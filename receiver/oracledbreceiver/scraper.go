@@ -37,6 +37,12 @@ import (
 const (
 	statsSQL     = "select * from v$sysstat"
 	sysmetricSQL = "SELECT metric_name, value FROM v$sysmetric WHERE group_id = 2"
+	// sysmetricCDBSQL extends sysmetricSQL for CDB root, using V$CON_SYSMETRIC to get per-PDB values.
+	sysmetricCDBSQL = `
+		SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME
+		FROM v$con_sysmetric s
+		JOIN v$containers c ON s.con_id = c.con_id
+		WHERE s.group_id = 2`
 
 	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
 	sysmetricBufferCacheHitRatio      = "Buffer Cache Hit Ratio"
@@ -291,7 +297,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
 	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
-	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
+	if s.isCDBRoot {
+		s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
+	} else {
+		s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
+	}
 	return nil
 }
 
@@ -792,15 +802,21 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	sysmetricQueryName := sysmetricSQL
+	if s.isCDBRoot {
+		sysmetricQueryName = sysmetricCDBSQL
+	}
 	rows, err := s.sysmetricClient.metricRows(ctx)
 	if err != nil {
-		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricSQL, err))
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricQueryName, err))
 		return
 	}
 
 	for _, row := range rows {
 		metricName := row["METRIC_NAME"]
 		rawVal := row["VALUE"]
+		// pdbName is set for CDB-root queries; empty for non-CDB or direct-PDB connections.
+		pdbName := row["PDB_NAME"]
 		val, parseErr := strconv.ParseFloat(rawVal, 64)
 		if parseErr != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
@@ -809,52 +825,52 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		switch metricName {
 		case sysmetricBufferCacheHitRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbBufferCacheUtilization.Enabled {
-				s.mb.RecordOracledbBufferCacheUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbBufferCacheUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricHostCPUUtilization:
 			if s.metricsBuilderConfig.Metrics.OracledbHostCPUUtilization.Enabled {
-				s.mb.RecordOracledbHostCPUUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbHostCPUUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricDatabaseCPUTimeRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbDatabaseCPUUtilization.Enabled {
-				s.mb.RecordOracledbDatabaseCPUUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbDatabaseCPUUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricLibraryCacheHitRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbLibraryCacheUtilization.Enabled {
-				s.mb.RecordOracledbLibraryCacheUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbLibraryCacheUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricSharedPoolFreePct:
 			if s.metricsBuilderConfig.Metrics.OracledbSharedPoolUtilization.Enabled {
-				s.mb.RecordOracledbSharedPoolUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbSharedPoolUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricDatabaseWaitTimeRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbDatabaseWaitUtilization.Enabled {
-				s.mb.RecordOracledbDatabaseWaitUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbDatabaseWaitUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricSoftParseRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbParseUtilization.Enabled {
-				s.mb.RecordOracledbParseUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbParseUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricSQLServiceResponseTime:
 			if s.metricsBuilderConfig.Metrics.OracledbSQLServiceResponseDuration.Enabled {
 				// Oracle reports SQL Service Response Time in centiseconds; convert to seconds.
-				s.mb.RecordOracledbSQLServiceResponseDurationDataPoint(now, val/100)
+				s.mb.RecordOracledbSQLServiceResponseDurationDataPoint(now, val/100, pdbName)
 			}
 		case sysmetricMemorySortsRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbSortRatio.Enabled {
-				s.mb.RecordOracledbSortRatioDataPoint(now, val, metadata.AttributeOracledbSortTypeMemory)
+				s.mb.RecordOracledbSortRatioDataPoint(now, val, metadata.AttributeOracledbSortTypeMemory, pdbName)
 			}
 		case sysmetricRedoAllocationHitRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbRedoAllocationUtilization.Enabled {
-				s.mb.RecordOracledbRedoAllocationUtilizationDataPoint(now, val)
+				s.mb.RecordOracledbRedoAllocationUtilizationDataPoint(now, val, pdbName)
 			}
 		case sysmetricParseFailureCount:
 			if s.metricsBuilderConfig.Metrics.OracledbParseRate.Enabled {
-				s.mb.RecordOracledbParseRateDataPoint(now, val, metadata.AttributeOracledbParseResultFailure)
+				s.mb.RecordOracledbParseRateDataPoint(now, val, metadata.AttributeOracledbParseResultFailure, pdbName)
 			}
 		case sysmetricExecuteWithoutParseRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled {
-				s.mb.RecordOracledbExecutionUtilizationDataPoint(now, val, metadata.AttributeOracledbParseTypeSoft)
+				s.mb.RecordOracledbExecutionUtilizationDataPoint(now, val, metadata.AttributeOracledbParseTypeSoft, pdbName)
 			}
 		}
 	}

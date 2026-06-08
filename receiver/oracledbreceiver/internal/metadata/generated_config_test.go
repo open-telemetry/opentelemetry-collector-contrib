@@ -27,7 +27,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheUtilizationMetricAttributeKey{OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
 						Enabled:             true,
@@ -43,10 +45,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbDatabaseCPUUtilization: OracledbDatabaseCPUUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseCPUUtilizationMetricAttributeKey{OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseWaitUtilizationMetricAttributeKey{OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 						Enabled:             true,
@@ -94,7 +100,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbExecutionUtilization: OracledbExecutionUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType},
+						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType, OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutions: OracledbExecutionsMetricConfig{
 						Enabled:             true,
@@ -107,10 +113,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbHardParsesMetricAttributeKey{OracledbHardParsesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHostCPUUtilizationMetricAttributeKey{OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLibraryCacheUtilizationMetricAttributeKey{OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 						Enabled:             true,
@@ -155,10 +165,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbParseRate: OracledbParseRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult},
+						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult, OracledbParseRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseUtilization: OracledbParseUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbParseUtilizationMetricAttributeKey{OracledbParseUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseCalls: OracledbParseCallsMetricConfig{
 						Enabled:             true,
@@ -230,7 +242,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoAllocationUtilizationMetricAttributeKey{OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 						Enabled: true,
@@ -241,15 +255,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus, OracledbSessionsUsageMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSharedPoolUtilizationMetricAttributeKey{OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSortRatio: OracledbSortRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType},
+						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType, OracledbSortRatioMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSQLServiceResponseDuration: OracledbSQLServiceResponseDurationMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSQLServiceResponseDurationMetricAttributeKey{OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             true,
@@ -306,7 +324,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbBufferCacheUtilizationMetricAttributeKey{OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
 						Enabled:             false,
@@ -322,10 +342,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbDatabaseCPUUtilization: OracledbDatabaseCPUUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseCPUUtilizationMetricAttributeKey{OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbDatabaseWaitUtilizationMetricAttributeKey{OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 						Enabled:             false,
@@ -373,7 +397,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbExecutionUtilization: OracledbExecutionUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType},
+						EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType, OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbExecutions: OracledbExecutionsMetricConfig{
 						Enabled:             false,
@@ -386,10 +410,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbHardParsesMetricAttributeKey{OracledbHardParsesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbHostCPUUtilizationMetricAttributeKey{OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbLibraryCacheUtilizationMetricAttributeKey{OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 						Enabled:             false,
@@ -434,10 +462,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbParseRate: OracledbParseRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult},
+						EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult, OracledbParseRateMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseUtilization: OracledbParseUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbParseUtilizationMetricAttributeKey{OracledbParseUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbParseCalls: OracledbParseCallsMetricConfig{
 						Enabled:             false,
@@ -509,7 +539,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbRedoAllocationUtilizationMetricAttributeKey{OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 						Enabled: false,
@@ -520,15 +552,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus, OracledbSessionsUsageMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSharedPoolUtilizationMetricAttributeKey{OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSortRatio: OracledbSortRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType},
+						EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType, OracledbSortRatioMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSQLServiceResponseDuration: OracledbSQLServiceResponseDurationMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OracledbSQLServiceResponseDurationMetricAttributeKey{OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             false,

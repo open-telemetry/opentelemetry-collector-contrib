@@ -318,6 +318,12 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
+
 ### oracledb.consistent_gets
 
 Number of times a consistent read was requested for a block from the buffer cache.
@@ -348,6 +354,12 @@ Fraction of total database time spent on CPU, as computed by Oracle V$SYSMETRIC 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
+
 ### oracledb.database.wait.utilization
 
 Fraction of total database time spent waiting on I/O, locks, or latches, as computed by Oracle V$SYSMETRIC (% Wait/DB_Time).
@@ -355,6 +367,12 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.db_block_gets
 
@@ -411,6 +429,7 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.host.cpu.utilization
 
@@ -420,6 +439,12 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
+
 ### oracledb.library_cache.utilization
 
 Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
@@ -427,6 +452,12 @@ Fraction of library cache pin requests that found the object already cached, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.logons
 
@@ -539,6 +570,7 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.result | Result of a parse operation (e.g., failure). | Str: ``failure`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.parse.utilization
 
@@ -547,6 +579,12 @@ Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.physical_io.cache_writes
 
@@ -694,6 +732,12 @@ Fraction of redo allocations that succeeded without space contention, as compute
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
@@ -701,6 +745,12 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.sort.ratio
 
@@ -715,6 +765,7 @@ Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.sort.type | Type of sort operation (e.g., memory, disk). | Str: ``memory`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.sql_service.response.duration
 
@@ -723,6 +774,12 @@ Average SQL service response time in seconds, converted from centiseconds as rep
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.sqlnet.io.transferred
 
