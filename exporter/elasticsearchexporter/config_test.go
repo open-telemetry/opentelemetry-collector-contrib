@@ -30,14 +30,17 @@ func TestConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+	defaultCfg.(*Config).Retry.RetryOnDocumentStatus = defaultCfg.(*Config).Retry.RetryOnStatus
 
 	defaultLogstashFormatCfg := createDefaultConfig()
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+	defaultLogstashFormatCfg.(*Config).Retry.RetryOnDocumentStatus = defaultLogstashFormatCfg.(*Config).Retry.RetryOnStatus
 
 	defaultRawCfg := createDefaultConfig()
 	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
@@ -120,6 +123,10 @@ func TestConfig(t *testing.T) {
 						http.StatusTooManyRequests,
 						http.StatusInternalServerError,
 					},
+					RetryOnDocumentStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+					},
 				},
 				Mapping: MappingsSettings{
 					Mode: "otel",
@@ -197,11 +204,12 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:         true,
-					MaxRetries:      5,
-					InitialInterval: 100 * time.Millisecond,
-					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:               true,
+					MaxRetries:            5,
+					InitialInterval:       100 * time.Millisecond,
+					MaxInterval:           1 * time.Minute,
+					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -273,11 +281,12 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:         true,
-					MaxRetries:      5,
-					InitialInterval: 100 * time.Millisecond,
-					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:               true,
+					MaxRetries:            5,
+					InitialInterval:       100 * time.Millisecond,
+					MaxInterval:           1 * time.Minute,
+					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -308,6 +317,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -315,6 +325,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -324,6 +335,7 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "none"
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -333,6 +345,7 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "gzip"
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -342,6 +355,7 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -351,6 +365,7 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -360,6 +375,7 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -377,6 +393,7 @@ func TestConfig(t *testing.T) {
 						MaxSize:      5000,
 					},
 				)
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -396,6 +413,7 @@ func TestConfig(t *testing.T) {
 				qbCfg.FlushTimeout = 111 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -415,6 +433,7 @@ func TestConfig(t *testing.T) {
 				qbCfg.FlushTimeout = 11 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -424,6 +443,25 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.SuppressConflictErrors = true
+				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
+				cfg.Retry.RetryOnDocumentStatus = []int{http.StatusBadRequest, http.StatusConflict}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "retry_on_document_status_empty"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
+				cfg.Retry.RetryOnDocumentStatus = []int{}
 			}),
 		},
 	}
