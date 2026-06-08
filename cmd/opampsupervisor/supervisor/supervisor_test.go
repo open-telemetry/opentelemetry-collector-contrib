@@ -326,50 +326,80 @@ service:
 }
 
 func TestNormalizeTelemetryResourceConfig(t *testing.T) {
-	raw := map[string]any{
-		"service": map[string]any{
-			"telemetry": map[string]any{
-				"resource": map[string]any{
-					"schema_url": "https://opentelemetry.io/schemas/1.38.0",
-					"detection/development": map[string]any{
-						"attributes": map[string]any{
-							"included": []any{"host.*"},
+	t.Run("merges legacy attributes with attribute list", func(t *testing.T) {
+		raw := map[string]any{
+			"service": map[string]any{
+				"telemetry": map[string]any{
+					"resource": map[string]any{
+						"schema_url": "https://opentelemetry.io/schemas/1.38.0",
+						"detection/development": map[string]any{
+							"attributes": map[string]any{
+								"included": []any{"host.*"},
+							},
+							"detectors": []any{
+								map[string]any{"host": map[string]any{}},
+							},
 						},
-						"detectors": []any{
-							map[string]any{"host": map[string]any{}},
+						"attributes": []any{
+							map[string]any{"name": "service.name", "value": "svc"},
+							map[string]any{"name": "deployment.environment", "value": "prod"},
 						},
+						"service.instance.id":    "abc123",
+						"service.name":           "legacy-name",
+						"deployment.environment": nil,
 					},
-					"attributes": []any{
-						map[string]any{"name": "service.name", "value": "svc"},
-						map[string]any{"name": "deployment.environment", "value": "prod"},
-					},
-					"service.instance.id":    "abc123",
-					"service.name":           "legacy-name",
-					"deployment.environment": nil,
 				},
 			},
-		},
-	}
+		}
 
-	require.NoError(t, normalizeTelemetryResourceConfig(raw))
+		require.NoError(t, normalizeTelemetryResourceConfig(raw))
 
-	resource := raw["service"].(map[string]any)["telemetry"].(map[string]any)["resource"].(map[string]any)
-	assert.NotContains(t, resource, "service.instance.id")
-	assert.NotContains(t, resource, "service.name")
-	assert.Contains(t, resource, "deployment.environment")
-	assert.Nil(t, resource["deployment.environment"])
+		resource := raw["service"].(map[string]any)["telemetry"].(map[string]any)["resource"].(map[string]any)
+		assert.NotContains(t, resource, "service.instance.id")
+		assert.NotContains(t, resource, "service.name")
+		assert.Contains(t, resource, "deployment.environment")
+		assert.Nil(t, resource["deployment.environment"])
 
-	var resourceCfg config.ResourceConfig
-	require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
-	require.Equal(t, map[string]any{"deployment.environment": nil}, resourceCfg.LegacyAttributes)
-	require.Len(t, resourceCfg.Attributes, 2)
-	assert.Equal(t, "service.name", resourceCfg.Attributes[0].Name)
-	assert.Equal(t, "legacy-name", resourceCfg.Attributes[0].Value)
-	assert.Equal(t, "service.instance.id", resourceCfg.Attributes[1].Name)
-	assert.Equal(t, "abc123", resourceCfg.Attributes[1].Value)
-	require.NotNil(t, resourceCfg.DetectionDevelopment)
-	require.NotNil(t, resourceCfg.DetectionDevelopment.Attributes)
-	assert.Equal(t, []string{"host.*"}, resourceCfg.DetectionDevelopment.Attributes.Included)
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Equal(t, map[string]any{"deployment.environment": nil}, resourceCfg.LegacyAttributes)
+		require.Len(t, resourceCfg.Attributes, 2)
+		assert.Equal(t, "service.name", resourceCfg.Attributes[0].Name)
+		assert.Equal(t, "legacy-name", resourceCfg.Attributes[0].Value)
+		assert.Equal(t, "service.instance.id", resourceCfg.Attributes[1].Name)
+		assert.Equal(t, "abc123", resourceCfg.Attributes[1].Value)
+		require.NotNil(t, resourceCfg.DetectionDevelopment)
+		require.NotNil(t, resourceCfg.DetectionDevelopment.Attributes)
+		assert.Equal(t, []string{"host.*"}, resourceCfg.DetectionDevelopment.Attributes.Included)
+	})
+
+	t.Run("converts legacy-only attributes to attribute list", func(t *testing.T) {
+		raw := map[string]any{
+			"service": map[string]any{
+				"telemetry": map[string]any{
+					"resource": map[string]any{
+						"service.name":    "updated-agent-description-e2e",
+						"service.version": "updated-version-e2e",
+					},
+				},
+			},
+		}
+
+		require.NoError(t, normalizeTelemetryResourceConfig(raw))
+
+		resource := raw["service"].(map[string]any)["telemetry"].(map[string]any)["resource"].(map[string]any)
+		assert.NotContains(t, resource, "service.name")
+		assert.NotContains(t, resource, "service.version")
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+		require.Len(t, resourceCfg.Attributes, 2)
+		assert.Equal(t, "service.name", resourceCfg.Attributes[0].Name)
+		assert.Equal(t, "updated-agent-description-e2e", resourceCfg.Attributes[0].Value)
+		assert.Equal(t, "service.version", resourceCfg.Attributes[1].Name)
+		assert.Equal(t, "updated-version-e2e", resourceCfg.Attributes[1].Value)
+	})
 }
 
 func Test_onMessage(t *testing.T) {

@@ -1396,7 +1396,7 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 		return err
 	}
 
-	if len(resourceCfg.Attributes) == 0 || len(resourceCfg.LegacyAttributes) == 0 {
+	if len(resourceCfg.LegacyAttributes) == 0 {
 		return nil
 	}
 

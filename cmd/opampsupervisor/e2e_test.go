@@ -1326,7 +1326,7 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 			// The effective config may be structurally different compared to what was sent,
 			// and currently has most values redacted,
 			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, "test_key:")
+			return strings.Contains(cfg, "test_key:") || strings.Contains(cfg, "name: test_key")
 		}
 
 		return false
