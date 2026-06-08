@@ -9,6 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `exporter.prometheusexporter.DisableAddMetricSuffixes` | alpha | When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used | v0.132.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-specification/pull/4533) |
-| `exporter.prometheusexporter.ResourceConstantLabels` | alpha | When enabled, resource_constant_labels is available and the deprecated resource_to_telemetry_conversion configuration option is disabled | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861) |
+| `exporter.prometheusexporter.RemoveResourceToTelemetry` | alpha | When enabled, the deprecated resource_to_telemetry_conversion configuration option is disabled | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

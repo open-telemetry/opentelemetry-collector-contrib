@@ -466,10 +466,6 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEndWithResourceConstantLabels(t *testing.T) {
-	oldValue := metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled()
-	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, true)
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, oldValue)
-
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",

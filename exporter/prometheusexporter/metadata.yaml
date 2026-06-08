@@ -18,8 +18,8 @@ feature_gates:
     from_version: "v0.132.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
     skip_strict_validation: true
-  - id: exporter.prometheusexporter.ResourceConstantLabels
-    description: When enabled, resource_constant_labels is available and the deprecated resource_to_telemetry_conversion configuration option is disabled
+  - id: exporter.prometheusexporter.RemoveResourceToTelemetry
+    description: When enabled, the deprecated resource_to_telemetry_conversion configuration option is disabled
     stage: alpha
     from_version: "v0.153.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861

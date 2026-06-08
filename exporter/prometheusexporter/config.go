@@ -97,12 +97,10 @@ func (cfg *Config) Validate() error {
 	if cfg.ResourceConstantLabels.HasValue() && cfg.resourceToTelemetryConfigured() {
 		return errors.New("resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time")
 	}
-	if metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() {
+	if metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate.IsEnabled() {
 		if cfg.resourceToTelemetryConfigured() {
-			return fmt.Errorf("resource_to_telemetry_conversion is disabled by feature gate %q; use resource_constant_labels instead", "exporter.prometheusexporter.ResourceConstantLabels")
+			return fmt.Errorf("resource_to_telemetry_conversion is disabled by feature gate %q; use resource_constant_labels instead", "exporter.prometheusexporter.RemoveResourceToTelemetry")
 		}
-	} else if cfg.ResourceConstantLabels.HasValue() {
-		return fmt.Errorf("resource_constant_labels requires feature gate %q", "exporter.prometheusexporter.ResourceConstantLabels")
 	}
 	return nil
 }

@@ -27,9 +27,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id                component.ID
-		enableFeatureGate bool
-		expected          component.Config
+		id       component.ID
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
@@ -62,8 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
-			id:                component.NewIDWithName(metadata.Type, "resource_constant_labels"),
-			enableFeatureGate: true,
+			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.ResourceConstantLabels = configoptional.Some(ResourceConstantLabels{
@@ -89,10 +87,6 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			oldValue := metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, tt.enableFeatureGate)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, oldValue)
-
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -106,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
+func TestValidateRemoveResourceToTelemetryFeatureGate(t *testing.T) {
 	tests := []struct {
 		name              string
 		enableFeatureGate bool
@@ -114,14 +108,13 @@ func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
 		wantErr           string
 	}{
 		{
-			name:              "resource constant labels require feature gate",
+			name:              "resource constant labels allowed without feature gate",
 			enableFeatureGate: false,
 			cfg: &Config{
 				ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
 					Included: []string{"service.name"},
 				}),
 			},
-			wantErr: `resource_constant_labels requires feature gate "exporter.prometheusexporter.ResourceConstantLabels"`,
 		},
 		{
 			name:              "legacy disabled by feature gate",
@@ -129,7 +122,7 @@ func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
 			cfg: &Config{
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 			},
-			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.ResourceConstantLabels"; use resource_constant_labels instead`,
+			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.RemoveResourceToTelemetry"; use resource_constant_labels instead`,
 		},
 		{
 			name:              "legacy block presence disabled by feature gate",
@@ -137,7 +130,7 @@ func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
 			cfg: &Config{
 				resourceToTelemetrySettingsConfigured: true,
 			},
-			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.ResourceConstantLabels"; use resource_constant_labels instead`,
+			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.RemoveResourceToTelemetry"; use resource_constant_labels instead`,
 		},
 		{
 			name:              "legacy and new are mutually exclusive",
@@ -151,7 +144,7 @@ func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
 			wantErr: "resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time",
 		},
 		{
-			name:              "new config allowed with feature gate",
+			name:              "resource constant labels allowed with feature gate",
 			enableFeatureGate: true,
 			cfg: &Config{
 				ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
@@ -170,9 +163,9 @@ func TestValidateResourceConstantLabelsFeatureGate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldValue := metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, tt.enableFeatureGate)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate, oldValue)
+			oldValue := metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate, tt.enableFeatureGate)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate, oldValue)
 
 			err := tt.cfg.Validate()
 			if tt.wantErr != "" {
