@@ -47,7 +47,7 @@ receivers:
 
 The receiver converts Fluentd events to OpenTelemetry logs. Each Fluentd event
 is converted to a single OpenTelemetry log record and packets are stored as LogRecordSlice.
-The FluentD `tag` is stored as an attribute with key `fluentd.tag`.
+The FluentD `tag` is stored as an attribute with key `fluent.tag`.
 The FluentD event timestamp is used as the log record timestamp.
 The record `message` or `log` field is stored as the body of the log record. If both are present,
 it just takes the field that comes last in the message stream.
