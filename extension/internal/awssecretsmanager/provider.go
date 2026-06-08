@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	DefaultRefreshInterval = 5 * time.Minute
+	DefaultRefreshInterval = 30 * time.Minute
 	fetchTimeout           = 30 * time.Second
 )
 
@@ -41,7 +42,7 @@ type Resolver struct {
 	value  atomic.Pointer[string]
 	Client SecretsManagerClient
 	cancel context.CancelFunc
-	done   chan struct{}
+	wg     sync.WaitGroup
 }
 
 // NewResolver creates a new AWS Secrets Manager resolver.
@@ -78,8 +79,8 @@ func (r *Resolver) Start(ctx context.Context) error {
 
 	loopCtx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
-	r.done = make(chan struct{})
 
+	r.wg.Add(1)
 	go r.refreshLoop(loopCtx)
 
 	return nil
@@ -95,13 +96,13 @@ func (r *Resolver) Value() string {
 func (r *Resolver) Shutdown() error {
 	if r.cancel != nil {
 		r.cancel()
-		<-r.done
+		r.wg.Wait()
 	}
 	return nil
 }
 
 func (r *Resolver) refreshLoop(ctx context.Context) {
-	defer close(r.done)
+	defer r.wg.Done()
 	ticker := time.NewTicker(r.refreshInterval)
 	defer ticker.Stop()
 
