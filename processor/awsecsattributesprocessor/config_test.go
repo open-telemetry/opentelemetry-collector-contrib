@@ -109,3 +109,56 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// metadata attributes are collected.
 	require.Empty(t, cfg.Attributes)
 }
+
+func TestConfigInit(t *testing.T) {
+	t.Run("compiles patterns", func(t *testing.T) {
+		cfg := &Config{
+			CacheTTL:    60,
+			Attributes:  []string{"^aws.*", "^docker.*"},
+			ContainerID: ContainerID{Sources: []string{"container.id"}},
+		}
+		require.NoError(t, cfg.init())
+		require.Len(t, cfg.attrExpressions, 2)
+	})
+
+	t.Run("is idempotent", func(t *testing.T) {
+		cfg := &Config{
+			CacheTTL:    60,
+			Attributes:  []string{"^aws.*"},
+			ContainerID: ContainerID{Sources: []string{"container.id"}},
+		}
+		require.NoError(t, cfg.init())
+		require.NoError(t, cfg.init())
+		require.Len(t, cfg.attrExpressions, 1)
+	})
+
+	t.Run("fails validation", func(t *testing.T) {
+		cfg := &Config{CacheTTL: 60, ContainerID: ContainerID{Sources: nil}}
+		require.Error(t, cfg.init())
+	})
+}
+
+func TestConfigAllowAttr(t *testing.T) {
+	t.Run("with patterns", func(t *testing.T) {
+		cfg := &Config{
+			CacheTTL:    60,
+			Attributes:  []string{"^aws.*", "^docker.*", "^image.*"},
+			ContainerID: ContainerID{Sources: []string{"container.id"}},
+		}
+		require.NoError(t, cfg.init())
+		require.True(t, cfg.allowAttr("aws.ecs.cluster"))
+		require.True(t, cfg.allowAttr("docker.id"))
+		require.True(t, cfg.allowAttr("image.id"))
+		require.False(t, cfg.allowAttr("random.attribute"))
+	})
+
+	t.Run("empty patterns allow all", func(t *testing.T) {
+		cfg := &Config{
+			CacheTTL:    60,
+			Attributes:  nil,
+			ContainerID: ContainerID{Sources: []string{"container.id"}},
+		}
+		require.NoError(t, cfg.init())
+		require.True(t, cfg.allowAttr("anything"))
+	})
+}
