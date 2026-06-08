@@ -155,10 +155,14 @@ func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 
 func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 	sink := &consumertest.TracesSink{}
+	const n = 500
 	cfg := &Config{
 		TraceTimeout:  50 * time.Millisecond,
 		DecisionDelay: 50 * time.Millisecond,
-		NumTraces:     100,
+		// NumTraces must hold every trace we send, otherwise eviction skews
+		// the observed sample count (eviction order is map-iteration order,
+		// which differs across platforms).
+		NumTraces: n,
 		Rules: []RuleConfig{
 			{
 				Name: "fixed",
@@ -171,7 +175,6 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 	}
 	p := newTestProcessor(t, cfg, sink)
 
-	const n = 500
 	for i := range n {
 		// Vary the last 7 bytes; W3C consistent sampling uses these as randomness.
 		id := [16]byte{
@@ -188,10 +191,10 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 		return len(p.traces) == 0
 	}, 2*time.Second, 20*time.Millisecond)
 
-	// Expect roughly 10% sampled. Allow a wide tolerance for the small sample.
+	// Expect roughly 10% sampled (~50 of 500). Allow a wide tolerance.
 	count := sink.SpanCount()
-	assert.Greater(t, count, 10, "expected some traces sampled, got %d", count)
-	assert.Less(t, count, 150, "expected fewer than ~30%, got %d", count)
+	assert.Greater(t, count, 20, "expected some traces sampled, got %d", count)
+	assert.Less(t, count, 100, "expected fewer than ~20%%, got %d", count)
 }
 
 func TestProcessor_Eviction(t *testing.T) {
