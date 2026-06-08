@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/prometheusreceiver
+note: Add Statefulness warning to metadata and README to indicate the receiver requires careful deployment when running multiple collector replicas.
+issues: [48920]
+subtext:
+change_logs: [user]
