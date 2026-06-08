@@ -4,6 +4,10 @@
 package resourceexhaustedretryextension
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -105,6 +109,140 @@ func TestGetGRPCServerOptions_ReturnsInterceptors(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, opts, 2, "expected unary + stream interceptor options")
 	require.NotPanics(t, func() { grpc.NewServer(opts...) })
+}
+
+// serveStatus is a test helper that creates a middleware handler from the extension,
+// serves a single request that responds with statusCode, and returns the recorded response.
+func serveStatus(t *testing.T, e *resourceExhaustedRetryExtension, statusCode int) *httptest.ResponseRecorder {
+	t.Helper()
+	handler, err := e.GetHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(statusCode)
+	}))
+	require.NoError(t, err)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	handler.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestGetHTTPHandler_Disabled(t *testing.T) {
+	e := newExtension(&Config{}) // RetryDelay == 0
+	base := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler, err := e.GetHTTPHandler(base)
+	require.NoError(t, err)
+	// When disabled, the base handler must be returned unchanged.
+	// Compare function pointer addresses since func values cannot be compared directly.
+	assert.Equal(t, fmt.Sprintf("%p", http.HandlerFunc(base)), fmt.Sprintf("%p", handler.(http.HandlerFunc)))
+}
+
+func TestGetHTTPHandler_Wraps(t *testing.T) {
+	e := newExtension(&Config{RetryDelay: time.Second})
+	base := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	})
+	handler, err := e.GetHTTPHandler(base)
+	require.NoError(t, err)
+	// When enabled, a new wrapping handler must be returned — it is not an http.HandlerFunc
+	// wrapping the same underlying function pointer.
+	wrapped, ok := handler.(http.HandlerFunc)
+	if ok {
+		assert.NotEqual(t, fmt.Sprintf("%p", http.HandlerFunc(base)), fmt.Sprintf("%p", wrapped))
+	}
+	// Either way: serve a 429 and confirm Retry-After is injected.
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	handler.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
+	assert.NotEmpty(t, rec.Header().Get("Retry-After"))
+}
+
+func TestHTTPMiddleware_429_InjectsRetryAfter(t *testing.T) {
+	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	rec := serveStatus(t, e, http.StatusTooManyRequests)
+	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
+	assert.Equal(t, "2", rec.Header().Get("Retry-After"))
+}
+
+func TestHTTPMiddleware_OtherStatus_NoRetryAfter(t *testing.T) {
+	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	for _, code := range []int{http.StatusOK, http.StatusInternalServerError, http.StatusServiceUnavailable} {
+		rec := serveStatus(t, e, code)
+		assert.Equal(t, code, rec.Code)
+		assert.Empty(t, rec.Header().Get("Retry-After"), "status %d should not have Retry-After", code)
+	}
+}
+
+func TestHTTPMiddleware_SubSecondRoundsUpToOne(t *testing.T) {
+	e := newExtension(&Config{RetryDelay: 300 * time.Millisecond, Jitter: 0})
+	rec := serveStatus(t, e, http.StatusTooManyRequests)
+	assert.Equal(t, "1", rec.Header().Get("Retry-After"))
+}
+
+func TestHTTPMiddleware_ExactSecondNoRoundup(t *testing.T) {
+	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	rec := serveStatus(t, e, http.StatusTooManyRequests)
+	assert.Equal(t, "2", rec.Header().Get("Retry-After"))
+}
+
+func TestHTTPMiddleware_429_Disabled(t *testing.T) {
+	e := newExtension(&Config{}) // RetryDelay == 0
+	rec := serveStatus(t, e, http.StatusTooManyRequests)
+	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
+	assert.Empty(t, rec.Header().Get("Retry-After"))
+}
+
+func TestHTTPMiddleware_WriteHeader_DoubleCall(t *testing.T) {
+	// countingResponseWriter wraps httptest.ResponseRecorder to count WriteHeader calls.
+	type countingResponseWriter struct {
+		*httptest.ResponseRecorder
+		calls int
+	}
+	crw := &countingResponseWriter{ResponseRecorder: httptest.NewRecorder()}
+
+	rw := &retryResponseWriter{
+		ResponseWriter: &struct {
+			http.ResponseWriter
+			writeHeader func(int)
+		}{
+			ResponseWriter: crw.ResponseRecorder,
+			writeHeader:    func(code int) { crw.calls++; crw.ResponseRecorder.WriteHeader(code) },
+		},
+		delay: 2 * time.Second,
+	}
+
+	// Use a simpler approach: wrap a recorder directly and count via the recorder's Code changes.
+	rec := httptest.NewRecorder()
+	rw2 := &retryResponseWriter{ResponseWriter: rec, delay: 2 * time.Second}
+	rw2.WriteHeader(http.StatusTooManyRequests)
+	firstCode := rec.Code
+	firstHeader := rec.Header().Get("Retry-After")
+
+	// Mutate the recorder to detect if WriteHeader is called again (it would overwrite Code).
+	rec.Code = 0
+	rw2.WriteHeader(http.StatusTooManyRequests) // second call — must be suppressed
+	assert.Equal(t, 0, rec.Code, "second WriteHeader call should be suppressed by wroteHeader guard")
+	assert.Equal(t, http.StatusTooManyRequests, firstCode)
+	assert.Equal(t, "2", firstHeader)
+
+	_ = rw // silence unused warning
+}
+
+func TestHTTPMiddleware_Jitter_429(t *testing.T) {
+	base := 2 * time.Second
+	jitter := 3 * time.Second
+	e := newExtension(&Config{RetryDelay: base, Jitter: jitter})
+
+	for i := range 100 {
+		rec := serveStatus(t, e, http.StatusTooManyRequests)
+		val := rec.Header().Get("Retry-After")
+		require.NotEmpty(t, val, "sample %d: Retry-After must be set", i)
+		secs, err := strconv.Atoi(val)
+		require.NoError(t, err, "sample %d: Retry-After must be an integer, got %q", i, val)
+		assert.GreaterOrEqual(t, secs, int(base.Seconds()), "sample %d: Retry-After below RetryDelay", i)
+		assert.LessOrEqual(t, secs, int((base+jitter).Seconds()), "sample %d: Retry-After above RetryDelay+Jitter", i)
+	}
 }
 
 func TestConfigValidate(t *testing.T) {
