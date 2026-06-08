@@ -144,13 +144,8 @@ func TestGetHTTPHandler_Wraps(t *testing.T) {
 	})
 	handler, err := e.GetHTTPHandler(base)
 	require.NoError(t, err)
-	// When enabled, a new wrapping handler must be returned — it is not an http.HandlerFunc
-	// wrapping the same underlying function pointer.
-	wrapped, ok := handler.(http.HandlerFunc)
-	if ok {
-		assert.NotEqual(t, fmt.Sprintf("%p", http.HandlerFunc(base)), fmt.Sprintf("%p", wrapped))
-	}
-	// Either way: serve a 429 and confirm Retry-After is injected.
+	require.NotNil(t, handler)
+	// Serve a 429 and confirm Retry-After is injected — the handler must be a wrapping handler.
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	handler.ServeHTTP(rec, req)
@@ -194,39 +189,31 @@ func TestHTTPMiddleware_429_Disabled(t *testing.T) {
 }
 
 func TestHTTPMiddleware_WriteHeader_DoubleCall(t *testing.T) {
-	// countingResponseWriter wraps httptest.ResponseRecorder to count WriteHeader calls.
-	type countingResponseWriter struct {
-		*httptest.ResponseRecorder
-		calls int
-	}
-	crw := &countingResponseWriter{ResponseRecorder: httptest.NewRecorder()}
-
-	rw := &retryResponseWriter{
-		ResponseWriter: &struct {
-			http.ResponseWriter
-			writeHeader func(int)
-		}{
-			ResponseWriter: crw.ResponseRecorder,
-			writeHeader:    func(code int) { crw.calls++; crw.ResponseRecorder.WriteHeader(code) },
-		},
-		delay: 2 * time.Second,
+	// countingWriter counts raw WriteHeader calls without its own once-guard,
+	// so we can verify retryResponseWriter's own guard fires exactly once.
+	calls := 0
+	cw := &countingWriter{
+		ResponseWriter: httptest.NewRecorder(),
+		onWriteHeader:  func() { calls++ },
 	}
 
-	// Use a simpler approach: wrap a recorder directly and count via the recorder's Code changes.
-	rec := httptest.NewRecorder()
-	rw2 := &retryResponseWriter{ResponseWriter: rec, delay: 2 * time.Second}
-	rw2.WriteHeader(http.StatusTooManyRequests)
-	firstCode := rec.Code
-	firstHeader := rec.Header().Get("Retry-After")
+	rw := &retryResponseWriter{ResponseWriter: cw, delay: 2 * time.Second}
+	rw.WriteHeader(http.StatusTooManyRequests) // first call
+	rw.WriteHeader(http.StatusTooManyRequests) // second call — must be suppressed
 
-	// Mutate the recorder to detect if WriteHeader is called again (it would overwrite Code).
-	rec.Code = 0
-	rw2.WriteHeader(http.StatusTooManyRequests) // second call — must be suppressed
-	assert.Equal(t, 0, rec.Code, "second WriteHeader call should be suppressed by wroteHeader guard")
-	assert.Equal(t, http.StatusTooManyRequests, firstCode)
-	assert.Equal(t, "2", firstHeader)
+	assert.Equal(t, 1, calls, "underlying WriteHeader must be called exactly once")
+	assert.Equal(t, "2", cw.ResponseWriter.(*httptest.ResponseRecorder).Header().Get("Retry-After"))
+}
 
-	_ = rw // silence unused warning
+// countingWriter is a test spy that tracks WriteHeader invocations.
+type countingWriter struct {
+	http.ResponseWriter
+	onWriteHeader func()
+}
+
+func (cw *countingWriter) WriteHeader(code int) {
+	cw.onWriteHeader()
+	cw.ResponseWriter.WriteHeader(code)
 }
 
 func TestHTTPMiddleware_Jitter_429(t *testing.T) {
@@ -241,7 +228,7 @@ func TestHTTPMiddleware_Jitter_429(t *testing.T) {
 		secs, err := strconv.Atoi(val)
 		require.NoError(t, err, "sample %d: Retry-After must be an integer, got %q", i, val)
 		assert.GreaterOrEqual(t, secs, int(base.Seconds()), "sample %d: Retry-After below RetryDelay", i)
-		assert.LessOrEqual(t, secs, int((base+jitter).Seconds()), "sample %d: Retry-After above RetryDelay+Jitter", i)
+		assert.LessOrEqual(t, secs, int((base + jitter).Seconds()), "sample %d: Retry-After above RetryDelay+Jitter", i)
 	}
 }
 
