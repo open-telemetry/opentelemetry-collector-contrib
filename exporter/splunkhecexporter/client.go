@@ -180,9 +180,10 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 
 	localHeaders := map[string]string{}
 	localHeaders[libraryHeaderName] = profilingLibraryName
-	if token := accessTokenForResources(pp.ResourceProfiles().Len(), func(i int) pcommon.Map {
+	getResourceAttrs := func(i int) pcommon.Map {
 		return pp.ResourceProfiles().At(i).Resource().Attributes()
-	}); token != "" {
+	}
+	if token := accessTokenForResources(pp.ResourceProfiles().Len(), getResourceAttrs); token != "" {
 		localHeaders[authorizationHeaderName] = splunk.BuildHECAuthHeader(token)
 	}
 
@@ -210,9 +211,12 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 
 		for _, sp := range rp.ScopeProfiles().All() {
 			for _, prof := range sp.Profiles().All() {
-				if err := profileToLogRecord(pp, rp, sp, prof, sl); err != nil {
+				lr, err := profileToLogRecord(pp, rp, sp, prof)
+				if err != nil {
 					permanentErrors = append(permanentErrors, err)
+					continue
 				}
+				lr.CopyTo(sl.LogRecords().AppendEmpty())
 			}
 		}
 	}
@@ -220,16 +224,16 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 	return ld, permanentErrors
 }
 
-// profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord appended to sl.
-// Returns a permanent error if translation or encoding fails; on error no log record is appended.
-func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile, sl plog.ScopeLogs) error {
+// profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
+// Returns a permanent error if translation or encoding fails; on error the returned record is unset.
+func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
 	expanded, err := prepareProfilesForPprofConversion(pp, rp, scope, prof)
 	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
 	p, err := pprof.ConvertPprofileToPprof(&expanded)
 	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
 	expandedProf := expanded.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), expandedProf)
@@ -237,10 +241,10 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	var buf bytes.Buffer
 	// The Write method encodes the profile to a gzipped protobuf
 	if err := p.Write(&buf); err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err))
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err))
 	}
 
-	lr := sl.LogRecords().AppendEmpty()
+	lr := plog.NewLogRecord()
 	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
 	lr.SetTimestamp(prof.Time())
 	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
@@ -254,7 +258,7 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
 	// TODO find whether it is continuous or snapshot
 	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
-	return nil
+	return lr, nil
 }
 
 // prepareProfilesForPprofConversion normalizes a single OTel pprofile.Profile into a pprofile.Profiles

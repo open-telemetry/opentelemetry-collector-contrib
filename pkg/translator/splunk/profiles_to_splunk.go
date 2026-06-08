@@ -12,6 +12,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
+const (
+	// Splunk AlwaysOn Profiling sample label keys. Their semantics and types are part of the
+	// profiling backend contract (see comment on AddProfilingPprofSampleLabels):
+	//   - sourceEventNameLabel (string) optionally names the event that triggered the sampling.
+	//   - sourceEventTimeLabel (int64) MUST be the unix time in milliseconds when the sample was taken.
+	//   - sourceEventPeriodLabel (string) holds the sampling period for cpu profiles.
+	sourceEventNameLabel   = "source.event.name"
+	sourceEventTimeLabel   = "source.event.time"
+	sourceEventPeriodLabel = "source.event.period"
+)
+
 // AddProfilingPprofSampleLabels adds Splunk AlwaysOn Profiling labels to pprof samples.
 //
 // prof is expected to be normalized so that each pprof sample maps 1:1 to a pprofile.Sample carrying at most one entry
@@ -39,10 +50,11 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 			}
 		}
 
-		sample.Label["source.event.name"] = []string{scope.Name()}
-		sample.NumLabel["source.event.time"] = []int64{eventTime.UnixMilli()}
+		sample.Label[sourceEventNameLabel] = []string{scope.Name()}
+		// source.event.time MUST be the unix time in milliseconds; the backend rejects other units.
+		sample.NumLabel[sourceEventTimeLabel] = []int64{eventTime.UnixMilli()}
 		if sampleType == "cpu" {
-			sample.Label["source.event.period"] = []string{strconv.Itoa(int(prof.Period()))}
+			sample.Label[sourceEventPeriodLabel] = []string{strconv.Itoa(int(prof.Period()))}
 		}
 
 		if sampleIdx >= prof.Samples().Len() {

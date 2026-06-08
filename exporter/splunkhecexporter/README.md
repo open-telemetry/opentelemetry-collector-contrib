@@ -153,13 +153,14 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 ## Profile Support
 
-> **Stability: development** — Profile support is under active development and behavior may change.
-
-This exporter supports the OpenTelemetry [profiles signal](https://opentelemetry.io/docs/specs/otel/profiles/), targeting [Splunk AlwaysOn Profiling](https://docs.splunk.com/observability/en/apm/profiling/intro-profiling.html).
+This exporter supports the OpenTelemetry [profiles signal](https://opentelemetry.io/docs/specs/otel/profiles/), 
+targeting [Splunk AlwaysOn Profiling](https://docs.splunk.com/observability/en/apm/profiling/intro-profiling.html).
 
 ### How it works
 
-Each OTel profile is translated to [pprof](https://github.com/google/pprof) format, gzip-compressed, base64-encoded, and sent as a HEC log event. The events carry the following attributes that the Splunk AlwaysOn Profiling backend uses to identify and ingest them:
+Each OTel profile is translated to [pprof](https://github.com/google/pprof) format, gzip-compressed, base64-encoded, 
+and sent as a HEC log event. The events carry the following attributes that the Splunk AlwaysOn Profiling backend 
+uses to identify and ingest them:
 
 | Attribute | Value |
 |---|---|
@@ -167,6 +168,8 @@ Each OTel profile is translated to [pprof](https://github.com/google/pprof) form
 | `profiling.data.type` | sample type (e.g. `cpu`, `wall`) |
 | `profiling.instrumentation.source` | `continuous` |
 | `com.splunk.sourcetype` | `otel.profiling` |
+
+All values are fixed constants emitted by the exporter except `profiling.data.type`, which is derived from each profile's sample type.
 
 ### Enabling profile export
 

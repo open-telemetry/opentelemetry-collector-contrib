@@ -48,16 +48,16 @@ func TestAddProfilingPprofSampleLabels(t *testing.T) {
 	AddProfilingPprofSampleLabels(pprofProfile, dict, scope, otelProfile)
 
 	require.Len(t, pprofProfile.Sample, 2)
-	assert.Equal(t, []string{"runtime/profiler"}, pprofProfile.Sample[0].Label["source.event.name"])
-	assert.Equal(t, []int64{ts.UnixMilli()}, pprofProfile.Sample[0].NumLabel["source.event.time"])
-	assert.Equal(t, []string{"100"}, pprofProfile.Sample[0].Label["source.event.period"])
-	assert.Equal(t, []string{spanID.String()}, pprofProfile.Sample[0].Label["span_id"])
-	assert.Equal(t, []string{traceID.String()}, pprofProfile.Sample[0].Label["trace_id"])
+	assert.Equal(t, []string{"runtime/profiler"}, pprofProfile.Sample[0].Label[sourceEventNameLabel])
+	assert.Equal(t, []int64{ts.UnixMilli()}, pprofProfile.Sample[0].NumLabel[sourceEventTimeLabel])
+	assert.Equal(t, []string{"100"}, pprofProfile.Sample[0].Label[sourceEventPeriodLabel])
+	assert.Equal(t, []string{spanID.String()}, pprofProfile.Sample[0].Label[spanIDFieldKey])
+	assert.Equal(t, []string{traceID.String()}, pprofProfile.Sample[0].Label[traceIDFieldKey])
 
-	assert.Equal(t, []string{"runtime/profiler"}, pprofProfile.Sample[1].Label["source.event.name"])
-	assert.Equal(t, []int64{ts.UnixMilli()}, pprofProfile.Sample[1].NumLabel["source.event.time"])
-	_, hasSpanID := pprofProfile.Sample[1].Label["span_id"]
+	assert.Equal(t, []string{"runtime/profiler"}, pprofProfile.Sample[1].Label[sourceEventNameLabel])
+	assert.Equal(t, []int64{ts.UnixMilli()}, pprofProfile.Sample[1].NumLabel[sourceEventTimeLabel])
+	_, hasSpanID := pprofProfile.Sample[1].Label[spanIDFieldKey]
 	assert.False(t, hasSpanID)
-	_, hasTraceID := pprofProfile.Sample[1].Label["trace_id"]
+	_, hasTraceID := pprofProfile.Sample[1].Label[traceIDFieldKey]
 	assert.False(t, hasTraceID)
 }
