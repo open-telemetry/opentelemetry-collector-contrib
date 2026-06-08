@@ -66,6 +66,18 @@ To see more examples of OTTL statements, checkout the [Transform Processor](http
 
 There is a lot more OTTL can do, like nested functions, arithmetic, indexing, and enums. To explore it further check out [OTTL's grammar doc](./LANGUAGE.md).
 
+### Common first examples
+
+If you are new to OTTL, start by identifying whether you want to transform telemetry or filter telemetry.
+
+The Transform Processor uses OTTL statements, which call a function such as `set(...)` and can include an optional `where` condition. The Filter Processor uses OTTL conditions, which are boolean expressions that determine whether telemetry should be dropped.
+
+| Goal | Example | Where to use it |
+|---|---|---|
+| Add an attribute to matching spans | `set(span.attributes["team"], "checkout") where span.name == "checkout"` | Transform Processor `trace_statements` |
+| Normalize log severity text | `set(log.severity_text, "WARN") where log.severity_text == "WARNING"` | Transform Processor `log_statements` |
+| Drop noisy health check spans | `span.name == "GET /healthz"` | Filter Processor `trace_conditions` |
+
 ## Where to use OTTL
 
 - To modify your data as it passes through a pipeline, use the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md).
