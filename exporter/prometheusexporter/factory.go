@@ -45,7 +45,7 @@ func createMetricsExporter(
 	if err := pcfg.Validate(); err != nil {
 		return nil, err
 	}
-	if !metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() && pcfg.ResourceToTelemetrySettings.Enabled {
+	if !metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() && pcfg.resourceToTelemetryConfigured() {
 		set.Logger.Warn("`resource_to_telemetry_conversion` is deprecated. Please enable the `exporter.prometheusexporter.ResourceConstantLabels` feature gate and use `resource_constant_labels` instead.")
 	}
 
