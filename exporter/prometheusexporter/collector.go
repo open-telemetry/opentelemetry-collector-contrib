@@ -381,6 +381,11 @@ func (c *collector) shouldAddResourceLabel(key string) bool {
 	return false
 }
 
+// upsertLabel keeps the variable label list unique while preserving the first
+// label position. Later sources, such as resource attributes, can override
+// earlier datapoint attributes after label-name translation.
+//
+// The later caller can override the earlier value by calling upsertLabel again.
 func upsertLabel(keys, values *[]string, labelIndex map[string]int, key, value string) {
 	if index, ok := labelIndex[key]; ok {
 		(*values)[index] = value
