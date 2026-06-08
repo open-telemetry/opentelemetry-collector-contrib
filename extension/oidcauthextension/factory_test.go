@@ -14,7 +14,8 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		Attribute: defaultAttribute,
+		Attribute:            defaultAttribute,
+		SupportedSigningAlgs: []string{"RS256"},
 	}
 
 	// test

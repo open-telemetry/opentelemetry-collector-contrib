@@ -119,8 +119,9 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 
 func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 	var errs error
-	for _, providerCfg := range e.cfg.getProviderConfigs() {
-		errs = multierr.Append(errs, e.processProviderConfig(ctx, providerCfg))
+	providers := e.cfg.getProviderConfigs()
+	for i := range providers {
+		errs = multierr.Append(errs, e.processProviderConfig(ctx, &providers[i]))
 	}
 	if errs != nil {
 		return fmt.Errorf("failed to get configuration from at least one configured auth server: %w", errs)
@@ -272,14 +273,15 @@ func (e *oidcExtension) resolveProvider(issuer string) (*providerContainer, erro
 	return pc, nil
 }
 
-func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg) error {
+func (e *oidcExtension) processProviderConfig(ctx context.Context, p *ProviderCfg) error {
 	pc := providerContainer{
-		providerCfg: p,
+		providerCfg: *p,
 	}
 
 	vCfg := &oidc.Config{
-		ClientID:          p.Audience,
-		SkipClientIDCheck: p.IgnoreAudience,
+		ClientID:             p.Audience,
+		SkipClientIDCheck:    p.IgnoreAudience,
+		SupportedSigningAlgs: p.SupportedSigningAlgs,
 	}
 
 	if p.PublicKeysFile != "" {
