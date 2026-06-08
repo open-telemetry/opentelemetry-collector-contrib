@@ -1586,6 +1586,75 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 }
 
+func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
+	const updatedServiceName = "updated-agent-description-e2e"
+	const updatedServiceVersion = "updated-version-e2e"
+
+	var agentDescription atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(proto.Clone(message.AgentDescription).(*protobufs.AgentDescription))
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	updatedConfig := []byte(fmt.Sprintf(`
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    resource:
+      service.name: %s
+      service.version: %s
+`, updatedServiceName, updatedServiceVersion))
+	updatedConfigHash := sha256.Sum256(updatedConfig)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: updatedConfig},
+				},
+			},
+			ConfigHash: updatedConfigHash[:],
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		require.True(c, ok)
+
+		identifyingAttributes := keyValuesToStringMap(ad.IdentifyingAttributes)
+		nonIdentifyingAttributes := keyValuesToStringMap(ad.NonIdentifyingAttributes)
+
+		assert.Equal(c, updatedServiceName, identifyingAttributes["service.name"])
+		assert.Equal(c, updatedServiceVersion, identifyingAttributes["service.version"])
+		assert.Equal(c, "my-client-id", identifyingAttributes["client.id"])
+		assert.Equal(c, "prod", nonIdentifyingAttributes["env"])
+	}, 10*time.Second, 250*time.Millisecond)
+}
+
 func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
 	out := make(map[string]string, len(kvs))
 	for _, kv := range kvs {

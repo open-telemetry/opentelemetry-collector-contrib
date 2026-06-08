@@ -980,6 +980,11 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	s.telemetrySettings.Logger.Debug("Received OpAMP message from the agent")
 	if message.AgentDescription != nil {
 		s.setAgentDescription(message.AgentDescription)
+		ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+		if err := s.opampClient.SetAgentDescription(ad); err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not update agent description: %s", err.Error()))
+			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the agent description", zap.Error(err))
+		}
 	}
 
 	if message.EffectiveConfig != nil {
