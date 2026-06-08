@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/custom"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// valueTransformer applies source-specific value-level normalization (e.g.
-// enum folding from "workflow" to "invoke_workflow") into dst. Sources that
-// do not need value-level normalization may leave this nil; the processor
-// falls back to a plain src.CopyTo(dst) in that case. Type-level enforcement
-// (string -> int coercion, single-string -> string[] wrap, etc.) is applied
-// downstream of this function via otelsemconv.Coerce, driven by the OTel
-// GenAI semconv library's typed constructors.
+// valueTransformer applies source-specific value-level normalization into
+// dst. A nil transformer falls back to a plain src.CopyTo(dst).
 type valueTransformer func(targetKey string, src, dst pcommon.Value)
 
 // sourceNormalizer holds per-source state used during normalization.
@@ -32,8 +28,9 @@ type sourceNormalizer struct {
 }
 
 // newSourceNormalizer wires up a sourceNormalizer from a validated Source
-// config. Unknown source names produce a no-op normalizer; Config validation
-// rejects them upstream.
+// config. Built-in source names use pre-defined mapping tables; any other
+// name is a user-defined source driven by the config's Mappings and
+// ValueMappings fields.
 func newSourceNormalizer(src Source) sourceNormalizer {
 	sn := sourceNormalizer{
 		removeOriginals: src.RemoveOriginals,
@@ -46,6 +43,11 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
 		sn.transformValue = openllmetry.Transform
+	default:
+		sn.lookupTable = src.Mappings
+		if len(src.ValueMappings) > 0 {
+			sn.transformValue = custom.Transform(src.ValueMappings)
+		}
 	}
 	return sn
 }

@@ -3,7 +3,6 @@
 
 The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -161,7 +160,7 @@ exporters:
       batch:
         timeout: 10s
         send_batch_size: 1000
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: https://prometheus:9090/api/v1/write
     sending_queue:
       batch:
@@ -173,7 +172,7 @@ service:
     metrics:
       receivers: [prometheus]
       processors: [resource]
-      exporters: [otlp_grpc, prometheusremotewrite]
+      exporters: [otlp_grpc, prometheus_remote_write]
 ```
 
 This configuration:

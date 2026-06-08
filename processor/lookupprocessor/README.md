@@ -5,12 +5,9 @@ The lookup processor enriches telemetry signals by performing external lookups t
 evaluates an [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) value
 expression to extract a lookup key, queries a lookup source, and writes the results as new attributes.
 
-Currently supports logs, with metrics and traces support planned.
-
-
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: logs   |
+| Stability     | [development]: logs, traces, metrics   |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Flookup%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Flookup) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Flookup%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Flookup) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_lookup)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_lookup&displayType=list) |
@@ -51,11 +48,24 @@ Each entry in `lookups` defines a lookup rule:
 | `context` | Default context for destination attributes: `record`, `resource` | `record` |
 | `attributes` | List of attribute mappings for writing results (required, at least one) | - |
 
-The `key` field supports any [OTTL value expression], including paths across contexts and converters:
+The `key` field supports any [OTTL value expression], including paths across contexts and converters. The path prefix depends on the signal type:
 
-- `log.attributes["user.id"]` - record attribute
-- `resource.attributes["service.name"]` - resource attribute
-- `Trim(log.attributes["raw.id"])` - apply a converter
+| Signal  | OTTL context | Record-level path prefix |
+|---------|-------------|--------------------------|
+| Logs    | `ottllog`       | `log.attributes["..."]`       |
+| Traces  | `ottlspan`      | `span.attributes["..."]`      |
+| Metrics | `ottldatapoint` | `datapoint.attributes["..."]` |
+
+Resource attributes use `resource.attributes["..."]` for all signals. A context prefix is always required; bare `attributes["..."]` paths are rejected at configuration time.
+
+Examples:
+
+- `attributes["user.id"]` - record attribute (works for all signals)
+- `log.attributes["user.id"]` - log record attribute (logs only)
+- `span.attributes["user.id"]` - span attribute (traces only)
+- `datapoint.attributes["host.id"]` - datapoint attribute (metrics only)
+- `resource.attributes["service.name"]` - resource attribute (all signals)
+- `Trim(attributes["raw.id"])` - apply a converter
 
 [OTTL value expression]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#value-expressions
 
@@ -130,8 +140,8 @@ processors:
 
 ### Context
 
-- **record**: Read from and write to record-level attributes (log records, spans, metric data points) (default)
-- **resource**: Read from and write to resource attributes
+- **record**: Write to the signal's record-level attributes (default). This maps to log record attributes for logs, span attributes for traces, and datapoint attributes for metrics. For metrics, lookups are evaluated for each datapoint across all metric types (Gauge, Sum, Histogram, ExponentialHistogram, Summary).
+- **resource**: Write to resource attributes.
 
 The `context` field on a key sets the default for all its destination attributes. Each attribute mapping can override this with its own `context` field.
 

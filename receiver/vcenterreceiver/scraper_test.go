@@ -22,6 +22,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := t.Context()
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
@@ -67,6 +68,8 @@ func TestScrape_TLS(t *testing.T) {
 	ctx := t.Context()
 	mockServer := mock.MockServer(t, true)
 	defer mockServer.Close()
+
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),

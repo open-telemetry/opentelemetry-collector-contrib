@@ -944,6 +944,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.vcenter.resourcePoolMemoryUsageAttribute` | alpha | Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric | v0.104.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741) |
+| `receiver.vcenter.resourcePoolMemoryUsageAttribute` | beta | Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
