@@ -1,7 +1,7 @@
 basicauth:
 
 basicauth/client:
-  client_auth: 
+  client_auth:
     username: username
     password: password
 
@@ -17,3 +17,20 @@ basicauth/both:
     password: pass
   htpasswd:
     file: /etc/nginx/htpasswd
+
+basicauth/client_aws:
+  client_auth:
+    aws_secret:
+      secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-creds"
+      region: "us-east-1"
+      username_key: "username"
+      password_key: "password"
+      refresh_interval: 5m
+
+basicauth/server_aws:
+  htpasswd:
+    aws_secret:
+      secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
+      region: "us-east-1"
+      value_key: "htpasswd_content"
+      refresh_interval: 10m

@@ -27,16 +27,35 @@ The following are the configuration options:
 
 - `htpasswd.file`:  The path to the htpasswd file.
 - `htpasswd.inline`: The htpasswd file inline content.
+- `htpasswd.aws_secret`: AWS Secrets Manager configuration for htpasswd content (see below).
 - `client_auth.username`: Username to use for client authentication.
 - `client_auth.username_file`: Path to a file containing the username. If set, takes precedence over `username`. The file is watched for changes, allowing rotation without restarting the collector.
 - `client_auth.password`: Password to use for client authentication.
 - `client_auth.password_file`: Path to a file containing the password. If set, takes precedence over `password`. The file is watched for changes, allowing rotation without restarting the collector.
+- `client_auth.aws_secret`: AWS Secrets Manager configuration for credentials (see below).
 
-To configure the extension as a server authenticator, either one of `htpasswd.file` or `htpasswd.inline` has to be set. If both are configured, `htpasswd.inline` credentials take precedence.
+To configure the extension as a server authenticator, one of `htpasswd.file`, `htpasswd.inline`, or `htpasswd.aws_secret` has to be set. If both file and inline are configured, `htpasswd.inline` credentials take precedence.
 
-To configure the extension as a client authenticator, `client_auth` has to be set.
+To configure the extension as a client authenticator, `client_auth` has to be set with either inline credentials, file-based credentials, or `aws_secret`.
 
-If both the options are configured, the extension will throw an error.
+Only one credential source is allowed per mode: `aws_secret` cannot be combined with inline or file options.
+
+If both `htpasswd` and `client_auth` are configured, the extension will throw an error.
+
+### AWS Secrets Manager
+
+The extension supports fetching credentials from AWS Secrets Manager with automatic rotation. Credentials are refreshed periodically in the background without requiring a collector restart.
+
+**AWS Secrets Manager options:**
+
+- `secret_arn` (required): The ARN of the secret in AWS Secrets Manager.
+- `region` (required): The AWS region where the secret is stored.
+- `refresh_interval` (optional, default: `5m`): How often to re-fetch the secret.
+- `username_key` (required for client_auth): The JSON key containing the username.
+- `password_key` (required for client_auth): The JSON key containing the password.
+- `value_key` (optional for htpasswd): If set, treats the secret as JSON and extracts this key. Otherwise, the raw secret string is used as htpasswd content.
+
+The extension uses the default AWS credential chain (environment variables, IAM roles, etc.).
 ## Configuration
 
 ```yaml
@@ -57,6 +76,25 @@ extensions:
     client_auth:
       username_file: /etc/secrets/username
       password_file: /etc/secrets/password
+
+  # AWS Secrets Manager credentials (auto-rotated)
+  basicauth/client_aws:
+    client_auth:
+      aws_secret:
+        secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-creds"
+        region: "us-east-1"
+        username_key: "username"
+        password_key: "password"
+        refresh_interval: 5m
+
+  # AWS Secrets Manager htpasswd (auto-rotated)
+  basicauth/server_aws:
+    htpasswd:
+      aws_secret:
+        secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
+        region: "us-east-1"
+        value_key: "htpasswd_content"
+        refresh_interval: 5m
 
 receivers:
   otlp:

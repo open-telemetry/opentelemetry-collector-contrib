@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/component"
@@ -19,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
@@ -35,7 +37,7 @@ func newClientAuthExtension(cfg *Config) *basicAuthClient {
 }
 
 func newServerAuthExtension(cfg *Config) (*basicAuthServer, error) {
-	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
+	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" && cfg.Htpasswd.AWSSecret == nil) {
 		return nil, errNoCredentialSource
 	}
 
@@ -50,12 +52,13 @@ var (
 )
 
 type basicAuthServer struct {
-	htpasswd  *HtpasswdSettings
-	matchFunc func(username, password string) bool
-	component.ShutdownFunc
+	htpasswd    *HtpasswdSettings
+	logger      *zap.Logger
+	matchFunc   atomic.Pointer[func(string, string) bool]
+	awsResolver *awssecretsmanager.Resolver
 }
 
-func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
+func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
@@ -78,13 +81,53 @@ func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
 
-	ba.matchFunc = htp.Match
+	matchFn := htp.Match
+	ba.matchFunc.Store(&matchFn)
+
+	if ba.htpasswd.AWSSecret != nil {
+		cfg := ba.htpasswd.AWSSecret
+		resolver := awssecretsmanager.NewResolver(
+			cfg.SecretARN,
+			cfg.Region,
+			cfg.ValueKey,
+			cfg.RefreshInterval,
+			ba.logger,
+			func(newValue string) {
+				htp, err := htpasswd.NewFromReader(strings.NewReader(newValue), htpasswd.DefaultSystems, nil)
+				if err != nil {
+					ba.logger.Error("failed to rebuild htpasswd matcher after secret rotation", zap.Error(err))
+					return
+				}
+				fn := htp.Match
+				ba.matchFunc.Store(&fn)
+			},
+		)
+
+		if err := resolver.Start(ctx); err != nil {
+			return err
+		}
+		ba.awsResolver = resolver
+
+		htp, err := htpasswd.NewFromReader(strings.NewReader(resolver.Value()), htpasswd.DefaultSystems, nil)
+		if err != nil {
+			return fmt.Errorf("parse htpasswd from AWS secret: %w", err)
+		}
+		fn := htp.Match
+		ba.matchFunc.Store(&fn)
+	}
 
 	return nil
 }
 
+func (ba *basicAuthServer) Shutdown(_ context.Context) error {
+	if ba.awsResolver != nil {
+		return ba.awsResolver.Shutdown()
+	}
+	return nil
+}
+
 func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	return basicauth.Authenticate(ctx, headers, ba.matchFunc)
+	return basicauth.Authenticate(ctx, headers, *ba.matchFunc.Load())
 }
 
 var (
@@ -105,6 +148,7 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		return errNoCredentialSource
 	}
 	ca := ba.clientAuth
+
 	if ca.Username != "" || ca.UsernameFile != "" {
 		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger)
 		if err != nil {
@@ -125,6 +169,28 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		}
 		ba.passwordResolver = r
 	}
+
+	if ca.AWSSecret != nil {
+		cfg := ca.AWSSecret
+
+		usernameResolver := awssecretsmanager.NewResolver(
+			cfg.SecretARN, cfg.Region, cfg.UsernameKey, cfg.RefreshInterval, ba.logger, nil,
+		)
+		if err := usernameResolver.Start(ctx); err != nil {
+			return fmt.Errorf("start username resolver: %w", err)
+		}
+		ba.usernameResolver = usernameResolver
+
+		passwordResolver := awssecretsmanager.NewResolver(
+			cfg.SecretARN, cfg.Region, cfg.PasswordKey, cfg.RefreshInterval, ba.logger, nil,
+		)
+		if err := passwordResolver.Start(ctx); err != nil {
+			_ = usernameResolver.Shutdown()
+			return fmt.Errorf("start password resolver: %w", err)
+		}
+		ba.passwordResolver = passwordResolver
+	}
+
 	return nil
 }
 
