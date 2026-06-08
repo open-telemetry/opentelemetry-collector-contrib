@@ -236,6 +236,14 @@ Computer uptime.
 | ---- | ----------- | ---------- | --------- |
 | {seconds} | Gauge | Int | Development |
 
+### sqlserver.connection.reset.rate
+
+Total number of logical connections reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resets}/s | Gauge | Double | Development |
+
 ### sqlserver.cpu.count
 
 Number of CPUs.
@@ -371,6 +379,14 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
 
+### sqlserver.error.rate
+
+Total number of errors raised by SQL Server, across all error categories.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {errors}/s | Gauge | Double | Development |
+
 ### sqlserver.index.search.rate
 
 Total number of index searches.
@@ -435,6 +451,52 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
 
+### sqlserver.lock.block.count
+
+Number of lock blocks tracked by the lock manager, broken down by block type.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {blocks} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| block.type | The type of lock block tracked by the lock manager. | Str: ``blocks``, ``allocated``, ``owner``, ``owner_allocated`` | Recommended | - |
+
+### sqlserver.lock.escalation.rate
+
+Number of times locks on a table were escalated to a larger granularity.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {escalations}/s | Gauge | Double | Development |
+
+### sqlserver.lock.memory
+
+Total amount of memory the SQL Server is using for locks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KBy | Gauge | Int | Development |
+
+### sqlserver.lock.request.rate
+
+Number of new locks and lock conversions per second requested from the lock manager.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {requests}/s | Gauge | Double | Development |
+
+### sqlserver.lock.timeout.gt0.rate
+
+Number of lock requests per second that timed out after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which includes immediate (zero-wait) timeouts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {timeouts}/s | Gauge | Double | Development |
+
 ### sqlserver.lock.timeout.rate
 
 Total number of lock timeouts.
@@ -452,6 +514,14 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {wait} | Sum | Int | Cumulative | true | Development |
+
+### sqlserver.lock.wait_time.total
+
+Total wait time in milliseconds for locks since the last server restart.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Double | Cumulative | true | Development |
 
 ### sqlserver.login.rate
 

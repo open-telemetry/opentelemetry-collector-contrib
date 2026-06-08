@@ -11,6 +11,8 @@ all_set:
       enabled: true
     sqlserver.computer.uptime:
       enabled: true
+    sqlserver.connection.reset.rate:
+      enabled: true
     sqlserver.cpu.count:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
@@ -38,6 +40,8 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.error.rate:
+      enabled: true
     sqlserver.index.search.rate:
       enabled: true
     sqlserver.latch.superlatch.count:
@@ -51,6 +55,17 @@ all_set:
       enabled: true
     sqlserver.latch.wait_time.total:
       enabled: true
+    sqlserver.lock.block.count:
+      enabled: true
+      attributes: ["block.type"]
+    sqlserver.lock.escalation.rate:
+      enabled: true
+    sqlserver.lock.memory:
+      enabled: true
+    sqlserver.lock.request.rate:
+      enabled: true
+    sqlserver.lock.timeout.gt0.rate:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -58,6 +73,8 @@ all_set:
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.lock.wait_time.total:
       enabled: true
     sqlserver.login.rate:
       enabled: true
@@ -174,6 +191,8 @@ reaggregate_set:
       enabled: true
     sqlserver.computer.uptime:
       enabled: true
+    sqlserver.connection.reset.rate:
+      enabled: true
     sqlserver.cpu.count:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
@@ -201,6 +220,8 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.error.rate:
+      enabled: true
     sqlserver.index.search.rate:
       enabled: true
     sqlserver.latch.superlatch.count:
@@ -214,6 +235,17 @@ reaggregate_set:
       enabled: true
     sqlserver.latch.wait_time.total:
       enabled: true
+    sqlserver.lock.block.count:
+      enabled: true
+      attributes: []
+    sqlserver.lock.escalation.rate:
+      enabled: true
+    sqlserver.lock.memory:
+      enabled: true
+    sqlserver.lock.request.rate:
+      enabled: true
+    sqlserver.lock.timeout.gt0.rate:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -221,6 +253,8 @@ reaggregate_set:
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.lock.wait_time.total:
       enabled: true
     sqlserver.login.rate:
       enabled: true
@@ -337,6 +371,8 @@ none_set:
       enabled: false
     sqlserver.computer.uptime:
       enabled: false
+    sqlserver.connection.reset.rate:
+      enabled: false
     sqlserver.cpu.count:
       enabled: false
     sqlserver.database.backup_or_restore.rate:
@@ -364,6 +400,8 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.error.rate:
+      enabled: false
     sqlserver.index.search.rate:
       enabled: false
     sqlserver.latch.superlatch.count:
@@ -377,6 +415,17 @@ none_set:
       enabled: false
     sqlserver.latch.wait_time.total:
       enabled: false
+    sqlserver.lock.block.count:
+      enabled: false
+      attributes: ["block.type"]
+    sqlserver.lock.escalation.rate:
+      enabled: false
+    sqlserver.lock.memory:
+      enabled: false
+    sqlserver.lock.request.rate:
+      enabled: false
+    sqlserver.lock.timeout.gt0.rate:
+      enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
     sqlserver.lock.wait.count:
@@ -384,6 +433,8 @@ none_set:
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
+      enabled: false
+    sqlserver.lock.wait_time.total:
       enabled: false
     sqlserver.login.rate:
       enabled: false
