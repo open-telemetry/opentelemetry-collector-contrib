@@ -28,6 +28,10 @@ type Config struct {
 	// CacheTTL is the time to live, in seconds, for the metadata cache.
 	CacheTTL int64 `mapstructure:"cache_ttl"`
 
+	// attrExpressions holds the compiled Attributes patterns. It is populated
+	// by init() and used by allowAttr() to filter enrichment attributes.
+	attrExpressions []*regexp.Regexp
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -61,4 +65,36 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+// init validates the config and compiles the attribute regular expressions.
+func (c *Config) init() error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
+	c.attrExpressions = make([]*regexp.Regexp, 0, len(c.Attributes))
+	for _, expr := range c.Attributes {
+		r, err := regexp.Compile(expr)
+		if err != nil {
+			return fmt.Errorf("invalid expression found under attributes pattern %s - %w", expr, err)
+		}
+		c.attrExpressions = append(c.attrExpressions, r)
+	}
+	return nil
+}
+
+// allowAttr reports whether the attribute key matches any configured pattern.
+// When no patterns are configured, all attributes are allowed.
+func (c *Config) allowAttr(k string) bool {
+	if len(c.attrExpressions) == 0 {
+		return true
+	}
+
+	for _, re := range c.attrExpressions {
+		if re.MatchString(k) {
+			return true
+		}
+	}
+	return false
 }
