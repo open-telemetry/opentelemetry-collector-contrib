@@ -201,12 +201,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
     * k8s.cluster.name
     * host.id (instance id)
-    * host.name (instance name; only when workload identity is disabled)
-
-One known issue is when GKE workload identity is enabled, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
-able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
-- `node.name` through the downward API with the `env` detector
-- obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
+    * host.name (instance name; availability with workload identity depends on GKE version)
 
 #### Google Cloud Run Services Metadata
 
