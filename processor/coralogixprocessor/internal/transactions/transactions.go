@@ -16,18 +16,6 @@ const (
 	TransactionIdentifierRoot = "cgx.transaction.root"
 )
 
-func ApplyTransactionsAttributes(td ptrace.Traces, logger *zap.Logger) (ptrace.Traces, error) {
-	if td.SpanCount() == 0 {
-		logger.Debug("no spans found in the trace")
-		return td, nil
-	}
-
-	spansByTraceID := traceutil.GroupSpansByTraceID(td)
-	applyTransactionsAttributesByTraceID(spansByTraceID, logger)
-
-	return td, nil
-}
-
 func ApplyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]ptrace.Span, logger *zap.Logger) {
 	applyTransactionsAttributesByTraceID(spansByTraceID, logger)
 }

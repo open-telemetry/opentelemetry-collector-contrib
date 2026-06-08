@@ -77,10 +77,6 @@ func ApplyCriticalPathAttributesToTree(traceID pcommon.TraceID, tree traceutil.T
 	annotateSpans(spans, contributions)
 }
 
-func buildTraceGraph(spans []ptrace.Span) traceutil.TraceTree {
-	return traceutil.BuildTraceTree(spans)
-}
-
 func computeCriticalPath(graph traceutil.TraceTree) []criticalPathSection {
 	var sections []criticalPathSection
 	sortNodesByEndDesc(graph.Roots)

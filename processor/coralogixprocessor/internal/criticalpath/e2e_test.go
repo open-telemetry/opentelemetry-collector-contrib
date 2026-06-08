@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package coralogixprocessor
+package criticalpath_test
 
 import (
 	"strconv"
@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
+	coralogixprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/criticalpath"
 )
 
@@ -40,9 +41,9 @@ type e2eScenario struct {
 }
 
 func TestCriticalPathE2E_Scenarios(t *testing.T) {
-	factory := NewFactory()
-	cfg := &Config{
-		CriticalPathConfig: CriticalPathConfig{Enabled: true},
+	factory := coralogixprocessor.NewFactory()
+	cfg := &coralogixprocessor.Config{
+		CriticalPathConfig: coralogixprocessor.CriticalPathConfig{Enabled: true},
 	}
 
 	scenarios := []e2eScenario{
@@ -406,9 +407,9 @@ func TestCriticalPathE2E_Scenarios(t *testing.T) {
 }
 
 func TestCriticalPathE2E_VeryDeepChain(t *testing.T) {
-	factory := NewFactory()
-	cfg := &Config{
-		CriticalPathConfig: CriticalPathConfig{Enabled: true},
+	factory := coralogixprocessor.NewFactory()
+	cfg := &coralogixprocessor.Config{
+		CriticalPathConfig: coralogixprocessor.CriticalPathConfig{Enabled: true},
 	}
 	sink := &consumertest.TracesSink{}
 	componentInstance, err := factory.CreateTraces(

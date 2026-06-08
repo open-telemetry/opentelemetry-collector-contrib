@@ -15,20 +15,16 @@ import (
 )
 
 func TestApplyTransactionsAttributes_EmptyTrace(t *testing.T) {
-	logger := zap.NewNop()
 	traces := ptrace.NewTraces()
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 	assert.Equal(t, int(0), result.SpanCount())
 }
 
 func TestApplyTransactionsAttributes_SingleSpan(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(1, ptrace.SpanKindServer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Get the first span
 	rspan := result.ResourceSpans().At(0)
@@ -46,7 +42,6 @@ func TestApplyTransactionsAttributes_SingleSpan(t *testing.T) {
 }
 
 func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
 	// Set the first span as Server kind
@@ -55,8 +50,7 @@ func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
 	span := sspan.Spans().At(0)
 	span.SetKind(ptrace.SpanKindServer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Check first span (server)
 	rspan = result.ResourceSpans().At(0)
@@ -84,7 +78,6 @@ func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
 }
 
 func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
 	// Set the first span as Consumer kind
@@ -93,8 +86,7 @@ func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
 	span := sspan.Spans().At(0)
 	span.SetKind(ptrace.SpanKindConsumer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Check first span (consumer)
 	rspan = result.ResourceSpans().At(0)
@@ -122,7 +114,6 @@ func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
 }
 
 func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(4, ptrace.SpanKindClient)
 
 	// Set the first span as Server kind
@@ -137,8 +128,7 @@ func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
 	span.SetKind(ptrace.SpanKindConsumer)
 	span.SetName("consumer-span")
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Check first span (server)
 	rspan = result.ResourceSpans().At(0)
@@ -248,6 +238,11 @@ func TestGroupSpansByTraceID(t *testing.T) {
 			assert.Equal(t, traceID, span.TraceID())
 		}
 	}
+}
+
+func applyTransactionsAttributes(traces ptrace.Traces) ptrace.Traces {
+	ApplyTransactionsAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), zap.NewNop())
+	return traces
 }
 
 // Helper function to create test traces

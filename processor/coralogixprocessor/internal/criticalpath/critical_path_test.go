@@ -195,7 +195,7 @@ func applyCriticalPathAttributes(traces ptrace.Traces) ptrace.Traces {
 }
 
 func TestBuildTraceGraph_Empty(t *testing.T) {
-	graph := buildTraceGraph(nil)
+	graph := traceutil.BuildTraceTree(nil)
 
 	assert.Empty(t, graph.Roots)
 	assert.Empty(t, graph.Nodes)
@@ -208,7 +208,7 @@ func TestBuildTraceGraph_UpdatesHierarchy(t *testing.T) {
 		span("late-child", 20, 100, 3, 1).
 		build()
 
-	graph := buildTraceGraph([]ptrace.Span{
+	graph := traceutil.BuildTraceTree([]ptrace.Span{
 		spanByName(traces, "middle"),
 		spanByName(traces, "early"),
 		spanByName(traces, "late-child"),
@@ -227,7 +227,7 @@ func TestComputeCriticalPath_EmptyGraph(t *testing.T) {
 }
 
 func TestComputeCriticalPathSections_MatchesJaegerOrder(t *testing.T) {
-	graph := buildTraceGraph([]ptrace.Span{
+	graph := traceutil.BuildTraceTree([]ptrace.Span{
 		newStandaloneSpan(1, 1, 101),
 		newStandaloneChildSpan(2, 10, 50, 1),
 		newStandaloneChildSpan(3, 20, 60, 1),
@@ -319,7 +319,7 @@ func TestSanitizeOverflowingChildren_TruncatesAndDrops(t *testing.T) {
 		span("truncate-end", 80, 120, 3, 1).
 		span("drop", 120, 130, 4, 1).
 		build()
-	graph := buildTraceGraph([]ptrace.Span{
+	graph := traceutil.BuildTraceTree([]ptrace.Span{
 		spanByName(traces, "root"),
 		spanByName(traces, "truncate-start"),
 		spanByName(traces, "truncate-end"),
@@ -344,7 +344,7 @@ func TestSanitizeOverflowingChildren_CoversRemainingBranches(t *testing.T) {
 		span("drop-before", 0, 5, 2, 1).
 		span("cover-parent", 0, 150, 3, 1).
 		build()
-	graph := buildTraceGraph([]ptrace.Span{
+	graph := traceutil.BuildTraceTree([]ptrace.Span{
 		spanByName(traces, "root"),
 		spanByName(traces, "drop-before"),
 		spanByName(traces, "cover-parent"),
@@ -366,7 +366,7 @@ func TestSanitizeOverflowingChildren_RevalidatesDescendantsAfterParentTruncation
 		span("child", 0, 150, 2, 1).
 		span("grandchild", 120, 140, 3, 2).
 		build()
-	graph := buildTraceGraph([]ptrace.Span{
+	graph := traceutil.BuildTraceTree([]ptrace.Span{
 		spanByName(traces, "root"),
 		spanByName(traces, "child"),
 		spanByName(traces, "grandchild"),
