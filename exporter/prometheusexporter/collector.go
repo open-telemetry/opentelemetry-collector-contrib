@@ -33,15 +33,15 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps   bool
-	namespace        string
-	constLabels      prometheus.Labels
-	metricFamilies   sync.Map
-	metricExpiration time.Duration
-	withoutScopeInfo bool
-	resourceLabels   *ResourceConstantLabels
-	includedLabels   map[string]struct{}
-	excludedLabels   map[string]struct{}
+	sendTimestamps        bool
+	namespace             string
+	constLabels           prometheus.Labels
+	metricFamilies        sync.Map
+	metricExpiration      time.Duration
+	withoutScopeInfo      bool
+	resourceLabelsEnabled bool
+	includedLabelNames    []string
+	excludedLabels        map[string]struct{}
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -67,9 +67,10 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		labelNamer:       labelNamer,
 	}
 	if config.ResourceConstantLabels.HasValue() {
-		c.resourceLabels = config.ResourceConstantLabels.Get()
-		c.includedLabels = labelSet(c.resourceLabels.Included)
-		c.excludedLabels = labelSet(c.resourceLabels.Excluded)
+		resourceLabels := config.ResourceConstantLabels.Get()
+		c.resourceLabelsEnabled = true
+		c.includedLabelNames = resourceLabels.Included
+		c.excludedLabels = labelSet(resourceLabels.Excluded)
 	}
 	return c
 }
@@ -335,7 +336,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		upsertLabel(&keys, &values, labelIndex, labelName, v.AsString())
 	}
 
-	if c.resourceLabels != nil {
+	if c.resourceLabelsEnabled {
 		multiErrs = multierr.Append(multiErrs, c.addResourceLabels(resourceAttrs, &keys, &values, labelIndex))
 	}
 
@@ -371,8 +372,8 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 
 func (c *collector) addResourceLabels(resourceAttrs pcommon.Map, keys, values *[]string, labelIndex map[string]int) error {
 	var multiErrs error
-	if len(c.resourceLabels.Included) > 0 {
-		for _, key := range c.resourceLabels.Included {
+	if len(c.includedLabelNames) > 0 {
+		for _, key := range c.includedLabelNames {
 			if _, excluded := c.excludedLabels[key]; excluded {
 				continue
 			}

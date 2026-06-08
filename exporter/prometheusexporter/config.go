@@ -4,6 +4,7 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -94,7 +95,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 	if cfg.ResourceConstantLabels.HasValue() && cfg.resourceToTelemetryConfigured() {
-		return fmt.Errorf("resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time")
+		return errors.New("resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time")
 	}
 	if metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() {
 		if cfg.resourceToTelemetryConfigured() {
