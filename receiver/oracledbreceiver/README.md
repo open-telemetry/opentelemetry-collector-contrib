@@ -63,8 +63,38 @@ receivers:
 
 ## Permissions
 
-Depending on which metrics you collect, you will need to assign those permissions to the database user:
+### Instance detection
+
+These grants are required to populate the `oracle.db.version`, `oracle.db.role`,
+`oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
+Detection is best-effort; failures are logged at warn level and the receiver continues.
+
+```sql
+GRANT SELECT ON V_$INSTANCE TO <username>;
+GRANT SELECT ON V_$DATABASE TO <username>;
 ```
+
+> **Note:** `sys_context('USERENV', ...)` queries against `DUAL` require no
+> additional grant and are available to all database users.
+
+### Hosting type detection (Oracle >=19c only)
+
+These grants are required to populate the `oracle.db.hosting_type` resource attribute.
+Only applies to Oracle 19c and later. Detection is best-effort; failures are logged at
+warn level and the receiver continues.
+
+```sql
+GRANT SELECT ON V_$DATAFILE TO <username>;
+GRANT SELECT ON V_$PDBS TO <username>;        -- OCI detection, connected to PDB only
+GRANT SELECT ON CDB_SERVICES TO <username>;   -- OCI confirmation, connected to PDB only
+```
+
+### Metrics collection
+
+Depending on which metrics you collect, you will need to assign these
+permissions to the database user:
+
+```sql
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SYSSTAT TO <username>;
 GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
