@@ -11,8 +11,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -36,7 +38,12 @@ type Config struct {
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+	//
+	// Deprecated: Use ResourceConstantLabels instead.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+
+	// ResourceConstantLabels defines resource attributes to add to metric labels.
+	ResourceConstantLabels configoptional.Optional[ResourceConstantLabels] `mapstructure:"resource_constant_labels"`
 
 	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
@@ -52,9 +59,29 @@ type Config struct {
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
 	// When set, this takes precedence over AddMetricSuffixes.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
+
+	resourceToTelemetrySettingsConfigured bool
 }
 
 var _ component.Config = (*Config)(nil)
+
+// ResourceConstantLabels defines which resource attributes are copied to metric labels.
+type ResourceConstantLabels struct {
+	// Included resource attributes are copied to metric labels.
+	// If empty, all resource attributes except excluded attributes are copied.
+	Included []string `mapstructure:"included"`
+
+	// Excluded resource attributes are not copied to metric labels.
+	Excluded []string `mapstructure:"excluded"`
+}
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	cfg.resourceToTelemetrySettingsConfigured = conf.IsSet("resource_to_telemetry_conversion")
+	return nil
+}
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -66,7 +93,25 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("invalid translation_strategy: %s", cfg.TranslationStrategy)
 		}
 	}
+	if cfg.resourceConstantLabelsConfigured() && cfg.resourceToTelemetryConfigured() {
+		return fmt.Errorf("resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time")
+	}
+	if metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() {
+		if cfg.resourceToTelemetryConfigured() {
+			return fmt.Errorf("resource_to_telemetry_conversion is disabled by feature gate %q; use resource_constant_labels instead", "exporter.prometheusexporter.ResourceConstantLabels")
+		}
+	} else if cfg.resourceConstantLabelsConfigured() {
+		return fmt.Errorf("resource_constant_labels requires feature gate %q", "exporter.prometheusexporter.ResourceConstantLabels")
+	}
 	return nil
+}
+
+func (cfg *Config) resourceConstantLabelsConfigured() bool {
+	return cfg.ResourceConstantLabels.HasValue()
+}
+
+func (cfg *Config) resourceToTelemetryConfigured() bool {
+	return cfg.resourceToTelemetrySettingsConfigured || cfg.ResourceToTelemetrySettings.Enabled || cfg.ResourceToTelemetrySettings.ExcludeServiceAttributes
 }
 
 type translationStrategy string

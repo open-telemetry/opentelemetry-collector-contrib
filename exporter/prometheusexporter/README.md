@@ -27,8 +27,11 @@ The following settings can be optionally configured:
 - `namespace` (no default): if set, exports metrics under the provided value.
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying metric sample in the response.
 - `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
-- `resource_to_telemetry_conversion`
+- `resource_to_telemetry_conversion` (**Deprecated**: use `resource_constant_labels` with the `exporter.prometheusexporter.ResourceConstantLabels` feature gate instead.)
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `resource_constant_labels`: Defines resource attributes to add to metric labels. This option requires the `exporter.prometheusexporter.ResourceConstantLabels` feature gate.
+  - `included`: List of resource attributes to add to metric labels. If empty, all resource attributes except excluded attributes are added.
+  - `excluded`: List of resource attributes not to add to metric labels.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
 - `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
@@ -58,8 +61,12 @@ exporters:
     # Legacy configuration - deprecated, ignored when translation_strategy is set
     add_metric_suffixes: false
     translation_strategy: "UnderscoreEscapingWithoutSuffixes"
-    resource_to_telemetry_conversion:
-      enabled: true
+    resource_constant_labels:
+      included:
+        - service.name
+        - k8s.namespace.name
+      excluded:
+        - service.instance.id
 ```
 
 Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
@@ -96,23 +103,22 @@ Or to group by a particular attribute (for ex. `k8s_namespace_name`):
 sum by (k8s_namespace_name) (app_ads_ad_requests_total * on (job, instance) group_left(k8s_namespace_name) target_info)
 ```
 
-This is not a common pattern, and we recommend copying the most common resource attributes into metric labels. You can do this through the transform processor:
+This is not a common pattern, and we recommend copying the most common resource attributes into metric labels. You can do this through `resource_constant_labels`:
 
 ```yaml
-processor:
-  transform:
-    metric_statements:
-      - context: datapoint
-        statements:
-        - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
-        - set(attributes["container"], resource.attributes["k8s.container.name"])
-        - set(attributes["pod"], resource.attributes["k8s.pod.name"])
+exporters:
+  prometheus:
+    resource_constant_labels:
+      included:
+        - k8s.namespace.name
+        - k8s.container.name
+        - k8s.pod.name
 ```
 
-After this, grouping or selecting becomes as simple as:
+Copied resource attributes remain on `target_info`. After this, grouping or selecting becomes as simple as:
 
 ```promql
-app_ads_ad_requests_total{namespace="my-namespace"}
+app_ads_ad_requests_total{k8s_namespace_name="my-namespace"}
 
-sum by (namespace) (app_ads_ad_requests_total)
+sum by (k8s_namespace_name) (app_ads_ad_requests_total)
 ```
