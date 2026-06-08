@@ -4,7 +4,6 @@
 The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google
 services and convert this data into a pipeline format that facilitates further use.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
