@@ -16,7 +16,7 @@ resourceMetrics:
           idKeys:
             - k8s.cronjob.uid
           type: k8s.cronjob
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of actively running jobs for a cronjob
@@ -47,7 +47,7 @@ resourceMetrics:
           idKeys:
             - k8s.deployment.uid
           type: k8s.deployment
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
@@ -86,7 +86,7 @@ resourceMetrics:
           idKeys:
             - k8s.hpa.uid
           type: k8s.hpa
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current number of pod replicas managed by this autoscaler.
@@ -141,7 +141,7 @@ resourceMetrics:
           idKeys:
             - k8s.job.uid
           type: k8s.job
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of actively running pods for a job
@@ -204,7 +204,7 @@ resourceMetrics:
           idKeys:
             - k8s.job.uid
           type: k8s.job
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of actively running pods for a job
@@ -267,7 +267,7 @@ resourceMetrics:
           idKeys:
             - k8s.replicaset.uid
           type: k8s.replicaset
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
@@ -306,7 +306,7 @@ resourceMetrics:
           idKeys:
             - k8s.statefulset.uid
           type: k8s.statefulset
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of pods created by the StatefulSet controller from the StatefulSet version
@@ -364,7 +364,7 @@ resourceMetrics:
           idKeys:
             - k8s.pod.uid
           type: k8s.pod
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -397,7 +397,7 @@ resourceMetrics:
           idKeys:
             - k8s.pod.uid
           type: k8s.pod
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -430,7 +430,7 @@ resourceMetrics:
           idKeys:
             - k8s.pod.uid
           type: k8s.pod
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -463,7 +463,7 @@ resourceMetrics:
           idKeys:
             - k8s.pod.uid
           type: k8s.pod
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -496,7 +496,7 @@ resourceMetrics:
           idKeys:
             - k8s.persistentvolumeclaim.uid
           type: k8s.persistentvolumeclaim
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
@@ -558,7 +558,7 @@ resourceMetrics:
           idKeys:
             - k8s.persistentvolumeclaim.uid
           type: k8s.persistentvolumeclaim
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
@@ -626,7 +626,7 @@ resourceMetrics:
         - key: k8s.service.uid
           value:
             stringValue: 5cba681a-a612-46b8-80b3-c48bfbd40d72
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of endpoints for a service, broken down by condition, address type, and zone.
@@ -693,7 +693,7 @@ resourceMetrics:
         - key: k8s.service.uid
           value:
             stringValue: 20adec8c-d347-4bf3-a109-405e93063f55
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of endpoints for a service, broken down by condition, address type, and zone.
@@ -763,7 +763,7 @@ resourceMetrics:
         - key: k8s.service.uid
           value:
             stringValue: 2fe6c600-a0e1-434e-ad43-ba2f325c5e23
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The number of endpoints for a service, broken down by condition, address type, and zone.
@@ -855,7 +855,7 @@ resourceMetrics:
           idKeys:
             - container.id
           type: k8s.container
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
@@ -910,7 +910,7 @@ resourceMetrics:
           idKeys:
             - container.id
           type: k8s.container
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
@@ -965,7 +965,7 @@ resourceMetrics:
           idKeys:
             - container.id
           type: k8s.container
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
@@ -1052,7 +1052,7 @@ resourceMetrics:
           idKeys:
             - container.id
           type: k8s.container
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)

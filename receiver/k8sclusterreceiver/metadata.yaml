@@ -15,7 +15,7 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
 
-sem_conv_version: 1.18.0
+sem_conv_version: 1.40.0
 
 reaggregation_enabled: true
 

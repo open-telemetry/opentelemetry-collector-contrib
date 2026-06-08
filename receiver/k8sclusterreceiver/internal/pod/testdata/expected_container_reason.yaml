@@ -19,7 +19,7 @@ resourceMetrics:
           idKeys:
             - k8s.pod.uid
           type: k8s.pod
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -65,7 +65,7 @@ resourceMetrics:
           idKeys:
             - container.id
           type: k8s.container
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - name: k8s.container.status.reason

@@ -16,7 +16,7 @@ resourceMetrics:
           idKeys:
             - k8s.daemonset.uid
           type: k8s.daemonset
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod

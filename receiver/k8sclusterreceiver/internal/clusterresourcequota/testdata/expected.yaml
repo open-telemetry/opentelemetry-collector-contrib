@@ -13,7 +13,7 @@ resourceMetrics:
           idKeys:
             - openshift.clusterquota.uid
           type: openshift.clusterquota
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
     scopeMetrics:
       - metrics:
           - description: The configured upper limit for a particular resource.
