@@ -4,7 +4,6 @@
 This extension enables OpenTelemetry components to run in HA mode across a Kubernetes cluster. The component that owns
 the lease becomes the leader and becomes the active instance.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

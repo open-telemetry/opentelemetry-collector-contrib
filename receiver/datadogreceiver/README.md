@@ -4,7 +4,6 @@
 The Datadog receiver enables translation between Datadog and OpenTelemetry-compatible backends. It currently has
 support for Datadog's APM traces, metrics, and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
