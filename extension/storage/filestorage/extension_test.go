@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -756,12 +755,12 @@ func TestCreateClientWithPanicRecoveryRecreatesDatabase(t *testing.T) {
 	}
 
 	callCount := 0
-	lfs.newClientFn = func(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
+	lfs.newClientFn = func(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
 		callCount++
 		if callCount == 1 {
 			panic("boom")
 		}
-		return newClient(logger, filePath, timeout, maxSize, compactionCfg, noSync)
+		return newClient(logger, filePath, cfg)
 	}
 
 	client, err := lfs.createClientWithPanicRecovery(dbFile)

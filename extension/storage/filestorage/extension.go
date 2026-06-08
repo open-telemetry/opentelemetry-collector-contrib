@@ -24,7 +24,7 @@ import (
 type localFileStorage struct {
 	cfg         *Config
 	logger      *zap.Logger
-	newClientFn func(*zap.Logger, string, time.Duration, int64, *CompactionConfig, bool) (*fileStorageClient, error)
+	newClientFn func(*zap.Logger, string, *Config) (*fileStorageClient, error)
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -121,8 +121,8 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 
-			// Rename the corrupted file with ISO 8601 timestamp
-			timestamp := time.Now().Format("2006-01-02T15:04:05.000")
+			// Use a filename-safe timestamp so recreate works on Windows too.
+			timestamp := time.Now().UTC().Format("20060102T150405.000Z0700")
 			backupName := absoluteName + "." + timestamp + ".backup"
 			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
 				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
@@ -145,10 +145,10 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 
 func (lfs *localFileStorage) newClient(absoluteName string) (*fileStorageClient, error) {
 	if lfs.newClientFn != nil {
-		return lfs.newClientFn(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.MaxSize, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		return lfs.newClientFn(lfs.logger, absoluteName, lfs.cfg)
 	}
 
-	return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.MaxSize, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	return newClient(lfs.logger, absoluteName, lfs.cfg)
 }
 
 func kindString(k component.Kind) string {
@@ -178,9 +178,9 @@ func sanitize(name string) string {
 	var sanitized strings.Builder
 	for _, character := range name {
 		if isSafe(character) {
-			sanitized.WriteString(string(character))
+			fmt.Fprint(&sanitized, string(character))
 		} else {
-			sanitized.WriteString(fmt.Sprintf("~%04X", character))
+			fmt.Fprintf(&sanitized, "~%04X", character)
 		}
 	}
 	return sanitized.String()

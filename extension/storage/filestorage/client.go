@@ -75,21 +75,13 @@ func setMaxSizeOptions(options *bbolt.Options, maxSize int64) {
 	}
 }
 
-func setAllocSizeForMaxSize(db *bbolt.DB, maxSize int64) {
-	if maxSize > 0 {
-		db.AllocSize = db.Info().PageSize
-	}
-}
-
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
-	options := bboltOptions(timeout, noSync)
-	setMaxSizeOptions(options, maxSize)
+func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
+	options := bboltOptions(cfg.Timeout, !cfg.FSync)
+	setMaxSizeOptions(options, cfg.MaxSize)
 	db, err := openBoltDB(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
 	}
-
-	setAllocSizeForMaxSize(db, maxSize)
 
 	initBucket := func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(defaultBucket)
@@ -103,13 +95,13 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSi
 	client := &fileStorageClient{
 		logger:        logger,
 		db:            db,
-		compactionCfg: compactionCfg,
-		maxSize:       maxSize,
-		openTimeout:   timeout,
+		compactionCfg: cfg.Compaction,
+		maxSize:       cfg.MaxSize,
+		openTimeout:   cfg.Timeout,
 		stopCh:        make(chan struct{}),
 		wg:            sync.WaitGroup{},
 	}
-	if compactionCfg.OnRebound {
+	if cfg.Compaction.OnRebound {
 		client.startCompactionLoop()
 	}
 
@@ -150,7 +142,7 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
-	return convertStorageFullError(c.db.Update(batch))
+	return normalizeStorageError(c.db.Update(batch))
 }
 
 // updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
@@ -198,7 +190,7 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 		return errors.New("storage is closed")
 	}
 
-	return convertStorageFullError(c.db.Update(func(tx *bbolt.Tx) error {
+	return normalizeStorageError(c.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
@@ -268,6 +260,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	// use temporary file as compaction target
 	options := bboltOptions(timeout, c.db.NoSync)
+	options.MaxSize = int(c.maxSize)
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
@@ -285,6 +278,11 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if compactedDb != nil {
+			_ = compactedDb.Close()
+		}
+	}()
 
 	compactionStart := time.Now()
 
@@ -298,6 +296,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	c.db.Close()
 	compactedDb.Close()
+	compactedDb = nil
 
 	// replace current db file with compacted db file
 	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed
@@ -308,7 +307,6 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		// errors from the closed DB instead of panicking on a nil pointer.
 		return fmt.Errorf("failed to open db after compaction: %w", openErr)
 	}
-	setAllocSizeForMaxSize(newDb, c.maxSize)
 	c.db = newDb
 
 	if moveErr != nil {
@@ -332,14 +330,6 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		zap.Duration(elapsedKey, time.Since(compactionStart)))
 
 	return nil
-}
-
-func convertStorageFullError(err error) error {
-	if errors.Is(err, berrors.ErrMaxSizeReached) {
-		return storage.ErrStorageFull
-	}
-
-	return err
 }
 
 // startCompactionLoop provides asynchronous compaction function
@@ -368,6 +358,13 @@ func (c *fileStorageClient) startCompactionLoop() {
 			}
 		}
 	})
+}
+
+func normalizeStorageError(err error) error {
+	if errors.Is(err, berrors.ErrMaxSizeReached) {
+		return storage.ErrStorageFull
+	}
+	return err
 }
 
 // shouldCompact checks whether the conditions for online compaction are met

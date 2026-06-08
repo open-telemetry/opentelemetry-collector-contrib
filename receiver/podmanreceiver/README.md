@@ -26,7 +26,12 @@ the [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-
 
 The following settings are required:
 
-- `endpoint` (default = `unix:///run/podman/podman.sock`): Address to reach the desired Podman daemon.
+- `endpoint` (default = `unix:///run/podman/podman.sock`): Address to reach the Podman service API.
+
+> [!NOTE]
+> Podman runs in rootless mode by default. For rootless Podman, use the user socket path:
+> `unix:///run/user/<UID>/podman/podman.sock` (or `unix://$XDG_RUNTIME_DIR/podman/podman.sock`).
+> The default path `/run/podman/podman.sock` is for rootful (system) Podman and requires elevated permissions.
 
 The following settings are optional:
 
@@ -37,10 +42,11 @@ The following settings are optional:
 
 Example:
 
+### Rootful
 ```yaml
 receivers:
   podman_stats:
-    endpoint: unix://run/podman/podman.sock
+    endpoint: unix:///run/podman/podman.sock
     timeout: 10s
     collection_interval: 10s
     initial_delay: 1s
@@ -48,6 +54,20 @@ receivers:
       container.cpu.usage.system:
         enabled: false
 ```
+
+### Rootless
+```yaml
+receivers:
+  podman_stats:
+    endpoint: unix:///run/user/<UID>/podman/podman.sock
+    timeout: 10s
+    collection_interval: 10s
+    initial_delay: 1s
+    metrics:
+      container.cpu.usage.system:
+        enabled: false
+```
+Where `<UID>` is your user ID.
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
@@ -70,7 +90,7 @@ receiver with an older API version, please set the `api_version` to the desired 
 ```yaml
 receivers:
   podman_stats:
-    endpoint: unix://run/podman/podman.sock
+    endpoint: unix:///run/podman/podman.sock
     api_version: 3.2.0
 ```
 ## Metrics
