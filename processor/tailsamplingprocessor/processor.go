@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -39,7 +40,7 @@ type policy struct {
 	// name used to identify this policy instance.
 	name string
 	// evaluator that decides if a trace is sampled or not by this policy instance.
-	evaluator samplingpolicy.Evaluator
+	evaluator samplingpolicy.ThresholdEvaluator
 	// attribute to use in the telemetry to denote the policy.
 	attribute metric.MeasurementOption
 	// isDrop indicates this is a drop policy.
@@ -80,6 +81,7 @@ type tailSamplingSpanProcessor struct {
 	sampledIDCache     cache.Cache
 	nonSampledIDCache  cache.Cache
 	recordPolicy       bool
+	useTracestate      bool
 	sampleOnFirstMatch bool
 	blockOnOverflow    bool
 	maxTraceSizeBytes  uint64
@@ -291,7 +293,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 
 		p := &policy{
 			name:      cfg.Name,
-			evaluator: eval,
+			evaluator: samplingpolicy.AsThresholdEvaluator(eval),
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
 			isDrop:    cfg.Type == Drop,
 		}
@@ -381,6 +383,12 @@ func WithNonSampledHooks(hooks ...DecisionHook) Option {
 func withRecordPolicy() Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.recordPolicy = true
+	}
+}
+
+func withUseTracestate() Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.useTracestate = true
 	}
 }
 
@@ -784,10 +792,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 		samplingpolicy.Dropped:          nil,
 	}
 
+	effectiveThreshold := pkgsampling.NeverSampleThreshold
+	haveThreshold := false
+
 	// Check all policies before making a final decision.
 	for i, p := range tsp.policies {
 		startTime := time.Now()
-		decision, err := p.evaluator.Evaluate(ctx, id, traceData)
+		decision, th, err := p.evaluator.EvaluateWithThreshold(ctx, id, traceData)
 		metrics.addDecisionTime(i, time.Since(startTime))
 
 		if err != nil {
@@ -804,6 +815,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 		// We associate the first policy with the sampling decision to understand what policy sampled a span
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
+		}
+
+		if decision == samplingpolicy.Sampled {
+			if !haveThreshold || pkgsampling.ThresholdLessThan(th, effectiveThreshold) {
+				effectiveThreshold = th
+				haveThreshold = true
+			}
 		}
 
 		// Break early if dropped. This can drastically reduce tick/decision latency.
@@ -839,6 +857,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 		sampling.SetAttrOnScopeSpans(traceData.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
 	}
 
+	if finalDecision == samplingpolicy.Sampled && haveThreshold && tsp.useTracestate {
+		sampling.WriteEffectiveThreshold(traceData.ReceivedBatches, effectiveThreshold, tsp.logger)
+	}
+
 	switch finalDecision {
 	case samplingpolicy.Sampled:
 		metrics.decisionSampled++
@@ -868,7 +890,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 		}
 
 		startTime := time.Now()
-		decision, err := p.evaluator.Evaluate(ctx, id, trace)
+		decision, th, err := p.evaluator.EvaluateWithThreshold(ctx, id, trace)
 		metrics.addDecisionTime(i, time.Since(startTime))
 
 		if err != nil {
@@ -895,6 +917,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 			metrics.decisionSampled++
 			if tsp.recordPolicy {
 				sampling.SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.policy", p.name)
+			}
+			if tsp.useTracestate {
+				sampling.WriteEffectiveThreshold(trace.ReceivedBatches, th, tsp.logger)
 			}
 			return samplingpolicy.Sampled, p.name
 		}

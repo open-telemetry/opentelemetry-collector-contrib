@@ -18,3 +18,7 @@ func IsMetricStatCountBytesSampledEnabled() bool {
 func IsRecordPolicyEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorRecordpolicyFeatureGate.IsEnabled()
 }
+
+func IsUseTracestateEnabled() bool {
+	return metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled()
+}

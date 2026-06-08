@@ -233,6 +233,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.153.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.153.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.153.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.153.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
@@ -407,3 +408,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/e
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
