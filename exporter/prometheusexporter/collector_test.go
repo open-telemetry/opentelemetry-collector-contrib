@@ -201,6 +201,37 @@ func TestResourceConstantLabels(t *testing.T) {
 	}, labelsToMap(pbMetric.Label))
 }
 
+func TestResourceConstantLabelsWithoutIncludedAttributes(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+
+	resourceAttrs := pcommon.NewMap()
+	resourceAttrs.PutStr("resource.attr", "from-resource")
+	resourceAttrs.PutStr("k8s.namespace.name", "default")
+	resourceAttrs.PutStr("excluded.attr", "excluded")
+
+	c := newCollector(&Config{
+		ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+			Excluded: []string{"excluded.attr"},
+		}),
+	}, zap.NewNop())
+
+	promMetric, err := c.convertGauge(metric, resourceAttrs, "", "", "", pcommon.NewMap())
+	require.NoError(t, err)
+
+	pbMetric := io_prometheus_client.Metric{}
+	require.NoError(t, promMetric.Write(&pbMetric))
+
+	require.Equal(t, map[string]string{
+		"k8s_namespace_name":    "default",
+		"otel_scope_name":       "",
+		"otel_scope_schema_url": "",
+		"otel_scope_version":    "",
+		"resource_attr":         "from-resource",
+	}, labelsToMap(pbMetric.Label))
+}
+
 func labelsToMap(labels []*io_prometheus_client.LabelPair) map[string]string {
 	result := make(map[string]string, len(labels))
 	for _, label := range labels {

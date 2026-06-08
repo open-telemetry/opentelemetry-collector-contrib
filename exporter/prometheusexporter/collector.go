@@ -40,6 +40,8 @@ type collector struct {
 	metricExpiration time.Duration
 	withoutScopeInfo bool
 	resourceLabels   *ResourceConstantLabels
+	includedLabels   map[string]struct{}
+	excludedLabels   map[string]struct{}
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -66,8 +68,21 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	}
 	if config.ResourceConstantLabels.HasValue() {
 		c.resourceLabels = config.ResourceConstantLabels.Get()
+		c.includedLabels = labelSet(c.resourceLabels.Included)
+		c.excludedLabels = labelSet(c.resourceLabels.Excluded)
 	}
 	return c
+}
+
+func labelSet(labels []string) map[string]struct{} {
+	if len(labels) == 0 {
+		return nil
+	}
+	result := make(map[string]struct{}, len(labels))
+	for _, label := range labels {
+		result[label] = struct{}{}
+	}
+	return result
 }
 
 // normalizeNamespace builds and returns the namespace if specified in the config
@@ -321,17 +336,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	}
 
 	if c.resourceLabels != nil {
-		for k, v := range resourceAttrs.All() {
-			if !c.shouldAddResourceLabel(k) {
-				continue
-			}
-			labelName, err := c.labelNamer.Build(k)
-			if err != nil {
-				multiErrs = multierr.Append(multiErrs, err)
-				continue
-			}
-			upsertLabel(&keys, &values, labelIndex, labelName, v.AsString())
-		}
+		multiErrs = multierr.Append(multiErrs, c.addResourceLabels(resourceAttrs, &keys, &values, labelIndex))
 	}
 
 	if !c.withoutScopeInfo {
@@ -364,21 +369,42 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
-func (c *collector) shouldAddResourceLabel(key string) bool {
-	for _, excluded := range c.resourceLabels.Excluded {
-		if key == excluded {
-			return false
+func (c *collector) addResourceLabels(resourceAttrs pcommon.Map, keys, values *[]string, labelIndex map[string]int) error {
+	var multiErrs error
+	if len(c.resourceLabels.Included) > 0 {
+		for _, key := range c.resourceLabels.Included {
+			if _, excluded := c.excludedLabels[key]; excluded {
+				continue
+			}
+			value, ok := resourceAttrs.Get(key)
+			if !ok {
+				continue
+			}
+			if err := c.upsertResourceLabel(keys, values, labelIndex, key, value); err != nil {
+				multiErrs = multierr.Append(multiErrs, err)
+			}
+		}
+		return multiErrs
+	}
+
+	for key, value := range resourceAttrs.All() {
+		if _, excluded := c.excludedLabels[key]; excluded {
+			continue
+		}
+		if err := c.upsertResourceLabel(keys, values, labelIndex, key, value); err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
 		}
 	}
-	if len(c.resourceLabels.Included) == 0 {
-		return true
+	return multiErrs
+}
+
+func (c *collector) upsertResourceLabel(keys, values *[]string, labelIndex map[string]int, key string, value pcommon.Value) error {
+	labelName, err := c.labelNamer.Build(key)
+	if err != nil {
+		return err
 	}
-	for _, included := range c.resourceLabels.Included {
-		if key == included {
-			return true
-		}
-	}
-	return false
+	upsertLabel(keys, values, labelIndex, labelName, value.AsString())
+	return nil
 }
 
 // upsertLabel keeps the variable label list unique while preserving the first
