@@ -13,6 +13,10 @@ import (
 )
 
 // AddProfilingPprofSampleLabels adds Splunk AlwaysOn Profiling labels to pprof samples.
+//
+// prof is expected to be normalized so that each pprof sample maps 1:1 to a pprofile.Sample carrying at most one entry
+// in timestamps_unix_nano. source.event.time is taken from that per-observation timestamp when present,
+// falling back to the Profile time.
 func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDictionary, scope pcommon.InstrumentationScope, prof pprofile.Profile) {
 	profileTime := prof.Time().AsTime()
 	if profileTime.UnixNano() == 0 {
@@ -28,8 +32,15 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 			sample.NumLabel = map[string][]int64{}
 		}
 
+		eventTime := profileTime
+		if sampleIdx < prof.Samples().Len() {
+			if ts := prof.Samples().At(sampleIdx).TimestampsUnixNano(); ts.Len() > 0 {
+				eventTime = time.Unix(0, int64(ts.At(0)))
+			}
+		}
+
 		sample.Label["source.event.name"] = []string{scope.Name()}
-		sample.NumLabel["source.event.time"] = []int64{profileTime.UnixMilli()}
+		sample.NumLabel["source.event.time"] = []int64{eventTime.UnixMilli()}
 		if sampleType == "cpu" {
 			sample.Label["source.event.period"] = []string{strconv.Itoa(int(prof.Period()))}
 		}
@@ -39,8 +50,8 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 		}
 		if li := prof.Samples().At(sampleIdx).LinkIndex(); li > 0 && int(li) < dict.LinkTable().Len() {
 			link := dict.LinkTable().At(int(li))
-			sample.Label["span_id"] = []string{link.SpanID().String()}
-			sample.Label["trace_id"] = []string{link.TraceID().String()}
+			sample.Label[spanIDFieldKey] = []string{link.SpanID().String()}
+			sample.Label[traceIDFieldKey] = []string{link.TraceID().String()}
 		}
 	}
 }

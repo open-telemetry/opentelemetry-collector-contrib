@@ -656,7 +656,9 @@ func TestWithMetadataInjectionLogs(t *testing.T) {
 func TestBatchProfilesDictionaryPreserved(t *testing.T) {
 	inBatch := pprofile.NewProfiles()
 
-	// Populate the shared dictionary with a string entry at index 0.
+	// Index 0 of every dictionary table MUST be the zero value (the "" / null sentinel),
+	// per the OTel profiles spec; real entries start at index 1.
+	inBatch.Dictionary().StringTable().Append("")
 	inBatch.Dictionary().StringTable().Append("cpu")
 	inBatch.Dictionary().StackTable().AppendEmpty()
 
@@ -685,9 +687,9 @@ func TestBatchProfilesDictionaryPreserved(t *testing.T) {
 
 	require.Len(t, batches, 2, "expected two sub-batches (one per token)")
 	for i, b := range batches {
-		assert.Equal(t, 1, b.dict.StringTable().Len(),
+		assert.Equal(t, 2, b.dict.StringTable().Len(),
 			"sub-batch %d: dictionary string table must be preserved after split", i)
-		assert.Equal(t, "cpu", b.dict.StringTable().At(0),
+		assert.Equal(t, "cpu", b.dict.StringTable().At(1),
 			"sub-batch %d: string table content must match original", i)
 	}
 }

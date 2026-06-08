@@ -1866,32 +1866,47 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	require.Equal(t, int64(ts.Nanosecond()), pprofProfile.TimeNanos)
 }
 
+// TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
+// multiple values is a per-observation time series of a single sample type (paired 1:1 with
+// timestamps_unix_nano), not multiple distinct sample types. Each observation must become its
+// own pprof sample, and the profile must carry exactly one sample type.
 func TestProfileDataMultiValueSamples(t *testing.T) {
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
+	// Index 0 of each dictionary table is the zero-value sentinel; real entries start at 1.
 	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
 	dict.StringTable().Append("cpu")
 	dict.StringTable().Append("nanoseconds")
 
-	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	p.SampleType().SetTypeStrindex(0)
-	p.SampleType().SetUnitStrindex(1)
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
+	t0 := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+	t1 := t0.Add(10 * time.Millisecond)
 	sample := p.Samples().AppendEmpty()
 	sample.Values().Append(1)
 	sample.Values().Append(2)
+	sample.TimestampsUnixNano().Append(uint64(t0.UnixNano()))
+	sample.TimestampsUnixNano().Append(uint64(t1.UnixNano()))
 
 	logs, errs := buildProfilesLogs(profiles)
 	require.Empty(t, errs)
 	require.Equal(t, 1, logs.LogRecordCount())
 
 	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
-	require.Len(t, pprofProfile.Sample, 1)
-	require.Equal(t, []int64{1, 2}, pprofProfile.Sample[0].Value)
-	require.Len(t, pprofProfile.SampleType, 2)
-	for _, sampleType := range pprofProfile.SampleType {
-		require.Equal(t, "cpu", sampleType.Type)
-		require.Equal(t, "nanoseconds", sampleType.Unit)
-	}
+	// One sample type, one pprof sample per observation.
+	require.Len(t, pprofProfile.SampleType, 1)
+	require.Equal(t, "cpu", pprofProfile.SampleType[0].Type)
+	require.Equal(t, "nanoseconds", pprofProfile.SampleType[0].Unit)
+	require.Len(t, pprofProfile.Sample, 2)
+	require.Equal(t, []int64{1}, pprofProfile.Sample[0].Value)
+	require.Equal(t, []int64{2}, pprofProfile.Sample[1].Value)
+	// source.event.time is taken from each observation's own timestamp.
+	require.Equal(t, []int64{t0.UnixMilli()}, pprofProfile.Sample[0].NumLabel["source.event.time"])
+	require.Equal(t, []int64{t1.UnixMilli()}, pprofProfile.Sample[1].NumLabel["source.event.time"])
 }
 
 func decodePprofLogRecord(t *testing.T, lr plog.LogRecord) *profile.Profile {
@@ -2062,17 +2077,16 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp1.Resource().Attributes().PutStr("host.name", "good-host")
 	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
 
-	// Resource 2: profile whose samples have inconsistent value counts (first sample has 2 values,
-	// second has 1), which causes an error that is local to this profile and does not affect the
-	// shared dictionary used by the good profile.
+	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
+	// which the spec forbids. This causes an error that is local to this profile and does not
+	// affect the shared dictionary used by the good profile.
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	badSample1 := badProfile.Samples().AppendEmpty()
-	badSample1.Values().Append(1)
-	badSample1.Values().Append(2) // first sample has 2 values → nValues=2 → 2 SampleTypes added
-	badSample2 := badProfile.Samples().AppendEmpty()
-	badSample2.Values().Append(3) // second sample has 1 value → mismatch triggers checkValid error
+	badSample := badProfile.Samples().AppendEmpty()
+	badSample.Values().Append(1)
+	badSample.Values().Append(2)                        // 2 values
+	badSample.TimestampsUnixNano().Append(uint64(1000)) // but only 1 timestamp → mismatch error
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}

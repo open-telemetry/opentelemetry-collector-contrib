@@ -15,7 +15,6 @@ import (
 	"sync"
 
 	"github.com/goccy/go-json"
-	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -184,7 +183,7 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	if token := accessTokenForResources(pp.ResourceProfiles().Len(), func(i int) pcommon.Map {
 		return pp.ResourceProfiles().At(i).Resource().Attributes()
 	}); token != "" {
-		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
+		localHeaders[authorizationHeaderName] = splunk.BuildHECAuthHeader(token)
 	}
 
 	ld, permanentErrors := buildProfilesLogs(pp)
@@ -224,11 +223,16 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 // profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord appended to sl.
 // Returns a permanent error if translation or encoding fails; on error no log record is appended.
 func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile, sl plog.ScopeLogs) error {
-	p, err := convertProfileToPprof(pp, rp, scope, prof)
+	expanded, err := prepareProfilesForPprofConversion(pp, rp, scope, prof)
 	if err != nil {
 		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
-	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), prof)
+	p, err := pprof.ConvertPprofileToPprof(&expanded)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
+	}
+	expandedProf := expanded.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), expandedProf)
 
 	var buf bytes.Buffer
 	// The Write method encodes the profile to a gzipped protobuf
@@ -253,15 +257,9 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	return nil
 }
 
-func convertProfileToPprof(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (*profile.Profile, error) {
-	profiles, err := profilesForPprofConversion(pp, rp, scope, prof)
-	if err != nil {
-		return nil, err
-	}
-	return pprof.ConvertPprofileToPprof(&profiles)
-}
-
-func profilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (pprofile.Profiles, error) {
+// prepareProfilesForPprofConversion normalizes a single OTel pprofile.Profile into a pprofile.Profiles
+// holding exactly one Profile with a single sample type, ready for conversion to pprof.
+func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (pprofile.Profiles, error) {
 	profiles := pprofile.NewProfiles()
 	pp.Dictionary().CopyTo(profiles.Dictionary())
 
@@ -273,34 +271,39 @@ func profilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfil
 	scope.Scope().CopyTo(dstScope.Scope())
 	dstScope.SetSchemaUrl(scope.SchemaUrl())
 
-	numValues := 1
-	if prof.Samples().Len() > 0 {
-		numValues = max(1, prof.Samples().At(0).Values().Len())
-	}
+	dstProfile := dstScope.Profiles().AppendEmpty()
+	prof.CopyTo(dstProfile)
+	// Drop the copied samples; they are rebuilt below, one pprof sample per observation.
+	dstProfile.Samples().RemoveIf(func(pprofile.Sample) bool { return true })
+
 	for _, sample := range prof.Samples().All() {
-		if sample.Values().Len() != numValues {
-			return profiles, errors.New("profile samples hold varying number of values")
+		numValues := sample.Values().Len()
+		numTimestamps := sample.TimestampsUnixNano().Len()
+
+		if numValues == 0 && numTimestamps == 0 {
+			return profiles, errors.New("profile sample holds neither values nor timestamps")
 		}
-	}
-
-	if numValues == 1 {
-		prof.CopyTo(dstScope.Profiles().AppendEmpty())
-		return profiles, nil
-	}
-
-	for profileIdx := range numValues {
-		valueIdx := profileIdx
-		switch profileIdx {
-		case 0:
-			valueIdx = numValues - 1
-		case numValues - 1:
-			valueIdx = 0
+		if numValues != 0 && numTimestamps != 0 && numValues != numTimestamps {
+			return profiles, errors.New("profile sample holds mismatched number of values and timestamps")
 		}
 
-		dstProfile := dstScope.Profiles().AppendEmpty()
-		prof.CopyTo(dstProfile)
-		for sampleIdx, sample := range prof.Samples().All() {
-			dstProfile.Samples().At(sampleIdx).Values().FromRaw([]int64{sample.Values().At(valueIdx)})
+		numObservations := max(numValues, numTimestamps)
+		for i := range numObservations {
+			dstSample := dstProfile.Samples().AppendEmpty()
+			sample.CopyTo(dstSample)
+
+			// A timestamps-only sample implies a value of 1 per observation.
+			value := int64(1)
+			if numValues != 0 {
+				value = sample.Values().At(i)
+			}
+			dstSample.Values().FromRaw([]int64{value})
+
+			if numTimestamps != 0 {
+				dstSample.TimestampsUnixNano().FromRaw([]uint64{sample.TimestampsUnixNano().At(i)})
+			} else {
+				dstSample.TimestampsUnixNano().FromRaw(nil)
+			}
 		}
 	}
 
@@ -312,6 +315,7 @@ func profilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfil
 const (
 	bufCapPadding                            = uint(4096)
 	libraryHeaderName                        = "X-Splunk-Instrumentation-Library"
+	authorizationHeaderName                  = "Authorization"
 	profilingLibraryName                     = "otel.profiling"
 	profilingLibraryVersion                  = "0.1.0"
 	profilingDataTypeKey                     = "profiling.data.type"
