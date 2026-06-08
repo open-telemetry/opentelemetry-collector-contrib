@@ -18,11 +18,11 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
-	t.Parallel()
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -60,6 +60,29 @@ func TestLoadConfig(t *testing.T) {
 				}
 			}(),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ResourceConstantLabels = configoptional.Some(ResourceConstantLabels{
+					Included: []string{"service.name", "k8s.namespace.name"},
+					Excluded: []string{"service.instance.id"},
+				})
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_resource_to_telemetry"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{
+					Enabled:                  true,
+					ExcludeServiceAttributes: true,
+				}
+				cfg.resourceToTelemetrySettingsConfigured = true
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -73,6 +96,83 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateRemoveResourceToTelemetryFeatureGate(t *testing.T) {
+	tests := []struct {
+		name              string
+		enableFeatureGate bool
+		cfg               *Config
+		wantErr           string
+	}{
+		{
+			name:              "resource constant labels allowed without feature gate",
+			enableFeatureGate: false,
+			cfg: &Config{
+				ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+					Included: []string{"service.name"},
+				}),
+			},
+		},
+		{
+			name:              "legacy disabled by feature gate",
+			enableFeatureGate: true,
+			cfg: &Config{
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+			},
+			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.RemoveResourceToTelemetry"; use resource_constant_labels instead`,
+		},
+		{
+			name:              "legacy block presence disabled by feature gate",
+			enableFeatureGate: true,
+			cfg: &Config{
+				resourceToTelemetrySettingsConfigured: true,
+			},
+			wantErr: `resource_to_telemetry_conversion is disabled by feature gate "exporter.prometheusexporter.RemoveResourceToTelemetry"; use resource_constant_labels instead`,
+		},
+		{
+			name:              "legacy and new are mutually exclusive",
+			enableFeatureGate: true,
+			cfg: &Config{
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+					Included: []string{"service.name"},
+				}),
+			},
+			wantErr: "resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time",
+		},
+		{
+			name:              "resource constant labels allowed with feature gate",
+			enableFeatureGate: true,
+			cfg: &Config{
+				ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+					Included: []string{"service.name"},
+				}),
+			},
+		},
+		{
+			name:              "legacy config allowed without feature gate",
+			enableFeatureGate: false,
+			cfg: &Config{
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldValue := metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate, tt.enableFeatureGate)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate, oldValue)
+
+			err := tt.cfg.Validate()
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

@@ -465,6 +465,71 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 }
 
+func TestPrometheusExporter_endToEndWithResourceConstantLabels(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cfg := &Config{
+		Namespace: "test",
+		ConstLabels: map[string]string{
+			"foo2":  "bar2",
+			"code2": "one2",
+		},
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
+		},
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+			Included: []string{"resource-attr", "service.name", "excluded.attr"},
+			Excluded: []string{"excluded.attr"},
+		}),
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	require.NotNil(t, exp)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	resourceAttrs := md.ResourceMetrics().At(0).Resource().Attributes()
+	resourceAttrs.PutStr("service.name", "test-service")
+	resourceAttrs.PutStr("service.instance.id", "test-instance")
+	resourceAttrs.PutStr("excluded.attr", "kept-on-target-info")
+
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	rsp, err := http.Get("http://" + addr + "/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	require.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
+
+	blob, _ := io.ReadAll(rsp.Body)
+	_ = rsp.Body.Close()
+
+	want := []string{
+		`# HELP test_target_info Target metadata`,
+		`# TYPE test_target_info gauge`,
+		`test_target_info{excluded_attr="kept-on-target-info",instance="test-instance",job="test-service",resource_attr="resource-attr-val-1"} 1`,
+		`# HELP test_counter_int`,
+		`# TYPE test_counter_int counter`,
+		`test_counter_int{code2="one2",foo2="bar2",instance="test-instance",job="test-service",label_1="label-value-1",otel_scope_name="",otel_scope_schema_url="",otel_scope_version="",resource_attr="resource-attr-val-1",service_name="test-service"} 123 1581452773000`,
+		`test_counter_int{code2="one2",foo2="bar2",instance="test-instance",job="test-service",label_2="label-value-2",otel_scope_name="",otel_scope_schema_url="",otel_scope_version="",resource_attr="resource-attr-val-1",service_name="test-service"} 456 1581452773000`,
+	}
+	for _, w := range want {
+		assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
+	}
+	assert.NotContains(t, string(blob), `test_counter_int{code2="one2",excluded_attr=`)
+}
+
 func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()

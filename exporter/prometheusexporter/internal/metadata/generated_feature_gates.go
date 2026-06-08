@@ -13,3 +13,11 @@ var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 	featuregate.WithRegisterFromVersion("v0.132.0"),
 )
+
+var ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusexporter.RemoveResourceToTelemetry",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the deprecated resource_to_telemetry_conversion configuration option is disabled"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861"),
+	featuregate.WithRegisterFromVersion("v0.153.0"),
+)

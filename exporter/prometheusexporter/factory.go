@@ -42,6 +42,12 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
+	if err := pcfg.Validate(); err != nil {
+		return nil, err
+	}
+	if !metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate.IsEnabled() && pcfg.resourceToTelemetryConfigured() {
+		set.Logger.Warn("`resource_to_telemetry_conversion` is deprecated. Please enable the `exporter.prometheusexporter.RemoveResourceToTelemetry` feature gate and use `resource_constant_labels` instead.")
+	}
 
 	prometheus, err := newPrometheusExporter(pcfg, set)
 	if err != nil {
@@ -61,9 +67,13 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
+	metricsExporter := exporter
+	if !metadata.ExporterPrometheusexporterRemoveResourceToTelemetryFeatureGate.IsEnabled() {
+		metricsExporter = resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter)
+	}
 
 	return &wrapMetricsExporter{
-		Metrics:  resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
+		Metrics:  metricsExporter,
 		exporter: prometheus,
 	}, nil
 }

@@ -33,12 +33,15 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps   bool
-	namespace        string
-	constLabels      prometheus.Labels
-	metricFamilies   sync.Map
-	metricExpiration time.Duration
-	withoutScopeInfo bool
+	sendTimestamps        bool
+	namespace             string
+	constLabels           prometheus.Labels
+	metricFamilies        sync.Map
+	metricExpiration      time.Duration
+	withoutScopeInfo      bool
+	resourceLabelsEnabled bool
+	includedLabelNames    []string
+	excludedLabels        map[string]struct{}
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -52,7 +55,7 @@ type metricFamily struct {
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	labelNamer := configureLabelNamer(config)
 
-	return &collector{
+	c := &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
 		namespace:        normalizeNamespace(config.Namespace, labelNamer, logger),
@@ -63,6 +66,24 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
 	}
+	if config.ResourceConstantLabels.HasValue() {
+		resourceLabels := config.ResourceConstantLabels.Get()
+		c.resourceLabelsEnabled = true
+		c.includedLabelNames = resourceLabels.Included
+		c.excludedLabels = labelSet(resourceLabels.Excluded)
+	}
+	return c
+}
+
+func labelSet(labels []string) map[string]struct{} {
+	if len(labels) == 0 {
+		return nil
+	}
+	result := make(map[string]struct{}, len(labels))
+	for _, label := range labels {
+		result[label] = struct{}{}
+	}
+	return result
 }
 
 // normalizeNamespace builds and returns the namespace if specified in the config
@@ -301,8 +322,9 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, err
 	}
 
-	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
-	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
+	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+resourceAttrs.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
+	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+resourceAttrs.Len()+5)
+	labelIndex := make(map[string]int, attributes.Len()+scopeAttributes.Len()+resourceAttrs.Len()+5)
 
 	var multiErrs error
 	for k, v := range attributes.All() {
@@ -311,8 +333,11 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 			multiErrs = multierr.Append(multiErrs, err)
 			continue
 		}
-		keys = append(keys, labelName)
-		values = append(values, v.AsString())
+		upsertLabel(&keys, &values, labelIndex, labelName, v.AsString())
+	}
+
+	if c.resourceLabelsEnabled {
+		multiErrs = multierr.Append(multiErrs, c.addResourceLabels(resourceAttrs, &keys, &values, labelIndex))
 	}
 
 	if !c.withoutScopeInfo {
@@ -325,30 +350,77 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 				multiErrs = multierr.Append(multiErrs, err)
 				continue
 			}
-			keys = append(keys, labelName)
-			values = append(values, v.AsString())
+			upsertLabel(&keys, &values, labelIndex, labelName, v.AsString())
 		}
 
-		keys = append(keys, "otel_scope_name")
-		values = append(values, scopeName)
-		keys = append(keys, "otel_scope_version")
-		values = append(values, scopeVersion)
-		keys = append(keys, "otel_scope_schema_url")
-		values = append(values, scopeSchemaURL)
+		upsertLabel(&keys, &values, labelIndex, "otel_scope_name", scopeName)
+		upsertLabel(&keys, &values, labelIndex, "otel_scope_version", scopeVersion)
+		upsertLabel(&keys, &values, labelIndex, "otel_scope_schema_url", scopeSchemaURL)
 	}
 
 	if job, ok := extractJob(resourceAttrs); ok {
-		keys = append(keys, model.JobLabel)
-		values = append(values, job)
+		upsertLabel(&keys, &values, labelIndex, model.JobLabel, job)
 	}
 	if instance, ok := extractInstance(resourceAttrs); ok {
-		keys = append(keys, model.InstanceLabel)
-		values = append(values, instance)
+		upsertLabel(&keys, &values, labelIndex, model.InstanceLabel, instance)
 	}
 	if multiErrs != nil {
 		return nil, nil, multiErrs
 	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
+}
+
+func (c *collector) addResourceLabels(resourceAttrs pcommon.Map, keys, values *[]string, labelIndex map[string]int) error {
+	var multiErrs error
+	if len(c.includedLabelNames) > 0 {
+		for _, key := range c.includedLabelNames {
+			if _, excluded := c.excludedLabels[key]; excluded {
+				continue
+			}
+			value, ok := resourceAttrs.Get(key)
+			if !ok {
+				continue
+			}
+			if err := c.upsertResourceLabel(keys, values, labelIndex, key, value); err != nil {
+				multiErrs = multierr.Append(multiErrs, err)
+			}
+		}
+		return multiErrs
+	}
+
+	for key, value := range resourceAttrs.All() {
+		if _, excluded := c.excludedLabels[key]; excluded {
+			continue
+		}
+		if err := c.upsertResourceLabel(keys, values, labelIndex, key, value); err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+		}
+	}
+	return multiErrs
+}
+
+func (c *collector) upsertResourceLabel(keys, values *[]string, labelIndex map[string]int, key string, value pcommon.Value) error {
+	labelName, err := c.labelNamer.Build(key)
+	if err != nil {
+		return err
+	}
+	upsertLabel(keys, values, labelIndex, labelName, value.AsString())
+	return nil
+}
+
+// upsertLabel keeps the variable label list unique while preserving the first
+// label position. Later sources, such as resource attributes, can override
+// earlier datapoint attributes after label-name translation.
+//
+// The later caller can override the earlier value by calling upsertLabel again.
+func upsertLabel(keys, values *[]string, labelIndex map[string]int, key, value string) {
+	if index, ok := labelIndex[key]; ok {
+		(*values)[index] = value
+		return
+	}
+	labelIndex[key] = len(*keys)
+	*keys = append(*keys, key)
+	*values = append(*values, value)
 }
 
 func isReservedScopeAttribute(k string) bool {

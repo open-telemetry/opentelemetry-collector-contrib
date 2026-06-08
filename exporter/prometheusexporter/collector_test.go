@@ -13,6 +13,7 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/otlptranslator"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -161,6 +162,82 @@ func TestConvertMetric(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestResourceConstantLabels(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("resource.attr", "from-datapoint")
+	dp.Attributes().PutStr("datapoint.attr", "from-datapoint")
+	dp.SetIntValue(1)
+
+	resourceAttrs := pcommon.NewMap()
+	resourceAttrs.PutStr("resource.attr", "from-resource")
+	resourceAttrs.PutStr("k8s.namespace.name", "default")
+	resourceAttrs.PutStr("excluded.attr", "excluded")
+
+	c := newCollector(&Config{
+		ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+			Included: []string{"resource.attr", "k8s.namespace.name", "excluded.attr"},
+			Excluded: []string{"excluded.attr"},
+		}),
+	}, zap.NewNop())
+
+	promMetric, err := c.convertGauge(metric, resourceAttrs, "", "", "", pcommon.NewMap())
+	require.NoError(t, err)
+
+	pbMetric := io_prometheus_client.Metric{}
+	require.NoError(t, promMetric.Write(&pbMetric))
+
+	require.Equal(t, map[string]string{
+		"datapoint_attr":        "from-datapoint",
+		"k8s_namespace_name":    "default",
+		"otel_scope_name":       "",
+		"otel_scope_schema_url": "",
+		"otel_scope_version":    "",
+		"resource_attr":         "from-resource",
+	}, labelsToMap(pbMetric.Label))
+}
+
+func TestResourceConstantLabelsWithoutIncludedAttributes(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+
+	resourceAttrs := pcommon.NewMap()
+	resourceAttrs.PutStr("resource.attr", "from-resource")
+	resourceAttrs.PutStr("k8s.namespace.name", "default")
+	resourceAttrs.PutStr("excluded.attr", "excluded")
+
+	c := newCollector(&Config{
+		ResourceConstantLabels: configoptional.Some(ResourceConstantLabels{
+			Excluded: []string{"excluded.attr"},
+		}),
+	}, zap.NewNop())
+
+	promMetric, err := c.convertGauge(metric, resourceAttrs, "", "", "", pcommon.NewMap())
+	require.NoError(t, err)
+
+	pbMetric := io_prometheus_client.Metric{}
+	require.NoError(t, promMetric.Write(&pbMetric))
+
+	require.Equal(t, map[string]string{
+		"k8s_namespace_name":    "default",
+		"otel_scope_name":       "",
+		"otel_scope_schema_url": "",
+		"otel_scope_version":    "",
+		"resource_attr":         "from-resource",
+	}, labelsToMap(pbMetric.Label))
+}
+
+func labelsToMap(labels []*io_prometheus_client.LabelPair) map[string]string {
+	result := make(map[string]string, len(labels))
+	for _, label := range labels {
+		result[label.GetName()] = label.GetValue()
+	}
+	return result
 }
 
 func setUpTestExemplar(exemplar pmetric.Exemplar) {
