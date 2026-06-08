@@ -1,0 +1,14 @@
+type: resource_exhausted_retry
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+    retry_delay: 1s
+    jitter: 500ms
