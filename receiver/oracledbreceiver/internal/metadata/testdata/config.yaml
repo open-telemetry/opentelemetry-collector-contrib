@@ -74,12 +74,13 @@ all_set:
       attributes: ["oracle.db.pdb"]
     oracledb.physical_io.cache_writes:
       enabled: true
+      attributes: ["oracle.db.pdb"]
     oracledb.physical_io.requests:
       enabled: true
-      attributes: ["disk.io.direction","disk.io.block_size"]
+      attributes: ["disk.io.direction","disk.io.block_size","oracle.db.pdb"]
     oracledb.physical_io.transferred:
       enabled: true
-      attributes: ["disk.io.direction","disk.io.type"]
+      attributes: ["disk.io.direction","disk.io.type","oracle.db.pdb"]
     oracledb.physical_read_io_requests:
       enabled: true
       attributes: ["oracle.db.pdb"]
@@ -114,7 +115,7 @@ all_set:
       attributes: ["session_type","session_status","oracle.db.pdb"]
     oracledb.sqlnet.io.transferred:
       enabled: true
-      attributes: ["network.io.direction","destination.type"]
+      attributes: ["network.io.direction","destination.type","oracle.db.pdb"]
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
@@ -234,6 +235,7 @@ reaggregate_set:
       attributes: []
     oracledb.physical_io.cache_writes:
       enabled: true
+      attributes: []
     oracledb.physical_io.requests:
       enabled: true
       attributes: []
@@ -394,12 +396,13 @@ none_set:
       attributes: ["oracle.db.pdb"]
     oracledb.physical_io.cache_writes:
       enabled: false
+      attributes: ["oracle.db.pdb"]
     oracledb.physical_io.requests:
       enabled: false
-      attributes: ["disk.io.direction","disk.io.block_size"]
+      attributes: ["disk.io.direction","disk.io.block_size","oracle.db.pdb"]
     oracledb.physical_io.transferred:
       enabled: false
-      attributes: ["disk.io.direction","disk.io.type"]
+      attributes: ["disk.io.direction","disk.io.type","oracle.db.pdb"]
     oracledb.physical_read_io_requests:
       enabled: false
       attributes: ["oracle.db.pdb"]
@@ -434,7 +437,7 @@ none_set:
       attributes: ["session_type","session_status","oracle.db.pdb"]
     oracledb.sqlnet.io.transferred:
       enabled: false
-      attributes: ["network.io.direction","destination.type"]
+      attributes: ["network.io.direction","destination.type","oracle.db.pdb"]
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:

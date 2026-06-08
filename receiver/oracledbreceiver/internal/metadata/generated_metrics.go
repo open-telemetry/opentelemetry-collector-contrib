@@ -2442,9 +2442,10 @@ func newMetricOracledbPgaMemory(cfg OracledbPgaMemoryMetricConfig) metricOracled
 }
 
 type metricOracledbPhysicalIoCacheWrites struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   OracledbPhysicalIoCacheWritesMetricConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        OracledbPhysicalIoCacheWritesMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.physical_io.cache_writes metric with initial data.
@@ -2455,16 +2456,49 @@ func (m *metricOracledbPhysicalIoCacheWrites) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbPhysicalIoCacheWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbPhysicalIoCacheWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2477,6 +2511,11 @@ func (m *metricOracledbPhysicalIoCacheWrites) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbPhysicalIoCacheWrites) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2512,7 +2551,7 @@ func (m *metricOracledbPhysicalIoRequests) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbPhysicalIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoBlockSizeAttributeValue string) {
+func (m *metricOracledbPhysicalIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoBlockSizeAttributeValue string, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2525,6 +2564,9 @@ func (m *metricOracledbPhysicalIoRequests) recordDataPoint(start pcommon.Timesta
 	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize) {
 		dp.Attributes().PutStr("disk.io.block_size", diskIoBlockSizeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
 	}
 
 	var s string
@@ -2606,7 +2648,7 @@ func (m *metricOracledbPhysicalIoTransferred) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbPhysicalIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoTypeAttributeValue string) {
+func (m *metricOracledbPhysicalIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoTypeAttributeValue string, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2619,6 +2661,9 @@ func (m *metricOracledbPhysicalIoTransferred) recordDataPoint(start pcommon.Time
 	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType) {
 		dp.Attributes().PutStr("disk.io.type", diskIoTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
 	}
 
 	var s string
@@ -3632,7 +3677,7 @@ func (m *metricOracledbSqlnetIoTransferred) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbSqlnetIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, destinationTypeAttributeValue string) {
+func (m *metricOracledbSqlnetIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, destinationTypeAttributeValue string, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3645,6 +3690,9 @@ func (m *metricOracledbSqlnetIoTransferred) recordDataPoint(start pcommon.Timest
 	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType) {
 		dp.Attributes().PutStr("destination.type", destinationTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb) {
+		dp.Attributes().PutStr("oracle.db.pdb", oracleDbPdbAttributeValue)
 	}
 
 	var s string
@@ -4860,32 +4908,32 @@ func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordOracledbPhysicalIoCacheWritesDataPoint adds a data point to oracledb.physical_io.cache_writes metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalIoCacheWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalIoCacheWritesDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalIoCacheWrites, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbPhysicalIoCacheWrites.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbPhysicalIoCacheWrites.recordDataPoint(mb.startTime, ts, val, oracleDbPdbAttributeValue)
 	return nil
 }
 
 // RecordOracledbPhysicalIoRequestsDataPoint adds a data point to oracledb.physical_io.requests metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalIoRequestsDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskIoBlockSizeAttributeValue AttributeDiskIoBlockSize) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalIoRequestsDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskIoBlockSizeAttributeValue AttributeDiskIoBlockSize, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalIoRequests, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbPhysicalIoRequests.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskIoBlockSizeAttributeValue.String())
+	mb.metricOracledbPhysicalIoRequests.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskIoBlockSizeAttributeValue.String(), oracleDbPdbAttributeValue)
 	return nil
 }
 
 // RecordOracledbPhysicalIoTransferredDataPoint adds a data point to oracledb.physical_io.transferred metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalIoTransferredDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskIoTypeAttributeValue AttributeDiskIoType) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalIoTransferredDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection, diskIoTypeAttributeValue AttributeDiskIoType, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalIoTransferred, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbPhysicalIoTransferred.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskIoTypeAttributeValue.String())
+	mb.metricOracledbPhysicalIoTransferred.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), diskIoTypeAttributeValue.String(), oracleDbPdbAttributeValue)
 	return nil
 }
 
@@ -5005,12 +5053,12 @@ func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbSqlnetIoTransferredDataPoint adds a data point to oracledb.sqlnet.io.transferred metric.
-func (mb *MetricsBuilder) RecordOracledbSqlnetIoTransferredDataPoint(ts pcommon.Timestamp, inputVal string, networkIoDirectionAttributeValue AttributeNetworkIoDirection, destinationTypeAttributeValue AttributeDestinationType) error {
+func (mb *MetricsBuilder) RecordOracledbSqlnetIoTransferredDataPoint(ts pcommon.Timestamp, inputVal string, networkIoDirectionAttributeValue AttributeNetworkIoDirection, destinationTypeAttributeValue AttributeDestinationType, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbSqlnetIoTransferred, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbSqlnetIoTransferred.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String(), destinationTypeAttributeValue.String())
+	mb.metricOracledbSqlnetIoTransferred.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String(), destinationTypeAttributeValue.String(), oracleDbPdbAttributeValue)
 	return nil
 }
 

@@ -474,55 +474,55 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeBuffered); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeBuffered, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeBuffered); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeBuffered, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadTotalBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeTotal); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeTotal, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteTotalBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeTotal); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeTotal, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadTotalIORequestsStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeAll); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeAll, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteTotalIORequestsStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeAll); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeAll, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadMultiBlockReqStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeMulti, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteMultiBlockReqStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeMulti, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWritesFromCacheStat:
-				if err := s.mb.RecordOracledbPhysicalIoCacheWritesDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoCacheWritesDataPoint(now, row["VALUE"], pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesRecvFromClient:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeClient); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeClient, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesSentToClient:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeClient); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeClient, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesRecvFromDBLink:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeDblink); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeDblink, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesSentToDBLink:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink, pdbName); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

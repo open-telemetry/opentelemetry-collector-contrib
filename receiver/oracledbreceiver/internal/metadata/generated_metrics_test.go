@@ -86,6 +86,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.parallel_operations_not_downgraded"] = mb.metricOracledbParallelOperationsNotDowngraded.config.AggregationStrategy
 			aggMap["oracledb.parse_calls"] = mb.metricOracledbParseCalls.config.AggregationStrategy
 			aggMap["oracledb.pga_memory"] = mb.metricOracledbPgaMemory.config.AggregationStrategy
+			aggMap["oracledb.physical_io.cache_writes"] = mb.metricOracledbPhysicalIoCacheWrites.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
 			aggMap["oracledb.physical_read_io_requests"] = mb.metricOracledbPhysicalReadIoRequests.config.AggregationStrategy
@@ -260,18 +261,21 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoBlockSizeAll)
+			mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoBlockSizeMulti)
+				mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts, "3", "oracle.db.pdb-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoTypeBuffered)
+			mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoBlockSizeAll, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoTypeTotal)
+				mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoBlockSizeMulti, "oracle.db.pdb-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoTypeBuffered, "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoTypeTotal, "oracle.db.pdb-val-2")
 			}
 
 			allMetricsCount++
@@ -340,9 +344,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "1", AttributeNetworkIoDirectionReceive, AttributeDestinationTypeClient)
+			mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "1", AttributeNetworkIoDirectionReceive, AttributeDestinationTypeClient, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "3", AttributeNetworkIoDirectionTransmit, AttributeDestinationTypeDblink)
+				mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "3", AttributeNetworkIoDirectionTransmit, AttributeDestinationTypeDblink, "oracle.db.pdb-val-2")
 			}
 
 			allMetricsCount++
@@ -418,6 +422,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbParallelOperationsNotDowngraded.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbParseCalls.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPgaMemory.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalIoCacheWrites.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalReadIoRequests.aggDataPoints)
@@ -1324,19 +1329,46 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "oracledb.physical_io.cache_writes":
-					assert.False(t, validatedMetrics["oracledb.physical_io.cache_writes"], "Found a duplicate in the metrics slice: oracledb.physical_io.cache_writes")
-					validatedMetrics["oracledb.physical_io.cache_writes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.", mi.Description())
-					assert.Equal(t, "{writes}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_io.cache_writes"], "Found a duplicate in the metrics slice: oracledb.physical_io.cache_writes")
+						validatedMetrics["oracledb.physical_io.cache_writes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_io.cache_writes"], "Found a duplicate in the metrics slice: oracledb.physical_io.cache_writes")
+						validatedMetrics["oracledb.physical_io.cache_writes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_io.cache_writes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_io.requests":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["oracledb.physical_io.requests"], "Found a duplicate in the metrics slice: oracledb.physical_io.requests")
@@ -1384,6 +1416,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("disk.io.block_size")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
 						assert.False(t, ok)
 					}
 				case "oracledb.physical_io.transferred":
@@ -1433,6 +1467,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("disk.io.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
 						assert.False(t, ok)
 					}
 				case "oracledb.physical_read_io_requests":
@@ -1864,6 +1900,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("network.io.direction")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("destination.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
 						assert.False(t, ok)
 					}
 				case "oracledb.storage.usage":

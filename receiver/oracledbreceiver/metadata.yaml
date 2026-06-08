@@ -654,6 +654,7 @@ metrics:
       input_type: string
     unit: By
   oracledb.physical_io.cache_writes:
+    attributes: [oracle.db.pdb]
     description: Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
     enabled: false
     stability: development
@@ -673,7 +674,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{requests}"
-    attributes: [disk.io.direction, disk.io.block_size]
+    attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]
   oracledb.physical_io.transferred:
     description: Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
     enabled: false
@@ -684,7 +685,7 @@ metrics:
       value_type: int
       input_type: string
     unit: By
-    attributes: [disk.io.direction, disk.io.type]
+    attributes: [disk.io.direction, disk.io.type, oracle.db.pdb]
   oracledb.physical_read_io_requests:
     attributes:
       - oracle.db.pdb
@@ -822,7 +823,7 @@ metrics:
       value_type: int
       input_type: string
     unit: By
-    attributes: [network.io.direction, destination.type]
+    attributes: [network.io.direction, destination.type, oracle.db.pdb]
   oracledb.storage.usage:
     description: Used database storage size from dba_data_files and dba_free_space.
     enabled: false

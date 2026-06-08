@@ -143,17 +143,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{OracledbPgaMemoryMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize},
+						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoTransferred: OracledbPhysicalIoTransferredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType},
+						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
 						Enabled:             true,
@@ -210,7 +212,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType},
+						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 						Enabled: true,
@@ -378,17 +380,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{OracledbPgaMemoryMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize},
+						EnabledAttributes:   []OracledbPhysicalIoRequestsMetricAttributeKey{OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalIoTransferred: OracledbPhysicalIoTransferredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType},
+						EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
 						Enabled:             false,
@@ -445,7 +449,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType},
+						EnabledAttributes:   []OracledbSqlnetIoTransferredMetricAttributeKey{OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb},
 					},
 					OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 						Enabled: false,

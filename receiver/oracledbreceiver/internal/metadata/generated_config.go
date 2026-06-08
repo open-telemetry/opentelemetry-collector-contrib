@@ -1061,10 +1061,20 @@ func (ms *OracledbPgaMemoryMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbPhysicalIoCacheWritesMetricAttributeKey specifies the key of an attribute for the oracledb.physical_io.cache_writes metric.
+type OracledbPhysicalIoCacheWritesMetricAttributeKey string
+
+const (
+	OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb OracledbPhysicalIoCacheWritesMetricAttributeKey = "oracle.db.pdb"
+)
+
 // OracledbPhysicalIoCacheWritesMetricConfig provides config for the oracledb.physical_io.cache_writes metric.
 type OracledbPhysicalIoCacheWritesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbPhysicalIoCacheWritesMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1081,12 +1091,31 @@ func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
+func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb:
+		default:
+			return fmt.Errorf("metric oracledb.physical_io.cache_writes doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbPhysicalIoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.physical_io.requests metric.
 type OracledbPhysicalIoRequestsMetricAttributeKey string
 
 const (
 	OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection OracledbPhysicalIoRequestsMetricAttributeKey = "disk.io.direction"
 	OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize OracledbPhysicalIoRequestsMetricAttributeKey = "disk.io.block_size"
+	OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb     OracledbPhysicalIoRequestsMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbPhysicalIoRequestsMetricConfig provides config for the oracledb.physical_io.requests metric.
@@ -1115,9 +1144,9 @@ func (ms *OracledbPhysicalIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *OracledbPhysicalIoRequestsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize:
+		case OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb:
 		default:
-			return fmt.Errorf("metric oracledb.physical_io.requests doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.block_size]", val)
+			return fmt.Errorf("metric oracledb.physical_io.requests doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]", val)
 		}
 	}
 
@@ -1136,6 +1165,7 @@ type OracledbPhysicalIoTransferredMetricAttributeKey string
 const (
 	OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection OracledbPhysicalIoTransferredMetricAttributeKey = "disk.io.direction"
 	OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType      OracledbPhysicalIoTransferredMetricAttributeKey = "disk.io.type"
+	OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb     OracledbPhysicalIoTransferredMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric.
@@ -1164,9 +1194,9 @@ func (ms *OracledbPhysicalIoTransferredMetricConfig) Unmarshal(parser *confmap.C
 func (ms *OracledbPhysicalIoTransferredMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType:
+		case OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb:
 		default:
-			return fmt.Errorf("metric oracledb.physical_io.transferred doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.type]", val)
+			return fmt.Errorf("metric oracledb.physical_io.transferred doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.type, oracle.db.pdb]", val)
 		}
 	}
 
@@ -1651,6 +1681,7 @@ type OracledbSqlnetIoTransferredMetricAttributeKey string
 const (
 	OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection OracledbSqlnetIoTransferredMetricAttributeKey = "network.io.direction"
 	OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType    OracledbSqlnetIoTransferredMetricAttributeKey = "destination.type"
+	OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb        OracledbSqlnetIoTransferredMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric.
@@ -1679,9 +1710,9 @@ func (ms *OracledbSqlnetIoTransferredMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *OracledbSqlnetIoTransferredMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType:
+		case OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb:
 		default:
-			return fmt.Errorf("metric oracledb.sqlnet.io.transferred doesn't have an attribute %v, valid attributes: [network.io.direction, destination.type]", val)
+			return fmt.Errorf("metric oracledb.sqlnet.io.transferred doesn't have an attribute %v, valid attributes: [network.io.direction, destination.type, oracle.db.pdb]", val)
 		}
 	}
 
@@ -2141,7 +2172,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{},
 		},
 		OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{},
 		},
 		OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 			Enabled:             false,

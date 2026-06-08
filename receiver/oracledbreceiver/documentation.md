@@ -480,6 +480,12 @@ Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
+
 ### oracledb.physical_io.requests
 
 Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).
@@ -494,6 +500,7 @@ Number of physical I/O requests issued to storage. Sourced from v$sysstat names 
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.physical_io.transferred
 
@@ -509,6 +516,7 @@ Total physical I/O bytes transferred between Oracle and storage. Sums across all
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.physical_read_io_requests
 
@@ -616,6 +624,7 @@ Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | network.io.direction | Direction of the SQL*Net network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
 | destination.type | Type of the SQL*Net destination endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB. | Any Str | Opt-In | - |
 
 ### oracledb.storage.usage
 
