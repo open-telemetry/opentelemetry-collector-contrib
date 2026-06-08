@@ -143,7 +143,6 @@ func Parse(format string, parse ParseFunc) (time.Time, string, error) {
 
 // Alternative formats that allow more flexible ctime-compatible parsing.
 // The values are split into discrete time.Parse elements so they can be identified in ParseError.LayoutElem.
-// Hour and minute values are parsed with and without a leading zero to work around https://github.com/elastic/lunes/issues/15
 var ctimeParseSubstitutes = map[string][][]string{
 	"%m": {{"1"}},
 	"%o": {{"1"}},
@@ -152,8 +151,8 @@ var ctimeParseSubstitutes = map[string][][]string{
 	"%e": {{"2"}},
 	"%g": {{"2"}},
 	"%I": {{"3"}},
-	"%M": {{"4"}, {"04"}},
-	"%S": {{"5"}, {"05"}},
+	"%M": {{"4"}},
+	"%S": {{"5"}},
 	"%D": {
 		// N.B. The docs above say that %D is equivalent to %m/%d/%y, but the implementation of Format uses %m/%d/%Y. We try to parse as both.
 		{"1", "/", "2", "/", "2006"},
@@ -164,10 +163,10 @@ var ctimeParseSubstitutes = map[string][][]string{
 		{"1", "/", "2", "/", "06"},
 	},
 	"%F": {{"2006", "-", "1", "-", "2"}},
-	"%T": {{"15", ":", "4", ":", "5"}, {"15", ":", "04", ":", "05"}},
-	"%X": {{"15", ":", "4", ":", "5"}, {"15", ":", "04", ":", "05"}},
-	"%r": {{"3", ":", "4", ":", "5", " ", "pm"}, {"3", ":", "04", ":", "05", " ", "pm"}},
-	"%R": {{"15", ":", "4"}, {"15", ":", "04"}},
+	"%T": {{"15", ":", "4", ":", "5"}},
+	"%X": {{"15", ":", "4", ":", "5"}},
+	"%r": {{"3", ":", "4", ":", "5", " ", "pm"}},
+	"%R": {{"15", ":", "4"}},
 	"%c": {{"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"}},
 }
 
@@ -192,15 +191,6 @@ func iterativeParse(partialLayout, format string, startIndex int, indexes [][]in
 		}
 		var lunesErr *lunes.ErrLayoutMismatch
 		if errors.As(err, &lunesErr) {
-			// Work around https://github.com/elastic/lunes/issues/15
-			// If we're parsing a minute or second and we're failing to parse %p, try again
-			// with a leading zero on the minute or second placeholder.
-			switch lunesErr.LayoutElem {
-			case "pm", "PM", "%p", "%P":
-				if i := slices.IndexFunc(elements, func(e string) bool { return e == "4" || e == "5" }); i >= 0 {
-					return i, "unknown"
-				}
-			}
 			if i := slices.Index(elements, lunesErr.LayoutElem); i >= 0 {
 				lunesErr.LayoutElem = directive
 				return i, "unknown"
