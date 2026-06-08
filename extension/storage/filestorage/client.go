@@ -23,14 +23,6 @@ var (
 
 	// Ensure fileStorageClient implements the Walker interface
 	_ storage.Walker = (*fileStorageClient)(nil)
-
-	createTempFile = func(dir, pattern string) (tempFile, error) {
-		return os.CreateTemp(dir, pattern)
-	}
-	statFile    = os.Stat
-	removeFile  = os.Remove
-	openBoltDB  = bbolt.Open
-	compactBolt = bbolt.Compact
 )
 
 const (
@@ -55,30 +47,22 @@ type fileStorageClient struct {
 	closed          bool
 }
 
-type tempFile interface {
-	Name() string
-	Close() error
-}
-
-func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
-	return &bbolt.Options{
-		Timeout:        timeout,
-		NoSync:         noSync,
+func bboltOptions(cfg *Config) *bbolt.Options {
+	options := &bbolt.Options{
+		Timeout:        cfg.Timeout,
+		NoSync:         !cfg.FSync,
 		NoFreelistSync: true,
 		FreelistType:   bbolt.FreelistMapType,
 	}
-}
-
-func setMaxSizeOptions(options *bbolt.Options, maxSize int64) {
-	if maxSize > 0 {
-		options.MaxSize = int(maxSize)
+	if cfg.MaxSize > 0 {
+		options.MaxSize = int(cfg.MaxSize)
 	}
+	return options
 }
 
 func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
-	options := bboltOptions(cfg.Timeout, !cfg.FSync)
-	setMaxSizeOptions(options, cfg.MaxSize)
-	db, err := openBoltDB(filePath, 0o600, options)
+	options := bboltOptions(cfg)
+	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
 	}
@@ -145,38 +129,6 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 	return normalizeStorageError(c.db.Update(batch))
 }
 
-// updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
-// The function caller must hold a read lock on compactionMutex.
-func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
-	var err error
-	for _, op := range ops {
-		switch op.Type {
-		case storage.Get:
-			value := bucket.Get([]byte(op.Key))
-			if value != nil {
-				// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
-				// to be able to return the value
-				op.Value = make([]byte, len(value))
-				copy(op.Value, value)
-			} else {
-				op.Value = nil
-			}
-		case storage.Set:
-			err = bucket.Put([]byte(op.Key), op.Value)
-		case storage.Delete:
-			err = bucket.Delete([]byte(op.Key))
-		default:
-			return errors.New("wrong operation type")
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // Walk implements storage.Walker.
 func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error {
 	if err := ctx.Err(); err != nil {
@@ -217,6 +169,38 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 	}))
 }
 
+// updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
+// The function caller must hold a read lock on compactionMutex.
+func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
+	var err error
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			value := bucket.Get([]byte(op.Key))
+			if value != nil {
+				// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
+				// to be able to return the value
+				op.Value = make([]byte, len(value))
+				copy(op.Value, value)
+			} else {
+				op.Value = nil
+			}
+		case storage.Set:
+			err = bucket.Put([]byte(op.Key), op.Value)
+		case storage.Delete:
+			err = bucket.Delete([]byte(op.Key))
+		default:
+			return errors.New("wrong operation type")
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Close will close the database
 func (c *fileStorageClient) Close(_ context.Context) error {
 	c.compactionMutex.Lock()
@@ -235,11 +219,11 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 // Compact database. Use temporary file as helper as we cannot replace database in-place
 func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Duration, maxTransactionSize int64) error {
 	var err error
-	var file tempFile
+	var file *os.File
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = createTempFile(compactionDirectory, TempDbPrefix)
+	file, err = os.CreateTemp(compactionDirectory, TempDbPrefix)
 	if err != nil {
 		return err
 	}
@@ -249,18 +233,21 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}
 
 	defer func() {
-		_, statErr := statFile(file.Name())
+		_, statErr := os.Stat(file.Name())
 		if statErr == nil {
 			// File still exists and needs to be removed
-			if removeErr := removeFile(file.Name()); removeErr != nil {
+			if removeErr := os.Remove(file.Name()); removeErr != nil {
 				c.logger.Error("removing temporary compaction file failed", zap.Error(removeErr))
 			}
 		}
 	}()
 
 	// use temporary file as compaction target
-	options := bboltOptions(timeout, c.db.NoSync)
-	options.MaxSize = int(c.maxSize)
+	options := bboltOptions(&Config{
+		Timeout: timeout,
+		FSync:   !c.db.NoSync,
+		MaxSize: c.maxSize,
+	})
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
@@ -274,7 +261,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		zap.String(tempDirectoryKey, file.Name()))
 
 	// cannot reuse newClient as db shouldn't contain any bucket
-	compactedDb, err = openBoltDB(file.Name(), 0o600, options)
+	compactedDb, err = bbolt.Open(file.Name(), 0o600, options)
 	if err != nil {
 		return err
 	}
@@ -286,7 +273,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	compactionStart := time.Now()
 
-	err = compactBolt(compactedDb, c.db, maxTransactionSize)
+	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
 	if err != nil {
 		return err
 	}

@@ -22,9 +22,8 @@ import (
 )
 
 type localFileStorage struct {
-	cfg         *Config
-	logger      *zap.Logger
-	newClientFn func(*zap.Logger, string, *Config) (*fileStorageClient, error)
+	cfg    *Config
+	logger *zap.Logger
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -111,7 +110,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
 		// If recreate is disabled, just try once
-		return lfs.newClient(absoluteName)
+		return newClient(lfs.logger, absoluteName, lfs.cfg)
 	}
 
 	// If recreate is enabled, handle potential panics during database opening
@@ -134,21 +133,13 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("backup", backupName))
 
 			// Try to create client again with fresh database
-			client, err = lfs.newClient(absoluteName)
+			client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 		}
 	}()
 
 	// Try to create the client normally first
-	client, err = lfs.newClient(absoluteName)
+	client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 	return client, err
-}
-
-func (lfs *localFileStorage) newClient(absoluteName string) (*fileStorageClient, error) {
-	if lfs.newClientFn != nil {
-		return lfs.newClientFn(lfs.logger, absoluteName, lfs.cfg)
-	}
-
-	return newClient(lfs.logger, absoluteName, lfs.cfg)
 }
 
 func kindString(k component.Kind) string {
