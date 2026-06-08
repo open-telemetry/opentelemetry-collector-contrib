@@ -23,16 +23,17 @@ type oracleInstanceInfo struct {
 	pdbName        string
 }
 
-// oracleVersionGTE reports whether the given Oracle version string has a major version >= minMajor.
-func oracleVersionGTE(version string, minMajor int) bool {
+// majorVersion extracts the major version number from an Oracle version string (e.g. "19.0.0.0.0" → 19).
+// Returns -1 if the version string is empty or unparseable.
+func majorVersion(version string) int {
 	if version == "" {
-		return false
+		return -1
 	}
 	major, err := strconv.Atoi(strings.SplitN(version, ".", 2)[0])
 	if err != nil {
-		return false
+		return -1
 	}
-	return major >= minMajor
+	return major
 }
 
 const (
@@ -91,7 +92,7 @@ func detectInstanceInfo(
 	info.dbVersion = rows[0][colVersion]
 	logger.Info("oracledbreceiver: detected Oracle version", zap.String("version", info.dbVersion))
 
-	if !oracleVersionGTE(info.dbVersion, minMultitenantVersion) {
+	if majorVersion(info.dbVersion) < minMultitenantVersion {
 		logger.Info("oracledbreceiver: Oracle version is pre-12c; multitenant detection skipped",
 			zap.String("version", info.dbVersion))
 		return info
@@ -108,7 +109,7 @@ func detectInstanceInfo(
 	info.openMode = rows[0][colOpenMode]
 
 	if !info.isCDB {
-		if oracleVersionGTE(info.dbVersion, minHostingDetectionVersion) {
+		if majorVersion(info.dbVersion) >= minHostingDetectionVersion {
 			info.hostingType = detectHostingType(ctx, rdsClient, ociClient, cdbServicesClient, false, logger)
 		}
 		return info
@@ -122,7 +123,7 @@ func detectInstanceInfo(
 	}
 	info.connectedToPDB = strings.EqualFold(rows[0][colConType], "PDB")
 
-	if oracleVersionGTE(info.dbVersion, minHostingDetectionVersion) {
+	if majorVersion(info.dbVersion) >= minHostingDetectionVersion {
 		info.hostingType = detectHostingType(ctx, rdsClient, ociClient, cdbServicesClient, info.connectedToPDB, logger)
 	}
 

@@ -290,6 +290,7 @@ type querySample struct {
 	processlistDB      string
 	processlistCommand string
 	processlistState   string
+	digestText         string
 	sqlText            string
 	digest             string
 	eventID            int64
@@ -966,6 +967,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.processlistCommand)
 			case "session_state":
 				dest = append(dest, &s.processlistState)
+			case "digest_text":
+				dest = append(dest, &s.digestText)
 			case "sql_text":
 				dest = append(dest, &s.sqlText)
 			case "fingerprint":
