@@ -37,10 +37,10 @@ func selectTransactionRoot(roots []*traceutil.TraceTreeNode) (*traceutil.TraceTr
 	var selectedFallback *traceutil.TraceTreeNode
 
 	for _, root := range roots {
-		if selectedFallback == nil || isBetterTransactionRoot(root, selectedFallback) {
+		if selectedFallback == nil || isBetterTransactionRoot(selectedFallback, root) {
 			selectedFallback = root
 		}
-		if root.Span.ParentSpanID().IsEmpty() && (selectedExplicit == nil || isBetterTransactionRoot(root, selectedExplicit)) {
+		if root.Span.ParentSpanID().IsEmpty() && (selectedExplicit == nil || isBetterTransactionRoot(selectedExplicit, root)) {
 			selectedExplicit = root
 		}
 	}
@@ -52,7 +52,7 @@ func selectTransactionRoot(roots []*traceutil.TraceTreeNode) (*traceutil.TraceTr
 	return selectedFallback, false
 }
 
-func isBetterTransactionRoot(candidate, current *traceutil.TraceTreeNode) bool {
+func isBetterTransactionRoot(current, candidate *traceutil.TraceTreeNode) bool {
 	if candidate.Span.StartTimestamp() != current.Span.StartTimestamp() {
 		return candidate.Span.StartTimestamp() < current.Span.StartTimestamp()
 	}

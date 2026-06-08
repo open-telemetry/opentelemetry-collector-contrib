@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/coralogix
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add critical path trace annotations to the Coralogix processor.
+note: Add critical path trace annotations.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48824]
@@ -16,8 +16,8 @@ issues: [48824]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  New `critical_path.enabled` config computes and writes `cgx.critical_path`, `cgx.critical_path.exclusive_ns`, and `cgx.critical_path.inclusive_ns` on critical-path spans.
-  Feature expects complete traces, so `groupbytrace` should run before `coralogixprocessor`.
+  New `critical_path.enabled` config computes and writes span attributes `cgx.critical_path.is_on_path`, `cgx.critical_path.exclusive_duration_ns`, and `cgx.critical_path.inclusive_duration_ns`.
+  Feature expects complete traces, so `groupbytrace` should run before `coralogixprocessor` in the pipeline.
   Example:
   `processors:
     coralogix:

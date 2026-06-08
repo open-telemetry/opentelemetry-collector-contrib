@@ -33,12 +33,12 @@ func ApplyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]p
 }
 
 func applyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]ptrace.Span, logger *zap.Logger) {
-	for _, spans := range spansByTraceID {
+	for traceID, spans := range spansByTraceID {
 		if len(spans) == 0 {
-			logger.Debug("skipping empty trace span group")
+			logger.Debug("skipping empty trace span group", zap.String("traceID", traceID.String()))
 			continue
 		}
-		logger.Debug("processing trace", zap.String("traceID", spans[0].TraceID().String()), zap.Int("spans", len(spans)))
+		logger.Debug("processing trace", zap.String("traceID", traceID.String()), zap.Int("spans", len(spans)))
 		root := buildSpanTree(traceutil.BuildTraceTree(spans), logger)
 		if root != nil {
 			markSpanAsRoot(root.Span)

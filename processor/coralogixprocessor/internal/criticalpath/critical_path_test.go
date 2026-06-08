@@ -16,16 +16,14 @@ import (
 )
 
 func TestApplyCriticalPathAttributes_EmptyTrace(t *testing.T) {
-	result, err := ApplyCriticalPathAttributes(ptrace.NewTraces(), zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(ptrace.NewTraces())
 	assert.Equal(t, 0, result.SpanCount())
 }
 
 func TestApplyCriticalPathAttributes_SingleSpan(t *testing.T) {
 	traces := newTraceBuilder().span("root", 0, 100, 1, 0).build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 100, 100)
 }
@@ -37,8 +35,7 @@ func TestApplyCriticalPathAttributes_JaegerSiblingHopShape(t *testing.T) {
 		span("right", 20, 60, 3, 1).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 60, 100)
 	assertNoCriticalPathAttrs(t, spanByName(result, "left"))
@@ -52,8 +49,7 @@ func TestApplyCriticalPathAttributes_NonOverlappingSiblingsReenterParent(t *test
 		span("second", 50, 60, 3, 1).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 70, 100)
 	assertCriticalPathAttrs(t, spanByName(result, "first"), 20, 20)
@@ -67,8 +63,7 @@ func TestApplyCriticalPathAttributes_OverlappingEarlierSiblingNotSelected(t *tes
 		span("second", 50, 100, 3, 1).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 70, 120)
 	assertNoCriticalPathAttrs(t, spanByName(result, "first"))
@@ -83,8 +78,7 @@ func TestApplyCriticalPathAttributes_NestedDescendants(t *testing.T) {
 		span("leaf", 100, 150, 4, 3).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 40, 200)
 	assertCriticalPathAttrs(t, spanByName(result, "child"), 60, 160)
@@ -99,8 +93,7 @@ func TestApplyCriticalPathAttributes_MultiRootAndMissingParent(t *testing.T) {
 		span("root-b", 70, 130, 3, 99).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root-a"), 60, 100)
 	assertCriticalPathAttrs(t, spanByName(result, "child-a"), 40, 40)
@@ -114,8 +107,7 @@ func TestApplyCriticalPathAttributes_InvalidIntervalsIgnored(t *testing.T) {
 		span("invalid", 90, 70, 3, 1).
 		build()
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "root"), 100, 100)
 	assertNoCriticalPathAttrs(t, spanByName(result, "zero"))
@@ -152,9 +144,9 @@ func TestApplyCriticalPathAttributesToTree(t *testing.T) {
 		span("child", 20, 60, 2, 1).
 		build()
 	child := spanByName(traces, "child")
-	child.Attributes().PutBool(AttributeCriticalPath, true)
-	child.Attributes().PutInt(AttributeCriticalPathExclusiveNS, 1)
-	child.Attributes().PutInt(AttributeCriticalPathInclusiveNS, 1)
+	child.Attributes().PutBool(AttributeCriticalPathIsOnPath, true)
+	child.Attributes().PutInt(AttributeCriticalPathExclusiveDurationNS, 1)
+	child.Attributes().PutInt(AttributeCriticalPathInclusiveDurationNS, 1)
 
 	ApplyCriticalPathAttributesToTree(
 		pcommon.TraceID([16]byte{1}),
@@ -182,20 +174,24 @@ func TestApplyCriticalPathAttributesToTree_MalformedChild(t *testing.T) {
 	assertCriticalPathAttrs(t, spanByName(traces, "overflow"), 20, 20)
 }
 
-func TestApplyCriticalPathAttributes_ClearsStaleAttributes(t *testing.T) {
+func TestApplyCriticalPathAttributes_RemovesStaleAttributes(t *testing.T) {
 	traces := newTraceBuilder().
 		span("root", 0, 100, 1, 0).
 		span("child", 20, 60, 2, 1).
 		build()
 	stale := spanByName(traces, "child")
-	stale.Attributes().PutBool(AttributeCriticalPath, true)
-	stale.Attributes().PutInt(AttributeCriticalPathExclusiveNS, 999)
-	stale.Attributes().PutInt(AttributeCriticalPathInclusiveNS, 999)
+	stale.Attributes().PutBool(AttributeCriticalPathIsOnPath, true)
+	stale.Attributes().PutInt(AttributeCriticalPathExclusiveDurationNS, 999)
+	stale.Attributes().PutInt(AttributeCriticalPathInclusiveDurationNS, 999)
 
-	result, err := ApplyCriticalPathAttributes(traces, zap.NewNop())
-	require.NoError(t, err)
+	result := applyCriticalPathAttributes(traces)
 
 	assertCriticalPathAttrs(t, spanByName(result, "child"), 40, 40)
+}
+
+func applyCriticalPathAttributes(traces ptrace.Traces) ptrace.Traces {
+	ApplyCriticalPathAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), zap.NewNop())
+	return traces
 }
 
 func TestBuildTraceGraph_Empty(t *testing.T) {
@@ -473,15 +469,15 @@ func spanByName(traces ptrace.Traces, name string) ptrace.Span {
 func assertCriticalPathAttrs(t *testing.T, span ptrace.Span, exclusiveNS, inclusiveNS int64) {
 	t.Helper()
 
-	isCritical, ok := span.Attributes().Get(AttributeCriticalPath)
+	isCritical, ok := span.Attributes().Get(AttributeCriticalPathIsOnPath)
 	require.True(t, ok)
 	assert.True(t, isCritical.Bool())
 
-	exclusive, ok := span.Attributes().Get(AttributeCriticalPathExclusiveNS)
+	exclusive, ok := span.Attributes().Get(AttributeCriticalPathExclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, exclusiveNS, exclusive.Int())
 
-	inclusive, ok := span.Attributes().Get(AttributeCriticalPathInclusiveNS)
+	inclusive, ok := span.Attributes().Get(AttributeCriticalPathInclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, inclusiveNS, inclusive.Int())
 }
@@ -489,10 +485,10 @@ func assertCriticalPathAttrs(t *testing.T, span ptrace.Span, exclusiveNS, inclus
 func assertNoCriticalPathAttrs(t *testing.T, span ptrace.Span) {
 	t.Helper()
 
-	_, ok := span.Attributes().Get(AttributeCriticalPath)
+	_, ok := span.Attributes().Get(AttributeCriticalPathIsOnPath)
 	assert.False(t, ok)
-	_, ok = span.Attributes().Get(AttributeCriticalPathExclusiveNS)
+	_, ok = span.Attributes().Get(AttributeCriticalPathExclusiveDurationNS)
 	assert.False(t, ok)
-	_, ok = span.Attributes().Get(AttributeCriticalPathInclusiveNS)
+	_, ok = span.Attributes().Get(AttributeCriticalPathInclusiveDurationNS)
 	assert.False(t, ok)
 }

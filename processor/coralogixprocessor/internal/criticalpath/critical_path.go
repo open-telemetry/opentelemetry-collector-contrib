@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	AttributeCriticalPath            = "cgx.critical_path"
-	AttributeCriticalPathExclusiveNS = "cgx.critical_path.exclusive_ns"
-	AttributeCriticalPathInclusiveNS = "cgx.critical_path.inclusive_ns"
+	AttributeCriticalPathIsOnPath            = "cgx.critical_path.is_on_path"
+	AttributeCriticalPathExclusiveDurationNS = "cgx.critical_path.exclusive_duration_ns"
+	AttributeCriticalPathInclusiveDurationNS = "cgx.critical_path.inclusive_duration_ns"
 )
 
 type criticalPathSection struct {
@@ -35,22 +35,10 @@ type sanitizeStats struct {
 	truncatedChildren int
 }
 
-func ApplyCriticalPathAttributes(td ptrace.Traces, logger *zap.Logger) (ptrace.Traces, error) {
-	if td.SpanCount() == 0 {
-		logger.Debug("no spans found in the trace")
-		return td, nil
-	}
-
-	spansByTraceID := traceutil.GroupSpansByTraceID(td)
-	ApplyCriticalPathAttributesByTraceID(spansByTraceID, logger)
-
-	return td, nil
-}
-
 func ApplyCriticalPathAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]ptrace.Span, logger *zap.Logger) {
 	for traceID, spans := range spansByTraceID {
 		logger.Debug("processing trace", zap.String("traceID", traceID.String()), zap.Int("spans", len(spans)))
-		clearCriticalPathAttributes(spans)
+		removeCriticalPathAttributes(spans)
 
 		tree := traceutil.BuildTraceTree(spans)
 		stats := sanitizeOverflowingChildren(tree)
@@ -73,7 +61,7 @@ func ApplyCriticalPathAttributesToTree(traceID pcommon.TraceID, tree traceutil.T
 	for _, node := range tree.Nodes {
 		spans = append(spans, node.Span)
 	}
-	clearCriticalPathAttributes(spans)
+	removeCriticalPathAttributes(spans)
 
 	stats := sanitizeOverflowingChildren(tree)
 	if stats.droppedChildren > 0 || stats.truncatedChildren > 0 {
@@ -279,18 +267,18 @@ func annotateSpans(spans []ptrace.Span, contributions map[pcommon.SpanID]contrib
 			continue
 		}
 
-		span.Attributes().PutBool(AttributeCriticalPath, true)
-		span.Attributes().PutInt(AttributeCriticalPathExclusiveNS, contrib.exclusiveNS)
-		span.Attributes().PutInt(AttributeCriticalPathInclusiveNS, contrib.inclusiveNS)
+		span.Attributes().PutBool(AttributeCriticalPathIsOnPath, true)
+		span.Attributes().PutInt(AttributeCriticalPathExclusiveDurationNS, contrib.exclusiveNS)
+		span.Attributes().PutInt(AttributeCriticalPathInclusiveDurationNS, contrib.inclusiveNS)
 	}
 }
 
-func clearCriticalPathAttributes(spans []ptrace.Span) {
+func removeCriticalPathAttributes(spans []ptrace.Span) {
 	for _, span := range spans {
 		attrs := span.Attributes()
-		attrs.Remove(AttributeCriticalPath)
-		attrs.Remove(AttributeCriticalPathExclusiveNS)
-		attrs.Remove(AttributeCriticalPathInclusiveNS)
+		attrs.Remove(AttributeCriticalPathIsOnPath)
+		attrs.Remove(AttributeCriticalPathExclusiveDurationNS)
+		attrs.Remove(AttributeCriticalPathInclusiveDurationNS)
 	}
 }
 

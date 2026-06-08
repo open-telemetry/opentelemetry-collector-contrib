@@ -517,15 +517,15 @@ func e2eSpanByName(traces ptrace.Traces, name string) ptrace.Span {
 func assertCriticalPathAttrs(t *testing.T, span ptrace.Span, exclusiveNS, inclusiveNS int64) {
 	t.Helper()
 
-	critical, ok := span.Attributes().Get(criticalpath.AttributeCriticalPath)
+	critical, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathIsOnPath)
 	require.True(t, ok)
 	assert.True(t, critical.Bool())
 
-	exclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveNS)
+	exclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, exclusiveNS, exclusive.Int())
 
-	inclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveNS)
+	inclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, inclusiveNS, inclusive.Int())
 }
@@ -533,10 +533,10 @@ func assertCriticalPathAttrs(t *testing.T, span ptrace.Span, exclusiveNS, inclus
 func assertNoCriticalPathAttrsE2E(t *testing.T, span ptrace.Span) {
 	t.Helper()
 
-	_, ok := span.Attributes().Get(criticalpath.AttributeCriticalPath)
+	_, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathIsOnPath)
 	assert.False(t, ok)
-	_, ok = span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveNS)
+	_, ok = span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveDurationNS)
 	assert.False(t, ok)
-	_, ok = span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveNS)
+	_, ok = span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveDurationNS)
 	assert.False(t, ok)
 }

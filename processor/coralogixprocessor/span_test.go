@@ -34,7 +34,7 @@ func TestProcessTraces_CriticalPathDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	root := processorSpanByName(traces, "root")
-	_, ok := root.Attributes().Get(criticalpath.AttributeCriticalPath)
+	_, ok := root.Attributes().Get(criticalpath.AttributeCriticalPathIsOnPath)
 	assert.False(t, ok)
 }
 
@@ -47,9 +47,9 @@ func TestProcessTraces_CriticalPathEnabled(t *testing.T) {
 	}
 	traces := newProcessorTestTrace()
 	child := processorSpanByName(traces, "child")
-	child.Attributes().PutBool(criticalpath.AttributeCriticalPath, true)
-	child.Attributes().PutInt(criticalpath.AttributeCriticalPathExclusiveNS, 1)
-	child.Attributes().PutInt(criticalpath.AttributeCriticalPathInclusiveNS, 1)
+	child.Attributes().PutBool(criticalpath.AttributeCriticalPathIsOnPath, true)
+	child.Attributes().PutInt(criticalpath.AttributeCriticalPathExclusiveDurationNS, 1)
+	child.Attributes().PutInt(criticalpath.AttributeCriticalPathInclusiveDurationNS, 1)
 
 	_, err := processor.processTraces(t.Context(), traces)
 	require.NoError(t, err)
@@ -137,7 +137,7 @@ func TestProcessTraces_BothFeaturesShareGroupingPass(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "root", transactionName.Str())
 
-	critical, ok := root.Attributes().Get(criticalpath.AttributeCriticalPath)
+	critical, ok := root.Attributes().Get(criticalpath.AttributeCriticalPathIsOnPath)
 	require.True(t, ok)
 	assert.True(t, critical.Bool())
 }
@@ -181,15 +181,15 @@ func processorSpanByName(traces ptrace.Traces, name string) ptrace.Span {
 func assertCriticalAttrsOnProcessorSpan(t *testing.T, span ptrace.Span, exclusiveNS, inclusiveNS int64) {
 	t.Helper()
 
-	critical, ok := span.Attributes().Get(criticalpath.AttributeCriticalPath)
+	critical, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathIsOnPath)
 	require.True(t, ok)
 	assert.True(t, critical.Bool())
 
-	exclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveNS)
+	exclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathExclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, exclusiveNS, exclusive.Int())
 
-	inclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveNS)
+	inclusive, ok := span.Attributes().Get(criticalpath.AttributeCriticalPathInclusiveDurationNS)
 	require.True(t, ok)
 	assert.Equal(t, inclusiveNS, inclusive.Int())
 }
