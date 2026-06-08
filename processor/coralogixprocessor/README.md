@@ -93,5 +93,4 @@ config:
 
 #### Algorithm References
 
-- [Uber CRISP article](https://www.uber.com/us/en/blog/crisp-critical-path-analysis-for-microservice-architectures/)
 - [Uber CRISP repository](https://github.com/uber-research/CRISP)
