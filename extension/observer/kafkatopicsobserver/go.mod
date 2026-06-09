@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.153.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.153.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.154.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go v1.21.2
 	github.com/twmb/franz-go/pkg/kadm v1.18.0
