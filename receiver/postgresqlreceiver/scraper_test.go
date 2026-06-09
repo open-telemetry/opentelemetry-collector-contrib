@@ -564,8 +564,8 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			params: map[string]any{
 				"limit":                int64(50),
 				"newestQueryTimestamp": 999999.555,
-				"blockingStartExpr":    "bl.waitstart",
-				"blockingSortExpr":     "bl.waitstart",
+				"blockingStartExpr":    "waitstart",
+				"blockingSortExpr":     "waitstart",
 			},
 		},
 		{

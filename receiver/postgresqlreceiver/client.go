@@ -925,8 +925,8 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		if parseErr != nil {
 			logger.Warn("failed to parse server version, defaulting to pre-14 blocking query", zap.Error(parseErr))
 		} else if major >= 14 {
-			blockingStartExpr = "bl.waitstart"
-			blockingSortExpr = "bl.waitstart"
+			blockingStartExpr = "waitstart"
+			blockingSortExpr = "waitstart"
 		}
 	}
 
