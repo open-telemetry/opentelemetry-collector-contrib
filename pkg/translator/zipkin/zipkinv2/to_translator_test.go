@@ -53,6 +53,43 @@ func TestZTagsToInternalAttrsRemoteServiceNameMigration(t *testing.T) {
 	}
 }
 
+func TestZTagsToInternalAttrsHTTPConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", false))
+			})
+
+			zspan := &zipkinmodel.SpanModel{Tags: map[string]string{"http.status_code": "500"}}
+			dest := pcommon.NewMap()
+			err = zTagsToInternalAttrs(zspan, zspan.Tags, dest, false)
+			assert.NoError(t, err)
+
+			_, hasV0 := dest.Get("http.status_code")
+			_, hasV1 := dest.Get("http.response.status_code")
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
+}
+
 func TestZipkinSpansToInternalTraces(t *testing.T) {
 	tests := []struct {
 		name string

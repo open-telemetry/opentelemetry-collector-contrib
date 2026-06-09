@@ -93,10 +93,20 @@ func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) 
 	}
 
 	if ilName := il.Name(); ilName != "" {
-		zTags[string(conventionsv125.OTelLibraryNameKey)] = ilName
+		if !metadata.PkgTranslatorZipkinDontEmitV0ScopeConventionsFeatureGate.IsEnabled() {
+			zTags[string(conventionsv125.OTelLibraryNameKey)] = ilName
+		}
+		if metadata.PkgTranslatorZipkinEmitV1ScopeConventionsFeatureGate.IsEnabled() {
+			zTags[string(conventions.OTelScopeNameKey)] = ilName
+		}
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[string(conventionsv125.OTelLibraryVersionKey)] = ilVer
+		if !metadata.PkgTranslatorZipkinDontEmitV0ScopeConventionsFeatureGate.IsEnabled() {
+			zTags[string(conventionsv125.OTelLibraryVersionKey)] = ilVer
+		}
+		if metadata.PkgTranslatorZipkinEmitV1ScopeConventionsFeatureGate.IsEnabled() {
+			zTags[string(conventions.OTelScopeVersionKey)] = ilVer
+		}
 	}
 }
 
@@ -197,6 +207,13 @@ func aggregateSpanTags(span ptrace.Span, zTags map[string]string) map[string]str
 	maps.Copy(tags, zTags)
 	spanTags := attributeMapToStringMap(span.Attributes())
 	maps.Copy(tags, spanTags)
+
+	if val, ok := tags[string(conventions.HTTPResponseStatusCodeKey)]; ok {
+		if _, ok2 := tags[string(conventionsv125.HTTPStatusCodeKey)]; !ok2 {
+			tags[string(conventionsv125.HTTPStatusCodeKey)] = val
+		}
+	}
+
 	return tags
 }
 
