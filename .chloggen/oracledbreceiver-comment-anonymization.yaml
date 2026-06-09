@@ -4,18 +4,19 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/spanpruning
+component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add attribute loss analysis to track diversity and missing attributes during span aggregation
+note: Enhance SQL obfuscation to anonymize comments while preserving query structure
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47671]
+issues: [48508]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  - Query structure, formatting, and whitespace are now preserved during obfuscation for improved readability.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
