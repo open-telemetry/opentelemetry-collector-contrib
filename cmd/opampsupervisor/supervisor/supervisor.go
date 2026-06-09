@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
+	koanfconfmap "github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -272,11 +273,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
-	if err != nil {
-		return telemetrySettings{}, err
-	}
-	pcommonRes, err := resourceConfigToPcommon(ctx, resourceCfg)
+	resourceCfg, pcommonRes, err := buildSupervisorResourceConfig(ctx, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -1247,8 +1244,23 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+
+	attrNames := make([]string, 0, len(resourceAttrs))
+	for name := range resourceAttrs {
+		attrNames = append(attrNames, name)
+	}
+	sort.Strings(attrNames)
+
+	resourceAttributeValues := make([]resourceAttributeTemplateValue, 0, len(attrNames))
+	for _, name := range attrNames {
+		resourceAttributeValues = append(resourceAttributeValues, resourceAttributeTemplateValue{
+			Name:  name,
+			Value: resourceAttrs[name],
+		})
+	}
+
 	tplVars := map[string]any{
-		"ResourceAttributes": resourceAttrs,
+		"ResourceAttributes": resourceAttributeValues,
 		"SupervisorPort":     s.opampServerPort,
 	}
 	err := s.extraTelemetryConfigTemplate.Execute(
@@ -1261,6 +1273,11 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	}
 
 	return cfg.Bytes()
+}
+
+type resourceAttributeTemplateValue struct {
+	Name  string
+	Value string
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1339,7 +1356,121 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
 	}
+
+	rawConf := koanf.New("::")
+	if loadErr := rawConf.Load(rawbytes.Provider(b), yaml.Parser()); loadErr != nil {
+		s.telemetrySettings.Logger.Error("Could not reload merged local config files", zap.Error(loadErr))
+		return []byte(""), loadErr
+	}
+	raw := rawConf.Raw()
+
+	if normalizeErr := normalizeTelemetryResourceConfig(raw); normalizeErr != nil {
+		s.telemetrySettings.Logger.Error("Could not normalize telemetry resource config", zap.Error(normalizeErr))
+		return []byte(""), normalizeErr
+	}
+
+	normalizedConf := koanf.New("::")
+	if reloadErr := normalizedConf.Load(koanfconfmap.Provider(raw, ""), nil); reloadErr != nil {
+		s.telemetrySettings.Logger.Error("Could not reload normalized config", zap.Error(reloadErr))
+		return []byte(""), reloadErr
+	}
+
+	b, err = normalizedConf.Marshal(yaml.Parser())
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not marshal normalized local config files", zap.Error(err))
+		return []byte(""), err
+	}
+
 	return b, nil
+}
+
+func normalizeTelemetryResourceConfig(raw map[string]any) error {
+	rawResourceCfg := maps.Search(raw, []string{"service", "telemetry", "resource"})
+	resourceMap, ok := rawResourceCfg.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	var resourceCfg config.ResourceConfig
+	if err := confmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
+		return err
+	}
+
+	if len(resourceCfg.LegacyAttributes) == 0 {
+		return nil
+	}
+
+	resourceCfg.Attributes = normalizeMergedResourceAttributes(resourceCfg.Attributes, resourceCfg.LegacyAttributes)
+	resourceCfg.LegacyAttributes = retainedLegacySuppressions(resourceCfg.LegacyAttributes)
+
+	normalized := confmap.New()
+	if err := normalized.Marshal(resourceCfg); err != nil {
+		return err
+	}
+
+	telemetryMap, ok := maps.Search(raw, []string{"service", "telemetry"}).(map[string]any)
+	if !ok {
+		return nil
+	}
+	telemetryMap["resource"] = normalized.ToStringMap()
+	return nil
+}
+
+func normalizeMergedResourceAttributes(attrs []telemetryconfig.AttributeNameValue, legacy map[string]any) []telemetryconfig.AttributeNameValue {
+	normalized := make([]telemetryconfig.AttributeNameValue, 0, len(attrs)+len(legacy))
+	handled := make(map[string]struct{}, len(legacy))
+
+	for _, attr := range attrs {
+		value, overridden := legacy[attr.Name]
+		if !overridden {
+			normalized = append(normalized, attr)
+			continue
+		}
+
+		handled[attr.Name] = struct{}{}
+		if value == nil {
+			continue
+		}
+
+		normalized = append(normalized, telemetryconfig.AttributeNameValue{
+			Name:  attr.Name,
+			Value: value,
+		})
+	}
+
+	legacyNames := make([]string, 0, len(legacy))
+	for name, value := range legacy {
+		if value == nil {
+			continue
+		}
+		if _, ok := handled[name]; ok {
+			continue
+		}
+		legacyNames = append(legacyNames, name)
+	}
+	sort.Strings(legacyNames)
+
+	for _, name := range legacyNames {
+		normalized = append(normalized, telemetryconfig.AttributeNameValue{
+			Name:  name,
+			Value: legacy[name],
+		})
+	}
+
+	return normalized
+}
+
+func retainedLegacySuppressions(legacy map[string]any) map[string]any {
+	suppressions := make(map[string]any)
+	for name, value := range legacy {
+		if value == nil {
+			suppressions[name] = nil
+		}
+	}
+	if len(suppressions) == 0 {
+		return nil
+	}
+	return suppressions
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by
@@ -2372,6 +2503,8 @@ func (s *Supervisor) getTracer() trace.Tracer {
 func configMergeFunc(src, dest map[string]any) error {
 	srcExtensions := maps.Search(src, []string{"service", "extensions"})
 	destExtensions := maps.Search(dest, []string{"service", "extensions"})
+	srcResourceAttributes := maps.Search(src, []string{"service", "telemetry", "resource", "attributes"})
+	destResourceAttributes := maps.Search(dest, []string{"service", "telemetry", "resource", "attributes"})
 
 	maps.Merge(src, dest)
 
@@ -2397,5 +2530,43 @@ func configMergeFunc(src, dest map[string]any) error {
 		}
 	}
 
+	if destAttrs, ok := destResourceAttributes.([]any); ok {
+		if srcAttrs, ok := srcResourceAttributes.([]any); ok {
+			if resource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+				resource["attributes"] = mergeResourceAttributes(destAttrs, srcAttrs)
+			}
+		}
+	}
+
 	return nil
+}
+
+func mergeResourceAttributes(destAttrs, srcAttrs []any) []any {
+	merged := append(slices.Clone(destAttrs), srcAttrs...)
+	seenByName := make(map[string]int, len(merged))
+	result := make([]any, 0, len(merged))
+
+	for _, attr := range merged {
+		attrMap, ok := attr.(map[string]any)
+		if !ok {
+			result = append(result, attr)
+			continue
+		}
+
+		name, ok := attrMap["name"].(string)
+		if !ok || name == "" {
+			result = append(result, attr)
+			continue
+		}
+
+		if idx, exists := seenByName[name]; exists {
+			result[idx] = attr
+			continue
+		}
+
+		seenByName[name] = len(result)
+		result = append(result, attr)
+	}
+
+	return result
 }

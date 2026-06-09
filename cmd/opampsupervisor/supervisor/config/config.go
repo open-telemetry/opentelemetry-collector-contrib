@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -30,8 +31,10 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xconfig "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -372,12 +375,164 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-type ResourceConfig = otelconftelemetry.ResourceConfig
+type ResourceConfig struct {
+	config.Resource `mapstructure:",squash"`
+
+	DetectionDevelopment *xconfig.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                         `mapstructure:",remain"`
+}
+
+var _ xconfmap.Validator = (*ResourceConfig)(nil)
+
+func (cfg *ResourceConfig) Unmarshal(conf *confmap.Conf) error {
+	type rawResourceConfig struct {
+		config.Resource  `mapstructure:",squash"`
+		LegacyAttributes map[string]any `mapstructure:",remain"`
+	}
+
+	var raw rawResourceConfig
+	if err := conf.Unmarshal(&raw); err != nil {
+		return err
+	}
+
+	cfg.Resource = raw.Resource
+	cfg.LegacyAttributes = raw.LegacyAttributes
+	cfg.DetectionDevelopment = nil
+
+	detectionConf, err := conf.Sub("detection/development")
+	if err != nil {
+		return err
+	}
+	if detectionConf != nil && detectionConf.ToStringMap() != nil {
+		delete(cfg.LegacyAttributes, "detection/development")
+		if err := validateExperimentalResourceDetectors(detectionConf.ToStringMap()); err != nil {
+			return err
+		}
+		cfg.DetectionDevelopment = &xconfig.ExperimentalResourceDetection{}
+		if err := detectionConf.Unmarshal(cfg.DetectionDevelopment); err != nil {
+			return err
+		}
+		normalizeExperimentalResourceDetectors(cfg.DetectionDevelopment, detectionConf.ToStringMap())
+	}
+
+	return nil
+}
+
+func (cfg ResourceConfig) Marshal(conf *confmap.Conf) error {
+	type rawResourceConfig struct {
+		config.Resource `mapstructure:",squash"`
+
+		DetectionDevelopment *xconfig.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+		LegacyAttributes     map[string]any                         `mapstructure:",remain"`
+	}
+
+	raw := rawResourceConfig(cfg)
+	if err := conf.Marshal(raw); err != nil {
+		return fmt.Errorf("failed to marshal resource configuration: %w", err)
+	}
+
+	return nil
+}
+
+func (cfg *ResourceConfig) Validate() error {
+	if cfg.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
+	}
+
+	for key, val := range cfg.LegacyAttributes {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
+		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
+	}
+
+	if cfg.DetectionDevelopment != nil && cfg.DetectionDevelopment.Attributes != nil {
+		for _, pattern := range cfg.DetectionDevelopment.Attributes.Included {
+			if _, err := path.Match(pattern, "test"); err != nil {
+				return fmt.Errorf("resource::detection/development::attributes::included contains invalid glob %q: %w", pattern, err)
+			}
+		}
+		for _, pattern := range cfg.DetectionDevelopment.Attributes.Excluded {
+			if _, err := path.Match(pattern, "test"); err != nil {
+				return fmt.Errorf("resource::detection/development::attributes::excluded contains invalid glob %q: %w", pattern, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateExperimentalResourceDetectors(raw map[string]any) error {
+	rawDetectors, ok := raw["detectors"]
+	if !ok {
+		return nil
+	}
+
+	detectors, ok := rawDetectors.([]any)
+	if !ok {
+		return nil
+	}
+
+	for i, rawDetector := range detectors {
+		detectorMap, ok := rawDetector.(map[string]any)
+		if !ok {
+			continue
+		}
+		for name := range detectorMap {
+			switch name {
+			case "container", "host", "process", "service":
+			default:
+				return fmt.Errorf("resource::detection/development::detectors[%d] contains unsupported detector %q", i, name)
+			}
+		}
+	}
+
+	return nil
+}
+
+func normalizeExperimentalResourceDetectors(cfg *xconfig.ExperimentalResourceDetection, raw map[string]any) {
+	if cfg == nil || raw == nil {
+		return
+	}
+
+	rawDetectors, ok := raw["detectors"].([]any)
+	if !ok {
+		return
+	}
+
+	for i, rawDetector := range rawDetectors {
+		if i >= len(cfg.Detectors) {
+			return
+		}
+		detectorMap, ok := rawDetector.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		if _, ok := detectorMap["container"]; ok && cfg.Detectors[i].Container == nil {
+			cfg.Detectors[i].Container = xconfig.ExperimentalContainerResourceDetector{}
+		}
+		if _, ok := detectorMap["host"]; ok && cfg.Detectors[i].Host == nil {
+			cfg.Detectors[i].Host = xconfig.ExperimentalHostResourceDetector{}
+		}
+		if _, ok := detectorMap["process"]; ok && cfg.Detectors[i].Process == nil {
+			cfg.Detectors[i].Process = xconfig.ExperimentalProcessResourceDetector{}
+		}
+		if _, ok := detectorMap["service"]; ok && cfg.Detectors[i].Service == nil {
+			cfg.Detectors[i].Service = xconfig.ExperimentalServiceResourceDetector{}
+		}
+	}
+}
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
