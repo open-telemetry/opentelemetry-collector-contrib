@@ -86,7 +86,7 @@ func buildMinimalProfiles(t *testing.T, values []int64, timestamps []uint64) *pp
 // TestSampleValueTimestampShapes exercises the three shapes that the OTel
 // profiles proto spec permits for Sample.values / Sample.timestamps_unix_nano
 //
-//   - Shape 1: timestamps only – values is empty; each timestamp implies a value of 1.
+//   - Shape 1: timestamps only – values is empty; the count of timestamps is emitted as a single aggregated value.
 //   - Shape 2: single aggregate value – one entry in values, timestamps is empty.
 //   - Shape 3: per-observation – values and timestamps have the same non-zero length;
 //     values[i] and timestamps[i] describe the same event.
@@ -98,10 +98,8 @@ func TestSampleValueTimestampShapes(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NoError(t, result.CheckValid())
-		require.Len(t, result.Sample, 3)
-		for _, s := range result.Sample {
-			require.Equal(t, []int64{1}, s.Value)
-		}
+		require.Len(t, result.Sample, 1)
+		require.Equal(t, []int64{3}, result.Sample[0].Value)
 	})
 
 	t.Run("shape 2: single aggregate value", func(t *testing.T) {

@@ -225,7 +225,8 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 // slice of per-observation pprof values according to the profiles proto spec:
 //
 //   - Shape 1 (timestamps only): values is empty; each timestamps_unix_nano
-//     entry represents one observation with an implicit value of 1.
+//     entry represents one observation with an implicit value of 1. Returns a
+//     single-element slice with the count of timestamps as the aggregated value.
 //   - Shape 2 (single aggregate): exactly one value and no timestamps; returns
 //     a single-element slice.
 //   - Shape 3 (per-observation): values and timestamps_unix_nano have equal
@@ -240,12 +241,9 @@ func sampleToPprofValues(s pprofile.Sample) ([]int64, error) {
 
 	switch {
 	case nValues == 0 && nTimestamps > 0:
-		// Shape 1: timestamps only; each observation has an implicit value of 1.
-		vals := make([]int64, nTimestamps)
-		for i := range nTimestamps {
-			vals[i] = 1
-		}
-		return vals, nil
+		// Shape 1: timestamps only; aggregate the implicit per-observation value of 1
+		// into a single count equal to the number of timestamps.
+		return []int64{int64(nTimestamps)}, nil
 	case nValues == 1 && nTimestamps == 0:
 		// Shape 2: single aggregate value.
 		return []int64{s.Values().At(0)}, nil
