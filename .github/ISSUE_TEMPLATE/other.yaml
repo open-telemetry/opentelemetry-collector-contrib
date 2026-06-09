@@ -61,7 +61,6 @@ body:
       - exporter/googlecloudpubsub
       - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
-      - exporter/googlesecops
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
@@ -192,6 +191,7 @@ body:
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/attributes
+      - processor/awsecsattributes
       - processor/cardinalityguardian
       - processor/coralogix
       - processor/cumulativetodelta
@@ -237,6 +237,7 @@ body:
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike

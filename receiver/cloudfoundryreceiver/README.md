@@ -4,7 +4,6 @@
 The Cloud Foundry Receiver connects to the RLP (Reverse Log Proxy) Gateway of the Cloud Foundry installation,
 typically available at the URL `https://log-stream.<cf-system-domain>`.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

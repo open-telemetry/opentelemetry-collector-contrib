@@ -81,9 +81,9 @@ func requireEqual(t *testing.T, a, b *Histogram[float64]) {
 
 	bstr := func(data *Buckets) string {
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintln("[@", data.Offset()))
+		fmt.Fprintln(&sb, "[@", data.Offset())
 		for i := uint32(0); i < data.Len(); i++ {
-			sb.WriteString(fmt.Sprintln(data.At(i)))
+			fmt.Fprintln(&sb, data.At(i))
 		}
 		sb.WriteString("]\n")
 		return sb.String()
