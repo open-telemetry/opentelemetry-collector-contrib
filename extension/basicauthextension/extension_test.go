@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 )
 
 var credentials = [][]string{
@@ -338,6 +338,14 @@ func TestClientAuth_AWSSecret(t *testing.T) {
 	mock := &mockSMClient{}
 	mock.setSecret(string(data))
 
+	cr := awssecretsmanager.NewClientResolver(
+		"arn:aws:secretsmanager:us-east-1:123:secret:test",
+		"us-east-1", "user", "pass", 5*time.Minute, zaptest.NewLogger(t),
+	)
+	cr.Client = mock
+
+	require.NoError(t, cr.Start(t.Context()))
+
 	ext := &basicAuthClient{
 		clientAuth: &ClientAuthSettings{
 			AWSSecret: &AWSSecretClientConfig{
@@ -348,23 +356,9 @@ func TestClientAuth_AWSSecret(t *testing.T) {
 				RefreshInterval: 5 * time.Minute,
 			},
 		},
-		logger: zaptest.NewLogger(t),
+		logger:         zaptest.NewLogger(t),
+		clientResolver: cr,
 	}
-
-	cfg := ext.clientAuth.AWSSecret
-	usernameResolver := awssecretsmanager.NewResolver(
-		cfg.SecretARN, cfg.Region, cfg.UsernameKey, cfg.RefreshInterval, ext.logger, nil,
-	)
-	usernameResolver.Client = mock
-	passwordResolver := awssecretsmanager.NewResolver(
-		cfg.SecretARN, cfg.Region, cfg.PasswordKey, cfg.RefreshInterval, ext.logger, nil,
-	)
-	passwordResolver.Client = mock
-
-	require.NoError(t, usernameResolver.Start(t.Context()))
-	require.NoError(t, passwordResolver.Start(t.Context()))
-	ext.usernameResolver = usernameResolver
-	ext.passwordResolver = passwordResolver
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
 	assert.Equal(t, "admin", ext.Username())

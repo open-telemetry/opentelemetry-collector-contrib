@@ -3,8 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basic
 go 1.25.0
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.41.12
+	github.com/aws/aws-sdk-go-v2/config v1.32.23
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.42.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.153.0
 	github.com/stretchr/testify v1.11.1
@@ -25,8 +26,6 @@ require (
 
 require (
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.41.12 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.32.23 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.22 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.28 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.28 // indirect
@@ -79,8 +78,6 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager => ../internal/awssecretsmanager
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth => ../internal/basicauth
 

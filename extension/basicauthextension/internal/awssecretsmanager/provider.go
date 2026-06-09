@@ -3,7 +3,7 @@
 
 // Package awssecretsmanager provides a ValueResolver that fetches secret values
 // from AWS Secrets Manager with periodic refresh.
-package awssecretsmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager"
+package awssecretsmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 
 import (
 	"context"

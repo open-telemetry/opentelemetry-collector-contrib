@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/awssecretsmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
@@ -141,6 +141,7 @@ type basicAuthClient struct {
 	logger           *zap.Logger
 	usernameResolver credentialsfile.ValueResolver
 	passwordResolver credentialsfile.ValueResolver
+	clientResolver   *awssecretsmanager.ClientResolver
 }
 
 func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
@@ -172,23 +173,13 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 	if ca.AWSSecret != nil {
 		cfg := ca.AWSSecret
-
-		usernameResolver := awssecretsmanager.NewResolver(
-			cfg.SecretARN, cfg.Region, cfg.UsernameKey, cfg.RefreshInterval, ba.logger, nil,
+		cr := awssecretsmanager.NewClientResolver(
+			cfg.SecretARN, cfg.Region, cfg.UsernameKey, cfg.PasswordKey, cfg.RefreshInterval, ba.logger,
 		)
-		if err := usernameResolver.Start(ctx); err != nil {
-			return fmt.Errorf("start username resolver: %w", err)
+		if err := cr.Start(ctx); err != nil {
+			return fmt.Errorf("start AWS secret resolver: %w", err)
 		}
-		ba.usernameResolver = usernameResolver
-
-		passwordResolver := awssecretsmanager.NewResolver(
-			cfg.SecretARN, cfg.Region, cfg.PasswordKey, cfg.RefreshInterval, ba.logger, nil,
-		)
-		if err := passwordResolver.Start(ctx); err != nil {
-			_ = usernameResolver.Shutdown()
-			return fmt.Errorf("start password resolver: %w", err)
-		}
-		ba.passwordResolver = passwordResolver
+		ba.clientResolver = cr
 	}
 
 	return nil
@@ -202,10 +193,16 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	if ba.passwordResolver != nil {
 		errs = append(errs, ba.passwordResolver.Shutdown())
 	}
+	if ba.clientResolver != nil {
+		errs = append(errs, ba.clientResolver.Shutdown())
+	}
 	return errors.Join(errs...)
 }
 
 func (ba *basicAuthClient) Username() string {
+	if ba.clientResolver != nil {
+		return ba.clientResolver.Username()
+	}
 	if ba.usernameResolver != nil {
 		return ba.usernameResolver.Value()
 	}
@@ -216,6 +213,9 @@ func (ba *basicAuthClient) Username() string {
 }
 
 func (ba *basicAuthClient) Password() string {
+	if ba.clientResolver != nil {
+		return ba.clientResolver.Password()
+	}
 	if ba.passwordResolver != nil {
 		return ba.passwordResolver.Value()
 	}
