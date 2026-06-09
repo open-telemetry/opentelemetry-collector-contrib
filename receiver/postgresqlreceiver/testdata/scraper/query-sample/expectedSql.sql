@@ -56,12 +56,8 @@ WHERE
 
       sa.query_start < TO_TIMESTAMP(123440.111)
       AND sa.state = 'idle'
-    )
-    AND (
-      -- Active sessions
-      sa.state = 'active'
-      -- Idle sessions that are blocking others (idle in transaction holding locks)
-      OR sa.pid IN (
+      -- Keep idle-in-transaction sessions that are blocking others
+      AND sa.pid NOT IN (
         SELECT unnest(pg_blocking_pids(pid))
         FROM   pg_stat_activity
         WHERE  cardinality(pg_blocking_pids(pid)) > 0
