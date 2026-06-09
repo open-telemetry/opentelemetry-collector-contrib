@@ -8,7 +8,7 @@ import (
 
 var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 	featuregate.WithRegisterFromVersion("v0.132.0"),
