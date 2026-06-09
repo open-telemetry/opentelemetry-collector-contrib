@@ -19,6 +19,7 @@ properties:
   log_count_attribute:
     type: string
   metadata_cardinality_limit:
+    description: MetadataCardinalityLimit limits the number of unique metadata combinations tracked simultaneously. 0 (default) means unbounded.
     type: integer
     x-customType: uint32
   metadata_keys:
