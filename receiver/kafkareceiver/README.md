@@ -5,7 +5,6 @@ The Kafka Receiver receives telemetry data from Kafka, with configurable topics 
 with the `kafkaexporter` configured with `include_metadata_keys`, The Kafka Receiver will also propagate the Kafka
 headers to the downstream pipeline, giving access to the rest of the pipeline to arbitrary metadata keys and values.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
