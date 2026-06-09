@@ -70,6 +70,7 @@ func TestFactoryMaps(t *testing.T) {
 				Namespace:         s.Namespace,
 				ComponentOverride: &overrideCopy,
 				SettingsDir:       settingsDir,
+				Pattern:           ".",
 			}
 
 			schema, err := NewParser(cfg).Parse()

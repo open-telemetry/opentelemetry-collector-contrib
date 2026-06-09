@@ -57,6 +57,7 @@ You can also go to specific component folder and run `make schemagen` directly.
 | `-o` | Given directory (or `outputFolder` from `.schemagen.yaml` if provided) | Folder that will receive the generated `*.schema.<ext>` file. |
 | `-t` | `yaml`                                                                 | Output format. Accepts `yaml`, `yml`, or `json`.              |
 | `-r` | `false`                                                                | Resolve `$ref` entries inline (see [Ref resolution](#ref-resolution)). |
+| `-p` | `.`                                                                    | Go package pattern passed to `packages.Load`. Use a fully-qualified import path (e.g. `go.opentelemetry.io/collector/receiver/otlpreceiver`) to target a specific package instead of the current directory. |
 
 The schema `$id` is derived from the Go package import path and the `$title` is the package name with the current
 run mode (`component`/`package`) appended.

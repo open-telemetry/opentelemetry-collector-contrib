@@ -33,6 +33,7 @@ type Config struct {
 	ResolveRefs       bool
 	ComponentOverride *ComponentOverride
 	SettingsDir       string
+	Pattern           string
 }
 
 var (
@@ -40,6 +41,7 @@ var (
 	outputFolder = flag.String("o", "", "Output schema folder (defaults to input folder)")
 	fileType     = flag.String("t", "yaml", "Output file type (yaml or json)")
 	resolveRefs  = flag.Bool("r", false, "Resolve external $ref entries inline in the output schema")
+	pattern      = flag.String("p", ".", "Optional pattern to match config struct package, e.g. \"go.opentelemetry.io/collector/receiver/otlpreceiver")
 )
 
 func usage() {
@@ -154,6 +156,7 @@ func ReadConfig() (*Config, error) {
 		ResolveRefs:       *resolveRefs,
 		ComponentOverride: componentOverride,
 		SettingsDir:       settingsDir,
+		Pattern:           *pattern,
 	}, nil
 }
 
