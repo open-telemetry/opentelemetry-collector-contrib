@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -151,6 +152,9 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 		active bool
 	}
 	dests := make(map[*wrappedExporter]*dest, e.loadBalancer.NumBackends())
+	// Resolving a backend hashes the trace ID under a lock; cache it so spans that share a
+	// trace ID resolve only once per batch.
+	expByTID := make(map[pcommon.TraceID]*wrappedExporter)
 
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -163,9 +167,14 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 				span := spans.At(k)
 				tid := span.TraceID()
 
-				exp, _, err := e.loadBalancer.exporterAndEndpoint(tid[:])
-				if err != nil {
-					return err
+				exp, ok := expByTID[tid]
+				if !ok {
+					var err error
+					exp, _, err = e.loadBalancer.exporterAndEndpoint(tid[:])
+					if err != nil {
+						return err
+					}
+					expByTID[tid] = exp
 				}
 
 				d, ok := dests[exp]

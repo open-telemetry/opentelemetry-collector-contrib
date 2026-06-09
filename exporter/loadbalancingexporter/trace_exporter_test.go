@@ -154,6 +154,128 @@ func TestConsumeTraces(t *testing.T) {
 	assert.NoError(t, res)
 }
 
+// TestConsumeTracesByID_MultipleTraceIDs verifies that a single ptrace.Traces carrying
+// several trace IDs - interleaved across multiple resources and scopes - is routed so that
+// every span lands on the backend selected for its trace ID, with its source resource and
+// scope preserved and no spans lost or duplicated.
+func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, traceIDRouting, p.routingKey)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Spans for the same trace ID are intentionally non-contiguous so the grouping logic is
+	// exercised. Each span records its origin resource/scope so preservation can be checked.
+	td := ptrace.NewTraces()
+	rsA := td.ResourceSpans().AppendEmpty()
+	rsA.Resource().Attributes().PutStr("res", "res-A")
+	ssA1 := rsA.ScopeSpans().AppendEmpty()
+	ssA1.Scope().SetName("scope-A")
+	ssA2 := rsA.ScopeSpans().AppendEmpty()
+	ssA2.Scope().SetName("scope-B")
+	rsB := td.ResourceSpans().AppendEmpty()
+	rsB.Resource().Attributes().PutStr("res", "res-B")
+	ssB1 := rsB.ScopeSpans().AppendEmpty()
+	ssB1.Scope().SetName("scope-C")
+
+	addSpan := func(ss ptrace.ScopeSpans, res string, tid pcommon.TraceID) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.Attributes().PutStr("origin-res", res)
+		s.Attributes().PutStr("origin-scope", ss.Scope().Name())
+	}
+	addSpan(ssA1, "res-A", pcommon.TraceID{1})
+	addSpan(ssA1, "res-A", pcommon.TraceID{2})
+	addSpan(ssA1, "res-A", pcommon.TraceID{1})
+	addSpan(ssA2, "res-A", pcommon.TraceID{3})
+	addSpan(ssB1, "res-B", pcommon.TraceID{2})
+	addSpan(ssB1, "res-B", pcommon.TraceID{4})
+	addSpan(ssB1, "res-B", pcommon.TraceID{1})
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	totalSpans := 0
+	spansPerTID := map[pcommon.TraceID]int{}
+	for endpoint, got := range received {
+		rss := got.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			rs := rss.At(i)
+			resAttr, ok := rs.Resource().Attributes().Get("res")
+			require.True(t, ok)
+			sss := rs.ScopeSpans()
+			for j := 0; j < sss.Len(); j++ {
+				ss := sss.At(j)
+				spans := ss.Spans()
+				for k := 0; k < spans.Len(); k++ {
+					span := spans.At(k)
+					totalSpans++
+
+					// span landed on the backend selected for its trace ID
+					tid := span.TraceID()
+					assert.Equal(t, endpointWithPort(lb.ring.endpointFor(tid[:])), endpoint)
+
+					// the span's source resource and scope traveled with it
+					originRes, _ := span.Attributes().Get("origin-res")
+					originScope, _ := span.Attributes().Get("origin-scope")
+					assert.Equal(t, resAttr.Str(), originRes.Str())
+					assert.Equal(t, ss.Scope().Name(), originScope.Str())
+
+					spansPerTID[tid]++
+				}
+			}
+		}
+	}
+
+	assert.Equal(t, 7, totalSpans)
+	assert.Equal(t, map[pcommon.TraceID]int{
+		{1}: 3,
+		{2}: 2,
+		{3}: 1,
+		{4}: 1,
+	}, spansPerTID)
+}
+
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
 func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
