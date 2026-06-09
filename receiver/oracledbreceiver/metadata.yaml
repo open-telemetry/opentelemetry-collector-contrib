@@ -400,35 +400,6 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.call.recursive:
-    description: Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{calls}"
-  oracledb.call.recursive_cpu_time:
-    description: Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
-  oracledb.call.user:
-    description: Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{calls}"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
@@ -497,6 +468,15 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.db.time:
+    description: Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -507,15 +487,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
-  oracledb.db_time:
-    description: Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
   oracledb.ddl_statements_parallelized:
     description: Number of DDL statements that were executed in parallel
     enabled: false
@@ -913,6 +884,25 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recursive_call.count:
+    description: Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{calls}"
+  oracledb.recursive_call.cpu.time:
+    description: Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.recycle_bin.limit:
     description: Total size of the recycle bin.
     enabled: false
@@ -938,7 +928,7 @@ metrics:
       input_type: string
     unit: "{operations}"
     attributes: [oracledb.scan.type]
-  oracledb.scan.table:
+  oracledb.scan.table.operations:
     description: Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
     enabled: false
     stability: development
@@ -959,8 +949,8 @@ metrics:
       value_type: int
       input_type: string
     unit: "{rows}"
-  oracledb.session.logon:
-    description: Current number of active session logons. Sourced from v$sysstat name logons current.
+  oracledb.session.active:
+    description: Current number of active sessions. Sourced from v$sysstat name logons current.
     enabled: false
     stability: development
     gauge:
@@ -1089,6 +1079,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{transactions}"
+  oracledb.user_call.count:
+    description: Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{calls}"
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true

@@ -3,12 +3,6 @@ all_set:
   metrics:
     oracledb.buffer_cache.utilization:
       enabled: true
-    oracledb.call.recursive:
-      enabled: true
-    oracledb.call.recursive_cpu_time:
-      enabled: true
-    oracledb.call.user:
-      enabled: true
     oracledb.consistent_gets:
       enabled: true
     oracledb.cpu_time:
@@ -25,9 +19,9 @@ all_set:
       enabled: true
     oracledb.database.wait.utilization:
       enabled: true
-    oracledb.db_block_gets:
+    oracledb.db.time:
       enabled: true
-    oracledb.db_time:
+    oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
       enabled: true
@@ -120,6 +114,10 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recursive_call.count:
+      enabled: true
+    oracledb.recursive_call.cpu.time:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo_allocation.utilization:
@@ -127,12 +125,12 @@ all_set:
     oracledb.scan.index_fast_full:
       enabled: true
       attributes: ["oracledb.scan.type"]
-    oracledb.scan.table:
+    oracledb.scan.table.operations:
       enabled: true
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.logon:
+    oracledb.session.active:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -167,6 +165,8 @@ all_set:
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
+      enabled: true
+    oracledb.user_call.count:
       enabled: true
     oracledb.user_commits:
       enabled: true
@@ -200,12 +200,6 @@ reaggregate_set:
   metrics:
     oracledb.buffer_cache.utilization:
       enabled: true
-    oracledb.call.recursive:
-      enabled: true
-    oracledb.call.recursive_cpu_time:
-      enabled: true
-    oracledb.call.user:
-      enabled: true
     oracledb.consistent_gets:
       enabled: true
     oracledb.cpu_time:
@@ -222,9 +216,9 @@ reaggregate_set:
       enabled: true
     oracledb.database.wait.utilization:
       enabled: true
-    oracledb.db_block_gets:
+    oracledb.db.time:
       enabled: true
-    oracledb.db_time:
+    oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
       enabled: true
@@ -317,6 +311,10 @@ reaggregate_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recursive_call.count:
+      enabled: true
+    oracledb.recursive_call.cpu.time:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo_allocation.utilization:
@@ -324,12 +322,12 @@ reaggregate_set:
     oracledb.scan.index_fast_full:
       enabled: true
       attributes: []
-    oracledb.scan.table:
+    oracledb.scan.table.operations:
       enabled: true
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.logon:
+    oracledb.session.active:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -365,6 +363,8 @@ reaggregate_set:
       enabled: true
     oracledb.transactions.usage:
       enabled: true
+    oracledb.user_call.count:
+      enabled: true
     oracledb.user_commits:
       enabled: true
     oracledb.user_rollbacks:
@@ -397,12 +397,6 @@ none_set:
   metrics:
     oracledb.buffer_cache.utilization:
       enabled: false
-    oracledb.call.recursive:
-      enabled: false
-    oracledb.call.recursive_cpu_time:
-      enabled: false
-    oracledb.call.user:
-      enabled: false
     oracledb.consistent_gets:
       enabled: false
     oracledb.cpu_time:
@@ -419,9 +413,9 @@ none_set:
       enabled: false
     oracledb.database.wait.utilization:
       enabled: false
-    oracledb.db_block_gets:
+    oracledb.db.time:
       enabled: false
-    oracledb.db_time:
+    oracledb.db_block_gets:
       enabled: false
     oracledb.ddl_statements_parallelized:
       enabled: false
@@ -514,6 +508,10 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
+    oracledb.recursive_call.count:
+      enabled: false
+    oracledb.recursive_call.cpu.time:
+      enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
     oracledb.redo_allocation.utilization:
@@ -521,12 +519,12 @@ none_set:
     oracledb.scan.index_fast_full:
       enabled: false
       attributes: ["oracledb.scan.type"]
-    oracledb.scan.table:
+    oracledb.scan.table.operations:
       enabled: false
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: false
-    oracledb.session.logon:
+    oracledb.session.active:
       enabled: false
     oracledb.sessions.limit:
       enabled: false
@@ -561,6 +559,8 @@ none_set:
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:
+      enabled: false
+    oracledb.user_call.count:
       enabled: false
     oracledb.user_commits:
       enabled: false

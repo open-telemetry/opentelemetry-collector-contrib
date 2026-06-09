@@ -427,9 +427,9 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 
 func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbCallRecursive.Enabled = true
-	cfg.Metrics.OracledbCallRecursiveCPUTime.Enabled = true
-	cfg.Metrics.OracledbCallUser.Enabled = true
+	cfg.Metrics.OracledbRecursiveCallCount.Enabled = true
+	cfg.Metrics.OracledbRecursiveCallCPUTime.Enabled = true
+	cfg.Metrics.OracledbUserCallCount.Enabled = true
 	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
 	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
 	cfg.Metrics.OracledbCursorOpen.Enabled = true
@@ -438,9 +438,9 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg.Metrics.OracledbLobOperations.Enabled = true
 	cfg.Metrics.OracledbParseTime.Enabled = true
 	cfg.Metrics.OracledbScanIndexFastFull.Enabled = true
-	cfg.Metrics.OracledbScanTable.Enabled = true
+	cfg.Metrics.OracledbScanTableOperations.Enabled = true
 	cfg.Metrics.OracledbScanTableRows.Enabled = true
-	cfg.Metrics.OracledbSessionLogon.Enabled = true
+	cfg.Metrics.OracledbSessionActive.Enabled = true
 	cfg.Metrics.OracledbSortOperations.Enabled = true
 	cfg.Metrics.OracledbSortRows.Enabled = true
 
@@ -505,9 +505,9 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	}
 
 	// Table-scan family (oracledb.scan.type attribute)
-	assert.Equal(t, int64(100), gotInt["oracledb.scan.table"]["oracledb.scan.type=direct_read"])
-	assert.Equal(t, int64(200), gotInt["oracledb.scan.table"]["oracledb.scan.type=long_tables"])
-	assert.Equal(t, int64(50), gotInt["oracledb.scan.table"]["oracledb.scan.type=rowid_ranges"])
+	assert.Equal(t, int64(100), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=direct_read"])
+	assert.Equal(t, int64(200), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=long_tables"])
+	assert.Equal(t, int64(50), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=rowid_ranges"])
 	assert.Equal(t, int64(999999), gotInt["oracledb.scan.table.rows"][""])
 
 	// Index fast full scans (oracledb.scan.type attribute)
@@ -537,11 +537,11 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	assert.Equal(t, int64(128), gotInt["oracledb.cursor.open"][""])
 
 	// Call family
-	assert.Equal(t, int64(987654), gotInt["oracledb.call.user"][""])
-	assert.Equal(t, int64(123456), gotInt["oracledb.call.recursive"][""])
+	assert.Equal(t, int64(987654), gotInt["oracledb.user_call.count"][""])
+	assert.Equal(t, int64(123456), gotInt["oracledb.recursive_call.count"][""])
 
-	// Session logon (gauge)
-	assert.Equal(t, int64(42), gotInt["oracledb.session.logon"][""])
+	// Session active (gauge)
+	assert.Equal(t, int64(42), gotInt["oracledb.session.active"][""])
 
 	// Time metrics: raw v$sysstat values are centiseconds; scraper converts to seconds (/100).
 	// parse time cpu     raw 1500 cs  -> 15 s
@@ -551,8 +551,8 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	const delta = 0.01
 	assert.InDelta(t, 15.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=cpu"], delta)
 	assert.InDelta(t, 30.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=elapsed"], delta)
-	assert.InDelta(t, 50.0, gotFloat["oracledb.call.recursive_cpu_time"][""], delta)
-	assert.InDelta(t, 600.0, gotFloat["oracledb.db_time"][""], delta)
+	assert.InDelta(t, 50.0, gotFloat["oracledb.recursive_call.cpu.time"][""], delta)
+	assert.InDelta(t, 600.0, gotFloat["oracledb.db.time"][""], delta)
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

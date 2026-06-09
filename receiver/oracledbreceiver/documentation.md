@@ -249,30 +249,6 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### oracledb.call.recursive
-
-Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {calls} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.call.recursive_cpu_time
-
-Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
-### oracledb.call.user
-
-Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {calls} | Sum | Int | Cumulative | true | Development |
-
 ### oracledb.consistent_gets
 
 Number of times a consistent read was requested for a block from the buffer cache.
@@ -329,6 +305,14 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.db.time
+
+Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.db_block_gets
 
 Number of times a current block was requested from the buffer cache.
@@ -336,14 +320,6 @@ Number of times a current block was requested from the buffer cache.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.db_time
-
-Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
 
 ### oracledb.ddl_statements_parallelized
 
@@ -597,6 +573,22 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.recursive_call.count
+
+Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {calls} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.recursive_call.cpu.time
+
+Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.recycle_bin.limit
 
 Total size of the recycle bin.
@@ -627,7 +619,7 @@ Cumulative count of index fast full scans by kind. Sourced from v$sysstat names 
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.scan.type | Kind of table or index scan reported by Oracle. | Str: ``direct_read``, ``full``, ``long_tables``, ``rowid_ranges`` | Recommended | - |
 
-### oracledb.scan.table
+### oracledb.scan.table.operations
 
 Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
 
@@ -649,9 +641,9 @@ Total number of rows returned by full-table scans. Sourced from v$sysstat name t
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {rows} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.session.logon
+### oracledb.session.active
 
-Current number of active session logons. Sourced from v$sysstat name logons current.
+Current number of active sessions. Sourced from v$sysstat name logons current.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -739,6 +731,14 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### oracledb.user_call.count
+
+Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {calls} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

@@ -20,17 +20,18 @@ subtext: |
   surface previously discarded v$sysstat counters for SQL workload analysis. The
   schema follows the dotted-namespace pattern established in PR #48335 and reuses
   the disk.io.direction attribute introduced there:
-    - oracledb.scan.table, oracledb.scan.table.rows, oracledb.scan.index_fast_full
-      (attribute: oracledb.scan.type)
+    - oracledb.scan.table.operations, oracledb.scan.table.rows,
+      oracledb.scan.index_fast_full (attribute: oracledb.scan.type)
     - oracledb.enqueue.operations (attribute: oracledb.enqueue.kind)
     - oracledb.lob.operations (attribute: disk.io.direction, reused from PR #48335)
     - oracledb.parse.time (attribute: oracledb.parse.kind)
     - oracledb.sort.operations (attribute: oracledb.sort.medium), oracledb.sort.rows
     - oracledb.cursor.cache.hits, oracledb.cursor.cache.size, oracledb.cursor.open
-    - oracledb.call.user, oracledb.call.recursive, oracledb.call.recursive_cpu_time
-    - oracledb.db_time, oracledb.session.logon
-  Time-based metrics (oracledb.parse.time, oracledb.call.recursive_cpu_time,
-  oracledb.db_time) report seconds; the raw centisecond values from v$sysstat are
+    - oracledb.user_call.count, oracledb.recursive_call.count,
+      oracledb.recursive_call.cpu.time
+    - oracledb.db.time, oracledb.session.active
+  Time-based metrics (oracledb.parse.time, oracledb.recursive_call.cpu.time,
+  oracledb.db.time) report seconds; the raw centisecond values from v$sysstat are
   divided by 100 in the scraper. No new SQL queries are introduced; the existing
   SELECT * FROM v$sysstat scrape already returns all required rows, so there is
   zero additional load on monitored Oracle instances.

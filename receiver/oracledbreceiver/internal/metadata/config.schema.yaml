@@ -4,27 +4,6 @@ $defs:
     description: MetricsConfig provides config for oracledb metrics.
     type: object
     properties:
-      oracledb.call.recursive:
-        description: "OracledbCallRecursiveMetricConfig provides config for the oracledb.call.recursive metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.call.recursive_cpu_time:
-        description: "OracledbCallRecursiveCPUTimeMetricConfig provides config for the oracledb.call.recursive_cpu_time metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.call.user:
-        description: "OracledbCallUserMetricConfig provides config for the oracledb.call.user metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
       oracledb.consistent_gets:
         description: "OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric."
         type: object
@@ -67,15 +46,15 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.db_block_gets:
-        description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
+      oracledb.db.time:
+        description: "OracledbDbTimeMetricConfig provides config for the oracledb.db.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      oracledb.db_time:
-        description: "OracledbDbTimeMetricConfig provides config for the oracledb.db_time metric."
+      oracledb.db_block_gets:
+        description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
         type: object
         properties:
           enabled:
@@ -424,6 +403,20 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recursive_call.count:
+        description: "OracledbRecursiveCallCountMetricConfig provides config for the oracledb.recursive_call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.recursive_call.cpu.time:
+        description: "OracledbRecursiveCallCPUTimeMetricConfig provides config for the oracledb.recursive_call.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -454,8 +447,8 @@ $defs:
                 - "oracledb.scan.type"
             default:
               - "oracledb.scan.type"
-      oracledb.scan.table:
-        description: "OracledbScanTableMetricConfig provides config for the oracledb.scan.table metric."
+      oracledb.scan.table.operations:
+        description: "OracledbScanTableOperationsMetricConfig provides config for the oracledb.scan.table.operations metric."
         type: object
         properties:
           enabled:
@@ -484,8 +477,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.session.logon:
-        description: "OracledbSessionLogonMetricConfig provides config for the oracledb.session.logon metric."
+      oracledb.session.active:
+        description: "OracledbSessionActiveMetricConfig provides config for the oracledb.session.active metric."
         type: object
         properties:
           enabled:
@@ -652,6 +645,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.user_call.count:
+        description: "OracledbUserCallCountMetricConfig provides config for the oracledb.user_call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.user_commits:
         description: "OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric."
         type: object
