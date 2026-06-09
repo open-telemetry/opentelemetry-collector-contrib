@@ -679,6 +679,39 @@ func TestProcessorPreservesOutlierSpans(t *testing.T) {
 	}
 }
 
+// TestProcessorSkipsAggregationWhenTooFewNormalSpans tests that aggregation is skipped
+// when preserving outliers would leave too few normal spans to aggregate.
+func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 11
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 0 // preserve all outliers
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.5
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.5
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// 13 leaf spans: 10 normal + 3 outliers. After preserving outliers,
+	// only 10 normal spans remain (< MinSpansToAggregate=11), so aggregation is skipped.
+	td := createTestTraceWithManyOutliers(t)
+	initialSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, initialSpanCount, countSpans(td), "no spans should be aggregated")
+	_, found := findSummarySpanByName(td, "SELECT")
+	assert.False(t, found, "summary span should not be created when normal spans drop below threshold")
+}
+
 // Helper functions
 
 func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
