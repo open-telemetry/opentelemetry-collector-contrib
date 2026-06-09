@@ -9,8 +9,17 @@ status:
   class: pkg
 
 feature_gates:
-  - id: pkg.translator.zipkin.DontEmitV0NetworkConventions
+  - id: pkg.translator.zipkin.DontEmitV0HttpConventions
     stage: alpha
+    description: >-
+      When enabled, the Zipkin translator no longer emits the deprecated
+      http.status_code attribute (semconv v1.25.0).
+      Requires pkg.translator.zipkin.EmitV1HttpConventions to also be enabled.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+    skip_strict_validation: true
+  - id: pkg.translator.zipkin.DontEmitV0NetworkConventions
+    stage: beta
     description: >-
       When enabled, the Zipkin translator no longer emits the deprecated
       net.host.ip, net.peer.ip, and peer.service (semconv v1.12.0)
@@ -18,8 +27,27 @@ feature_gates:
       Requires pkg.translator.zipkin.EmitV1NetworkConventions to also be enabled.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
-  - id: pkg.translator.zipkin.EmitV1NetworkConventions
+    skip_strict_validation: true
+  - id: pkg.translator.zipkin.DontEmitV0ScopeConventions
     stage: alpha
+    description: >-
+      When enabled, the Zipkin translator no longer emits the deprecated
+      otel.library.name and otel.library.version attributes (semconv v1.25.0).
+      Requires pkg.translator.zipkin.EmitV1ScopeConventions to also be enabled.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+    skip_strict_validation: true
+  - id: pkg.translator.zipkin.EmitV1HttpConventions
+    stage: alpha
+    description: >-
+      When enabled, the Zipkin translator emits http.response.status_code
+      (semconv v1.40.0) instead of the deprecated http.status_code
+      (semconv v1.25.0).
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+    skip_strict_validation: true
+  - id: pkg.translator.zipkin.EmitV1NetworkConventions
+    stage: beta
     description: >-
       When enabled, the Zipkin translator emits network.local.address and
       network.peer.address and service.peer.name (semconv v1.40.0)
@@ -27,3 +55,13 @@ feature_gates:
       peer.service (semconv v1.12.0).
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
+    skip_strict_validation: true
+  - id: pkg.translator.zipkin.EmitV1ScopeConventions
+    stage: alpha
+    description: >-
+      When enabled, the Zipkin translator emits otel.scope.name and
+      otel.scope.version (semconv v1.40.0) instead of the deprecated
+      otel.library.name and otel.library.version (semconv v1.25.0).
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+    skip_strict_validation: true

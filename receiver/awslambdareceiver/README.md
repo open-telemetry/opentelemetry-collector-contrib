@@ -73,7 +73,7 @@ This metadata is added to the request context and can be accessed by any downstr
 > Static metadata such as `cloud.provider` are not available through `client.Info`.
 > These can be added using processors (for example, the resource processor).
 
-### CloudWatch Logs subscription
+### CloudWatch Logs subscription handling
 
 CloudWatch Logs events are handled in the following manner:
 
@@ -82,6 +82,19 @@ CloudWatch Logs events are handled in the following manner:
 - Decode payload using the configured encoding extension
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
+
+The following metadata is available through `client.Info` for CloudWatch Logs events.
+This metadata is added to the request context and can be accessed by any downstream component in the pipeline (for example, processors):
+
+| Metadata Key         | Description                |
+|----------------------|----------------------------|
+| cloud.account.id     | AWS account ID             |
+| aws.log.group.names  | CloudWatch log group name  |
+| aws.log.stream.names | CloudWatch log stream name |
+
+> [!NOTE]
+> Static metadata such as `cloud.provider` are not available through `client.Info`.
+> These can be added using processors (for example, the resource processor).
 
 ## Deployment
 
@@ -133,7 +146,7 @@ Write a collector configuration:
 ```shell
 cat > collector-config.yaml << 'EOF'
 receivers:
-  awslambda:
+  aws_lambda:
 
 exporters:
   debug:
@@ -142,7 +155,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [awslambda]
+      receivers: [aws_lambda]
       exporters: [debug]
 EOF
 
@@ -233,7 +246,7 @@ Given below are example configurations for various use cases.
 
 ```yaml
 receivers:
-  awslambda:
+  aws_lambda:
     s3:
       encoding: aws_logs_encoding
 
@@ -252,7 +265,7 @@ service:
     - aws_logs_encoding
   pipelines:
     logs:
-      receivers: [awslambda]
+      receivers: [aws_lambda]
       exporters: [otlp_http]
 ```
 
@@ -264,7 +277,7 @@ Parsed logs are forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ```yaml
 receivers:
-  awslambda:
+  aws_lambda:
     s3:
       encoding: aws_logs_encoding
 
@@ -283,7 +296,7 @@ service:
     - aws_logs_encoding
   pipelines:
     logs:
-      receivers: [awslambda]
+      receivers: [aws_lambda]
       exporters: [otlp_http]
 ```
 
@@ -332,7 +345,7 @@ extensions:
     format: cloudtrail
 
 receivers:
-  awslambda:
+  aws_lambda:
     s3:
       encodings:
         - name: vpcflow
@@ -367,7 +380,7 @@ For any name not listed above, `path_pattern` must be specified explicitly.
 
 ```yaml
 receivers:
-  awslambda:
+  aws_lambda:
 
 exporters:
   otlp_http:
@@ -376,7 +389,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [awslambda]
+      receivers: [aws_lambda]
       exporters: [otlp_http]
 ```
 
@@ -388,7 +401,7 @@ These logs then get forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ```yaml
 receivers:
-  awslambda:
+  aws_lambda:
 
 exporters:
   otlp_http:
@@ -397,7 +410,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [awslambda]
+      receivers: [aws_lambda]
       exporters: [otlp_http]
 ```
 
@@ -448,7 +461,7 @@ To enable this feature, set the `failure_bucket_arn` configuration to the ARN of
 
 ```yaml
 receivers:
-  awslambda:
+  aws_lambda:
     s3:
       encoding: aws_logs_encoding
     failure_bucket_arn: "arn:aws:s3:::example"

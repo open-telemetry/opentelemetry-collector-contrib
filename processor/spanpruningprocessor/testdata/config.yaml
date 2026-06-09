@@ -16,3 +16,11 @@ spanpruning/custom:
     - "100ms"
     - "500ms"
     - "1s"
+
+spanpruning/attribute_loss:
+  group_by_attributes:
+    - "db.operation"
+  min_spans_to_aggregate: 4
+  aggregation_attribute_prefix: "aggregation."
+  enable_attribute_loss_analysis: true
+  attribute_loss_exemplar_sample_rate: 0.25

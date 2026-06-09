@@ -34,7 +34,7 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.NtpFrequencyOffset.Enabled = false
 	mbc.Metrics.NtpSkew.Enabled = true
 	mbc.Metrics.NtpStratum.Enabled = false

@@ -168,10 +168,10 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 
 	factory := otlpreceiver.NewFactory()
 	config := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	if err := insertDefault(&config.GRPC); err != nil {
+	if err := insertDefault(&config.Protocols.GRPC); err != nil {
 		return nil, err
 	}
-	config.GRPC.Get().NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
+	config.Protocols.GRPC.Get().NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
 
 	params := receiver.Settings{
 		ID:                component.NewIDWithName(factory.Type(), jmx.params.ID.String()),

@@ -7,7 +7,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [portertech]
+    active: [portertech, csmarchbanks]
 
 telemetry:
   metrics:
@@ -27,6 +27,42 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    processor_spanpruning_leaf_attribute_diversity_loss:
+      enabled: false
+      description: Attribute values lost due to diversity per leaf aggregation
+      unit: "{values}"
+      stability: development
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_leaf_attribute_loss:
+      enabled: false
+      description: Attribute keys lost due to absence per leaf aggregation
+      unit: "{keys}"
+      stability: development
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_parent_attribute_diversity_loss:
+      enabled: false
+      description: Attribute values lost due to diversity per parent aggregation
+      unit: "{values}"
+      stability: development
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_parent_attribute_loss:
+      enabled: false
+      description: Attribute keys lost due to absence per parent aggregation
+      unit: "{keys}"
+      stability: development
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
 
     processor_spanpruning_processing_duration:
       enabled: true

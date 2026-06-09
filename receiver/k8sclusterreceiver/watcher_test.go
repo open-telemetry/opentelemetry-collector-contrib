@@ -250,13 +250,13 @@ func TestConditionalInformerSetup(t *testing.T) {
 	}{
 		{
 			name:   "default_config_no_pv_pvc",
-			config: &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config: &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			wantPV: false, wantPVC: false,
 		},
 		{
 			name: "pv_phase_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
 				return cfg
 			}(),
@@ -265,7 +265,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pv_capacity_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
 				return cfg
 			}(),
@@ -274,7 +274,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_phase_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
 				return cfg
 			}(),
@@ -283,7 +283,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_capacity_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
 				return cfg
 			}(),
@@ -292,7 +292,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "pvc_request_metric_enabled",
 			config: func() *Config {
-				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
 				return cfg
 			}(),
@@ -301,14 +301,14 @@ func TestConditionalInformerSetup(t *testing.T) {
 		{
 			name: "metadata_exporters_configured",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				MetadataExporters:    []string{"signalfx"},
 			},
 			wantPV: true, wantPVC: true,
 		},
 		{
 			name:           "entity_log_consumer_set",
-			config:         &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config:         &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			entityConsumer: consumertest.NewNop(),
 			wantPV:         true, wantPVC: true,
 		},

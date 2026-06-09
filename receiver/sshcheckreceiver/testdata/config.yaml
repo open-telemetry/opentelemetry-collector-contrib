@@ -1,5 +1,5 @@
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: notdefault:1313
     username: notdefault_username
     password: notdefault_password
@@ -17,6 +17,6 @@ exporters:
 service:
   pipelines:
     metrics:
-     receivers: [sshcheck]
+     receivers: [ssh_check]
      processors: [nop]
      exporters: [nop]

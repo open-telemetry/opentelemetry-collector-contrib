@@ -4,18 +4,18 @@ go 1.25.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.6.0
+	github.com/jaegertracing/jaeger-idl v0.9.0
 	github.com/kr/pretty v0.3.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.154.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.56.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/otel v1.43.0
+	go.opentelemetry.io/collector/pdata v1.60.0
+	go.opentelemetry.io/otel v1.44.0
 	go.uber.org/goleak v1.3.0
 )
 
 require (
-	github.com/apache/thrift v0.21.0 // indirect
+	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -26,14 +26,14 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260415114935-307e3abdbae9 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.150.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.60.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.154.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
-	google.golang.org/grpc v1.80.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

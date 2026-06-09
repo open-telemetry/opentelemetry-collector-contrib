@@ -31,7 +31,7 @@ type StackPayload struct {
 	StackFrames     []StackFrame
 	Executables     []ExeMetadata
 
-	HostMetadata HostResourceData
+	ResourceAttrs ResourceData
 
 	UnsymbolizedLeafFrames  []UnsymbolizedLeafFrame
 	UnsymbolizedExecutables []UnsymbolizedExecutable
@@ -83,16 +83,16 @@ type StackFrame struct {
 	FunctionOffset []int32  `json:"Stackframe.function.offset,omitempty"`
 }
 
-// HostResourceData represents the resources metadata related to a host for the
+// ResourceData represents the resources metadata related to a sample for the
 // profiling-hosts index.
-type HostResourceData struct {
+type ResourceData struct {
 	EcsVersion
 	HostID string `json:"host.id"`
 	Data   map[string]string
 }
 
 // MarshalJSON customizes the JSON marshaling for HostResourceData.
-func (h HostResourceData) MarshalJSON() ([]byte, error) {
+func (h ResourceData) MarshalJSON() ([]byte, error) {
 	// Create a temporary map to hold the combined data
 	combinedData := make(map[string]any)
 

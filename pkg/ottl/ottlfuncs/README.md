@@ -551,12 +551,16 @@ Available Converters:
 - [ToSnakeCase](#tosnakecase)
 - [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
+- [Trim](#trim)
+- [TrimPrefix](#trimprefix)
+- [TrimSuffix](#trimsuffix) 
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
+- [URL](#url)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
 - [UUIDv7](#UUIDv7)
@@ -782,6 +786,7 @@ The `ConvertTextToElementsXML` Converter returns an edited version of an XML str
 
 `target` is a Getter that returns a string. This string should be in XML format.
 If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+Conversion is bounded by a maximum XML nesting depth of 10,000 levels; deeper documents return an error.
 
 `xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
 selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
@@ -1816,6 +1821,8 @@ This Converter should be preferred over `ParseXML` when minor semantic details (
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
 a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
 
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
+
 See other functions which may be useful for preparing XML documents:
 
 - [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
@@ -2378,11 +2385,11 @@ Examples:
 
 ### Substring
 
-`Substring(target, start, length)`
+`Substring(target, start, length, Optional[utf8_safe])`
 
 The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `start` and `length` are `int64`.
+`target` is a string. `start` and `length` are byte offsets as `int64`. `utf8_safe` is an optional boolean (default: `false`); when `true`, a mid-character `start` advances to the next UTF-8 boundary and a mid-character end (`start+length`) backs up to the previous one, so multi-byte characters are never split, and the result may be shorter than `length` bytes.
 
 If `target` is not a string or is nil, an error is returned.
 If the start/length exceed the length of the `target` string, an error is returned.
@@ -2390,6 +2397,7 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+- `Substring("一二三", 0, 4, true)`
 
 ### Time
 

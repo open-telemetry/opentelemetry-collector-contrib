@@ -285,7 +285,7 @@ func Test_ParseXML(t *testing.T) {
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
-						const depth = maxElementDepth + 2
+						const depth = maxXMLElementDepth + 2
 						return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
 					},
 				},
