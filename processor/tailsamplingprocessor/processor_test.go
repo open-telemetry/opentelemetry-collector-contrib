@@ -1458,6 +1458,61 @@ func TestDropLargeTraces(t *testing.T) {
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
+// TestSetMaxTraceSizeDrainedBeforeEvaluation is a regression test for the fix
+// that drains pending configuration updates (SetMaximumTraceSizeBytes) before
+// processing incoming trace batches in the iter loop. Without the drain, Go's
+// non-deterministic select could pick the workChan case before the config
+// update channel, causing traces to be incorrectly dropped as too large even
+// though SetMaximumTraceSizeBytes had already been called to raise the limit.
+func TestSetMaxTraceSizeDrainedBeforeEvaluation(t *testing.T) {
+	controller := newTestTSPController()
+
+	largeValue := strings.Repeat("x", 2048) // clearly > 1024 bytes
+
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(10),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   1024, // Start with a small limit.
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = processor.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	// Raise the limit so the large trace should be accepted.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20) // 1 MB
+
+	// Send a large trace that exceeds the original 1024-byte limit but is
+	// well within the new 1 MB limit. Because the drain logic in iter
+	// applies config updates before evaluating the batch, this trace must
+	// not be dropped.
+	largeTrace := ptrace.NewTraces()
+	rs := largeTrace.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	sp := ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{9, 9, 9, 9}))
+	sp.Attributes().PutStr("payload", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeTrace))
+	controller.waitForTick() // First tick closes current batch.
+	controller.waitForTick() // Second tick evaluates it.
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 1, "large trace should be sampled after SetMaximumTraceSizeBytes raised the limit")
+}
+
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
 // both the idToTrace map as well as the deleteTraceQueue.
 func TestDeleteQueueCleared(t *testing.T) {
