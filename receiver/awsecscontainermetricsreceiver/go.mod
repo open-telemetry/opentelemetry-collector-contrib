@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecs
 go 1.25.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.10
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.153.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.153.0
+	github.com/aws/aws-sdk-go-v2 v1.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.154.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.60.0
 	go.opentelemetry.io/collector/component/componenttest v0.154.0
@@ -24,7 +24,7 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aws/smithy-go v1.26.0 // indirect
+	github.com/aws/smithy-go v1.27.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect

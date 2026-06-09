@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: extension/text_encoding
-note: Fix text encoding log unmarshalling for large messages when no unmarshaling separator is configured.
-issues: [48696]
