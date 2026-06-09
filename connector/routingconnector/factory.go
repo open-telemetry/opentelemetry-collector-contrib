@@ -29,8 +29,12 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
+	defaultErrorMode := ottl.PropagateError
+	if metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		defaultErrorMode = ottl.IgnoreError
+	}
 	return &Config{
-		ErrorMode: ottl.PropagateError,
+		ErrorMode: defaultErrorMode,
 	}
 }
 

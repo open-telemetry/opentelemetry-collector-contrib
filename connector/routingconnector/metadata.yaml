@@ -11,6 +11,13 @@ status:
     emeritus: [jpkrohling]
     seeking_new: true
 
+feature_gates:
+  - id: "connector.routing.defaultErrorModeIgnore"
+    description: Changes the default error_mode of the routing connector from propagate to ignore
+    stage: alpha
+    from_version: v0.152.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418
+
 tests:
   skip_lifecycle: true
   skip_shutdown: true
