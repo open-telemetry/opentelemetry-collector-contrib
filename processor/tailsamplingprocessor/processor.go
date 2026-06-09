@@ -162,7 +162,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 }
 
 func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
@@ -1180,7 +1180,7 @@ func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []
 			sp = scope.Spans().AppendEmpty()
 		}
 
-		spanAndScope.span.CopyTo(sp)
+		spanAndScope.span.MoveTo(sp)
 		if sp.ParentSpanID().IsEmpty() {
 			rootSpan = &sp
 		}
