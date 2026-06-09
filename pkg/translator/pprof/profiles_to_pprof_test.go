@@ -128,4 +128,51 @@ func TestSampleValueTimestampShapes(t *testing.T) {
 		require.Equal(t, []int64{20}, result.Sample[1].Value)
 		require.Equal(t, []int64{30}, result.Sample[2].Value)
 	})
+
+	t.Run("invalid: multiple values without timestamps", func(t *testing.T) {
+		// nValues > 1 with nTimestamps == 0 does not match any valid shape and
+		// must be rejected. Build the proto directly to bypass the conformance
+		// checker, which would otherwise prevent this invalid state from being
+		// constructed.
+		dict := &otlpprofiles.ProfilesDictionary{
+			StringTable:  []string{"", "cpu", "nanoseconds"},
+			MappingTable: []*otlpprofiles.Mapping{{}},
+			FunctionTable: []*otlpprofiles.Function{
+				{},
+				{NameStrindex: 1, SystemNameStrindex: 1, FilenameStrindex: 1},
+			},
+			LocationTable: []*otlpprofiles.Location{
+				{},
+				{Lines: []*otlpprofiles.Line{{FunctionIndex: 1}}},
+			},
+			StackTable: []*otlpprofiles.Stack{
+				{},
+				{LocationIndices: []int32{1}},
+			},
+		}
+		data := &otlpprofiles.ProfilesData{
+			Dictionary: dict,
+			ResourceProfiles: []*otlpprofiles.ResourceProfiles{{
+				ScopeProfiles: []*otlpprofiles.ScopeProfiles{{
+					Profiles: []*otlpprofiles.Profile{{
+						SampleType: &otlpprofiles.ValueType{TypeStrindex: 1, UnitStrindex: 2},
+						PeriodType: &otlpprofiles.ValueType{TypeStrindex: 1, UnitStrindex: 2},
+						Period:     1,
+						Samples: []*otlpprofiles.Sample{{
+							StackIndex: 1,
+							Values:     []int64{1, 2}, // two values, no timestamps: invalid
+						}},
+					}},
+				}},
+			}},
+		}
+		b, err := proto.Marshal(data)
+		require.NoError(t, err)
+		p, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles(b)
+		require.NoError(t, err)
+
+		_, err = ConvertPprofileToPprof(&p)
+
+		require.ErrorContains(t, err, "invalid sample")
+	})
 }
