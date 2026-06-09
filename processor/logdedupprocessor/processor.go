@@ -187,6 +187,11 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
 		}
 	} else {
+		if cfg.MetadataCardinalityLimit == 0 {
+			settings.Logger.Warn("metadata_keys is set but metadata_cardinality_limit is 0; the number of metadata combinations is unbounded, which may lead to unbounded memory growth. Set metadata_cardinality_limit to a positive value to cap it.",
+				zap.Strings("metadata_keys", metadataKeys),
+			)
+		}
 		agg = &multiShardAggregator{
 			metadataKeys:             metadataKeys,
 			metadataCardinalityLimit: int(cfg.MetadataCardinalityLimit),

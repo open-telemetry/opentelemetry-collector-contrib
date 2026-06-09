@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -582,6 +585,45 @@ func TestMetadataKeysCardinalityLimit(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err), "expected permanent error")
 
 	require.NoError(t, p.Shutdown(t.Context()))
+}
+
+func TestMetadataKeysUnboundedCardinalityLogsWarning(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	cfg := &Config{
+		LogCountAttribute:        defaultLogCountAttribute,
+		Interval:                 defaultInterval,
+		Timezone:                 defaultTimezone,
+		MetadataKeys:             []string{"x-scope-orgid"},
+		MetadataCardinalityLimit: 0,
+	}
+
+	_, err := createLogsProcessor(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	entries := logs.FilterMessageSnippet("metadata_cardinality_limit is 0").All()
+	require.Len(t, entries, 1)
+}
+
+func TestMetadataKeysBoundedCardinalityNoWarning(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	cfg := &Config{
+		LogCountAttribute:        defaultLogCountAttribute,
+		Interval:                 defaultInterval,
+		Timezone:                 defaultTimezone,
+		MetadataKeys:             []string{"x-scope-orgid"},
+		MetadataCardinalityLimit: 1,
+	}
+
+	_, err := createLogsProcessor(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	assert.Empty(t, logs.FilterMessageSnippet("metadata_cardinality_limit is 0").All())
 }
 
 func TestMetadataKeysCaseInsensitive(t *testing.T) {
