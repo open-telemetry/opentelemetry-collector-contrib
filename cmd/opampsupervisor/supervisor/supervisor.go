@@ -1308,7 +1308,7 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 			if item == nil {
 				continue
 			}
-			if remoteConfigDeclaresResourceAttributes(item.Body) {
+			if remoteConfigDeclaresResourceConfig(item.Body) {
 				remoteConfigComposers = append(remoteConfigComposers, composeClearResourceAttributesConfig)
 			}
 			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
@@ -1389,13 +1389,6 @@ func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
 	resourceAttrs := map[string]string{
 		"service.instance.id": s.persistentState.InstanceID.String(),
 	}
-	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
-	for _, attr := range ad.IdentifyingAttributes {
-		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
-	}
-	for _, attr := range ad.NonIdentifyingAttributes {
-		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
-	}
 
 	attrNames := make([]string, 0, len(resourceAttrs))
 	for name := range resourceAttrs {
@@ -1415,13 +1408,12 @@ func composeClearResourceAttributesConfig() []byte {
 	return []byte("service:\n  telemetry:\n    resource:\n      " + clearResourceAttributesKey + ": true\n")
 }
 
-func remoteConfigDeclaresResourceAttributes(body []byte) bool {
+func remoteConfigDeclaresResourceConfig(body []byte) bool {
 	k := koanf.New("::")
 	if err := k.Load(rawbytes.Provider(body), yaml.Parser()); err != nil {
 		return false
 	}
-	_, ok := k.Get("service::telemetry::resource::attributes").([]any)
-	return ok
+	return k.Exists("service::telemetry::resource")
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {

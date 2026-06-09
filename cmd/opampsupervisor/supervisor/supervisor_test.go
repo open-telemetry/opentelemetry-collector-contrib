@@ -585,7 +585,167 @@ service:
 		assert.False(t, hasServiceName)
 		assert.False(t, hasDeployment)
 		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
-		assert.Equal(t, "1.2.3", attrValues["service.version"])
+		assert.NotContains(t, attrValues, "service.version")
+	})
+
+	t.Run("remote declarative attributes override stale agent description attributes", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-service"},
+					},
+				},
+				{
+					Key: "service.version",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-version"},
+					},
+				},
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "deployment.environment",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-env"},
+					},
+				},
+			},
+		})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					string(config.SpecialConfigFileRemoteConfig),
+				}},
+			},
+			agentDescription: agentDesc,
+			persistentState:  &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:         &atomic.Value{},
+			pidProvider:      staticPIDProvider(1234),
+		}
+
+		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte(`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: remote-service
+        - name: service.version
+          value: remote-version
+        - name: deployment.environment
+          value: remote-env
+`)},
+				},
+			},
+		}, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+
+		attrValues := make(map[string]any, len(resourceCfg.Attributes))
+		for _, attr := range resourceCfg.Attributes {
+			attrValues[attr.Name] = attr.Value
+		}
+
+		assert.Equal(t, "remote-service", attrValues["service.name"])
+		assert.Equal(t, "remote-version", attrValues["service.version"])
+		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
+		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+	})
+
+	t.Run("remote legacy attributes override stale agent description attributes", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-service"},
+					},
+				},
+				{
+					Key: "service.version",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-version"},
+					},
+				},
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "deployment.environment",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "stale-env"},
+					},
+				},
+			},
+		})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					string(config.SpecialConfigFileRemoteConfig),
+				}},
+			},
+			agentDescription: agentDesc,
+			persistentState:  &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:         &atomic.Value{},
+			pidProvider:      staticPIDProvider(1234),
+		}
+
+		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte(`
+service:
+  telemetry:
+    resource:
+      deployment.environment: remote-env
+      service.name: remote-service
+      service.version: remote-version
+`)},
+				},
+			},
+		}, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+
+		attrValues := make(map[string]any, len(resourceCfg.Attributes))
+		for _, attr := range resourceCfg.Attributes {
+			attrValues[attr.Name] = attr.Value
+		}
+
+		assert.Equal(t, "remote-service", attrValues["service.name"])
+		assert.Equal(t, "remote-version", attrValues["service.version"])
+		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
+		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
 	})
 }
 
