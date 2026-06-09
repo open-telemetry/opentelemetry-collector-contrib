@@ -805,6 +805,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 	}
 	td := mergeTraces(trace1, trace2)
 
+	b.ReportAllocs()
 	for b.Loop() {
 		err = p.ConsumeTraces(b.Context(), td)
 		require.NoError(b, err)

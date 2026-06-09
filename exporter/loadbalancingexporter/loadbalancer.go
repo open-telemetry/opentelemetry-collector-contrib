@@ -241,3 +241,10 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 
 	return exp, endpoint, nil
 }
+
+// NumBackends returns the current number of resolved backend exporters.
+func (lb *loadBalancer) NumBackends() int {
+	lb.updateLock.RLock()
+	defer lb.updateLock.RUnlock()
+	return len(lb.exporters)
+}
