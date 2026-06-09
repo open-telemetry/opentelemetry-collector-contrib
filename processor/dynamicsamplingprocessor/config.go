@@ -203,6 +203,14 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
+	// A catch-all rule (no conditions) consumes every trace and renders any
+	// later rules unreachable, so it must be last.
+	for i := range c.Rules {
+		r := &c.Rules[i]
+		if len(r.Conditions) == 0 && i < len(c.Rules)-1 {
+			return fmt.Errorf("rules[%d] %q: catch-all rule (no conditions) must be the last rule; %d later rule(s) would be unreachable", i, r.Name, len(c.Rules)-i-1)
+		}
+	}
 	return nil
 }
 

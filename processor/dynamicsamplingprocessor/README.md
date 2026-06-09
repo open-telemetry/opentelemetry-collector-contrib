@@ -25,13 +25,13 @@ The Dynamic Sampling Processor performs adaptive tail-based trace sampling using
    - a root span arrives (any span with an empty `ParentSpanID`), or
    - `trace_timeout` elapses since the first span of the trace arrived. This timer is set on first-seen and is never extended by subsequent spans, ensuring a predictable upper bound on buffer occupancy.
 3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The same delay applies regardless of which event fired the trigger.
-4. Rules are then evaluated in order against the accumulated trace. The first rule whose conditions all match selects the sampler. A rule with no conditions is a catch-all.
+4. Rules are then evaluated in order against the accumulated trace. The first rule whose conditions all match selects the sampler; once a rule is selected, its sampler's keep/drop decision is final and no later rules are considered. A rule with no conditions is a catch-all.
 5. The matched sampler produces a sample rate (1-in-N).
 6. The keep/drop decision is made deterministically by comparing the sample rate's threshold against the randomness of the trace ID, using the [OTel consistent probability sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) algorithm.
 7. Sampled traces are forwarded with two annotations on every span:
    - `otelcol.processor.dynamic_sampling.rule`: the name of the matched rule
    - W3C TraceState `ot=th:<hex>`: the threshold encoding the effective sample rate
-8. The decision (sampled or dropped) is recorded in a per-trace LRU cache so that any late-arriving spans for the same trace ID are handled consistently with the original decision — see [Decision cache](#decision-cache) below.
+8. The decision (sampled or dropped) is recorded in a per-trace LRU cache so that any late-arriving spans for the same trace ID are handled consistently with the original decision (see [Decision cache](#decision-cache) below).
 
 ## Configuration
 
@@ -84,7 +84,28 @@ processors:
 
 ### Rules
 
-Rules are evaluated in order; the first whose conditions all match selects the sampler. A rule with no conditions is a catch-all.
+Rules are evaluated in order; the first whose conditions all match selects the sampler. A rule with no conditions is a catch-all. Once a rule is selected, its sampler's decision is final: a drop stays dropped, the trace is not handed to any later rule.
+
+> [!WARNING]
+> A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. This is rejected at config validation time.
+
+The intended pattern is specific-conditions rules first, catch-all last:
+
+```yaml
+rules:
+  - name: keep-errors
+    conditions: ["status.code == 2"]
+    sampler:
+      type: always_sample
+  - name: default              # catch-all
+    sampler:
+      type: ema_dynamic
+      ema_dynamic:
+        goal_sampling_percentage: 10
+        key_fields: ["service.name"]
+```
+
+With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is why config validation rejects it.
 
 Each condition is a simple expression. In this initial release the supported forms are:
 

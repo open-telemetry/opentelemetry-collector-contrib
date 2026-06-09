@@ -320,6 +320,31 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: "key_fields",
 		},
+		{
+			name: "catch_all_before_later_rule",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				Rules: []RuleConfig{
+					{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+					{Name: "keep-errors", Conditions: []string{"status.code == 2"}, Sampler: SamplerConfig{Type: AlwaysSample}},
+				},
+			},
+			wantErr: "catch-all rule",
+		},
+		{
+			name: "catch_all_as_last_rule_allowed",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				Rules: []RuleConfig{
+					{Name: "keep-errors", Conditions: []string{"status.code == 2"}, Sampler: SamplerConfig{Type: AlwaysSample}},
+					{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
