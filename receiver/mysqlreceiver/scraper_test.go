@@ -799,15 +799,16 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.processlistDB = text[5]
 		s.processlistCommand = text[6]
 		s.processlistState = text[7]
-		s.sqlText = text[8]
-		s.digest = text[9]
-		s.eventID, _ = parseInt(text[10])
-		s.sessionStatus = text[11]
-		s.waitEvent = text[12]
-		s.waitTime, _ = strconv.ParseFloat(text[13], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[14], 64)
-		if len(text) > 15 {
-			s.traceparent = text[15]
+		s.digestText = text[8]
+		s.sqlText = text[9]
+		s.digest = text[10]
+		s.eventID, _ = parseInt(text[11])
+		s.sessionStatus = text[12]
+		s.waitEvent = text[13]
+		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
+		if len(text) > 16 {
+			s.traceparent = text[16]
 		}
 
 		samples = append(samples, s)
@@ -937,6 +938,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					processlistUser:    "myuser",
 					processlistCommand: "Query",
 					processlistState:   "executing",
+					digestText:         "SELECT * FROM t",
 					sqlText:            "SELECT * FROM t",
 					digest:             digest,
 					eventID:            1,
@@ -1031,7 +1033,7 @@ func mustDBVersion(t *testing.T, rawVersion string) dbVersion {
 	if strings.Contains(rawVersion, "MariaDB") {
 		product = dbProductMariaDB
 	}
-	semverStr := strings.SplitN(rawVersion, "-", 2)[0]
+	semverStr, _, _ := strings.Cut(rawVersion, "-")
 	v, err := version.NewVersion(semverStr)
 	require.NoError(t, err)
 	return dbVersion{product: product, version: v}
@@ -1440,6 +1442,10 @@ func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	sls := logs.ResourceLogs().At(0).ScopeLogs()
+
+	digest, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.events_statements_summary_by_digest.digest")
+	queryPlanHash, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.query_plan.hash")
+	assert.Equal(t, digest, queryPlanHash)
 	for i := 0; i < sls.Len(); i++ {
 		attrs := sls.At(i).Scope().Attributes()
 		ver, ok := attrs.Get("db.version")
