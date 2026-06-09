@@ -27,7 +27,7 @@ func applyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]p
 			continue
 		}
 		logger.Debug("processing trace", zap.String("traceID", traceID.String()), zap.Int("spans", len(spans)))
-		root := buildSpanTree(traceutil.BuildTraceTree(spans), logger)
+		root := selectSpanRoot(traceutil.BuildTraceTree(spans), logger)
 		if root != nil {
 			markSpanAsRoot(root.Span)
 			applyTransactionToTrace(root, root.Span.Name())
@@ -36,7 +36,7 @@ func applyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]p
 }
 
 func ApplyTransactionAttributesToTree(tree traceutil.TraceTree, logger *zap.Logger) {
-	root := buildSpanTree(tree, logger)
+	root := selectSpanRoot(tree, logger)
 	if root != nil {
 		markSpanAsRoot(root.Span)
 		applyTransactionToTrace(root, root.Span.Name())

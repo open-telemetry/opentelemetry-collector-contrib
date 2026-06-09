@@ -9,8 +9,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 )
 
-// buildSpanTree selects the transaction root from a shared trace tree.
-func buildSpanTree(tree traceutil.TraceTree, logger *zap.Logger) *traceutil.TraceTreeNode {
+// selectSpanRoot selects the transaction root from a shared trace tree.
+func selectSpanRoot(tree traceutil.TraceTree, logger *zap.Logger) *traceutil.TraceTreeNode {
 	if len(tree.Roots) == 0 {
 		return nil
 	}
