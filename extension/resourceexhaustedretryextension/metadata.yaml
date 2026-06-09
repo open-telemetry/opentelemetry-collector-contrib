@@ -1,0 +1,43 @@
+type: resource_exhausted_retry
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+telemetry:
+  metrics:
+    extension_resource_exhausted_retry_retries_not_set:
+      enabled: true
+      description: Number of times retry-after was not injected, by reason (permanent, wrong_code, retry_info_present).
+      stability: development
+      unit: "{retries}"
+      sum:
+        value_type: int
+        monotonic: true
+        
+    extension_resource_exhausted_retry_retries_set:
+      enabled: true
+      description: Number of times a retry-after hint was injected into a response.
+      stability: development
+      unit: "{retries}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    extension_resource_exhausted_retry_retry_delay:
+      enabled: true
+      description: Distribution of effective retry delay durations injected.
+      stability: development
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [1000, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000]
+
+tests:
+  config:
+    retry_delay: 1s
+    jitter: 500ms
