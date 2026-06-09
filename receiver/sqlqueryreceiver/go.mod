@@ -7,7 +7,7 @@ require (
 	github.com/SAP/go-hdb v1.16.11
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/microsoft/go-mssqldb v1.9.6
 	github.com/moby/moby/api v1.54.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.154.0
