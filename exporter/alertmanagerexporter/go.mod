@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.154.0
-	github.com/prometheus/common v0.68.0
+	github.com/prometheus/common v0.68.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.60.0
 	go.opentelemetry.io/collector/component/componenttest v0.154.0
