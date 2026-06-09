@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
@@ -509,6 +510,175 @@ func TestAttributeLoss_DisabledByDefault(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestOutlierMetrics_IQR(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestOutlierMetrics_MAD(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodMAD
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.MADMultiplier = 3.0
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestOutlierMetrics_NoPreservation(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = false
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_outliers_preserved")
+	assert.Error(t, err, "outliers_preserved should not be recorded when preserve_outliers is false")
+}
+
+func TestProcessorPreservesOutlierSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	var spans []ptrace.Span
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				spans = append(spans, ss.Spans().At(k))
+			}
+		}
+	}
+
+	var summarySpan ptrace.Span
+	var outlierSpans []ptrace.Span
+	for _, span := range spans {
+		if isSummary, exists := span.Attributes().Get("aggregation.is_summary"); exists && isSummary.Bool() {
+			summarySpan = span
+		}
+		if isOutlier, exists := span.Attributes().Get("aggregation.is_preserved_outlier"); exists && isOutlier.Bool() {
+			outlierSpans = append(outlierSpans, span)
+		}
+	}
+
+	require.False(t, summarySpan.SpanID().IsEmpty(), "summary span should exist")
+	assert.Len(t, outlierSpans, 2, "should have 2 preserved outlier spans")
+
+	spanCount, exists := summarySpan.Attributes().Get("aggregation.span_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(8), spanCount.Int(), "summary should aggregate only normal spans")
+
+	outlierCount, exists := summarySpan.Attributes().Get("aggregation.preserved_outlier_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(2), outlierCount.Int())
+
+	summarySpanIDStr := summarySpan.SpanID().String()
+	for _, outlier := range outlierSpans {
+		summaryRef, hasSummaryRef := outlier.Attributes().Get("aggregation.summary_span_id")
+		require.True(t, hasSummaryRef)
+		assert.Equal(t, summarySpanIDStr, summaryRef.Str())
+	}
+}
+
 // Helper functions
 
 func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
@@ -566,6 +736,101 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 		for k, v := range attrs {
 			span.Attributes().PutStr(k, v)
 		}
+	}
+
+	return td
+}
+
+func createTestTraceWithOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	normalDurations := []int64{5, 6, 7, 8, 9, 10, 11, 12}
+	outlierDurations := []int64{500, 600}
+
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "true")
+	}
+
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "false")
+	}
+
+	return td
+}
+
+func createTestTraceWithManyOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	normalDurations := []int64{5, 6, 6, 7, 7, 8, 8, 9, 9, 10}
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	outlierDurations := []int64{500, 600, 700}
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
 	}
 
 	return td
