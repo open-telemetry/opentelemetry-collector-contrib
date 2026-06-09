@@ -255,21 +255,22 @@ func (p *postgreSQLScraper) resolveBlockingExprs(ctx context.Context, dbClient c
 	if p.blockingStartExpr != "" {
 		return
 	}
-	p.blockingStartExpr = "sa.state_change"
-	p.blockingSortExpr = ""
 	version, err := dbClient.getVersion(ctx)
 	if err != nil {
-		p.logger.Warn("failed to get server version, defaulting to pre-14 blocking query", zap.Error(err))
-		return
+		p.logger.Warn("failed to get server version, will retry next scrape; using pre-14 blocking query fallback", zap.Error(err))
+		return // leave blockingStartExpr="" so next scrape retries
 	}
 	major, err := parseMajorVersion(version)
 	if err != nil {
-		p.logger.Warn("failed to parse server version, defaulting to pre-14 blocking query", zap.Error(err))
-		return
+		p.logger.Warn("failed to parse server version, will retry next scrape; using pre-14 blocking query fallback", zap.Error(err))
+		return // leave blockingStartExpr="" so next scrape retries
 	}
 	if major >= 14 {
 		p.blockingStartExpr = "waitstart"
 		p.blockingSortExpr = "waitstart"
+	} else {
+		p.blockingStartExpr = "sa.state_change"
+		p.blockingSortExpr = ""
 	}
 }
 
@@ -277,7 +278,13 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	p.resolveBlockingExprs(ctx, dbClient)
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.blockingStartExpr, p.blockingSortExpr, logger)
+	// Use resolved expressions; fall back to pre-14 values if version detection hasn't succeeded yet
+	blockingStartExpr := p.blockingStartExpr
+	if blockingStartExpr == "" {
+		blockingStartExpr = "sa.state_change"
+	}
+
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, blockingStartExpr, p.blockingSortExpr, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
