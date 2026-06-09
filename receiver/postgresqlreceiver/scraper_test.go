@@ -262,7 +262,6 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		fmt.Println(actualMetrics.ResourceMetrics())
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
@@ -566,6 +565,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 				"limit":                int64(50),
 				"newestQueryTimestamp": 999999.555,
 				"blockingStartExpr":    "bl.waitstart",
+				"blockingSortExpr":     "bl.waitstart",
 			},
 		},
 		{
@@ -574,6 +574,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 				"limit":                int64(10),
 				"newestQueryTimestamp": float64(0),
 				"blockingStartExpr":    "sa.state_change",
+				"blockingSortExpr":     "",
 			},
 		},
 	}

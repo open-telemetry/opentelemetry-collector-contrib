@@ -916,6 +916,7 @@ var querySampleTemplate string
 func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
 	// pg_locks.waitstart was added in PG 14 — use state_change as fallback for older versions
 	blockingStartExpr := "sa.state_change"
+	blockingSortExpr := ""
 	version, err := c.getVersion(ctx)
 	if err != nil {
 		logger.Warn("failed to get server version, defaulting to pre-14 blocking query", zap.Error(err))
@@ -925,6 +926,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			logger.Warn("failed to parse server version, defaulting to pre-14 blocking query", zap.Error(parseErr))
 		} else if major >= 14 {
 			blockingStartExpr = "bl.waitstart"
+			blockingSortExpr = "bl.waitstart"
 		}
 	}
 
@@ -935,6 +937,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
 		"blockingStartExpr":    blockingStartExpr,
+		"blockingSortExpr":     blockingSortExpr,
 	}); tmplErr != nil {
 		logger.Error("failed to execute template", zap.Error(tmplErr))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)

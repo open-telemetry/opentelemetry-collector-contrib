@@ -3,7 +3,7 @@ resourceLogs:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: SSIROTHI-M-QDJX:5432
+            stringValue: testhost:5432
     scopeLogs:
       - logRecords:
           - attributes:
@@ -75,7 +75,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1780386413515393000"
+            timeUnixNano: "0"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

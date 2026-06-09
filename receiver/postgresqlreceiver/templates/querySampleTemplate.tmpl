@@ -39,7 +39,9 @@ LEFT JOIN LATERAL (
   SELECT mode, locktype, relation, {{ .blockingStartExpr }} AS waitstart
   FROM pg_locks
   WHERE pid = sa.pid AND NOT granted
-  ORDER BY {{ .blockingStartExpr }} ASC NULLS LAST
+  {{- if .blockingSortExpr }}
+  ORDER BY {{ .blockingSortExpr }} ASC NULLS LAST
+  {{- end }}
   LIMIT 1
 ) bl ON TRUE
 LEFT JOIN pg_class c

@@ -39,7 +39,6 @@ LEFT JOIN LATERAL (
   SELECT mode, locktype, relation, sa.state_change AS waitstart
   FROM pg_locks
   WHERE pid = sa.pid AND NOT granted
-  ORDER BY sa.state_change ASC NULLS LAST
   LIMIT 1
 ) bl ON TRUE
 LEFT JOIN pg_class c

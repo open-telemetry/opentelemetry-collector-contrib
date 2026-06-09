@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/postgresqlreceiver
+component: receiver/postgresql
 
 # A brief description of the change. Surround your text with quotes (") if it needs to start with a backtick (`).
 note: Adds blocking session and lock attributes to `db.server.query_sample` events for PostgreSQL blocking session detection. Blocking attributes are always emitted (empty string / 0 when not blocked).
