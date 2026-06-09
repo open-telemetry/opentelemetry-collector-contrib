@@ -1,28 +1,24 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: extension/azure_encoding
+component: cmd/schemagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Map PIM event properties for Administrative Activity Logs
+note: "Add `-p` flag to schemagen to allow specifying a custom Go package pattern"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47566]
+issues: [48966]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Azure PIM (Privileged Identity Management) events share the Administrative category with
-  standard audit events but carry a different properties payload. All PIM-specific fields
-  were silently dropped. This change adds explicit mappings for all known PIM fields:
-  generic Azure concepts use cloud.account.id and azure.{tenant,resource}.* attributes,
-  while PIM-specific fields use azure.pim.*. CallerInfo is projected to flat per-identity
-  attributes (azure.pim.caller.upn, azure.pim.caller.object_id, azure.pim.caller.username,
-  ...) keyed by the lowercased snake_case identity type.
+  Previously the parser always loaded the package from the current directory (`.`).
+  The new `-p` flag accepts any pattern accepted by `packages.Load`, including a fully-qualified
+  import path, so that schemagen can target a specific package without changing the working directory.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
