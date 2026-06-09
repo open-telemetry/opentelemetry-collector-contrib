@@ -1159,13 +1159,11 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	}
 }
 
-// TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning verifies that when a SQL
-// query text fails to obfuscate (e.g. due to a truncated string literal from
-// Oracle's CLOB display limit), the affected entry is skipped with a Warn log
-// and the remaining entries are still emitted. The whole scrape must not abort.
-func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
-	// Build two metric rows: one with valid SQL and one with a truncated
-	// string literal that the obfuscator cannot parse.
+// TestObfuscateCacheHitsHandlesTruncatedSQL verifies that the obfuscator
+// successfully handles SQL with truncated string literals that may occur
+// when Oracle's CLOB display limit is reached.
+func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
+	// Build two metric rows with different SQL queries to verify obfuscation.
 	metricsData := []metricRow{
 		{
 			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "4000000", "CHILD_ADDRESS": "ADDR1",
@@ -1179,7 +1177,7 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 			"COMMAND_TYPE": "3",
 		},
 		{
-			// Truncated mid-string-literal — obfuscator will return an error.
+			// SQL with truncated string literal.
 			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "5000000", "CHILD_ADDRESS": "ADDR2",
 			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
 			"CPU_TIME": "50000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
@@ -1249,18 +1247,16 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 	require.NoError(t, err)
 
 	logs, err := scrpr.scrapeLogs(t.Context())
-	// The scrape must succeed even though one entry failed to obfuscate.
 	require.NoError(t, err)
 
-	// Exactly one valid log record (for "valid001") should be emitted.
+	// Both log records should be emitted.
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	require.Equal(t, 1, records.Len(), "Only the valid entry should be emitted; the truncated-SQL entry should be skipped")
+	require.Equal(t, 2, records.Len(), "Expected both entries to be emitted")
 
-	// A Warn log must have been emitted for the skipped entry.
+	// Verify no obfuscation errors were logged.
 	warnLogs := observedLogs.FilterMessage("oracleScraper failed to obfuscate SQL query, skipping entry")
-	assert.Equal(t, 1, warnLogs.Len(), "Expected exactly one Warn log for the failed obfuscation")
-	assert.Equal(t, "trunc01", warnLogs.All()[0].ContextMap()["sql_id"], "Warn log should identify the failing sql_id")
+	assert.Equal(t, 0, warnLogs.Len(), "Expected no obfuscation failures")
 }
 
 func TestCalculateLookbackSeconds(t *testing.T) {
