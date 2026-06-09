@@ -32,7 +32,6 @@ func TestTraceExport(t *testing.T) {
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
-	t.Logf("Error: %v", err)
 	err = traceExporter.Shutdown(ctx)
 	assert.NoError(t, err)
 }
@@ -49,7 +48,6 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
-	t.Logf("Error: %v", err)
 	err = traceExporter.Shutdown(ctx)
 	assert.NoError(t, err)
 }
@@ -93,7 +91,6 @@ func TestTelemetryEnabled(t *testing.T) {
 	td := constructSpanData()
 	err = traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
-	t.Logf("Error: %v", err)
 	err = traceExporter.Shutdown(ctx)
 	assert.NoError(t, err)
 	assert.EqualValues(t, 1, sink.StartCount.Load())
