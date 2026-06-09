@@ -85,6 +85,8 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		return nil, err
 	}
 
+	warnUnreachableRules(set.Logger, cfg.Rules)
+
 	cache, err := newDecisionCache(cfg.DecisionCache)
 	if err != nil {
 		return nil, err
@@ -100,6 +102,22 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		rules:     rules,
 		cache:     cache,
 	}, nil
+}
+
+// warnUnreachableRules logs a warning when a no-conditions catch-all rule is
+// placed before other rules. The catch-all matches every trace, so any rules
+// after it never run. This is almost always a misconfiguration.
+func warnUnreachableRules(logger *zap.Logger, rules []RuleConfig) {
+	for i := range rules {
+		if len(rules[i].Conditions) == 0 && i < len(rules)-1 {
+			logger.Warn(
+				"catch-all rule (no conditions) is followed by other rules that will never be reached; move it to the end of the rules list",
+				zap.String("rule", rules[i].Name),
+				zap.Int("unreachable_rules", len(rules)-i-1),
+			)
+			return
+		}
+	}
 }
 
 func buildRules(cfg *Config) ([]*rule, error) {

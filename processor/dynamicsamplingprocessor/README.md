@@ -87,7 +87,7 @@ processors:
 Rules are evaluated in order; the first whose conditions all match selects the sampler. A rule with no conditions is a catch-all. Once a rule is selected, its sampler's decision is final: a drop stays dropped, the trace is not handed to any later rule.
 
 > [!WARNING]
-> A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. This is rejected at config validation time.
+> A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
 The intended pattern is specific-conditions rules first, catch-all last:
 
@@ -105,7 +105,7 @@ rules:
         key_fields: ["service.name"]
 ```
 
-With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is why config validation rejects it.
+With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
 
 Each condition is a simple expression. In this initial release the supported forms are:
 

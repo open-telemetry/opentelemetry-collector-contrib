@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadata"
 )
@@ -26,6 +28,60 @@ func newTestProcessor(t *testing.T, cfg *Config, sink *consumertest.TracesSink) 
 		require.NoError(t, p.Shutdown(t.Context()))
 	})
 	return p
+}
+
+func TestWarnUnreachableRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		rules     []RuleConfig
+		wantWarn  bool
+		wantField string
+	}{
+		{
+			name: "catch_all_first_warns",
+			rules: []RuleConfig{
+				{Name: "default"},
+				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+			},
+			wantWarn:  true,
+			wantField: "default",
+		},
+		{
+			name: "catch_all_last_no_warn",
+			rules: []RuleConfig{
+				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+				{Name: "default"},
+			},
+		},
+		{
+			name: "single_catch_all_no_warn",
+			rules: []RuleConfig{
+				{Name: "default"},
+			},
+		},
+		{
+			name: "all_conditional_no_warn",
+			rules: []RuleConfig{
+				{Name: "errors", Conditions: []string{"status.code == 2"}},
+				{Name: "payment", Conditions: []string{"service.name == payment"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core, recorded := observer.New(zap.WarnLevel)
+			warnUnreachableRules(zap.New(core), tt.rules)
+			if !tt.wantWarn {
+				assert.Zero(t, recorded.Len())
+				return
+			}
+			require.Equal(t, 1, recorded.Len())
+			entry := recorded.All()[0]
+			assert.Equal(t, zap.WarnLevel, entry.Level)
+			assert.Contains(t, entry.Message, "catch-all rule")
+			assert.Equal(t, tt.wantField, entry.ContextMap()["rule"])
+		})
+	}
 }
 
 // newTrace builds a single-span ptrace.Traces with a non-empty ParentSpanID so
