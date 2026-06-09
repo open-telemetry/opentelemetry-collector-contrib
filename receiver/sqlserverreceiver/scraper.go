@@ -927,11 +927,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		// Use structured fields instead of fmt.Sprintf so the raw row --
-		// which still contains query_text and query_plan values -- is
-		// never embedded in the message string. It is only emitted at
-		// Debug level via a typed zap field the operator can scrub
-		// (#47692).
 		s.logger.Debug("top-query row",
 			zap.Any("query_hash", queryHashVal),
 			zap.Any("plan_hash", queryPlanHashVal),
@@ -975,11 +970,6 @@ func (s *sqlServerScraperHelper) retrieveValue(
 ) any {
 	value, err := valueRetriever(row, column)
 	if err != nil {
-		// Previously we logged row[column] at Error level, which for columns
-		// like query_text or query_plan wrote raw unobfuscated SQL into the
-		// collector logs. Log only the column name and error, and demote to
-		// Warn since this is a per-column parse failure, not a scraper-wide
-		// fatal condition (#47692).
 		s.logger.Warn("sqlServerScraperHelper failed parsing column",
 			zap.String("column", column),
 			zap.Error(err))
