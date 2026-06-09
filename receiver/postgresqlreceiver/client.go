@@ -66,7 +66,7 @@ type client interface {
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
-	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, blockingStartExpr, blockingSortExpr string, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
 }
@@ -913,23 +913,7 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
-	// pg_locks.waitstart was added in PG 14 — use state_change as fallback for older versions
-	blockingStartExpr := "sa.state_change"
-	blockingSortExpr := ""
-	version, err := c.getVersion(ctx)
-	if err != nil {
-		logger.Warn("failed to get server version, defaulting to pre-14 blocking query", zap.Error(err))
-	} else {
-		major, parseErr := parseMajorVersion(version)
-		if parseErr != nil {
-			logger.Warn("failed to parse server version, defaulting to pre-14 blocking query", zap.Error(parseErr))
-		} else if major >= 14 {
-			blockingStartExpr = "waitstart"
-			blockingSortExpr = "waitstart"
-		}
-	}
-
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, blockingStartExpr, blockingSortExpr string, logger *zap.Logger) ([]map[string]any, float64, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
