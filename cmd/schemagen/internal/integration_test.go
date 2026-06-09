@@ -90,3 +90,44 @@ func TestFactoryMaps(t *testing.T) {
 		})
 	}
 }
+
+// TestOverlayPrometheus verifies that the overlay injects the prom_config
+// description for the prometheus receiver.
+func TestOverlayPrometheus(t *testing.T) {
+	prometheusDir := "../../../receiver/prometheusreceiver"
+	absDir, err := filepath.Abs(prometheusDir)
+	require.NoError(t, err)
+
+	s, settingsDir, ok := ReadSettingsFile()
+	require.True(t, ok, "expected .schemagen.yaml to be found")
+
+	override, found := s.ComponentOverrides["receiver/prometheus"]
+	require.True(t, found, "expected componentOverride for receiver/prometheus in .schemagen.yaml")
+	require.NotEmpty(t, override.OverlayFile)
+
+	overrideCopy := override
+	cfg := &Config{
+		Mode:              Component,
+		DirPath:           absDir,
+		ConfigType:        "Config",
+		Mappings:          s.Mappings,
+		AllowedRefs:       s.AllowedRefs,
+		Namespace:         s.Namespace,
+		ComponentOverride: &overrideCopy,
+		SettingsDir:       settingsDir,
+	}
+
+	parser := NewParser(cfg)
+	schema, err := parser.Parse()
+	require.NoError(t, err)
+
+	rawYAML, err := schema.ToYAML()
+	require.NoError(t, err)
+
+	merged, err := ApplyOverlayToYAML(rawYAML, cfg)
+	require.NoError(t, err)
+
+	// The overlay should inject a description on prom_config.
+	const wantDesc = "PromConfig is a redeclaration of promconfig.Config"
+	assert.Contains(t, string(merged), wantDesc)
+}
