@@ -7,7 +7,6 @@ This receiver will read pipeline data from JSON files. The data is written in
 using [OpenTelemetry
 protocol](https://github.com/open-telemetry/opentelemetry-proto).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |

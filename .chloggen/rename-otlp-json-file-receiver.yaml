@@ -1,6 +1,0 @@
-change_type: deprecation
-component: receiver/otlp_json_file
-note: rename to `otlp_json_file` with deprecated alias `otlpjsonfile`
-issues: [45339]
-subtext:
-change_logs: [user]
