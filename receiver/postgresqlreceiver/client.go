@@ -931,13 +931,13 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
 		"blockingStartExpr":    blockingStartExpr,
-	}); err != nil {
-		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
+	}); tmplErr != nil {
+		logger.Error("failed to execute template", zap.Error(tmplErr))
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
