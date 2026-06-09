@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkarequest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -93,9 +92,9 @@ func createTracesExporter(
 	exp := newTracesExporter(oCfg, set)
 
 	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
-		qbs := xexporterhelper.QueueBatchSettings{
-			Encoding: kafkarequest.NewEncoding(),
-		}
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
 		return xexporterhelper.NewTracesRequest(
 			ctx,
 			set,
@@ -103,7 +102,7 @@ func createTracesExporter(
 			newTracesRequestPusher(exp),
 			exporterhelperOptions(
 				oCfg,
-				qbs,
+				xexporterhelper.QueueBatchSettings{},
 				exp.Start, exp.Close,
 			)...,
 		)
