@@ -463,16 +463,16 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
 	expected := map[string]any{
-		"cache_hit":            true,
-		"ping_count":           int64(25),
-		"timeout":              12.3,
-		"clnt/finagle.version": "6.45.0",
-		"http.path":            "/api",
-		"http.status_code":     int64(500),
-		"net.host.ip":          "7::80:807f",
-		"peer.service":         "backend",
-		"net.peer.ip":          "192.168.99.101",
-		"net.peer.port":        int64(9000),
+		"cache_hit":             true,
+		"ping_count":            int64(25),
+		"timeout":               12.3,
+		"clnt/finagle.version":  "6.45.0",
+		"http.path":             "/api",
+		"http.status_code":      int64(500),
+		"network.local.address": "7::80:807f",
+		"service.peer.name":     "backend",
+		"network.peer.address":  "192.168.99.101",
+		"net.peer.port":         int64(9000),
 	}
 
 	assert.Equal(t, expected, span.Attributes().AsRaw())

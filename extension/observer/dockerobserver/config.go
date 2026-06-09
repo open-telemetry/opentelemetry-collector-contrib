@@ -33,6 +33,12 @@ type Config struct {
 	// to an instance of the agent running outside of the docker network stack.
 	IgnoreNonHostBindings bool `mapstructure:"ignore_non_host_bindings"`
 
+	// If true, the observer will emit a port-less endpoint for every running container,
+	// alongside any per-port endpoints. This makes every container, including those
+	// without exposed ports, discoverable by receiver_creator rules matching
+	// `type == "container"`.
+	IncludeAllContainers bool `mapstructure:"include_all_containers"`
+
 	// The time to wait before resyncing the list of containers the observer maintains
 	// through the docker event listener example: cache_sync_interval: "20m"
 	// Default: "60m"

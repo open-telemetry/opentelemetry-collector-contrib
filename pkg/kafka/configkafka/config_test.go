@@ -28,7 +28,7 @@ func TestClientConfig(t *testing.T) {
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
 				ClientID:                             "vip",
-				ProtocolVersion:                      "1.2.3",
+				ProtocolVersion:                      "3.1.2",
 				TLS: &configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   "ca.pem",
@@ -132,7 +132,7 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: "brokers must be specified",
 		},
 		"invalid_protocol_version": {
-			expectedErr: "invalid protocol version: invalid version `none`",
+			expectedErr: `invalid protocol version: "none"`,
 		},
 		"sasl_invalid_mechanism": {
 			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
@@ -174,6 +174,16 @@ func TestConsumerConfig(t *testing.T) {
 				MaxPartitionFetchSize: 4096,
 			},
 		},
+		"group_rebalance_strategies": {
+			expected: func() ConsumerConfig {
+				config := NewDefaultConsumerConfig()
+				config.GroupRebalanceStrategies = []GroupRebalanceStrategy{
+					CooperativeStickyBalanceStrategy,
+					"my_balancer",
+				}
+				return config
+			}(),
+		},
 		"zero_min_fetch_size": {
 			expected: ConsumerConfig{
 				SessionTimeout:    10 * time.Second,
@@ -200,6 +210,12 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
+		},
+		"conflicting_group_rebalance_strategies": {
+			expectedErr: "group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies",
+		},
+		"empty_group_rebalance_strategies_entry": {
+			expectedErr: "group_rebalance_strategies entries cannot be empty",
 		},
 	})
 }
