@@ -36,9 +36,10 @@ SELECT
          ELSE '' END AS blocking_transaction_start
 FROM pg_stat_activity sa
 LEFT JOIN LATERAL (
-  SELECT mode, locktype, relation, sa.state_change AS waitstart
+  SELECT mode, locktype, relation, waitstart
   FROM pg_locks
   WHERE pid = sa.pid AND NOT granted
+  ORDER BY waitstart ASC NULLS LAST
   LIMIT 1
 ) bl ON TRUE
 LEFT JOIN pg_class c

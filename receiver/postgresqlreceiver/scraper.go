@@ -48,9 +48,6 @@ type postgreSQLScraper struct {
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	lastExecutionTimestamp time.Time
-	// blocking query template expressions — resolved once on first scrape and cached
-	blockingStartExpr string
-	blockingSortExpr  string
 }
 
 type errsMux struct {
@@ -251,40 +248,10 @@ func attrFloat64(atts map[string]any, key string) float64 {
 	return 0
 }
 
-func (p *postgreSQLScraper) resolveBlockingExprs(ctx context.Context, dbClient client) {
-	if p.blockingStartExpr != "" {
-		return
-	}
-	version, err := dbClient.getVersion(ctx)
-	if err != nil {
-		p.logger.Warn("failed to get server version, will retry next scrape; using pre-14 blocking query fallback", zap.Error(err))
-		return // leave blockingStartExpr="" so next scrape retries
-	}
-	major, err := parseMajorVersion(version)
-	if err != nil {
-		p.logger.Warn("failed to parse server version, will retry next scrape; using pre-14 blocking query fallback", zap.Error(err))
-		return // leave blockingStartExpr="" so next scrape retries
-	}
-	if major >= 14 {
-		p.blockingStartExpr = "waitstart"
-		p.blockingSortExpr = "waitstart"
-	} else {
-		p.blockingStartExpr = "sa.state_change"
-		p.blockingSortExpr = ""
-	}
-}
-
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
-	p.resolveBlockingExprs(ctx, dbClient)
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	// Use resolved expressions; fall back to pre-14 values if version detection hasn't succeeded yet
-	blockingStartExpr := p.blockingStartExpr
-	if blockingStartExpr == "" {
-		blockingStartExpr = "sa.state_change"
-	}
-
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, blockingStartExpr, p.blockingSortExpr, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)

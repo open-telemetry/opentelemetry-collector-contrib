@@ -66,7 +66,7 @@ type client interface {
 	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
-	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, blockingStartExpr, blockingSortExpr string, logger *zap.Logger) ([]map[string]any, float64, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
 }
@@ -913,15 +913,13 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, blockingStartExpr, blockingSortExpr string, logger *zap.Logger) ([]map[string]any, float64, error) {
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
-		"blockingStartExpr":    blockingStartExpr,
-		"blockingSortExpr":     blockingSortExpr,
 	}); tmplErr != nil {
 		logger.Error("failed to execute template", zap.Error(tmplErr))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
