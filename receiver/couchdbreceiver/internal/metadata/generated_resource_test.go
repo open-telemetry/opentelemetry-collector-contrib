@@ -14,15 +14,18 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetCouchdbNodeName("couchdb.node.name-val")
+			rb.SetCouchdbVersion("couchdb.version-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -33,6 +36,21 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "couchdb.node.name-val", couchdbNodeNameAttrVal.Str())
+			}
+			couchdbVersionAttrVal, ok := res.Attributes().Get("couchdb.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "couchdb.version-val", couchdbVersionAttrVal.Str())
+			}
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+			}
+			serviceNameAttrVal, ok := res.Attributes().Get("service.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
 			}
 		})
 	}

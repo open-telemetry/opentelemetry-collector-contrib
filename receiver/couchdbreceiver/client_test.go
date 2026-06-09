@@ -178,6 +178,90 @@ func TestGetNodeStats(t *testing.T) {
 	})
 }
 
+func TestGetRootInfo(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/invalid_json") {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"}`))
+			assert.NoError(t, err)
+			return
+		}
+		if r.URL.Path == "/" {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"uuid":"1234"}`))
+			assert.NoError(t, err)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	t.Run("invalid endpoint", func(t *testing.T) {
+		couchdbClient := defaultClient(t, "invalid")
+		actualInfo, err := couchdbClient.GetRootInfo()
+		require.Error(t, err)
+		require.Nil(t, actualInfo)
+	})
+	t.Run("invalid json", func(t *testing.T) {
+		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
+
+		actualInfo, err := couchdbClient.GetRootInfo()
+		require.Error(t, err)
+		require.Nil(t, actualInfo)
+	})
+
+	t.Run("no error", func(t *testing.T) {
+		expectedInfo := map[string]any{"uuid": "1234"}
+		couchdbClient := defaultClient(t, ts.URL)
+
+		actualInfo, err := couchdbClient.GetRootInfo()
+		require.NoError(t, err)
+		require.Equal(t, expectedInfo, actualInfo)
+	})
+}
+
+func TestGetNodeInfo(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/invalid_json") {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"}`))
+			assert.NoError(t, err)
+			return
+		}
+		if strings.Contains(r.URL.Path, "/_node/_local") {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"name":"couchdb@1.2.3.4"}`))
+			assert.NoError(t, err)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	t.Run("invalid endpoint", func(t *testing.T) {
+		couchdbClient := defaultClient(t, "invalid")
+		actualInfo, err := couchdbClient.GetNodeInfo("_local")
+		require.Error(t, err)
+		require.Nil(t, actualInfo)
+	})
+	t.Run("invalid json", func(t *testing.T) {
+		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
+
+		actualInfo, err := couchdbClient.GetNodeInfo("_local")
+		require.Error(t, err)
+		require.Nil(t, actualInfo)
+	})
+
+	t.Run("no error", func(t *testing.T) {
+		expectedInfo := map[string]any{"name": "couchdb@1.2.3.4"}
+		couchdbClient := defaultClient(t, ts.URL)
+
+		actualInfo, err := couchdbClient.GetNodeInfo("_local")
+		require.NoError(t, err)
+		require.Equal(t, expectedInfo, actualInfo)
+	})
+}
+
 func TestBuildReq(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
