@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -30,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -82,7 +85,16 @@ func Load(configFile string) (Supervisor, error) {
 	return cfg, nil
 }
 
-func (Supervisor) Validate() error {
+func (s *Supervisor) Validate() error {
+	if s.Server.Auth == (component.ID{}) {
+		return nil
+	}
+	if ok := s.Extensions.Exists(s.Server.Auth); !ok {
+		return fmt.Errorf(
+			"server.auth references %q which is not configured under extensions",
+			s.Server.Auth,
+		)
+	}
 	return nil
 }
 
@@ -173,6 +185,11 @@ type OpAMPServer struct {
 	Endpoint string                 `mapstructure:"endpoint"`
 	Headers  http.Header            `mapstructure:"headers"`
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// Auth references an extension in the top-level extensions: block that
+	// implements extensionauth.HTTPClient. When set, the supervisor uses the
+	// extension's RoundTripper to populate auth headers on the OpAMP
+	// connection. The extensions feature gate must be enabled.
+	Auth component.ID `mapstructure:"auth,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -228,6 +245,9 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
+	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
+	// when the OpAMP server is unreachable. Configs are merged in order.
+	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
 }
 
 func (a Agent) Validate() error {
@@ -275,7 +295,54 @@ func (a Agent) Validate() error {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
+	if err := a.validateFallbackConfigs(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (a Agent) validateFallbackConfigs() error {
+	// If no fallback configs are specified, no validation is needed.
+	if len(a.StartupFallbackConfigs) == 0 {
+		return nil
+	}
+
+	// Validate that the fallback config files exist.
+	for i, cfgPath := range a.StartupFallbackConfigs {
+		if cfgPath == "" {
+			return fmt.Errorf("agent::startup_fallback_configs[%d] cannot be empty", i)
+		}
+		if _, err := os.Stat(cfgPath); err != nil {
+			return fmt.Errorf("could not stat agent::startup_fallback_configs[%d] path %q: %w", i, cfgPath, err)
+		}
+	}
+	if err := a.validateFallbackConfigsWithColBin(); err != nil {
+		return fmt.Errorf("could not validate startup fallback configs with agent::executable: %w", err)
+	}
+
+	return nil
+}
+
+func (a Agent) validateFallbackConfigsWithColBin() error {
+	cfgValidateCommand := []string{a.Executable, "validate"}
+	for _, cfgPath := range a.StartupFallbackConfigs {
+		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
+	}
+	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FallbackEnabled returns true if fallback configuration is enabled.
+func (a Agent) FallbackEnabled() bool {
+	return len(a.StartupFallbackConfigs) > 0
 }
 
 type SpecialConfigFile string
@@ -306,12 +373,42 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-type ResourceConfig = otelconftelemetry.ResourceConfig
+type ResourceConfig struct {
+	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
+
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+}
+
+func (c *ResourceConfig) Validate() error {
+	if err := c.ResourceConfig.Validate(); err != nil {
+		return err
+	}
+	return validateExperimentalAttributeFilters(c.DetectionDevelopment)
+}
+
+func validateExperimentalAttributeFilters(cfg *xotelconf.ExperimentalResourceDetection) error {
+	if cfg == nil || cfg.Attributes == nil {
+		return nil
+	}
+
+	for _, pattern := range cfg.Attributes.Included {
+		if _, err := filepath.Match(pattern, ""); err != nil {
+			return fmt.Errorf("resource::detection/development::attributes::included contains invalid glob %q: %w", pattern, err)
+		}
+	}
+	for _, pattern := range cfg.Attributes.Excluded {
+		if _, err := filepath.Match(pattern, ""); err != nil {
+			return fmt.Errorf("resource::detection/development::attributes::excluded contains invalid glob %q: %w", pattern, err)
+		}
+	}
+
+	return nil
+}
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`

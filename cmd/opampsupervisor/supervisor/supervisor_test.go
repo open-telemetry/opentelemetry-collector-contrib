@@ -15,10 +15,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,9 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	collectorconfmap "go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/plog"
-	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -327,206 +327,6 @@ service:
 	}
 }
 
-func TestNormalizeTelemetryResourceConfig(t *testing.T) {
-	tests := []struct {
-		name                  string
-		raw                   map[string]any
-		wantAttributes        []otelconf.AttributeNameValue
-		wantSchemaURL         string
-		wantDetectorIncludes  []string
-		wantRemovedLegacyKeys []string
-	}{
-		{
-			name: "converts mixed resource config to declarative attributes",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"attributes": []any{
-								map[string]any{
-									"name":  "otelcol.service.mode",
-									"value": "agent",
-								},
-							},
-							"host.arch": "amd64",
-							"os.type":   "linux",
-						},
-					},
-				},
-			},
-			wantAttributes: []otelconf.AttributeNameValue{
-				{Name: "otelcol.service.mode", Value: "agent"},
-				{Name: "host.arch", Value: "amd64"},
-				{Name: "os.type", Value: "linux"},
-			},
-			wantRemovedLegacyKeys: []string{"host.arch", "os.type"},
-		},
-		{
-			name: "declarative value wins over duplicate legacy key and nil legacy key is skipped",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"attributes": []any{
-								map[string]any{
-									"name":  "service.name",
-									"value": "declarative-name",
-								},
-							},
-							"service.name":           "legacy-name",
-							"service.instance.id":    nil,
-							"deployment.environment": "prod",
-						},
-					},
-				},
-			},
-			wantAttributes: []otelconf.AttributeNameValue{
-				{Name: "service.name", Value: "declarative-name"},
-				{Name: "deployment.environment", Value: "prod"},
-			},
-			wantRemovedLegacyKeys: []string{"service.name", "service.instance.id", "deployment.environment"},
-		},
-		{
-			name: "preserves schema url and detectors",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"schema_url": "https://opentelemetry.io/schemas/1.38.0",
-							"attributes": []any{
-								map[string]any{
-									"name":  "service.namespace",
-									"value": "payments",
-								},
-							},
-							"detectors": map[string]any{
-								"attributes": map[string]any{
-									"included": []any{"host.name", "host.arch"},
-								},
-							},
-							"cloud.region": "us-central1",
-						},
-					},
-				},
-			},
-			wantAttributes: []otelconf.AttributeNameValue{
-				{Name: "service.namespace", Value: "payments"},
-				{Name: "cloud.region", Value: "us-central1"},
-			},
-			wantSchemaURL:         "https://opentelemetry.io/schemas/1.38.0",
-			wantDetectorIncludes:  []string{"host.name", "host.arch"},
-			wantRemovedLegacyKeys: []string{"cloud.region"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, normalizeTelemetryResourceConfig(tt.raw))
-
-			telemetry := tt.raw["service"].(map[string]any)["telemetry"].(map[string]any)
-			resource := telemetry["resource"].(map[string]any)
-			for _, key := range tt.wantRemovedLegacyKeys {
-				assert.NotContains(t, resource, key)
-			}
-
-			var resourceCfg config.ResourceConfig
-			require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
-			require.NoError(t, xconfmap.Validate(&resourceCfg))
-			require.Empty(t, resourceCfg.LegacyAttributes)
-			require.Equal(t, tt.wantAttributes, resourceCfg.Attributes)
-
-			if tt.wantSchemaURL != "" {
-				require.NotNil(t, resourceCfg.SchemaUrl)
-				assert.Equal(t, tt.wantSchemaURL, *resourceCfg.SchemaUrl)
-			}
-
-			if len(tt.wantDetectorIncludes) > 0 {
-				require.NotNil(t, resourceCfg.Detectors)
-				require.NotNil(t, resourceCfg.Detectors.Attributes)
-				assert.Equal(t, tt.wantDetectorIncludes, resourceCfg.Detectors.Attributes.Included)
-			}
-		})
-	}
-}
-
-func TestNormalizeTelemetryResourceConfigNoopAndErrorBranches(t *testing.T) {
-	tests := []struct {
-		name    string
-		raw     map[string]any
-		wantErr bool
-	}{
-		{
-			name: "missing resource config is ignored",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{},
-				},
-			},
-		},
-		{
-			name: "non map resource config is ignored",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": "invalid-shape",
-					},
-				},
-			},
-		},
-		{
-			name: "declarative only config is unchanged",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"attributes": []any{
-								map[string]any{"name": "service.name", "value": "svc"},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "legacy only config is unchanged",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"service.name": "svc",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "invalid declarative attributes returns error",
-			raw: map[string]any{
-				"service": map[string]any{
-					"telemetry": map[string]any{
-						"resource": map[string]any{
-							"attributes":   "bad",
-							"service.name": "svc",
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := normalizeTelemetryResourceConfig(tt.raw)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestComposeAgentConfigFilesBranches(t *testing.T) {
 	t.Run("ignores unreadable and invalid local configs", func(t *testing.T) {
 		validCfg := filepath.Join(t.TempDir(), "valid.yaml")
@@ -562,7 +362,7 @@ service:
 			pidProvider:      staticPIDProvider(1234),
 		}
 
-		got, err := s.composeAgentConfigFiles(nil)
+		got, err := s.composeAgentConfigFiles(nil, s.config.Agent.ConfigFiles)
 		require.NoError(t, err)
 		assert.Contains(t, string(got), "service.name")
 		assert.Contains(t, string(got), "svc")
@@ -583,9 +383,309 @@ service:
 					"": {Body: []byte("service: [")},
 				},
 			},
-		})
+		}, s.config.Agent.ConfigFiles)
 		require.Error(t, err)
 	})
+
+	t.Run("special configs keep declarative telemetry resource format", func(t *testing.T) {
+		localCfg := filepath.Join(t.TempDir(), "local.yaml")
+		require.NoError(t, os.WriteFile(localCfg, []byte(`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: svc
+`), 0o600))
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.version",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "1.2.3"},
+					},
+				},
+			},
+		})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					localCfg,
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}},
+			},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			persistentState:                &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:                       &atomic.Value{},
+			pidProvider:                    staticPIDProvider(1234),
+		}
+		require.NoError(t, s.createTemplates())
+
+		got, err := s.composeAgentConfigFiles(nil, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+		assert.NotContains(t, resource, "service.instance.id")
+		assert.NotContains(t, resource, "service.version")
+
+		attrs, ok := resource["attributes"].([]any)
+		require.True(t, ok)
+		assert.Contains(t, attrs, map[string]any{"name": "service.name", "value": "svc"})
+		assert.Contains(t, attrs, map[string]any{"name": "service.instance.id", "value": "018fee23-4a51-7303-a441-73faed7d9deb"})
+		assert.Contains(t, attrs, map[string]any{"name": "service.version", "value": "1.2.3"})
+	})
+
+	t.Run("legacy local resource config stays compatible with supervisor special configs", func(t *testing.T) {
+		localCfg := filepath.Join(t.TempDir(), "legacy.yaml")
+		require.NoError(t, os.WriteFile(localCfg, []byte(`
+service:
+  telemetry:
+    resource:
+      deployment.environment: prod
+`), 0o600))
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.version",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "1.2.3"},
+					},
+				},
+			},
+		})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					localCfg,
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}},
+			},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			persistentState:                &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:                       &atomic.Value{},
+			pidProvider:                    staticPIDProvider(1234),
+		}
+		require.NoError(t, s.createTemplates())
+
+		got, err := s.composeAgentConfigFiles(nil, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+		assert.NotContains(t, resource, "deployment.environment")
+		assert.NotContains(t, resource, "service.instance.id")
+		assert.NotContains(t, resource, "service.version")
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+
+		attrValues := make(map[string]any, len(resourceCfg.Attributes))
+		for _, attr := range resourceCfg.Attributes {
+			attrValues[attr.Name] = attr.Value
+		}
+		assert.Equal(t, "prod", attrValues["deployment.environment"])
+		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+		assert.Equal(t, "1.2.3", attrValues["service.version"])
+	})
+
+	t.Run("remote declarative attributes can clear lower priority declarative attributes", func(t *testing.T) {
+		localCfg := filepath.Join(t.TempDir(), "local.yaml")
+		require.NoError(t, os.WriteFile(localCfg, []byte(`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: svc
+        - name: deployment.environment
+          value: prod
+`), 0o600))
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.version",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "1.2.3"},
+					},
+				},
+			},
+		})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					localCfg,
+					string(config.SpecialConfigFileRemoteConfig),
+				}},
+			},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			persistentState:                &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:                       &atomic.Value{},
+			pidProvider:                    staticPIDProvider(1234),
+		}
+
+		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte(`
+service:
+  telemetry:
+    resource:
+      attributes: []
+`)},
+				},
+			},
+		}, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+
+		attrValues := make(map[string]any, len(resourceCfg.Attributes))
+		for _, attr := range resourceCfg.Attributes {
+			attrValues[attr.Name] = attr.Value
+		}
+
+		_, hasServiceName := attrValues["service.name"]
+		_, hasDeployment := attrValues["deployment.environment"]
+		assert.False(t, hasServiceName)
+		assert.False(t, hasDeployment)
+		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+		assert.Equal(t, "1.2.3", attrValues["service.version"])
+	})
+}
+
+func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing.T) {
+	agentDesc := &atomic.Value{}
+	agentDesc.Store(&protobufs.AgentDescription{
+		IdentifyingAttributes: []*protobufs.KeyValue{
+			{
+				Key: "service.name",
+				Value: &protobufs.AnyValue{
+					Value: &protobufs.AnyValue_StringValue{StringValue: "otelcol"},
+				},
+			},
+		},
+		NonIdentifyingAttributes: []*protobufs.KeyValue{
+			{
+				Key: "service.version",
+				Value: &protobufs.AnyValue{
+					Value: &protobufs.AnyValue_StringValue{StringValue: "0.152.0"},
+				},
+			},
+		},
+	})
+
+	s := Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		agentDescription:  agentDesc,
+	}
+	require.NoError(t, s.createTemplates())
+
+	k := koanf.New("::")
+	require.NoError(t, k.Load(rawbytes.Provider(s.composeExtraTelemetryConfig()), yaml.Parser()))
+
+	resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+	require.True(t, ok)
+	assert.NotContains(t, resource, "service.name")
+	assert.NotContains(t, resource, "service.version")
+
+	attrs, ok := resource["attributes"].([]any)
+	require.True(t, ok)
+	require.Len(t, attrs, 2)
+	assert.Equal(t, []any{
+		map[string]any{"name": "service.name", "value": "otelcol"},
+		map[string]any{"name": "service.version", "value": "0.152.0"},
+	}, attrs)
+}
+
+func TestComposeExtraTelemetryConfigTemplateError(t *testing.T) {
+	agentDesc := &atomic.Value{}
+	agentDesc.Store(&protobufs.AgentDescription{})
+
+	s := Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		agentDescription:  agentDesc,
+		extraTelemetryConfigTemplate: template.Must(template.New("bad").Funcs(template.FuncMap{
+			"boom": func() (string, error) {
+				return "", errors.New("boom")
+			},
+		}).Parse(`{{boom}}`)),
+	}
+
+	assert.Nil(t, s.composeExtraTelemetryConfig())
+}
+
+func TestConfigMergeFuncMergesResourceAttributes(t *testing.T) {
+	src := map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": []any{
+						map[string]any{"name": "service.name", "value": "src"},
+						map[string]any{"name": "service.instance.id", "value": "src-id"},
+					},
+				},
+			},
+		},
+	}
+	dest := map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": []any{
+						map[string]any{"name": "service.name", "value": "dest"},
+						map[string]any{"name": "service.version", "value": "1.2.3"},
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, configMergeFunc(src, dest))
+
+	resource := dest["service"].(map[string]any)["telemetry"].(map[string]any)["resource"].(map[string]any)
+	attrs, ok := resource["attributes"].([]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{
+		map[string]any{"name": "service.name", "value": "src"},
+		map[string]any{"name": "service.version", "value": "1.2.3"},
+		map[string]any{"name": "service.instance.id", "value": "src-id"},
+	}, attrs)
 }
 
 func Test_onMessage(t *testing.T) {
@@ -792,7 +892,8 @@ func Test_onMessage(t *testing.T) {
 		t.Log(s.cfgState.Load())
 		mergedCfg := s.cfgState.Load().(*configState).mergedConfig
 		require.Contains(t, mergedCfg, newID.String())
-		require.Contains(t, mergedCfg, "runtime.type: test")
+		require.Contains(t, mergedCfg, "- name: runtime.type")
+		require.Contains(t, mergedCfg, "value: test")
 	})
 	t.Run("RemoteConfig - Remote Config message is processed and merged into local config", func(t *testing.T) {
 		const testConfigMessage = `receivers:
@@ -823,7 +924,9 @@ service:
             output_paths:
                 - stdout
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -925,7 +1028,9 @@ service:
             output_paths:
                 - stdout
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -1112,7 +1217,9 @@ service:
             output_paths:
                 - stdout
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		// store the initial remote config message so the supervisor is initialized with it
@@ -1406,6 +1513,183 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			CustomCapabilities: customCapabilities,
 		})
+	})
+
+	t.Run("AgentDescription - Agent description from agent is forwarded to server", func(t *testing.T) {
+		incomingAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "other.identifying",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-value",
+						},
+					},
+				},
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-service",
+						},
+					},
+				},
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "resource.attr",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "resource-value",
+						},
+					},
+				},
+			},
+		}
+		expectedAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "client.id",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "client-1",
+						},
+					},
+				},
+				{
+					Key: "other.identifying",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-value",
+						},
+					},
+				},
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "override-service",
+						},
+					},
+				},
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "resource.attr",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "resource-value",
+						},
+					},
+				},
+				{
+					Key: "test.attribute",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test-value",
+						},
+					},
+				},
+			},
+		}
+
+		agentDescriptionForwarded := false
+		mc := &mockOpAMPClient{
+			setAgentDescriptionFunc: func(descr *protobufs.AgentDescription) error {
+				agentDescriptionForwarded = true
+				require.Equal(t, expectedAgentDescription, descr)
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
+			config: config.Supervisor{
+				Agent: config.Agent{
+					Description: config.AgentDescription{
+						IdentifyingAttributes: map[string]string{
+							"client.id":    "client-1",
+							"service.name": "override-service",
+						},
+						NonIdentifyingAttributes: map[string]string{
+							"test.attribute": "test-value",
+						},
+					},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentDescription:               &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			AgentDescription: incomingAgentDescription,
+		})
+
+		require.True(t, agentDescriptionForwarded)
+		require.Equal(t, expectedAgentDescription, s.agentDescription.Load())
+		require.Equal(t, expectedAgentDescription, mc.AgentDescription())
+	})
+
+	t.Run("AgentDescription - forwarding error does not reject agent message", func(t *testing.T) {
+		incomingAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "test.attribute",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test-value",
+						},
+					},
+				},
+			},
+		}
+
+		agentDescriptionForwarded := false
+		mc := &mockOpAMPClient{
+			setAgentDescriptionFunc: func(*protobufs.AgentDescription) error {
+				agentDescriptionForwarded = true
+				return errors.New("unexpected error")
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentDescription:               &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			AgentDescription: incomingAgentDescription,
+		})
+
+		require.True(t, agentDescriptionForwarded)
+		require.Equal(t, incomingAgentDescription, s.agentDescription.Load())
+		require.Equal(t, incomingAgentDescription, mc.AgentDescription())
 	})
 
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
@@ -1703,6 +1987,7 @@ func (s staticPIDProvider) PID() int {
 
 type mockOpAMPClient struct {
 	agentDesc                 *protobufs.AgentDescription
+	setAgentDescriptionFunc   func(descr *protobufs.AgentDescription) error
 	sendCustomMessageFunc     func(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error)
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
@@ -1724,6 +2009,9 @@ func (mockOpAMPClient) Stop(context.Context) error {
 
 func (m *mockOpAMPClient) SetAgentDescription(descr *protobufs.AgentDescription) error {
 	m.agentDesc = descr
+	if m.setAgentDescriptionFunc != nil {
+		return m.setAgentDescriptionFunc(descr)
+	}
 	return nil
 }
 
@@ -1951,13 +2239,24 @@ func writeValidationExecutable(t *testing.T, exitCode int) string {
 	t.Helper()
 
 	executablePath := filepath.Join(t.TempDir(), "fake-collector")
+	if runtime.GOOS == "windows" {
+		executablePath += ".bat"
+		script := fmt.Sprintf(`@echo off
+if "%%1"=="validate" exit /b %d
+exit /b 0
+`, exitCode)
+		require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o600))
+		return executablePath
+	}
+
 	script := fmt.Sprintf(`#!/bin/sh
 if [ "$1" = "validate" ]; then
   exit %d
 fi
 exit 0
 `, exitCode)
-	require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o700))
+	require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o600))
+	require.NoError(t, os.Chmod(executablePath, 0o700))
 	return executablePath
 }
 
@@ -1981,7 +2280,7 @@ func newComposeMergedConfigTestSupervisor(t *testing.T, executablePath string, v
 		hasNewConfig:                   make(chan struct{}, 1),
 		agentConfigOwnTelemetrySection: &atomic.Value{},
 		cfgState:                       &atomic.Value{},
-		runCtx:                         context.Background(),
+		runCtx:                         t.Context(),
 	}
 	agentDesc := &atomic.Value{}
 	agentDesc.Store(&protobufs.AgentDescription{
@@ -2105,8 +2404,11 @@ service:
                             endpoint: localhost-metrics
                             protocol: http/protobuf
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
-            service.name: otelcol
+            attributes:
+                - name: service.name
+                  value: otelcol
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
         traces:
             processors:
                 - batch:
@@ -2227,7 +2529,9 @@ service:
                 - nop
     telemetry:
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -2273,7 +2577,9 @@ service:
                 - nop
     telemetry:
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -2471,8 +2777,10 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg.Agent.ConfigFiles = tc.configFiles
 			supervisor := Supervisor{config: cfg}
-			supervisor.addSpecialConfigFiles()
-			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
+			originalConfigFiles := slices.Clone(tc.configFiles)
+			configFiles := supervisor.addSpecialConfigFiles()
+			require.Equal(t, tc.expectedConfigFiles, configFiles)
+			require.Equal(t, originalConfigFiles, supervisor.config.Agent.ConfigFiles)
 		})
 	}
 }
@@ -2673,4 +2981,393 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 
 	close(startSignal)
 	wg.Wait()
+}
+
+func TestSupervisor_composeFallbackConfig(t *testing.T) {
+	const fallbackConfigInput = `receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const fallbackBaseConfigInput = `receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const fallbackOverrideConfigInput = `exporters:
+  logging:
+service:
+  pipelines:
+    logs:
+      exporters: [logging]
+`
+
+	const expectedMergedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - nop
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource:
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
+                - name: service.name
+                  value: otelcol
+`
+
+	const expectedMergedConfigWithOwnTelemetry = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - nop
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        metrics:
+            readers:
+                - periodic:
+                    exporter:
+                        otlp:
+                            endpoint: http://localhost:4318
+        resource:
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
+                - name: service.name
+                  value: otelcol
+`
+
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	tests := []struct {
+		name               string
+		fallbackConfig     string
+		ownTelemetryConfig string
+		wantErr            bool
+		wantErrContains    string
+		wantChanged        bool
+		wantConfig         string
+	}{
+		{
+			name:           "fallback config with opamp extension and telemetry configs added",
+			fallbackConfig: fallbackConfigInput,
+			wantErr:        false,
+			wantChanged:    true,
+			wantConfig:     expectedMergedConfig,
+		},
+		{
+			name:               "fallback config with own telemetry merged",
+			fallbackConfig:     fallbackConfigInput,
+			ownTelemetryConfig: "service:\n  telemetry:\n    metrics:\n      readers:\n        - periodic:\n            exporter:\n              otlp:\n                endpoint: http://localhost:4318\n",
+			wantErr:            false,
+			wantChanged:        true,
+			wantConfig:         expectedMergedConfigWithOwnTelemetry,
+		},
+		{
+			name:            "invalid YAML in fallback config",
+			fallbackConfig:  "invalid: yaml: content: [",
+			wantErr:         true,
+			wantErrContains: "could not load fallback config",
+			wantChanged:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fallbackConfigPath := filepath.Join(t.TempDir(), "fallback_config.yaml")
+			require.NoError(t, os.WriteFile(fallbackConfigPath, []byte(tt.fallbackConfig), 0o600))
+
+			s := Supervisor{
+				telemetrySettings: newNopTelemetrySettings(),
+				persistentState:   &persistentState{InstanceID: testUUID},
+				pidProvider:       staticPIDProvider(1234),
+				config: config.Supervisor{
+					Storage: config.Storage{
+						Directory: t.TempDir(),
+					},
+					Agent: config.Agent{
+						StartupFallbackConfigs: []string{fallbackConfigPath},
+					},
+				},
+				hasNewConfig:                   make(chan struct{}, 1),
+				agentConfigOwnTelemetrySection: &atomic.Value{},
+				cfgState:                       &atomic.Value{},
+			}
+
+			agentDesc := &atomic.Value{}
+			agentDesc.Store(&protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					{
+						Key: "service.name",
+						Value: &protobufs.AnyValue{
+							Value: &protobufs.AnyValue_StringValue{
+								StringValue: "otelcol",
+							},
+						},
+					},
+				},
+			})
+			s.agentDescription = agentDesc
+
+			// Store own telemetry config if provided
+			if tt.ownTelemetryConfig != "" {
+				s.agentConfigOwnTelemetrySection.Store(tt.ownTelemetryConfig)
+			}
+
+			require.NoError(t, s.createTemplates())
+
+			configChanged, err := s.composeFallbackConfig()
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErrContains)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.wantChanged, configChanged)
+
+			cfgState := s.cfgState.Load().(*configState)
+			require.NotNil(t, cfgState)
+
+			gotConfig := strings.ReplaceAll(cfgState.mergedConfig, "\r\n", "\n")
+			require.Equal(t, tt.wantConfig, gotConfig)
+		})
+	}
+
+	t.Run("fallback config file not found", func(t *testing.T) {
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					StartupFallbackConfigs: []string{"/nonexistent/path/fallback_config.yaml"},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		configChanged, err := s.composeFallbackConfig()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "could not read fallback config file")
+		require.False(t, configChanged)
+	})
+
+	t.Run("second call with same config returns configChanged false", func(t *testing.T) {
+		fallbackConfigPath := filepath.Join(t.TempDir(), "fallback_config.yaml")
+		require.NoError(t, os.WriteFile(fallbackConfigPath, []byte(fallbackConfigInput), 0o600))
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					StartupFallbackConfigs: []string{fallbackConfigPath},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "otelcol",
+						},
+					},
+				},
+			},
+		})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		// First call should return configChanged=true
+		configChanged, err := s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.True(t, configChanged)
+
+		// Second call with same config should return configChanged=false
+		configChanged, err = s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.False(t, configChanged)
+	})
+
+	t.Run("multiple fallback configs are merged in order", func(t *testing.T) {
+		// Base config defines exporters list as [nop], override changes it to [logging].
+		// Koanf overrides lists by default (except service.extensions via configMergeFunc),
+		// so this validates later fallback configs override earlier ones.
+		basePath := filepath.Join(t.TempDir(), "fallback_base.yaml")
+		overridePath := filepath.Join(t.TempDir(), "fallback_override.yaml")
+		require.NoError(t, os.WriteFile(basePath, []byte(fallbackBaseConfigInput), 0o600))
+		require.NoError(t, os.WriteFile(overridePath, []byte(fallbackOverrideConfigInput), 0o600))
+
+		const expectedMergedConfigMulti = `exporters:
+    logging: null
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - logging
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource:
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
+                - name: service.name
+                  value: otelcol
+`
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					StartupFallbackConfigs: []string{basePath, overridePath},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "otelcol",
+						},
+					},
+				},
+			},
+		})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		configChanged, err := s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.True(t, configChanged)
+
+		cfgState := s.cfgState.Load().(*configState)
+		require.NotNil(t, cfgState)
+		gotConfig := strings.ReplaceAll(cfgState.mergedConfig, "\r\n", "\n")
+		require.Equal(t, expectedMergedConfigMulti, gotConfig)
+	})
 }

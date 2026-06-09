@@ -22,7 +22,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
 
 func simpleError(err string) func() string {
@@ -576,6 +579,18 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestResourceConfigValidateExperimentalAttributeFilters(t *testing.T) {
+	err := (&ResourceConfig{
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"["},
+			},
+		},
+	}).Validate()
+
+	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
+}
+
 func TestSupervisor_UnmarshalExtensions(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"extensions": map[string]any{
@@ -606,6 +621,65 @@ func TestSupervisor_UnmarshalExtensionsUnknownType(t *testing.T) {
 	require.Contains(t, err.Error(), "unknown extension type")
 }
 
+func TestSupervisor_Validate(t *testing.T) {
+	bearerID := component.MustNewID("bearertokenauth")
+	namedBearerID := component.MustNewIDWithName("bearertokenauth", "primary")
+	nopFactory := extensiontest.NewNopFactory()
+
+	testCases := []struct {
+		name        string
+		auth        component.ID
+		extensions  extensions.Config
+		errContains string
+	}{
+		{
+			name: "auth unset",
+		},
+		{
+			name: "auth references existing extension",
+			auth: bearerID,
+			extensions: extensions.Config{
+				bearerID: nopFactory.CreateDefaultConfig(),
+			},
+		},
+		{
+			name: "auth references named extension",
+			auth: namedBearerID,
+			extensions: extensions.Config{
+				namedBearerID: nopFactory.CreateDefaultConfig(),
+			},
+		},
+		{
+			name:        "auth references missing extension",
+			auth:        bearerID,
+			errContains: `server.auth references "bearertokenauth" which is not configured under extensions`,
+		},
+		{
+			name: "auth references missing extension when others configured",
+			auth: namedBearerID,
+			extensions: extensions.Config{
+				bearerID: nopFactory.CreateDefaultConfig(),
+			},
+			errContains: `server.auth references "bearertokenauth/primary" which is not configured under extensions`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := Supervisor{
+				Server:     OpAMPServer{Auth: tc.auth},
+				Extensions: tc.extensions,
+			}
+			err := cfg.Validate()
+			if tc.errContains != "" {
+				require.ErrorContains(t, err, tc.errContains)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 // TestSupervisor_TopLevelValidate confirms that confmap.Validate produces
 // path-prefixed errors when called at the supervisor-config root, which is
 // what NewSupervisor relies on for actionable validation messages.
@@ -622,6 +696,60 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "healthcheck")
+}
+
+func TestSupervisor_LoadServerAuth(t *testing.T) {
+	tmpDir := t.TempDir()
+	executablePath := filepath.Join(tmpDir, "binary")
+	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0o600))
+
+	cases := []struct {
+		name     string
+		yaml     string
+		expected component.ID
+	}{
+		{
+			name: "type only",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+  auth: bearerauth
+agent:
+  executable: %s
+`,
+			expected: component.MustNewID("bearerauth"),
+		},
+		{
+			name: "type and name",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+  auth: bearerauth/primary
+agent:
+  executable: %s
+`,
+			expected: component.MustNewIDWithName("bearerauth", "primary"),
+		},
+		{
+			name: "unset",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+agent:
+  executable: %s
+`,
+			expected: component.ID{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgPath := setupSupervisorConfigFile(t, tmpDir, fmt.Sprintf(tc.yaml, executablePath))
+			cfg, err := Load(cfgPath)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, cfg.Server.Auth)
+		})
+	}
 }
 
 func TestOpAMPServer_OpaqueHeaders(t *testing.T) {

@@ -6,6 +6,7 @@ package k8seventsreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,6 +44,20 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 			desc: "custom qps and burst are valid",
 			cfg: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
+			},
+		},
+		{
+			desc: "negative dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: -1 * time.Second,
+			},
+		},
+		{
+			desc: "positive dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: 5 * time.Minute,
 			},
 		},
 	}
@@ -83,6 +98,17 @@ func TestLoadConfig(t *testing.T) {
 					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_dedup"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+				DedupInterval: 5 * time.Minute,
 			},
 		},
 	}
