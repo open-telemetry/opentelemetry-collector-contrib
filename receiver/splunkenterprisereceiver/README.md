@@ -7,7 +7,6 @@ results from ad-hoc searches. Because of this, care must be taken by users when 
 Cloud deployments. The primary purpose of this receiver is to empower those tasked with the maintenance and care of a Splunk Enterprise deployment to leverage opentelemetry and their observability toolset in their
 jobs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
