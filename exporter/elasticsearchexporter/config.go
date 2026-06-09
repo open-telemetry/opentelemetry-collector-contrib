@@ -271,8 +271,12 @@ type RetrySettings struct {
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 
-	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	// RetryOnStatus configures the status codes that trigger request level retries.
 	RetryOnStatus []int `mapstructure:"retry_on_status"`
+
+	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
+	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
 }
 
 type MappingsSettings struct {
@@ -349,6 +353,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
 		}
 	}
+
+	if !conf.IsSet("retry::retry_on_document_status") {
+		cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
+	}
+
 	return nil
 }
 

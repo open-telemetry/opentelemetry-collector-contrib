@@ -447,6 +447,19 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	}, bi.QueryParams)
 }
 
+func TestBulkIndexerConfigRetryOnDocumentStatus(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200"}
+	cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests}
+	cfg.Retry.RetryOnDocumentStatus = []int{http.StatusTeapot}
+
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+	require.NoError(t, err)
+
+	bi := bulkIndexerConfig(client, cfg, false, zaptest.NewLogger(t))
+	assert.Equal(t, []int{http.StatusTeapot}, bi.RetryOnDocumentStatus)
+}
+
 func TestNewBulkIndexer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200"}
