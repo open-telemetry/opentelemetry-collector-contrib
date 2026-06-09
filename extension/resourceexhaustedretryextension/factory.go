@@ -8,17 +8,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-var typeStr = component.MustNewType("resource_exhausted_retry")
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/resourceexhaustedretryextension/internal/metadata"
+)
 
 // NewFactory creates a factory for the resourceexhaustedretryextension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		create,
-		component.StabilityLevelDevelopment,
+		metadata.ExtensionStability,
 	)
 }
 
@@ -26,6 +26,6 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newExtension(cfg.(*Config)), nil
+func create(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return newExtension(cfg.(*Config), set.TelemetrySettings)
 }

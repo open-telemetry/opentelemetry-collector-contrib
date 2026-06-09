@@ -4,6 +4,7 @@
 package resourceexhaustedretryextension
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +14,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -21,94 +26,103 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestWrapGRPCError_Disabled(t *testing.T) {
-	e := newExtension(&Config{}) // RetryDelay == 0
-	err := status.Error(codes.ResourceExhausted, "full")
-	assert.Equal(t, err, e.wrapGRPCError(err))
+// newTestExtension creates an extension with nop telemetry for tests that do not
+// assert metric values.
+func newTestExtension(t *testing.T, cfg *Config) *resourceExhaustedRetryExtension {
+	t.Helper()
+	e, err := newExtension(cfg, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	return e
 }
 
-func TestWrapGRPCError_NilError(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
-	assert.NoError(t, e.wrapGRPCError(nil))
+// newTelSettings returns TelemetrySettings backed by a real SDK meter provider
+// and a reader that tests can collect from to assert metric values.
+func newTelSettings(t *testing.T) (component.TelemetrySettings, *sdkmetric.ManualReader) {
+	t.Helper()
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = mp
+	t.Cleanup(func() { _ = mp.Shutdown(context.Background()) })
+	return settings, reader
 }
 
-func TestWrapGRPCError_Permanent(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
-	inner := status.Error(codes.ResourceExhausted, "full")
-	err := consumererror.NewPermanent(inner)
-	assert.Equal(t, err, e.wrapGRPCError(err))
+// newTelExtension creates an extension with a real meter provider wired up.
+func newTelExtension(t *testing.T, cfg *Config) (*resourceExhaustedRetryExtension, *sdkmetric.ManualReader) {
+	t.Helper()
+	settings, reader := newTelSettings(t)
+	e, err := newExtension(cfg, settings)
+	require.NoError(t, err)
+	return e, reader
 }
 
-func TestWrapGRPCError_OtherCodes(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
-	for _, code := range []codes.Code{codes.Unavailable, codes.Internal, codes.InvalidArgument} {
-		err := status.Error(code, "err")
-		assert.Equal(t, err, e.wrapGRPCError(err), "code %v should not be modified", code)
-	}
+func collectMetrics(t *testing.T, reader *sdkmetric.ManualReader) metricdata.ResourceMetrics {
+	t.Helper()
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(context.Background(), &rm))
+	return rm
 }
 
-func TestWrapGRPCError_ExistingRetryInfo(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
-	st := status.New(codes.ResourceExhausted, "full")
-	st, _ = st.WithDetails(&errdetails.RetryInfo{
-		RetryDelay: durationpb.New(42 * time.Second),
-	})
-	err := st.Err()
-	got := e.wrapGRPCError(err)
-	assert.Equal(t, err, got)
-}
-
-func TestWrapGRPCError_InjectsRetryInfo(t *testing.T) {
-	delay := 2 * time.Second
-	e := newExtension(&Config{RetryDelay: delay})
-	err := status.Error(codes.ResourceExhausted, "full")
-
-	got := e.wrapGRPCError(err)
-	require.NotEqual(t, err, got)
-
-	st, ok := status.FromError(got)
-	require.True(t, ok)
-	assert.Equal(t, codes.ResourceExhausted, st.Code())
-
-	var ri *errdetails.RetryInfo
-	for _, d := range st.Details() {
-		if r, ok := d.(*errdetails.RetryInfo); ok {
-			ri = r
+// counterTotal returns the sum of all data-point values for the named counter.
+func counterTotal(rm metricdata.ResourceMetrics, name string) int64 {
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name != name {
+				continue
+			}
+			sum, ok := m.Data.(metricdata.Sum[int64])
+			if !ok {
+				return 0
+			}
+			var total int64
+			for _, dp := range sum.DataPoints {
+				total += dp.Value
+			}
+			return total
 		}
 	}
-	require.NotNil(t, ri, "RetryInfo not found in status details")
-	assert.Equal(t, delay, ri.RetryDelay.AsDuration())
+	return 0
 }
 
-func TestEffectiveDelay_NoJitter(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: 3 * time.Second})
-	assert.Equal(t, 3*time.Second, e.effectiveDelay())
-}
-
-func TestEffectiveDelay_WithJitter(t *testing.T) {
-	base := 2 * time.Second
-	jitter := 3 * time.Second
-	e := newExtension(&Config{RetryDelay: base, Jitter: jitter})
-	for range 1000 {
-		d := e.effectiveDelay()
-		assert.GreaterOrEqual(t, d, base, "delay below RetryDelay")
-		assert.LessOrEqual(t, d, base+jitter, "delay above RetryDelay+Jitter")
+// counterByReason returns the value of the data point for the named counter whose
+// "reason" attribute matches the given value.
+func counterByReason(rm metricdata.ResourceMetrics, name, reason string) int64 {
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name != name {
+				continue
+			}
+			sum, ok := m.Data.(metricdata.Sum[int64])
+			if !ok {
+				return 0
+			}
+			for _, dp := range sum.DataPoints {
+				for _, attr := range dp.Attributes.ToSlice() {
+					if string(attr.Key) == "reason" && attr.Value.AsString() == reason {
+						return dp.Value
+					}
+				}
+			}
+		}
 	}
+	return 0
 }
 
-func TestGetGRPCServerOptions_Disabled(t *testing.T) {
-	e := newExtension(&Config{})
-	opts, err := e.GetGRPCServerOptions()
-	require.NoError(t, err)
-	assert.Empty(t, opts)
-}
-
-func TestGetGRPCServerOptions_ReturnsInterceptors(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
-	opts, err := e.GetGRPCServerOptions()
-	require.NoError(t, err)
-	require.Len(t, opts, 2, "expected unary + stream interceptor options")
-	require.NotPanics(t, func() { grpc.NewServer(opts...) })
+// histogramDataPoint finds the first histogram data point for the named metric.
+func histogramDataPoint(rm metricdata.ResourceMetrics, name string) (metricdata.HistogramDataPoint[int64], bool) {
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name != name {
+				continue
+			}
+			hist, ok := m.Data.(metricdata.Histogram[int64])
+			if !ok || len(hist.DataPoints) == 0 {
+				return metricdata.HistogramDataPoint[int64]{}, false
+			}
+			return hist.DataPoints[0], true
+		}
+	}
+	return metricdata.HistogramDataPoint[int64]{}, false
 }
 
 // serveStatus is a test helper that creates a middleware handler from the extension,
@@ -125,64 +139,203 @@ func serveStatus(t *testing.T, e *resourceExhaustedRetryExtension, statusCode in
 	return rec
 }
 
+// --- gRPC error wrapping ---
+
+func TestWrapGRPCError_Disabled(t *testing.T) {
+	e := newTestExtension(t, &Config{}) // RetryDelay == 0
+	err := status.Error(codes.ResourceExhausted, "full")
+	assert.Equal(t, err, e.wrapGRPCError(err))
+}
+
+func TestWrapGRPCError_NilError(t *testing.T) {
+	e := newTestExtension(t, &Config{RetryDelay: time.Second})
+	assert.NoError(t, e.wrapGRPCError(nil))
+}
+
+func TestWrapGRPCError_Permanent(t *testing.T) {
+	e, reader := newTelExtension(t, &Config{RetryDelay: time.Second})
+	inner := status.Error(codes.ResourceExhausted, "full")
+	err := consumererror.NewPermanent(inner)
+
+	assert.Equal(t, err, e.wrapGRPCError(err))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterByReason(rm, "otelcol_extension_resource_exhausted_retry_retries_not_set", "permanent"))
+}
+
+func TestWrapGRPCError_OtherCodes(t *testing.T) {
+	e, reader := newTelExtension(t, &Config{RetryDelay: time.Second})
+
+	for _, code := range []codes.Code{codes.Unavailable, codes.Internal, codes.InvalidArgument} {
+		err := status.Error(code, "err")
+		assert.Equal(t, err, e.wrapGRPCError(err), "code %v should not be modified", code)
+	}
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(3), counterByReason(rm, "otelcol_extension_resource_exhausted_retry_retries_not_set", "wrong_code"))
+}
+
+func TestWrapGRPCError_ExistingRetryInfo(t *testing.T) {
+	e, reader := newTelExtension(t, &Config{RetryDelay: time.Second})
+	st := status.New(codes.ResourceExhausted, "full")
+	st, _ = st.WithDetails(&errdetails.RetryInfo{RetryDelay: durationpb.New(42 * time.Second)})
+	err := st.Err()
+
+	assert.Equal(t, err, e.wrapGRPCError(err))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterByReason(rm, "otelcol_extension_resource_exhausted_retry_retries_not_set", "retry_info_present"))
+}
+
+func TestWrapGRPCError_InjectsRetryInfo(t *testing.T) {
+	delay := 2 * time.Second
+	e, reader := newTelExtension(t, &Config{RetryDelay: delay})
+
+	got := e.wrapGRPCError(status.Error(codes.ResourceExhausted, "full"))
+	require.NotEqual(t, status.Error(codes.ResourceExhausted, "full"), got)
+
+	st, ok := status.FromError(got)
+	require.True(t, ok)
+	assert.Equal(t, codes.ResourceExhausted, st.Code())
+	var ri *errdetails.RetryInfo
+	for _, d := range st.Details() {
+		if r, ok := d.(*errdetails.RetryInfo); ok {
+			ri = r
+		}
+	}
+	require.NotNil(t, ri, "RetryInfo not found in status details")
+	assert.Equal(t, delay, ri.RetryDelay.AsDuration())
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
+	dp, found := histogramDataPoint(rm, "otelcol_extension_resource_exhausted_retry_retry_delay")
+	require.True(t, found, "retry_delay histogram not recorded")
+	assert.Equal(t, uint64(1), dp.Count)
+	assert.Equal(t, int64(2000), dp.Sum)
+}
+
+// --- Effective delay ---
+
+func TestEffectiveDelay_NoJitter(t *testing.T) {
+	e := newTestExtension(t, &Config{RetryDelay: 3 * time.Second})
+	assert.Equal(t, 3*time.Second, e.effectiveDelay())
+}
+
+func TestEffectiveDelay_WithJitter(t *testing.T) {
+	base := 2 * time.Second
+	jitter := 3 * time.Second
+	e := newTestExtension(t, &Config{RetryDelay: base, Jitter: jitter})
+	for range 1000 {
+		d := e.effectiveDelay()
+		assert.GreaterOrEqual(t, d, base, "delay below RetryDelay")
+		assert.LessOrEqual(t, d, base+jitter, "delay above RetryDelay+Jitter")
+	}
+}
+
+// --- gRPC server options ---
+
+func TestGetGRPCServerOptions_Disabled(t *testing.T) {
+	e := newTestExtension(t, &Config{})
+	opts, err := e.GetGRPCServerOptions()
+	require.NoError(t, err)
+	assert.Empty(t, opts)
+}
+
+func TestGetGRPCServerOptions_ReturnsInterceptors(t *testing.T) {
+	e := newTestExtension(t, &Config{RetryDelay: time.Second})
+	opts, err := e.GetGRPCServerOptions()
+	require.NoError(t, err)
+	require.Len(t, opts, 2, "expected unary + stream interceptor options")
+	require.NotPanics(t, func() { grpc.NewServer(opts...) })
+}
+
+// --- HTTP handler ---
+
 func TestGetHTTPHandler_Disabled(t *testing.T) {
-	e := newExtension(&Config{}) // RetryDelay == 0
+	e := newTestExtension(t, &Config{}) // RetryDelay == 0
 	base := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	handler, err := e.GetHTTPHandler(base)
 	require.NoError(t, err)
 	// When disabled, the base handler must be returned unchanged.
-	// Compare function pointer addresses since func values cannot be compared directly.
 	assert.Equal(t, fmt.Sprintf("%p", http.HandlerFunc(base)), fmt.Sprintf("%p", handler.(http.HandlerFunc)))
 }
 
 func TestGetHTTPHandler_Wraps(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: time.Second})
+	e, reader := newTelExtension(t, &Config{RetryDelay: time.Second})
 	base := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
 	})
 	handler, err := e.GetHTTPHandler(base)
 	require.NoError(t, err)
 	require.NotNil(t, handler)
-	// Serve a 429 and confirm Retry-After is injected — the handler must be a wrapping handler.
+
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/", nil)
-	handler.ServeHTTP(rec, req)
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/", nil))
 	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 	assert.NotEmpty(t, rec.Header().Get("Retry-After"))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
 }
 
+// --- HTTP middleware ---
+
 func TestHTTPMiddleware_429_InjectsRetryAfter(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	e, reader := newTelExtension(t, &Config{RetryDelay: 2 * time.Second, Jitter: 0})
+
 	rec := serveStatus(t, e, http.StatusTooManyRequests)
 	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 	assert.Equal(t, "2", rec.Header().Get("Retry-After"))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
+	dp, found := histogramDataPoint(rm, "otelcol_extension_resource_exhausted_retry_retry_delay")
+	require.True(t, found, "retry_delay histogram not recorded")
+	assert.Equal(t, uint64(1), dp.Count)
+	assert.Equal(t, int64(2000), dp.Sum)
 }
 
 func TestHTTPMiddleware_OtherStatus_NoRetryAfter(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	e, reader := newTelExtension(t, &Config{RetryDelay: 2 * time.Second, Jitter: 0})
+
 	for _, code := range []int{http.StatusOK, http.StatusInternalServerError, http.StatusServiceUnavailable} {
 		rec := serveStatus(t, e, code)
 		assert.Equal(t, code, rec.Code)
 		assert.Empty(t, rec.Header().Get("Retry-After"), "status %d should not have Retry-After", code)
 	}
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(3), counterByReason(rm, "otelcol_extension_resource_exhausted_retry_retries_not_set", "wrong_code"))
 }
 
 func TestHTTPMiddleware_SubSecondRoundsUpToOne(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: 300 * time.Millisecond, Jitter: 0})
+	e, reader := newTelExtension(t, &Config{RetryDelay: 300 * time.Millisecond, Jitter: 0})
+
 	rec := serveStatus(t, e, http.StatusTooManyRequests)
 	assert.Equal(t, "1", rec.Header().Get("Retry-After"))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
+	dp, found := histogramDataPoint(rm, "otelcol_extension_resource_exhausted_retry_retry_delay")
+	require.True(t, found)
+	assert.Equal(t, uint64(1), dp.Count)
+	assert.Equal(t, int64(300), dp.Sum)
 }
 
 func TestHTTPMiddleware_ExactSecondNoRoundup(t *testing.T) {
-	e := newExtension(&Config{RetryDelay: 2 * time.Second, Jitter: 0})
+	e, reader := newTelExtension(t, &Config{RetryDelay: 2 * time.Second, Jitter: 0})
+
 	rec := serveStatus(t, e, http.StatusTooManyRequests)
 	assert.Equal(t, "2", rec.Header().Get("Retry-After"))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
 }
 
 func TestHTTPMiddleware_429_Disabled(t *testing.T) {
-	e := newExtension(&Config{}) // RetryDelay == 0
+	e := newTestExtension(t, &Config{}) // RetryDelay == 0
 	rec := serveStatus(t, e, http.StatusTooManyRequests)
 	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 	assert.Empty(t, rec.Header().Get("Retry-After"))
@@ -197,12 +350,17 @@ func TestHTTPMiddleware_WriteHeader_DoubleCall(t *testing.T) {
 		onWriteHeader:  func() { calls++ },
 	}
 
-	rw := &retryResponseWriter{ResponseWriter: cw, delay: 2 * time.Second}
+	e, reader := newTelExtension(t, &Config{RetryDelay: 2 * time.Second})
+	rw := &retryResponseWriter{ResponseWriter: cw, delay: 2 * time.Second, resource: e}
 	rw.WriteHeader(http.StatusTooManyRequests) // first call
 	rw.WriteHeader(http.StatusTooManyRequests) // second call — must be suppressed
 
 	assert.Equal(t, 1, calls, "underlying WriteHeader must be called exactly once")
 	assert.Equal(t, "2", cw.ResponseWriter.(*httptest.ResponseRecorder).Header().Get("Retry-After"))
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(1), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"),
+		"suppressed second WriteHeader must not record a second metric")
 }
 
 // countingWriter is a test spy that tracks WriteHeader invocations.
@@ -219,7 +377,7 @@ func (cw *countingWriter) WriteHeader(code int) {
 func TestHTTPMiddleware_Jitter_429(t *testing.T) {
 	base := 2 * time.Second
 	jitter := 3 * time.Second
-	e := newExtension(&Config{RetryDelay: base, Jitter: jitter})
+	e, reader := newTelExtension(t, &Config{RetryDelay: base, Jitter: jitter})
 
 	for i := range 100 {
 		rec := serveStatus(t, e, http.StatusTooManyRequests)
@@ -230,7 +388,15 @@ func TestHTTPMiddleware_Jitter_429(t *testing.T) {
 		assert.GreaterOrEqual(t, secs, int(base.Seconds()), "sample %d: Retry-After below RetryDelay", i)
 		assert.LessOrEqual(t, secs, int((base + jitter).Seconds()), "sample %d: Retry-After above RetryDelay+Jitter", i)
 	}
+
+	rm := collectMetrics(t, reader)
+	assert.Equal(t, int64(100), counterTotal(rm, "otelcol_extension_resource_exhausted_retry_retries_set"))
+	dp, found := histogramDataPoint(rm, "otelcol_extension_resource_exhausted_retry_retry_delay")
+	require.True(t, found, "retry_delay histogram not recorded")
+	assert.Equal(t, uint64(100), dp.Count)
 }
+
+// --- Config validation ---
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
