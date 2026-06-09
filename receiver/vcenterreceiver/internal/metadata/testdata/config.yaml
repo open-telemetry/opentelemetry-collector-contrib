@@ -60,6 +60,11 @@ all_set:
       enabled: true
     vcenter.host.cpu.utilization:
       enabled: true
+    vcenter.host.datastore.normalized_latency.avg:
+      enabled: true
+    vcenter.host.datastore.operations:
+      enabled: true
+      attributes: ["direction"]
     vcenter.host.disk.latency.avg:
       enabled: true
       attributes: ["direction","object"]
@@ -90,6 +95,8 @@ all_set:
     vcenter.host.network.usage:
       enabled: true
       attributes: ["object"]
+    vcenter.host.uptime:
+      enabled: true
     vcenter.host.vsan.cache.hit_rate:
       enabled: true
     vcenter.host.vsan.congestions:
@@ -119,6 +126,8 @@ all_set:
     vcenter.resource_pool.memory.usage:
       enabled: true
       attributes: ["type"]
+    vcenter.vm.cpu.latency.avg:
+      enabled: true
     vcenter.vm.cpu.readiness:
       enabled: true
     vcenter.vm.cpu.time:
@@ -267,6 +276,11 @@ reaggregate_set:
       enabled: true
     vcenter.host.cpu.utilization:
       enabled: true
+    vcenter.host.datastore.normalized_latency.avg:
+      enabled: true
+    vcenter.host.datastore.operations:
+      enabled: true
+      attributes: []
     vcenter.host.disk.latency.avg:
       enabled: true
       attributes: []
@@ -297,6 +311,8 @@ reaggregate_set:
     vcenter.host.network.usage:
       enabled: true
       attributes: []
+    vcenter.host.uptime:
+      enabled: true
     vcenter.host.vsan.cache.hit_rate:
       enabled: true
     vcenter.host.vsan.congestions:
@@ -326,6 +342,8 @@ reaggregate_set:
     vcenter.resource_pool.memory.usage:
       enabled: true
       attributes: []
+    vcenter.vm.cpu.latency.avg:
+      enabled: true
     vcenter.vm.cpu.readiness:
       enabled: true
     vcenter.vm.cpu.time:
@@ -474,6 +492,11 @@ none_set:
       enabled: false
     vcenter.host.cpu.utilization:
       enabled: false
+    vcenter.host.datastore.normalized_latency.avg:
+      enabled: false
+    vcenter.host.datastore.operations:
+      enabled: false
+      attributes: ["direction"]
     vcenter.host.disk.latency.avg:
       enabled: false
       attributes: ["direction","object"]
@@ -504,6 +527,8 @@ none_set:
     vcenter.host.network.usage:
       enabled: false
       attributes: ["object"]
+    vcenter.host.uptime:
+      enabled: false
     vcenter.host.vsan.cache.hit_rate:
       enabled: false
     vcenter.host.vsan.congestions:
@@ -533,6 +558,8 @@ none_set:
     vcenter.resource_pool.memory.usage:
       enabled: false
       attributes: ["type"]
+    vcenter.vm.cpu.latency.avg:
+      enabled: false
     vcenter.vm.cpu.readiness:
       enabled: false
     vcenter.vm.cpu.time:

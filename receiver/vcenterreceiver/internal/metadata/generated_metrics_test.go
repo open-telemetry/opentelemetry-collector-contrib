@@ -78,6 +78,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["vcenter.datacenter.vm.count"] = mb.metricVcenterDatacenterVMCount.config.AggregationStrategy
 			aggMap["vcenter.datastore.disk.usage"] = mb.metricVcenterDatastoreDiskUsage.config.AggregationStrategy
 			aggMap["vcenter.host.cpu.reserved"] = mb.metricVcenterHostCPUReserved.config.AggregationStrategy
+			aggMap["vcenter.host.datastore.operations"] = mb.metricVcenterHostDatastoreOperations.config.AggregationStrategy
 			aggMap["vcenter.host.disk.latency.avg"] = mb.metricVcenterHostDiskLatencyAvg.config.AggregationStrategy
 			aggMap["vcenter.host.disk.latency.max"] = mb.metricVcenterHostDiskLatencyMax.config.AggregationStrategy
 			aggMap["vcenter.host.disk.throughput"] = mb.metricVcenterHostDiskThroughput.config.AggregationStrategy
@@ -243,6 +244,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordVcenterHostDatastoreNormalizedLatencyAvgDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostDatastoreOperationsDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostDatastoreOperationsDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
@@ -310,6 +320,9 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
 
+			allMetricsCount++
+			mb.RecordVcenterHostUptimeDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
@@ -372,6 +385,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 3, AttributeMemoryUsageTypeHost)
 			}
+
+			allMetricsCount++
+			mb.RecordVcenterVMCPULatencyAvgDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -534,6 +550,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricVcenterDatacenterVMCount.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterDatastoreDiskUsage.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostCPUReserved.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostDatastoreOperations.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostDiskLatencyAvg.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostDiskLatencyMax.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostDiskThroughput.aggDataPoints)
@@ -1246,6 +1263,58 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.host.datastore.normalized_latency.avg":
+					assert.False(t, validatedMetrics["vcenter.host.datastore.normalized_latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.datastore.normalized_latency.avg")
+					validatedMetrics["vcenter.host.datastore.normalized_latency.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The size-normalized I/O latency of the datastore for this host.", mi.Description())
+					assert.Equal(t, "us", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.datastore.operations":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.datastore.operations"], "Found a duplicate in the metrics slice: vcenter.host.datastore.operations")
+						validatedMetrics["vcenter.host.datastore.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The IOPs of the datastore for this host.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						diskDirectionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.datastore.operations"], "Found a duplicate in the metrics slice: vcenter.host.datastore.operations")
+						validatedMetrics["vcenter.host.datastore.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The IOPs of the datastore for this host.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.datastore.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.disk.latency.avg":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
@@ -1648,6 +1717,20 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("object")
 						assert.False(t, ok)
 					}
+				case "vcenter.host.uptime":
+					assert.False(t, validatedMetrics["vcenter.host.uptime"], "Found a duplicate in the metrics slice: vcenter.host.uptime")
+					validatedMetrics["vcenter.host.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total time elapsed since last operating system boot-up.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.vsan.cache.hit_rate":
 					assert.False(t, validatedMetrics["vcenter.host.vsan.cache.hit_rate"], "Found a duplicate in the metrics slice: vcenter.host.vsan.cache.hit_rate")
 					validatedMetrics["vcenter.host.vsan.cache.hit_rate"] = true
@@ -1950,6 +2033,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("type")
 						assert.False(t, ok)
 					}
+				case "vcenter.vm.cpu.latency.avg":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.latency.avg")
+					validatedMetrics["vcenter.vm.cpu.latency.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.cpu.readiness":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.readiness"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.readiness")
 					validatedMetrics["vcenter.vm.cpu.readiness"] = true
