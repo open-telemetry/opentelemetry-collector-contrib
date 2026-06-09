@@ -5,6 +5,7 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
+	"github.com/parquet-go/parquet-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,10 +30,63 @@ import (
 )
 
 var (
-	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	// Default TGW format is version 2 with resource-type field
-	defaultTGWFormat = []string{"version", "resource-type", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status"}
+	supportedVPCFlowLogFileFormat = []string{
+		constants.FileFormatPlainText,
+		constants.FileFormatParquet,
+	}
+
+	// defaultVPCFormat holds the default format for VPC flow logs, when
+	// sent to CloudWatch Logs. For logs sent to S3, the format is
+	// determined from the header line.
+	//
+	// Note: order is important.
+	defaultVPCFormat = []string{
+		"version",
+		"account-id",
+		"interface-id",
+		"srcaddr",
+		"dstaddr",
+		"srcport",
+		"dstport",
+		"protocol",
+		"packets",
+		"bytes",
+		"start",
+		"end",
+		"action",
+		"log-status",
+	}
+
+	// defaultTGWFormat holds the default format for Transit Gateway flow logs,
+	// when sent to CloudWatch Logs. For logs sent to S3, the format is determined
+	// from the header line.
+	//
+	// Note: order is important.
+	defaultTGWFormat = []string{
+		"version",
+		"resource-type",
+		"account-id",
+		"tgw-id",
+		"tgw-attachment-id",
+		"tgw-src-vpc-id",
+		"tgw-dst-vpc-id",
+		"tgw-src-subnet-id",
+		"tgw-dst-subnet-id",
+		"tgw-src-eni",
+		"tgw-dst-eni",
+		"tgw-src-az-id",
+		"tgw-dst-az-id",
+		"srcaddr",
+		"dstaddr",
+		"srcport",
+		"dstport",
+		"protocol",
+		"packets",
+		"bytes",
+		"start",
+		"end",
+		"log-status",
+	}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -74,9 +129,7 @@ func NewVPCFlowLogUnmarshaler(
 	}
 
 	switch cfg.FileFormat {
-	case constants.FileFormatParquet:
-		// TODO
-		return nil, errors.New("still needs to be implemented")
+	case constants.FileFormatParquet: // valid
 	case constants.FileFormatPlainText: // valid
 	default:
 		return nil, fmt.Errorf(
@@ -95,45 +148,36 @@ func NewVPCFlowLogUnmarshaler(
 }
 
 func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	switch v.cfg.FileFormat {
-	case constants.FileFormatPlainText:
-		// Decode as a stream but flush all at once using flush options
-		streamUnmarshaler, err := v.NewLogsDecoder(reader, encoding.WithFlushItems(0), encoding.WithFlushBytes(0))
-		if err != nil {
-			return plog.Logs{}, err
-		}
-		logs, err := streamUnmarshaler.DecodeLogs()
-		if err != nil {
-			//nolint:errorlint
-			if err == io.EOF {
-				// EOF indicates no logs were found, return any logs that's available
-				return logs, nil
-			}
-
-			return plog.Logs{}, err
-		}
-
-		return logs, nil
-	case constants.FileFormatParquet:
-		// TODO
-		return plog.Logs{}, errors.New("still needs to be implemented")
-	default:
-		// not possible, prevent by NewVPCFlowLogUnmarshaler
-		return plog.Logs{}, nil
+	streamUnmarshaler, err := v.NewLogsDecoder(reader, encoding.WithFlushItems(0), encoding.WithFlushBytes(0))
+	if err != nil {
+		return plog.Logs{}, err
 	}
+	logs, err := streamUnmarshaler.DecodeLogs()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return logs, nil
+		}
+		return plog.Logs{}, err
+	}
+	return logs, nil
 }
 
 // NewLogsDecoder returns a LogsDecoder that processes VPC flow logs from the provided reader.
-// Auto-detects the source format (S3 plain text or CloudWatch subscription filter) from the first byte.
+// For plain text, auto-detects the source (S3 or CloudWatch subscription filter) from the first byte.
 // Supported sub formats:
 //   - S3 plain text logs: Supports offset-based streaming; offset tracked by bytes processed
 //   - CloudWatch subscription filter: Processes full payload; offset tracked by bytes processed
-//   - Parquet format: Not yet implemented
+//   - Parquet format: Batches rows according to flush options; offset tracked by rows processed.
+//     If the reader implements io.ReaderAt (with Size() or io.Seeker), the file is opened
+//     directly without buffering into memory. WithOffset skips rows via SeekToRow.
 func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
 	if v.cfg.FileFormat == constants.FileFormatParquet {
-		return nil, errors.New("streaming parquet VPC flow logs is not yet implemented")
+		return v.newParquetLogsDecoder(reader, options...)
 	}
+	return v.newPlaintextLogsDecoder(reader, options...)
+}
 
+func (v *VPCFlowLogUnmarshaler) newPlaintextLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
 	// use buffered reader for efficiency and to avoid any size restrictions
 	bufReader := bufio.NewReader(reader)
 
@@ -326,29 +370,15 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 	fields []string,
 	logLine string,
 ) error {
-	record := scopeLogs.LogRecords().AppendEmpty()
-	addr := &address{}
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	var addr address
 	for _, field := range fields {
 		if logLine == "" {
 			return errors.New("log line has less fields than the ones expected")
 		}
 		var value string
 		value, logLine, _ = strings.Cut(logLine, " ")
-
-		if value == "-" {
-			// If a field is not applicable or could not be computed for a
-			// specific record, the record displays a '-' symbol for that entry.
-			//
-			// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html.
-			continue
-		}
-
-		if strings.HasPrefix(field, "ecs-") {
-			v.logger.Warn("currently there is no support for ECS fields")
-			continue
-		}
-
-		found, err := v.handleField(field, value, resourceLogs, record, addr)
+		found, err := v.handleField(field, value, resourceLogs, logRecord, &addr)
 		if err != nil {
 			return err
 		}
@@ -359,13 +389,209 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 			)
 		}
 	}
-
 	if logLine != "" {
 		return errors.New("log line has more fields than the ones expected")
 	}
+	v.handleAddresses(&addr, logRecord)
+	return nil
+}
 
-	// Add the address fields with the correct conventions to the log record
-	v.handleAddresses(addr, record)
+// openParquetFile opens a parquet.File from the given reader. To avoid buffering
+// the entire file into memory, the reader may implement io.ReaderAt with either
+// a Size() int64 method or io.Seeker. If neither is available, the full payload
+// is read into a buffer first.
+func openParquetFile(reader io.Reader) (*parquet.File, error) {
+	// readerAtSizer is for readers that implement io.ReaderAt and have a
+	// Size() method, such as bytes.Reader.
+	type readerAtSizer interface {
+		io.ReaderAt
+		Size() int64
+	}
+	// readerAtSeeker is for readers that implement io.ReaderAt and io.Seeker,
+	// such as os.File. We can determine the size by seeking to the end, then
+	// reset to the start for reading.
+	type readerAtSeeker interface {
+		io.ReaderAt
+		io.Seeker
+	}
+
+	var readerAt io.ReaderAt
+	var size int64
+	switch r := reader.(type) {
+	case readerAtSizer:
+		readerAt = r
+		size = r.Size()
+	case readerAtSeeker:
+		var err error
+		size, err = r.Seek(0, io.SeekEnd)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek parquet reader: %w", err)
+		}
+		if _, err = r.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("failed to reset parquet reader: %w", err)
+		}
+		readerAt = r
+	default:
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read parquet data: %w", err)
+		}
+		readerAt = bytes.NewReader(data)
+		size = int64(len(data))
+	}
+	return parquet.OpenFile(readerAt, size)
+}
+
+// newParquetLogsDecoder returns a LogsDecoder that yields batches of Parquet rows
+// according to the flush options. Offset is measured in rows: WithOffset skips
+// rows efficiently using SeekToRow, and Offset() returns the total rows consumed.
+//
+// To avoid buffering the entire file into memory, the reader may implement
+// io.ReaderAt with either a Size() int64 method or io.Seeker. If neither is
+// available, the full payload is read into a buffer first.
+func (v *VPCFlowLogUnmarshaler) newParquetLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	file, err := openParquetFile(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open parquet file: %w", err)
+	}
+
+	columnPaths := file.Schema().Columns()
+	fields := make([]string, len(columnPaths))
+	for i, columnPath := range columnPaths {
+		// Convert underscores to hyphens to match the JSON encoding field names.
+		fields[i] = strings.ReplaceAll(strings.Join(columnPath, "."), "_", "-")
+	}
+	v.warnUnknownParquetColumns(fields)
+
+	rowGroups := file.RowGroups()
+	batchHelper := xstreamencoding.NewBatchHelper(options...)
+
+	// For Parquet, offset is measured in rows (not bytes).
+	rowOffset := batchHelper.Options().Offset
+
+	// State for iterating across row groups.
+	groupIdx := 0
+	var rowReader parquet.Rows
+	var rowBuf [1]parquet.Row
+
+	// Skip whole row groups and seek within the target group using SeekToRow.
+	if rowOffset > 0 {
+		remaining := rowOffset
+		for groupIdx < len(rowGroups) {
+			n := rowGroups[groupIdx].NumRows()
+			if remaining < n {
+				// Partial skip within this row group.
+				rowReader = rowGroups[groupIdx].Rows()
+				if err = rowReader.SeekToRow(remaining); err != nil {
+					_ = rowReader.Close()
+					return nil, fmt.Errorf("failed to seek to row %d in parquet row group: %w", remaining, err)
+				}
+				break
+			}
+			remaining -= n
+			groupIdx++
+		}
+	}
+
+	decodeF := func() (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := v.createLogs()
+		for groupIdx < len(rowGroups) {
+			if rowReader == nil {
+				rowReader = rowGroups[groupIdx].Rows()
+			}
+			for {
+				n, readErr := rowReader.ReadRows(rowBuf[:])
+				if n > 0 {
+					if err := v.addParquetRowToLogs(rowBuf[0], fields, resourceLogs, scopeLogs); err != nil {
+						_ = rowReader.Close()
+						return plog.Logs{}, err
+					}
+					rowOffset++
+					batchHelper.IncrementItems(1)
+				}
+				if readErr != nil {
+					if err := rowReader.Close(); err != nil {
+						return plog.Logs{}, fmt.Errorf("failed to close parquet row reader: %w", err)
+					}
+					rowReader = nil
+					groupIdx++
+					if !errors.Is(readErr, io.EOF) {
+						return plog.Logs{}, fmt.Errorf("failed to read parquet rows: %w", readErr)
+					}
+					break
+				}
+				if batchHelper.ShouldFlush() {
+					batchHelper.Reset()
+					return logs, nil
+				}
+			}
+		}
+		if scopeLogs.LogRecords().Len() == 0 {
+			return logs, io.EOF
+		}
+		return logs, nil
+	}
+
+	return xstreamencoding.NewLogsDecoderAdapter(decodeF, func() int64 { return rowOffset }), nil
+}
+
+// warnUnknownParquetColumns logs a warning for each column name that is not
+// recognized by either handleStringField or handleInt64Field. Invoked once at
+// decoder construction since the Parquet schema is fixed for the file.
+func (v *VPCFlowLogUnmarshaler) warnUnknownParquetColumns(fields []string) {
+	scratchLogs := plog.NewLogs()
+	scratchResLogs := scratchLogs.ResourceLogs().AppendEmpty()
+	scratchRecord := scratchResLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	var scratchAddr address
+	for _, field := range fields {
+		foundStr, _ := v.handleStringField(field, "", scratchResLogs, scratchRecord, &scratchAddr)
+		foundInt, _ := v.handleInt64Field(field, 0, scratchResLogs, scratchRecord, &scratchAddr)
+		if !foundStr && !foundInt {
+			v.logger.Warn("field is not an available field for a flow log record",
+				zap.String("field", field),
+				zap.String("documentation", "https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html"),
+			)
+		}
+	}
+}
+
+// addParquetRowToLogs processes a single Parquet row and appends a log record.
+func (v *VPCFlowLogUnmarshaler) addParquetRowToLogs(
+	row parquet.Row,
+	fields []string,
+	resourceLogs plog.ResourceLogs,
+	scopeLogs plog.ScopeLogs,
+) error {
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	var addr address
+	var columnErr error
+	row.Range(func(columnIndex int, columnValues []parquet.Value) bool {
+		if len(columnValues) == 0 {
+			return true
+		}
+		val := columnValues[0]
+		if val.IsNull() {
+			return true
+		}
+		if columnIndex >= len(fields) {
+			return true
+		}
+
+		field := fields[columnIndex]
+		switch val.Kind() {
+		case parquet.Int32:
+			_, columnErr = v.handleInt64Field(field, int64(val.Int32()), resourceLogs, logRecord, &addr)
+		case parquet.Int64:
+			_, columnErr = v.handleInt64Field(field, val.Int64(), resourceLogs, logRecord, &addr)
+		default:
+			_, columnErr = v.handleStringField(field, val.String(), resourceLogs, logRecord, &addr)
+		}
+		return columnErr == nil
+	})
+	if columnErr != nil {
+		return columnErr
+	}
+	v.handleAddresses(&addr, logRecord)
 	return nil
 }
 
@@ -414,26 +640,36 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	record plog.LogRecord,
 	addr *address,
 ) (bool, error) {
-	// convert string to number
-	getNumber := func(value string) (int64, error) {
+	if value == "-" {
+		return true, nil
+	}
+	// Integer fields: parse and call handleInt64Field
+	switch field {
+	case "version", "srcport", "dstport", "protocol", "packets", "bytes",
+		"tcp-flags", "traffic-path", "start", "end",
+		"packets-lost-no-route", "packets-lost-blackhole",
+		"packets-lost-mtu-exceeded", "packets-lost-ttl-expired":
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return -1, fmt.Errorf("%q field in log file is not a number", field)
+			return false, fmt.Errorf("%q field in log file is not a number", field)
 		}
-		return n, nil
+		return v.handleInt64Field(field, n, resourceLogs, record, addr)
 	}
+	return v.handleStringField(field, value, resourceLogs, record, addr)
+}
 
-	// convert string to number and add the
-	// value to an attribute
-	addNumber := func(field, value, attrName string) error {
-		n, err := getNumber(value)
-		if err != nil {
-			return fmt.Errorf("%q field in log file is not a number", field)
-		}
-		record.Attributes().PutInt(attrName, n)
-		return nil
+// handleStringField applies a string value for the given field to resource/record/addr.
+// If the field is not recognized, it returns false.
+func (*VPCFlowLogUnmarshaler) handleStringField(
+	field string,
+	value string,
+	resourceLogs plog.ResourceLogs,
+	record plog.LogRecord,
+	addr *address,
+) (bool, error) {
+	if value == "-" {
+		return true, nil
 	}
-
 	switch field {
 	case "srcaddr":
 		// handled later
@@ -447,7 +683,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "pkt-dstaddr":
 		// handled later
 		addr.pktDestination = value
-
 	case "account-id":
 		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
 	case "vpc-id":
@@ -459,8 +694,7 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
-		// TODO Replace with conventions variable once it becomes available
-		record.Attributes().PutStr("network.interface.name", value)
+		record.Attributes().PutStr(string(conventions.NetworkInterfaceNameKey), value)
 	case "tgw-id":
 		record.Attributes().PutStr("aws.tgw.id", value)
 	case "tgw-attachment-id":
@@ -485,24 +719,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		record.Attributes().PutStr("aws.tgw.attachment.pair.id", value)
 	case "resource-type":
 		// Skip - used for detection only, already captured in encoding.format
-	case "srcport":
-		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
-			return false, err
-		}
-	case "dstport":
-		if err := addNumber(field, value, string(conventions.DestinationPortKey)); err != nil {
-			return false, err
-		}
-	case "protocol":
-		n, err := getNumber(value)
-		if err != nil {
-			return false, err
-		}
-		protocolNumber := int(n)
-		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
-			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
-		}
-		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
 	case "type":
 		record.Attributes().PutStr(string(conventions.NetworkTypeKey), strings.ToLower(value))
 	case "region":
@@ -516,54 +732,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
-	case "version":
-		if err := addNumber(field, value, "aws.vpc.flow.log.version"); err != nil {
-			return false, err
-		}
-	case "packets":
-		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
-			return false, err
-		}
-	case "bytes":
-		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
-			return false, err
-		}
-	case "packets-lost-no-route":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_no_route"); err != nil {
-			return false, err
-		}
-	case "packets-lost-blackhole":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_blackhole"); err != nil {
-			return false, err
-		}
-	case "packets-lost-mtu-exceeded":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_mtu_exceeded"); err != nil {
-			return false, err
-		}
-	case "packets-lost-ttl-expired":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_ttl_expired"); err != nil {
-			return false, err
-		}
-	case "start":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		if v.vpcFlowStartISO8601FormatEnabled {
-			// New behavior: ISO-8601 format (RFC3339Nano)
-			timestamp := time.Unix(unixSeconds, 0).UTC()
-			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
-		} else {
-			// Legacy behavior: Unix timestamp as integer
-			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
-		}
-	case "end":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		timestamp := time.Unix(unixSeconds, 0)
-		record.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	case "action":
 		record.Attributes().PutStr("aws.vpc.flow.action", value)
 	case "log-status":
@@ -605,7 +773,61 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	default:
 		return false, nil
 	}
+	return true, nil
+}
 
+// handleInt64Field applies an int64 value for the given field to resource/record.
+// Returns (true, nil) when the field is recognized, (false, nil) when unknown, or (_, err) on error.
+func (v *VPCFlowLogUnmarshaler) handleInt64Field(
+	field string,
+	value int64,
+	_ plog.ResourceLogs,
+	record plog.LogRecord,
+	_ *address,
+) (bool, error) {
+	switch field {
+	case "version":
+		record.Attributes().PutInt("aws.vpc.flow.log.version", value)
+	case "srcport":
+		record.Attributes().PutInt(string(conventions.SourcePortKey), value)
+	case "dstport":
+		record.Attributes().PutInt(string(conventions.DestinationPortKey), value)
+	case "protocol":
+		protocolNumber := int(value)
+		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
+			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
+		}
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
+	case "packets":
+		record.Attributes().PutInt("aws.vpc.flow.packets", value)
+	case "bytes":
+		record.Attributes().PutInt("aws.vpc.flow.bytes", value)
+	case "start":
+		if v.vpcFlowStartISO8601FormatEnabled {
+			// New behavior: ISO-8601 format (RFC3339Nano)
+			timestamp := time.Unix(value, 0).UTC()
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
+		} else {
+			// Legacy behavior: Unix timestamp as integer
+			record.Attributes().PutInt("aws.vpc.flow.start", value)
+		}
+	case "end":
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(value, 0)))
+	case "tcp-flags":
+		record.Attributes().PutStr("network.tcp.flags", strconv.FormatInt(value, 10))
+	case "traffic-path":
+		record.Attributes().PutStr("aws.vpc.flow.traffic_path", strconv.FormatInt(value, 10))
+	case "packets-lost-no-route":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_no_route", value)
+	case "packets-lost-blackhole":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_blackhole", value)
+	case "packets-lost-mtu-exceeded":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_mtu_exceeded", value)
+	case "packets-lost-ttl-expired":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_ttl_expired", value)
+	default:
+		return false, nil
+	}
 	return true, nil
 }
 

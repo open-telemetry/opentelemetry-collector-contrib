@@ -55,6 +55,34 @@ func TestParser(t *testing.T) {
 	}
 }
 
+func TestSyslogParseRFC3164_MalformedDay(t *testing.T) {
+	cfg := basicConfig()
+	cfg.Protocol = syslog.RFC3164
+
+	body := `<13>Feb 05 17:32:18 10.0.0.99 Test message`
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	err = op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, err)
+
+	newEntry := entry.New()
+	newEntry.Body = body
+	err = op.Process(t.Context(), newEntry)
+	require.NoError(t, err)
+
+	select {
+	case e := <-fake.Received:
+		require.Equal(t, body, e.Body)
+		require.Equal(t, time.Date(2026, time.February, 5, 17, 32, 18, 0, time.UTC), e.Timestamp)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
 func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	cfg := basicConfig()
 	cfg.Protocol = syslog.RFC5424
@@ -112,7 +140,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 }
 
 func TestSyslogProtocolConfig(t *testing.T) {
-	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
+	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164", "None", "none", "NONE"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
@@ -120,13 +148,32 @@ func TestSyslogProtocolConfig(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d"} {
+	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d", "nonex"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
 		_, err := cfg.Build(set)
 		require.Error(t, err)
 	}
+}
+
+func TestSyslogNoneProtocolFramingConfig(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+
+	// Octet counting is compatible with the none protocol.
+	cfg := basicConfig()
+	cfg.Protocol = syslog.None
+	cfg.EnableOctetCounting = true
+	_, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	// Non-transparent framing is not compatible with the none protocol.
+	trailer := syslog.NULTrailer
+	cfg = basicConfig()
+	cfg.Protocol = syslog.None
+	cfg.NonTransparentFramingTrailer = &trailer
+	_, err = cfg.Build(set)
+	require.ErrorContains(t, err, "non_transparent_framing is not compatible with protocol none")
 }
 
 // TestSyslogParserDoesNotSplitBatches verifies that the syslog parser processes
