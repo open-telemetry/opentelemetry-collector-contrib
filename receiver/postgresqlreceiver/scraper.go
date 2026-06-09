@@ -255,6 +255,13 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 			atts[dbAttributePrefix+querySampleColumnWaitEventType].(string),
 			atts[dbAttributePrefix+querySampleColumnQueryID].(string),
 			atts[postgresqlTotalExecTimeAttributeName].(float64),
+			atts[dbAttributePrefix+querySampleColumnBlockingPIDs].(string),
+			atts[dbAttributePrefix+querySampleColumnBlockingStartTime].(string),
+			atts[dbAttributePrefix+querySampleColumnBlockingWaitDuration].(int64),
+			atts[dbAttributePrefix+querySampleColumnBlockingLockMode].(string),
+			atts[dbAttributePrefix+querySampleColumnBlockingLockType].(string),
+			atts[dbAttributePrefix+querySampleColumnBlockingLockRelation].(string),
+			atts[dbAttributePrefix+querySampleColumnBlockingTxnStartTime].(string),
 		)
 	}
 }

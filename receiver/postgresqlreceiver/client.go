@@ -914,12 +914,27 @@ func functionKey(database, schema, function string) functionIdentifer {
 var querySampleTemplate string
 
 func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
+	// pg_locks.waitstart was added in PG 14 — use state_change as fallback for older versions
+	blockingStartExpr := "sa.state_change"
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		logger.Warn("failed to get server version, defaulting to pre-14 blocking query", zap.Error(err))
+	} else {
+		major, parseErr := parseMajorVersion(version)
+		if parseErr != nil {
+			logger.Warn("failed to parse server version, defaulting to pre-14 blocking query", zap.Error(parseErr))
+		} else if major >= 14 {
+			blockingStartExpr = "bl.waitstart"
+		}
+	}
+
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
+		"blockingStartExpr":    blockingStartExpr,
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
@@ -956,6 +971,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			querySampleColumnQueryID,
 			querySampleColumnState,
 			querySampleColumnApplicationName,
+			querySampleColumnBlockingPIDs,
+			querySampleColumnBlockingStartTime,
+			querySampleColumnBlockingLockMode,
+			querySampleColumnBlockingLockType,
+			querySampleColumnBlockingLockRelation,
+			querySampleColumnBlockingTxnStartTime,
 		}
 
 		for _, col := range querySampleSimpleColumns {
@@ -1012,6 +1033,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			}
 		}
 
+		blockingWaitDuration := int64(0)
+		if row[querySampleColumnBlockingWaitDuration] != "" {
+			blockingWaitDuration, err = strconv.ParseInt(row[querySampleColumnBlockingWaitDuration], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert blocking_wait_duration to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
@@ -1025,6 +1055,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
 		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
+		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 

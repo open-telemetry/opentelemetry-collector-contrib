@@ -425,6 +425,13 @@ var querySampleColumns = []string{
 	querySampleColumnState,
 	querySampleColumnQuery,
 	querySampleColumnDurationMilliseconds,
+	querySampleColumnBlockingPIDs,
+	querySampleColumnBlockingStartTime,
+	querySampleColumnBlockingWaitDuration,
+	querySampleColumnBlockingLockMode,
+	querySampleColumnBlockingLockType,
+	querySampleColumnBlockingLockRelation,
+	querySampleColumnBlockingTxnStartTime,
 }
 
 func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
@@ -558,6 +565,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			params: map[string]any{
 				"limit":                int64(50),
 				"newestQueryTimestamp": 999999.555,
+				"blockingStartExpr":    "bl.waitstart",
 			},
 		},
 		{
@@ -565,6 +573,7 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			params: map[string]any{
 				"limit":                int64(10),
 				"newestQueryTimestamp": float64(0),
+				"blockingStartExpr":    "sa.state_change",
 			},
 		},
 	}
