@@ -127,6 +127,9 @@ attributes:
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
+  mongodb.operation.comment:
+    description: The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON.
+    type: slice
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
@@ -223,6 +226,7 @@ events:
       - mongodb.query.framework
       - mongodb.operation.state
       - mongodb.operation.type
+      - mongodb.operation.comment
       - mongodb.operation.duration
       - mongodb.operation.prepared_read_conflict.count
       - mongodb.operation.write_conflict.count

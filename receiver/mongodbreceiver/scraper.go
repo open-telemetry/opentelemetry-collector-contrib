@@ -37,6 +37,7 @@ var (
 const (
 	namespaceKey                = "ns"
 	commandKey                  = "command"
+	commentKey                  = "comment"
 	opKey                       = "op"
 	activeKey                   = "active"
 	durationMicrosKey           = "microsecs_running"
@@ -235,7 +236,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
-		queryTruncated := commandIsTruncated(command)
+		queryTruncated, commandComment := extractCommandMetadata(command)
 		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
@@ -303,6 +304,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			queryFramework,
 			operationState,
 			opType,
+			commandComment,
 			durationSeconds,
 			preparedReadConflictCount,
 			writeConflictCount,
@@ -362,6 +364,40 @@ func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
 	return true
 }
 
+func extractCommandMetadata(command bson.D) (bool, []any) {
+	queryTruncated := false
+	comments := []any{}
+	for _, elem := range command {
+		switch elem.Key {
+		case "$truncated":
+			queryTruncated = true
+		case commentKey:
+			if values, ok := elem.Value.(bson.A); ok {
+				for _, value := range values {
+					comments = append(comments, stringifyCommandComment(value))
+				}
+			} else {
+				comments = append(comments, stringifyCommandComment(elem.Value))
+			}
+		}
+	}
+	return queryTruncated, comments
+}
+
+func stringifyCommandComment(value any) string {
+	if comment, ok := value.(string); ok {
+		return comment
+	}
+	if value == nil {
+		return "null"
+	}
+	valueType, data, err := bson.MarshalValue(value)
+	if err != nil {
+		return fmt.Sprint(value)
+	}
+	return bson.RawValue{Type: valueType, Value: data}.String()
+}
+
 func getDBFromNamespace(namespace string) string {
 	parts := strings.SplitN(namespace, ".", 2)
 	if len(parts) == 2 {
@@ -376,19 +412,6 @@ func getCollectionFromNamespace(namespace string) string {
 		return parts[1]
 	}
 	return ""
-}
-
-// commandIsTruncated returns whether MongoDB clipped the command document in $currentOp.
-// MongoDB signals truncation by inserting a "$truncated" key into the command
-// when the rendered form exceeds the per-op size cap; downstream consumers
-// need this so they can tell that db.query.text is not the complete statement.
-func commandIsTruncated(command bson.D) bool {
-	for _, elem := range command {
-		if elem.Key == "$truncated" {
-			return true
-		}
-	}
-	return false
 }
 
 // lookup returns the value for key from a BSON document. It accepts bson.M,

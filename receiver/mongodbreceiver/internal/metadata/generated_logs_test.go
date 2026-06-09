@@ -131,7 +131,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.id-val", "db.query.text-val", false, "user.name-val", "mongodb.client.app.name-val", false, "mongodb.cursor.id-val", false, "mongodb.cursor.originating_command-val", 31, 33, false, "mongodb.lsid.id-val", "mongodb.operation.plan.summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", 26.100000, 46, 38, 29, []any{"mongodb.operation.wait.type-item1", "mongodb.operation.wait.type-item2"}, "mongodb.operation.wait.details-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.id-val", "db.query.text-val", false, "user.name-val", "mongodb.client.app.name-val", false, "mongodb.cursor.id-val", false, "mongodb.cursor.originating_command-val", 31, 33, false, "mongodb.lsid.id-val", "mongodb.operation.plan.summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", []any{"mongodb.operation.comment-item1", "mongodb.operation.comment-item2"}, 26.100000, 46, 38, 29, []any{"mongodb.operation.wait.type-item1", "mongodb.operation.wait.type-item2"}, "mongodb.operation.wait.details-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetServerAddress("server.address-val")
@@ -232,6 +232,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.type")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.operation.type-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.comment")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"mongodb.operation.comment-item1", "mongodb.operation.comment-item2"}, attrVal.Slice().AsRaw())
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.duration")
 					assert.True(t, ok)
 					assert.Equal(t, 26.100000, attrVal.Double())

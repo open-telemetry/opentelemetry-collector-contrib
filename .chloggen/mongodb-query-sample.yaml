@@ -19,8 +19,9 @@ subtext: |
   Samples are sourced from the `$currentOp` aggregation pipeline, filtered to exclude idle
   connections and noisy administrative commands (`hello`, `ping`, `isMaster` on the `admin`/`local`
   namespaces). Each event carries the obfuscated query text plus operation metadata such as
-  `db.operation.id`, `mongodb.operation.type`, plan summary, wait details, cursor statistics,
-  client application info, and effective user. See `documentation.md` for the full attribute list.
+  `db.operation.id`, `mongodb.operation.type`, `mongodb.operation.comment`, plan summary, wait
+  details, cursor statistics, client application info, and effective user. See `documentation.md`
+  for the full attribute list.
   The `logs` signal is at `development` stability; the event schema and attribute names may change
   in backwards-incompatible ways as this functionality matures and as OpenTelemetry semantic
   conventions for `db.server.query_sample` stabilize. The `metrics` signal remains at `beta`.

@@ -1242,6 +1242,127 @@ func TestProcessCurrentOp(t *testing.T) {
 	require.Equal(t, 2, logs.LogRecordCount(), "only 2 of 4 operations should produce log records")
 }
 
+func TestProcessCurrentOpCommandComment(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+
+	operations := []bson.M{
+		{
+			"ns":      "mydb.orders",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "orders"}, {Key: "comment", Value: "checkout-flow"}},
+			"active":  true,
+		},
+		{
+			"ns":      "mydb.products",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "products"}, {Key: "comment", Value: bson.A{"batch", "dashboard"}}},
+			"active":  true,
+		},
+		{
+			"ns": "mydb.users",
+			"op": "query",
+			"command": bson.D{
+				{Key: "find", Value: "users"},
+				{Key: "comment", Value: bson.D{{Key: "trace", Value: "abc"}, {Key: "retry", Value: true}}},
+			},
+			"active": true,
+		},
+		{
+			"ns": "mydb.audit",
+			"op": "query",
+			"command": bson.D{
+				{Key: "find", Value: "audit"},
+				{Key: "comment", Value: "first"},
+				{Key: "comment", Value: bson.A{"second", bson.D{{Key: "third", Value: int32(3)}}}},
+			},
+			"active": true,
+		},
+	}
+
+	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
+
+	logs := scraper.lb.Emit()
+	require.Equal(t, 4, logs.LogRecordCount())
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	firstAttrs := records.At(0).Attributes()
+	requireSliceAttribute(t, firstAttrs, "mongodb.operation.comment", []any{"checkout-flow"})
+	statement, ok := firstAttrs.Get("db.query.text")
+	require.True(t, ok)
+	require.NotContains(t, statement.Str(), "checkout-flow")
+
+	requireSliceAttribute(t, records.At(1).Attributes(), "mongodb.operation.comment", []any{"batch", "dashboard"})
+	requireSliceAttribute(t, records.At(2).Attributes(), "mongodb.operation.comment", []any{`{"trace": "abc","retry": true}`})
+	requireSliceAttribute(t, records.At(3).Attributes(), "mongodb.operation.comment", []any{"first", "second", `{"third": {"$numberInt":"3"}}`})
+}
+
+func TestExtractCommandMetadata(t *testing.T) {
+	tests := []struct {
+		name              string
+		command           bson.D
+		expectedTruncated bool
+		expectedComments  []any
+	}{
+		{
+			name:             "missing comment",
+			command:          bson.D{{Key: "find", Value: "orders"}},
+			expectedComments: []any{},
+		},
+		{
+			name:             "string comment",
+			command:          bson.D{{Key: "find", Value: "orders"}, {Key: "comment", Value: "checkout-flow"}},
+			expectedComments: []any{"checkout-flow"},
+		},
+		{
+			name:             "array comment",
+			command:          bson.D{{Key: "find", Value: "orders"}, {Key: "comment", Value: bson.A{"checkout", "retry"}}},
+			expectedComments: []any{"checkout", "retry"},
+		},
+		{
+			name: "document comment",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{{Key: "trace", Value: "abc"}, {Key: "retry", Value: true}}},
+			},
+			expectedComments: []any{`{"trace": "abc","retry": true}`},
+		},
+		{
+			name: "duplicate comment fields",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: "first"},
+				{Key: "comment", Value: bson.A{"second", bson.D{{Key: "third", Value: int32(3)}}}},
+			},
+			expectedComments: []any{"first", "second", `{"third": {"$numberInt":"3"}}`},
+		},
+		{
+			name:             "nil comment",
+			command:          bson.D{{Key: "find", Value: "orders"}, {Key: "comment", Value: nil}},
+			expectedComments: []any{"null"},
+		},
+		{
+			name: "truncated command with comment",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "$truncated", Value: true},
+				{Key: "comment", Value: "checkout-flow"},
+			},
+			expectedTruncated: true,
+			expectedComments:  []any{"checkout-flow"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			truncated, comments := extractCommandMetadata(tt.command)
+			require.Equal(t, tt.expectedTruncated, truncated)
+			require.Equal(t, tt.expectedComments, comments)
+		})
+	}
+}
+
 func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
 	scraperCfg.Events.DbServerQuerySample.Enabled = true

@@ -585,6 +585,7 @@ query sample
  | Any Str | - |
 | mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.operation.comment | The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON. | Any Slice | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
 | mongodb.operation.prepared_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
 | mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
