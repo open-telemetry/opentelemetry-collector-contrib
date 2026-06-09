@@ -83,6 +83,8 @@ componentOverrides:
     configName: 'NamedPipeConfig'
   receiver/file_log:
     configName: 'FileLogConfig'
+  receiver/prometheus:
+    overlayFile: receiver/prometheusreceiver/config.schema.overlay.yaml
 ```
 
 - `namespace` corresponds to the Go package import path for modules from current repository. 
@@ -96,9 +98,43 @@ componentOverrides:
   generating `$ref` pointers. This is useful when your configuration structs
   embed types from other repositories that also have schemagen-generated
   schemas. If repo is not listed here, schemagen will use type `any`.
-- `componentOverrides` allow per-component configuration of the root struct
-  name. This is useful when a component does not use the conventional
-  `Config` struct name.
+- `componentOverrides` allow per-component customisation. Supported fields:
+  - `configName` — overrides the root struct name (default: `Config`).
+  - `factoryMaps` — expands factory-keyed map fields (see below).
+  - `overlayFile` — path to a hand-curated YAML file deep-merged into the generated schema (see [Overlay files](#overlay-files)).
+
+## Overlay files
+
+Some configuration fields cannot be described by Go types alone — for example, a field that holds
+an arbitrary Prometheus scrape config expressed as raw YAML. Overlay files let you inject
+descriptions, constraints, or additional properties into the generated schema without modifying the
+generator.
+
+Set `overlayFile` in `.schemagen.yaml` for the target component to a path relative to the
+repository root (or an absolute path):
+
+```yaml
+componentOverrides:
+  receiver/prometheus:
+    overlayFile: receiver/prometheusreceiver/config.schema.overlay.yaml
+```
+
+The file must be valid YAML that mirrors the structure of the generated schema. After generation,
+schemagen deep-merges the overlay into the schema: map keys are merged recursively, scalar values
+replace the generated ones. This means you can add or override `description`, `title`, `examples`,
+or any other JSON Schema keyword on a per-field basis while leaving the rest of the schema intact.
+
+```yaml
+# config.schema.overlay.yaml — only the keys you want to change
+properties:
+  prom_config:
+    description: "Prometheus scrape configuration, as defined by the Prometheus documentation."
+    properties:
+      scrape_configs:
+        description: "List of scrape configurations."
+```
+
+The overlay is applied to both YAML and JSON output formats.
 
 ## Ref resolution
 
