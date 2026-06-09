@@ -13,6 +13,7 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,11 +31,12 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister           operator.Persister
-	convertMessageBytes bool
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	errChan             chan error
+	persister                operator.Persister
+	convertMessageBytes      bool
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	errChan                  chan error
+	includeLogRecordOriginal bool
 }
 
 type cmd interface {
@@ -254,6 +256,11 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 	}
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+
+	if operator.includeLogRecordOriginal {
+		entry.AddAttribute("log.record.original", strings.TrimSpace(string(line)))
+	}
+
 	return entry, cursorString, nil
 }
 
