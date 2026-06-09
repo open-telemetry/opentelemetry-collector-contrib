@@ -19,7 +19,8 @@ type obfuscator obfuscate.Obfuscator
 func newObfuscator() *obfuscator {
 	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
 		Mongo: obfuscate.JSONConfig{
-			Enabled: true,
+			Enabled:    true,
+			KeepValues: []string{"aggregate", "$db", "find", "insert", "update", "delete", "collection", "findAndModify"},
 		},
 	}))
 }
