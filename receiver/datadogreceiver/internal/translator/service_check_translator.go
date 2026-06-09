@@ -38,13 +38,10 @@ func (mt *MetricsTranslator) TranslateServices(services []ServiceCheck) pmetric.
 		metricProperties.dpAttrs.CopyTo(dp.Attributes())
 		dp.SetIntValue(int64(service.Status))
 
-		// TODO(alexg): Do this stream thing for service check metrics?
 		stream := identity.OfStream(metricID, dp)
-		ts, ok := mt.streamHasTimestamp(stream)
-		if ok {
-			dp.SetStartTimestamp(ts)
+		if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+			dp.SetStartTimestamp(startTs)
 		}
-		mt.updateLastTsForStream(stream, dp.Timestamp())
 	}
 	return bt.Metrics
 }
