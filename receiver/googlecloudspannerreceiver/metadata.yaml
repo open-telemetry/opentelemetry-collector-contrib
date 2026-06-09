@@ -16,6 +16,15 @@ tests:
     skip: true
 
 attributes:
+  project_id:
+    description: GCP project ID.
+    type: string
+  instance_id:
+    description: Spanner instance ID.
+    type: string
+  database:
+    description: Spanner database name.
+    type: string
   row_range_start_key:
     description: Spanner ROW_RANGE_START_KEY label.
     type: string
