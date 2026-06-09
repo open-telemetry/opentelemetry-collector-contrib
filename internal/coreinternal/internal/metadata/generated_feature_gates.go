@@ -19,7 +19,7 @@ var InternalCoreinternalGoldendatasetDontEmitV0FaaSConventionsFeatureGate = feat
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv FaaS attributes like faas.execution."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
-	featuregate.WithRegisterFromVersion("v0.154.0"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
 var InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -59,7 +59,7 @@ var InternalCoreinternalGoldendatasetEmitV1FaaSConventionsFeatureGate = featureg
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with faas.invocation_id (semconv v1.40.0) alongside legacy faas.execution to support migration."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
-	featuregate.WithRegisterFromVersion("v0.154.0"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
