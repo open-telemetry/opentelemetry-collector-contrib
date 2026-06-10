@@ -84,4 +84,3 @@ jobs:
         with:
           args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
           failIfEmpty: false
-      - run: ./.github/workflows/scripts/check-disk-space.sh
