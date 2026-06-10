@@ -274,7 +274,10 @@ type AutoCommitConfig struct {
 const defaultMaxBrokerWriteBytes = 100 << 20 // 104857600
 
 type ProducerConfig struct {
-	// Maximum message bytes the producer will accept to produce (default 1000000)
+	// MaxMessageBytes is the maximum message bytes the producer will accept to
+	// produce. It must be less than or equal to MaxBrokerWriteBytes, and must
+	// fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes.
+	// (default 1000000)
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 
 	// MaxBrokerWriteBytes is the maximum bytes the producer will write to a
@@ -354,7 +357,7 @@ func (c ProducerConfig) Validate() error {
 	}
 	if c.MaxBrokerWriteBytes < defaultMaxBrokerWriteBytes {
 		return fmt.Errorf(
-			"max_broker_write_bytes (%d) must be at least %d (franz-go minimum)",
+			"max_broker_write_bytes (%d) must be at least %d (100 MiB, franz-go minimum)",
 			c.MaxBrokerWriteBytes,
 			defaultMaxBrokerWriteBytes,
 		)
