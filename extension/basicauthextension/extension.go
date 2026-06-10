@@ -143,7 +143,6 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		return errNoCredentialSource
 	}
 	ca := ba.clientAuth
-
 	if ca.Username != "" || ca.UsernameFile != "" {
 		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger)
 		if err != nil {
