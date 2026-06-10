@@ -4,6 +4,8 @@
 package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 
 import (
+	"fmt"
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
@@ -322,10 +324,16 @@ func TestProducerConfig(t *testing.T) {
 			expectedErr: "max_message_bytes (-1000) must be non-negative",
 		},
 		"max_broker_write_bytes_too_small": {
-			expectedErr: "max_broker_write_bytes (1000) must be at least 104857600 (franz-go minimum)",
+			expectedErr: fmt.Sprintf("max_broker_write_bytes (1000) must be at least %d (franz-go minimum)", defaultMaxBrokerWriteBytes),
 		},
 		"max_message_bytes_exceeds_broker": {
-			expectedErr: "max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (104857600)",
+			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", defaultMaxBrokerWriteBytes),
+		},
+		"max_message_bytes_overflow": {
+			expectedErr: fmt.Sprintf("max_message_bytes (%d) must not exceed %d", math.MaxInt32+1, math.MaxInt32),
+		},
+		"max_broker_write_bytes_overflow": {
+			expectedErr: fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", math.MaxInt32+1, math.MaxInt32),
 		},
 	})
 }

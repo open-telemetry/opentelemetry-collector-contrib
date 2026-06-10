@@ -44,6 +44,10 @@ kafka/max_broker_write_bytes_too_small:
   max_broker_write_bytes: 1000
 kafka/max_message_bytes_exceeds_broker:
   max_message_bytes: 209715200
+kafka/max_message_bytes_overflow:
+  max_message_bytes: 2147483648
+kafka/max_broker_write_bytes_overflow:
+  max_broker_write_bytes: 2147483648
 
 kafka/producer_linger:
   linger: 100ms

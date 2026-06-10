@@ -6,6 +6,7 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -346,12 +347,20 @@ func (c ProducerConfig) Validate() error {
 	if c.MaxMessageBytes < 0 {
 		return fmt.Errorf("max_message_bytes (%d) must be non-negative", c.MaxMessageBytes)
 	}
+	// Both limits are passed to franz-go as int32, so reject anything that would
+	// overflow on conversion and silently become a negative/invalid size.
+	if c.MaxMessageBytes > math.MaxInt32 {
+		return fmt.Errorf("max_message_bytes (%d) must not exceed %d", c.MaxMessageBytes, math.MaxInt32)
+	}
 	if c.MaxBrokerWriteBytes < defaultMaxBrokerWriteBytes {
 		return fmt.Errorf(
 			"max_broker_write_bytes (%d) must be at least %d (franz-go minimum)",
 			c.MaxBrokerWriteBytes,
 			defaultMaxBrokerWriteBytes,
 		)
+	}
+	if c.MaxBrokerWriteBytes > math.MaxInt32 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must not exceed %d", c.MaxBrokerWriteBytes, math.MaxInt32)
 	}
 	if c.MaxMessageBytes > c.MaxBrokerWriteBytes {
 		return fmt.Errorf(
