@@ -148,6 +148,21 @@ func TestLoadConfig(t *testing.T) {
 									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 								},
 							},
+							{
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "test-and-policy-3",
+									Type: Not,
+								},
+								NotCfg: NotCfg{
+									SubPolicy: NotSubPolicyCfg{
+										sharedPolicyCfg: sharedPolicyCfg{
+											Name:       "test-and-policy-3-not-sub-policy",
+											Type:       Latency,
+											LatencyCfg: LatencyCfg{ThresholdMs: 1000},
+										},
+									},
+								},
+							},
 						},
 					},
 				},

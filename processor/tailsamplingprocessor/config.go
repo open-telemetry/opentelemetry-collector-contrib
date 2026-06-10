@@ -113,6 +113,9 @@ type CompositeSubPolicyCfg struct {
 // AndSubPolicyCfg holds the common configuration to all policies under and policy.
 type AndSubPolicyCfg struct {
 	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configs for defining not policy under and policy.
+	NotCfg NotCfg `mapstructure:"not"`
 }
 
 // NotSubPolicyCfg holds the common configuration to the policy under the not policy.
