@@ -5,6 +5,7 @@ package activedirectoryinvreceiver // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 )
@@ -18,7 +19,8 @@ type ADConfig struct {
 }
 
 var (
-	errInvalidDN           = errors.New("base_dn is required, it must be a valid distinguished name (CN=Guest,OU=Users,DC=example,DC=com)")
+	errEmptyDN             = errors.New("base_dn must not be empty")
+	errInvalidDN           = errors.New("base_dn is not a valid distinguished name (expected format: CN=Guest,OU=Users,DC=example,DC=com)")
 	errInvalidPollInterval = errors.New("poll_interval is incorrect, invalid duration")
 	errSupportedOS         = errors.New("active_directory_inv is only supported on Windows")
 )
@@ -40,13 +42,16 @@ func (c *ADConfig) Validate() error {
 	// Compile the regular expression pattern
 	regex := regexp.MustCompile(pattern)
 
+	if len(c.BaseDN) == 0 {
+		return errEmptyDN
+	}
 	// Check if the Base DN is valid
 	if !regex.MatchString(c.BaseDN) {
-		return errInvalidDN
+		return fmt.Errorf("%w: got %q", errInvalidDN, c.BaseDN)
 	}
 
 	if !isValidDuration(c.PollInterval) {
-		return errInvalidPollInterval
+		return fmt.Errorf("%w: got %s", errInvalidPollInterval, c.PollInterval)
 	}
 
 	return nil
