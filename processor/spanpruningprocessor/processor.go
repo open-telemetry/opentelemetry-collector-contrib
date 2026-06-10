@@ -19,10 +19,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
-// spanInfo pairs a span with its ScopeSpans container for in-place edits.
+// spanInfo pairs a span with its ResourceSpans/ScopeSpans containers for
+// in-place edits and hierarchy reconstruction.
 type spanInfo struct {
-	span       ptrace.Span
-	scopeSpans ptrace.ScopeSpans
+	span          ptrace.Span
+	resourceSpans ptrace.ResourceSpans
+	scopeSpans    ptrace.ScopeSpans
 }
 
 // attributePattern caches a compiled glob used for attribute key matching.
@@ -141,8 +143,9 @@ func (*spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.T
 				span := spans.At(k)
 				traceID := span.TraceID()
 				traceSpans[traceID] = append(traceSpans[traceID], spanInfo{
-					span:       span,
-					scopeSpans: ils,
+					span:          span,
+					resourceSpans: rs,
+					scopeSpans:    ils,
 				})
 			}
 		}
