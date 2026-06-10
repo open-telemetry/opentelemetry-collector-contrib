@@ -290,6 +290,7 @@ type querySample struct {
 	processlistDB      string
 	processlistCommand string
 	processlistState   string
+	digestText         string
 	sqlText            string
 	digest             string
 	eventID            int64
@@ -420,7 +421,7 @@ func parseDBVersion(versionStr string) (dbVersion, error) {
 	}
 
 	// MySQL: strip any suffix after the first "-"
-	semverStr := strings.SplitN(versionStr, "-", 2)[0]
+	semverStr, _, _ := strings.Cut(versionStr, "-")
 	v, err := version.NewVersion(semverStr)
 	if err != nil {
 		return dbVersion{}, fmt.Errorf("failed to parse db version %q: %w", versionStr, err)
@@ -966,6 +967,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.processlistCommand)
 			case "session_state":
 				dest = append(dest, &s.processlistState)
+			case "digest_text":
+				dest = append(dest, &s.digestText)
 			case "sql_text":
 				dest = append(dest, &s.sqlText)
 			case "fingerprint":
@@ -1018,16 +1021,23 @@ func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest s
 		return ""
 	}
 
+	ctx := context.Background()
+	conn, err := c.client.Conn(ctx)
+	if err != nil {
+		logger.Warn("unable to acquire connection for explain", zap.String("digest", digest), zap.Error(err))
+		return ""
+	}
+	defer conn.Close()
+
 	if schema != "" {
-		if _, err := c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE `%s`;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
+		if _, err = conn.ExecContext(ctx, fmt.Sprintf("/* otel-collector-ignore */ USE `%s`;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
 			logger.Warn(fmt.Sprintf("unable to use schema: %s", schema), zap.String("digest", digest), zap.Error(err))
 			return ""
 		}
 	}
 
 	var plan string
-	err := c.client.QueryRow("EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
-	if err != nil {
+	if err = conn.QueryRowContext(ctx, "EXPLAIN FORMAT=json "+strings.TrimSpace(sampleStatement)).Scan(&plan); err != nil {
 		logger.Warn("unable to execute explain statement", zap.String("digest", digest), zap.Error(err))
 		return ""
 	}
@@ -1049,7 +1059,7 @@ func isQueryExplainable(query string) bool {
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
-	lowerQuery := strings.ToLower(trimmedQuery)
+	lowerQuery := strings.ToLower(stripLeadingSQLComments(trimmedQuery))
 
 	for _, keyword := range sqlStartingKeywords {
 		if strings.HasPrefix(lowerQuery, keyword) {
@@ -1057,6 +1067,30 @@ func isQueryExplainable(query string) bool {
 		}
 	}
 	return false
+}
+
+// stripLeadingSQLComments removes leading block (/* ... */)
+// and line comments (-- ... and # ...) from a query.
+func stripLeadingSQLComments(query string) string {
+	for {
+		switch {
+		case strings.HasPrefix(query, "/*"):
+			end := strings.Index(query, "*/")
+			if end == -1 {
+				return query
+			}
+			query = strings.TrimSpace(query[end+2:])
+		case strings.HasPrefix(query, "--"), strings.HasPrefix(query, "#"):
+			end := strings.Index(query, "\n")
+			if end == -1 {
+				// remaining text is a comment
+				return ""
+			}
+			query = strings.TrimSpace(query[end+1:])
+		default:
+			return query
+		}
+	}
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {

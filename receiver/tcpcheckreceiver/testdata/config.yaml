@@ -1,5 +1,5 @@
 receivers:
-  tcpcheck:
+  tcp_check:
     collection_interval: 1m
     initial_delay: 1s
     targets:

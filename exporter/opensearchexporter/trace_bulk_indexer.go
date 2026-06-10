@@ -20,13 +20,14 @@ import (
 
 type traceBulkIndexer struct {
 	bulkAction  string
+	pipeline    string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(bulkAction string, model mappingModel) *traceBulkIndexer {
-	return &traceBulkIndexer{bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
+func newTraceBulkIndexer(bulkAction string, model mappingModel, pipeline string) *traceBulkIndexer {
+	return &traceBulkIndexer{bulkAction: bulkAction, pipeline: pipeline, model: model, errs: nil, bulkIndexer: nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
@@ -35,7 +36,7 @@ func (tbi *traceBulkIndexer) joinedError() error {
 
 func (tbi *traceBulkIndexer) start(client *opensearchapi.Client) error {
 	var startErr error
-	tbi.bulkIndexer, startErr = newOpenSearchBulkIndexer(client, tbi.onIndexerError)
+	tbi.bulkIndexer, startErr = newOpenSearchBulkIndexer(client, tbi.onIndexerError, tbi.pipeline)
 	return startErr
 }
 
@@ -159,10 +160,11 @@ func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte, indexName strin
 	return item
 }
 
-func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
+func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(context.Context, error), pipeline string) (opensearchutil.BulkIndexer, error) {
 	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers: 1,
 		Client:     client,
 		OnError:    onIndexerError,
+		Pipeline:   pipeline,
 	})
 }

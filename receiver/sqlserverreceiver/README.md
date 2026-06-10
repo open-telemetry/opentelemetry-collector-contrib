@@ -5,7 +5,6 @@ The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instanc
 Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
 are only available when running on Windows.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

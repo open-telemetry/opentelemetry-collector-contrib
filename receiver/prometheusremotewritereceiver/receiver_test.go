@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,6 +35,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	otelattr "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -1678,6 +1685,150 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			name: "exponential histogram - stale NaN sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
+								Schema:         -4,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetZeroThreshold(1)
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - overflow buckets dropped",
+			// This test case verifies that the bucket with index 1026 is dropped because the limit is 1025 at scale 0 (1024 + 1 for +Inf bucket).
+			// Bucket 1025 is valid (+Inf bucket).
+			// The original count was 50. Bucket 1025 has count 10. Bucket 1026 has count 30 (10 + 20).
+			// Bucket 1026 overflows (> 1025) and is dropped.
+			// The total count is updated to 50 - 30 = 20.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 50,
+								},
+								Sum:            100,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 2}},
+								PositiveDeltas: []int64{10, 20},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(100)
+				dp.SetCount(20)
+
+				dp.Positive().SetOffset(1024)
+				dp.Positive().BucketCounts().FromRaw([]uint64{10})
+
+				return metrics
+			}(),
+		},
+		{
 			name: "multiple histogram metrics with exemplars",
 			request: &writev2.Request{
 				Symbols: []string{
@@ -2473,6 +2624,117 @@ func TestTranslateV2(t *testing.T) {
 				spanID, _ = hex.DecodeString("fff067aa0ba902ff")
 				copy(sid[:], spanID)
 				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			// Regression test: exemplars from different label-set variants of the
+			// same counter must be attached to their matching datapoint, not At(0).
+			name: "counter metric with exemplars for multiple label-set variants",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"__name__", "http_requests_total", // 5, 6
+					"status", "200", "500", // 7, 8, 9
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbb", // 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// samples for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Samples:    []writev2.Sample{{Value: 100, Timestamp: 1}},
+					},
+					{
+						// samples for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+					},
+					{
+						// disconnected exemplar for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Exemplars: []writev2.Exemplar{{
+							Value:      100,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 11, 12, 13},
+						}},
+					},
+					{
+						// disconnected exemplar for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Exemplars: []writev2.Exemplar{{
+							Value:      5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 14, 12, 15},
+						}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "production")
+				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("http_requests_total")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				// datapoint for status=200 must get only trace-A
+				dp200 := sum.DataPoints().AppendEmpty()
+				dp200.SetDoubleValue(100)
+				dp200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp200.Attributes().PutStr("status", "200")
+				ex200 := dp200.Exemplars().AppendEmpty()
+				ex200.SetDoubleValue(100)
+				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				var tidA [16]byte
+				copy(tidA[:], traceA)
+				ex200.SetTraceID(pcommon.TraceID(tidA))
+				spanA, _ := hex.DecodeString("aaaaaaaaaaaaaaaa")
+				var sidA [8]byte
+				copy(sidA[:], spanA)
+				ex200.SetSpanID(pcommon.SpanID(sidA))
+
+				// datapoint for status=500 must get only trace-B
+				dp500 := sum.DataPoints().AppendEmpty()
+				dp500.SetDoubleValue(5)
+				dp500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp500.Attributes().PutStr("status", "500")
+				ex500 := dp500.Exemplars().AppendEmpty()
+				ex500.SetDoubleValue(5)
+				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				var tidB [16]byte
+				copy(tidB[:], traceB)
+				ex500.SetTraceID(pcommon.TraceID(tidB))
+				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
+				var sidB [8]byte
+				copy(sidB[:], spanB)
+				ex500.SetSpanID(pcommon.SpanID(sidB))
 
 				return metrics
 			}(),
@@ -3336,4 +3598,180 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+}
+
+// TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
+// number of data points, not the number of resource metric groups.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
+	// Build a request with 3 gauge time series all from the same job/instance.
+	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
+	request := &writev2.Request{
+		Symbols: []string{
+			"",              // 0 - required empty string
+			"__name__",      // 1
+			"gauge_a",       // 2
+			"gauge_b",       // 3
+			"gauge_c",       // 4
+			"job",           // 5
+			"test-job",      // 6
+			"instance",      // 7
+			"test-instance", // 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 3, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 1000}},
+			},
+		},
+	}
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(request)
+	require.NoError(t, err)
+
+	receiverID := component.NewIDWithName(metadata.Type, "test")
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.TelemetrySettings = tt.NewTelemetrySettings()
+	settings.ID = receiverID
+
+	sink := &consumertest.MetricsSink{}
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+	w := httptest.NewRecorder()
+	writeReceiver.handlePRW(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+
+	// The accepted metric points must equal the data point count (3), not the
+	// resource group count (1). This is the regression check for #48306.
+	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
+			Unit:        "{datapoint}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: otelattr.NewSet(
+							otelattr.String("receiver", receiverID.String()),
+							otelattr.String("transport", "http")),
+						Value: 3, // 3 data points, not 1 (resource count)
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
+func TestInvalidSchemaLogging(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	request := &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_invalid_histogram",
+			"job", "test_job",
+			"instance", "test_instance",
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Metadata: writev2.Metadata{
+					Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				},
+				Histograms: []writev2.Histogram{
+					{
+						Timestamp: 123456789,
+						Schema:    -10, // Invalid schema
+						Sum:       100.5,
+						Count:     &writev2.Histogram_CountInt{CountInt: 50},
+						PositiveSpans: []writev2.BucketSpan{
+							{Offset: 0, Length: 2},
+						},
+						PositiveDeltas: []int64{10, 15},
+					},
+				},
+			},
+		},
+	}
+
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
+	require.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
+	assert.Equal(t, 0, stats.Histograms)
+
+	// Verify that debug log was emitted for the invalid schema
+	logs := obs.All()
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
+
+	// Check log entry
+	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
+	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
+	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
+	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
+	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
+	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
 }

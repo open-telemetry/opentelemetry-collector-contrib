@@ -5,6 +5,9 @@
 package internal
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"testing"
@@ -113,6 +116,7 @@ func TestComponentParser(t *testing.T) {
 					"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen",
 				},
 				Namespace: "github.com/open-telemetry/opentelemetry-collector-contrib",
+				Pattern:   ".",
 			}
 			if tc.rootType != "" {
 				cfg.ConfigType = tc.rootType
@@ -170,4 +174,52 @@ func testMappings() Mappings {
 			},
 		},
 	}
+}
+
+func TestParseTypeNilGuard(t *testing.T) {
+	src := `package test
+
+// MyConfig is a config type backed by an unrecognized generic.
+type MyConfig pkg.Unknown[string]
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "test.go", src, parser.ParseComments)
+	require.NoError(t, err)
+
+	cmap := ast.NewCommentMap(fset, file, file.Comments)
+	var typeInfo *TypeInfo
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok {
+			continue
+		}
+		for _, spec := range genDecl.Specs {
+			ts, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+			if ts.Name.Name == "MyConfig" {
+				typeInfo = &TypeInfo{
+					spec:     ts,
+					comms:    cmap[genDecl],
+					typeName: ts.Name.Name,
+					imports:  map[string]string{},
+				}
+			}
+		}
+	}
+	require.NotNil(t, typeInfo, "TypeInfo for MyConfig not found")
+	require.NotEmpty(t, typeInfo.comms, "expected doc comment to be present")
+
+	p := &Parser{
+		config: &Config{
+			Mode:     Component,
+			Mappings: testMappings(),
+		},
+		types: map[string]*TypeInfo{},
+	}
+
+	elem, err := p.parseType(typeInfo)
+	require.NoError(t, err)
+	require.Nil(t, elem)
 }
