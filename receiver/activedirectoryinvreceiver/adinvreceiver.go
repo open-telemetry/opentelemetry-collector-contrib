@@ -137,8 +137,8 @@ func (r *adReceiver) traverse(node Container, attrs []string, resourceLogs *plog
 		}
 		childContainer := &adsiContainer{windowsChildContainer}
 		r.traverse(childContainer, attrs, resourceLogs)
+		childContainer.Close()
 	}
-	defer node.Close()
 }
 
 // Poll for Active Directory inventory records
@@ -152,6 +152,7 @@ func (r *adReceiver) poll(ctx context.Context) error {
 		return fmt.Errorf("failed to open Active Directory path %q: %w", r.config.BaseDN, err)
 	}
 	r.traverse(root, r.config.Attributes, resourceLogs)
+	defer root.Close()
 	err = r.consumer.ConsumeLogs(ctx, logs)
 	if err != nil {
 		r.logger.Error("Error consuming log", zap.Error(err))
