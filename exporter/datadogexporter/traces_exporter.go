@@ -229,6 +229,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
+	if !featuregates.ScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_scope_convention"] = struct{}{}
+	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }
