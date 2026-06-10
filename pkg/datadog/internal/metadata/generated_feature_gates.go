@@ -26,7 +26,7 @@ var DatadogEnableScopeConventionFeatureGate = featuregate.GlobalRegistry().MustR
 	"datadog.EnableScopeConvention",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, use otel.scope.name and otel.scope.version convention to set scope name and version instead of the deprecated otel.library.name and otel.library.version."),
-	featuregate.WithRegisterReferenceURL("https://opentelemetry.io/docs/specs/otel/common/mapping-to-non-otlp/"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49001"),
 	featuregate.WithRegisterFromVersion("v1.10.0"),
 )
 
