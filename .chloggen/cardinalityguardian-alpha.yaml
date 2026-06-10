@@ -4,7 +4,7 @@
 change_type: new_component
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/cardinalityguardian
+component: processor/cardinality_guardian
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Promote the cardinalityguardian processor to alpha stability and include it in the contrib distribution.
