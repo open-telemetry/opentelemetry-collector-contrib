@@ -148,6 +148,9 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 	if !metadata.DatadogEnableReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
+	if !metadata.DatadogEnableScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_scope_convention"] = struct{}{}
+	}
 	if !metadata.DatadogEnableOperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 		logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. The v1 logic will be deprecated in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention. See the migration guide at https://docs.datadoghq.com/opentelemetry/guide/migrate/migrate_operation_names/")
