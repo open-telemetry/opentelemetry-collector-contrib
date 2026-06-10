@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var PkgTranslatorZipkinDontEmitV0CloudResourceConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.zipkin.DontEmitV0CloudResourceConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Zipkin translator no longer emits the deprecated faas.id attribute (semconv v1.18.0). Requires pkg.translator.zipkin.EmitV1CloudResourceConventions to also be enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
+)
+
 var PkgTranslatorZipkinDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.zipkin.DontEmitV0HttpConventions",
 	featuregate.StageAlpha,
@@ -28,6 +36,14 @@ var PkgTranslatorZipkinDontEmitV0ScopeConventionsFeatureGate = featuregate.Globa
 	featuregate.WithRegisterDescription("When enabled, the Zipkin translator no longer emits the deprecated otel.library.name and otel.library.version attributes (semconv v1.25.0). Requires pkg.translator.zipkin.EmitV1ScopeConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var PkgTranslatorZipkinEmitV1CloudResourceConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.zipkin.EmitV1CloudResourceConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Zipkin translator emits cloud.resource_id (semconv v1.40.0) instead of the deprecated faas.id (semconv v1.18.0)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
 var PkgTranslatorZipkinEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(

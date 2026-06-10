@@ -33,6 +33,43 @@ func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
 	assert.False(t, redundantKeys["peer.service"])
 }
 
+func TestResourceToZipkinEndpointServiceNameAndAttributeMapCloudResourceConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", false))
+			})
+
+			resource := pcommon.NewResource()
+			resource.Attributes().PutStr("faas.id", "my-faas")
+
+			_, zTags := resourceToZipkinEndpointServiceNameAndAttributeMap(resource)
+
+			_, hasV0 := zTags["faas.id"]
+			_, hasV1 := zTags["cloud.resource_id"]
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
+}
+
 func TestInternalTracesToZipkinSpans(t *testing.T) {
 	tests := []struct {
 		name string
