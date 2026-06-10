@@ -53,10 +53,10 @@ var (
 )
 
 type basicAuthServer struct {
-	htpasswd    *HtpasswdSettings
-	matchFunc   atomic.Pointer[func(string, string) bool]
+	htpasswd          *HtpasswdSettings
+	matchFunc         atomic.Pointer[func(string, string) bool]
 	awsSecretResolver *awssecretsmanager.Resolver
-	logger      *zap.Logger
+	logger            *zap.Logger
 }
 
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
@@ -74,21 +74,11 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 
 	if ba.htpasswd.AWSSecret != nil {
 		cfg := ba.htpasswd.AWSSecret
-		resolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger,
-			func(raw string) error {
-				htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
-				if err != nil {
-					return err
-				}
-				fn := htp.Match
-				ba.matchFunc.Store(&fn)
-				return nil
-			},
-		)
-		if err := resolver.Start(ctx); err != nil {
+		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, ba.parseAWSSecret)
+		if err := serverResolver.Start(ctx); err != nil {
 			return err
 		}
-		ba.awsSecretResolver = resolver
+		ba.awsSecretResolver = serverResolver
 		return nil
 	}
 
@@ -118,6 +108,16 @@ func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string]
 	return basicauth.Authenticate(ctx, headers, *ba.matchFunc.Load())
 }
 
+func (ba *basicAuthServer) parseAWSSecret(raw string) error {
+	htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
+	if err != nil {
+		return err
+	}
+	fn := htp.Match
+	ba.matchFunc.Store(&fn)
+	return nil
+}
+
 var (
 	_ extension.Extension      = (*basicAuthClient)(nil)
 	_ extensionauth.HTTPClient = (*basicAuthClient)(nil)
@@ -130,12 +130,12 @@ type awsCredentials struct {
 }
 
 type basicAuthClient struct {
-	clientAuth       *ClientAuthSettings
-	logger           *zap.Logger
-	usernameResolver credentialsfile.ValueResolver
-	passwordResolver credentialsfile.ValueResolver
-	awsSecretResolver      *awssecretsmanager.Resolver
-	creds            atomic.Pointer[awsCredentials]
+	clientAuth        *ClientAuthSettings
+	logger            *zap.Logger
+	usernameResolver  credentialsfile.ValueResolver
+	passwordResolver  credentialsfile.ValueResolver
+	awsSecretResolver *awssecretsmanager.Resolver
+	creds             atomic.Pointer[awsCredentials]
 }
 
 func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
