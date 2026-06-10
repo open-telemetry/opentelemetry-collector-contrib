@@ -95,6 +95,7 @@ func (l *adReceiver) startPolling(ctx context.Context) {
 		l.logger.Error("there was an error during the poll", zap.Error(err))
 	}
 	t := time.NewTicker(l.config.PollInterval)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
