@@ -761,6 +761,61 @@ func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
 }
 
+func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "5432",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "888",
+		querySampleColumnPID:                  "2600",
+		querySampleColumnApplicationName:      "app",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "active",
+		querySampleColumnQuery:                "update orders set status = ? where id = ?",
+		querySampleColumnDurationMilliseconds: "10.0",
+		querySampleColumnBlockingPIDs:         "{3001,3002}",
+		querySampleColumnBlockingStartTime:    "2025-02-12T16:37:50Z",
+		querySampleColumnBlockingWaitDuration: "10",
+		querySampleColumnBlockingLockMode:     "RowExclusiveLock",
+		querySampleColumnBlockingLockType:     "relation",
+		querySampleColumnBlockingLockRelation: "orders",
+		querySampleColumnBlockingTxnStartTime: "2025-02-12T16:37:49Z",
+	}))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	lr := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes().AsRaw()
+	assert.Equal(t, "{3001,3002}", attrs["postgresql.blocking.pids"])
+	assert.Equal(t, "2025-02-12T16:37:50Z", attrs["postgresql.blocking.start_time"])
+	assert.Equal(t, int64(10), attrs["postgresql.blocking.wait_duration"])
+	assert.Equal(t, "RowExclusiveLock", attrs["postgresql.blocking.lock.mode"])
+	assert.Equal(t, "relation", attrs["postgresql.blocking.lock.type"])
+	assert.Equal(t, "orders", attrs["postgresql.blocking.lock.relation"])
+	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
+}
+
 //go:embed testdata/scraper/top-query/expectedSql.sql
 var expectedScrapeTopQuery string
 
