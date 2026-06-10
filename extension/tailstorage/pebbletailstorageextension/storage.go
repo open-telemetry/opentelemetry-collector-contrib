@@ -1,9 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"path/filepath"
@@ -31,22 +34,52 @@ type storage struct {
 	marshaler   ptrace.Marshaler
 }
 
-func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
-	db, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
+	db, created, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &storage{
+	s := &storage{
 		db:          db,
 		logger:      logger,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
-	}, nil
+	}
+
+	if !created {
+		// Persistence across restarts is not supported.
+		// Enforce this at startup to prevent users from relying on persistence.
+		logger.Warn("existing database found; dropping all data as persistence across restarts is not supported")
+		if err := s.drop(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	return s, nil
+}
+
+func (s *storage) drop(ctx context.Context) error {
+	var lo, hi [traceIDBytes + 1]byte
+	lo[len(lo)-1] = traceIDSeparator
+	for i := range hi {
+		if i == len(hi)-1 {
+			hi[i] = traceIDSeparator + 1 // +1 to include the greatest trace ID with trace ID separator
+			break
+		}
+		hi[i] = 0xff
+	}
+	if err := s.db.DeleteRange(lo[:], hi[:], pebble.NoSync); err != nil {
+		return err
+	}
+	if err := s.db.Compact(ctx, lo[:], hi[:], true); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *storage) Close() error {

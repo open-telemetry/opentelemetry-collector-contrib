@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
@@ -28,8 +30,8 @@ func newExtension(settings extension.Settings, cfg *Config) *pebbleTailStorageEx
 	}
 }
 
-func (e *pebbleTailStorageExtension) Start(_ context.Context, _ component.Host) error {
-	storage, err := newStorage(e.cfg.Directory, e.settings.Logger)
+func (e *pebbleTailStorageExtension) Start(ctx context.Context, _ component.Host) error {
+	storage, err := newStorage(ctx, e.cfg.Directory, e.settings.Logger)
 	if err != nil {
 		return err
 	}
