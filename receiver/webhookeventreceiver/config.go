@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
 
@@ -18,6 +19,9 @@ var (
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errHeaderAttributeRegexCompile = errors.New("regex for header_attribute_regex failed to compile")
+	errHMACMissingSecret           = errors.New("hmac_signature.secret is required when hmac_signature is configured")
+	errHMACMissingHeader           = errors.New("hmac_signature.header is required when hmac_signature is configured")
+	errHMACMissingPrefix           = errors.New("hmac_signature.prefix is required when hmac_signature is configured")
 )
 
 // Config defines configuration for the Generic Webhook receiver.
@@ -32,11 +36,24 @@ type Config struct {
 	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
+	HMACSignature              HMACSignature            `mapstructure:"hmac_signature"`                // optional HMAC hex digest signature verification
 }
 
 type RequiredHeader struct {
 	Key   string `mapstructure:"key"`
 	Value string `mapstructure:"value"`
+}
+
+// HMACSignature defines configuration for HMAC hex digest signature verification.
+// This is compatible with webhook signature schemes used by GitHub (X-Hub-Signature-256: sha256=<hex>)
+// and Fingerprint (fpjs-event-signature: v1=<hex>).
+type HMACSignature struct {
+	// Secret is the shared secret used to compute the HMAC.
+	Secret configopaque.String `mapstructure:"secret"`
+	// Header is the HTTP header name containing the signature (e.g. "X-Hub-Signature-256").
+	Header string `mapstructure:"header"`
+	// Prefix is the prefix before the hex digest in the header value (e.g. "sha256=" or "v1=").
+	Prefix string `mapstructure:"prefix"`
 }
 
 func (cfg *Config) Validate() error {
@@ -84,6 +101,18 @@ func (cfg *Config) Validate() error {
 
 	if cfg.SplitLogsAtNewLine && cfg.SplitLogsAtJSONBoundary {
 		errs = multierr.Append(errs, errors.New("split_logs_at_new_line and split_logs_at_json_boundary cannot be enabled at the same time"))
+	}
+
+	if cfg.HMACSignature.Secret != "" || cfg.HMACSignature.Header != "" || cfg.HMACSignature.Prefix != "" {
+		if cfg.HMACSignature.Secret == "" {
+			errs = multierr.Append(errs, errHMACMissingSecret)
+		}
+		if cfg.HMACSignature.Header == "" {
+			errs = multierr.Append(errs, errHMACMissingHeader)
+		}
+		if cfg.HMACSignature.Prefix == "" {
+			errs = multierr.Append(errs, errHMACMissingPrefix)
+		}
 	}
 
 	if cfg.HeaderAttributeRegex != "" {
