@@ -296,6 +296,14 @@ func TestProducerConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"large_message": {
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.MaxMessageBytes = 209715200
+				cfg.MaxBrokerWriteBytes = 268435456
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_compression": {
@@ -312,6 +320,12 @@ func TestProducerConfig(t *testing.T) {
 		},
 		"max_message_bytes_negative": {
 			expectedErr: "max_message_bytes (-1000) must be non-negative",
+		},
+		"max_broker_write_bytes_too_small": {
+			expectedErr: "max_broker_write_bytes (1000) must be at least 104857600 (franz-go minimum)",
+		},
+		"max_message_bytes_exceeds_broker": {
+			expectedErr: "max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (104857600)",
 		},
 	})
 }
