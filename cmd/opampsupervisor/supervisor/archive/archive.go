@@ -6,11 +6,8 @@
 package archive
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -40,7 +37,7 @@ type Installer interface {
 func NewInstaller(format Format) (Installer, error) {
 	switch format {
 	case FormatNone:
-		return rawInstaller{}, nil
+		return rawInstaller{maxBytes: maxAgentBytes}, nil
 	default:
 		return nil, fmt.Errorf("unsupported archive format: %q", string(format))
 	}
@@ -50,22 +47,19 @@ var _ Installer = rawInstaller{}
 
 // rawInstaller treats the package bytes as a raw agent binary and writes them
 // directly to destination.
-type rawInstaller struct{}
-
-func (rawInstaller) Install(_ context.Context, pkg []byte, destination string) error {
-	return writeBinaryToDestination(bytes.NewReader(pkg), destination)
+type rawInstaller struct {
+	// maxBytes is the maximum binary size the installer will write. Inputs larger
+	// than this are rejected rather than silently truncated.
+	maxBytes int64
 }
 
-// writeBinaryToDestination writes binary to destination, creating or truncating
-// the file with executable permissions. At most maxAgentBytes are written.
-func writeBinaryToDestination(binary io.Reader, destination string) error {
-	f, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o700)
-	if err != nil {
-		return fmt.Errorf("open destination file: %w", err)
+func (r rawInstaller) Install(_ context.Context, pkg []byte, destination string) error {
+	if int64(len(pkg)) > r.maxBytes {
+		return fmt.Errorf("binary exceeds maximum size of %d bytes", r.maxBytes)
 	}
-	defer f.Close()
 
-	if _, err := io.CopyN(f, binary, maxAgentBytes); err != nil && !errors.Is(err, io.EOF) {
+	// Create or truncate the destination with executable permissions.
+	if err := os.WriteFile(destination, pkg, 0o700); err != nil {
 		return fmt.Errorf("write binary to destination: %w", err)
 	}
 
