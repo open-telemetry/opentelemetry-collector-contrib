@@ -16,15 +16,17 @@ issues: [47492]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously, setting `producer.max_message_bytes` above 100 MiB passed configuration
-  validation but caused the collector to fail on startup with an unrecoverable error
-  ("max broker write bytes ... is erroneously less than max record batch bytes ...").
+  The maximum size of a single write to a broker was previously fixed at the underlying
+  franz-go default of 100 MiB and could not be configured. As a result, setting
+  `producer.max_message_bytes` above 100 MiB passed configuration validation but caused the
+  collector to fail on startup with an unrecoverable error ("max broker write bytes ... is
+  erroneously less than max record batch bytes ...").
 
-  A new `producer.max_broker_write_bytes` setting (default 104857600, i.e. 100 MiB) controls
-  the maximum size of a single write to a broker. To send messages larger than 100 MiB,
-  raise this value so it is greater than or equal to `max_message_bytes`. Configuration is
-  now validated up front: the collector reports a clear error if `max_broker_write_bytes` is
-  below the 100 MiB minimum or smaller than `max_message_bytes`, rather than failing at runtime.
+  The new `producer.max_broker_write_bytes` setting (default 104857600, i.e. 100 MiB) exposes
+  this limit. To send messages larger than 100 MiB, raise it so it is greater than or equal to
+  `max_message_bytes`. Configuration is now validated up front: the collector reports a clear
+  error if `max_broker_write_bytes` is below the 100 MiB minimum or smaller than
+  `max_message_bytes`, rather than failing at runtime.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
