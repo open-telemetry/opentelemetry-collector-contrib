@@ -89,6 +89,11 @@ func (l *adReceiver) Shutdown(_ context.Context) error {
 func (l *adReceiver) startPolling(ctx context.Context) {
 	defer l.wg.Done()
 	l.logger.Info("Polling interval: ", zap.Duration("interval", l.config.PollInterval))
+	// initial poll before starting the ticker
+	err := l.poll(ctx)
+	if err != nil {
+		l.logger.Error("there was an error during the poll", zap.Error(err))
+	}
 	t := time.NewTicker(l.config.PollInterval)
 	for {
 		select {
