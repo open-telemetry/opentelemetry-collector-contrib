@@ -355,6 +355,9 @@ func (c ProducerConfig) Validate() error {
 	if c.MaxMessageBytes > math.MaxInt32 {
 		return fmt.Errorf("max_message_bytes (%d) must not exceed %d", c.MaxMessageBytes, math.MaxInt32)
 	}
+	if c.MaxBrokerWriteBytes < 0 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must be non-negative", c.MaxBrokerWriteBytes)
+	}
 	if c.MaxBrokerWriteBytes < defaultMaxBrokerWriteBytes {
 		return fmt.Errorf(
 			"max_broker_write_bytes (%d) must be at least %d (100 MiB, franz-go minimum)",

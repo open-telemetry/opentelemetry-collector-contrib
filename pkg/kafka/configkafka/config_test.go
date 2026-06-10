@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -323,18 +324,41 @@ func TestProducerConfig(t *testing.T) {
 		"max_message_bytes_negative": {
 			expectedErr: "max_message_bytes (-1000) must be non-negative",
 		},
+		"max_broker_write_bytes_negative": {
+			expectedErr: "max_broker_write_bytes (-1000) must be non-negative",
+		},
 		"max_broker_write_bytes_too_small": {
 			expectedErr: fmt.Sprintf("max_broker_write_bytes (1000) must be at least %d (100 MiB, franz-go minimum)", defaultMaxBrokerWriteBytes),
 		},
 		"max_message_bytes_exceeds_broker": {
 			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", defaultMaxBrokerWriteBytes),
 		},
-		"max_message_bytes_overflow": {
-			expectedErr: fmt.Sprintf("max_message_bytes (%d) must not exceed %d", int64(math.MaxInt32)+1, int64(math.MaxInt32)),
-		},
-		"max_broker_write_bytes_overflow": {
-			expectedErr: fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", int64(math.MaxInt32)+1, int64(math.MaxInt32)),
-		},
+	})
+}
+
+// TestProducerConfigInt32Overflow verifies that size limits exceeding the int32
+// range used by franz-go are rejected. Values above math.MaxInt32 are only
+// representable on platforms where int is 64-bit, so this is skipped elsewhere.
+func TestProducerConfigInt32Overflow(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is not wide enough to exceed math.MaxInt32 on this architecture")
+	}
+	// Use a runtime int64 value so the conversion to int is not a compile-time
+	// constant (which would overflow int and fail to build on 32-bit platforms).
+	maxInt32 := int64(math.MaxInt32)
+	overflow := int(maxInt32 + 1)
+
+	t.Run("max_message_bytes", func(t *testing.T) {
+		cfg := NewDefaultProducerConfig()
+		cfg.MaxMessageBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_message_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
+	})
+	t.Run("max_broker_write_bytes", func(t *testing.T) {
+		cfg := NewDefaultProducerConfig()
+		cfg.MaxBrokerWriteBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
 	})
 }
 
