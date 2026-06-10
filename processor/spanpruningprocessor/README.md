@@ -369,7 +369,7 @@ be smaller than the full batch.
 |------------|------------|--------------------------|
 | `bytes_processed_input` vs `bytes_processed_output` | Yes | Yes |
 | `bytes_received` vs `bytes_emitted` | Yes | Yes |
-| `bytes_emitted` vs `bytes_processed_input` | Equivalent today (same scope) | Not a like-for-like comparison (full batch vs matched subset) |
+| `bytes_emitted` vs `bytes_processed_input` | Same scope today (full batch), but values are equal only if pruning does not change serialized size | Not a like-for-like comparison (full batch vs matched subset) |
 
 After aggregation, `bytes_processed_output` can exceed `bytes_processed_input` when
 summary spans are larger than the leaf spans they replace, so matched-byte savings
