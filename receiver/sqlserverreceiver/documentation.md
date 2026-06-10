@@ -463,7 +463,7 @@ Number of lock blocks tracked by the lock manager, broken down by block type.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| block.type | The type of lock block tracked by the lock manager. | Str: ``blocks``, ``allocated``, ``owner``, ``owner_allocated`` | Recommended | - |
+| sqlserver.block.type | The type of lock block tracked by the lock manager. | Str: ``blocks``, ``allocated``, ``owner``, ``owner_allocated`` | Recommended | - |
 
 ### sqlserver.lock.escalation.rate
 

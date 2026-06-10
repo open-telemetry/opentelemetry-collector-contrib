@@ -644,7 +644,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockBlocks)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeBlockTypeBlocks)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeBlocks)
 			}
 		case lockBlocksAllocated:
 			val, err := retrieveInt(row, valueKey)
@@ -652,7 +652,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockBlocksAllocated)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeBlockTypeAllocated)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeAllocated)
 			}
 		case lockMemoryKB:
 			val, err := retrieveInt(row, valueKey)
@@ -668,7 +668,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockOwnerBlocks)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeBlockTypeOwner)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeOwner)
 			}
 		case lockOwnerBlocksAllocated:
 			val, err := retrieveInt(row, valueKey)
@@ -676,7 +676,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockOwnerBlocksAllocated)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeBlockTypeOwnerAllocated)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeOwnerAllocated)
 			}
 		case lockRequestsPerSec:
 			val, err := retrieveFloat(row, valueKey)

@@ -248,9 +248,9 @@ $defs:
             items:
               type: string
               enum:
-                - "block.type"
+                - "sqlserver.block.type"
             default:
-              - "block.type"
+              - "sqlserver.block.type"
       sqlserver.lock.escalation.rate:
         description: "SqlserverLockEscalationRateMetricConfig provides config for the sqlserver.lock.escalation.rate metric."
         type: object

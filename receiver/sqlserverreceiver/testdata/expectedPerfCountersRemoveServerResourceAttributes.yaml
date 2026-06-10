@@ -1924,7 +1924,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: block.type
+                    - key: sqlserver.block.type
                       value:
                         stringValue: blocks
                   startTimeUnixNano: "1000000"
@@ -1952,7 +1952,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
-                    - key: block.type
+                    - key: sqlserver.block.type
                       value:
                         stringValue: allocated
                   startTimeUnixNano: "1000000"
@@ -1980,7 +1980,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: block.type
+                    - key: sqlserver.block.type
                       value:
                         stringValue: owner
                   startTimeUnixNano: "1000000"
@@ -2008,7 +2008,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
-                    - key: block.type
+                    - key: sqlserver.block.type
                       value:
                         stringValue: owner_allocated
                   startTimeUnixNano: "1000000"

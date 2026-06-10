@@ -113,7 +113,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLockBlockCount: SqlserverLockBlockCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeyBlockType},
+						EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType},
 					},
 					SqlserverLockEscalationRate: SqlserverLockEscalationRateMetricConfig{
 						Enabled: true,
@@ -375,7 +375,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLockBlockCount: SqlserverLockBlockCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeyBlockType},
+						EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType},
 					},
 					SqlserverLockEscalationRate: SqlserverLockEscalationRateMetricConfig{
 						Enabled: false,

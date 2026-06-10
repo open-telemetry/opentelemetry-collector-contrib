@@ -670,7 +670,7 @@ func (ms *SqlserverLatchWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Con
 type SqlserverLockBlockCountMetricAttributeKey string
 
 const (
-	SqlserverLockBlockCountMetricAttributeKeyBlockType SqlserverLockBlockCountMetricAttributeKey = "block.type"
+	SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType SqlserverLockBlockCountMetricAttributeKey = "sqlserver.block.type"
 )
 
 // SqlserverLockBlockCountMetricConfig provides config for the sqlserver.lock.block.count metric.
@@ -699,9 +699,9 @@ func (ms *SqlserverLockBlockCountMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *SqlserverLockBlockCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverLockBlockCountMetricAttributeKeyBlockType:
+		case SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType:
 		default:
-			return fmt.Errorf("metric sqlserver.lock.block.count doesn't have an attribute %v, valid attributes: [block.type]", val)
+			return fmt.Errorf("metric sqlserver.lock.block.count doesn't have an attribute %v, valid attributes: [sqlserver.block.type]", val)
 		}
 	}
 
@@ -2087,7 +2087,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockBlockCount: SqlserverLockBlockCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeyBlockType},
+			EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType},
 		},
 		SqlserverLockEscalationRate: SqlserverLockEscalationRateMetricConfig{
 			Enabled: false,

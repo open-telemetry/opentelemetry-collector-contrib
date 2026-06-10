@@ -51,11 +51,6 @@ resource_attributes:
 
 attributes:
   # attributes for metrics
-  sqlserver.block.type:
-    description: The type of lock block tracked by the lock manager.
-    type: string
-    requirement_level: recommended
-    enum: [blocks, allocated, owner, owner_allocated]
   cache.state:
     description: The state of the cache objects.
     type: string
@@ -145,6 +140,11 @@ attributes:
     description: The port number on which the server is listening.
     type: int
     requirement_level: recommended
+  sqlserver.block.type:
+    description: The type of lock block tracked by the lock manager.
+    type: string
+    requirement_level: recommended
+    enum: [blocks, allocated, owner, owner_allocated]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -656,7 +656,7 @@ metrics:
     unit: "{blocks}"
     gauge:
       value_type: int
-    attributes: [block.type]
+    attributes: [sqlserver.block.type]
   sqlserver.lock.escalation.rate:
     enabled: false
     description: Number of times locks on a table were escalated to a larger granularity.

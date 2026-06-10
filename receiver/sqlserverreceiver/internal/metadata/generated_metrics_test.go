@@ -188,9 +188,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLatchWaitTimeTotalDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeBlockTypeBlocks)
+			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeSqlserverBlockTypeBlocks)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverLockBlockCountDataPoint(ts, 3, AttributeBlockTypeAllocated)
+				mb.RecordSqlserverLockBlockCountDataPoint(ts, 3, AttributeSqlserverBlockTypeAllocated)
 			}
 
 			allMetricsCount++
@@ -966,9 +966,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						blockTypeAttrVal, ok := dp.Attributes().Get("block.type")
+						sqlserverBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.block.type")
 						assert.True(t, ok)
-						assert.Equal(t, "blocks", blockTypeAttrVal.Str())
+						assert.Equal(t, "blocks", sqlserverBlockTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.lock.block.count"], "Found a duplicate in the metrics slice: sqlserver.lock.block.count")
 						validatedMetrics["sqlserver.lock.block.count"] = true
@@ -990,7 +990,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("block.type")
+						_, ok := dp.Attributes().Get("sqlserver.block.type")
 						assert.False(t, ok)
 					}
 				case "sqlserver.lock.escalation.rate":

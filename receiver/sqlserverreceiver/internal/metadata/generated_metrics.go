@@ -22,40 +22,6 @@ const (
 	AggregationStrategyMax = "max"
 )
 
-// AttributeBlockType specifies the value block.type attribute.
-type AttributeBlockType int
-
-const (
-	_ AttributeBlockType = iota
-	AttributeBlockTypeBlocks
-	AttributeBlockTypeAllocated
-	AttributeBlockTypeOwner
-	AttributeBlockTypeOwnerAllocated
-)
-
-// String returns the string representation of the AttributeBlockType.
-func (av AttributeBlockType) String() string {
-	switch av {
-	case AttributeBlockTypeBlocks:
-		return "blocks"
-	case AttributeBlockTypeAllocated:
-		return "allocated"
-	case AttributeBlockTypeOwner:
-		return "owner"
-	case AttributeBlockTypeOwnerAllocated:
-		return "owner_allocated"
-	}
-	return ""
-}
-
-// MapAttributeBlockType is a helper map of string to AttributeBlockType attribute value.
-var MapAttributeBlockType = map[string]AttributeBlockType{
-	"blocks":          AttributeBlockTypeBlocks,
-	"allocated":       AttributeBlockTypeAllocated,
-	"owner":           AttributeBlockTypeOwner,
-	"owner_allocated": AttributeBlockTypeOwnerAllocated,
-}
-
 // AttributeCacheState specifies the value cache.state attribute.
 type AttributeCacheState int
 
@@ -292,6 +258,40 @@ func (av AttributeReplicaDirection) String() string {
 var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"transmit": AttributeReplicaDirectionTransmit,
 	"receive":  AttributeReplicaDirectionReceive,
+}
+
+// AttributeSqlserverBlockType specifies the value sqlserver.block.type attribute.
+type AttributeSqlserverBlockType int
+
+const (
+	_ AttributeSqlserverBlockType = iota
+	AttributeSqlserverBlockTypeBlocks
+	AttributeSqlserverBlockTypeAllocated
+	AttributeSqlserverBlockTypeOwner
+	AttributeSqlserverBlockTypeOwnerAllocated
+)
+
+// String returns the string representation of the AttributeSqlserverBlockType.
+func (av AttributeSqlserverBlockType) String() string {
+	switch av {
+	case AttributeSqlserverBlockTypeBlocks:
+		return "blocks"
+	case AttributeSqlserverBlockTypeAllocated:
+		return "allocated"
+	case AttributeSqlserverBlockTypeOwner:
+		return "owner"
+	case AttributeSqlserverBlockTypeOwnerAllocated:
+		return "owner_allocated"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverBlockType is a helper map of string to AttributeSqlserverBlockType attribute value.
+var MapAttributeSqlserverBlockType = map[string]AttributeSqlserverBlockType{
+	"blocks":          AttributeSqlserverBlockTypeBlocks,
+	"allocated":       AttributeSqlserverBlockTypeAllocated,
+	"owner":           AttributeSqlserverBlockTypeOwner,
+	"owner_allocated": AttributeSqlserverBlockTypeOwnerAllocated,
 }
 
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
@@ -2240,7 +2240,7 @@ func (m *metricSqlserverLockBlockCount) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, blockTypeAttributeValue string) {
+func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverBlockTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2248,8 +2248,8 @@ func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverLockBlockCountMetricAttributeKeyBlockType) {
-		dp.Attributes().PutStr("block.type", blockTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType) {
+		dp.Attributes().PutStr("sqlserver.block.type", sqlserverBlockTypeAttributeValue)
 	}
 
 	var s string
@@ -5551,8 +5551,8 @@ func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.
 }
 
 // RecordSqlserverLockBlockCountDataPoint adds a data point to sqlserver.lock.block.count metric.
-func (mb *MetricsBuilder) RecordSqlserverLockBlockCountDataPoint(ts pcommon.Timestamp, val int64, blockTypeAttributeValue AttributeBlockType) {
-	mb.metricSqlserverLockBlockCount.recordDataPoint(mb.startTime, ts, val, blockTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverLockBlockCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverBlockTypeAttributeValue AttributeSqlserverBlockType) {
+	mb.metricSqlserverLockBlockCount.recordDataPoint(mb.startTime, ts, val, sqlserverBlockTypeAttributeValue.String())
 }
 
 // RecordSqlserverLockEscalationRateDataPoint adds a data point to sqlserver.lock.escalation.rate metric.
