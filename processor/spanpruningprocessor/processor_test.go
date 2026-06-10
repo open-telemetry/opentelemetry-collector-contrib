@@ -518,6 +518,52 @@ func TestBytesMetrics_InputEqualsOutputWhenNotPruned(t *testing.T) {
 		"bytes_processed_output should equal bytes_processed_input when no pruning occurs")
 }
 
+// TestBytesMetrics_EmittedReflectsPruning verifies byte counters change when
+// pruning changes the serialized trace size.
+func TestBytesMetrics_EmittedReflectsPruning(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 12, "SELECT", map[string]string{
+		"db.operation": "select",
+		"db.statement": strings.Repeat("SELECT * FROM users WHERE tenant_id = 'very-long-tenant-id' ", 10),
+	})
+	originalSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	prunedSpanCount := countSpans(td)
+	require.Less(t, prunedSpanCount, originalSpanCount, "test fixture must trigger pruning")
+
+	receivedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_received")
+	emittedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_emitted")
+	processedInputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_input")
+	processedOutputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_output")
+
+	require.Equal(t, receivedBytes, processedInputBytes,
+		"without conditions, processed input should match received bytes")
+	require.Equal(t, emittedBytes, processedOutputBytes,
+		"without conditions, processed output should match emitted bytes")
+
+	require.NotEqual(t, processedInputBytes, processedOutputBytes,
+		"processed byte counters should change after pruning")
+	require.NotEqual(t, receivedBytes, emittedBytes,
+		"received/emitted byte counters should change after pruning")
+	require.Less(t, processedOutputBytes, processedInputBytes,
+		"this fixture should reduce serialized size after pruning")
+	require.Less(t, emittedBytes, receivedBytes,
+		"this fixture should reduce full-batch serialized size after pruning")
+}
+
 func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
