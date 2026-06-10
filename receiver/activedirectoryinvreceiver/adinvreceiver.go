@@ -148,7 +148,7 @@ func (r *adReceiver) poll(ctx context.Context) error {
 	_ = resourceLogs.ScopeLogs().AppendEmpty()
 	root, err := r.client.Open(r.config.BaseDN, resourceLogs)
 	if err != nil {
-		return fmt.Errorf("invalid distinguished name, please verify that the domain exists: %w", err)
+		return fmt.Errorf("failed to open Active Directory path %q: %w", r.config.BaseDN, err)
 	}
 	r.traverse(root, r.config.Attributes, resourceLogs)
 	err = r.consumer.ConsumeLogs(ctx, logs)
