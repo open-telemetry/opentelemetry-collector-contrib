@@ -5,6 +5,7 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -62,34 +63,21 @@ type basicAuthServer struct {
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 	if ba.htpasswd.AWSSecret != nil {
 		cfg := ba.htpasswd.AWSSecret
-		resolver := awssecretsmanager.NewResolver(
-			cfg.SecretARN,
-			cfg.Region,
-			cfg.ValueKey,
-			cfg.RefreshInterval,
-			ba.logger,
-			func(newValue string) {
-				htp, err := htpasswd.NewFromReader(strings.NewReader(newValue), htpasswd.DefaultSystems, nil)
+		resolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger,
+			func(raw string) error {
+				htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
 				if err != nil {
-					ba.logger.Error("failed to rebuild htpasswd matcher after secret rotation", zap.Error(err))
-					return
+					return err
 				}
 				fn := htp.Match
 				ba.matchFunc.Store(&fn)
+				return nil
 			},
 		)
-
 		if err := resolver.Start(ctx); err != nil {
 			return err
 		}
 		ba.awsResolver = resolver
-
-		htp, err := htpasswd.NewFromReader(strings.NewReader(resolver.Value()), htpasswd.DefaultSystems, nil)
-		if err != nil {
-			return fmt.Errorf("parse htpasswd from AWS secret: %w", err)
-		}
-		fn := htp.Match
-		ba.matchFunc.Store(&fn)
 		return nil
 	}
 
@@ -136,12 +124,18 @@ var (
 	_ extensionauth.GRPCClient = (*basicAuthClient)(nil)
 )
 
+type awsCredentials struct {
+	username string
+	password string
+}
+
 type basicAuthClient struct {
 	clientAuth       *ClientAuthSettings
 	logger           *zap.Logger
 	usernameResolver credentialsfile.ValueResolver
 	passwordResolver credentialsfile.ValueResolver
-	clientResolver   *awssecretsmanager.ClientResolver
+	awsResolver      *awssecretsmanager.Resolver
+	creds            atomic.Pointer[awsCredentials]
 }
 
 func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
@@ -173,13 +167,36 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 	if ca.AWSSecret != nil {
 		cfg := ca.AWSSecret
-		cr := awssecretsmanager.NewClientResolver(
-			cfg.SecretARN, cfg.Region, cfg.UsernameKey, cfg.PasswordKey, cfg.RefreshInterval, ba.logger,
+		cr := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger,
+			func(raw string) error {
+				var parsed map[string]any
+				if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+					return fmt.Errorf("parse secret as JSON: %w", err)
+				}
+				uVal, ok := parsed[cfg.UsernameKey]
+				if !ok {
+					return fmt.Errorf("key %q not found in secret JSON", cfg.UsernameKey)
+				}
+				u, ok := uVal.(string)
+				if !ok {
+					return fmt.Errorf("key %q in secret is not a string", cfg.UsernameKey)
+				}
+				pVal, ok := parsed[cfg.PasswordKey]
+				if !ok {
+					return fmt.Errorf("key %q not found in secret JSON", cfg.PasswordKey)
+				}
+				p, ok := pVal.(string)
+				if !ok {
+					return fmt.Errorf("key %q in secret is not a string", cfg.PasswordKey)
+				}
+				ba.creds.CompareAndSwap(ba.creds.Load(), &awsCredentials{username: u, password: p})
+				return nil
+			},
 		)
 		if err := cr.Start(ctx); err != nil {
 			return fmt.Errorf("start AWS secret resolver: %w", err)
 		}
-		ba.clientResolver = cr
+		ba.awsResolver = cr
 	}
 
 	return nil
@@ -193,15 +210,15 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	if ba.passwordResolver != nil {
 		errs = append(errs, ba.passwordResolver.Shutdown())
 	}
-	if ba.clientResolver != nil {
-		errs = append(errs, ba.clientResolver.Shutdown())
+	if ba.awsResolver != nil {
+		errs = append(errs, ba.awsResolver.Shutdown())
 	}
 	return errors.Join(errs...)
 }
 
 func (ba *basicAuthClient) Username() string {
-	if ba.clientResolver != nil {
-		return ba.clientResolver.Username()
+	if c := ba.creds.Load(); c != nil {
+		return c.username
 	}
 	if ba.usernameResolver != nil {
 		return ba.usernameResolver.Value()
@@ -213,8 +230,8 @@ func (ba *basicAuthClient) Username() string {
 }
 
 func (ba *basicAuthClient) Password() string {
-	if ba.clientResolver != nil {
-		return ba.clientResolver.Password()
+	if c := ba.creds.Load(); c != nil {
+		return c.password
 	}
 	if ba.passwordResolver != nil {
 		return ba.passwordResolver.Value()

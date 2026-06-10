@@ -1,16 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package awssecretsmanager provides a ValueResolver that fetches secret values
+// Package awssecretsmanager provides a Resolver that fetches secret values
 // from AWS Secrets Manager with periodic refresh.
 package awssecretsmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -29,36 +27,35 @@ type SecretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 }
 
-// Resolver implements credentialsfile.ValueResolver by fetching
-// a value from AWS Secrets Manager and periodically refreshing it.
+// Resolver fetches a secret from AWS Secrets Manager and periodically refreshes it.
+// The caller provides an onFetch callback that receives the raw secret string
+// and handles parsing and storage.
 type Resolver struct {
 	secretARN       string
 	region          string
-	valueKey        string
 	refreshInterval time.Duration
 	logger          *zap.Logger
-	onChange        func(string)
+	onFetch         func(string) error
 
-	value  atomic.Pointer[string]
 	Client SecretsManagerClient
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
 // NewResolver creates a new AWS Secrets Manager resolver.
-// If valueKey is non-empty, the secret is parsed as JSON and the specified key is extracted.
-// Otherwise, the raw secret string is returned.
-func NewResolver(secretARN, region, valueKey string, refreshInterval time.Duration, logger *zap.Logger, onChange func(string)) *Resolver {
+// The onFetch callback is called with the raw secret string on each successful fetch.
+// If onFetch returns an error during Start, the error is propagated.
+// If onFetch returns an error during refresh, the error is logged and the old value is retained.
+func NewResolver(secretARN, region string, refreshInterval time.Duration, logger *zap.Logger, onFetch func(string) error) *Resolver {
 	if refreshInterval <= 0 {
 		refreshInterval = DefaultRefreshInterval
 	}
 	return &Resolver{
 		secretARN:       secretARN,
 		region:          region,
-		valueKey:        valueKey,
 		refreshInterval: refreshInterval,
 		logger:          logger,
-		onChange:        onChange,
+		onFetch:         onFetch,
 	}
 }
 
@@ -71,11 +68,13 @@ func (r *Resolver) Start(ctx context.Context) error {
 		r.Client = secretsmanager.NewFromConfig(cfg)
 	}
 
-	val, err := r.fetch(ctx)
+	raw, err := r.fetch(ctx)
 	if err != nil {
 		return fmt.Errorf("initial secret fetch: %w", err)
 	}
-	r.value.Store(&val)
+	if err := r.onFetch(raw); err != nil {
+		return fmt.Errorf("initial secret processing: %w", err)
+	}
 
 	loopCtx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
@@ -84,13 +83,6 @@ func (r *Resolver) Start(ctx context.Context) error {
 	go r.refreshLoop(loopCtx)
 
 	return nil
-}
-
-func (r *Resolver) Value() string {
-	if v := r.value.Load(); v != nil {
-		return *v
-	}
-	return ""
 }
 
 func (r *Resolver) Shutdown() error {
@@ -111,17 +103,13 @@ func (r *Resolver) refreshLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			val, err := r.fetch(ctx)
+			raw, err := r.fetch(ctx)
 			if err != nil {
 				r.logger.Error("failed to refresh secret", zap.String("secret_arn", r.secretARN), zap.Error(err))
 				continue
 			}
-			old := r.value.Load()
-			if old == nil || *old != val {
-				r.value.Store(&val)
-				if r.onChange != nil {
-					r.onChange(val)
-				}
+			if err := r.onFetch(raw); err != nil {
+				r.logger.Error("failed to process refreshed secret", zap.String("secret_arn", r.secretARN), zap.Error(err))
 			}
 		}
 	}
@@ -142,26 +130,5 @@ func (r *Resolver) fetch(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("secret %q has no string value (binary secrets are not supported)", r.secretARN)
 	}
 
-	raw := *out.SecretString
-
-	if r.valueKey == "" {
-		return raw, nil
-	}
-
-	var parsed map[string]any
-	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return "", fmt.Errorf("parse secret as JSON: %w", err)
-	}
-
-	val, ok := parsed[r.valueKey]
-	if !ok {
-		return "", fmt.Errorf("key %q not found in secret JSON", r.valueKey)
-	}
-
-	str, ok := val.(string)
-	if !ok {
-		return "", fmt.Errorf("key %q in secret is not a string", r.valueKey)
-	}
-
-	return str, nil
+	return *out.SecretString, nil
 }

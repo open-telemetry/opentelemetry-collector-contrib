@@ -338,14 +338,6 @@ func TestClientAuth_AWSSecret(t *testing.T) {
 	mock := &mockSMClient{}
 	mock.setSecret(string(data))
 
-	cr := awssecretsmanager.NewClientResolver(
-		"arn:aws:secretsmanager:us-east-1:123:secret:test",
-		"us-east-1", "user", "pass", 5*time.Minute, zaptest.NewLogger(t),
-	)
-	cr.Client = mock
-
-	require.NoError(t, cr.Start(t.Context()))
-
 	ext := &basicAuthClient{
 		clientAuth: &ClientAuthSettings{
 			AWSSecret: &AWSSecretClientConfig{
@@ -356,9 +348,25 @@ func TestClientAuth_AWSSecret(t *testing.T) {
 				RefreshInterval: 5 * time.Minute,
 			},
 		},
-		logger:         zaptest.NewLogger(t),
-		clientResolver: cr,
+		logger: zaptest.NewLogger(t),
 	}
+
+	cfg := ext.clientAuth.AWSSecret
+	cr := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ext.logger,
+		func(raw string) error {
+			var parsed map[string]any
+			if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+				return err
+			}
+			u := parsed[cfg.UsernameKey].(string)
+			p := parsed[cfg.PasswordKey].(string)
+			ext.creds.CompareAndSwap(ext.creds.Load(), &awsCredentials{username: u, password: p})
+			return nil
+		},
+	)
+	cr.Client = mock
+	require.NoError(t, cr.Start(t.Context()))
+	ext.awsResolver = cr
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
 	assert.Equal(t, "admin", ext.Username())
@@ -391,25 +399,20 @@ func TestServerAuth_AWSSecret(t *testing.T) {
 
 	resolver := awssecretsmanager.NewResolver(
 		ext.htpasswd.AWSSecret.SecretARN, ext.htpasswd.AWSSecret.Region,
-		ext.htpasswd.AWSSecret.ValueKey, ext.htpasswd.AWSSecret.RefreshInterval,
-		ext.logger,
-		func(newValue string) {
-			htp, err := htpasswd.NewFromReader(strings.NewReader(newValue), htpasswd.DefaultSystems, nil)
+		ext.htpasswd.AWSSecret.RefreshInterval, ext.logger,
+		func(raw string) error {
+			htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
 			if err != nil {
-				return
+				return err
 			}
 			fn := htp.Match
 			ext.matchFunc.Store(&fn)
+			return nil
 		},
 	)
 	resolver.Client = mock
 	require.NoError(t, resolver.Start(t.Context()))
 	ext.awsResolver = resolver
-
-	htp, err := htpasswd.NewFromReader(strings.NewReader(resolver.Value()), htpasswd.DefaultSystems, nil)
-	require.NoError(t, err)
-	fn := htp.Match
-	ext.matchFunc.Store(&fn)
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
 	auth := "dGVzdHVzZXI6cGFzc3dvcmQ=" // testuser:password

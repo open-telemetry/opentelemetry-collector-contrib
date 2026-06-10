@@ -5,7 +5,6 @@ package awssecretsmanager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -38,58 +37,33 @@ func (m *mockSMClient) setSecret(s string) {
 	m.secretString.Store(&s)
 }
 
-func TestResolver_RawStringSecret(t *testing.T) {
+func TestResolver_Start(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
-	mock.setSecret("htpasswd-content-here")
+	mock.setSecret("raw-secret-content")
 
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 5*time.Minute, zaptest.NewLogger(t), nil)
+	var received atomic.Value
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 5*time.Minute, zaptest.NewLogger(t),
+		func(raw string) error {
+			received.Store(raw)
+			return nil
+		},
+	)
 	resolver.Client = mock
 
 	require.NoError(t, resolver.Start(t.Context()))
 	defer func() { require.NoError(t, resolver.Shutdown()) }()
 
-	assert.Equal(t, "htpasswd-content-here", resolver.Value())
+	assert.Equal(t, "raw-secret-content", received.Load())
 }
 
-func TestResolver_JSONKeyExtraction(t *testing.T) {
-	t.Parallel()
-	secret := map[string]string{"username": "admin", "password": "s3cret"}
-	data, _ := json.Marshal(secret)
-
-	mock := &mockSMClient{}
-	mock.setSecret(string(data))
-
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "password", 5*time.Minute, zaptest.NewLogger(t), nil)
-	resolver.Client = mock
-
-	require.NoError(t, resolver.Start(t.Context()))
-	defer func() { require.NoError(t, resolver.Shutdown()) }()
-
-	assert.Equal(t, "s3cret", resolver.Value())
-}
-
-func TestResolver_MissingJSONKey(t *testing.T) {
-	t.Parallel()
-	secret := map[string]string{"user": "admin"}
-	data, _ := json.Marshal(secret)
-
-	mock := &mockSMClient{}
-	mock.setSecret(string(data))
-
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "nonexistent", 5*time.Minute, zaptest.NewLogger(t), nil)
-	resolver.Client = mock
-
-	err := resolver.Start(t.Context())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found in secret JSON")
-}
-
-func TestResolver_FetchError(t *testing.T) {
+func TestResolver_StartFetchError(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{err: fmt.Errorf("access denied")}
 
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 5*time.Minute, zaptest.NewLogger(t), nil)
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 5*time.Minute, zaptest.NewLogger(t),
+		func(_ string) error { return nil },
+	)
 	resolver.Client = mock
 
 	err := resolver.Start(t.Context())
@@ -97,11 +71,28 @@ func TestResolver_FetchError(t *testing.T) {
 	assert.Contains(t, err.Error(), "access denied")
 }
 
+func TestResolver_StartOnFetchError(t *testing.T) {
+	t.Parallel()
+	mock := &mockSMClient{}
+	mock.setSecret("some-value")
+
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 5*time.Minute, zaptest.NewLogger(t),
+		func(_ string) error { return fmt.Errorf("bad format") },
+	)
+	resolver.Client = mock
+
+	err := resolver.Start(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bad format")
+}
+
 func TestResolver_NilSecretString(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
 
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 5*time.Minute, zaptest.NewLogger(t), nil)
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 5*time.Minute, zaptest.NewLogger(t),
+		func(_ string) error { return nil },
+	)
 	resolver.Client = mock
 
 	err := resolver.Start(t.Context())
@@ -114,109 +105,110 @@ func TestResolver_Refresh(t *testing.T) {
 	mock := &mockSMClient{}
 	mock.setSecret("initial")
 
-	var changed atomic.Value
-	onChange := func(val string) {
-		changed.Store(val)
-	}
-
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 100*time.Millisecond, zaptest.NewLogger(t), onChange)
+	var received atomic.Value
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 100*time.Millisecond, zaptest.NewLogger(t),
+		func(raw string) error {
+			received.Store(raw)
+			return nil
+		},
+	)
 	resolver.Client = mock
 
 	require.NoError(t, resolver.Start(t.Context()))
 	defer func() { require.NoError(t, resolver.Shutdown()) }()
 
-	assert.Equal(t, "initial", resolver.Value())
+	assert.Equal(t, "initial", received.Load())
 
 	mock.setSecret("rotated")
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.Equal(c, "rotated", resolver.Value())
+		assert.Equal(c, "rotated", received.Load())
 	}, 2*time.Second, 50*time.Millisecond)
-
-	assert.Equal(t, "rotated", changed.Load())
 }
 
-func TestResolver_RefreshErrorKeepsOldValue(t *testing.T) {
+func TestResolver_RefreshFetchError(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
 	mock.setSecret("good-value")
 
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 100*time.Millisecond, zaptest.NewLogger(t), nil)
+	var received atomic.Value
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 100*time.Millisecond, zaptest.NewLogger(t),
+		func(raw string) error {
+			received.Store(raw)
+			return nil
+		},
+	)
 	resolver.Client = mock
 
 	require.NoError(t, resolver.Start(t.Context()))
 	defer func() { require.NoError(t, resolver.Shutdown()) }()
 
-	assert.Equal(t, "good-value", resolver.Value())
+	assert.Equal(t, "good-value", received.Load())
 
 	mock.err = fmt.Errorf("transient error")
-
 	time.Sleep(300 * time.Millisecond)
-	assert.Equal(t, "good-value", resolver.Value())
+
+	// onFetch was never called with a new value, old value preserved by caller
+	assert.Equal(t, "good-value", received.Load())
 }
 
-func TestResolver_DefaultRefreshInterval(t *testing.T) {
-	t.Parallel()
-	resolver := NewResolver("arn", "us-east-1", "", 0, zaptest.NewLogger(t), nil)
-	assert.Equal(t, DefaultRefreshInterval, resolver.refreshInterval)
-}
-
-func TestResolver_ValueBeforeStart(t *testing.T) {
-	t.Parallel()
-	resolver := NewResolver("arn", "us-east-1", "", 5*time.Minute, zaptest.NewLogger(t), nil)
-	assert.Equal(t, "", resolver.Value())
-}
-
-func TestResolver_NonStringJSONValue(t *testing.T) {
-	t.Parallel()
-	data := `{"count": 42}`
-
-	mock := &mockSMClient{}
-	mock.setSecret(data)
-
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "count", 5*time.Minute, zaptest.NewLogger(t), nil)
-	resolver.Client = mock
-
-	err := resolver.Start(t.Context())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not a string")
-}
-
-func TestResolver_InvalidJSON(t *testing.T) {
+func TestResolver_RefreshOnFetchError(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
-	mock.setSecret("not-json")
+	mock.setSecret("initial")
 
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "key", 5*time.Minute, zaptest.NewLogger(t), nil)
+	var callCount atomic.Int32
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 100*time.Millisecond, zaptest.NewLogger(t),
+		func(_ string) error {
+			n := callCount.Add(1)
+			if n > 1 {
+				return fmt.Errorf("processing error")
+			}
+			return nil
+		},
+	)
 	resolver.Client = mock
 
-	err := resolver.Start(t.Context())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "parse secret as JSON")
+	require.NoError(t, resolver.Start(t.Context()))
+	defer func() { require.NoError(t, resolver.Shutdown()) }()
+
+	// Wait for at least one refresh to fire (and fail gracefully)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.GreaterOrEqual(c, callCount.Load(), int32(2))
+	}, 2*time.Second, 50*time.Millisecond)
+}
+
+func TestResolver_Shutdown(t *testing.T) {
+	t.Parallel()
+	mock := &mockSMClient{}
+	mock.setSecret("value")
+
+	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", 100*time.Millisecond, zaptest.NewLogger(t),
+		func(_ string) error { return nil },
+	)
+	resolver.Client = mock
+
+	require.NoError(t, resolver.Start(t.Context()))
+	require.NoError(t, resolver.Shutdown())
+
+	// After shutdown, no more fetches should happen
+	countAfter := mock.callCount.Load()
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, countAfter, mock.callCount.Load())
 }
 
 func TestResolver_ShutdownWithoutStart(t *testing.T) {
 	t.Parallel()
-	resolver := NewResolver("arn", "us-east-1", "", 5*time.Minute, zaptest.NewLogger(t), nil)
+	resolver := NewResolver("arn", "us-east-1", 5*time.Minute, zaptest.NewLogger(t),
+		func(_ string) error { return nil },
+	)
 	assert.NoError(t, resolver.Shutdown())
 }
 
-func TestResolver_OnChangeNotCalledWhenValueUnchanged(t *testing.T) {
+func TestResolver_DefaultRefreshInterval(t *testing.T) {
 	t.Parallel()
-	mock := &mockSMClient{}
-	mock.setSecret("same")
-
-	var callCount atomic.Int32
-	onChange := func(_ string) {
-		callCount.Add(1)
-	}
-
-	resolver := NewResolver("arn:aws:secretsmanager:us-east-1:123:secret:test", "us-east-1", "", 100*time.Millisecond, zaptest.NewLogger(t), onChange)
-	resolver.Client = mock
-
-	require.NoError(t, resolver.Start(t.Context()))
-	defer func() { require.NoError(t, resolver.Shutdown()) }()
-
-	time.Sleep(350 * time.Millisecond)
-	assert.Equal(t, int32(0), callCount.Load())
+	resolver := NewResolver("arn", "us-east-1", 0, zaptest.NewLogger(t),
+		func(_ string) error { return nil },
+	)
+	assert.Equal(t, DefaultRefreshInterval, resolver.refreshInterval)
 }
