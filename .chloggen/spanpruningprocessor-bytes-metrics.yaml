@@ -1,0 +1,12 @@
+# Changelog entry for serialized bytes metrics in spanpruningprocessor.
+
+change_type: enhancement
+
+component: processor/spanpruning
+
+note: Add opt-in enable_bytes_metrics configuration and emit bytes_received, bytes_emitted, bytes_processed_input, and bytes_processed_output telemetry counters.
+
+# TODO: Replace placeholder with tracking issue or PR number before merge.
+issues: [0]
+
+change_logs: [user]
