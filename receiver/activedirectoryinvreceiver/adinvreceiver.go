@@ -112,9 +112,9 @@ func (r *adReceiver) traverse(node Container, attrs []string, resourceLogs *plog
 		r.logger.Error("Failed to convert container to object", zap.Error(err))
 		return
 	}
-	err = setUserAttributes(nodeObject, attrs, resourceLogs)
+	err = setConfiguredAttributes(nodeObject, attrs, resourceLogs)
 	if err != nil {
-		r.logger.Error("Failed to set user attributes", zap.Error(err))
+		r.logger.Error("Failed to set configured attributes", zap.Error(err))
 		return
 	}
 	children, err := node.Children()
@@ -122,6 +122,7 @@ func (r *adReceiver) traverse(node Container, attrs []string, resourceLogs *plog
 		r.logger.Error("Failed to retrieve children", zap.Error(err))
 		return
 	}
+	defer children.Close()
 	for child, err := children.Next(); err == nil; child, err = children.Next() {
 		windowsChildContainer, err := child.ToContainer()
 		if err != nil {
@@ -132,7 +133,6 @@ func (r *adReceiver) traverse(node Container, attrs []string, resourceLogs *plog
 		r.traverse(childContainer, attrs, resourceLogs)
 	}
 	defer node.Close()
-	children.Close()
 }
 
 // Poll for Active Directory inventory records
@@ -153,12 +153,12 @@ func (r *adReceiver) poll(ctx context.Context) error {
 	return nil
 }
 
-// Set user attributes to a log record body
-func setUserAttributes(user Object, attrs []string, resourceLogs *plog.ResourceLogs) error {
+// Set configured attributes to a log record body
+func setConfiguredAttributes(obj Object, attrs []string, resourceLogs *plog.ResourceLogs) error {
 	observedTime := pcommon.NewTimestampFromTime(time.Now())
 	attributes := make(map[string]interface{})
 	for _, attr := range attrs {
-		values, err := user.Attrs(attr)
+		values, err := obj.Attrs(attr)
 		if err == nil && len(values) > 0 {
 			if len(values) == 1 {
 				attributes[attr] = values[0]
