@@ -216,6 +216,39 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
+## Relationship to `processor/tail_sampling`
+
+This processor sits next to `tail_sampling` rather than extending it. The two are close in shape (both buffer traces and decide once a trigger fires) but use different evaluation models, and `tail_sampling`'s current model has several mechanical features that a rate-bearing sampler does not fit cleanly into.
+
+### Decision semantics
+
+In `tail_sampling`'s [policy loop](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/processor.go#L800-L817) only two outcomes short-circuit evaluation: any policy returning `Dropped`, and (when `sample_on_first_match` is enabled) the first policy to return `Sampled`. Every other outcome, including `NotSampled`, lets the loop continue to subsequent policies.
+
+All common "this trace did not pass my check" votes from existing policies (probabilistic, status_code, rate_limiting, and_policy, etc.) return `NotSampled`, never `Dropped`. `Dropped` is reserved for the explicit [`drop` policy](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/internal/sampling/drop.go#L46), and the [final-decision composition](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/processor.go#L821-L836) gives `Dropped` precedence over `Sampled`.
+
+A rate-bearing sampler dropped into this model has to pick a return value for a probabilistically-dropped trace, and both options break correctness:
+
+- Returning `NotSampled` matches the existing convention but does not stop the loop. A later policy voting `Sampled` would still cause the trace to be kept, and the rate-bearing sampler's view of what it controlled diverges from reality. Its rate calculations drift over time.
+- Returning `Dropped` stops the loop, but it also wins precedence over every `Sampled` vote in the composition step. An operator pairing a rate-bearing sampler with an explicit `keep-errors` policy would expect errors to always win; instead the rate-bearing sampler's probabilistic drop would override the keep, inverting the configured intent.
+
+### No rate or threshold in the policy contract
+
+The [`Evaluator` interface](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/pkg/samplingpolicy/samplingpolicy.go#L78-L85) returns only a decision enum. There is no way for a policy to communicate the sample rate or threshold it applied, which means `ot=th` cannot be emitted from inside `tail_sampling` without expanding the contract. The processor has roughly twenty existing policies; widening the interface would touch all of them.
+
+### `sample_on_first_match` would become correctness-load-bearing for one policy type only
+
+Today `sample_on_first_match` is an opt-in optimization. Adding rate-bearing samplers as policies would make it mandatory for configurations using them; without it, the OR composition above produces drift. Existing `tail_sampling` users adding a rate-bearing policy without flipping the flag would silently get wrong rates. Validation cannot easily reject this because the flag is fine in isolation, and there is no current marker on a policy type that says "this policy requires first-match for correctness."
+
+### Rule attribution
+
+This processor records the matched rule name on every span in a sampled trace, which is only meaningful under first-match semantics. Under `tail_sampling`'s multi-policy OR model multiple policies can vote `Sampled` and there is no defined "winner" to attribute the trace to.
+
+### Relationship to [PR #48865](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48865)
+
+In-flight work on adding tracestate handling to `tail_sampling`'s probabilistic policy is input-driven: it reads SDK-supplied `ot=th` to adjust the tail probabilistic threshold (equalizing mode). This processor is output-driven: it computes a tail-stage rate and emits `ot=th`. The two address different problems and can ship independently.
+
+For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling` users retain the existing multi-policy model unchanged, and `dynamic_sampling` keeps a single evaluation model (first-match with rate-bearing samplers) end to end.
+
 ## Metrics
 
 | Metric                                              | Type     | Labels   | Description                                                                 |
