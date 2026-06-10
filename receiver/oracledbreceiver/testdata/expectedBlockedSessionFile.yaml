@@ -24,6 +24,9 @@ resourceLogs:
                   stringValue: APP_USER
               - key: db.namespace
                 value:
+                  stringValue: ORCLPDB1
+              - key: db.servicename
+                value:
                   stringValue: ORCL
               - key: client.address
                 value:
