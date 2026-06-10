@@ -127,6 +127,39 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	return td, nil
 }
 
+// getBytes returns the serialized size of the subset of traces identified
+// by matchedTraces, preserving the original ResourceSpans/ScopeSpans hierarchy.
+func (p *spanPruningProcessor) getBytes(_ context.Context, matchedTraces map[pcommon.TraceID]struct{}, traceSpans map[pcommon.TraceID][]spanInfo) int64 {
+	filtered := ptrace.NewTraces()
+	// Track already-added ResourceSpans and ScopeSpans by their original object
+	// identity to preserve the original hierarchy (same RS/SS grouping).
+	// pdata structs hold a pointer to the underlying proto, so struct equality
+	// gives pointer identity for free.
+	rsMap := make(map[ptrace.ResourceSpans]ptrace.ResourceSpans)
+	ssMap := make(map[ptrace.ScopeSpans]ptrace.ScopeSpans)
+	for traceID := range matchedTraces {
+		for _, si := range traceSpans[traceID] {
+			filtRS, ok := rsMap[si.resourceSpans]
+			if !ok {
+				filtRS = filtered.ResourceSpans().AppendEmpty()
+				si.resourceSpans.Resource().CopyTo(filtRS.Resource())
+				filtRS.SetSchemaUrl(si.resourceSpans.SchemaUrl())
+				rsMap[si.resourceSpans] = filtRS
+			}
+			filtSS, ok := ssMap[si.scopeSpans]
+			if !ok {
+				filtSS = filtRS.ScopeSpans().AppendEmpty()
+				si.scopeSpans.Scope().CopyTo(filtSS.Scope())
+				filtSS.SetSchemaUrl(si.scopeSpans.SchemaUrl())
+				ssMap[si.scopeSpans] = filtSS
+			}
+			si.span.CopyTo(filtSS.Spans().AppendEmpty())
+		}
+	}
+	var m ptrace.ProtoMarshaler
+	return int64(m.TracesSize(filtered))
+}
+
 // groupSpansByTraceID flattens incoming data into a TraceID-indexed map so
 // each trace can be analyzed independently.
 func (*spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
