@@ -60,6 +60,18 @@ type basicAuthServer struct {
 }
 
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
+	var rs []io.Reader
+
+	if ba.htpasswd.File != "" {
+		f, err := os.Open(ba.htpasswd.File)
+		if err != nil {
+			return fmt.Errorf("open htpasswd file: %w", err)
+		}
+		defer f.Close()
+
+		rs = append(rs, f, strings.NewReader("\n"))
+	}
+
 	if ba.htpasswd.AWSSecret != nil {
 		cfg := ba.htpasswd.AWSSecret
 		resolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger,
@@ -78,18 +90,6 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		}
 		ba.awsSecretResolver = resolver
 		return nil
-	}
-
-	var rs []io.Reader
-
-	if ba.htpasswd.File != "" {
-		f, err := os.Open(ba.htpasswd.File)
-		if err != nil {
-			return fmt.Errorf("open htpasswd file: %w", err)
-		}
-		defer f.Close()
-
-		rs = append(rs, f, strings.NewReader("\n"))
 	}
 
 	// Ensure that the inline content is read the last.
