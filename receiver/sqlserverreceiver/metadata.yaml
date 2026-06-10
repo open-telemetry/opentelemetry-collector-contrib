@@ -51,7 +51,7 @@ resource_attributes:
 
 attributes:
   # attributes for metrics
-  block.type:
+  sqlserver.block.type:
     description: The type of lock block tracked by the lock manager.
     type: string
     requirement_level: recommended
