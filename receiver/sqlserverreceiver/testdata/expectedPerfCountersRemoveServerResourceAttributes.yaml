@@ -10,6 +10,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -37,6 +40,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -64,6 +70,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -95,6 +104,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -126,6 +138,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -153,6 +168,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -184,6 +202,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -211,6 +232,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -242,6 +266,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -269,6 +296,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -300,6 +330,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -331,6 +364,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -358,6 +394,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -386,6 +425,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -413,6 +455,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -440,6 +485,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -467,6 +515,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -494,6 +545,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -521,6 +575,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -548,6 +605,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -575,6 +635,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -602,6 +665,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -629,6 +695,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -664,6 +733,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -691,6 +763,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -718,6 +793,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -745,6 +823,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -772,6 +853,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -799,6 +883,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -826,6 +913,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -855,6 +945,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -882,6 +975,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -913,6 +1009,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -944,6 +1043,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -971,6 +1073,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -998,6 +1103,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1025,6 +1133,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1053,6 +1164,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1084,6 +1198,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1115,6 +1232,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1143,6 +1263,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1170,6 +1293,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1201,6 +1327,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1228,6 +1357,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1259,6 +1391,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1290,6 +1425,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1317,6 +1455,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1348,6 +1489,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1375,6 +1519,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1403,6 +1550,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1430,6 +1580,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1457,6 +1610,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1484,6 +1640,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1516,6 +1675,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1543,6 +1705,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1572,6 +1737,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1601,6 +1769,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1632,6 +1803,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1663,6 +1837,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1694,6 +1871,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1725,6 +1905,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1756,6 +1939,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1787,6 +1973,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1818,6 +2007,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1849,6 +2041,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1880,6 +2075,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1911,6 +2109,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1942,6 +2143,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1973,6 +2177,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -2004,6 +2211,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426

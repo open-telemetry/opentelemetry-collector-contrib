@@ -16,6 +16,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -61,6 +64,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -106,6 +112,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -151,6 +160,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -196,6 +208,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -241,6 +256,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -286,6 +304,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -331,6 +352,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -376,6 +400,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -421,6 +448,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -466,6 +496,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -511,6 +544,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -556,6 +592,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -601,6 +640,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -646,6 +688,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -691,6 +736,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -736,6 +784,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -781,6 +832,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -826,6 +880,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -871,6 +928,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -916,6 +976,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -961,6 +1024,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -1006,6 +1072,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -1051,6 +1120,9 @@ resourceMetrics:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: master

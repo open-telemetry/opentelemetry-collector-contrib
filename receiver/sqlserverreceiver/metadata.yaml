@@ -37,7 +37,7 @@ resource_attributes:
     enabled: true
     type: string
   service.name:
-    description: "Logical name of the service. When enabled, the default value is unknown_service:microsoft.sql_server per OTel specification."
+    description: "Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server."
     enabled: false
     type: string
   service.namespace:

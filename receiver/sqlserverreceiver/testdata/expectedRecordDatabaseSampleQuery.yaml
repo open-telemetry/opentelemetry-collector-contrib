@@ -16,6 +16,9 @@ resourceLogs:
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -151,7 +154,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6a7169203331
-            timeUnixNano: "1781013977921518000"
+            timeUnixNano: "1781104670103144000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
