@@ -494,7 +494,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.cursor.cache.hits"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.", mi.Description())
+					assert.Equal(t, "Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.", mi.Description())
 					assert.Equal(t, "{hits}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -506,13 +506,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "oracledb.cursor.cache.size":
 					assert.False(t, validatedMetrics["oracledb.cursor.cache.size"], "Found a duplicate in the metrics slice: oracledb.cursor.cache.size")
 					validatedMetrics["oracledb.cursor.cache.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.", mi.Description())
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total number of cursors currently held in the session cursor cache.", mi.Description())
 					assert.Equal(t, "{cursors}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -522,7 +520,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.cursor.open"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.", mi.Description())
+					assert.Equal(t, "Number of currently open cursors in the Oracle instance.", mi.Description())
 					assert.Equal(t, "{cursors}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -570,7 +568,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.db.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.", mi.Description())
+					assert.Equal(t, "Total wall-clock time spent in database calls by foreground sessions.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -651,7 +649,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.enqueue.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.", mi.Description())
+						assert.Equal(t, "Total count of enqueue (lock) operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -668,7 +666,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.enqueue.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.", mi.Description())
+						assert.Equal(t, "Total count of enqueue (lock) operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -863,7 +861,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.lob.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR", mi.Description())
+						assert.Equal(t, "Total count of LOB (large object) I/O operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -880,7 +878,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.lob.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR", mi.Description())
+						assert.Equal(t, "Total count of LOB (large object) I/O operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1059,7 +1057,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.parse.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.", mi.Description())
+						assert.Equal(t, "Total SQL parse time.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1076,7 +1074,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.parse.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.", mi.Description())
+						assert.Equal(t, "Total SQL parse time.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1376,7 +1374,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.recursive_call.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.", mi.Description())
+					assert.Equal(t, "Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.", mi.Description())
 					assert.Equal(t, "{calls}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1390,7 +1388,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.recursive_call.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.", mi.Description())
+					assert.Equal(t, "Total CPU time spent on recursive (internal) calls.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1429,7 +1427,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.scan.index_fast_full"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).", mi.Description())
+						assert.Equal(t, "Total count of index fast full scans.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1446,7 +1444,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.scan.index_fast_full"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).", mi.Description())
+						assert.Equal(t, "Total count of index fast full scans.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1473,7 +1471,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.scan.table.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).", mi.Description())
+						assert.Equal(t, "Total count of full-table scans.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1490,7 +1488,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.scan.table.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).", mi.Description())
+						assert.Equal(t, "Total count of full-table scans.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1516,7 +1514,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.scan.table.rows"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.", mi.Description())
+					assert.Equal(t, "Total number of rows returned by full-table scans.", mi.Description())
 					assert.Equal(t, "{rows}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1530,7 +1528,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.session.active"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Current number of active sessions. Sourced from v$sysstat name logons current.", mi.Description())
+					assert.Equal(t, "Current number of active sessions.", mi.Description())
 					assert.Equal(t, "{sessions}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1612,7 +1610,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.sort.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).", mi.Description())
+						assert.Equal(t, "Total count of sort operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1629,7 +1627,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.sort.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).", mi.Description())
+						assert.Equal(t, "Total count of sort operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1695,7 +1693,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.sort.rows"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).", mi.Description())
+					assert.Equal(t, "Total number of rows sorted across all sort operations.", mi.Description())
 					assert.Equal(t, "{rows}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1898,7 +1896,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.user_call.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.", mi.Description())
+					assert.Equal(t, "Total count of user calls (logins, parses, fetches, executes) issued to the database.", mi.Description())
 					assert.Equal(t, "{calls}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

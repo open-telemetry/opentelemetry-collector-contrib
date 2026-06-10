@@ -805,7 +805,7 @@ type metricOracledbCursorCacheHits struct {
 // init fills oracledb.cursor.cache.hits metric with initial data.
 func (m *metricOracledbCursorCacheHits) init() {
 	m.data.SetName("oracledb.cursor.cache.hits")
-	m.data.SetDescription("Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.")
+	m.data.SetDescription("Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.")
 	m.data.SetUnit("{hits}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -857,18 +857,16 @@ type metricOracledbCursorCacheSize struct {
 // init fills oracledb.cursor.cache.size metric with initial data.
 func (m *metricOracledbCursorCacheSize) init() {
 	m.data.SetName("oracledb.cursor.cache.size")
-	m.data.SetDescription("Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.")
+	m.data.SetDescription("Total number of cursors currently held in the session cursor cache.")
 	m.data.SetUnit("{cursors}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricOracledbCursorCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -876,14 +874,14 @@ func (m *metricOracledbCursorCacheSize) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricOracledbCursorCacheSize) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbCursorCacheSize) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -909,7 +907,7 @@ type metricOracledbCursorOpen struct {
 // init fills oracledb.cursor.open metric with initial data.
 func (m *metricOracledbCursorOpen) init() {
 	m.data.SetName("oracledb.cursor.open")
-	m.data.SetDescription("Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.")
+	m.data.SetDescription("Number of currently open cursors in the Oracle instance.")
 	m.data.SetUnit("{cursors}")
 	m.data.SetEmptyGauge()
 }
@@ -1109,7 +1107,7 @@ type metricOracledbDbTime struct {
 // init fills oracledb.db.time metric with initial data.
 func (m *metricOracledbDbTime) init() {
 	m.data.SetName("oracledb.db.time")
-	m.data.SetDescription("Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.")
+	m.data.SetDescription("Total wall-clock time spent in database calls by foreground sessions.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1418,7 +1416,7 @@ type metricOracledbEnqueueOperations struct {
 // init fills oracledb.enqueue.operations metric with initial data.
 func (m *metricOracledbEnqueueOperations) init() {
 	m.data.SetName("oracledb.enqueue.operations")
-	m.data.SetDescription("Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.")
+	m.data.SetDescription("Total count of enqueue (lock) operations.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2106,7 +2104,7 @@ type metricOracledbLobOperations struct {
 // init fills oracledb.lob.operations metric with initial data.
 func (m *metricOracledbLobOperations) init() {
 	m.data.SetName("oracledb.lob.operations")
-	m.data.SetDescription("Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR")
+	m.data.SetDescription("Total count of LOB (large object) I/O operations.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2702,7 +2700,7 @@ type metricOracledbParseTime struct {
 // init fills oracledb.parse.time metric with initial data.
 func (m *metricOracledbParseTime) init() {
 	m.data.SetName("oracledb.parse.time")
-	m.data.SetDescription("Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.")
+	m.data.SetDescription("Total SQL parse time.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3650,7 +3648,7 @@ type metricOracledbRecursiveCallCount struct {
 // init fills oracledb.recursive_call.count metric with initial data.
 func (m *metricOracledbRecursiveCallCount) init() {
 	m.data.SetName("oracledb.recursive_call.count")
-	m.data.SetDescription("Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.")
+	m.data.SetDescription("Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.")
 	m.data.SetUnit("{calls}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3702,7 +3700,7 @@ type metricOracledbRecursiveCallCPUTime struct {
 // init fills oracledb.recursive_call.cpu.time metric with initial data.
 func (m *metricOracledbRecursiveCallCPUTime) init() {
 	m.data.SetName("oracledb.recursive_call.cpu.time")
-	m.data.SetDescription("Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.")
+	m.data.SetDescription("Total CPU time spent on recursive (internal) calls.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3855,7 +3853,7 @@ type metricOracledbScanIndexFastFull struct {
 // init fills oracledb.scan.index_fast_full metric with initial data.
 func (m *metricOracledbScanIndexFastFull) init() {
 	m.data.SetName("oracledb.scan.index_fast_full")
-	m.data.SetDescription("Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).")
+	m.data.SetDescription("Total count of index fast full scans.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3946,7 +3944,7 @@ type metricOracledbScanTableOperations struct {
 // init fills oracledb.scan.table.operations metric with initial data.
 func (m *metricOracledbScanTableOperations) init() {
 	m.data.SetName("oracledb.scan.table.operations")
-	m.data.SetDescription("Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).")
+	m.data.SetDescription("Total count of full-table scans.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4036,7 +4034,7 @@ type metricOracledbScanTableRows struct {
 // init fills oracledb.scan.table.rows metric with initial data.
 func (m *metricOracledbScanTableRows) init() {
 	m.data.SetName("oracledb.scan.table.rows")
-	m.data.SetDescription("Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.")
+	m.data.SetDescription("Total number of rows returned by full-table scans.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4088,7 +4086,7 @@ type metricOracledbSessionActive struct {
 // init fills oracledb.session.active metric with initial data.
 func (m *metricOracledbSessionActive) init() {
 	m.data.SetName("oracledb.session.active")
-	m.data.SetDescription("Current number of active sessions. Sourced from v$sysstat name logons current.")
+	m.data.SetDescription("Current number of active sessions.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
 }
@@ -4331,7 +4329,7 @@ type metricOracledbSortOperations struct {
 // init fills oracledb.sort.operations metric with initial data.
 func (m *metricOracledbSortOperations) init() {
 	m.data.SetName("oracledb.sort.operations")
-	m.data.SetDescription("Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).")
+	m.data.SetDescription("Total count of sort operations.")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4510,7 +4508,7 @@ type metricOracledbSortRows struct {
 // init fills oracledb.sort.rows metric with initial data.
 func (m *metricOracledbSortRows) init() {
 	m.data.SetName("oracledb.sort.rows")
-	m.data.SetDescription("Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).")
+	m.data.SetDescription("Total number of rows sorted across all sort operations.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -5084,7 +5082,7 @@ type metricOracledbUserCallCount struct {
 // init fills oracledb.user_call.count metric with initial data.
 func (m *metricOracledbUserCallCount) init() {
 	m.data.SetName("oracledb.user_call.count")
-	m.data.SetDescription("Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.")
+	m.data.SetDescription("Total count of user calls (logins, parses, fetches, executes) issued to the database.")
 	m.data.SetUnit("{calls}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

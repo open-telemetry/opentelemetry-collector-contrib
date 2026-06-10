@@ -96,7 +96,6 @@ const (
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	// Workload analysis v$sysstat names (PR3)
 	tableScansDirectReadStat     = "table scans (direct read)"
 	tableScansLongTablesStat     = "table scans (long tables)"
 	tableScansRowidRangesStat    = "table scans (rowid ranges)"

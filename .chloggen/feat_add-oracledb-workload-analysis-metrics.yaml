@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add workload analysis metrics (scans, enqueue, LOB, parse, sort, cursor, session activity) sourced from the existing v$sysstat scrape."
+note: "Add workload analysis metrics related to scans, enqueue, LOB, parse, sort, cursor, and session activity"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48808]
@@ -16,25 +16,20 @@ issues: [48808]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds sixteen new opt-in metrics (disabled by default, stability: development) that
-  surface previously discarded v$sysstat counters for SQL workload analysis. The
-  schema follows the dotted-namespace pattern established in PR #48335 and reuses
-  the disk.io.direction attribute introduced there:
+  Adds sixteen new opt-in metrics (disabled by default):
     - oracledb.scan.table.operations, oracledb.scan.table.rows,
-      oracledb.scan.index_fast_full (attribute: oracledb.scan.type)
-    - oracledb.enqueue.operations (attribute: oracledb.enqueue.kind)
-    - oracledb.lob.operations (attribute: disk.io.direction, reused from PR #48335)
-    - oracledb.parse.time (attribute: oracledb.parse.kind)
-    - oracledb.sort.operations (attribute: oracledb.sort.medium), oracledb.sort.rows
+      oracledb.scan.index_fast_full
+    - oracledb.enqueue.operations
+    - oracledb.lob.operations
+    - oracledb.parse.time
+    - oracledb.sort.operations, oracledb.sort.rows
     - oracledb.cursor.cache.hits, oracledb.cursor.cache.size, oracledb.cursor.open
     - oracledb.user_call.count, oracledb.recursive_call.count,
       oracledb.recursive_call.cpu.time
     - oracledb.db.time, oracledb.session.active
-  Time-based metrics (oracledb.parse.time, oracledb.recursive_call.cpu.time,
-  oracledb.db.time) report seconds; the raw centisecond values from v$sysstat are
-  divided by 100 in the scraper. No new SQL queries are introduced; the existing
-  SELECT * FROM v$sysstat scrape already returns all required rows, so there is
-  zero additional load on monitored Oracle instances.
+  No new SQL queries are issued; the existing v$sysstat scrape already returns
+  all required rows, so the receiver adds no additional load on the monitored
+  Oracle instance.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

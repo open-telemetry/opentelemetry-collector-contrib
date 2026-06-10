@@ -420,7 +420,7 @@ metrics:
       value_type: double
     unit: s
   oracledb.cursor.cache.hits:
-    description: Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.
+    description: Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
     enabled: false
     stability: development
     sum:
@@ -430,17 +430,15 @@ metrics:
       input_type: string
     unit: "{hits}"
   oracledb.cursor.cache.size:
-    description: Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.
+    description: Total number of cursors currently held in the session cursor cache.
     enabled: false
     stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
+    gauge:
       value_type: int
       input_type: string
     unit: "{cursors}"
   oracledb.cursor.open:
-    description: Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.
+    description: Number of currently open cursors in the Oracle instance.
     enabled: false
     stability: development
     gauge:
@@ -469,7 +467,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.db.time:
-    description: Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+    description: Total wall-clock time spent in database calls by foreground sessions.
     enabled: false
     stability: development
     sum:
@@ -524,7 +522,7 @@ metrics:
       input_type: string
     unit: "{statements}"
   oracledb.enqueue.operations:
-    description: Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.
+    description: Total count of enqueue (lock) operations.
     enabled: false
     stability: development
     sum:
@@ -630,7 +628,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.lob.operations:
-    description: Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR #48335.
+    description: Total count of LOB (large object) I/O operations.
     enabled: false
     stability: development
     sum:
@@ -730,7 +728,7 @@ metrics:
       value_type: double
     unit: "{parses}/s"
   oracledb.parse.time:
-    description: Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.
+    description: Total SQL parse time.
     enabled: false
     stability: development
     sum:
@@ -885,7 +883,7 @@ metrics:
       input_type: string
     unit: "{queries}"
   oracledb.recursive_call.count:
-    description: Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+    description: Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
     enabled: false
     stability: development
     sum:
@@ -895,7 +893,7 @@ metrics:
       input_type: string
     unit: "{calls}"
   oracledb.recursive_call.cpu.time:
-    description: Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+    description: Total CPU time spent on recursive (internal) calls.
     enabled: false
     stability: development
     sum:
@@ -918,7 +916,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.scan.index_fast_full:
-    description: Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).
+    description: Total count of index fast full scans.
     enabled: false
     stability: development
     sum:
@@ -929,7 +927,7 @@ metrics:
     unit: "{operations}"
     attributes: [oracledb.scan.type]
   oracledb.scan.table.operations:
-    description: Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
+    description: Total count of full-table scans.
     enabled: false
     stability: development
     sum:
@@ -940,7 +938,7 @@ metrics:
     unit: "{operations}"
     attributes: [oracledb.scan.type]
   oracledb.scan.table.rows:
-    description: Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.
+    description: Total number of rows returned by full-table scans.
     enabled: false
     stability: development
     sum:
@@ -950,7 +948,7 @@ metrics:
       input_type: string
     unit: "{rows}"
   oracledb.session.active:
-    description: Current number of active sessions. Sourced from v$sysstat name logons current.
+    description: Current number of active sessions.
     enabled: false
     stability: development
     gauge:
@@ -984,7 +982,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.sort.operations:
-    description: Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).
+    description: Total count of sort operations.
     enabled: false
     stability: development
     sum:
@@ -1004,7 +1002,7 @@ metrics:
       value_type: double
     unit: "1"
   oracledb.sort.rows:
-    description: Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).
+    description: Total number of rows sorted across all sort operations.
     enabled: false
     stability: development
     sum:
@@ -1080,7 +1078,7 @@ metrics:
       input_type: string
     unit: "{transactions}"
   oracledb.user_call.count:
-    description: Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+    description: Total count of user calls (logins, parses, fetches, executes) issued to the database.
     enabled: false
     stability: development
     sum:

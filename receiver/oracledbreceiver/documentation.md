@@ -259,7 +259,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 
 ### oracledb.cursor.cache.hits
 
-Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.
+Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -267,15 +267,15 @@ Number of times an existing cursor in the session cursor cache was reused, avoid
 
 ### oracledb.cursor.cache.size
 
-Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.
+Total number of cursors currently held in the session cursor cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cursors} | Sum | Int | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursors} | Gauge | Int | Development |
 
 ### oracledb.cursor.open
 
-Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.
+Number of currently open cursors in the Oracle instance.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -307,7 +307,7 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 
 ### oracledb.db.time
 
-Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+Total wall-clock time spent in database calls by foreground sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -339,7 +339,7 @@ Number of DML statements that were executed in parallel
 
 ### oracledb.enqueue.operations
 
-Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.
+Total count of enqueue (lock) operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -383,7 +383,7 @@ Fraction of library cache pin requests that found the object already cached, as 
 
 ### oracledb.lob.operations
 
-Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR
+Total count of LOB (large object) I/O operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -467,7 +467,7 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 
 ### oracledb.parse.time
 
-Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.
+Total SQL parse time.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -575,7 +575,7 @@ Number of SELECT statements executed in parallel
 
 ### oracledb.recursive_call.count
 
-Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -583,7 +583,7 @@ Total number of recursive calls generated at both the user and system level. Rec
 
 ### oracledb.recursive_call.cpu.time
 
-Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+Total CPU time spent on recursive (internal) calls.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -607,7 +607,7 @@ Fraction of redo allocations that succeeded without space contention, as compute
 
 ### oracledb.scan.index_fast_full
 
-Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).
+Total count of index fast full scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -621,7 +621,7 @@ Cumulative count of index fast full scans by kind. Sourced from v$sysstat names 
 
 ### oracledb.scan.table.operations
 
-Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
+Total count of full-table scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -635,7 +635,7 @@ Cumulative count of full-table scans by kind. Sourced from v$sysstat names table
 
 ### oracledb.scan.table.rows
 
-Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.
+Total number of rows returned by full-table scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -643,7 +643,7 @@ Total number of rows returned by full-table scans. Sourced from v$sysstat name t
 
 ### oracledb.session.active
 
-Current number of active sessions. Sourced from v$sysstat name logons current.
+Current number of active sessions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -659,7 +659,7 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 
 ### oracledb.sort.operations
 
-Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).
+Total count of sort operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -687,7 +687,7 @@ Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC
 
 ### oracledb.sort.rows
 
-Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).
+Total number of rows sorted across all sort operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -734,7 +734,7 @@ Fraction of allocated database storage that is used.
 
 ### oracledb.user_call.count
 
-Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+Total count of user calls (logins, parses, fetches, executes) issued to the database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
