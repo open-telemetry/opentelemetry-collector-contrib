@@ -24,14 +24,6 @@ feature_gates:
     from_version: v0.73.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
     skip_strict_validation: true
-  - id: filelog.decompressFingerprint
-    stage: stable
-    description: >-
-      Computes fingerprint for compressed files by decompressing its data.
-    from_version: v0.128.0
-    to_version: v0.142.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256
-    skip_strict_validation: true
   - id: filelog.mtimeSortType
     stage: alpha
     description: >-
