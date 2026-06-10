@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
@@ -405,6 +406,164 @@ func TestLeafSpanPruning_TemplateEventsAndLinksPreserved(t *testing.T) {
 	assert.Equal(t, "template", linkAttr.Str())
 }
 
+// TestBytesMetrics_Enabled tests that bytes metrics are recorded when enabled.
+func TestBytesMetrics_Enabled(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningBytesReceived(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue())
+	metadatatest.AssertEqualProcessorSpanpruningBytesEmitted(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue())
+	metadatatest.AssertEqualProcessorSpanpruningBytesProcessedInput(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue())
+	metadatatest.AssertEqualProcessorSpanpruningBytesProcessedOutput(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue())
+}
+
+// TestBytesMetrics_Disabled tests that bytes metrics are not recorded by default.
+func TestBytesMetrics_Disabled(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_received")
+	assert.Error(t, err, "bytes_received metric should not exist when disabled")
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_emitted")
+	assert.Error(t, err, "bytes_emitted metric should not exist when disabled")
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_processed_input")
+	assert.Error(t, err, "bytes_processed_input metric should not exist when disabled")
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_processed_output")
+	assert.Error(t, err, "bytes_processed_output metric should not exist when disabled")
+}
+
+// TestBytesMetrics_MatchedEqualsReceivedWithNoConditions verifies that when no
+// conditions are configured every trace matches, so bytes_processed_input == bytes_received.
+func TestBytesMetrics_MatchedEqualsReceivedWithNoConditions(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	receivedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_received")
+	processedInputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_input")
+
+	require.Greater(t, receivedBytes, int64(0))
+	require.Equal(t, receivedBytes, processedInputBytes,
+		"bytes_processed_input should equal bytes_received when no conditions are configured")
+}
+
+// TestBytesMetrics_InputEqualsOutputWhenNotPruned verifies bytes_processed_input
+// equals bytes_processed_output when no aggregation runs.
+func TestBytesMetrics_InputEqualsOutputWhenNotPruned(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 100 // too high to aggregate
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	processedInputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_input")
+	processedOutputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_output")
+
+	require.Equal(t, processedInputBytes, processedOutputBytes,
+		"bytes_processed_output should equal bytes_processed_input when no pruning occurs")
+}
+
+// TestBytesMetrics_EmittedReflectsPruning verifies byte counters change when
+// pruning changes the serialized trace size.
+func TestBytesMetrics_EmittedReflectsPruning(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 12, "SELECT", map[string]string{
+		"db.operation": "select",
+		"db.statement": strings.Repeat("SELECT * FROM users WHERE tenant_id = 'very-long-tenant-id' ", 10),
+	})
+	originalSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	prunedSpanCount := countSpans(td)
+	require.Less(t, prunedSpanCount, originalSpanCount, "test fixture must trigger pruning")
+
+	receivedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_received")
+	emittedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_emitted")
+	processedInputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_input")
+	processedOutputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_output")
+
+	require.Equal(t, receivedBytes, processedInputBytes,
+		"without conditions, processed input should match received bytes")
+	require.Equal(t, emittedBytes, processedOutputBytes,
+		"without conditions, processed output should match emitted bytes")
+
+	require.NotEqual(t, processedInputBytes, processedOutputBytes,
+		"processed byte counters should change after pruning")
+	require.NotEqual(t, receivedBytes, emittedBytes,
+		"received/emitted byte counters should change after pruning")
+	require.Less(t, processedOutputBytes, processedInputBytes,
+		"this fixture should reduce serialized size after pruning")
+	require.Less(t, emittedBytes, receivedBytes,
+		"this fixture should reduce full-batch serialized size after pruning")
+}
+
 func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
@@ -537,6 +696,16 @@ func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, met
 	hist, ok := metric.Data.(metricdata.Histogram[int64])
 	require.True(t, ok, "metric %s should be an int64 histogram", metricName)
 	return hist
+}
+
+func bytesCounterSum(t *testing.T, tel *componenttest.Telemetry, metricName string) int64 {
+	t.Helper()
+	m, err := tel.GetMetric(metricName)
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	require.Len(t, sum.DataPoints, 1)
+	return sum.DataPoints[0].Value
 }
 
 func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
