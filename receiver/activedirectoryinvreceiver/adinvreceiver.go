@@ -151,8 +151,8 @@ func (r *adReceiver) poll(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open Active Directory path %q: %w", r.config.BaseDN, err)
 	}
-	r.traverse(root, r.config.Attributes, resourceLogs)
 	defer root.Close()
+	r.traverse(root, r.config.Attributes, resourceLogs)
 	err = r.consumer.ConsumeLogs(ctx, logs)
 	if err != nil {
 		r.logger.Error("Error consuming log", zap.Error(err))
