@@ -196,6 +196,9 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+  oracledb.plan.first_load:
+    description: "Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
+    type: string
   oracledb.plan.last_load:
     description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
@@ -381,6 +384,7 @@ events:
       - oracledb.procedure_name
       - oracledb.procedure_type
       - oracledb.plan_hash_value
+      - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
   oracledb.buffer_cache.utilization:
