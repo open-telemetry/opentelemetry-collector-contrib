@@ -8,6 +8,56 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+// SystemNetworkConnectionCountMetricAttributeKey specifies the key of an attribute for the system.network.connection.count metric.
+type SystemNetworkConnectionCountMetricAttributeKey string
+
+const (
+	SystemNetworkConnectionCountMetricAttributeKeyProcessName   SystemNetworkConnectionCountMetricAttributeKey = "process.name"
+	SystemNetworkConnectionCountMetricAttributeKeyServerAddress SystemNetworkConnectionCountMetricAttributeKey = "server.address"
+	SystemNetworkConnectionCountMetricAttributeKeyServerPort    SystemNetworkConnectionCountMetricAttributeKey = "server.port"
+)
+
+// SystemNetworkConnectionCountMetricConfig provides config for the system.network.connection.count metric.
+type SystemNetworkConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkConnectionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkConnectionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkConnectionCountMetricAttributeKeyProcessName, SystemNetworkConnectionCountMetricAttributeKeyServerAddress, SystemNetworkConnectionCountMetricAttributeKeyServerPort:
+		default:
+			return fmt.Errorf("metric system.network.connection.count doesn't have an attribute %v, valid attributes: [process.name, server.address, server.port]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SystemNetworkConnectionsMetricAttributeKey specifies the key of an attribute for the system.network.connections metric.
 type SystemNetworkConnectionsMetricAttributeKey string
 
@@ -295,17 +345,23 @@ func (ms *SystemNetworkPacketsMetricConfig) Validate() error {
 
 // MetricsConfig provides config for network metrics.
 type MetricsConfig struct {
-	SystemNetworkConnections    SystemNetworkConnectionsMetricConfig    `mapstructure:"system.network.connections"`
-	SystemNetworkConntrackCount SystemNetworkConntrackCountMetricConfig `mapstructure:"system.network.conntrack.count"`
-	SystemNetworkConntrackMax   SystemNetworkConntrackMaxMetricConfig   `mapstructure:"system.network.conntrack.max"`
-	SystemNetworkDropped        SystemNetworkDroppedMetricConfig        `mapstructure:"system.network.dropped"`
-	SystemNetworkErrors         SystemNetworkErrorsMetricConfig         `mapstructure:"system.network.errors"`
-	SystemNetworkIo             SystemNetworkIoMetricConfig             `mapstructure:"system.network.io"`
-	SystemNetworkPackets        SystemNetworkPacketsMetricConfig        `mapstructure:"system.network.packets"`
+	SystemNetworkConnectionCount SystemNetworkConnectionCountMetricConfig `mapstructure:"system.network.connection.count"`
+	SystemNetworkConnections     SystemNetworkConnectionsMetricConfig     `mapstructure:"system.network.connections"`
+	SystemNetworkConntrackCount  SystemNetworkConntrackCountMetricConfig  `mapstructure:"system.network.conntrack.count"`
+	SystemNetworkConntrackMax    SystemNetworkConntrackMaxMetricConfig    `mapstructure:"system.network.conntrack.max"`
+	SystemNetworkDropped         SystemNetworkDroppedMetricConfig         `mapstructure:"system.network.dropped"`
+	SystemNetworkErrors          SystemNetworkErrorsMetricConfig          `mapstructure:"system.network.errors"`
+	SystemNetworkIo              SystemNetworkIoMetricConfig              `mapstructure:"system.network.io"`
+	SystemNetworkPackets         SystemNetworkPacketsMetricConfig         `mapstructure:"system.network.packets"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemNetworkConnectionCount: SystemNetworkConnectionCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemNetworkConnectionCountMetricAttributeKey{SystemNetworkConnectionCountMetricAttributeKeyProcessName, SystemNetworkConnectionCountMetricAttributeKeyServerAddress, SystemNetworkConnectionCountMetricAttributeKeyServerPort},
+		},
 		SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,

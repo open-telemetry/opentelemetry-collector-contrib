@@ -1,6 +1,9 @@
 default:
 all_set:
   metrics:
+    system.network.connection.count:
+      enabled: true
+      attributes: ["process.name","server.address","server.port"]
     system.network.connections:
       enabled: true
       attributes: ["protocol","state"]
@@ -22,6 +25,9 @@ all_set:
       attributes: ["device","direction"]
 reaggregate_set:
   metrics:
+    system.network.connection.count:
+      enabled: true
+      attributes: []
     system.network.connections:
       enabled: true
       attributes: []
@@ -43,6 +49,9 @@ reaggregate_set:
       attributes: []
 none_set:
   metrics:
+    system.network.connection.count:
+      enabled: false
+      attributes: ["process.name","server.address","server.port"]
     system.network.connections:
       enabled: false
       attributes: ["protocol","state"]

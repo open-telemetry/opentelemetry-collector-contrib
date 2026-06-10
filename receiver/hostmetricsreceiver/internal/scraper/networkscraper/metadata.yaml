@@ -22,17 +22,37 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [receive, transmit]
+  process.name:
+    description: The name of the process associated with the local end of the connection.
+    type: string
+    requirement_level: recommended
   protocol:
     description: Network protocol, e.g. TCP or UDP.
     type: string
     requirement_level: recommended
     enum: [tcp]
+  server.address:
+    description: The remote address of the network connection.
+    type: string
+    requirement_level: recommended
+  server.port:
+    description: The remote port of the network connection.
+    type: int
+    requirement_level: recommended
   state:
     description: State of the network connection.
     type: string
     requirement_level: recommended
 
 metrics:
+  system.network.connection.count:
+    enabled: false
+    description: The number of network connections, grouped by process and remote endpoint.
+    unit: "{connections}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: [process.name, server.address, server.port]
   system.network.connections:
     enabled: true
     description: The number of connections.
