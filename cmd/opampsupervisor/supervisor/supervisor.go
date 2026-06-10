@@ -421,7 +421,7 @@ func rewriteLegacyOTLPKeys(v any) any {
 		case strings.HasPrefix(protocol, "http/"):
 			value["otlp_http"] = otlpMap
 			delete(value, "otlp")
-		case protocol == "", strings.HasPrefix(protocol, "grpc/"):
+		case protocol == "", protocol == "grpc", strings.HasPrefix(protocol, "grpc/"):
 			value["otlp_grpc"] = otlpMap
 			delete(value, "otlp")
 		}
@@ -1308,7 +1308,7 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 			if item == nil {
 				continue
 			}
-			if remoteConfigDeclaresResourceConfig(item.Body) {
+			if remoteConfigDeclaresResourceAttributes(item.Body) {
 				remoteConfigComposers = append(remoteConfigComposers, composeClearResourceAttributesConfig)
 			}
 			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
@@ -1408,12 +1408,12 @@ func composeClearResourceAttributesConfig() []byte {
 	return []byte("service:\n  telemetry:\n    resource:\n      " + clearResourceAttributesKey + ": true\n")
 }
 
-func remoteConfigDeclaresResourceConfig(body []byte) bool {
+func remoteConfigDeclaresResourceAttributes(body []byte) bool {
 	k := koanf.New("::")
 	if err := k.Load(rawbytes.Provider(body), yaml.Parser()); err != nil {
 		return false
 	}
-	return k.Exists("service::telemetry::resource")
+	return k.Exists("service::telemetry::resource::attributes")
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1532,9 +1532,9 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 		return nil
 	}
 
-	seen := make(map[string]struct{}, len(resourceCfg.Attributes))
-	for _, attr := range resourceCfg.Attributes {
-		seen[attr.Name] = struct{}{}
+	seen := make(map[string]int, len(resourceCfg.Attributes))
+	for idx, attr := range resourceCfg.Attributes {
+		seen[attr.Name] = idx
 	}
 
 	legacyNames := make([]string, 0, len(resourceCfg.LegacyAttributes))
@@ -1542,7 +1542,8 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 		if value == nil {
 			continue
 		}
-		if _, exists := seen[name]; exists {
+		if idx, exists := seen[name]; exists {
+			resourceCfg.Attributes[idx].Value = value
 			continue
 		}
 		legacyNames = append(legacyNames, name)

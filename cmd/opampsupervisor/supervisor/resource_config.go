@@ -140,25 +140,23 @@ func filepathMatch(pattern, value string) (bool, error) {
 func envResourceAttributes() map[string]any {
 	attrs := map[string]any{}
 
+	raw, ok := os.LookupEnv("OTEL_RESOURCE_ATTRIBUTES")
+	if ok {
+		for pair := range strings.SplitSeq(raw, ",") {
+			key, value, found := strings.Cut(pair, "=")
+			if !found {
+				continue
+			}
+			key = strings.TrimSpace(key)
+			if key == "" {
+				continue
+			}
+			attrs[key] = strings.TrimSpace(value)
+		}
+	}
+
 	if value, ok := os.LookupEnv("OTEL_SERVICE_NAME"); ok {
 		attrs[string(conventions.ServiceNameKey)] = value
-	}
-
-	raw, ok := os.LookupEnv("OTEL_RESOURCE_ATTRIBUTES")
-	if !ok {
-		return attrs
-	}
-
-	for pair := range strings.SplitSeq(raw, ",") {
-		key, value, found := strings.Cut(pair, "=")
-		if !found {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		if key == "" {
-			continue
-		}
-		attrs[key] = strings.TrimSpace(value)
 	}
 
 	return attrs

@@ -76,7 +76,7 @@ func TestInitTelemetrySettingsWithLegacyNilResourceOverride(t *testing.T) {
 
 func TestInitTelemetrySettingsUsesEnvironmentResourceDefaults(t *testing.T) {
 	t.Setenv("OTEL_SERVICE_NAME", "env-supervisor")
-	t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "deployment.environment=prod")
+	t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "deployment.environment=prod,service.name=resource-supervisor")
 
 	settings, err := initTelemetrySettings(t.Context(), zap.NewNop(), config.Telemetry{
 		Logs: config.Logs{

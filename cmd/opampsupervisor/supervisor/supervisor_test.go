@@ -588,6 +588,69 @@ service:
 		assert.NotContains(t, attrValues, "service.version")
 	})
 
+	t.Run("remote legacy resource attributes preserve lower priority declarative attributes", func(t *testing.T) {
+		localCfg := filepath.Join(t.TempDir(), "local.yaml")
+		require.NoError(t, os.WriteFile(localCfg, []byte(`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: svc
+        - name: deployment.environment
+          value: prod
+`), 0o600))
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent: config.Agent{ConfigFiles: []string{
+					localCfg,
+					string(config.SpecialConfigFileRemoteConfig),
+				}},
+			},
+			persistentState: &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			cfgState:        &atomic.Value{},
+			pidProvider:     staticPIDProvider(1234),
+		}
+
+		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte(`
+service:
+  telemetry:
+    resource:
+      service.name: remote-service
+      service.version: remote-version
+`)},
+				},
+			},
+		}, s.config.Agent.ConfigFiles)
+		require.NoError(t, err)
+
+		k := koanf.New("::")
+		require.NoError(t, k.Load(rawbytes.Provider(got), yaml.Parser()))
+
+		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+		require.True(t, ok)
+
+		var resourceCfg config.ResourceConfig
+		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+		require.Empty(t, resourceCfg.LegacyAttributes)
+
+		attrValues := make(map[string]any, len(resourceCfg.Attributes))
+		for _, attr := range resourceCfg.Attributes {
+			attrValues[attr.Name] = attr.Value
+		}
+
+		assert.Equal(t, "remote-service", attrValues["service.name"])
+		assert.Equal(t, "prod", attrValues["deployment.environment"])
+		assert.Equal(t, "remote-version", attrValues["service.version"])
+		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+	})
+
 	t.Run("remote declarative attributes override stale agent description attributes", func(t *testing.T) {
 		agentDesc := &atomic.Value{}
 		agentDesc.Store(&protobufs.AgentDescription{
@@ -747,6 +810,22 @@ service:
 		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
 		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
 	})
+}
+
+func TestRewriteLegacyOTLPKeysSupportsBareGRPCProtocol(t *testing.T) {
+	cfg := map[string]any{
+		"exporter": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"protocol": "grpc",
+			},
+		},
+	}
+
+	got := rewriteLegacyOTLPKeys(cfg).(map[string]any)
+	exporter := got["exporter"].(map[string]any)
+	assert.NotContains(t, exporter, "otlp")
+	assert.Equal(t, map[string]any{"endpoint": "localhost:4317"}, exporter["otlp_grpc"])
 }
 
 func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing.T) {
