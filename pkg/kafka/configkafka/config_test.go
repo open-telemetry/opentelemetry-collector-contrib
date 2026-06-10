@@ -328,10 +328,10 @@ func TestProducerConfig(t *testing.T) {
 			expectedErr: "max_broker_write_bytes (-1000) must be non-negative",
 		},
 		"max_broker_write_bytes_too_small": {
-			expectedErr: fmt.Sprintf("max_broker_write_bytes (1000) must be at least %d (100 MiB, franz-go minimum)", defaultMaxBrokerWriteBytes),
+			expectedErr: fmt.Sprintf("max_broker_write_bytes (1000) must be at least %d (%d MiB, franz-go minimum)", franzGoMinBrokerWriteBytes, franzGoMinBrokerWriteBytes>>20),
 		},
 		"max_message_bytes_exceeds_broker": {
-			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", defaultMaxBrokerWriteBytes),
+			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", franzGoMinBrokerWriteBytes),
 		},
 	})
 }

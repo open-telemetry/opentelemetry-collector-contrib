@@ -269,9 +269,12 @@ type AutoCommitConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
-// defaultMaxBrokerWriteBytes mirrors franz-go's hardcoded 100 MiB floor for
-// kgo.BrokerMaxWriteBytes, which is also its minimum accepted value.
-const defaultMaxBrokerWriteBytes = 100 << 20 // 104857600
+// franzGoMinBrokerWriteBytes is franz-go's hardcoded 100 MiB floor for
+// kgo.BrokerMaxWriteBytes: values below it are rejected by franz-go at client
+// construction. It is also franz-go's default for that option, so it doubles as
+// the default for ProducerConfig.MaxBrokerWriteBytes, preserving the prior
+// (non-configurable) behavior when left unset.
+const franzGoMinBrokerWriteBytes = 100 << 20 // 104857600
 
 type ProducerConfig struct {
 	// MaxMessageBytes is the maximum message bytes the producer will accept to
@@ -323,7 +326,7 @@ type ProducerConfig struct {
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
 		MaxMessageBytes:        1000000,
-		MaxBrokerWriteBytes:    defaultMaxBrokerWriteBytes,
+		MaxBrokerWriteBytes:    franzGoMinBrokerWriteBytes,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
 		FlushMaxMessages:       10000,
@@ -358,11 +361,12 @@ func (c ProducerConfig) Validate() error {
 	if c.MaxBrokerWriteBytes < 0 {
 		return fmt.Errorf("max_broker_write_bytes (%d) must be non-negative", c.MaxBrokerWriteBytes)
 	}
-	if c.MaxBrokerWriteBytes < defaultMaxBrokerWriteBytes {
+	if c.MaxBrokerWriteBytes < franzGoMinBrokerWriteBytes {
 		return fmt.Errorf(
-			"max_broker_write_bytes (%d) must be at least %d (100 MiB, franz-go minimum)",
+			"max_broker_write_bytes (%d) must be at least %d (%d MiB, franz-go minimum)",
 			c.MaxBrokerWriteBytes,
-			defaultMaxBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes>>20,
 		)
 	}
 	if c.MaxBrokerWriteBytes > math.MaxInt32 {
