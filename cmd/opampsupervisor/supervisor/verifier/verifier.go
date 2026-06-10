@@ -20,12 +20,12 @@ type Verifier interface {
 }
 
 // NewVerifier returns the Verifier for the given verifier configuration.
-func NewVerifier(verifier config.Verifier) (Verifier, error) {
-	switch verifier.Type {
+func NewVerifier(cfg config.Verifier) (Verifier, error) {
+	switch cfg.Type {
 	case config.VerifierTypeNone:
 		return &noneVerifier{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported verifier type: %q", verifier.Type)
+		return nil, fmt.Errorf("unsupported verifier type: %q", cfg.Type)
 	}
 }
 

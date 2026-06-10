@@ -4,6 +4,7 @@
 package archive
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,4 +64,47 @@ func TestRawInstaller_Install(t *testing.T) {
 	written, err := os.ReadFile(destination)
 	require.NoError(t, err)
 	assert.Equal(t, contents, written)
+}
+
+func TestRawInstaller_Install_Size(t *testing.T) {
+	const maxBytes = 16
+
+	testCases := []struct {
+		name      string
+		size      int
+		expectErr string
+	}{
+		{
+			name: "under limit",
+			size: maxBytes - 1,
+		},
+		{
+			name: "at limit",
+			size: maxBytes,
+		},
+		{
+			name:      "over limit is rejected",
+			size:      maxBytes + 1,
+			expectErr: "binary exceeds maximum size",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			destination := filepath.Join(t.TempDir(), "otelcol-contrib")
+			contents := bytes.Repeat([]byte("a"), tc.size)
+
+			installer := rawInstaller{maxBytes: maxBytes}
+			err := installer.Install(t.Context(), contents, destination)
+			if tc.expectErr != "" {
+				require.ErrorContains(t, err, tc.expectErr)
+				return
+			}
+			require.NoError(t, err)
+
+			written, err := os.ReadFile(destination)
+			require.NoError(t, err)
+			assert.Equal(t, contents, written)
+		})
+	}
 }
