@@ -20,8 +20,8 @@ subtext: |
   postgresql.blocking.wait_duration, postgresql.blocking.lock.mode, postgresql.blocking.lock.type,
   postgresql.blocking.lock.relation, postgresql.blocking.transaction.start_time.
   postgresql.blocking.pids contains the full array of blocking PIDs from pg_blocking_pids() (e.g. {5121,5122}).
-  postgresql.blocking.start_time uses pg_locks.waitstart (PostgreSQL 14+) to record when the lock wait began.
-  postgresql.blocking.transaction.start_time provides a stable UTC timestamp (RFC3339) from xact_start that does not reset when the blocker set changes.
+  postgresql.blocking.start_time uses pg_locks.waitstart (PostgreSQL 14+) to record when the lock wait began. waitstart is stable for the full duration of the wait — it is set once when the lock wait starts and is not affected by blockers joining or leaving.
+  postgresql.blocking.transaction.start_time provides a UTC timestamp (RFC3339) from xact_start representing when the transaction started, predating the lock contention itself.
   Idle-in-transaction blocker sessions (holding locks without an active request) are captured via pg_blocking_pids subquery in the WHERE clause.
   All blocking attributes are always present on every db.server.query_sample event; empty string / 0 values indicate no active blocking.
   Requires PostgreSQL 14 or later.
