@@ -10,13 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-adsi/adsi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -33,8 +31,8 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (mc *mockClient) Open(path string, resourceLogs *plog.ResourceLogs) (Container, error) {
-	args := mc.Called(path, resourceLogs)
+func (mc *mockClient) Open(path string) (Container, error) {
+	args := mc.Called(path)
 	return args.Get(0).(Container), args.Error(1)
 }
 
@@ -74,9 +72,9 @@ type mockObjectIter struct {
 	mock.Mock
 }
 
-func (mo *mockObjectIter) Next() (*adsi.Object, error) {
+func (mo *mockObjectIter) Next() (Object, error) {
 	args := mo.Called()
-	return args.Get(0).(*adsi.Object), args.Error(1)
+	return args.Get(0).(Object), args.Error(1)
 }
 
 func (mo *mockObjectIter) Close() {
@@ -88,10 +86,10 @@ func TestStart(t *testing.T) {
 	cfg.BaseDN = "CN=Guest,CN=Users,DC=exampledomain,DC=com"
 
 	sink := &consumertest.LogsSink{}
-	mockClient := &mockClient{}
+	mc := defaultmockClient()
 	mockRuntime := &mockRuntime{}
 	mockRuntime.On("SupportedOS").Return(true)
-	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), mockClient, mockRuntime, sink)
+	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), mc, mockRuntime, sink)
 	// Start the receiver
 	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -151,6 +149,6 @@ func defaultmockClient() Client {
 	mockContainer.On("Close").Return(nil)
 	mockObject.On("Attrs", mock.Anything).Return(attrs, nil)
 	mockObject.On("ToContainer").Return(mockContainer, nil)
-	mockClient.On("Open", mock.Anything, mock.Anything).Return(mockContainer, nil)
+	mockClient.On("Open", mock.Anything).Return(mockContainer, nil)
 	return mockClient
 }

@@ -3,11 +3,10 @@
 
 package activedirectoryinvreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectoryinvreceiver"
 
-import (
-	"runtime"
-
-	adsi "github.com/go-adsi/adsi"
-)
+// Client is an interface for an Active Directory client
+type Client interface {
+	Open(path string) (Container, error)
+}
 
 // Container is an interface for an Active Directory container
 type Container interface {
@@ -16,89 +15,19 @@ type Container interface {
 	Children() (ObjectIter, error)
 }
 
-// adsiContainer is a wrapper for an Active Directory container
-type adsiContainer struct {
-	windowsADContainer *adsi.Container
-}
-
-// ToObject converts an Active Directory container to an Active Directory object
-func (c *adsiContainer) ToObject() (Object, error) {
-	object, err := c.windowsADContainer.ToObject()
-	if err != nil {
-		return nil, err
-	}
-	return &adObject{object}, nil
-}
-
-// Close closes an Active Directory container
-func (c *adsiContainer) Close() {
-	c.windowsADContainer.Close()
-}
-
-// Children returns the children of an Active Directory container
-func (c *adsiContainer) Children() (ObjectIter, error) {
-	objectIter, err := c.windowsADContainer.Children()
-	if err != nil {
-		return nil, err
-	}
-	return &adObjectIter{objectIter}, nil
-}
-
 // Object is an interface for an Active Directory object
 type Object interface {
 	Attrs(key string) ([]interface{}, error)
 	ToContainer() (Container, error)
 }
 
-// adObject is a wrapper for an Active Directory object
-type adObject struct {
-	windowsADObject *adsi.Object
-}
-
-// Attrs returns the attributes of an Active Directory object
-func (o *adObject) Attrs(key string) ([]interface{}, error) {
-	return o.windowsADObject.Attr(key)
-}
-
-// ToContainer converts an Active Directory object to an Active Directory container
-func (o *adObject) ToContainer() (Container, error) {
-	container, err := o.windowsADObject.ToContainer()
-	if err != nil {
-		return nil, err
-	}
-	return &adsiContainer{container}, nil
-}
-
 // ObjectIter is an interface for an Active Directory object iterator
 type ObjectIter interface {
-	Next() (*adsi.Object, error)
+	Next() (Object, error)
 	Close()
-}
-
-// adObjectIter is a wrapper for an Active Directory object iterator
-type adObjectIter struct {
-	windowsADObjectIter *adsi.ObjectIter
-}
-
-// Next returns the next Active Directory object in the iterator
-func (o *adObjectIter) Next() (*adsi.Object, error) {
-	return o.windowsADObjectIter.Next()
-}
-
-// Close closes an Active Directory object iterator
-func (o *adObjectIter) Close() {
-	o.windowsADObjectIter.Close()
 }
 
 // RuntimeInfo is an interface for runtime information
 type RuntimeInfo interface {
 	SupportedOS() bool
-}
-
-// adRuntimeInfo is a wrapper for runtime information
-type adRuntimeInfo struct{}
-
-// SupportedOS returns whether the runtime is supported
-func (r *adRuntimeInfo) SupportedOS() bool {
-	return (runtime.GOOS == "windows")
 }

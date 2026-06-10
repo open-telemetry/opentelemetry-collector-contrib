@@ -10,38 +10,12 @@ import (
 	"sync"
 	"time"
 
-	adsi "github.com/go-adsi/adsi"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
-
-// Client is an interface for an Active Directory client
-type Client interface {
-	Open(path string, resourceLogs *plog.ResourceLogs) (Container, error)
-}
-
-type adsiClient struct{}
-
-func (c *adsiClient) Open(path string, resourceLogs *plog.ResourceLogs) (Container, error) {
-	client, err := adsi.NewClient()
-	if err != nil {
-		return nil, err
-	}
-	ldapPath := fmt.Sprintf("LDAP://%s", path)
-	root, err := client.Open(ldapPath)
-	if err != nil {
-		return nil, err
-	}
-	rootContainer, err := root.ToContainer()
-	if err != nil {
-		return nil, err
-	}
-	windowsContainer := &adsiContainer{rootContainer}
-	return windowsContainer, nil
-}
 
 type adReceiver struct {
 	config   *ADConfig
@@ -130,12 +104,11 @@ func (r *adReceiver) traverse(node Container, attrs []string, resourceLogs *plog
 	}
 	defer children.Close()
 	for child, err := children.Next(); err == nil; child, err = children.Next() {
-		windowsChildContainer, err := child.ToContainer()
+		childContainer, err := child.ToContainer()
 		if err != nil {
 			r.logger.Error("Failed to convert child object to container", zap.Error(err))
 			return
 		}
-		childContainer := &adsiContainer{windowsChildContainer}
 		r.traverse(childContainer, attrs, resourceLogs)
 		childContainer.Close()
 	}
@@ -147,7 +120,7 @@ func (r *adReceiver) poll(ctx context.Context) error {
 	rl := logs.ResourceLogs().AppendEmpty()
 	resourceLogs := &rl
 	_ = resourceLogs.ScopeLogs().AppendEmpty()
-	root, err := r.client.Open(r.config.BaseDN, resourceLogs)
+	root, err := r.client.Open(r.config.BaseDN)
 	if err != nil {
 		return fmt.Errorf("failed to open Active Directory path %q: %w", r.config.BaseDN, err)
 	}
