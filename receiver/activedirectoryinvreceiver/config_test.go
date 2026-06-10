@@ -56,7 +56,7 @@ func TestValidate(t *testing.T) {
 				Attributes:   []string{"name"},
 				PollInterval: 24 * time.Hour,
 			},
-			expectedErr: errInvalidDN,
+			expectedErr: errEmptyDN,
 		},
 		{
 			name: "Invalid Poll Interval",
