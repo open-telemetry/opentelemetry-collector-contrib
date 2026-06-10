@@ -37,6 +37,10 @@ func (m *mockSMClient) setSecret(s string) {
 	m.secretString.Store(&s)
 }
 
+func (m *mockSMClient) clearSecret() {
+	m.secretString.Store(nil)
+}
+
 func TestResolver_Start(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
@@ -145,7 +149,8 @@ func TestResolver_RefreshFetchError(t *testing.T) {
 
 	assert.Equal(t, "good-value", received.Load())
 
-	mock.err = fmt.Errorf("transient error")
+	// Clear the secret so GetSecretValue returns nil SecretString, triggering a fetch error
+	mock.clearSecret()
 	time.Sleep(300 * time.Millisecond)
 
 	// onFetch was never called with a new value, old value preserved by caller

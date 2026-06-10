@@ -73,7 +73,7 @@ func TestBasicAuth_Valid(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			File: htpasswdFile,
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
@@ -98,7 +98,7 @@ func TestBasicAuth_InvalidCredentials(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
@@ -110,7 +110,7 @@ func TestBasicAuth_NoHeader(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{})
@@ -122,7 +122,7 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer token"}})
@@ -134,7 +134,7 @@ func TestBasicAuth_NoFile(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			File: "/non/existing/file",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -146,7 +146,7 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	for _, auth := range [][]string{
@@ -172,7 +172,7 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 			File:   htpasswdFile,
 			Inline: "username:frominline",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -192,7 +192,7 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -211,7 +211,7 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 func TestBasicAuth_ServerInvalid(t *testing.T) {
 	_, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{},
-	}, zaptest.NewLogger(t))
+	})
 	assert.Error(t, err)
 }
 
@@ -251,7 +251,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 			Username: "username",
 			Password: "password",
 		},
-	}, zaptest.NewLogger(t))
+	})
 	require.NotNil(t, ext)
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
@@ -297,7 +297,7 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 				Username: "user:name",
 				Password: "password",
 			},
-		}, zaptest.NewLogger(t))
+		})
 		require.NotNil(t, ext)
 
 		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
