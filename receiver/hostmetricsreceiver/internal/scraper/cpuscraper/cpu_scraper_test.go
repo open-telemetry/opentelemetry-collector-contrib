@@ -36,33 +36,33 @@ func TestScrape(t *testing.T) {
 		expectedErr         string
 	}
 
-	disabledMetric := metadata.DefaultMetricsBuilderConfig()
+	disabledMetric := metadata.NewDefaultMetricsBuilderConfig()
 	disabledMetric.Metrics.SystemCPUTime.Enabled = false
 
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 		},
 		{
 			name:                "Validate Start Time",
 			bootTimeFunc:        func(context.Context) (uint64, error) { return 100, nil },
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
 			name:                "Boot Time Error",
 			bootTimeFunc:        func(context.Context) (uint64, error) { return 0, errors.New("err1") },
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			initializationErr:   "err1",
 		},
 		{
 			name:                "Times Error",
 			timesFunc:           func(context.Context, bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedErr:         "err2",
 		},
@@ -156,7 +156,7 @@ func TestScrape_CpuCount(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.SystemCPUTime.Enabled = false
 			cfg.Metrics.SystemCPUPhysicalCount.Enabled = test.enabledPhysicalCount
 			cfg.Metrics.SystemCPULogicalCount.Enabled = test.enabledLogicalCount
@@ -233,7 +233,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			times:               true,
 			utilization:         false,
@@ -264,7 +264,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
 			if reflect.DeepEqual(test.metricsConfig.Metrics, metadata.MetricsConfig{}) {
-				settings = metadata.DefaultMetricsBuilderConfig()
+				settings = metadata.NewDefaultMetricsBuilderConfig()
 				settings.Metrics.SystemCPUTime.Enabled = test.times
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 			}
@@ -306,7 +306,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
 	// mock times function to force an error in next scrape
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
@@ -328,7 +328,7 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 }
 
 func TestScrape_CpuUtilizationStandard(t *testing.T) {
-	overriddenMetricsSettings := metadata.DefaultMetricsBuilderConfig()
+	overriddenMetricsSettings := metadata.NewDefaultMetricsBuilderConfig()
 	overriddenMetricsSettings.Metrics.SystemCPUUtilization.Enabled = true
 	overriddenMetricsSettings.Metrics.SystemCPUTime.Enabled = false
 

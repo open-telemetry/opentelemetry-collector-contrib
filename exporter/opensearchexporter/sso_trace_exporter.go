@@ -33,6 +33,16 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 	model := &encodeModel{
 		dataset:   cfg.Dataset,
 		namespace: cfg.Namespace,
+		otelV1:    cfg.Mode == MappingOTelV1.String(),
+	}
+
+	defaultPrefix := "ss4o_traces"
+	dataset := cfg.Dataset
+	namespace := cfg.Namespace
+	if cfg.Mode == MappingOTelV1.String() {
+		defaultPrefix = "otel-v1-apm-span"
+		dataset = ""
+		namespace = ""
 	}
 
 	return &ssoTracesExporter{
@@ -43,7 +53,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 		model:         model,
 		httpSettings:  cfg.ClientConfig,
 		config:        cfg,
-		indexResolver: newIndexResolver("ss4o_traces", cfg.Dataset, cfg.Namespace),
+		indexResolver: newIndexResolver(defaultPrefix, dataset, namespace),
 	}
 }
 
@@ -59,11 +69,12 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 	}
 
 	s.client = client
+
 	return nil
 }
 
 func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	indexer := newTraceBulkIndexer(s.bulkAction, s.model)
+	indexer := newTraceBulkIndexer(s.bulkAction, s.model, s.config.Pipeline)
 	startErr := indexer.start(s.client)
 	if startErr != nil {
 		return startErr

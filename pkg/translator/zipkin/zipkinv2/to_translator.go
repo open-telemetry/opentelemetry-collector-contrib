@@ -180,6 +180,8 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
 	attrs[string(conventionsv125.OTelLibraryNameKey)] = struct{}{}
 	attrs[string(conventionsv125.OTelLibraryVersionKey)] = struct{}{}
+	attrs[string(conventions.OTelScopeNameKey)] = struct{}{}
+	attrs[string(conventions.OTelScopeVersionKey)] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
 	attrs[occonventions.AttributeExporterVersion] = struct{}{}
 	attrs[string(conventions.ProcessPIDKey)] = struct{}{}
@@ -416,7 +418,12 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.PutStr(string(conventionsv138.PeerServiceKey), zspan.RemoteEndpoint.ServiceName)
+			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
+				dest.PutStr(string(conventionsv138.PeerServiceKey), zspan.RemoteEndpoint.ServiceName)
+			}
+			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
+				dest.PutStr(string(conventions.ServicePeerNameKey), zspan.RemoteEndpoint.ServiceName)
+			}
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
 			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
@@ -448,22 +455,35 @@ func tagsToAttributeMap(tags map[string]string, dest pcommon.Map, parseStringTag
 			continue
 		}
 
-		if parseStringTags {
-			switch zipkin.DetermineValueType(val) {
-			case pcommon.ValueTypeInt:
-				iValue, _ := strconv.ParseInt(val, 10, 64)
-				dest.PutInt(key, iValue)
-			case pcommon.ValueTypeDouble:
-				fValue, _ := strconv.ParseFloat(val, 64)
-				dest.PutDouble(key, fValue)
-			case pcommon.ValueTypeBool:
-				bValue, _ := strconv.ParseBool(val)
-				dest.PutBool(key, bValue)
-			default:
-				dest.PutStr(key, val)
+		keys := []string{key}
+		if key == string(conventionsv125.HTTPStatusCodeKey) {
+			keys = nil
+			if !metadata.PkgTranslatorZipkinDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, key)
 			}
-		} else {
-			dest.PutStr(key, val)
+			if metadata.PkgTranslatorZipkinEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventions.HTTPResponseStatusCodeKey))
+			}
+		}
+
+		for _, k := range keys {
+			if parseStringTags {
+				switch zipkin.DetermineValueType(val) {
+				case pcommon.ValueTypeInt:
+					iValue, _ := strconv.ParseInt(val, 10, 64)
+					dest.PutInt(k, iValue)
+				case pcommon.ValueTypeDouble:
+					fValue, _ := strconv.ParseFloat(val, 64)
+					dest.PutDouble(k, fValue)
+				case pcommon.ValueTypeBool:
+					bValue, _ := strconv.ParseBool(val)
+					dest.PutBool(k, bValue)
+				default:
+					dest.PutStr(k, val)
+				}
+			} else {
+				dest.PutStr(k, val)
+			}
 		}
 	}
 	return parseErr
@@ -488,7 +508,8 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	delete(tags, zipkin.TagServiceNameSource)
 
 	for key := range nonSpanAttributes {
-		if key == string(conventionsv125.OTelLibraryNameKey) || key == string(conventionsv125.OTelLibraryVersionKey) {
+		if key == string(conventionsv125.OTelLibraryNameKey) || key == string(conventionsv125.OTelLibraryVersionKey) ||
+			key == string(conventions.OTelScopeNameKey) || key == string(conventions.OTelScopeVersionKey) {
 			continue
 		}
 		if value, ok := tags[key]; ok {
@@ -506,9 +527,17 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 		library.SetName(value)
 		delete(tags, string(conventionsv125.OTelLibraryNameKey))
 	}
+	if value, ok := tags[string(conventions.OTelScopeNameKey)]; ok {
+		library.SetName(value)
+		delete(tags, string(conventions.OTelScopeNameKey))
+	}
 	if value, ok := tags[string(conventionsv125.OTelLibraryVersionKey)]; ok {
 		library.SetVersion(value)
 		delete(tags, string(conventionsv125.OTelLibraryVersionKey))
+	}
+	if value, ok := tags[string(conventions.OTelScopeVersionKey)]; ok {
+		library.SetVersion(value)
+		delete(tags, string(conventions.OTelScopeVersionKey))
 	}
 }
 
@@ -528,6 +557,9 @@ func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
 func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || len(zspan.Tags) == 0 {
 		return ""
+	}
+	if val, ok := zspan.Tags[string(conventions.OTelScopeNameKey)]; ok {
+		return val
 	}
 	return zspan.Tags[string(conventionsv125.OTelLibraryNameKey)]
 }

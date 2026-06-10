@@ -3,17 +3,1154 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// K8sContainerCPULimitMetricConfig provides config for the k8s.container.cpu_limit metric.
+type K8sContainerCPULimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerCPULimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerCPURequestMetricConfig provides config for the k8s.container.cpu_request metric.
+type K8sContainerCPURequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerCPURequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerEphemeralstorageLimitMetricConfig provides config for the k8s.container.ephemeralstorage_limit metric.
+type K8sContainerEphemeralstorageLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerEphemeralstorageLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerEphemeralstorageRequestMetricConfig provides config for the k8s.container.ephemeralstorage_request metric.
+type K8sContainerEphemeralstorageRequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerEphemeralstorageRequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerMemoryLimitMetricConfig provides config for the k8s.container.memory_limit metric.
+type K8sContainerMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerMemoryRequestMetricConfig provides config for the k8s.container.memory_request metric.
+type K8sContainerMemoryRequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerMemoryRequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerReadyMetricConfig provides config for the k8s.container.ready metric.
+type K8sContainerReadyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerReadyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerRestartsMetricConfig provides config for the k8s.container.restarts metric.
+type K8sContainerRestartsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerRestartsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerStatusReasonMetricConfig provides config for the k8s.container.status.reason metric.
+type K8sContainerStatusReasonMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerStatusReasonMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerStatusStateMetricConfig provides config for the k8s.container.status.state metric.
+type K8sContainerStatusStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerStatusStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerStorageLimitMetricConfig provides config for the k8s.container.storage_limit metric.
+type K8sContainerStorageLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerStorageLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sContainerStorageRequestMetricConfig provides config for the k8s.container.storage_request metric.
+type K8sContainerStorageRequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sContainerStorageRequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sCronjobActiveJobsMetricConfig provides config for the k8s.cronjob.active_jobs metric.
+type K8sCronjobActiveJobsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sCronjobActiveJobsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDaemonsetCurrentScheduledNodesMetricConfig provides config for the k8s.daemonset.current_scheduled_nodes metric.
+type K8sDaemonsetCurrentScheduledNodesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDaemonsetCurrentScheduledNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDaemonsetDesiredScheduledNodesMetricConfig provides config for the k8s.daemonset.desired_scheduled_nodes metric.
+type K8sDaemonsetDesiredScheduledNodesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDaemonsetDesiredScheduledNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDaemonsetMisscheduledNodesMetricConfig provides config for the k8s.daemonset.misscheduled_nodes metric.
+type K8sDaemonsetMisscheduledNodesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDaemonsetMisscheduledNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDaemonsetReadyNodesMetricConfig provides config for the k8s.daemonset.ready_nodes metric.
+type K8sDaemonsetReadyNodesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDaemonsetReadyNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDeploymentAvailableMetricConfig provides config for the k8s.deployment.available metric.
+type K8sDeploymentAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDeploymentAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sDeploymentDesiredMetricConfig provides config for the k8s.deployment.desired metric.
+type K8sDeploymentDesiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sDeploymentDesiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sHpaCurrentReplicasMetricConfig provides config for the k8s.hpa.current_replicas metric.
+type K8sHpaCurrentReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sHpaCurrentReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sHpaDesiredReplicasMetricConfig provides config for the k8s.hpa.desired_replicas metric.
+type K8sHpaDesiredReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sHpaDesiredReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sHpaMaxReplicasMetricConfig provides config for the k8s.hpa.max_replicas metric.
+type K8sHpaMaxReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sHpaMaxReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sHpaMinReplicasMetricConfig provides config for the k8s.hpa.min_replicas metric.
+type K8sHpaMinReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sHpaMinReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sJobActivePodsMetricConfig provides config for the k8s.job.active_pods metric.
+type K8sJobActivePodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sJobActivePodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sJobDesiredSuccessfulPodsMetricConfig provides config for the k8s.job.desired_successful_pods metric.
+type K8sJobDesiredSuccessfulPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sJobDesiredSuccessfulPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sJobFailedPodsMetricConfig provides config for the k8s.job.failed_pods metric.
+type K8sJobFailedPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sJobFailedPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sJobMaxParallelPodsMetricConfig provides config for the k8s.job.max_parallel_pods metric.
+type K8sJobMaxParallelPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sJobMaxParallelPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sJobSuccessfulPodsMetricConfig provides config for the k8s.job.successful_pods metric.
+type K8sJobSuccessfulPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sJobSuccessfulPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNamespacePhaseMetricConfig provides config for the k8s.namespace.phase metric.
+type K8sNamespacePhaseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNamespacePhaseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodeConditionMetricConfig provides config for the k8s.node.condition metric.
+type K8sNodeConditionMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeConditionMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPersistentvolumeStatusPhaseMetricConfig provides config for the k8s.persistentvolume.status.phase metric.
+type K8sPersistentvolumeStatusPhaseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPersistentvolumeStatusPhaseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPersistentvolumeStorageCapacityMetricConfig provides config for the k8s.persistentvolume.storage.capacity metric.
+type K8sPersistentvolumeStorageCapacityMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPersistentvolumeStorageCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPersistentvolumeclaimStatusPhaseMetricConfig provides config for the k8s.persistentvolumeclaim.status.phase metric.
+type K8sPersistentvolumeclaimStatusPhaseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPersistentvolumeclaimStatusPhaseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPersistentvolumeclaimStorageCapacityMetricConfig provides config for the k8s.persistentvolumeclaim.storage.capacity metric.
+type K8sPersistentvolumeclaimStorageCapacityMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPersistentvolumeclaimStorageCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPersistentvolumeclaimStorageRequestMetricConfig provides config for the k8s.persistentvolumeclaim.storage.request metric.
+type K8sPersistentvolumeclaimStorageRequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPersistentvolumeclaimStorageRequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodPhaseMetricConfig provides config for the k8s.pod.phase metric.
+type K8sPodPhaseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodPhaseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodStatusReasonMetricConfig provides config for the k8s.pod.status_reason metric.
+type K8sPodStatusReasonMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodStatusReasonMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicasetAvailableMetricConfig provides config for the k8s.replicaset.available metric.
+type K8sReplicasetAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sReplicasetAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicasetDesiredMetricConfig provides config for the k8s.replicaset.desired metric.
+type K8sReplicasetDesiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sReplicasetDesiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicationControllerAvailableMetricConfig provides config for the k8s.replication_controller.available metric.
+type K8sReplicationControllerAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sReplicationControllerAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicationControllerDesiredMetricConfig provides config for the k8s.replication_controller.desired metric.
+type K8sReplicationControllerDesiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sReplicationControllerDesiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sResourceQuotaHardLimitMetricConfig provides config for the k8s.resource_quota.hard_limit metric.
+type K8sResourceQuotaHardLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sResourceQuotaHardLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sResourceQuotaUsedMetricConfig provides config for the k8s.resource_quota.used metric.
+type K8sResourceQuotaUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sResourceQuotaUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sServiceEndpointCountMetricAttributeKey specifies the key of an attribute for the k8s.service.endpoint.count metric.
+type K8sServiceEndpointCountMetricAttributeKey string
+
+const (
+	K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointAddressType K8sServiceEndpointCountMetricAttributeKey = "k8s.service.endpoint.address_type"
+	K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointCondition   K8sServiceEndpointCountMetricAttributeKey = "k8s.service.endpoint.condition"
+	K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointZone        K8sServiceEndpointCountMetricAttributeKey = "k8s.service.endpoint.zone"
+)
+
+// K8sServiceEndpointCountMetricConfig provides config for the k8s.service.endpoint.count metric.
+type K8sServiceEndpointCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sServiceEndpointCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *K8sServiceEndpointCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *K8sServiceEndpointCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointAddressType, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointCondition, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointZone:
+		default:
+			return fmt.Errorf("metric k8s.service.endpoint.count doesn't have an attribute %v, valid attributes: [k8s.service.endpoint.address_type, k8s.service.endpoint.condition, k8s.service.endpoint.zone]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// K8sServiceLoadBalancerIngressCountMetricConfig provides config for the k8s.service.load_balancer.ingress.count metric.
+type K8sServiceLoadBalancerIngressCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sServiceLoadBalancerIngressCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sStatefulsetCurrentPodsMetricConfig provides config for the k8s.statefulset.current_pods metric.
+type K8sStatefulsetCurrentPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sStatefulsetCurrentPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sStatefulsetDesiredPodsMetricConfig provides config for the k8s.statefulset.desired_pods metric.
+type K8sStatefulsetDesiredPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sStatefulsetDesiredPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sStatefulsetReadyPodsMetricConfig provides config for the k8s.statefulset.ready_pods metric.
+type K8sStatefulsetReadyPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sStatefulsetReadyPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sStatefulsetUpdatedPodsMetricConfig provides config for the k8s.statefulset.updated_pods metric.
+type K8sStatefulsetUpdatedPodsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sStatefulsetUpdatedPodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OpenshiftAppliedclusterquotaLimitMetricAttributeKey specifies the key of an attribute for the openshift.appliedclusterquota.limit metric.
+type OpenshiftAppliedclusterquotaLimitMetricAttributeKey string
+
+const (
+	OpenshiftAppliedclusterquotaLimitMetricAttributeKeyK8sNamespaceName OpenshiftAppliedclusterquotaLimitMetricAttributeKey = "k8s.namespace.name"
+	OpenshiftAppliedclusterquotaLimitMetricAttributeKeyResource         OpenshiftAppliedclusterquotaLimitMetricAttributeKey = "resource"
+)
+
+// OpenshiftAppliedclusterquotaLimitMetricConfig provides config for the openshift.appliedclusterquota.limit metric.
+type OpenshiftAppliedclusterquotaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OpenshiftAppliedclusterquotaLimitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OpenshiftAppliedclusterquotaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OpenshiftAppliedclusterquotaLimitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OpenshiftAppliedclusterquotaLimitMetricAttributeKeyK8sNamespaceName, OpenshiftAppliedclusterquotaLimitMetricAttributeKeyResource:
+		default:
+			return fmt.Errorf("metric openshift.appliedclusterquota.limit doesn't have an attribute %v, valid attributes: [k8s.namespace.name, resource]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, OpenshiftAppliedclusterquotaLimitMetricAttributeKeyResource) {
+		return fmt.Errorf("resource is a required attribute for openshift.appliedclusterquota.limit metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OpenshiftAppliedclusterquotaUsedMetricAttributeKey specifies the key of an attribute for the openshift.appliedclusterquota.used metric.
+type OpenshiftAppliedclusterquotaUsedMetricAttributeKey string
+
+const (
+	OpenshiftAppliedclusterquotaUsedMetricAttributeKeyK8sNamespaceName OpenshiftAppliedclusterquotaUsedMetricAttributeKey = "k8s.namespace.name"
+	OpenshiftAppliedclusterquotaUsedMetricAttributeKeyResource         OpenshiftAppliedclusterquotaUsedMetricAttributeKey = "resource"
+)
+
+// OpenshiftAppliedclusterquotaUsedMetricConfig provides config for the openshift.appliedclusterquota.used metric.
+type OpenshiftAppliedclusterquotaUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OpenshiftAppliedclusterquotaUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OpenshiftAppliedclusterquotaUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OpenshiftAppliedclusterquotaUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OpenshiftAppliedclusterquotaUsedMetricAttributeKeyK8sNamespaceName, OpenshiftAppliedclusterquotaUsedMetricAttributeKeyResource:
+		default:
+			return fmt.Errorf("metric openshift.appliedclusterquota.used doesn't have an attribute %v, valid attributes: [k8s.namespace.name, resource]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, OpenshiftAppliedclusterquotaUsedMetricAttributeKeyResource) {
+		return fmt.Errorf("resource is a required attribute for openshift.appliedclusterquota.used metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OpenshiftClusterquotaLimitMetricConfig provides config for the openshift.clusterquota.limit metric.
+type OpenshiftClusterquotaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OpenshiftClusterquotaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OpenshiftClusterquotaUsedMetricConfig provides config for the openshift.clusterquota.used metric.
+type OpenshiftClusterquotaUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OpenshiftClusterquotaUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,200 +1166,226 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for k8s_cluster metrics.
 type MetricsConfig struct {
-	K8sContainerCPULimit                MetricConfig `mapstructure:"k8s.container.cpu_limit"`
-	K8sContainerCPURequest              MetricConfig `mapstructure:"k8s.container.cpu_request"`
-	K8sContainerEphemeralstorageLimit   MetricConfig `mapstructure:"k8s.container.ephemeralstorage_limit"`
-	K8sContainerEphemeralstorageRequest MetricConfig `mapstructure:"k8s.container.ephemeralstorage_request"`
-	K8sContainerMemoryLimit             MetricConfig `mapstructure:"k8s.container.memory_limit"`
-	K8sContainerMemoryRequest           MetricConfig `mapstructure:"k8s.container.memory_request"`
-	K8sContainerReady                   MetricConfig `mapstructure:"k8s.container.ready"`
-	K8sContainerRestarts                MetricConfig `mapstructure:"k8s.container.restarts"`
-	K8sContainerStatusReason            MetricConfig `mapstructure:"k8s.container.status.reason"`
-	K8sContainerStatusState             MetricConfig `mapstructure:"k8s.container.status.state"`
-	K8sContainerStorageLimit            MetricConfig `mapstructure:"k8s.container.storage_limit"`
-	K8sContainerStorageRequest          MetricConfig `mapstructure:"k8s.container.storage_request"`
-	K8sCronjobActiveJobs                MetricConfig `mapstructure:"k8s.cronjob.active_jobs"`
-	K8sDaemonsetCurrentScheduledNodes   MetricConfig `mapstructure:"k8s.daemonset.current_scheduled_nodes"`
-	K8sDaemonsetDesiredScheduledNodes   MetricConfig `mapstructure:"k8s.daemonset.desired_scheduled_nodes"`
-	K8sDaemonsetMisscheduledNodes       MetricConfig `mapstructure:"k8s.daemonset.misscheduled_nodes"`
-	K8sDaemonsetReadyNodes              MetricConfig `mapstructure:"k8s.daemonset.ready_nodes"`
-	K8sDeploymentAvailable              MetricConfig `mapstructure:"k8s.deployment.available"`
-	K8sDeploymentDesired                MetricConfig `mapstructure:"k8s.deployment.desired"`
-	K8sHpaCurrentReplicas               MetricConfig `mapstructure:"k8s.hpa.current_replicas"`
-	K8sHpaDesiredReplicas               MetricConfig `mapstructure:"k8s.hpa.desired_replicas"`
-	K8sHpaMaxReplicas                   MetricConfig `mapstructure:"k8s.hpa.max_replicas"`
-	K8sHpaMinReplicas                   MetricConfig `mapstructure:"k8s.hpa.min_replicas"`
-	K8sJobActivePods                    MetricConfig `mapstructure:"k8s.job.active_pods"`
-	K8sJobDesiredSuccessfulPods         MetricConfig `mapstructure:"k8s.job.desired_successful_pods"`
-	K8sJobFailedPods                    MetricConfig `mapstructure:"k8s.job.failed_pods"`
-	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
-	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
-	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
-	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
-	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
-	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
-	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
-	K8sReplicasetDesired                MetricConfig `mapstructure:"k8s.replicaset.desired"`
-	K8sReplicationControllerAvailable   MetricConfig `mapstructure:"k8s.replication_controller.available"`
-	K8sReplicationControllerDesired     MetricConfig `mapstructure:"k8s.replication_controller.desired"`
-	K8sResourceQuotaHardLimit           MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
-	K8sResourceQuotaUsed                MetricConfig `mapstructure:"k8s.resource_quota.used"`
-	K8sServiceEndpointCount             MetricConfig `mapstructure:"k8s.service.endpoint.count"`
-	K8sServiceLoadBalancerIngressCount  MetricConfig `mapstructure:"k8s.service.load_balancer.ingress.count"`
-	K8sStatefulsetCurrentPods           MetricConfig `mapstructure:"k8s.statefulset.current_pods"`
-	K8sStatefulsetDesiredPods           MetricConfig `mapstructure:"k8s.statefulset.desired_pods"`
-	K8sStatefulsetReadyPods             MetricConfig `mapstructure:"k8s.statefulset.ready_pods"`
-	K8sStatefulsetUpdatedPods           MetricConfig `mapstructure:"k8s.statefulset.updated_pods"`
-	OpenshiftAppliedclusterquotaLimit   MetricConfig `mapstructure:"openshift.appliedclusterquota.limit"`
-	OpenshiftAppliedclusterquotaUsed    MetricConfig `mapstructure:"openshift.appliedclusterquota.used"`
-	OpenshiftClusterquotaLimit          MetricConfig `mapstructure:"openshift.clusterquota.limit"`
-	OpenshiftClusterquotaUsed           MetricConfig `mapstructure:"openshift.clusterquota.used"`
+	K8sContainerCPULimit                    K8sContainerCPULimitMetricConfig                    `mapstructure:"k8s.container.cpu_limit"`
+	K8sContainerCPURequest                  K8sContainerCPURequestMetricConfig                  `mapstructure:"k8s.container.cpu_request"`
+	K8sContainerEphemeralstorageLimit       K8sContainerEphemeralstorageLimitMetricConfig       `mapstructure:"k8s.container.ephemeralstorage_limit"`
+	K8sContainerEphemeralstorageRequest     K8sContainerEphemeralstorageRequestMetricConfig     `mapstructure:"k8s.container.ephemeralstorage_request"`
+	K8sContainerMemoryLimit                 K8sContainerMemoryLimitMetricConfig                 `mapstructure:"k8s.container.memory_limit"`
+	K8sContainerMemoryRequest               K8sContainerMemoryRequestMetricConfig               `mapstructure:"k8s.container.memory_request"`
+	K8sContainerReady                       K8sContainerReadyMetricConfig                       `mapstructure:"k8s.container.ready"`
+	K8sContainerRestarts                    K8sContainerRestartsMetricConfig                    `mapstructure:"k8s.container.restarts"`
+	K8sContainerStatusReason                K8sContainerStatusReasonMetricConfig                `mapstructure:"k8s.container.status.reason"`
+	K8sContainerStatusState                 K8sContainerStatusStateMetricConfig                 `mapstructure:"k8s.container.status.state"`
+	K8sContainerStorageLimit                K8sContainerStorageLimitMetricConfig                `mapstructure:"k8s.container.storage_limit"`
+	K8sContainerStorageRequest              K8sContainerStorageRequestMetricConfig              `mapstructure:"k8s.container.storage_request"`
+	K8sCronjobActiveJobs                    K8sCronjobActiveJobsMetricConfig                    `mapstructure:"k8s.cronjob.active_jobs"`
+	K8sDaemonsetCurrentScheduledNodes       K8sDaemonsetCurrentScheduledNodesMetricConfig       `mapstructure:"k8s.daemonset.current_scheduled_nodes"`
+	K8sDaemonsetDesiredScheduledNodes       K8sDaemonsetDesiredScheduledNodesMetricConfig       `mapstructure:"k8s.daemonset.desired_scheduled_nodes"`
+	K8sDaemonsetMisscheduledNodes           K8sDaemonsetMisscheduledNodesMetricConfig           `mapstructure:"k8s.daemonset.misscheduled_nodes"`
+	K8sDaemonsetReadyNodes                  K8sDaemonsetReadyNodesMetricConfig                  `mapstructure:"k8s.daemonset.ready_nodes"`
+	K8sDeploymentAvailable                  K8sDeploymentAvailableMetricConfig                  `mapstructure:"k8s.deployment.available"`
+	K8sDeploymentDesired                    K8sDeploymentDesiredMetricConfig                    `mapstructure:"k8s.deployment.desired"`
+	K8sHpaCurrentReplicas                   K8sHpaCurrentReplicasMetricConfig                   `mapstructure:"k8s.hpa.current_replicas"`
+	K8sHpaDesiredReplicas                   K8sHpaDesiredReplicasMetricConfig                   `mapstructure:"k8s.hpa.desired_replicas"`
+	K8sHpaMaxReplicas                       K8sHpaMaxReplicasMetricConfig                       `mapstructure:"k8s.hpa.max_replicas"`
+	K8sHpaMinReplicas                       K8sHpaMinReplicasMetricConfig                       `mapstructure:"k8s.hpa.min_replicas"`
+	K8sJobActivePods                        K8sJobActivePodsMetricConfig                        `mapstructure:"k8s.job.active_pods"`
+	K8sJobDesiredSuccessfulPods             K8sJobDesiredSuccessfulPodsMetricConfig             `mapstructure:"k8s.job.desired_successful_pods"`
+	K8sJobFailedPods                        K8sJobFailedPodsMetricConfig                        `mapstructure:"k8s.job.failed_pods"`
+	K8sJobMaxParallelPods                   K8sJobMaxParallelPodsMetricConfig                   `mapstructure:"k8s.job.max_parallel_pods"`
+	K8sJobSuccessfulPods                    K8sJobSuccessfulPodsMetricConfig                    `mapstructure:"k8s.job.successful_pods"`
+	K8sNamespacePhase                       K8sNamespacePhaseMetricConfig                       `mapstructure:"k8s.namespace.phase"`
+	K8sNodeCondition                        K8sNodeConditionMetricConfig                        `mapstructure:"k8s.node.condition"`
+	K8sPersistentvolumeStatusPhase          K8sPersistentvolumeStatusPhaseMetricConfig          `mapstructure:"k8s.persistentvolume.status.phase"`
+	K8sPersistentvolumeStorageCapacity      K8sPersistentvolumeStorageCapacityMetricConfig      `mapstructure:"k8s.persistentvolume.storage.capacity"`
+	K8sPersistentvolumeclaimStatusPhase     K8sPersistentvolumeclaimStatusPhaseMetricConfig     `mapstructure:"k8s.persistentvolumeclaim.status.phase"`
+	K8sPersistentvolumeclaimStorageCapacity K8sPersistentvolumeclaimStorageCapacityMetricConfig `mapstructure:"k8s.persistentvolumeclaim.storage.capacity"`
+	K8sPersistentvolumeclaimStorageRequest  K8sPersistentvolumeclaimStorageRequestMetricConfig  `mapstructure:"k8s.persistentvolumeclaim.storage.request"`
+	K8sPodPhase                             K8sPodPhaseMetricConfig                             `mapstructure:"k8s.pod.phase"`
+	K8sPodStatusReason                      K8sPodStatusReasonMetricConfig                      `mapstructure:"k8s.pod.status_reason"`
+	K8sReplicasetAvailable                  K8sReplicasetAvailableMetricConfig                  `mapstructure:"k8s.replicaset.available"`
+	K8sReplicasetDesired                    K8sReplicasetDesiredMetricConfig                    `mapstructure:"k8s.replicaset.desired"`
+	K8sReplicationControllerAvailable       K8sReplicationControllerAvailableMetricConfig       `mapstructure:"k8s.replication_controller.available"`
+	K8sReplicationControllerDesired         K8sReplicationControllerDesiredMetricConfig         `mapstructure:"k8s.replication_controller.desired"`
+	K8sResourceQuotaHardLimit               K8sResourceQuotaHardLimitMetricConfig               `mapstructure:"k8s.resource_quota.hard_limit"`
+	K8sResourceQuotaUsed                    K8sResourceQuotaUsedMetricConfig                    `mapstructure:"k8s.resource_quota.used"`
+	K8sServiceEndpointCount                 K8sServiceEndpointCountMetricConfig                 `mapstructure:"k8s.service.endpoint.count"`
+	K8sServiceLoadBalancerIngressCount      K8sServiceLoadBalancerIngressCountMetricConfig      `mapstructure:"k8s.service.load_balancer.ingress.count"`
+	K8sStatefulsetCurrentPods               K8sStatefulsetCurrentPodsMetricConfig               `mapstructure:"k8s.statefulset.current_pods"`
+	K8sStatefulsetDesiredPods               K8sStatefulsetDesiredPodsMetricConfig               `mapstructure:"k8s.statefulset.desired_pods"`
+	K8sStatefulsetReadyPods                 K8sStatefulsetReadyPodsMetricConfig                 `mapstructure:"k8s.statefulset.ready_pods"`
+	K8sStatefulsetUpdatedPods               K8sStatefulsetUpdatedPodsMetricConfig               `mapstructure:"k8s.statefulset.updated_pods"`
+	OpenshiftAppliedclusterquotaLimit       OpenshiftAppliedclusterquotaLimitMetricConfig       `mapstructure:"openshift.appliedclusterquota.limit"`
+	OpenshiftAppliedclusterquotaUsed        OpenshiftAppliedclusterquotaUsedMetricConfig        `mapstructure:"openshift.appliedclusterquota.used"`
+	OpenshiftClusterquotaLimit              OpenshiftClusterquotaLimitMetricConfig              `mapstructure:"openshift.clusterquota.limit"`
+	OpenshiftClusterquotaUsed               OpenshiftClusterquotaUsedMetricConfig               `mapstructure:"openshift.clusterquota.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		K8sContainerCPULimit: MetricConfig{
+		K8sContainerCPULimit: K8sContainerCPULimitMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerCPURequest: MetricConfig{
+		K8sContainerCPURequest: K8sContainerCPURequestMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerEphemeralstorageLimit: MetricConfig{
+		K8sContainerEphemeralstorageLimit: K8sContainerEphemeralstorageLimitMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerEphemeralstorageRequest: MetricConfig{
+		K8sContainerEphemeralstorageRequest: K8sContainerEphemeralstorageRequestMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerMemoryLimit: MetricConfig{
+		K8sContainerMemoryLimit: K8sContainerMemoryLimitMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerMemoryRequest: MetricConfig{
+		K8sContainerMemoryRequest: K8sContainerMemoryRequestMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerReady: MetricConfig{
+		K8sContainerReady: K8sContainerReadyMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerRestarts: MetricConfig{
+		K8sContainerRestarts: K8sContainerRestartsMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerStatusReason: MetricConfig{
+		K8sContainerStatusReason: K8sContainerStatusReasonMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerStatusState: MetricConfig{
+		K8sContainerStatusState: K8sContainerStatusStateMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerStorageLimit: MetricConfig{
+		K8sContainerStorageLimit: K8sContainerStorageLimitMetricConfig{
 			Enabled: true,
 		},
-		K8sContainerStorageRequest: MetricConfig{
+		K8sContainerStorageRequest: K8sContainerStorageRequestMetricConfig{
 			Enabled: true,
 		},
-		K8sCronjobActiveJobs: MetricConfig{
+		K8sCronjobActiveJobs: K8sCronjobActiveJobsMetricConfig{
 			Enabled: true,
 		},
-		K8sDaemonsetCurrentScheduledNodes: MetricConfig{
+		K8sDaemonsetCurrentScheduledNodes: K8sDaemonsetCurrentScheduledNodesMetricConfig{
 			Enabled: true,
 		},
-		K8sDaemonsetDesiredScheduledNodes: MetricConfig{
+		K8sDaemonsetDesiredScheduledNodes: K8sDaemonsetDesiredScheduledNodesMetricConfig{
 			Enabled: true,
 		},
-		K8sDaemonsetMisscheduledNodes: MetricConfig{
+		K8sDaemonsetMisscheduledNodes: K8sDaemonsetMisscheduledNodesMetricConfig{
 			Enabled: true,
 		},
-		K8sDaemonsetReadyNodes: MetricConfig{
+		K8sDaemonsetReadyNodes: K8sDaemonsetReadyNodesMetricConfig{
 			Enabled: true,
 		},
-		K8sDeploymentAvailable: MetricConfig{
+		K8sDeploymentAvailable: K8sDeploymentAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sDeploymentDesired: MetricConfig{
+		K8sDeploymentDesired: K8sDeploymentDesiredMetricConfig{
 			Enabled: true,
 		},
-		K8sHpaCurrentReplicas: MetricConfig{
+		K8sHpaCurrentReplicas: K8sHpaCurrentReplicasMetricConfig{
 			Enabled: true,
 		},
-		K8sHpaDesiredReplicas: MetricConfig{
+		K8sHpaDesiredReplicas: K8sHpaDesiredReplicasMetricConfig{
 			Enabled: true,
 		},
-		K8sHpaMaxReplicas: MetricConfig{
+		K8sHpaMaxReplicas: K8sHpaMaxReplicasMetricConfig{
 			Enabled: true,
 		},
-		K8sHpaMinReplicas: MetricConfig{
+		K8sHpaMinReplicas: K8sHpaMinReplicasMetricConfig{
 			Enabled: true,
 		},
-		K8sJobActivePods: MetricConfig{
+		K8sJobActivePods: K8sJobActivePodsMetricConfig{
 			Enabled: true,
 		},
-		K8sJobDesiredSuccessfulPods: MetricConfig{
+		K8sJobDesiredSuccessfulPods: K8sJobDesiredSuccessfulPodsMetricConfig{
 			Enabled: true,
 		},
-		K8sJobFailedPods: MetricConfig{
+		K8sJobFailedPods: K8sJobFailedPodsMetricConfig{
 			Enabled: true,
 		},
-		K8sJobMaxParallelPods: MetricConfig{
+		K8sJobMaxParallelPods: K8sJobMaxParallelPodsMetricConfig{
 			Enabled: true,
 		},
-		K8sJobSuccessfulPods: MetricConfig{
+		K8sJobSuccessfulPods: K8sJobSuccessfulPodsMetricConfig{
 			Enabled: true,
 		},
-		K8sNamespacePhase: MetricConfig{
+		K8sNamespacePhase: K8sNamespacePhaseMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeCondition: MetricConfig{
+		K8sNodeCondition: K8sNodeConditionMetricConfig{
 			Enabled: false,
 		},
-		K8sPodPhase: MetricConfig{
-			Enabled: true,
-		},
-		K8sPodStatusReason: MetricConfig{
+		K8sPersistentvolumeStatusPhase: K8sPersistentvolumeStatusPhaseMetricConfig{
 			Enabled: false,
 		},
-		K8sReplicasetAvailable: MetricConfig{
-			Enabled: true,
-		},
-		K8sReplicasetDesired: MetricConfig{
-			Enabled: true,
-		},
-		K8sReplicationControllerAvailable: MetricConfig{
-			Enabled: true,
-		},
-		K8sReplicationControllerDesired: MetricConfig{
-			Enabled: true,
-		},
-		K8sResourceQuotaHardLimit: MetricConfig{
-			Enabled: true,
-		},
-		K8sResourceQuotaUsed: MetricConfig{
-			Enabled: true,
-		},
-		K8sServiceEndpointCount: MetricConfig{
+		K8sPersistentvolumeStorageCapacity: K8sPersistentvolumeStorageCapacityMetricConfig{
 			Enabled: false,
 		},
-		K8sServiceLoadBalancerIngressCount: MetricConfig{
+		K8sPersistentvolumeclaimStatusPhase: K8sPersistentvolumeclaimStatusPhaseMetricConfig{
 			Enabled: false,
 		},
-		K8sStatefulsetCurrentPods: MetricConfig{
+		K8sPersistentvolumeclaimStorageCapacity: K8sPersistentvolumeclaimStorageCapacityMetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeclaimStorageRequest: K8sPersistentvolumeclaimStorageRequestMetricConfig{
+			Enabled: false,
+		},
+		K8sPodPhase: K8sPodPhaseMetricConfig{
 			Enabled: true,
 		},
-		K8sStatefulsetDesiredPods: MetricConfig{
+		K8sPodStatusReason: K8sPodStatusReasonMetricConfig{
+			Enabled: false,
+		},
+		K8sReplicasetAvailable: K8sReplicasetAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sStatefulsetReadyPods: MetricConfig{
+		K8sReplicasetDesired: K8sReplicasetDesiredMetricConfig{
 			Enabled: true,
 		},
-		K8sStatefulsetUpdatedPods: MetricConfig{
+		K8sReplicationControllerAvailable: K8sReplicationControllerAvailableMetricConfig{
 			Enabled: true,
 		},
-		OpenshiftAppliedclusterquotaLimit: MetricConfig{
+		K8sReplicationControllerDesired: K8sReplicationControllerDesiredMetricConfig{
 			Enabled: true,
 		},
-		OpenshiftAppliedclusterquotaUsed: MetricConfig{
+		K8sResourceQuotaHardLimit: K8sResourceQuotaHardLimitMetricConfig{
 			Enabled: true,
 		},
-		OpenshiftClusterquotaLimit: MetricConfig{
+		K8sResourceQuotaUsed: K8sResourceQuotaUsedMetricConfig{
 			Enabled: true,
 		},
-		OpenshiftClusterquotaUsed: MetricConfig{
+		K8sServiceEndpointCount: K8sServiceEndpointCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []K8sServiceEndpointCountMetricAttributeKey{K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointAddressType, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointCondition, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointZone},
+		},
+		K8sServiceLoadBalancerIngressCount: K8sServiceLoadBalancerIngressCountMetricConfig{
+			Enabled: false,
+		},
+		K8sStatefulsetCurrentPods: K8sStatefulsetCurrentPodsMetricConfig{
+			Enabled: true,
+		},
+		K8sStatefulsetDesiredPods: K8sStatefulsetDesiredPodsMetricConfig{
+			Enabled: true,
+		},
+		K8sStatefulsetReadyPods: K8sStatefulsetReadyPodsMetricConfig{
+			Enabled: true,
+		},
+		K8sStatefulsetUpdatedPods: K8sStatefulsetUpdatedPodsMetricConfig{
+			Enabled: true,
+		},
+		OpenshiftAppliedclusterquotaLimit: OpenshiftAppliedclusterquotaLimitMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OpenshiftAppliedclusterquotaLimitMetricAttributeKey{OpenshiftAppliedclusterquotaLimitMetricAttributeKeyK8sNamespaceName, OpenshiftAppliedclusterquotaLimitMetricAttributeKeyResource},
+		},
+		OpenshiftAppliedclusterquotaUsed: OpenshiftAppliedclusterquotaUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OpenshiftAppliedclusterquotaUsedMetricAttributeKey{OpenshiftAppliedclusterquotaUsedMetricAttributeKeyK8sNamespaceName, OpenshiftAppliedclusterquotaUsedMetricAttributeKeyResource},
+		},
+		OpenshiftClusterquotaLimit: OpenshiftClusterquotaLimitMetricConfig{
+			Enabled: true,
+		},
+		OpenshiftClusterquotaUsed: OpenshiftClusterquotaUsedMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -281,6 +1444,11 @@ type ResourceAttributesConfig struct {
 	K8sNamespaceUID                        ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                            ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeUID                             ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
+	K8sPersistentvolumeName                ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.name"`
+	K8sPersistentvolumeReclaimPolicy       ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.reclaim_policy"`
+	K8sPersistentvolumeUID                 ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.uid"`
+	K8sPersistentvolumeclaimName           ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.name"`
+	K8sPersistentvolumeclaimUID            ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.uid"`
 	K8sPodName                             ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
 	K8sPodQosClass                         ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
 	K8sPodUID                              ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
@@ -297,6 +1465,7 @@ type ResourceAttributesConfig struct {
 	K8sServiceUID                          ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
 	K8sStatefulsetName                     ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID                      ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	K8sStorageclassName                    ResourceAttributeConfig `mapstructure:"k8s.storageclass.name"`
 	OpenshiftClusterquotaName              ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID               ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 	OsDescription                          ResourceAttributeConfig `mapstructure:"os.description"`
@@ -380,6 +1549,21 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sNodeUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sPersistentvolumeName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeReclaimPolicy: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sPodName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -428,6 +1612,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sStatefulsetUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sStorageclassName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -449,9 +1636,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

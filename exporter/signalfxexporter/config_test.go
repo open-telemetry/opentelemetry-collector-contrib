@@ -339,7 +339,7 @@ func TestConfigGetIngestURL(t *testing.T) {
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "ingest.us0.signalfx.com",
+				Host:   "ingest.us0.observability.splunkcloud.com",
 				Path:   "",
 			},
 		},
@@ -347,11 +347,11 @@ func TestConfigGetIngestURL(t *testing.T) {
 			name: "Test URL overrides",
 			cfg: &Config{
 				Realm:     "us0",
-				IngestURL: "https://ingest.us1.signalfx.com/",
+				IngestURL: "https://ingest.us1.observability.splunkcloud.com/",
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "ingest.us1.signalfx.com",
+				Host:   "ingest.us1.observability.splunkcloud.com",
 				Path:   "/",
 			},
 		},
@@ -390,18 +390,18 @@ func TestConfigGetAPIURL(t *testing.T) {
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "api.us0.signalfx.com",
+				Host:   "api.us0.observability.splunkcloud.com",
 			},
 		},
 		{
 			name: "Test URL overrides",
 			cfg: &Config{
 				Realm:  "us0",
-				APIURL: "https://api.us1.signalfx.com/",
+				APIURL: "https://api.us1.observability.splunkcloud.com/",
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "api.us1.signalfx.com",
+				Host:   "api.us1.observability.splunkcloud.com",
 				Path:   "/",
 			},
 		},
@@ -439,14 +439,14 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "Test empty realm and API URL",
 			cfg: &Config{
 				AccessToken: "access_token",
-				IngestURL:   "https://ingest.us1.signalfx.com/",
+				IngestURL:   "https://ingest.us1.observability.splunkcloud.com/",
 			},
 		},
 		{
 			name: "Test empty realm and Ingest URL",
 			cfg: &Config{
 				AccessToken: "access_token",
-				APIURL:      "https://api.us1.signalfx.com/",
+				APIURL:      "https://api.us1.observability.splunkcloud.com/",
 			},
 		},
 		{

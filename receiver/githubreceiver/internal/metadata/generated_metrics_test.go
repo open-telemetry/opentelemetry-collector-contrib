@@ -67,15 +67,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["VcsChangeCount"] = mb.metricVcsChangeCount.config.AggregationStrategy
-			aggMap["VcsChangeDuration"] = mb.metricVcsChangeDuration.config.AggregationStrategy
-			aggMap["VcsChangeTimeToApproval"] = mb.metricVcsChangeTimeToApproval.config.AggregationStrategy
-			aggMap["VcsChangeTimeToMerge"] = mb.metricVcsChangeTimeToMerge.config.AggregationStrategy
-			aggMap["VcsContributorCount"] = mb.metricVcsContributorCount.config.AggregationStrategy
-			aggMap["VcsRefCount"] = mb.metricVcsRefCount.config.AggregationStrategy
-			aggMap["VcsRefLinesDelta"] = mb.metricVcsRefLinesDelta.config.AggregationStrategy
-			aggMap["VcsRefRevisionsDelta"] = mb.metricVcsRefRevisionsDelta.config.AggregationStrategy
-			aggMap["VcsRefTime"] = mb.metricVcsRefTime.config.AggregationStrategy
+			aggMap["vcs.change.count"] = mb.metricVcsChangeCount.config.AggregationStrategy
+			aggMap["vcs.change.duration"] = mb.metricVcsChangeDuration.config.AggregationStrategy
+			aggMap["vcs.change.time_to_approval"] = mb.metricVcsChangeTimeToApproval.config.AggregationStrategy
+			aggMap["vcs.change.time_to_merge"] = mb.metricVcsChangeTimeToMerge.config.AggregationStrategy
+			aggMap["vcs.contributor.count"] = mb.metricVcsContributorCount.config.AggregationStrategy
+			aggMap["vcs.ref.count"] = mb.metricVcsRefCount.config.AggregationStrategy
+			aggMap["vcs.ref.lines_delta"] = mb.metricVcsRefLinesDelta.config.AggregationStrategy
+			aggMap["vcs.ref.revisions_delta"] = mb.metricVcsRefRevisionsDelta.config.AggregationStrategy
+			aggMap["vcs.ref.time"] = mb.metricVcsRefTime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

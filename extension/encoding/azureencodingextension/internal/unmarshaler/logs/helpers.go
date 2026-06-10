@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -223,4 +224,19 @@ func parseUnixTimestamp(s string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return time.Unix(ts, 0).UTC(), nil
+}
+
+// unmarshalStringOrObjectJSON handles Azure properties fields that can be either
+// a JSON object or a stringified JSON string (where Azure wraps the object in quotes).
+// Some Azure Event Hub sources emit `"properties": "{\"key\":\"value\"}"` instead of
+// `"properties": {"key":"value"}`.
+func unmarshalStringOrObjectJSON(data []byte, v any) error {
+	if len(data) > 1 && data[0] == '"' {
+		var s string
+		if err := jsoniter.ConfigFastest.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		data = []byte(s)
+	}
+	return jsoniter.ConfigFastest.Unmarshal(data, v)
 }

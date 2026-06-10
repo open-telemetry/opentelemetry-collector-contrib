@@ -5,8 +5,10 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,6 +38,8 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 		Auth: Authentication{
 			Type: ConnectionString,
 		},
@@ -76,7 +80,9 @@ func createLogsExporter(ctx context.Context,
 		config,
 		azBlobExporter.ConsumeLogs,
 		exporterhelper.WithStart(azBlobExporter.start),
-		exporterhelper.WithRetry(cfg.BackOffConfig))
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings))
 }
 
 func createMetricsExporter(ctx context.Context,
@@ -90,7 +96,9 @@ func createMetricsExporter(ctx context.Context,
 		config,
 		azBlobExporter.ConsumeMetrics,
 		exporterhelper.WithStart(azBlobExporter.start),
-		exporterhelper.WithRetry(cfg.BackOffConfig))
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings))
 }
 
 func createTracesExporter(ctx context.Context,
@@ -105,5 +113,7 @@ func createTracesExporter(ctx context.Context,
 		config,
 		azBlobExporter.ConsumeTraces,
 		exporterhelper.WithStart(azBlobExporter.start),
-		exporterhelper.WithRetry(cfg.BackOffConfig))
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings))
 }

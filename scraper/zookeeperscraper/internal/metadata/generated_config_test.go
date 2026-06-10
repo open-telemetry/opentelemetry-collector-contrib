@@ -20,58 +20,62 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ZookeeperConnectionActive: MetricConfig{
+					ZookeeperConnectionActive: ZookeeperConnectionActiveMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
+					ZookeeperDataTreeEphemeralNodeCount: ZookeeperDataTreeEphemeralNodeCountMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperDataTreeSize: MetricConfig{
+					ZookeeperDataTreeSize: ZookeeperDataTreeSizeMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperFileDescriptorLimit: MetricConfig{
+					ZookeeperFileDescriptorLimit: ZookeeperFileDescriptorLimitMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperFileDescriptorOpen: MetricConfig{
+					ZookeeperFileDescriptorOpen: ZookeeperFileDescriptorOpenMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperFollowerCount: MetricConfig{
+					ZookeeperFollowerCount: ZookeeperFollowerCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ZookeeperFollowerCountMetricAttributeKey{ZookeeperFollowerCountMetricAttributeKeyState},
+					},
+					ZookeeperFsyncExceededThresholdCount: ZookeeperFsyncExceededThresholdCountMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperFsyncExceededThresholdCount: MetricConfig{
+					ZookeeperLatencyAvg: ZookeeperLatencyAvgMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperLatencyAvg: MetricConfig{
+					ZookeeperLatencyMax: ZookeeperLatencyMaxMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperLatencyMax: MetricConfig{
+					ZookeeperLatencyMin: ZookeeperLatencyMinMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperLatencyMin: MetricConfig{
+					ZookeeperPacketCount: ZookeeperPacketCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ZookeeperPacketCountMetricAttributeKey{ZookeeperPacketCountMetricAttributeKeyDirection},
+					},
+					ZookeeperRequestActive: ZookeeperRequestActiveMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperPacketCount: MetricConfig{
+					ZookeeperRuok: ZookeeperRuokMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperRequestActive: MetricConfig{
+					ZookeeperSyncPending: ZookeeperSyncPendingMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperRuok: MetricConfig{
+					ZookeeperWatchCount: ZookeeperWatchCountMetricConfig{
 						Enabled: true,
 					},
-					ZookeeperSyncPending: MetricConfig{
-						Enabled: true,
-					},
-					ZookeeperWatchCount: MetricConfig{
-						Enabled: true,
-					},
-					ZookeeperZnodeCount: MetricConfig{
+					ZookeeperZnodeCount: ZookeeperZnodeCountMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -85,52 +89,56 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ZookeeperConnectionActive: MetricConfig{
+					ZookeeperConnectionActive: ZookeeperConnectionActiveMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
+					ZookeeperDataTreeEphemeralNodeCount: ZookeeperDataTreeEphemeralNodeCountMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperDataTreeSize: MetricConfig{
+					ZookeeperDataTreeSize: ZookeeperDataTreeSizeMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperFileDescriptorLimit: MetricConfig{
+					ZookeeperFileDescriptorLimit: ZookeeperFileDescriptorLimitMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperFileDescriptorOpen: MetricConfig{
+					ZookeeperFileDescriptorOpen: ZookeeperFileDescriptorOpenMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperFollowerCount: MetricConfig{
+					ZookeeperFollowerCount: ZookeeperFollowerCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ZookeeperFollowerCountMetricAttributeKey{ZookeeperFollowerCountMetricAttributeKeyState},
+					},
+					ZookeeperFsyncExceededThresholdCount: ZookeeperFsyncExceededThresholdCountMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperFsyncExceededThresholdCount: MetricConfig{
+					ZookeeperLatencyAvg: ZookeeperLatencyAvgMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperLatencyAvg: MetricConfig{
+					ZookeeperLatencyMax: ZookeeperLatencyMaxMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperLatencyMax: MetricConfig{
+					ZookeeperLatencyMin: ZookeeperLatencyMinMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperLatencyMin: MetricConfig{
+					ZookeeperPacketCount: ZookeeperPacketCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ZookeeperPacketCountMetricAttributeKey{ZookeeperPacketCountMetricAttributeKeyDirection},
+					},
+					ZookeeperRequestActive: ZookeeperRequestActiveMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperPacketCount: MetricConfig{
+					ZookeeperRuok: ZookeeperRuokMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperRequestActive: MetricConfig{
+					ZookeeperSyncPending: ZookeeperSyncPendingMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperRuok: MetricConfig{
+					ZookeeperWatchCount: ZookeeperWatchCountMetricConfig{
 						Enabled: false,
 					},
-					ZookeeperSyncPending: MetricConfig{
-						Enabled: false,
-					},
-					ZookeeperWatchCount: MetricConfig{
-						Enabled: false,
-					},
-					ZookeeperZnodeCount: MetricConfig{
+					ZookeeperZnodeCount: ZookeeperZnodeCountMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -144,7 +152,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ZookeeperConnectionActiveMetricConfig{}, ZookeeperDataTreeEphemeralNodeCountMetricConfig{}, ZookeeperDataTreeSizeMetricConfig{}, ZookeeperFileDescriptorLimitMetricConfig{}, ZookeeperFileDescriptorOpenMetricConfig{}, ZookeeperFollowerCountMetricConfig{}, ZookeeperFsyncExceededThresholdCountMetricConfig{}, ZookeeperLatencyAvgMetricConfig{}, ZookeeperLatencyMaxMetricConfig{}, ZookeeperLatencyMinMetricConfig{}, ZookeeperPacketCountMetricConfig{}, ZookeeperRequestActiveMetricConfig{}, ZookeeperRuokMetricConfig{}, ZookeeperSyncPendingMetricConfig{}, ZookeeperWatchCountMetricConfig{}, ZookeeperZnodeCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -155,7 +163,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -852,6 +852,9 @@ func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.Expone
 	assert.Equal(t, 1, dps.Len())
 	dp := dps.At(0)
 
+	assert.NotZero(t, dp.Timestamp(), "timestamp must be set")
+	assert.NotZero(t, dp.StartTimestamp(), "start timestamp must be set")
+
 	// ignore time
 	dp.SetTimestamp(pcommon.Timestamp(0))
 	dp.SetStartTimestamp(pcommon.Timestamp(0))

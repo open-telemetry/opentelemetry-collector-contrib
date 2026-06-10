@@ -14,7 +14,14 @@ COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
-FOR_GROUP_TARGET=for-$(GROUP)-target
+# If GROUP contains a slash (e.g. "receiver/hostmetrics" or a space-separated list
+# of module paths emitted by compute-ci-scope.sh), invoke the per-module delegation
+# targets directly. Otherwise, map the group name to its for-<name>-target rule.
+ifneq ($(findstring /,$(GROUP)),)
+    FOR_GROUP_TARGET=$(GROUP)
+else
+    FOR_GROUP_TARGET=for-$(GROUP)-target
+endif
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
@@ -395,10 +402,12 @@ docker-golden:
 
 GITHUBGEN_ARGS ?= -skipgithub
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gengithub
 gengithub:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates distribution component lists and data in reports/distributions
 .PHONY: gendistributions
 gendistributions:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) distributions
@@ -407,18 +416,22 @@ gendistributions:
 gencodecov:
 	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
+# Regenerates all code, then updates CODEOWNERS, issue templates and component labels in .github
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gencodeowners
 gencodeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates CODEOWNERS in .github
 .PHONY: codeowners
 codeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) codeowners
 
+# Updates chloggen component lists in .chloggen/config.yaml
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) chloggen-components
