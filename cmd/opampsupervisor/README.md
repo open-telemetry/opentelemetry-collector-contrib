@@ -182,8 +182,8 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 |--------------------------------|----------------------------------------------------------------------------------|
 | AcceptsRemoteConfig            | ✅                                                                               |
 | ReportsEffectiveConfig         | ✅                                                                               |
-| AcceptsPackages                | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34734> |
-| ReportsPackageStatuses         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38727> |
+| AcceptsPackages                | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272> |
+| ReportsPackageStatuses         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272> |
 | ReportsOwnTraces               | ✅                                                                               |
 | ReportsOwnMetrics              | ✅                                                                               |
 | ReportsOwnLogs                 | ✅                                                                               |
