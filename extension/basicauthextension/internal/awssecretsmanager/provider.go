@@ -75,6 +75,7 @@ func (r *Resolver) Start(ctx context.Context) error {
 	if err := r.onFetch(raw); err != nil {
 		return fmt.Errorf("initial secret processing: %w", err)
 	}
+	r.logger.Debug("initial secret fetch successful", zap.String("secret_arn", r.secretARN))
 
 	loopCtx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel

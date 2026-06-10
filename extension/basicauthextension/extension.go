@@ -55,7 +55,7 @@ var (
 type basicAuthServer struct {
 	htpasswd    *HtpasswdSettings
 	matchFunc   atomic.Pointer[func(string, string) bool]
-	awsResolver *awssecretsmanager.Resolver
+	awsSecretResolver *awssecretsmanager.Resolver
 	logger      *zap.Logger
 }
 
@@ -76,7 +76,7 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		if err := resolver.Start(ctx); err != nil {
 			return err
 		}
-		ba.awsResolver = resolver
+		ba.awsSecretResolver = resolver
 		return nil
 	}
 
@@ -108,8 +108,8 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (ba *basicAuthServer) Shutdown(_ context.Context) error {
-	if ba.awsResolver != nil {
-		return ba.awsResolver.Shutdown()
+	if ba.awsSecretResolver != nil {
+		return ba.awsSecretResolver.Shutdown()
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ type basicAuthClient struct {
 	logger           *zap.Logger
 	usernameResolver credentialsfile.ValueResolver
 	passwordResolver credentialsfile.ValueResolver
-	awsResolver      *awssecretsmanager.Resolver
+	awsSecretResolver      *awssecretsmanager.Resolver
 	creds            atomic.Pointer[awsCredentials]
 }
 
@@ -167,36 +167,11 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 	if ca.AWSSecret != nil {
 		cfg := ca.AWSSecret
-		cr := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger,
-			func(raw string) error {
-				var parsed map[string]any
-				if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-					return fmt.Errorf("parse secret as JSON: %w", err)
-				}
-				uVal, ok := parsed[cfg.UsernameKey]
-				if !ok {
-					return fmt.Errorf("key %q not found in secret JSON", cfg.UsernameKey)
-				}
-				u, ok := uVal.(string)
-				if !ok {
-					return fmt.Errorf("key %q in secret is not a string", cfg.UsernameKey)
-				}
-				pVal, ok := parsed[cfg.PasswordKey]
-				if !ok {
-					return fmt.Errorf("key %q not found in secret JSON", cfg.PasswordKey)
-				}
-				p, ok := pVal.(string)
-				if !ok {
-					return fmt.Errorf("key %q in secret is not a string", cfg.PasswordKey)
-				}
-				ba.creds.CompareAndSwap(ba.creds.Load(), &awsCredentials{username: u, password: p})
-				return nil
-			},
-		)
-		if err := cr.Start(ctx); err != nil {
+		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, ba.parseAWSSecret)
+		if err := clientResolver.Start(ctx); err != nil {
 			return fmt.Errorf("start AWS secret resolver: %w", err)
 		}
-		ba.awsResolver = cr
+		ba.awsSecretResolver = clientResolver
 	}
 
 	return nil
@@ -210,8 +185,8 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	if ba.passwordResolver != nil {
 		errs = append(errs, ba.passwordResolver.Shutdown())
 	}
-	if ba.awsResolver != nil {
-		errs = append(errs, ba.awsResolver.Shutdown())
+	if ba.awsSecretResolver != nil {
+		errs = append(errs, ba.awsSecretResolver.Shutdown())
 	}
 	return errors.Join(errs...)
 }
@@ -240,6 +215,32 @@ func (ba *basicAuthClient) Password() string {
 		return string(ba.clientAuth.Password)
 	}
 	return ""
+}
+
+func (ba *basicAuthClient) parseAWSSecret(raw string) error {
+	cfg := ba.clientAuth.AWSSecret
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return fmt.Errorf("parse secret as JSON: %w", err)
+	}
+	uVal, ok := parsed[cfg.UsernameKey]
+	if !ok {
+		return fmt.Errorf("key %q not found in secret JSON", cfg.UsernameKey)
+	}
+	u, ok := uVal.(string)
+	if !ok {
+		return fmt.Errorf("key %q in secret is not a string", cfg.UsernameKey)
+	}
+	pVal, ok := parsed[cfg.PasswordKey]
+	if !ok {
+		return fmt.Errorf("key %q not found in secret JSON", cfg.PasswordKey)
+	}
+	p, ok := pVal.(string)
+	if !ok {
+		return fmt.Errorf("key %q in secret is not a string", cfg.PasswordKey)
+	}
+	ba.creds.CompareAndSwap(ba.creds.Load(), &awsCredentials{username: u, password: p})
+	return nil
 }
 
 func (ba *basicAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {

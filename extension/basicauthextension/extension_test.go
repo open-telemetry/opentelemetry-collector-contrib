@@ -366,7 +366,7 @@ func TestClientAuth_AWSSecret(t *testing.T) {
 	)
 	cr.Client = mock
 	require.NoError(t, cr.Start(t.Context()))
-	ext.awsResolver = cr
+	ext.awsSecretResolver = cr
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
 	assert.Equal(t, "admin", ext.Username())
@@ -412,7 +412,7 @@ func TestServerAuth_AWSSecret(t *testing.T) {
 	)
 	resolver.Client = mock
 	require.NoError(t, resolver.Start(t.Context()))
-	ext.awsResolver = resolver
+	ext.awsSecretResolver = resolver
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
 	auth := "dGVzdHVzZXI6cGFzc3dvcmQ=" // testuser:password
