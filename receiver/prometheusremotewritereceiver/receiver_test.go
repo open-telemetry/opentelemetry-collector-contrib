@@ -2634,6 +2634,117 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			// Regression test: exemplars from different label-set variants of the
+			// same counter must be attached to their matching datapoint, not At(0).
+			name: "counter metric with exemplars for multiple label-set variants",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"__name__", "http_requests_total", // 5, 6
+					"status", "200", "500", // 7, 8, 9
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbb", // 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// samples for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Samples:    []writev2.Sample{{Value: 100, Timestamp: 1}},
+					},
+					{
+						// samples for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+					},
+					{
+						// disconnected exemplar for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Exemplars: []writev2.Exemplar{{
+							Value:      100,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 11, 12, 13},
+						}},
+					},
+					{
+						// disconnected exemplar for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Exemplars: []writev2.Exemplar{{
+							Value:      5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 14, 12, 15},
+						}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "production")
+				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("http_requests_total")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				// datapoint for status=200 must get only trace-A
+				dp200 := sum.DataPoints().AppendEmpty()
+				dp200.SetDoubleValue(100)
+				dp200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp200.Attributes().PutStr("status", "200")
+				ex200 := dp200.Exemplars().AppendEmpty()
+				ex200.SetDoubleValue(100)
+				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				var tidA [16]byte
+				copy(tidA[:], traceA)
+				ex200.SetTraceID(pcommon.TraceID(tidA))
+				spanA, _ := hex.DecodeString("aaaaaaaaaaaaaaaa")
+				var sidA [8]byte
+				copy(sidA[:], spanA)
+				ex200.SetSpanID(pcommon.SpanID(sidA))
+
+				// datapoint for status=500 must get only trace-B
+				dp500 := sum.DataPoints().AppendEmpty()
+				dp500.SetDoubleValue(5)
+				dp500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp500.Attributes().PutStr("status", "500")
+				ex500 := dp500.Exemplars().AppendEmpty()
+				ex500.SetDoubleValue(5)
+				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				var tidB [16]byte
+				copy(tidB[:], traceB)
+				ex500.SetTraceID(pcommon.TraceID(tidB))
+				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
+				var sidB [8]byte
+				copy(sidB[:], spanB)
+				ex500.SetSpanID(pcommon.SpanID(sidB))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
 			name: "service with only target_info metric",
 			request: &writev2.Request{
 				Symbols: []string{
