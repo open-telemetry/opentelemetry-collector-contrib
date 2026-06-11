@@ -33,7 +33,7 @@ components:
         - attributes
         - cumulativetodelta
         - deltatocumulative
-        - deltatorate
+        - delta_to_rate
         - drain
         - filter
         - groupbyattrs
