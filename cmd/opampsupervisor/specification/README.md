@@ -174,6 +174,9 @@ agent:
   # Values here override the values in the agent description retrieved from the collector's
   # OpAMP extension (self-reported by the Collector).
   description:
+    # Passed to the Supervisor-injected OpAMP extension to copy the collector's 
+    # resource attributes into the non-identifying attributes.
+    include_resource_attributes: true
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:

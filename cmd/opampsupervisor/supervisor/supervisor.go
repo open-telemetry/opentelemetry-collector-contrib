@@ -1276,6 +1276,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 		"PID":                        s.pidProvider.PID(),
 		"PPIDPollInterval":           orphanPollInterval,
 		"ReportsAvailableComponents": s.config.Capabilities.ReportsAvailableComponents,
+		"IncludeResourceAttributes":  s.config.Agent.Description.IncludeResourceAttributes,
 	}
 	err := s.opampextensionTemplate.Execute(
 		&cfg,
