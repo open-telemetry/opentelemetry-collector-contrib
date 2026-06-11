@@ -101,6 +101,44 @@ func TestExplicitToNHCBHistogram_BucketCountsRoundTrip(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+// TestExplicitToNHCBHistogram_CountBelowBucketSum guards the negative-bucket
+// regression: when a source's Count is below its bucket sum, deriving the total
+// from the buckets (not Count) keeps the +Inf bucket non-negative so remote write
+// accepts it.
+func TestExplicitToNHCBHistogram_CountBelowBucketSum(t *testing.T) {
+	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
+	metric := pmetric.NewMetric()
+	metric.SetName("test_hist")
+	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	pt := metric.Histogram().DataPoints().AppendEmpty()
+	pt.SetTimestamp(ts)
+	pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4}) // bucket sum 10
+	pt.SetCount(5)                                  // inconsistent: below finite cumulative (6)
+	pt.SetSum(42.5)
+
+	h, err := explicitToNHCBHistogram(pt)
+	require.NoError(t, err)
+
+	ih := h.ToIntHistogram()
+	require.NotNil(t, ih)
+	require.NoError(t, ih.Validate(), "converted histogram must be valid (no negative buckets)")
+
+	type bucket struct {
+		upper float64
+		cum   uint64
+	}
+	var got []bucket
+	for it := ih.CumulativeBucketIterator(); it.Next(); {
+		b := it.At()
+		got = append(got, bucket{b.Upper, b.Count})
+	}
+	// Total derived from buckets (10), so the +Inf bucket is the overflow (4), not negative.
+	want := []bucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}}
+	assert.Equal(t, want, got)
+	assert.Equal(t, uint64(10), h.GetCountInt(), "count derived from bucket sum")
+}
+
 func TestExplicitToNHCBHistogram_NoSum(t *testing.T) {
 	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
 	metric := pmetric.NewMetric()
