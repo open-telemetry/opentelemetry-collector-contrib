@@ -12,6 +12,12 @@ import (
 	adsi "github.com/go-adsi/adsi"
 )
 
+var _ Client = (*adsiClient)(nil)
+var _ Container = (*adsiContainer)(nil)
+var _ Object = (*adObject)(nil)
+var _ ObjectIter = (*adObjectIter)(nil)
+var _ RuntimeInfo = (*adRuntimeInfo)(nil)
+
 type adsiClient struct{}
 
 func (c *adsiClient) Open(path string) (Container, error) {
