@@ -45,7 +45,7 @@ func TestLeafSpanPruning_BasicAggregation(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -76,7 +76,7 @@ func TestLeafSpanPruning_BelowThreshold(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 1, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 1, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 2, originalSpanCount) // 1 parent + 1 leaf span
 
@@ -544,7 +544,7 @@ func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, met
 	return hist
 }
 
-func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
+func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, attrs map[string]string) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -565,7 +565,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
 		span.SetParentSpanID(parentSpanID)
-		span.SetName(spanName)
+		span.SetName("SELECT")
 		span.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
 		span.SetEndTimestamp(pcommon.Timestamp(1000000100 + int64(i)*100))
 		for k, v := range attrs {
@@ -2268,7 +2268,7 @@ func TestOTTLConditions_NoConditions(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	require.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -2297,7 +2297,7 @@ func TestOTTLConditions_ConditionMatches(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithResourceAttr(t, "loki-query-engine", 3)
+	td := createTestTraceWithResourceAttr(t, "loki-query-engine")
 	originalSpanCount := countSpans(td)
 	require.Equal(t, 4, originalSpanCount)
 
@@ -2318,7 +2318,7 @@ func TestOTTLConditions_ConditionDoesNotMatch(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithResourceAttr(t, "other-service", 3)
+	td := createTestTraceWithResourceAttr(t, "other-service")
 	originalSpanCount := countSpans(td)
 	require.Equal(t, 4, originalSpanCount)
 
@@ -2339,7 +2339,7 @@ func TestOTTLConditions_SpanAttributeCondition(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{
 		"db.operation": "select",
 		"db.system":    "postgresql",
 	})
@@ -2364,7 +2364,7 @@ func TestOTTLConditions_MultipleConditions(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithResourceAttr(t, "tempo-query-engine", 3)
+	td := createTestTraceWithResourceAttr(t, "tempo-query-engine")
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
@@ -2469,7 +2469,7 @@ func TestOTTLConditions_TracesSkippedMetric(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithResourceAttr(t, "other-service", 3)
+	td := createTestTraceWithResourceAttr(t, "other-service")
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
@@ -2494,7 +2494,7 @@ func TestOTTLConditions_SpanNameCondition(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	require.Equal(t, 4, originalSpanCount)
 
@@ -2534,7 +2534,7 @@ func TestOTTLConditions_NoSpansMatch(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 
 	err = tp.ConsumeTraces(t.Context(), td)
@@ -2572,7 +2572,7 @@ func TestOTTLConditions_EvalErrorLogging(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, p.shutdown(context.Background())) }) //nolint:usetesting
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 
 	resultTd, err := p.processTraces(t.Context(), td)
@@ -2593,7 +2593,7 @@ func TestOTTLConditions_EvalErrorLogging(t *testing.T) {
 	assert.True(t, foundEvalErrorLog, "expected at least one OTTL condition evaluation error log")
 }
 
-func createTestTraceWithResourceAttr(t *testing.T, serviceName string, numLeafSpans int) ptrace.Traces {
+func createTestTraceWithResourceAttr(t *testing.T, serviceName string) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -2608,7 +2608,7 @@ func createTestTraceWithResourceAttr(t *testing.T, serviceName string, numLeafSp
 	parentSpan.SetSpanID(parentSpanID)
 	parentSpan.SetName("parent")
 
-	for i := range numLeafSpans {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
