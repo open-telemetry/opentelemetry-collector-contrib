@@ -1,0 +1,5 @@
+change_type: 'bug_fix'
+component: extension/datadogextension
+note: "Fix `tls.insecure_skip_verify` being ignored"
+issues: [48992]
+change_logs: [user]
