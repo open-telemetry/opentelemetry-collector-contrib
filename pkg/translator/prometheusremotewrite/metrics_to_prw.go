@@ -27,6 +27,12 @@ type Settings struct {
 	AddMetricSuffixes   bool
 	TranslationStrategy string
 	SendMetadata        bool
+	// KeepIdentifyingResourceAttributes preserves service.name,
+	// service.namespace, and service.instance.id as labels on target_info in
+	// addition to mapping them into the job and instance labels, keeping
+	// target_info compliant with the OpenTelemetry service resource semantic
+	// conventions (https://opentelemetry.io/docs/specs/semconv/resource/service/).
+	KeepIdentifyingResourceAttributes bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.

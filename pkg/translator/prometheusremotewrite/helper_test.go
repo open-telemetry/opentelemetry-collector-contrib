@@ -816,6 +816,21 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: 0,
 		},
+		{
+			desc:      "KeepIdentifyingResourceAttributes preserves service.* on target_info",
+			resource:  resourceWithServiceAttrs,
+			timestamp: testdata.TestMetricStartTimestamp,
+			settings:  Settings{KeepIdentifyingResourceAttributes: true},
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: model.JobLabel, Value: "service-namespace/service-name"},
+				{Name: "resource_attr", Value: "resource-attr-val-1"},
+				{Name: "service_instance_id", Value: "service-instance-id"},
+				{Name: "service_name", Value: "service-name"},
+				{Name: "service_namespace", Value: "service-namespace"},
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
