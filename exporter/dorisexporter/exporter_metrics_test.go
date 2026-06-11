@@ -27,7 +27,8 @@ func TestPushMetricData(t *testing.T) {
 	config.CreateSchema = false
 	require.NoError(t, config.Validate())
 
-	exporter := newMetricsExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
+	exporter, err := newMetricsExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 
 	ctx := t.Context()
 

@@ -44,10 +44,14 @@ type logsExporter struct {
 	*commonExporter
 }
 
-func newLogsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *logsExporter {
-	return &logsExporter{
-		commonExporter: newExporter(logger, cfg, set, "LOG"),
+func newLogsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) (*logsExporter, error) {
+	commonExporter, err := newExporter(logger, cfg, set, "LOG")
+	if err != nil {
+		return nil, err
 	}
+	return &logsExporter{
+		commonExporter: commonExporter,
+	}, nil
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) error {
@@ -176,6 +180,8 @@ func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog, la
 		if response.duplication() {
 			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(logs)))
 		}
+
+		e.reportFilteredRows(ctx, &response, label)
 
 		if e.cfg.LogResponse {
 			e.logger.Info("log response:\n" + string(body))
