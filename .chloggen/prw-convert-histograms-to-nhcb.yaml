@@ -1,0 +1,34 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/prometheusremotewrite
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `convert_histograms_to_nhcb` to convert explicit-bucket (classic) histograms into Native Histograms with Custom Buckets (NHCB) on export, with `keep_classic_histograms` to emit both representations during migration.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [33661]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  When `convert_histograms_to_nhcb` is set, each OTLP explicit-bucket histogram
+  is converted to a single NHCB series (schema -53) carrying the bounds as
+  CustomValues, instead of the classic `_bucket`/`_sum`/`_count` fan-out. Setting
+  `keep_classic_histograms: true` additionally emits the classic series so a
+  migration can run both in parallel. Implemented for both the RW1 and RW2 write
+  paths; reuses Prometheus' `util/convertnhcb` converter for wire-compatible
+  encoding.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
