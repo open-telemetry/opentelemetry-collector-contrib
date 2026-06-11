@@ -547,8 +547,8 @@ var MetricsInfo = metricsInfo{
 	SqlserverLockRequestRate: metricInfo{
 		Name: "sqlserver.lock.request.rate",
 	},
-	SqlserverLockTimeoutGt0Rate: metricInfo{
-		Name: "sqlserver.lock.timeout.gt0.rate",
+	SqlserverLockTimeoutNonzeroRate: metricInfo{
+		Name: "sqlserver.lock.timeout.nonzero.rate",
 	},
 	SqlserverLockTimeoutRate: metricInfo{
 		Name: "sqlserver.lock.timeout.rate",
@@ -704,7 +704,7 @@ type metricsInfo struct {
 	SqlserverLockEscalationRate                 metricInfo
 	SqlserverLockMemory                         metricInfo
 	SqlserverLockRequestRate                    metricInfo
-	SqlserverLockTimeoutGt0Rate                 metricInfo
+	SqlserverLockTimeoutNonzeroRate             metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
@@ -1011,8 +1011,8 @@ type metricSqlserverConnectionResetRate struct {
 // init fills sqlserver.connection.reset.rate metric with initial data.
 func (m *metricSqlserverConnectionResetRate) init() {
 	m.data.SetName("sqlserver.connection.reset.rate")
-	m.data.SetDescription("Total number of logical connections reset.")
-	m.data.SetUnit("{resets}/s")
+	m.data.SetDescription("Number of logical connections reset per second.")
+	m.data.SetUnit("{connections}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -2321,7 +2321,7 @@ type metricSqlserverLockEscalationRate struct {
 // init fills sqlserver.lock.escalation.rate metric with initial data.
 func (m *metricSqlserverLockEscalationRate) init() {
 	m.data.SetName("sqlserver.lock.escalation.rate")
-	m.data.SetDescription("Number of times locks on a table were escalated to a larger granularity.")
+	m.data.SetDescription("Number of lock escalations per second (locks on a table escalated to a larger granularity).")
 	m.data.SetUnit("{escalations}/s")
 	m.data.SetEmptyGauge()
 }
@@ -2462,21 +2462,21 @@ func newMetricSqlserverLockRequestRate(cfg SqlserverLockRequestRateMetricConfig)
 	return m
 }
 
-type metricSqlserverLockTimeoutGt0Rate struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   SqlserverLockTimeoutGt0RateMetricConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+type metricSqlserverLockTimeoutNonzeroRate struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   SqlserverLockTimeoutNonzeroRateMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
-// init fills sqlserver.lock.timeout.gt0.rate metric with initial data.
-func (m *metricSqlserverLockTimeoutGt0Rate) init() {
-	m.data.SetName("sqlserver.lock.timeout.gt0.rate")
-	m.data.SetDescription("Number of lock requests per second that timed out after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which includes immediate (zero-wait) timeouts.")
+// init fills sqlserver.lock.timeout.nonzero.rate metric with initial data.
+func (m *metricSqlserverLockTimeoutNonzeroRate) init() {
+	m.data.SetName("sqlserver.lock.timeout.nonzero.rate")
+	m.data.SetDescription("Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.")
 	m.data.SetUnit("{timeouts}/s")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverLockTimeoutGt0Rate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverLockTimeoutNonzeroRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2487,14 +2487,14 @@ func (m *metricSqlserverLockTimeoutGt0Rate) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverLockTimeoutGt0Rate) updateCapacity() {
+func (m *metricSqlserverLockTimeoutNonzeroRate) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverLockTimeoutGt0Rate) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverLockTimeoutNonzeroRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2502,8 +2502,8 @@ func (m *metricSqlserverLockTimeoutGt0Rate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSqlserverLockTimeoutGt0Rate(cfg SqlserverLockTimeoutGt0RateMetricConfig) metricSqlserverLockTimeoutGt0Rate {
-	m := metricSqlserverLockTimeoutGt0Rate{config: cfg}
+func newMetricSqlserverLockTimeoutNonzeroRate(cfg SqlserverLockTimeoutNonzeroRateMetricConfig) metricSqlserverLockTimeoutNonzeroRate {
+	m := metricSqlserverLockTimeoutNonzeroRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2723,8 +2723,8 @@ type metricSqlserverLockWaitTimeTotal struct {
 // init fills sqlserver.lock.wait_time.total metric with initial data.
 func (m *metricSqlserverLockWaitTimeTotal) init() {
 	m.data.SetName("sqlserver.lock.wait_time.total")
-	m.data.SetDescription("Total wait time in milliseconds for locks since the last server restart.")
-	m.data.SetUnit("ms")
+	m.data.SetDescription("Total wait time in seconds for locks since the last server restart.")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -5053,7 +5053,7 @@ type MetricsBuilder struct {
 	metricSqlserverLockEscalationRate                 metricSqlserverLockEscalationRate
 	metricSqlserverLockMemory                         metricSqlserverLockMemory
 	metricSqlserverLockRequestRate                    metricSqlserverLockRequestRate
-	metricSqlserverLockTimeoutGt0Rate                 metricSqlserverLockTimeoutGt0Rate
+	metricSqlserverLockTimeoutNonzeroRate             metricSqlserverLockTimeoutNonzeroRate
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
@@ -5148,7 +5148,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLockEscalationRate:                 newMetricSqlserverLockEscalationRate(mbc.Metrics.SqlserverLockEscalationRate),
 		metricSqlserverLockMemory:                         newMetricSqlserverLockMemory(mbc.Metrics.SqlserverLockMemory),
 		metricSqlserverLockRequestRate:                    newMetricSqlserverLockRequestRate(mbc.Metrics.SqlserverLockRequestRate),
-		metricSqlserverLockTimeoutGt0Rate:                 newMetricSqlserverLockTimeoutGt0Rate(mbc.Metrics.SqlserverLockTimeoutGt0Rate),
+		metricSqlserverLockTimeoutNonzeroRate:             newMetricSqlserverLockTimeoutNonzeroRate(mbc.Metrics.SqlserverLockTimeoutNonzeroRate),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
@@ -5332,7 +5332,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLockEscalationRate.emit(ils.Metrics())
 	mb.metricSqlserverLockMemory.emit(ils.Metrics())
 	mb.metricSqlserverLockRequestRate.emit(ils.Metrics())
-	mb.metricSqlserverLockTimeoutGt0Rate.emit(ils.Metrics())
+	mb.metricSqlserverLockTimeoutNonzeroRate.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
@@ -5570,9 +5570,9 @@ func (mb *MetricsBuilder) RecordSqlserverLockRequestRateDataPoint(ts pcommon.Tim
 	mb.metricSqlserverLockRequestRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverLockTimeoutGt0RateDataPoint adds a data point to sqlserver.lock.timeout.gt0.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLockTimeoutGt0RateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockTimeoutGt0Rate.recordDataPoint(mb.startTime, ts, val)
+// RecordSqlserverLockTimeoutNonzeroRateDataPoint adds a data point to sqlserver.lock.timeout.nonzero.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLockTimeoutNonzeroRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLockTimeoutNonzeroRate.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.

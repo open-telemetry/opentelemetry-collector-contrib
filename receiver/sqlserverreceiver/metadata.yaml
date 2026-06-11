@@ -477,9 +477,9 @@ metrics:
       input_type: string
   sqlserver.connection.reset.rate:
     enabled: false
-    description: Total number of logical connections reset.
+    description: Number of logical connections reset per second.
     stability: development
-    unit: "{resets}/s"
+    unit: "{connections}/s"
     gauge:
       value_type: double
     attributes: []
@@ -659,7 +659,7 @@ metrics:
     attributes: [sqlserver.block.type]
   sqlserver.lock.escalation.rate:
     enabled: false
-    description: Number of times locks on a table were escalated to a larger granularity.
+    description: Number of lock escalations per second (locks on a table escalated to a larger granularity).
     stability: development
     unit: "{escalations}/s"
     gauge:
@@ -681,9 +681,9 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.lock.timeout.gt0.rate:
+  sqlserver.lock.timeout.nonzero.rate:
     enabled: false
-    description: Number of lock requests per second that timed out after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which includes immediate (zero-wait) timeouts.
+    description: Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
     stability: development
     unit: "{timeouts}/s"
     gauge:
@@ -724,9 +724,9 @@ metrics:
     extended_documentation: This metric is only available when running on Windows.
   sqlserver.lock.wait_time.total:
     enabled: false
-    description: Total wait time in milliseconds for locks since the last server restart.
+    description: Total wait time in seconds for locks since the last server restart.
     stability: development
-    unit: ms
+    unit: s
     sum:
       monotonic: true
       aggregation_temporality: cumulative

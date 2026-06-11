@@ -272,8 +272,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      sqlserver.lock.timeout.gt0.rate:
-        description: "SqlserverLockTimeoutGt0RateMetricConfig provides config for the sqlserver.lock.timeout.gt0.rate metric."
+      sqlserver.lock.timeout.nonzero.rate:
+        description: "SqlserverLockTimeoutNonzeroRateMetricConfig provides config for the sqlserver.lock.timeout.nonzero.rate metric."
         type: object
         properties:
           enabled:

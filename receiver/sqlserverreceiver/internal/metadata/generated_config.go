@@ -774,13 +774,13 @@ func (ms *SqlserverLockRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// SqlserverLockTimeoutGt0RateMetricConfig provides config for the sqlserver.lock.timeout.gt0.rate metric.
-type SqlserverLockTimeoutGt0RateMetricConfig struct {
+// SqlserverLockTimeoutNonzeroRateMetricConfig provides config for the sqlserver.lock.timeout.nonzero.rate metric.
+type SqlserverLockTimeoutNonzeroRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverLockTimeoutGt0RateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverLockTimeoutNonzeroRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1954,7 +1954,7 @@ type MetricsConfig struct {
 	SqlserverLockEscalationRate                 SqlserverLockEscalationRateMetricConfig                 `mapstructure:"sqlserver.lock.escalation.rate"`
 	SqlserverLockMemory                         SqlserverLockMemoryMetricConfig                         `mapstructure:"sqlserver.lock.memory"`
 	SqlserverLockRequestRate                    SqlserverLockRequestRateMetricConfig                    `mapstructure:"sqlserver.lock.request.rate"`
-	SqlserverLockTimeoutGt0Rate                 SqlserverLockTimeoutGt0RateMetricConfig                 `mapstructure:"sqlserver.lock.timeout.gt0.rate"`
+	SqlserverLockTimeoutNonzeroRate             SqlserverLockTimeoutNonzeroRateMetricConfig             `mapstructure:"sqlserver.lock.timeout.nonzero.rate"`
 	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
@@ -2098,7 +2098,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockRequestRate: SqlserverLockRequestRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverLockTimeoutGt0Rate: SqlserverLockTimeoutGt0RateMetricConfig{
+		SqlserverLockTimeoutNonzeroRate: SqlserverLockTimeoutNonzeroRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{

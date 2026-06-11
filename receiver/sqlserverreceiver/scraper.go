@@ -434,7 +434,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const lockOwnerBlocks = "Lock Owner Blocks"
 	const lockOwnerBlocksAllocated = "Lock Owner Blocks Allocated"
 	const lockRequestsPerSec = "Lock Requests/sec"
-	const lockTimeoutsGt0PerSec = "Lock Timeouts (timeout > 0)/sec"
+	const lockTimeoutsNonzeroPerSec = "Lock Timeouts (timeout > 0)/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
 	const lockWaitCount = "Lock Wait Count"
 	const lockWaitTimeMS = "Lock Wait Time (ms)"
@@ -481,8 +481,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const superLatchPromotionsPerSec = "SuperLatch Promotions/sec"
 	const superLatchDemotionsPerSec = "SuperLatch Demotions/sec"
 
-	// SQLServer:SQL Errors object emits Errors/sec for several error categories.
-	// We only record the aggregate (Total) row.
+	// "SQL Errors" emits Errors/sec for several error categories;
+	// we only record the aggregate (Total) row.
 	const errorsTotalInstance = "Total"
 
 	rows, err := s.client.QueryRows(ctx)
@@ -585,7 +585,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case diskWriteIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(now, row[valueKey]))
 		case errorsPerSec:
-			// SQLServer:SQL Errors object emits Errors/sec for multiple categories
+			// "SQL Errors" emits Errors/sec for multiple categories
 			// (DB Offline Errors, Info Errors, Kill Connection Errors, User Errors, Total).
 			// Record only the Total aggregate to avoid name explosion.
 			if row["instance"] != errorsTotalInstance {
@@ -686,13 +686,13 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLockRequestRateDataPoint(now, val.(float64))
 			}
-		case lockTimeoutsGt0PerSec:
+		case lockTimeoutsNonzeroPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockTimeoutsGt0PerSec)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockTimeoutsNonzeroPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockTimeoutGt0RateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverLockTimeoutNonzeroRateDataPoint(now, val.(float64))
 			}
 		case lockTimeoutsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -716,7 +716,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeMS)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64))
+				// Counter reports milliseconds; emit seconds to match OTel convention.
+				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
 			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)

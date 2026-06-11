@@ -64,7 +64,7 @@ all_set:
       enabled: true
     sqlserver.lock.request.rate:
       enabled: true
-    sqlserver.lock.timeout.gt0.rate:
+    sqlserver.lock.timeout.nonzero.rate:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
@@ -244,7 +244,7 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.request.rate:
       enabled: true
-    sqlserver.lock.timeout.gt0.rate:
+    sqlserver.lock.timeout.nonzero.rate:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
@@ -424,7 +424,7 @@ none_set:
       enabled: false
     sqlserver.lock.request.rate:
       enabled: false
-    sqlserver.lock.timeout.gt0.rate:
+    sqlserver.lock.timeout.nonzero.rate:
       enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false

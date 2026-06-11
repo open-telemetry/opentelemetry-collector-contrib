@@ -238,11 +238,11 @@ Computer uptime.
 
 ### sqlserver.connection.reset.rate
 
-Total number of logical connections reset.
+Number of logical connections reset per second.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {resets}/s | Gauge | Double | Development |
+| {connections}/s | Gauge | Double | Development |
 
 ### sqlserver.cpu.count
 
@@ -467,7 +467,7 @@ Number of lock blocks tracked by the lock manager, broken down by block type.
 
 ### sqlserver.lock.escalation.rate
 
-Number of times locks on a table were escalated to a larger granularity.
+Number of lock escalations per second (locks on a table escalated to a larger granularity).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -489,9 +489,9 @@ Number of new locks and lock conversions per second requested from the lock mana
 | ---- | ----------- | ---------- | --------- |
 | {requests}/s | Gauge | Double | Development |
 
-### sqlserver.lock.timeout.gt0.rate
+### sqlserver.lock.timeout.nonzero.rate
 
-Number of lock requests per second that timed out after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which includes immediate (zero-wait) timeouts.
+Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -517,11 +517,11 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.lock.wait_time.total
 
-Total wait time in milliseconds for locks since the last server restart.
+Total wait time in seconds for locks since the last server restart.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Double | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### sqlserver.login.rate
 

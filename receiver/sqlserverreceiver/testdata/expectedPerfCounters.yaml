@@ -78,7 +78,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of times locks on a table were escalated to a larger granularity.
+          - description: Number of lock escalations per second (locks on a table escalated to a larger granularity).
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1081,13 +1081,13 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock requests per second that timed out after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which includes immediate (zero-wait) timeouts.
+          - description: Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
             gauge:
               dataPoints:
                 - asDouble: 0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.lock.timeout.gt0.rate
+            name: sqlserver.lock.timeout.nonzero.rate
             unit: '{timeouts}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -2309,14 +2309,14 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total number of logical connections reset.
+          - description: Number of logical connections reset per second.
             gauge:
               dataPoints:
                 - asDouble: 12
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.connection.reset.rate
-            unit: '{resets}/s'
+            unit: '{connections}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2535,16 +2535,16 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total wait time in milliseconds for locks since the last server restart.
+          - description: Total wait time in seconds for locks since the last server restart.
             name: sqlserver.lock.wait_time.total
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 271
+                - asDouble: 0.271
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: ms
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

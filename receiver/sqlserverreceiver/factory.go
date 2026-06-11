@@ -280,7 +280,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverLockEscalationRate.Enabled ||
 		metrics.SqlserverLockMemory.Enabled ||
 		metrics.SqlserverLockRequestRate.Enabled ||
-		metrics.SqlserverLockTimeoutGt0Rate.Enabled ||
+		metrics.SqlserverLockTimeoutNonzeroRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
 		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
