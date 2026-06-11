@@ -1,0 +1,14 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: processor/spanpruning
+
+# A brief description of the change.
+note: Add optional OTTL `conditions` filtering so span pruning only applies to traces with at least one matching span (empty conditions still prune all traces), and add the `otelcol_processor_spanpruning_traces_skipped` metric for traces skipped when no conditions match.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [49008]
+
+# Optional: The change log or logs in which this entry should be included.
+change_logs: [user]
