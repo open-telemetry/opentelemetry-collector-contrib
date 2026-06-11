@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/prometheus
+note: >-
+  Prometheus API server config/targets stay in sync with Target Allocator changing it if both are enabled.
+issues: [48040]
+subtext: |-
+  Previously, the API server config and targets did not get the updates from the Target Allocator.
+change_logs:
+  - user
