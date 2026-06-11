@@ -99,6 +99,15 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_spanpruning_traces_skipped:
+      enabled: true
+      description: Total traces skipped due to conditions not matching
+      unit: "{traces}"
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
     group_by_attributes:
