@@ -396,7 +396,6 @@ events:
       - sqlserver.wait.resource.type
       - sqlserver.row_count
       - sqlserver.session.duration
-
       - sqlserver.session.start_time
       - sqlserver.session_id
       - sqlserver.session_status
