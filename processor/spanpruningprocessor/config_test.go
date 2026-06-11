@@ -55,6 +55,7 @@ func TestLoadConfig(t *testing.T) {
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
 				EnableAttributeLossAnalysis: false,
+				Conditions:                  []string{},
 				// Default from createDefaultConfig should persist when omitted in YAML.
 				AttributeLossExemplarSampleRate: 0,
 			},
@@ -68,6 +69,7 @@ func TestLoadConfig(t *testing.T) {
 				AggregationAttributePrefix:  "batch.",
 				AggregationHistogramBuckets: customHistogramBuckets,
 				EnableAttributeLossAnalysis: false,
+				Conditions:                  []string{},
 				// Default from createDefaultConfig should persist when omitted in YAML.
 				AttributeLossExemplarSampleRate: 0,
 			},
@@ -239,6 +241,29 @@ func TestConfig_Validate(t *testing.T) {
 				},
 			},
 			expectError: false,
+		},
+		{
+			name: "valid conditions list",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				Conditions: []string{
+					`name == "GET /api/users"`,
+					`attributes["db.system"] == "postgresql"`,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "blank condition entry",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				Conditions:                 []string{`attributes["db.system"] == "postgresql"`, "   "},
+			},
+			expectError: true,
 		},
 		{
 			name: "negative histogram bucket value",
