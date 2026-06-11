@@ -6,7 +6,7 @@ status:
   stability:
     alpha: [metrics]
   codeowners:
-    active: [evan-bradley, atoulme, tigrannajaryan]
+    active: [evan-bradley, atoulme, tigrannajaryan, douglascamata, dpaasman00]
 
 feature_gates:
   - id: opampsupervisor.Extensions

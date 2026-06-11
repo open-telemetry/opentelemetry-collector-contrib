@@ -18,8 +18,16 @@ func WriteSchemaToFile(schema *Schema, config *Config) (string, error) {
 	switch config.FileType {
 	case "yaml", "yml":
 		raw, err = schema.ToYAML()
+		if err != nil {
+			return "", err
+		}
+		raw, err = ApplyOverlayToYAML(raw, config)
 	case "json":
 		raw, err = schema.ToJSON()
+		if err != nil {
+			return "", err
+		}
+		raw, err = ApplyOverlayToJSON(raw, config)
 	default:
 		err = errors.New("unknown output file type; use json or yaml")
 	}

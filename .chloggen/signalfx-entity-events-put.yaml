@@ -1,9 +1,0 @@
-change_type: enhancement
-
-component: exporter/signalfx
-
-note: Handle entity events as property updates sent to the PUT endpoint instead of PATCH.
-
-issues: [48469]
-
-change_logs: [user]

@@ -127,7 +127,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
@@ -154,7 +154,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 429
+	attributes["http.response.status_code"] = 429
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser

@@ -114,6 +114,7 @@ func (r *dnsResolver) shutdown(_ context.Context) error {
 
 func (r *dnsResolver) periodicallyResolve(ctx context.Context) {
 	ticker := time.NewTicker(r.resInterval)
+	defer ticker.Stop()
 	defer r.shutdownWg.Done()
 
 	for {

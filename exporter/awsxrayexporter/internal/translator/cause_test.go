@@ -176,7 +176,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
@@ -226,7 +226,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	attributes["http.status_text"] = errorMsg
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
 	filtered, _ := makeHTTP(span)
@@ -276,7 +276,7 @@ func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
@@ -393,7 +393,7 @@ func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 400
+	attributes["http.response.status_code"] = 400
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
@@ -441,7 +441,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 499
+	attributes["http.response.status_code"] = 499
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
@@ -483,7 +483,7 @@ func TestCauseWithThrottled(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.com/widgets"
-	attributes["http.status_code"] = 429
+	attributes["http.response.status_code"] = 429
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)

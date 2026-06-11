@@ -99,6 +99,18 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
+			name: "http response: 500",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
+			attributes: map[string]string{
+				"http.response.status_code": "500",
+			},
+		},
+
+		{
 			name:     "http: message only, nil",
 			expected: ptrace.NewStatus(),
 			attributes: map[string]string{

@@ -71,6 +71,33 @@ func TestStaleNaNs(t *testing.T) {
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+	// Drop scrape results that contain only the default scrape metrics.
+	// The receiver emits such entries when a scrape itself fails with no
+	// previously-seen data (e.g. scrape_timeout under load, or once the
+	// expected scrape count is reached but the scrape manager has fired
+	// again before shutdown). They are unrelated to the alternating
+	// success/failure pattern this test validates and would otherwise
+	// race with it on slow CI runners.
+	filtered := resourceMetrics[:0:0]
+	for _, rm := range resourceMetrics {
+		hasAppMetric := false
+		for _, m := range getMetrics(rm) {
+			if !isDefaultMetrics(m) && !isExtraScrapeMetrics(m) {
+				hasAppMetric = true
+				break
+			}
+		}
+		if hasAppMetric {
+			filtered = append(filtered, rm)
+		}
+	}
+	// Trim to the expected count in case the snapshot caught extra real
+	// scrapes appended after the expected count was reached.
+	if len(filtered) > totalScrapes {
+		filtered = filtered[:totalScrapes]
+	}
+	resourceMetrics = filtered
+
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
 	successfulScrapes := 0
 	failedScrapes := 0

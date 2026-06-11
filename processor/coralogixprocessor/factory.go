@@ -26,6 +26,9 @@ func createDefaultConfig() component.Config {
 		TransactionsConfig: TransactionsConfig{
 			Enabled: false,
 		},
+		CriticalPathConfig: CriticalPathConfig{
+			Enabled: false,
+		},
 	}
 }
 
