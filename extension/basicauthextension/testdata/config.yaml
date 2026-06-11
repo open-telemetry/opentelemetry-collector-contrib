@@ -32,5 +32,4 @@ basicauth/server_aws:
     aws_secret:
       secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
       region: "us-east-1"
-      value_key: "htpasswd_content"
       refresh_interval: 10m

@@ -71,7 +71,6 @@ func TestLoadConfig(t *testing.T) {
 					AWSSecret: &AWSSecretHtpasswdConfig{
 						SecretARN:       "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd",
 						Region:          "us-east-1",
-						ValueKey:        "htpasswd_content",
 						RefreshInterval: 10 * time.Minute,
 					},
 				},

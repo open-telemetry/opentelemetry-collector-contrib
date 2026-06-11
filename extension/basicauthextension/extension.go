@@ -207,27 +207,27 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 }
 
 func (ba *basicAuthClient) Username() string {
-	if c := ba.creds.Load(); c != nil {
-		return c.username
-	}
 	if ba.usernameResolver != nil {
 		return ba.usernameResolver.Value()
 	}
-	if ba.clientAuth != nil {
+	if ba.clientAuth != nil && ba.clientAuth.Username != "" {
 		return ba.clientAuth.Username
+	}
+	if c := ba.creds.Load(); c != nil {
+		return c.username
 	}
 	return ""
 }
 
 func (ba *basicAuthClient) Password() string {
-	if c := ba.creds.Load(); c != nil {
-		return c.password
-	}
 	if ba.passwordResolver != nil {
 		return ba.passwordResolver.Value()
 	}
-	if ba.clientAuth != nil {
+	if ba.clientAuth != nil && string(ba.clientAuth.Password) != "" {
 		return string(ba.clientAuth.Password)
+	}
+	if c := ba.creds.Load(); c != nil {
+		return c.password
 	}
 	return ""
 }

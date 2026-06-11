@@ -32,11 +32,10 @@ type AWSSecretClientConfig struct {
 }
 
 // AWSSecretHtpasswdConfig configures AWS Secrets Manager as a credential source for server auth.
-// The secret can be raw htpasswd content, or a JSON object with a field containing htpasswd content.
+// The secret value is used directly as htpasswd content.
 type AWSSecretHtpasswdConfig struct {
 	SecretARN       string        `mapstructure:"secret_arn"`
 	Region          string        `mapstructure:"region"`
-	ValueKey        string        `mapstructure:"value_key"`
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 }
 

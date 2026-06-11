@@ -50,10 +50,9 @@ The extension supports fetching credentials from AWS Secrets Manager with automa
 
 - `secret_arn` (required): The ARN of the secret in AWS Secrets Manager.
 - `region` (required): The AWS region where the secret is stored.
-- `refresh_interval` (optional, default: `5m`): How often to re-fetch the secret.
+- `refresh_interval` (optional, default: `30m`): How often to re-fetch the secret.
 - `username_key` (required for client_auth): The JSON key containing the username.
 - `password_key` (required for client_auth): The JSON key containing the password.
-- `value_key` (optional for htpasswd): If set, treats the secret as JSON and extracts this key. Otherwise, the raw secret string is used as htpasswd content.
 
 The extension uses the AWS SDK's default credential chain (`aws-sdk-go-v2/config.LoadDefaultConfig`). This means the collector workload must have an IAM identity that grants `secretsmanager:GetSecretValue` on the target secret. If the secret is encrypted with a customer managed KMS key (CMK), the identity also needs `kms:Decrypt` on that key's ARN. In practice, attach an instance profile role (EC2), a pod identity or IRSA role (EKS), or a task role (ECS) to the workload running the collector.
 ## Configuration
@@ -93,7 +92,6 @@ extensions:
       aws_secret:
         secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
         region: "us-east-1"
-        value_key: "htpasswd_content"
         refresh_interval: 5m
 
 receivers:
