@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-func TestNewLogger_LogFormatConsole(t *testing.T) {
+func TestNewLogger_EncodingConsole(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "opamp-logger-test") //nolint:usetesting // Zap logger holds file locks on Windows, preventing t.TempDir cleanup
 	require.NoError(t, err)
 	defer func() {
@@ -27,7 +27,7 @@ func TestNewLogger_LogFormatConsole(t *testing.T) {
 	logger, err := NewLogger(config.Logs{
 		Level:       zapcore.InfoLevel,
 		OutputPaths: []string{logFile},
-		LogFormat:   "console",
+		Encoding:    "console",
 	})
 	require.NoError(t, err)
 	defer func() { _ = logger.Sync() }()
@@ -43,7 +43,7 @@ func TestNewLogger_LogFormatConsole(t *testing.T) {
 	require.False(t, strings.HasPrefix(logLine, "{"))
 }
 
-func TestNewLogger_DefaultLogFormatJSON(t *testing.T) {
+func TestNewLogger_DefaultEncodingJSON(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "opamp-logger-test") //nolint:usetesting // Zap logger holds file locks on Windows, preventing t.TempDir cleanup
 	require.NoError(t, err)
 	defer func() {

@@ -755,7 +755,7 @@ agent:
 			},
 		},
 		{
-			name: "full with console log format",
+			name: "full with console encoding",
 			cfg: fmt.Sprintf(`
 server:
   endpoint: ws://localhost/v1/opamp
@@ -773,7 +773,7 @@ telemetry:
     level: warn
     error_output_paths: ["stderr"]
     output_paths: ["stdout"]
-    log_format: console
+    encoding: console
 `, filepath.Join(tmpDir, "storage"), executablePath),
 			want: Supervisor{
 				Server:       OpAMPServer{Endpoint: "ws://localhost/v1/opamp", TLS: configtls.ClientConfig{Insecure: true}},
@@ -786,7 +786,7 @@ telemetry:
 					BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
 					ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
 				},
-				Telemetry:   Telemetry{Logs: Logs{Level: zapcore.WarnLevel, OutputPaths: []string{"stdout"}, ErrorOutputPaths: []string{"stderr"}, LogFormat: "console"}},
+				Telemetry:   Telemetry{Logs: Logs{Level: zapcore.WarnLevel, OutputPaths: []string{"stdout"}, ErrorOutputPaths: []string{"stderr"}, Encoding: "console"}},
 				HealthCheck: DefaultSupervisor().HealthCheck,
 			},
 		},
@@ -818,10 +818,10 @@ agent:
 
 	cfgPath := setupSupervisorConfigFile(t, tmpDir, configString)
 
-	// Assert log_format parses as an empty string default
+	// Assert encoding parses as an empty string default
 	got, err := Load(cfgPath)
 	require.NoError(t, err)
-	require.Empty(t, got.Telemetry.Logs.LogFormat)
+	require.Empty(t, got.Telemetry.Logs.Encoding)
 
 	// Assert loading a deleted file fails
 	require.NoError(t, os.Remove(cfgPath))

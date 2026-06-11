@@ -29,7 +29,7 @@ func newZapConfig(cfg config.Logs) zap.Config {
 	zapCfg := zap.NewProductionConfig()
 	zapCfg.Encoding = "json"
 
-	if isConsoleLogFormat(cfg.LogFormat) {
+	if isConsoleEncoding(cfg.Encoding) {
 		zapCfg.Encoding = "console"
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
@@ -37,8 +37,8 @@ func newZapConfig(cfg config.Logs) zap.Config {
 	return zapCfg
 }
 
-func isConsoleLogFormat(format string) bool {
-	switch strings.ToLower(strings.TrimSpace(format)) {
+func isConsoleEncoding(encoding string) bool {
+	switch strings.ToLower(strings.TrimSpace(encoding)) {
 	case "console", "text":
 		return true
 	default:
