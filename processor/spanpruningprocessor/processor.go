@@ -129,7 +129,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	if p.enableBytesMetrics {
 		// Measure matched traces before pruning so bytes_processed_input reflects
 		// pre-pruning size.
-		bytesProcessedInput = p.getBytes(ctx, matchedTraces, traceSpans)
+		bytesProcessedInput = p.getBytes(matchedTraces, traceSpans)
 	}
 
 	// Process each trace independently
@@ -158,7 +158,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 			// bytes_processed_output covers those 10 post-prune, while bytes_emitted covers all 100.
 			// The two are equal only when all traces in the batch match the OTTL conditions.
 			postPruneTraceSpans := p.groupSpansByTraceID(td)
-			bytesProcessedOutput := p.getBytes(ctx, matchedTraces, postPruneTraceSpans)
+			bytesProcessedOutput := p.getBytes(matchedTraces, postPruneTraceSpans)
 			p.telemetryBuilder.ProcessorSpanpruningBytesProcessedOutput.Add(ctx, bytesProcessedOutput)
 		}
 		p.telemetryBuilder.ProcessorSpanpruningBytesEmitted.Add(ctx, int64(m.TracesSize(td)))
@@ -169,7 +169,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 
 // getBytes returns the serialized size of the subset of traces identified
 // by matchedTraces, preserving the original ResourceSpans/ScopeSpans hierarchy.
-func (p *spanPruningProcessor) getBytes(_ context.Context, matchedTraces map[pcommon.TraceID]struct{}, traceSpans map[pcommon.TraceID][]spanInfo) int64 {
+func (*spanPruningProcessor) getBytes(matchedTraces map[pcommon.TraceID]struct{}, traceSpans map[pcommon.TraceID][]spanInfo) int64 {
 	filtered := ptrace.NewTraces()
 	// Track already-added ResourceSpans and ScopeSpans by their original object
 	// identity to preserve the original hierarchy (same RS/SS grouping).

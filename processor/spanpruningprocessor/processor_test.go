@@ -41,7 +41,7 @@ func TestLeafSpanPruning_BasicAggregation(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -72,7 +72,7 @@ func TestLeafSpanPruning_BelowThreshold(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 1, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 1, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 2, originalSpanCount) // 1 parent + 1 leaf span
 
@@ -419,7 +419,7 @@ func TestBytesMetrics_Enabled(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
@@ -453,7 +453,7 @@ func TestBytesMetrics_Disabled(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
@@ -481,14 +481,14 @@ func TestBytesMetrics_MatchedEqualsReceivedWithNoConditions(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
 	receivedBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_received")
 	processedInputBytes := bytesCounterSum(t, testTel, "otelcol_processor_spanpruning_bytes_processed_input")
 
-	require.Greater(t, receivedBytes, int64(0))
+	require.Positive(t, receivedBytes)
 	require.Equal(t, receivedBytes, processedInputBytes,
 		"bytes_processed_input should equal bytes_received when no conditions are configured")
 }
@@ -507,7 +507,7 @@ func TestBytesMetrics_InputEqualsOutputWhenNotPruned(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
@@ -532,7 +532,7 @@ func TestBytesMetrics_EmittedReflectsPruning(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 12, "SELECT", map[string]string{
+	td := createTestTraceWithLeafSpans(t, 12, map[string]string{
 		"db.operation": "select",
 		"db.statement": strings.Repeat("SELECT * FROM users WHERE tenant_id = 'very-long-tenant-id' ", 10),
 	})
@@ -708,7 +708,7 @@ func bytesCounterSum(t *testing.T, tel *componenttest.Telemetry, metricName stri
 	return sum.DataPoints[0].Value
 }
 
-func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
+func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, attrs map[string]string) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -729,7 +729,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
 		span.SetParentSpanID(parentSpanID)
-		span.SetName(spanName)
+		span.SetName("SELECT")
 		span.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
 		span.SetEndTimestamp(pcommon.Timestamp(1000000100 + int64(i)*100))
 		for k, v := range attrs {
