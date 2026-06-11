@@ -349,21 +349,9 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			mux.Lock()
 
-			// Check if TLS metric is enabled and this is an HTTPS endpoint
-			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
-				// Extract TLS info directly from the HTTP response
-				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
-				if issuer != "" || commonName != "" || len(sans) > 0 {
-					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
-						now,
-						timeLeft,
-						h.cfg.Targets[targetIndex].Endpoint,
-						issuer,
-						commonName,
-						sans,
-					)
-				}
-			}
+			// TLS cert-remaining is recorded once below alongside the
+			// timing-breakdown metrics; the duplicate record here would
+			// emit the same data point twice per scrape.
 			// Record timing breakdown metrics
 			dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
 			endpoint := h.cfg.Targets[targetIndex].Endpoint
