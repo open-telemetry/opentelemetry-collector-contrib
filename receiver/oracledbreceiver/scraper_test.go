@@ -721,7 +721,6 @@ func TestScraperWithQueryComments(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.QuerySample.AllowedCommentKeys = []string{}
 
-		
 		sqlWithComment := "/* nr_service_guid=test-123 */ SELECT * FROM test_table"
 		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
 
