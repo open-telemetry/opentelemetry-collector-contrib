@@ -59,6 +59,7 @@ Available Editors:
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 - [set](#set)
+- [stringify_all](#stringify_all)
 - [truncate_all](#truncate_all)
 
 ### append
@@ -464,6 +465,27 @@ Examples:
 
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
+
+### stringify_all
+
+`stringify_all(target)`
+
+The `stringify_all` function converts all non-string values in a `pcommon.Map` to their string representation.
+
+`target` is a path expression to a `pcommon.Map` type field.
+
+The map will be mutated such that all values are of type string. Values already of type string are unchanged. Non-string values are converted using their standard string representation:
+- Int/Double: numeric string (e.g., `"42"`, `"3.14"`)
+- Bool: `"true"` or `"false"`
+- Bytes: base64-encoded string
+- Map: JSON-marshaled string
+- Slice: JSON-marshaled string
+- Empty: `""`
+
+Examples:
+
+- `stringify_all(log.attributes)`
+- `stringify_all(resource.attributes)`
 
 ## Converters
 
