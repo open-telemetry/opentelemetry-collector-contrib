@@ -4,7 +4,6 @@
 The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

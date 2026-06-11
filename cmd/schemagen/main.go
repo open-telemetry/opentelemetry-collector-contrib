@@ -28,6 +28,14 @@ func run() error {
 		return err
 	}
 
+	if config.ResolveRefs {
+		resolver := internal.NewRefResolver(config)
+		schema, err = resolver.Resolve(schema)
+		if err != nil {
+			return err
+		}
+	}
+
 	path, writeErr := internal.WriteSchemaToFile(schema, config)
 	if writeErr != nil {
 		return writeErr

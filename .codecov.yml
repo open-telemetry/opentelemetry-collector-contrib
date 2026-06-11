@@ -197,10 +197,6 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
-  - component_id: exporter_googlesecops
-    name: exporter_googlesecops
-    paths:
-    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -453,6 +449,10 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_awsecsattributes
+    name: processor_awsecsattributes
+    paths:
+    - processor/awsecsattributesprocessor/**
   - component_id: processor_cardinalityguardian
     name: processor_cardinalityguardian
     paths:
