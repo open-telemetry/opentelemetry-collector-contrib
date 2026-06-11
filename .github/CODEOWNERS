@@ -20,7 +20,7 @@
 
 cmd/codecovgen/                                                  @open-telemetry/collector-contrib-approvers @mx-psi
 cmd/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
-cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan @douglascamata
+cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan @douglascamata @dpaasman00
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/schemagen/                                                   @open-telemetry/collector-contrib-approvers
@@ -113,7 +113,7 @@ extension/encoding/zipkinencodingextension/                      @open-telemetry
 extension/googleclientauthextension/                             @open-telemetry/collector-contrib-approvers @dashpole @aabmass @braydonk @jsuereth @psx95 @ridwanmsharif
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers @evan-bradley
-extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @evan-bradley
+extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
 extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
@@ -127,8 +127,8 @@ extension/observer/hostobserver/                                 @open-telemetry
 extension/observer/k8sobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/observer/kafkatopicsobserver/                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/oidcauthextension/                                     @open-telemetry/collector-contrib-approvers @asweet-confluent
-extension/opampcustommessages/                                   @open-telemetry/collector-contrib-approvers @evan-bradley @douglascamata
-extension/opampextension/                                        @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @douglascamata
+extension/opampcustommessages/                                   @open-telemetry/collector-contrib-approvers @evan-bradley @douglascamata @dpaasman00
+extension/opampextension/                                        @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @douglascamata @dpaasman00
 extension/pprofextension/                                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                    @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3

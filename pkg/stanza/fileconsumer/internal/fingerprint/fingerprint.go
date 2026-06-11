@@ -15,7 +15,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 const DefaultSize = 1000 // bytes
@@ -37,23 +36,19 @@ func New(first []byte) *Fingerprint {
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
 func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	if metadata.FilelogDecompressFingerprintFeatureGate.IsEnabled() {
-		if decompressData {
-			if compression.IsGzipFile(file, logger) {
-				// If the file is of compressed type, uncompress the data before creating its fingerprint
-				uncompressedData, err := gzip.NewReader(file)
-				if err != nil {
-					return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
-				}
-				defer uncompressedData.Close()
-
-				n, err := uncompressedData.Read(buf)
-				if err != nil && !errors.Is(err, io.EOF) {
-					return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
-				}
-				return New(buf[:n]), nil
-			}
+	if decompressData && compression.IsGzipFile(file, logger) {
+		// If the file is of compressed type, uncompress the data before creating its fingerprint
+		uncompressedData, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
 		}
+		defer uncompressedData.Close()
+
+		n, err := uncompressedData.Read(buf)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
+		}
+		return New(buf[:n]), nil
 	}
 
 	n, err := file.ReadAt(buf, 0)
