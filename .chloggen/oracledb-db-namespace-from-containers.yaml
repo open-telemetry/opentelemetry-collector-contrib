@@ -7,7 +7,7 @@ change_type: breaking
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Source `db.namespace` from `V$CONTAINERS` and add `db.servicename` attribute to query sample and top query events.
+note: Set `db.namespace` to database name and add `oracle.db.service` attribute on query sample and top query events.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48996]
@@ -16,13 +16,10 @@ issues: [48996]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `db.namespace` on `db.server.query_sample` and `db.server.top_query` events
-  now resolves per-row from `V$CONTAINERS.NAME` (joined on `CON_ID`), giving
-  the actual PDB / container name even when the collector connects at the CDB
-  root and observes activity from multiple PDBs. The Oracle service name that
-  query sample previously emitted as `db.namespace` now lives in a new
-  `db.servicename` attribute. Top query gains both attributes.
-
+  On `db.server.query_sample` and `db.server.top_query` events, `db.namespace`
+  now reports the database name instead of the Oracle service
+  name. The service name moves to the new `oracle.db.service` attribute.
+  Existing dashboards or queries grouping by `db.namespace` on these events should be updated.
   Requires Oracle 12c+ and `SELECT` on `V$CONTAINERS`. Both events are still
   `enabled: false` by default.
 

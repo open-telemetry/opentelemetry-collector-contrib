@@ -65,9 +65,6 @@ attributes:
   db.server.name:
     description: The name of the server hosting the database.
     type: string
-  db.servicename:
-    description: Oracle service name. For query sample, the service the session connected through (V$SESSION.SERVICE_NAME). For top query, the service under which the cursor was first parsed (V$SQL.SERVICE).
-    type: string
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
@@ -97,6 +94,9 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  oracle.db.service:
+    description: The Oracle service name associated with the database connection.
+    type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
@@ -302,7 +302,7 @@ events:
       - db.system.name
       - user.name
       - db.namespace
-      - db.servicename
+      - oracle.db.service
       - client.address
       - client.port
       - network.peer.address
@@ -356,7 +356,7 @@ events:
       - db.system.name
       - db.server.name
       - db.namespace
-      - db.servicename
+      - oracle.db.service
       - db.query.text
       - oracledb.query_plan
       - oracledb.sql_id

@@ -22,7 +22,7 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: ORCLPDB1
-              - key: db.servicename
+              - key: oracle.db.service
                 value:
                   stringValue: ORCLPDB1
               - key: db.query.text

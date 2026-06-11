@@ -25,7 +25,7 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: ""
-              - key: db.servicename
+              - key: oracle.db.service
                 value:
                   stringValue: ""
               - key: client.address

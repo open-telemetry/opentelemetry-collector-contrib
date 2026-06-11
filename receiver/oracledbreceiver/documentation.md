@@ -608,7 +608,7 @@ sample query
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | user.name | Database user name under which a session is connected to | Any Str | - |
 | db.namespace | The database name. | Any Str | - |
-| db.servicename | Oracle service name. For query sample, the service the session connected through (V$SESSION.SERVICE_NAME). For top query, the service under which the cursor was first parsed (V$SQL.SERVICE). | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | client.address | Hostname or address of the client. | Any Str | - |
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
@@ -672,7 +672,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | db.server.name | The name of the server hosting the database. | Any Str | - |
 | db.namespace | The database name. | Any Str | - |
-| db.servicename | Oracle service name. For query sample, the service the session connected through (V$SESSION.SERVICE_NAME). For top query, the service under which the cursor was first parsed (V$SQL.SERVICE). | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
