@@ -1,4 +1,5 @@
-type: roundrobin
+type: round_robin
+deprecated_type: roundrobin
 display_name: Round-Robin Connector
 
 status:

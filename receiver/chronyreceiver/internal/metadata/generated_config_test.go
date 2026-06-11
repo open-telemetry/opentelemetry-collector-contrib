@@ -20,32 +20,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{
+					NtpFrequencyOffset: NtpFrequencyOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpFrequencyOffsetMetricAttributeKey{NtpFrequencyOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpSkew: NtpSkewMetricConfig{
 						Enabled: true,
 					},
-					NtpSkew: MetricConfig{
+					NtpStratum: NtpStratumMetricConfig{
 						Enabled: true,
 					},
-					NtpStratum: MetricConfig{
-						Enabled: true,
+					NtpTimeCorrection: NtpTimeCorrectionMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeCorrectionMetricAttributeKey{NtpTimeCorrectionMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeCorrection: MetricConfig{
-						Enabled: true,
+					NtpTimeLastOffset: NtpTimeLastOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeLastOffsetMetricAttributeKey{NtpTimeLastOffsetMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeLastOffset: MetricConfig{
-						Enabled: true,
+					NtpTimeRmsOffset: NtpTimeRmsOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRmsOffsetMetricAttributeKey{NtpTimeRmsOffsetMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeRmsOffset: MetricConfig{
-						Enabled: true,
-					},
-					NtpTimeRootDelay: MetricConfig{
-						Enabled: true,
+					NtpTimeRootDelay: NtpTimeRootDelayMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRootDelayMetricAttributeKey{NtpTimeRootDelayMetricAttributeKeyLeapStatus},
 					},
 				},
 			},
@@ -54,26 +64,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{
+					NtpFrequencyOffset: NtpFrequencyOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpFrequencyOffsetMetricAttributeKey{NtpFrequencyOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpSkew: NtpSkewMetricConfig{
 						Enabled: false,
 					},
-					NtpSkew: MetricConfig{
+					NtpStratum: NtpStratumMetricConfig{
 						Enabled: false,
 					},
-					NtpStratum: MetricConfig{
-						Enabled: false,
+					NtpTimeCorrection: NtpTimeCorrectionMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeCorrectionMetricAttributeKey{NtpTimeCorrectionMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeCorrection: MetricConfig{
-						Enabled: false,
+					NtpTimeLastOffset: NtpTimeLastOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeLastOffsetMetricAttributeKey{NtpTimeLastOffsetMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeLastOffset: MetricConfig{
-						Enabled: false,
+					NtpTimeRmsOffset: NtpTimeRmsOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRmsOffsetMetricAttributeKey{NtpTimeRmsOffsetMetricAttributeKeyLeapStatus},
 					},
-					NtpTimeRmsOffset: MetricConfig{
-						Enabled: false,
-					},
-					NtpTimeRootDelay: MetricConfig{
-						Enabled: false,
+					NtpTimeRootDelay: NtpTimeRootDelayMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRootDelayMetricAttributeKey{NtpTimeRootDelayMetricAttributeKeyLeapStatus},
 					},
 				},
 			},
@@ -82,7 +102,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NtpFrequencyOffsetMetricConfig{}, NtpSkewMetricConfig{}, NtpStratumMetricConfig{}, NtpTimeCorrectionMetricConfig{}, NtpTimeLastOffsetMetricConfig{}, NtpTimeRmsOffsetMetricConfig{}, NtpTimeRootDelayMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -93,7 +113,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -120,44 +121,101 @@ func TestLogsQueryReceiver_BothDatasourceFields(t *testing.T) {
 	require.NoError(t, receiver.Shutdown(ctx))
 }
 
-func TestLogsQueryReceiver_NullValue(t *testing.T) {
-	col1 := "col1"
-	col1Value := "42"
-	fakeClient := &sqlquery.FakeDBClient{
-		StringMaps: [][]sqlquery.StringMap{
-			{{col1: col1Value}},
-		},
-		// fakeClient.QueryRows will return ErrNullValueWarning on top of the StringMaps
-		ErrNullValueWarning: true,
+func TestLogsQueryReceiver_UnreferencedNullColumnWarning(t *testing.T) {
+	// An unreferenced NULL column should only produce a warning when
+	// IgnoreNullValues is false (or unset). When true, no warning is logged.
+	// In all cases the log record itself is collected successfully.
+	tests := []struct {
+		name             string
+		ignoreNullValues bool
+		expectWarning    bool
+	}{
+		{name: "default", ignoreNullValues: false, expectWarning: true},
+		{name: "explicit_false", ignoreNullValues: false, expectWarning: true},
+		{name: "true", ignoreNullValues: true, expectWarning: false},
 	}
-
-	core, recorded := observer.New(zap.InfoLevel)
-	logger := zap.New(core)
-
-	queryReceiver := logsQueryReceiver{
-		client: fakeClient,
-		query: sqlquery.Query{
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       col1,
-					AttributeColumns: []string{col1},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			col1 := "col1"
+			col1Value := "42"
+			fakeClient := &sqlquery.FakeDBClient{
+				StringMaps: [][]sqlquery.StringMap{
+					{{col1: col1Value}},
 				},
-			},
-		},
-		logger: logger,
-	}
-	// ensure that the logs are collected successfully
-	logs, err := queryReceiver.collect(t.Context())
-	assert.NoError(t, err)
-	assert.Equal(t, 1, logs.LogRecordCount())
-	assert.Equal(t, col1Value, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+				// fakeClient.QueryRows will return ErrNullValueWarning on top of the StringMaps
+				ErrNullValueWarning: true,
+			}
 
-	// ensure that the warning is logged
-	all := recorded.All()
-	require.Len(t, all, 1)
-	entry := all[0]
-	require.Equal(t, "problems encountered getting log rows", entry.Message)
-	require.Equal(t, sqlquery.ErrNullValueWarning.Error(), entry.ContextMap()["error"])
+			core, recorded := observer.New(zap.WarnLevel)
+			logger := zap.New(core)
+
+			queryReceiver := logsQueryReceiver{
+				client: fakeClient,
+				query: sqlquery.Query{
+					IgnoreNullValues: tt.ignoreNullValues,
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn:       col1,
+							AttributeColumns: []string{col1},
+						},
+					},
+				},
+				logger: logger,
+			}
+			logs, err := queryReceiver.collect(t.Context())
+			assert.NoError(t, err)
+			assert.Equal(t, 1, logs.LogRecordCount())
+			assert.Equal(t, col1Value, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+
+			if tt.expectWarning {
+				all := recorded.All()
+				require.Len(t, all, 1)
+				assert.Equal(t, "problems encountered getting log rows", all[0].Message)
+				assert.Equal(t, sqlquery.ErrNullValueWarning.Error(), all[0].ContextMap()["error"])
+			} else {
+				assert.Empty(t, recorded.All(), "expected no warnings when IgnoreNullValues is true")
+			}
+		})
+	}
+}
+
+func TestLogsQueryReceiver_NullValue_ReferencedNullColumnStillErrors(t *testing.T) {
+	// An error must be returned when a referenced column (BodyColumn) is NULL,
+	// regardless of the IgnoreNullValues setting.
+	tests := []struct {
+		name             string
+		ignoreNullValues bool
+	}{
+		{name: "default", ignoreNullValues: false},
+		{name: "explicit_false", ignoreNullValues: false},
+		{name: "true", ignoreNullValues: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient := &sqlquery.FakeDBClient{
+				StringMaps: [][]sqlquery.StringMap{
+					{{"other_col": "val"}}, // BodyColumn "missing_col" is absent
+				},
+				ErrNullValueWarning: true,
+			}
+
+			queryReceiver := logsQueryReceiver{
+				client: fakeClient,
+				query: sqlquery.Query{
+					IgnoreNullValues: tt.ignoreNullValues,
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn: "missing_col",
+						},
+					},
+				},
+				logger: zap.NewNop(),
+			}
+			_, err := queryReceiver.collect(t.Context())
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "body_column 'missing_col' not found in result set")
+		})
+	}
 }
 
 func TestLogsReceiver_InitialDelay(t *testing.T) {
@@ -211,4 +269,56 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() >= 1
 	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
+}
+
+func TestStatusReportingLogs(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+		},
+	}
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	statusEvents := make(chan *componentstatus.Event, 10)
+	host := &statusReporterHost{
+		Host: componenttest.NewNopHost(),
+		report: func(event *componentstatus.Event) {
+			statusEvents <- event
+		},
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Millisecond,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, receiver.Start(ctx, host))
+
+	select {
+	case event := <-statusEvents:
+		require.Equal(t, componentstatus.StatusOK, event.Status())
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for status event")
+	}
+
+	require.NoError(t, receiver.Shutdown(ctx))
 }

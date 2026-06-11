@@ -8,13 +8,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
-	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper"
-	"go.opentelemetry.io/collector/scraper/xscraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
@@ -26,15 +25,29 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
 }
 
-func createDefaultConfig() component.Config {
-	scraperCfg := scraperhelper.NewDefaultControllerConfig()
-	scraperCfg.CollectionInterval = 10 * time.Second
+func defaultControllerConfig() scraperhelper.ControllerConfig {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = 10 * time.Second
+	return cfg
+}
 
+func createDefaultConfig() component.Config {
 	return &Config{
-		ControllerConfig:     scraperCfg,
-		Include:              "",
-		BlockProfileFraction: 1,
-		MutexProfileFraction: 1,
+		Remote: configoptional.Default(RemoteConfig{
+			ControllerConfig: defaultControllerConfig(),
+			ClientConfig:     confighttp.NewDefaultClientConfig(),
+		}),
+		File: configoptional.Default(FileConfig{
+			ControllerConfig: defaultControllerConfig(),
+		}),
+		Self: configoptional.Default(SelfConfig{
+			ControllerConfig:     defaultControllerConfig(),
+			BlockProfileFraction: 1,
+			MutexProfileFraction: 1,
+		}),
+		Server: configoptional.Default(ServerConfig{
+			ServerConfig: confighttp.NewDefaultServerConfig(),
+		}),
 	}
 }
 
@@ -45,23 +58,5 @@ func createProfilesReceiver(
 	consumer xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
 	rCfg := cfg.(*Config)
-
-	scraperFactory := xscraper.NewFactory(
-		metadata.Type,
-		func() component.Config { return &Config{} },
-		xscraper.WithProfiles(func(_ context.Context, set scraper.Settings, _ component.Config) (xscraper.Profiles, error) {
-			return newScraper(rCfg, receiver.Settings{
-				ID:                set.ID,
-				TelemetrySettings: set.TelemetrySettings,
-				BuildInfo:         settings.BuildInfo,
-			})
-		}, metadata.ProfilesStability),
-	)
-
-	return xscraperhelper.NewProfilesController(
-		&rCfg.ControllerConfig,
-		settings,
-		consumer,
-		xscraperhelper.AddFactoryWithConfig(scraperFactory, rCfg),
-	)
+	return newReceiver(rCfg, settings, consumer)
 }

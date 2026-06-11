@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
@@ -45,6 +46,10 @@ func StandardDataPointFuncs() map[string]ottl.Factory[*ottldatapoint.TransformCo
 	return ottlfuncs.StandardConverters[*ottldatapoint.TransformContext]()
 }
 
+func StandardExemplarFuncs() map[string]ottl.Factory[*ottlexemplar.TransformContext] {
+	return ottlfuncs.StandardConverters[*ottlexemplar.TransformContext]()
+}
+
 func StandardScopeFuncs() map[string]ottl.Factory[*ottlscope.TransformContext] {
 	return ottlfuncs.StandardConverters[*ottlscope.TransformContext]()
 }
@@ -64,23 +69,6 @@ func StandardResourceFuncs() map[string]ottl.Factory[*ottlresource.TransformCont
 type hasAttributeOnDatapointArguments struct {
 	Key         string
 	ExpectedVal string
-}
-
-// TODO: Remove when deprecated DefaultMetricFunctions is removed.
-func NewHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("HasAttrOnDatapoint", &hasAttributeOnDatapointArguments{}, createHasAttributeOnDatapointFunctionLegacy, ottl.NonDeterministicConverter[ottlmetric.TransformContext]())
-}
-
-func createHasAttributeOnDatapointFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*hasAttributeOnDatapointArguments)
-
-	if !ok {
-		return nil, errors.New("hasAttributeOnDatapointFactory args must be of type *hasAttributeOnDatapointArguments")
-	}
-
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
-		return checkDataPoints(&tCtx, args.Key, &args.ExpectedVal)
-	}, nil
 }
 
 func newHasAttributeOnDatapointFactory() ottl.Factory[*ottlmetric.TransformContext] {
@@ -105,23 +93,6 @@ func hasAttributeOnDatapoint(key, expectedVal string) (ottl.ExprFunc[*ottlmetric
 
 type hasAttributeKeyOnDatapointArguments struct {
 	Key string
-}
-
-// TODO: Remove when deprecated DefaultMetricFunctions is removed.
-func NewHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("HasAttrKeyOnDatapoint", &hasAttributeKeyOnDatapointArguments{}, createHasAttributeKeyOnDatapointFunctionLegacy, ottl.NonDeterministicConverter[ottlmetric.TransformContext]())
-}
-
-func createHasAttributeKeyOnDatapointFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*hasAttributeKeyOnDatapointArguments)
-
-	if !ok {
-		return nil, errors.New("hasAttributeKeyOnDatapointFactory args must be of type *hasAttributeOnDatapointArguments")
-	}
-
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
-		return checkDataPoints(&tCtx, args.Key, nil)
-	}, nil
 }
 
 func newHasAttributeKeyOnDatapointFactory() ottl.Factory[*ottlmetric.TransformContext] {

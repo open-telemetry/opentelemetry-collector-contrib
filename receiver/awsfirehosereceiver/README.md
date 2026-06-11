@@ -4,7 +4,6 @@
 The AWS Kinesis Data Firehose Receiver is for ingesting delivery stream messages and parsing the records received
 based on the configured record type.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics, logs   |
@@ -95,6 +94,8 @@ receivers:
 The built-in `cwlogs` encoding is deprecated and will be removed in a future version.
 Use the [`aws_logs_encoding`](../../extension/encoding/awslogsencodingextension) extension with
 `format: cloudwatch` instead.
+
+The receiver detects and decompresses gzip-compressed Firehose records before invoking any configured logs encoding.
 
 ```yaml
 extensions:

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/component"
@@ -40,6 +41,21 @@ type Config struct {
 	// are added to summary spans.
 	// Default: "aggregation."
 	AggregationAttributePrefix string `mapstructure:"aggregation_attribute_prefix"`
+
+	// AggregationHistogramBuckets lists cumulative histogram bucket upper bounds
+	// for latency tracking on aggregated spans. Empty slice disables histograms.
+	AggregationHistogramBuckets []time.Duration `mapstructure:"aggregation_histogram_buckets"`
+
+	// EnableAttributeLossAnalysis toggles analysis of attribute loss during
+	// aggregation. When enabled, the processor compares attribute sets across
+	// aggregated spans, records loss metrics, and annotates summary spans.
+	// Default: false (to reduce telemetry overhead)
+	EnableAttributeLossAnalysis bool `mapstructure:"enable_attribute_loss_analysis"`
+
+	// AttributeLossExemplarSampleRate controls the fraction of attribute-loss
+	// metric recordings that include exemplars when loss analysis is enabled.
+	// Range: 0.0 (disabled) to 1.0 (always).
+	AttributeLossExemplarSampleRate float64 `mapstructure:"attribute_loss_exemplar_sample_rate"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -73,6 +89,21 @@ func (cfg *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid glob pattern at group_by_attributes[%d]: %q: %w", i, pattern, err)
 		}
+	}
+
+	// Validate histogram buckets
+	for i, bucket := range cfg.AggregationHistogramBuckets {
+		if bucket <= 0 {
+			return errors.New("histogram bucket values must be positive")
+		}
+		if i > 0 && bucket <= cfg.AggregationHistogramBuckets[i-1] {
+			return errors.New("histogram buckets must be sorted in ascending order")
+		}
+	}
+
+	// Validate AttributeLossExemplarSampleRate
+	if cfg.AttributeLossExemplarSampleRate < 0 || cfg.AttributeLossExemplarSampleRate > 1 {
+		return errors.New("attribute_loss_exemplar_sample_rate must be between 0.0 and 1.0")
 	}
 
 	return nil

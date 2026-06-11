@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,64 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["mongodbatlas.db.counts"] = mb.metricMongodbatlasDbCounts.config.AggregationStrategy
+			aggMap["mongodbatlas.db.size"] = mb.metricMongodbatlasDbSize.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.iops.average"] = mb.metricMongodbatlasDiskPartitionIopsAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.iops.max"] = mb.metricMongodbatlasDiskPartitionIopsMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.latency.average"] = mb.metricMongodbatlasDiskPartitionLatencyAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.latency.max"] = mb.metricMongodbatlasDiskPartitionLatencyMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.space.average"] = mb.metricMongodbatlasDiskPartitionSpaceAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.space.max"] = mb.metricMongodbatlasDiskPartitionSpaceMax.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.throughput"] = mb.metricMongodbatlasDiskPartitionThroughput.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.usage.average"] = mb.metricMongodbatlasDiskPartitionUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.disk.partition.usage.max"] = mb.metricMongodbatlasDiskPartitionUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.asserts"] = mb.metricMongodbatlasProcessAsserts.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.io"] = mb.metricMongodbatlasProcessCacheIo.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.ratio"] = mb.metricMongodbatlasProcessCacheRatio.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cache.size"] = mb.metricMongodbatlasProcessCacheSize.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.normalized.usage.average"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.normalized.usage.max"] = mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.usage.average"] = mb.metricMongodbatlasProcessCPUChildrenUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.children.usage.max"] = mb.metricMongodbatlasProcessCPUChildrenUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.normalized.usage.average"] = mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.normalized.usage.max"] = mb.metricMongodbatlasProcessCPUNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.usage.average"] = mb.metricMongodbatlasProcessCPUUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cpu.usage.max"] = mb.metricMongodbatlasProcessCPUUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.process.cursors"] = mb.metricMongodbatlasProcessCursors.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.document.rate"] = mb.metricMongodbatlasProcessDbDocumentRate.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.operations.rate"] = mb.metricMongodbatlasProcessDbOperationsRate.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.operations.time"] = mb.metricMongodbatlasProcessDbOperationsTime.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.query_executor.scanned"] = mb.metricMongodbatlasProcessDbQueryExecutorScanned.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.config.AggregationStrategy
+			aggMap["mongodbatlas.process.db.storage"] = mb.metricMongodbatlasProcessDbStorage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.global_lock"] = mb.metricMongodbatlasProcessGlobalLock.config.AggregationStrategy
+			aggMap["mongodbatlas.process.index.counters"] = mb.metricMongodbatlasProcessIndexCounters.config.AggregationStrategy
+			aggMap["mongodbatlas.process.memory.usage"] = mb.metricMongodbatlasProcessMemoryUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.process.network.io"] = mb.metricMongodbatlasProcessNetworkIo.config.AggregationStrategy
+			aggMap["mongodbatlas.process.oplog.time"] = mb.metricMongodbatlasProcessOplogTime.config.AggregationStrategy
+			aggMap["mongodbatlas.process.page_faults"] = mb.metricMongodbatlasProcessPageFaults.config.AggregationStrategy
+			aggMap["mongodbatlas.process.tickets"] = mb.metricMongodbatlasProcessTickets.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.normalized.usage.average"] = mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.normalized.usage.max"] = mb.metricMongodbatlasSystemCPUNormalizedUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.usage.average"] = mb.metricMongodbatlasSystemCPUUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.cpu.usage.max"] = mb.metricMongodbatlasSystemCPUUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.cpu.normalized.usage"] = mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.cpu.usage"] = mb.metricMongodbatlasSystemFtsCPUUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.fts.memory.usage"] = mb.metricMongodbatlasSystemFtsMemoryUsage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.memory.usage.average"] = mb.metricMongodbatlasSystemMemoryUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.memory.usage.max"] = mb.metricMongodbatlasSystemMemoryUsageMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.network.io.average"] = mb.metricMongodbatlasSystemNetworkIoAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.network.io.max"] = mb.metricMongodbatlasSystemNetworkIoMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.io.average"] = mb.metricMongodbatlasSystemPagingIoAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.io.max"] = mb.metricMongodbatlasSystemPagingIoMax.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.usage.average"] = mb.metricMongodbatlasSystemPagingUsageAverage.config.AggregationStrategy
+			aggMap["mongodbatlas.system.paging.usage.max"] = mb.metricMongodbatlasSystemPagingUsageMax.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,26 +131,44 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDbCountsDataPoint(ts, 3, AttributeObjectTypeIndex)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDbSizeDataPoint(ts, 3, AttributeObjectTypeIndex)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionQueueDepthDataPoint(ts, 1)
@@ -97,21 +176,36 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 3, AttributeDiskStatusUsed)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 3, AttributeDiskStatusUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -124,6 +218,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 3, AttributeAssertTypeWarning)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -132,13 +229,22 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 3, AttributeCacheDirectionWrittenFrom)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 1, AttributeCacheRatioTypeCacheFill)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 3, AttributeCacheRatioTypeDirtyFill)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 3, AttributeCacheStatusUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -147,66 +253,114 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 3, AttributeCursorStateOpen)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 3, AttributeDocumentStatusInserted)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 3, AttributeOperationQuery, AttributeClusterRoleReplica)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 3, AttributeExecutionTypeWrites)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 3, AttributeScannedTypeObjects)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 3, AttributeScannedTypeObjects)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 3, AttributeStorageStatusDataSize)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 3, AttributeGlobalLockStateCurrentQueueReaders)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -215,6 +369,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 3, AttributeBtreeCounterTypeHits)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -231,10 +388,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 3, AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -247,10 +410,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 3, AttributeOplogTypeMasterTime)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 3, AttributeMemoryIssueTypeGlobalAccessesNotInMemory)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -259,30 +428,51 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 3, AttributeTicketTypeAvailableWrites)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 3, AttributeCPUStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -291,38 +481,65 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 3, AttributeMemoryStatusBuffers)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 3, AttributeMemoryStatusBuffers)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 3, AttributeMemoryStateVirtual)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMongodbAtlasClusterName("mongodb_atlas.cluster.name-val")
@@ -340,6 +557,60 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricMongodbatlasDbCounts.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDbSize.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionIopsAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionIopsMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionLatencyAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionLatencyMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionSpaceAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionSpaceMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasDiskPartitionUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessAsserts.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCacheIo.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCacheRatio.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCacheSize.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUChildrenUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUChildrenUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUNormalizedUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCPUUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessCursors.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbDocumentRate.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbOperationsRate.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbOperationsTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbQueryExecutorScanned.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessDbStorage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessGlobalLock.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessIndexCounters.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessMemoryUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessOplogTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessPageFaults.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasProcessTickets.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemCPUNormalizedUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemCPUUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemCPUUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemFtsCPUUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemFtsMemoryUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemMemoryUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemMemoryUsageMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemNetworkIoAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemNetworkIoMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemPagingIoAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemPagingIoMax.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemPagingUsageAverage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbatlasSystemPagingUsageMax.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -367,95 +638,245 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "mongodbatlas.db.counts":
-					assert.False(t, validatedMetrics["mongodbatlas.db.counts"], "Found a duplicate in the metrics slice: mongodbatlas.db.counts")
-					validatedMetrics["mongodbatlas.db.counts"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Database feature size", mi.Description())
-					assert.Equal(t, "{objects}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					objectTypeAttrVal, ok := dp.Attributes().Get("object_type")
-					assert.True(t, ok)
-					assert.Equal(t, "collection", objectTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.db.counts"], "Found a duplicate in the metrics slice: mongodbatlas.db.counts")
+						validatedMetrics["mongodbatlas.db.counts"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Database feature size", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						objectTypeAttrVal, ok := dp.Attributes().Get("object_type")
+						assert.True(t, ok)
+						assert.Equal(t, "collection", objectTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.db.counts"], "Found a duplicate in the metrics slice: mongodbatlas.db.counts")
+						validatedMetrics["mongodbatlas.db.counts"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Database feature size", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.db.counts"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("object_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.db.size":
-					assert.False(t, validatedMetrics["mongodbatlas.db.size"], "Found a duplicate in the metrics slice: mongodbatlas.db.size")
-					validatedMetrics["mongodbatlas.db.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Database feature size", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					objectTypeAttrVal, ok := dp.Attributes().Get("object_type")
-					assert.True(t, ok)
-					assert.Equal(t, "collection", objectTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.db.size"], "Found a duplicate in the metrics slice: mongodbatlas.db.size")
+						validatedMetrics["mongodbatlas.db.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Database feature size", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						objectTypeAttrVal, ok := dp.Attributes().Get("object_type")
+						assert.True(t, ok)
+						assert.Equal(t, "collection", objectTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.db.size"], "Found a duplicate in the metrics slice: mongodbatlas.db.size")
+						validatedMetrics["mongodbatlas.db.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Database feature size", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.db.size"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("object_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.iops.average":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.average")
-					validatedMetrics["mongodbatlas.disk.partition.iops.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition iops", mi.Description())
-					assert.Equal(t, "{ops}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.average")
+						validatedMetrics["mongodbatlas.disk.partition.iops.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition iops", mi.Description())
+						assert.Equal(t, "{ops}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.average")
+						validatedMetrics["mongodbatlas.disk.partition.iops.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition iops", mi.Description())
+						assert.Equal(t, "{ops}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.iops.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.iops.max":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.max")
-					validatedMetrics["mongodbatlas.disk.partition.iops.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition iops", mi.Description())
-					assert.Equal(t, "{ops}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.max")
+						validatedMetrics["mongodbatlas.disk.partition.iops.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition iops", mi.Description())
+						assert.Equal(t, "{ops}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.max")
+						validatedMetrics["mongodbatlas.disk.partition.iops.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition iops", mi.Description())
+						assert.Equal(t, "{ops}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.iops.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.latency.average":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.average")
-					validatedMetrics["mongodbatlas.disk.partition.latency.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition latency", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.average")
+						validatedMetrics["mongodbatlas.disk.partition.latency.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition latency", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.average")
+						validatedMetrics["mongodbatlas.disk.partition.latency.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition latency", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.latency.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.latency.max":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.max")
-					validatedMetrics["mongodbatlas.disk.partition.latency.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition latency", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.max")
+						validatedMetrics["mongodbatlas.disk.partition.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition latency", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.max")
+						validatedMetrics["mongodbatlas.disk.partition.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition latency", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.latency.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.queue.depth":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.queue.depth"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.queue.depth")
 					validatedMetrics["mongodbatlas.disk.partition.queue.depth"] = true
@@ -469,80 +890,205 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.disk.partition.space.average":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
-					validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition space", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", diskStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
+						validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition space", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
+						assert.True(t, ok)
+						assert.Equal(t, "free", diskStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
+						validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition space", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.space.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.space.max":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.max")
-					validatedMetrics["mongodbatlas.disk.partition.space.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition space", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", diskStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.max")
+						validatedMetrics["mongodbatlas.disk.partition.space.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition space", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
+						assert.True(t, ok)
+						assert.Equal(t, "free", diskStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.max")
+						validatedMetrics["mongodbatlas.disk.partition.space.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition space", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.space.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.throughput":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.throughput"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.throughput")
-					validatedMetrics["mongodbatlas.disk.partition.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk throughput", mi.Description())
-					assert.Equal(t, "By/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.throughput"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.throughput")
+						validatedMetrics["mongodbatlas.disk.partition.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk throughput", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskDirectionAttrVal, ok := dp.Attributes().Get("disk_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.throughput"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.throughput")
+						validatedMetrics["mongodbatlas.disk.partition.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk throughput", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.throughput"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
-					validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", diskStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
+						validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
+						assert.True(t, ok)
+						assert.Equal(t, "free", diskStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
+						validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.max")
-					validatedMetrics["mongodbatlas.disk.partition.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", diskStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.max")
+						validatedMetrics["mongodbatlas.disk.partition.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						diskStatusAttrVal, ok := dp.Attributes().Get("disk_status")
+						assert.True(t, ok)
+						assert.Equal(t, "free", diskStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.max")
+						validatedMetrics["mongodbatlas.disk.partition.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Disk partition usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.disk.partition.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("disk_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.disk.partition.utilization.average":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.utilization.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.utilization.average")
 					validatedMetrics["mongodbatlas.disk.partition.utilization.average"] = true
@@ -568,20 +1114,45 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.asserts":
-					assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
-					validatedMetrics["mongodbatlas.process.asserts"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of assertions per second", mi.Description())
-					assert.Equal(t, "{assertions}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					assertTypeAttrVal, ok := dp.Attributes().Get("assert_type")
-					assert.True(t, ok)
-					assert.Equal(t, "regular", assertTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
+						validatedMetrics["mongodbatlas.process.asserts"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of assertions per second", mi.Description())
+						assert.Equal(t, "{assertions}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						assertTypeAttrVal, ok := dp.Attributes().Get("assert_type")
+						assert.True(t, ok)
+						assert.Equal(t, "regular", assertTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
+						validatedMetrics["mongodbatlas.process.asserts"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of assertions per second", mi.Description())
+						assert.Equal(t, "{assertions}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.asserts"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("assert_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.background_flush":
 					assert.False(t, validatedMetrics["mongodbatlas.process.background_flush"], "Found a duplicate in the metrics slice: mongodbatlas.process.background_flush")
 					validatedMetrics["mongodbatlas.process.background_flush"] = true
@@ -595,52 +1166,129 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.cache.io":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cache.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.io")
-					validatedMetrics["mongodbatlas.process.cache.io"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Cache throughput (per second)", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cacheDirectionAttrVal, ok := dp.Attributes().Get("cache_direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read_into", cacheDirectionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.io")
+						validatedMetrics["mongodbatlas.process.cache.io"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Cache throughput (per second)", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cacheDirectionAttrVal, ok := dp.Attributes().Get("cache_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read_into", cacheDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.io")
+						validatedMetrics["mongodbatlas.process.cache.io"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Cache throughput (per second)", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cache.io"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cache_direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cache.ratio":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cache.ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.ratio")
-					validatedMetrics["mongodbatlas.process.cache.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Cache ratios represented as (%)", mi.Description())
-					assert.Equal(t, "%", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cacheRatioTypeAttrVal, ok := dp.Attributes().Get("cache_ratio_type")
-					assert.True(t, ok)
-					assert.Equal(t, "cache_fill", cacheRatioTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.ratio")
+						validatedMetrics["mongodbatlas.process.cache.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Cache ratios represented as (%)", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cacheRatioTypeAttrVal, ok := dp.Attributes().Get("cache_ratio_type")
+						assert.True(t, ok)
+						assert.Equal(t, "cache_fill", cacheRatioTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.ratio")
+						validatedMetrics["mongodbatlas.process.cache.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Cache ratios represented as (%)", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cache.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cache_ratio_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cache.size":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
-					validatedMetrics["mongodbatlas.process.cache.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cache sizes", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cacheStatusAttrVal, ok := dp.Attributes().Get("cache_status")
-					assert.True(t, ok)
-					assert.Equal(t, "dirty", cacheStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
+						validatedMetrics["mongodbatlas.process.cache.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cache sizes", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cacheStatusAttrVal, ok := dp.Attributes().Get("cache_status")
+						assert.True(t, ok)
+						assert.Equal(t, "dirty", cacheStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
+						validatedMetrics["mongodbatlas.process.cache.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cache sizes", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cache.size"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cache_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.connections":
 					assert.False(t, validatedMetrics["mongodbatlas.process.connections"], "Found a duplicate in the metrics slice: mongodbatlas.process.connections")
 					validatedMetrics["mongodbatlas.process.connections"] = true
@@ -656,250 +1304,654 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.cpu.children.normalized.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.average")
-					validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.children.normalized.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.children.normalized.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.max")
-					validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.children.normalized.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.children.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.average")
-					validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.children.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.children.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.max")
-					validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.children.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.normalized.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.average")
-					validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.normalized.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.normalized.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.max")
-					validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.normalized.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.average")
-					validatedMetrics["mongodbatlas.process.cpu.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.average")
+						validatedMetrics["mongodbatlas.process.cpu.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cpu.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.max")
-					validatedMetrics["mongodbatlas.process.cpu.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU Usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.max")
+						validatedMetrics["mongodbatlas.process.cpu.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cpu.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.cursors":
-					assert.False(t, validatedMetrics["mongodbatlas.process.cursors"], "Found a duplicate in the metrics slice: mongodbatlas.process.cursors")
-					validatedMetrics["mongodbatlas.process.cursors"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of cursors", mi.Description())
-					assert.Equal(t, "{cursors}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cursorStateAttrVal, ok := dp.Attributes().Get("cursor_state")
-					assert.True(t, ok)
-					assert.Equal(t, "timed_out", cursorStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cursors"], "Found a duplicate in the metrics slice: mongodbatlas.process.cursors")
+						validatedMetrics["mongodbatlas.process.cursors"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cursors", mi.Description())
+						assert.Equal(t, "{cursors}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cursorStateAttrVal, ok := dp.Attributes().Get("cursor_state")
+						assert.True(t, ok)
+						assert.Equal(t, "timed_out", cursorStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.cursors"], "Found a duplicate in the metrics slice: mongodbatlas.process.cursors")
+						validatedMetrics["mongodbatlas.process.cursors"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cursors", mi.Description())
+						assert.Equal(t, "{cursors}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.cursors"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cursor_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.document.rate":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.document.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.document.rate")
-					validatedMetrics["mongodbatlas.process.db.document.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Document access rates", mi.Description())
-					assert.Equal(t, "{documents}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					documentStatusAttrVal, ok := dp.Attributes().Get("document_status")
-					assert.True(t, ok)
-					assert.Equal(t, "returned", documentStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.document.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.document.rate")
+						validatedMetrics["mongodbatlas.process.db.document.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Document access rates", mi.Description())
+						assert.Equal(t, "{documents}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						documentStatusAttrVal, ok := dp.Attributes().Get("document_status")
+						assert.True(t, ok)
+						assert.Equal(t, "returned", documentStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.document.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.document.rate")
+						validatedMetrics["mongodbatlas.process.db.document.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Document access rates", mi.Description())
+						assert.Equal(t, "{documents}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.document.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("document_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.operations.rate":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.rate")
-					validatedMetrics["mongodbatlas.process.db.operations.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "DB Operation Rates", mi.Description())
-					assert.Equal(t, "{operations}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					operationAttrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "cmd", operationAttrVal.Str())
-					clusterRoleAttrVal, ok := dp.Attributes().Get("cluster_role")
-					assert.True(t, ok)
-					assert.Equal(t, "primary", clusterRoleAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.rate")
+						validatedMetrics["mongodbatlas.process.db.operations.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "DB Operation Rates", mi.Description())
+						assert.Equal(t, "{operations}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "cmd", operationAttrVal.Str())
+						clusterRoleAttrVal, ok := dp.Attributes().Get("cluster_role")
+						assert.True(t, ok)
+						assert.Equal(t, "primary", clusterRoleAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.rate")
+						validatedMetrics["mongodbatlas.process.db.operations.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "DB Operation Rates", mi.Description())
+						assert.Equal(t, "{operations}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.operations.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("cluster_role")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.operations.time":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.time")
-					validatedMetrics["mongodbatlas.process.db.operations.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "DB Operation Times", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					executionTypeAttrVal, ok := dp.Attributes().Get("execution_type")
-					assert.True(t, ok)
-					assert.Equal(t, "reads", executionTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.time")
+						validatedMetrics["mongodbatlas.process.db.operations.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "DB Operation Times", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						executionTypeAttrVal, ok := dp.Attributes().Get("execution_type")
+						assert.True(t, ok)
+						assert.Equal(t, "reads", executionTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.time")
+						validatedMetrics["mongodbatlas.process.db.operations.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "DB Operation Times", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.operations.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("execution_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.query_executor.scanned":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.query_executor.scanned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_executor.scanned")
-					validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Scanned objects", mi.Description())
-					assert.Equal(t, "{objects}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					scannedTypeAttrVal, ok := dp.Attributes().Get("scanned_type")
-					assert.True(t, ok)
-					assert.Equal(t, "index_items", scannedTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_executor.scanned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_executor.scanned")
+						validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Scanned objects", mi.Description())
+						assert.Equal(t, "{objects}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						scannedTypeAttrVal, ok := dp.Attributes().Get("scanned_type")
+						assert.True(t, ok)
+						assert.Equal(t, "index_items", scannedTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_executor.scanned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_executor.scanned")
+						validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Scanned objects", mi.Description())
+						assert.Equal(t, "{objects}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.query_executor.scanned"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("scanned_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.query_targeting.scanned_per_returned":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_targeting.scanned_per_returned")
-					validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Scanned objects per returned", mi.Description())
-					assert.Equal(t, "{scanned}/{returned}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					scannedTypeAttrVal, ok := dp.Attributes().Get("scanned_type")
-					assert.True(t, ok)
-					assert.Equal(t, "index_items", scannedTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_targeting.scanned_per_returned")
+						validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Scanned objects per returned", mi.Description())
+						assert.Equal(t, "{scanned}/{returned}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						scannedTypeAttrVal, ok := dp.Attributes().Get("scanned_type")
+						assert.True(t, ok)
+						assert.Equal(t, "index_items", scannedTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_targeting.scanned_per_returned")
+						validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Scanned objects per returned", mi.Description())
+						assert.Equal(t, "{scanned}/{returned}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.query_targeting.scanned_per_returned"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("scanned_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.db.storage":
-					assert.False(t, validatedMetrics["mongodbatlas.process.db.storage"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.storage")
-					validatedMetrics["mongodbatlas.process.db.storage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Storage used by the database", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					storageStatusAttrVal, ok := dp.Attributes().Get("storage_status")
-					assert.True(t, ok)
-					assert.Equal(t, "total", storageStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.storage"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.storage")
+						validatedMetrics["mongodbatlas.process.db.storage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Storage used by the database", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						storageStatusAttrVal, ok := dp.Attributes().Get("storage_status")
+						assert.True(t, ok)
+						assert.Equal(t, "total", storageStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.db.storage"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.storage")
+						validatedMetrics["mongodbatlas.process.db.storage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Storage used by the database", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.db.storage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("storage_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.global_lock":
-					assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
-					validatedMetrics["mongodbatlas.process.global_lock"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number and status of locks", mi.Description())
-					assert.Equal(t, "{locks}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					globalLockStateAttrVal, ok := dp.Attributes().Get("global_lock_state")
-					assert.True(t, ok)
-					assert.Equal(t, "current_queue_total", globalLockStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
+						validatedMetrics["mongodbatlas.process.global_lock"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number and status of locks", mi.Description())
+						assert.Equal(t, "{locks}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						globalLockStateAttrVal, ok := dp.Attributes().Get("global_lock_state")
+						assert.True(t, ok)
+						assert.Equal(t, "current_queue_total", globalLockStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
+						validatedMetrics["mongodbatlas.process.global_lock"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number and status of locks", mi.Description())
+						assert.Equal(t, "{locks}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.global_lock"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("global_lock_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.index.btree_miss_ratio":
 					assert.False(t, validatedMetrics["mongodbatlas.process.index.btree_miss_ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.btree_miss_ratio")
 					validatedMetrics["mongodbatlas.process.index.btree_miss_ratio"] = true
@@ -913,20 +1965,45 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.index.counters":
-					assert.False(t, validatedMetrics["mongodbatlas.process.index.counters"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.counters")
-					validatedMetrics["mongodbatlas.process.index.counters"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Indexes", mi.Description())
-					assert.Equal(t, "{indexes}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					btreeCounterTypeAttrVal, ok := dp.Attributes().Get("btree_counter_type")
-					assert.True(t, ok)
-					assert.Equal(t, "accesses", btreeCounterTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.index.counters"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.counters")
+						validatedMetrics["mongodbatlas.process.index.counters"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Indexes", mi.Description())
+						assert.Equal(t, "{indexes}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						btreeCounterTypeAttrVal, ok := dp.Attributes().Get("btree_counter_type")
+						assert.True(t, ok)
+						assert.Equal(t, "accesses", btreeCounterTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.index.counters"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.counters")
+						validatedMetrics["mongodbatlas.process.index.counters"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Indexes", mi.Description())
+						assert.Equal(t, "{indexes}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.index.counters"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("btree_counter_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.journaling.commits":
 					assert.False(t, validatedMetrics["mongodbatlas.process.journaling.commits"], "Found a duplicate in the metrics slice: mongodbatlas.process.journaling.commits")
 					validatedMetrics["mongodbatlas.process.journaling.commits"] = true
@@ -964,35 +2041,85 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.memory.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.process.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.memory.usage")
-					validatedMetrics["mongodbatlas.process.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Memory Usage", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
-					assert.True(t, ok)
-					assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.memory.usage")
+						validatedMetrics["mongodbatlas.process.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Memory Usage", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
+						assert.True(t, ok)
+						assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.memory.usage")
+						validatedMetrics["mongodbatlas.process.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Memory Usage", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.memory.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.network.io":
-					assert.False(t, validatedMetrics["mongodbatlas.process.network.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.io")
-					validatedMetrics["mongodbatlas.process.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Network IO", mi.Description())
-					assert.Equal(t, "By/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.network.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.io")
+						validatedMetrics["mongodbatlas.process.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.network.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.io")
+						validatedMetrics["mongodbatlas.process.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.network.io"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.network.requests":
 					assert.False(t, validatedMetrics["mongodbatlas.process.network.requests"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.requests")
 					validatedMetrics["mongodbatlas.process.network.requests"] = true
@@ -1020,35 +2147,85 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.oplog.time":
-					assert.False(t, validatedMetrics["mongodbatlas.process.oplog.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.time")
-					validatedMetrics["mongodbatlas.process.oplog.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Execution time by operation", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					oplogTypeAttrVal, ok := dp.Attributes().Get("oplog_type")
-					assert.True(t, ok)
-					assert.Equal(t, "slave_lag_master_time", oplogTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.oplog.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.time")
+						validatedMetrics["mongodbatlas.process.oplog.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Execution time by operation", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						oplogTypeAttrVal, ok := dp.Attributes().Get("oplog_type")
+						assert.True(t, ok)
+						assert.Equal(t, "slave_lag_master_time", oplogTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.oplog.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.time")
+						validatedMetrics["mongodbatlas.process.oplog.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Execution time by operation", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.oplog.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("oplog_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.page_faults":
-					assert.False(t, validatedMetrics["mongodbatlas.process.page_faults"], "Found a duplicate in the metrics slice: mongodbatlas.process.page_faults")
-					validatedMetrics["mongodbatlas.process.page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Page faults", mi.Description())
-					assert.Equal(t, "{faults}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryIssueTypeAttrVal, ok := dp.Attributes().Get("memory_issue_type")
-					assert.True(t, ok)
-					assert.Equal(t, "extra_info", memoryIssueTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.page_faults"], "Found a duplicate in the metrics slice: mongodbatlas.process.page_faults")
+						validatedMetrics["mongodbatlas.process.page_faults"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Page faults", mi.Description())
+						assert.Equal(t, "{faults}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryIssueTypeAttrVal, ok := dp.Attributes().Get("memory_issue_type")
+						assert.True(t, ok)
+						assert.Equal(t, "extra_info", memoryIssueTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.page_faults"], "Found a duplicate in the metrics slice: mongodbatlas.process.page_faults")
+						validatedMetrics["mongodbatlas.process.page_faults"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Page faults", mi.Description())
+						assert.Equal(t, "{faults}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.page_faults"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_issue_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.process.restarts":
 					assert.False(t, validatedMetrics["mongodbatlas.process.restarts"], "Found a duplicate in the metrics slice: mongodbatlas.process.restarts")
 					validatedMetrics["mongodbatlas.process.restarts"] = true
@@ -1062,110 +2239,285 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.process.tickets":
-					assert.False(t, validatedMetrics["mongodbatlas.process.tickets"], "Found a duplicate in the metrics slice: mongodbatlas.process.tickets")
-					validatedMetrics["mongodbatlas.process.tickets"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Tickets", mi.Description())
-					assert.Equal(t, "{tickets}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					ticketTypeAttrVal, ok := dp.Attributes().Get("ticket_type")
-					assert.True(t, ok)
-					assert.Equal(t, "available_reads", ticketTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.process.tickets"], "Found a duplicate in the metrics slice: mongodbatlas.process.tickets")
+						validatedMetrics["mongodbatlas.process.tickets"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Tickets", mi.Description())
+						assert.Equal(t, "{tickets}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						ticketTypeAttrVal, ok := dp.Attributes().Get("ticket_type")
+						assert.True(t, ok)
+						assert.Equal(t, "available_reads", ticketTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.process.tickets"], "Found a duplicate in the metrics slice: mongodbatlas.process.tickets")
+						validatedMetrics["mongodbatlas.process.tickets"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Tickets", mi.Description())
+						assert.Equal(t, "{tickets}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.process.tickets"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("ticket_type")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.cpu.normalized.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.average")
-					validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System CPU Normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.average")
+						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.average")
+						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.cpu.normalized.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.cpu.normalized.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.max")
-					validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System CPU Normalized to pct", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.max")
+						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.max")
+						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.cpu.normalized.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.cpu.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.average")
-					validatedMetrics["mongodbatlas.system.cpu.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System CPU Usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.average")
+						validatedMetrics["mongodbatlas.system.cpu.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.average")
+						validatedMetrics["mongodbatlas.system.cpu.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.cpu.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.cpu.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.max")
-					validatedMetrics["mongodbatlas.system.cpu.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System CPU Usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.max")
+						validatedMetrics["mongodbatlas.system.cpu.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.max")
+						validatedMetrics["mongodbatlas.system.cpu.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System CPU Usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.cpu.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.fts.cpu.normalized.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.normalized.usage")
-					validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Full text search disk usage (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.normalized.usage")
+						validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Full text search disk usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.normalized.usage")
+						validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Full text search disk usage (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.fts.cpu.normalized.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.fts.cpu.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.usage")
-					validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Full-text search (%)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.usage")
+						validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Full-text search (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "kernel", cpuStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.usage")
+						validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Full-text search (%)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.fts.cpu.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.fts.disk.used":
 					assert.False(t, validatedMetrics["mongodbatlas.system.fts.disk.used"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.disk.used")
 					validatedMetrics["mongodbatlas.system.fts.disk.used"] = true
@@ -1179,142 +2531,369 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.system.fts.memory.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.system.fts.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.memory.usage")
-					validatedMetrics["mongodbatlas.system.fts.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Full-text search", mi.Description())
-					assert.Equal(t, "MiBy", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
-					assert.True(t, ok)
-					assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.memory.usage")
+						validatedMetrics["mongodbatlas.system.fts.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Full-text search", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
+						assert.True(t, ok)
+						assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.fts.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.memory.usage")
+						validatedMetrics["mongodbatlas.system.fts.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Full-text search", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.fts.memory.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.memory.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.average")
-					validatedMetrics["mongodbatlas.system.memory.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System Memory Usage", mi.Description())
-					assert.Equal(t, "KiBy", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStatusAttrVal, ok := dp.Attributes().Get("memory_status")
-					assert.True(t, ok)
-					assert.Equal(t, "available", memoryStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.average")
+						validatedMetrics["mongodbatlas.system.memory.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Memory Usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStatusAttrVal, ok := dp.Attributes().Get("memory_status")
+						assert.True(t, ok)
+						assert.Equal(t, "available", memoryStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.average")
+						validatedMetrics["mongodbatlas.system.memory.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Memory Usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.memory.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.memory.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.max")
-					validatedMetrics["mongodbatlas.system.memory.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System Memory Usage", mi.Description())
-					assert.Equal(t, "KiBy", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStatusAttrVal, ok := dp.Attributes().Get("memory_status")
-					assert.True(t, ok)
-					assert.Equal(t, "available", memoryStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.max")
+						validatedMetrics["mongodbatlas.system.memory.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Memory Usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStatusAttrVal, ok := dp.Attributes().Get("memory_status")
+						assert.True(t, ok)
+						assert.Equal(t, "available", memoryStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.max")
+						validatedMetrics["mongodbatlas.system.memory.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Memory Usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.memory.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_status")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.network.io.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.network.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.average")
-					validatedMetrics["mongodbatlas.system.network.io.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System Network IO", mi.Description())
-					assert.Equal(t, "By/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.average")
+						validatedMetrics["mongodbatlas.system.network.io.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.average")
+						validatedMetrics["mongodbatlas.system.network.io.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.network.io.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.network.io.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.network.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.max")
-					validatedMetrics["mongodbatlas.system.network.io.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "System Network IO", mi.Description())
-					assert.Equal(t, "By/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.max")
+						validatedMetrics["mongodbatlas.system.network.io.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.max")
+						validatedMetrics["mongodbatlas.system.network.io.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "System Network IO", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.network.io.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.paging.io.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.average")
-					validatedMetrics["mongodbatlas.system.paging.io.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Swap IO", mi.Description())
-					assert.Equal(t, "{pages}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.average")
+						validatedMetrics["mongodbatlas.system.paging.io.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap IO", mi.Description())
+						assert.Equal(t, "{pages}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.average")
+						validatedMetrics["mongodbatlas.system.paging.io.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap IO", mi.Description())
+						assert.Equal(t, "{pages}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.paging.io.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.paging.io.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.max")
-					validatedMetrics["mongodbatlas.system.paging.io.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Swap IO", mi.Description())
-					assert.Equal(t, "{pages}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.max")
+						validatedMetrics["mongodbatlas.system.paging.io.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap IO", mi.Description())
+						assert.Equal(t, "{pages}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.max")
+						validatedMetrics["mongodbatlas.system.paging.io.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap IO", mi.Description())
+						assert.Equal(t, "{pages}/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.paging.io.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.paging.usage.average":
-					assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.average")
-					validatedMetrics["mongodbatlas.system.paging.usage.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Swap usage", mi.Description())
-					assert.Equal(t, "KiBy", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
-					assert.True(t, ok)
-					assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.average")
+						validatedMetrics["mongodbatlas.system.paging.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
+						assert.True(t, ok)
+						assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.average")
+						validatedMetrics["mongodbatlas.system.paging.usage.average"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.paging.usage.average"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_state")
+						assert.False(t, ok)
+					}
 				case "mongodbatlas.system.paging.usage.max":
-					assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.max")
-					validatedMetrics["mongodbatlas.system.paging.usage.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Swap usage", mi.Description())
-					assert.Equal(t, "KiBy", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
-					assert.True(t, ok)
-					assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.max")
+						validatedMetrics["mongodbatlas.system.paging.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						memoryStateAttrVal, ok := dp.Attributes().Get("memory_state")
+						assert.True(t, ok)
+						assert.Equal(t, "resident", memoryStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.max")
+						validatedMetrics["mongodbatlas.system.paging.usage.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Swap usage", mi.Description())
+						assert.Equal(t, "KiBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodbatlas.system.paging.usage.max"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("memory_state")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

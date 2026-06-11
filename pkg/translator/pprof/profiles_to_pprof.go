@@ -20,7 +20,7 @@ import (
 // errNotFound is returned if something requested is not available
 var errNotFound = errors.New("not found")
 
-func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
+func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	dst := &profile.Profile{}
 
 	rp := src.ResourceProfiles()
@@ -181,7 +181,7 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.TimeNanos = int64(p.Time().AsTime().Nanosecond())
+	dst.TimeNanos = p.Time().AsTime().UnixNano()
 	dst.DurationNanos = int64(p.DurationNano())
 	dst.Period = p.Period()
 

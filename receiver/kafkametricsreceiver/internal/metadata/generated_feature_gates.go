@@ -8,8 +8,9 @@ import (
 
 var ReceiverKafkametricsreceiverUseFranzGoFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.kafkametricsreceiver.UseFranzGo",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the Kafka Metrics receiver will use the franz-go client to connect to Kafka."),
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("The Kafka Metrics receiver now uses the franz-go client to connect to Kafka."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41480"),
 	featuregate.WithRegisterFromVersion("v0.137.0"),
+	featuregate.WithRegisterToVersion("v0.154.0"),
 )

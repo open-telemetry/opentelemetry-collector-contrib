@@ -200,7 +200,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			// resource spans
 			rAttr, ok := rs.At(i).Resource().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(rAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, rAttr))
 				continue
 			}
 
@@ -208,7 +208,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			ils := rs.At(0).ScopeSpans()
 			iAttr, ok := ils.At(0).Scope().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(iAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, iAttr))
 				continue
 			}
 
@@ -216,22 +216,22 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			spans := ils.At(0).Spans()
 
 			if a == pseudoAttrSpanKind {
-				rKey.WriteString(spans.At(0).Kind().String())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Kind().String()))
 				continue
 			}
 
 			if a == pseudoAttrSpanName {
-				rKey.WriteString(spans.At(0).Name())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Name()))
 				continue
 			}
 
 			sAttr, ok := spans.At(0).Attributes().Get(a)
 			if ok {
-				rKey.WriteString(sAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, sAttr))
 				continue
 			}
+
+			rKey.WriteString(buildAttributeRoutingKey(a))
 		}
 
 		// No matter what, there will be a key here (even if that key is "").

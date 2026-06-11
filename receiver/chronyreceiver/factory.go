@@ -39,9 +39,21 @@ func newMetricsReceiver(
 	s := newScraper(ctx, cfg, set)
 	sc, err := scraper.NewMetrics(s.scrape,
 		scraper.WithStart(func(_ context.Context, _ component.Host) error {
-			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
+			var chronyc chrony.Client
+			var err error
+			if cfg.FileMountPath != "" {
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout, chrony.WithFileMountPath(cfg.FileMountPath))
+			} else {
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout)
+			}
 			s.client = chronyc
 			return err
+		}),
+		scraper.WithShutdown(func(_ context.Context) error {
+			if s.client != nil {
+				return s.client.Close()
+			}
+			return nil
 		}),
 	)
 	if err != nil {

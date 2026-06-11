@@ -1,4 +1,4 @@
-metricstransform:
+metrics_transform:
   transforms:
     - include: name1
       metric_name: name2

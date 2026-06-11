@@ -6,13 +6,16 @@ package azureblobexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 )
@@ -31,7 +34,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				URL: "https://fakeaccount.blob.core.windows.net/",
+				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
+				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:         "service_principal",
 					TenantID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
@@ -64,7 +69,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				URL: "https://fakeaccount.blob.core.windows.net/",
+				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
+				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type: "system_managed_identity",
 				},
@@ -94,7 +101,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				URL: "https://fakeaccount.blob.core.windows.net/",
+				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
+				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:     "user_managed_identity",
 					ClientID: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
@@ -125,7 +134,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "wif"),
 			expected: &Config{
-				URL: "https://fakeaccount.blob.core.windows.net/",
+				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
+				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:               "workload_identity",
 					ClientID:           "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
@@ -156,8 +167,47 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "queue"),
+			expected: &Config{
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 10
+					queue.QueueSize = 100
+					return queue
+				}()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
+				URL:             "https://fakeaccount.blob.core.windows.net/",
+				Auth: Authentication{
+					Type: "system_managed_identity",
+				},
+				Container: TelemetryConfig{
+					Metrics: "test",
+					Logs:    "test",
+					Traces:  "test",
+				},
+				BlobNameFormat: BlobNameFormat{
+					MetricsFormat:     "2006/01/02/metrics_15_04_05.json",
+					LogsFormat:        "2006/01/02/logs_15_04_05.json",
+					TracesFormat:      "2006/01/02/traces_15_04_05.json",
+					SerialNumEnabled:  true,
+					SerialNumRange:    10000,
+					TimeParserEnabled: true,
+					Params:            map[string]string{},
+				},
+				FormatType:    "json",
+				Encodings:     Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "conn-string"),
 			expected: &Config{
+				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				Auth: Authentication{
 					Type:             "connection_string",
 					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",

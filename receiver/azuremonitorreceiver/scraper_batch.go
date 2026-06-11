@@ -518,6 +518,19 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
 		now := time.Now().UTC()
+
+		// Anti-duplicate guard: do not re-scrape a (resourceType, compositeKey) pair more often
+		// than its Azure timeGrain. The batch scraper emits points using the original Azure
+		// timestamp (cf. processQueryTimeseriesData), so re-scraping the same window would
+		// republish identical (labels, timestamp) tuples and trigger 409 "duplicate sample
+		// for timestamp" errors on Prometheus-compatible backends (Thanos, Mimir, Cortex…).
+		// This mirrors the guard already present in the non-batch scraper (scraper.go).
+		// Note: the guard is best-effort. metricsByCompositeKey is reset whenever the
+		// metrics definitions cache (CacheResourcesDefinitions, default 24h) expires,
+		// so at most one duplicating scrape may happen right after each expiration and on restarts.
+		if now.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+			continue
+		}
 		metricsByGrain.metricsValuesUpdated = now
 
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.

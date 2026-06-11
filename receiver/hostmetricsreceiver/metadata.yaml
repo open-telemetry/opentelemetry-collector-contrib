@@ -1,11 +1,10 @@
 display_name: Host Metrics Receiver
-type: hostmetrics
-
+type: host_metrics
+deprecated_type: hostmetrics
 description: |
   The Host Metrics receiver generates metrics about the host system scraped
   from various sources and host entity event as log. This is intended to be
   used when the collector is deployed as an agent.
-
 status:
   class: receiver
   stability:
@@ -21,11 +20,13 @@ feature_gates:
     stage: beta
     from_version: "v0.98.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849
+    skip_strict_validation: true
   - id: receiver.hostmetricsreceiver.UseLinuxMemAvailable
     description: When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel's MemAvailable statistic instead of MemFree, Buffers, and Cached.
     stage: beta
     from_version: "v0.137.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221
+    skip_strict_validation: true
 
 tests:
   config:

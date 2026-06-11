@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,24 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["chassis.powerstate"] = mb.metricChassisPowerstate.config.AggregationStrategy
+			aggMap["chassis.status.health"] = mb.metricChassisStatusHealth.config.AggregationStrategy
+			aggMap["chassis.status.state"] = mb.metricChassisStatusState.config.AggregationStrategy
+			aggMap["fan.reading"] = mb.metricFanReading.config.AggregationStrategy
+			aggMap["fan.status.health"] = mb.metricFanStatusHealth.config.AggregationStrategy
+			aggMap["fan.status.state"] = mb.metricFanStatusState.config.AggregationStrategy
+			aggMap["system.powerstate"] = mb.metricSystemPowerstate.config.AggregationStrategy
+			aggMap["system.status.health"] = mb.metricSystemStatusHealth.config.AggregationStrategy
+			aggMap["system.status.state"] = mb.metricSystemStatusState.config.AggregationStrategy
+			aggMap["temperature.reading"] = mb.metricTemperatureReading.config.AggregationStrategy
+			aggMap["temperature.status.health"] = mb.metricTemperatureStatusHealth.config.AggregationStrategy
+			aggMap["temperature.status.state"] = mb.metricTemperatureStatusState.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,56 +91,106 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisPowerstateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordChassisPowerstateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusHealthDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordChassisStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusStateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordChassisStatusStateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanReadingDataPoint(ts, 1, "chassis.id-val", "fan.name-val", "fan.reading_units-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordFanReadingDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2", "fan.reading_units-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusHealthDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordFanStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusStateDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordFanStatusStateDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPowerstateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemPowerstateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusHealthDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemStatusHealthDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusStateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemStatusStateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureReadingDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordTemperatureReadingDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordTemperatureStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordTemperatureStatusStateDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
 			rb.SetURLFull("url.full-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricChassisPowerstate.aggDataPoints)
+				assert.Empty(t, mb.metricChassisStatusHealth.aggDataPoints)
+				assert.Empty(t, mb.metricChassisStatusState.aggDataPoints)
+				assert.Empty(t, mb.metricFanReading.aggDataPoints)
+				assert.Empty(t, mb.metricFanStatusHealth.aggDataPoints)
+				assert.Empty(t, mb.metricFanStatusState.aggDataPoints)
+				assert.Empty(t, mb.metricSystemPowerstate.aggDataPoints)
+				assert.Empty(t, mb.metricSystemStatusHealth.aggDataPoints)
+				assert.Empty(t, mb.metricSystemStatusState.aggDataPoints)
+				assert.Empty(t, mb.metricTemperatureReading.aggDataPoints)
+				assert.Empty(t, mb.metricTemperatureStatusHealth.aggDataPoints)
+				assert.Empty(t, mb.metricTemperatureStatusState.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -147,341 +218,745 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "chassis.powerstate":
-					assert.False(t, validatedMetrics["chassis.powerstate"], "Found a duplicate in the metrics slice: chassis.powerstate")
-					validatedMetrics["chassis.powerstate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", mi.Description())
-					assert.Equal(t, "{powerstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
-					chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
-					chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
-					chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
-					chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
-					chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
-					chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["chassis.powerstate"], "Found a duplicate in the metrics slice: chassis.powerstate")
+						validatedMetrics["chassis.powerstate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", mi.Description())
+						assert.Equal(t, "{powerstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
+						chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
+						chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
+						chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
+						chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
+						chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
+						chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["chassis.powerstate"], "Found a duplicate in the metrics slice: chassis.powerstate")
+						validatedMetrics["chassis.powerstate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", mi.Description())
+						assert.Equal(t, "{powerstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["chassis.powerstate"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.chassis_type")
+						assert.False(t, ok)
+					}
 				case "chassis.status.health":
-					assert.False(t, validatedMetrics["chassis.status.health"], "Found a duplicate in the metrics slice: chassis.status.health")
-					validatedMetrics["chassis.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
-					assert.Equal(t, "{statushealth}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
-					chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
-					chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
-					chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
-					chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
-					chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
-					chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["chassis.status.health"], "Found a duplicate in the metrics slice: chassis.status.health")
+						validatedMetrics["chassis.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
+						chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
+						chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
+						chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
+						chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
+						chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
+						chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["chassis.status.health"], "Found a duplicate in the metrics slice: chassis.status.health")
+						validatedMetrics["chassis.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["chassis.status.health"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.chassis_type")
+						assert.False(t, ok)
+					}
 				case "chassis.status.state":
-					assert.False(t, validatedMetrics["chassis.status.state"], "Found a duplicate in the metrics slice: chassis.status.state")
-					validatedMetrics["chassis.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
-					assert.Equal(t, "{statusstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
-					chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
-					chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
-					chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
-					chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
-					chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
-					chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["chassis.status.state"], "Found a duplicate in the metrics slice: chassis.status.state")
+						validatedMetrics["chassis.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						chassisAssetTagAttrVal, ok := dp.Attributes().Get("chassis.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.asset_tag-val", chassisAssetTagAttrVal.Str())
+						chassisModelAttrVal, ok := dp.Attributes().Get("chassis.model")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.model-val", chassisModelAttrVal.Str())
+						chassisNameAttrVal, ok := dp.Attributes().Get("chassis.name")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.name-val", chassisNameAttrVal.Str())
+						chassisManufacturerAttrVal, ok := dp.Attributes().Get("chassis.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.manufacturer-val", chassisManufacturerAttrVal.Str())
+						chassisSerialNumberAttrVal, ok := dp.Attributes().Get("chassis.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.serial_number-val", chassisSerialNumberAttrVal.Str())
+						chassisSkuAttrVal, ok := dp.Attributes().Get("chassis.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.sku-val", chassisSkuAttrVal.Str())
+						chassisChassisTypeAttrVal, ok := dp.Attributes().Get("chassis.chassis_type")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.chassis_type-val", chassisChassisTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["chassis.status.state"], "Found a duplicate in the metrics slice: chassis.status.state")
+						validatedMetrics["chassis.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["chassis.status.state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("chassis.chassis_type")
+						assert.False(t, ok)
+					}
 				case "fan.reading":
-					assert.False(t, validatedMetrics["fan.reading"], "Found a duplicate in the metrics slice: fan.reading")
-					validatedMetrics["fan.reading"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the reading of a chassis fan.", mi.Description())
-					assert.Equal(t, "{}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
-					assert.True(t, ok)
-					assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
-					fanReadingUnitsAttrVal, ok := dp.Attributes().Get("fan.reading_units")
-					assert.True(t, ok)
-					assert.Equal(t, "fan.reading_units-val", fanReadingUnitsAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["fan.reading"], "Found a duplicate in the metrics slice: fan.reading")
+						validatedMetrics["fan.reading"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the reading of a chassis fan.", mi.Description())
+						assert.Equal(t, "{}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
+						assert.True(t, ok)
+						assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
+						fanReadingUnitsAttrVal, ok := dp.Attributes().Get("fan.reading_units")
+						assert.True(t, ok)
+						assert.Equal(t, "fan.reading_units-val", fanReadingUnitsAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["fan.reading"], "Found a duplicate in the metrics slice: fan.reading")
+						validatedMetrics["fan.reading"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the reading of a chassis fan.", mi.Description())
+						assert.Equal(t, "{}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["fan.reading"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("fan.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("fan.reading_units")
+						assert.False(t, ok)
+					}
 				case "fan.status.health":
-					assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
-					validatedMetrics["fan.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
-					assert.Equal(t, "{statushealth}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
-					assert.True(t, ok)
-					assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
+						validatedMetrics["fan.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
+						assert.True(t, ok)
+						assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
+						validatedMetrics["fan.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["fan.status.health"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("fan.name")
+						assert.False(t, ok)
+					}
 				case "fan.status.state":
-					assert.False(t, validatedMetrics["fan.status.state"], "Found a duplicate in the metrics slice: fan.status.state")
-					validatedMetrics["fan.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
-					assert.Equal(t, "{statusstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
-					assert.True(t, ok)
-					assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["fan.status.state"], "Found a duplicate in the metrics slice: fan.status.state")
+						validatedMetrics["fan.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						fanNameAttrVal, ok := dp.Attributes().Get("fan.name")
+						assert.True(t, ok)
+						assert.Equal(t, "fan.name-val", fanNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["fan.status.state"], "Found a duplicate in the metrics slice: fan.status.state")
+						validatedMetrics["fan.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["fan.status.state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("fan.name")
+						assert.False(t, ok)
+					}
 				case "system.powerstate":
-					assert.False(t, validatedMetrics["system.powerstate"], "Found a duplicate in the metrics slice: system.powerstate")
-					validatedMetrics["system.powerstate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", mi.Description())
-					assert.Equal(t, "{powerstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					systemIDAttrVal, ok := dp.Attributes().Get("system.id")
-					assert.True(t, ok)
-					assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
-					systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
-					systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
-					assert.True(t, ok)
-					assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
-					systemModelAttrVal, ok := dp.Attributes().Get("system.model")
-					assert.True(t, ok)
-					assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
-					systemNameAttrVal, ok := dp.Attributes().Get("system.name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
-					systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
-					systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
-					systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
-					systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
-					assert.True(t, ok)
-					assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.powerstate"], "Found a duplicate in the metrics slice: system.powerstate")
+						validatedMetrics["system.powerstate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", mi.Description())
+						assert.Equal(t, "{powerstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						systemIDAttrVal, ok := dp.Attributes().Get("system.id")
+						assert.True(t, ok)
+						assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
+						systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
+						systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
+						assert.True(t, ok)
+						assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
+						systemModelAttrVal, ok := dp.Attributes().Get("system.model")
+						assert.True(t, ok)
+						assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
+						systemNameAttrVal, ok := dp.Attributes().Get("system.name")
+						assert.True(t, ok)
+						assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
+						systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
+						systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
+						systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
+						systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
+						assert.True(t, ok)
+						assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.powerstate"], "Found a duplicate in the metrics slice: system.powerstate")
+						validatedMetrics["system.powerstate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", mi.Description())
+						assert.Equal(t, "{powerstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.powerstate"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.bios_version")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.system_type")
+						assert.False(t, ok)
+					}
 				case "system.status.health":
-					assert.False(t, validatedMetrics["system.status.health"], "Found a duplicate in the metrics slice: system.status.health")
-					validatedMetrics["system.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
-					assert.Equal(t, "{statushealth}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					systemIDAttrVal, ok := dp.Attributes().Get("system.id")
-					assert.True(t, ok)
-					assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
-					systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
-					systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
-					assert.True(t, ok)
-					assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
-					systemModelAttrVal, ok := dp.Attributes().Get("system.model")
-					assert.True(t, ok)
-					assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
-					systemNameAttrVal, ok := dp.Attributes().Get("system.name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
-					systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
-					systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
-					systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
-					systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
-					assert.True(t, ok)
-					assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.status.health"], "Found a duplicate in the metrics slice: system.status.health")
+						validatedMetrics["system.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						systemIDAttrVal, ok := dp.Attributes().Get("system.id")
+						assert.True(t, ok)
+						assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
+						systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
+						systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
+						assert.True(t, ok)
+						assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
+						systemModelAttrVal, ok := dp.Attributes().Get("system.model")
+						assert.True(t, ok)
+						assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
+						systemNameAttrVal, ok := dp.Attributes().Get("system.name")
+						assert.True(t, ok)
+						assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
+						systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
+						systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
+						systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
+						systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
+						assert.True(t, ok)
+						assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.status.health"], "Found a duplicate in the metrics slice: system.status.health")
+						validatedMetrics["system.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.status.health"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.bios_version")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.system_type")
+						assert.False(t, ok)
+					}
 				case "system.status.state":
-					assert.False(t, validatedMetrics["system.status.state"], "Found a duplicate in the metrics slice: system.status.state")
-					validatedMetrics["system.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
-					assert.Equal(t, "{statusstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					systemIDAttrVal, ok := dp.Attributes().Get("system.id")
-					assert.True(t, ok)
-					assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
-					systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
-					assert.True(t, ok)
-					assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
-					systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
-					assert.True(t, ok)
-					assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
-					systemModelAttrVal, ok := dp.Attributes().Get("system.model")
-					assert.True(t, ok)
-					assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
-					systemNameAttrVal, ok := dp.Attributes().Get("system.name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
-					systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
-					assert.True(t, ok)
-					assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
-					systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
-					assert.True(t, ok)
-					assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
-					systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
-					assert.True(t, ok)
-					assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
-					systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
-					assert.True(t, ok)
-					assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.status.state"], "Found a duplicate in the metrics slice: system.status.state")
+						validatedMetrics["system.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						systemIDAttrVal, ok := dp.Attributes().Get("system.id")
+						assert.True(t, ok)
+						assert.Equal(t, "system.id-val", systemIDAttrVal.Str())
+						systemAssetTagAttrVal, ok := dp.Attributes().Get("system.asset_tag")
+						assert.True(t, ok)
+						assert.Equal(t, "system.asset_tag-val", systemAssetTagAttrVal.Str())
+						systemBiosVersionAttrVal, ok := dp.Attributes().Get("system.bios_version")
+						assert.True(t, ok)
+						assert.Equal(t, "system.bios_version-val", systemBiosVersionAttrVal.Str())
+						systemModelAttrVal, ok := dp.Attributes().Get("system.model")
+						assert.True(t, ok)
+						assert.Equal(t, "system.model-val", systemModelAttrVal.Str())
+						systemNameAttrVal, ok := dp.Attributes().Get("system.name")
+						assert.True(t, ok)
+						assert.Equal(t, "system.name-val", systemNameAttrVal.Str())
+						systemManufacturerAttrVal, ok := dp.Attributes().Get("system.manufacturer")
+						assert.True(t, ok)
+						assert.Equal(t, "system.manufacturer-val", systemManufacturerAttrVal.Str())
+						systemSerialNumberAttrVal, ok := dp.Attributes().Get("system.serial_number")
+						assert.True(t, ok)
+						assert.Equal(t, "system.serial_number-val", systemSerialNumberAttrVal.Str())
+						systemSkuAttrVal, ok := dp.Attributes().Get("system.sku")
+						assert.True(t, ok)
+						assert.Equal(t, "system.sku-val", systemSkuAttrVal.Str())
+						systemSystemTypeAttrVal, ok := dp.Attributes().Get("system.system_type")
+						assert.True(t, ok)
+						assert.Equal(t, "system.system_type-val", systemSystemTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.status.state"], "Found a duplicate in the metrics slice: system.status.state")
+						validatedMetrics["system.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.status.state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.asset_tag")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.bios_version")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.model")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.manufacturer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.serial_number")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.sku")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("system.system_type")
+						assert.False(t, ok)
+					}
 				case "temperature.reading":
-					assert.False(t, validatedMetrics["temperature.reading"], "Found a duplicate in the metrics slice: temperature.reading")
-					validatedMetrics["temperature.reading"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the reading of a chassis temperature.", mi.Description())
-					assert.Equal(t, "°C", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
-					assert.True(t, ok)
-					assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["temperature.reading"], "Found a duplicate in the metrics slice: temperature.reading")
+						validatedMetrics["temperature.reading"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the reading of a chassis temperature.", mi.Description())
+						assert.Equal(t, "°C", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
+						assert.True(t, ok)
+						assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["temperature.reading"], "Found a duplicate in the metrics slice: temperature.reading")
+						validatedMetrics["temperature.reading"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the reading of a chassis temperature.", mi.Description())
+						assert.Equal(t, "°C", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["temperature.reading"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("temperature.name")
+						assert.False(t, ok)
+					}
 				case "temperature.status.health":
-					assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
-					validatedMetrics["temperature.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
-					assert.Equal(t, "{statushealth}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
-					assert.True(t, ok)
-					assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
+						validatedMetrics["temperature.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
+						assert.True(t, ok)
+						assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
+						validatedMetrics["temperature.status.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+						assert.Equal(t, "{statushealth}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["temperature.status.health"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("temperature.name")
+						assert.False(t, ok)
+					}
 				case "temperature.status.state":
-					assert.False(t, validatedMetrics["temperature.status.state"], "Found a duplicate in the metrics slice: temperature.status.state")
-					validatedMetrics["temperature.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
-					assert.Equal(t, "{statusstate}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
-					assert.True(t, ok)
-					assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
-					temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
-					assert.True(t, ok)
-					assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["temperature.status.state"], "Found a duplicate in the metrics slice: temperature.status.state")
+						validatedMetrics["temperature.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						chassisIDAttrVal, ok := dp.Attributes().Get("chassis.id")
+						assert.True(t, ok)
+						assert.Equal(t, "chassis.id-val", chassisIDAttrVal.Str())
+						temperatureNameAttrVal, ok := dp.Attributes().Get("temperature.name")
+						assert.True(t, ok)
+						assert.Equal(t, "temperature.name-val", temperatureNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["temperature.status.state"], "Found a duplicate in the metrics slice: temperature.status.state")
+						validatedMetrics["temperature.status.state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+						assert.Equal(t, "{statusstate}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["temperature.status.state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("chassis.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("temperature.name")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

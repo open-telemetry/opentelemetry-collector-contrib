@@ -1,6 +1,8 @@
 self-hosted-runner:
   labels:
     - oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
+    - cncf-ubuntu-8-32-x86
+    - cncf-ubuntu-8-32-arm
 
 config-variables: null
 

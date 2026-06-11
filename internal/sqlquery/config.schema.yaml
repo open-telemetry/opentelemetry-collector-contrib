@@ -84,6 +84,8 @@ $defs:
   query:
     type: object
     properties:
+      ignore_null_values:
+        type: boolean
       logs:
         type: array
         items:
