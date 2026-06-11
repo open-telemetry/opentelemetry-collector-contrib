@@ -14,6 +14,7 @@ extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.153.1-0.20260605023205-2008f48638ec
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.153.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/resourceexhaustedretryextension v0.113.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.153.1-0.20260605023205-2008f48638ec

@@ -14,6 +14,7 @@ dist:
   output_path: ./cmd/otelcontribcol
 
 extensions:
+  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.153.1-0.20260605023205-2008f48638ec
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.153.1-0.20260605023205-2008f48638ec
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.153.0
@@ -40,6 +41,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.153.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/resourceexhaustedretryextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.153.0
