@@ -79,7 +79,7 @@ func ReadConfig() (*Config, error) {
 	var (
 		dirPath       string
 		output        = *outputFolder
-		mode          = Component
+		mode          = Package
 		mappings      Mappings
 		ctype         string
 		class         string
