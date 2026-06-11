@@ -59,7 +59,7 @@ func createTracesProcessor(
 		return nil, err
 	}
 
-	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder)
+	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder, nil)
 	if err != nil {
 		return nil, err
 	}
