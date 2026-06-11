@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -110,12 +111,15 @@ func basicSliceByte() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
 	tests := []struct {
 		name        string
 		val         value
 		ctx         any
 		want        any
 		wantLiteral bool
+		assertValue func(t *testing.T, a any) bool
 	}{
 		{
 			name: "string literal",
@@ -705,6 +709,38 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
+		{
+			name: "lambda",
+			val: value{
+				Lambda: &lambdaExpr{
+					Params: []localIdentifierDecl{"value"},
+					Arrow:  "=>",
+					Body: lambdaBody{
+						Value: &value{
+							Literal: &mathExprLiteral{
+								Path: &path{Fields: []field{{Name: "value"}}},
+							},
+						},
+					},
+				},
+			},
+			wantLiteral: true,
+			assertValue: func(t *testing.T, a any) bool {
+				expected := newLambdaExpression[any](
+					makeLocalIdentifiers("value"),
+					&localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true, fetched: true, originalText: "value"}},
+					nil,
+				)
+				assert.NotNil(t, expected.activationPool)
+				expected.activationPool = nil
+				if v, ok := a.(*LambdaExpression[any]); ok {
+					assert.NotNil(t, v.activationPool)
+					v.activationPool = nil
+					return assert.Equal(t, expected, v)
+				}
+				return assert.Fail(t, "expected LambdaExpression")
+			},
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -729,7 +765,7 @@ func Test_newGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 
 			tCtx := tt.want
@@ -750,12 +786,17 @@ func Test_newGetter(t *testing.T) {
 				val, err = reader.Get(t.Context(), tCtx)
 				require.NoError(t, err)
 			}
-			assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+
+			if tt.assertValue != nil {
+				tt.assertValue(t, val)
+			} else {
+				assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+			}
 		})
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(value{})
+		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
 	})
 }
@@ -876,7 +917,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("type, string, does not support int indexing"),
+			err: errors.New("type string does not support int indexing"),
 		},
 		{
 			name: "invalid string indexing type",
@@ -892,7 +933,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("type, string, does not support string indexing"),
+			err: errors.New("type string does not support string indexing"),
 		},
 	}
 
@@ -913,7 +954,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)

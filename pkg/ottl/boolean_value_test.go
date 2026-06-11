@@ -173,7 +173,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
-			evaluator, err := p.newComparisonExpr(comp)
+			evaluator, err := p.newParseContext().newComparisonExpr(comp)
 			require.NoError(t, err)
 			result, err := evaluator.Eval(t.Context(), tt.item)
 			require.NoError(t, err)
@@ -209,7 +209,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newComparisonExpr(tt.comparison)
+			_, err := p.newParseContext().newComparisonExpr(tt.comparison)
 			assert.Error(t, err)
 		})
 	}
@@ -618,7 +618,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluator, err := p.newBoolExpr(tt.expr)
+			evaluator, err := p.newParseContext().newBoolExpr(tt.expr)
 			require.NoError(t, err)
 			result, err := evaluator.Eval(t.Context(), nil)
 			require.NoError(t, err)
@@ -658,7 +658,7 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluator, err := p.newBoolExpr(tt.expr)
+			evaluator, err := p.newParseContext().newBoolExpr(tt.expr)
 			require.NoError(t, err)
 			_, err = evaluator.Eval(t.Context(), nil)
 			assert.Error(t, err)
