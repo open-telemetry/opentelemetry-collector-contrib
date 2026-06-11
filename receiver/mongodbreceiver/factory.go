@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -90,16 +90,15 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 			scraper.WithShutdown(ms.shutdown),
 		)
 		if err != nil {
-			ms.logger.Error("failed to create log scraper", zap.Error(err))
-		} else {
-			opts = append(
-				opts,
-				scraperhelper.AddFactoryWithConfig(
-					scraper.NewFactory(
-						metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
-							return s, nil
-						}, metadata.LogsStability)), nil))
+			return nil, fmt.Errorf("failed to create log scraper: %w", err)
 		}
+		opts = append(
+			opts,
+			scraperhelper.AddFactoryWithConfig(
+				scraper.NewFactory(
+					metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+						return s, nil
+					}, metadata.LogsStability)), nil))
 	}
 	return scraperhelper.NewLogsController(
 		&cfg.ControllerConfig, params, consumer, opts...)

@@ -513,27 +513,15 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	}
 
 	host, port, err := net.SplitHostPort(clientAddr)
-	if err == nil {
-		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
-		if parseErr != nil {
-			return host, 0
-		}
-		return host, parsedPort
+	if err != nil {
+		return clientAddr, 0
 	}
 
-	if strings.Count(clientAddr, ":") == 1 {
-		host, port, found := strings.Cut(clientAddr, ":")
-		if !found {
-			return clientAddr, 0
-		}
-		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
-		if parseErr != nil {
-			return host, 0
-		}
-		return host, parsedPort
+	parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
+	if parseErr != nil {
+		return host, 0
 	}
-
-	return clientAddr, 0
+	return host, parsedPort
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
