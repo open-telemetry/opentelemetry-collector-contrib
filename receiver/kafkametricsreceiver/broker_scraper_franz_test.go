@@ -130,6 +130,7 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 		ClusterAlias:         "test-cluster",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 	cfg.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
 	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
@@ -145,6 +146,11 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "test-cluster", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	ms := rm.ScopeMetrics().At(0).Metrics()
 	var sawBrokers, sawRetention bool
