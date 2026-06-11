@@ -118,7 +118,7 @@ receivers:
       allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
 ```
 
-## SQL Comment Extraction for APM Correlation
+## SQL Comment Extraction
 
 When the `db.server.query_sample` and/or `db.server.top_query` events are enabled, the receiver can
 extract key-value pairs from leading SQL block comments (`/* key=value */`) and emit them as the
@@ -131,7 +131,7 @@ under `top_query_collection` and `query_sample_collection`:
   collection, only keys present in this allowlist are extracted from the leading SQL comment and
   included (as comma-separated `key=value` pairs) in the `query.comments` attribute.
 
-Extraction is secure by default and disabled unless explicitly configured:
+Extraction is disabled unless explicitly configured:
 
 - When `allowed_comment_keys` is empty or unset, no comments are extracted.
 - Only keys included in the allowlist are emitted; all other comment keys are ignored.
@@ -149,12 +149,13 @@ receivers:
       db.server.top_query:
         enabled: true
     top_query_collection:
-      allowed_comment_keys: [application]
+      allowed_comment_keys: [application, team]
     query_sample_collection:
-      allowed_comment_keys: [application]
+      allowed_comment_keys: [application, team]
 ```
 
-Given a query such as `/* application=exampleApp */ SELECT * FROM users`, the emitted log record
-will include `query.comments` set to `application=exampleApp`.
+Given a query such as `/* application=exampleApp,team=payments */ SELECT * FROM users`, the emitted
+log record will include `query.comments` set to `application=exampleApp,team=payments`. When multiple
+keys are extracted, they are emitted as a comma-separated list of `key=value` pairs.
 
 See [documentation](./documentation.md) for details on the `query.comments` attribute.
