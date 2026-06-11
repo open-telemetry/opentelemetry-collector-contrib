@@ -104,8 +104,8 @@ components:
         - attributes
         - cardinality_guardian
         - cumulativetodelta
-        - deltatocumulative
         - delta_to_rate
+        - deltatocumulative
         - drain
         - filter
         - gen_ai_normalizer
