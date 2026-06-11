@@ -75,7 +75,7 @@ func TestResolver_StartFetchError(t *testing.T) {
 	assert.Contains(t, err.Error(), "access denied")
 }
 
-func TestResolver_StartOnFetchError(t *testing.T) {
+func TestResolver_StartProcessSecretError(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
 	mock.setSecret("some-value")
@@ -157,7 +157,7 @@ func TestResolver_RefreshFetchError(t *testing.T) {
 	assert.Equal(t, "good-value", received.Load())
 }
 
-func TestResolver_RefreshOnFetchError(t *testing.T) {
+func TestResolver_RefreshProcessSecretError(t *testing.T) {
 	t.Parallel()
 	mock := &mockSMClient{}
 	mock.setSecret("initial")
