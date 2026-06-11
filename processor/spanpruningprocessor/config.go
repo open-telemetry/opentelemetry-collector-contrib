@@ -56,6 +56,13 @@ type Config struct {
 	// metric recordings that include exemplars when loss analysis is enabled.
 	// Range: 0.0 (disabled) to 1.0 (always).
 	AttributeLossExemplarSampleRate float64 `mapstructure:"attribute_loss_exemplar_sample_rate"`
+
+	// Conditions is a list of OTTL conditions that determine which traces
+	// should be pruned. Conditions use OTTL span context syntax. When empty,
+	// all traces are pruned (current behavior). When set, only traces where
+	// at least one span matches any condition are pruned.
+	// Example: `resource.attributes["service.name"] == "loki-query-engine"`
+	Conditions []string `mapstructure:"conditions"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -88,6 +95,13 @@ func (cfg *Config) Validate() error {
 		_, err := glob.Compile(pattern)
 		if err != nil {
 			return fmt.Errorf("invalid glob pattern at group_by_attributes[%d]: %q: %w", i, pattern, err)
+		}
+	}
+
+	// Validate Conditions (OTTL syntax validated at factory time)
+	for i, cond := range cfg.Conditions {
+		if strings.TrimSpace(cond) == "" {
+			return fmt.Errorf("conditions[%d] cannot be empty", i)
 		}
 	}
 
