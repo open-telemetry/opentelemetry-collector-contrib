@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `object_name`, `object_type`, `filter_predicates`, `partition_start`, and `partition_stop` attributes to Oracle query execution plan events
+note: Add additional attributes to the Oracle query execution plan.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48965]
@@ -16,13 +16,12 @@ issues: [48965]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Extend the `V$SQL_PLAN` query in the Oracle DB receiver execution-plan template with five additional columns:
-  - object_name: Name of the object referenced by the plan step
-  - object_type: Type of the referenced object (e.g., table, index)
-  - filter_predicates: Predicates applied as a filter during the step
-  - partition_start: Starting partition for partitioned access
-  - partition_stop: Ending partition for partitioned access
-  These attributes provide richer object, partition, and filter context for execution plan analysis and query tuning.
+  Extend the execution plan with five additional attributes:
+  - `object_name`: Name of the object referenced by the plan step
+  - `object_type`: Type of the referenced object (e.g., table, index)
+  - `filter_predicates`: Predicates applied as a filter during the step
+  - `partition_start`: Starting partition for partitioned access
+  - `partition_stop`: Ending partition for partitioned access
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
