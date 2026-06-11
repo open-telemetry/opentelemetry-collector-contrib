@@ -21,8 +21,8 @@ func TestReadConfig(t *testing.T) {
 	cfg, err := readConfigForTest(t, dir)
 	require.NoError(t, err)
 
-	// No metadata.yaml present: falls back to the default mode (Component).
-	require.Equal(t, Component, cfg.Mode)
+	// No metadata.yaml present: falls back to the default mode (Package).
+	require.Equal(t, Package, cfg.Mode)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
 	require.Empty(t, cfg.ConfigType)
@@ -177,7 +177,7 @@ status:
 		{
 			name:          "no metadata file",
 			metadata:      "",
-			expectedMode:  Component,
+			expectedMode:  Package,
 			expectedClass: "",
 		},
 	}
@@ -252,11 +252,10 @@ func TestReadConfig_PatternResolvesMetadata(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	// Verify the local dirPath has no metadata.yaml (so mode would be Component
-	// by default without pattern-based resolution, which would be wrong for a
-	// package-mode component). We can only test this properly for local packages
-	// because packages.Load needs a real module graph; we just verify that when
-	// pattern == "." the metadata comes from dirPath.
+	// Verify the local dirPath has no metadata.yaml (so mode would be Package
+	// by default without pattern-based resolution). We can only test this properly
+	// for local packages because packages.Load needs a real module graph; we just
+	// verify that when pattern == "." the metadata comes from dirPath.
 	createConfigFile(t, dir, "config.go")
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: testpkg
 status:
