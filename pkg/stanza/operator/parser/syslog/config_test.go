@@ -41,6 +41,14 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "none",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = None
+					return cfg
+				}(),
+			},
+			{
 				Name: "location",
 				Expect: func() *Config {
 					cfg := NewConfig()
