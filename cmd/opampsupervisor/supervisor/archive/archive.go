@@ -59,7 +59,7 @@ func (r rawInstaller) Install(_ context.Context, pkg []byte, destination string)
 	}
 
 	// Create or truncate the destination with executable permissions.
-	if err := os.WriteFile(destination, pkg, 0o700); err != nil {
+	if err := os.WriteFile(destination, pkg, 0o700); err != nil { //nolint:gosec // G306: the agent binary must be executable
 		return fmt.Errorf("write binary to destination: %w", err)
 	}
 
