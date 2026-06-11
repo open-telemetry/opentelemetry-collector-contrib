@@ -29,6 +29,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorSpanpruningSpansPruned.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningSpansReceived.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningTracesProcessed.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningTracesSkipped.Add(context.Background(), 1)
 	AssertEqualProcessorSpanpruningAggregationGroupSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
@@ -57,6 +58,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningTracesProcessed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningTracesSkipped(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

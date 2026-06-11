@@ -17,7 +17,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
@@ -40,7 +45,7 @@ func TestLeafSpanPruning_BasicAggregation(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -71,7 +76,7 @@ func TestLeafSpanPruning_BelowThreshold(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 1, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 1, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 2, originalSpanCount) // 1 parent + 1 leaf span
 
@@ -539,7 +544,7 @@ func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, met
 	return hist
 }
 
-func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
+func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, attrs map[string]string) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -560,7 +565,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
 		span.SetParentSpanID(parentSpanID)
-		span.SetName(spanName)
+		span.SetName("SELECT")
 		span.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
 		span.SetEndTimestamp(pcommon.Timestamp(1000000100 + int64(i)*100))
 		for k, v := range attrs {
@@ -2248,4 +2253,370 @@ func findAllSummarySpans(td ptrace.Traces) []ptrace.Span {
 		}
 	}
 	return result
+}
+
+// OTTL Condition Filtering Tests
+
+func TestOTTLConditions_NoConditions(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
+	originalSpanCount := countSpans(td)
+	require.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 2, finalSpanCount) // 1 parent + 1 summary
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+	spanCount, exists := summarySpan.Attributes().Get("aggregation.span_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(3), spanCount.Int())
+
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_traces_skipped")
+	assert.Error(t, err, "traces_skipped should not be emitted when no traces are skipped")
+}
+
+func TestOTTLConditions_ConditionMatches(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`resource.attributes["service.name"] == "loki-query-engine"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithResourceAttr(t, "loki-query-engine")
+	originalSpanCount := countSpans(td)
+	require.Equal(t, 4, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+	_, found := findSummarySpan(td)
+	require.True(t, found)
+}
+
+func TestOTTLConditions_ConditionDoesNotMatch(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`resource.attributes["service.name"] == "loki-query-engine"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithResourceAttr(t, "other-service")
+	originalSpanCount := countSpans(td)
+	require.Equal(t, 4, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, originalSpanCount, countSpans(td))
+	_, found := findSummarySpan(td)
+	assert.False(t, found)
+}
+
+func TestOTTLConditions_SpanAttributeCondition(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`attributes["db.system"] == "postgresql"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{
+		"db.operation": "select",
+		"db.system":    "postgresql",
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+	_, found := findSummarySpan(td)
+	require.True(t, found)
+}
+
+func TestOTTLConditions_MultipleConditions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{
+		`resource.attributes["service.name"] == "loki-query-engine"`,
+		`resource.attributes["service.name"] == "tempo-query-engine"`,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithResourceAttr(t, "tempo-query-engine")
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+	_, found := findSummarySpan(td)
+	require.True(t, found)
+}
+
+func TestOTTLConditions_MixedTraces(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`resource.attributes["service.name"] == "loki-query-engine"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := ptrace.NewTraces()
+
+	rs1 := td.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("service.name", "loki-query-engine")
+	ss1 := rs1.ScopeSpans().AppendEmpty()
+	traceID1 := pcommon.TraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	parentSpanID1 := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	parent1 := ss1.Spans().AppendEmpty()
+	parent1.SetTraceID(traceID1)
+	parent1.SetSpanID(parentSpanID1)
+	parent1.SetName("parent")
+	for i := range 3 {
+		span := ss1.Spans().AppendEmpty()
+		span.SetTraceID(traceID1)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID1)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	rs2 := td.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("service.name", "other-service")
+	ss2 := rs2.ScopeSpans().AppendEmpty()
+	traceID2 := pcommon.TraceID([16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2})
+	parentSpanID2 := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+	parent2 := ss2.Spans().AppendEmpty()
+	parent2.SetTraceID(traceID2)
+	parent2.SetSpanID(parentSpanID2)
+	parent2.SetName("parent")
+	for i := range 3 {
+		span := ss2.Spans().AppendEmpty()
+		span.SetTraceID(traceID2)
+		span.SetSpanID(pcommon.SpanID([8]byte{4, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID2)
+		span.SetName("INSERT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 6, countSpans(td), "one trace should be pruned and one should pass through")
+
+	var matchedSpans, unmatchedSpans int
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		svc, _ := rs.Resource().Attributes().Get("service.name")
+		spansInResource := 0
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			spansInResource += rs.ScopeSpans().At(j).Spans().Len()
+		}
+		switch svc.Str() {
+		case "loki-query-engine":
+			matchedSpans = spansInResource
+		case "other-service":
+			unmatchedSpans = spansInResource
+		}
+	}
+
+	assert.Equal(t, 2, matchedSpans, "matching trace should be pruned")
+	assert.Equal(t, 4, unmatchedSpans, "non-matching trace should remain unchanged")
+}
+
+func TestOTTLConditions_InvalidOTTL(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`invalid otql syntax [[[`}
+
+	_, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.Error(t, err)
+}
+
+func TestOTTLConditions_TracesSkippedMetric(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`resource.attributes["service.name"] == "loki-query-engine"`}
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithResourceAttr(t, "other-service")
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metric, err := tel.GetMetric("otelcol_processor_spanpruning_traces_skipped")
+	require.NoError(t, err)
+	sum, ok := metric.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	require.Len(t, sum.DataPoints, 1)
+	assert.Equal(t, int64(1), sum.DataPoints[0].Value)
+
+	metadatatest.AssertEqualProcessorSpanpruningTracesSkipped(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestOTTLConditions_SpanNameCondition(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`name == "SELECT"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
+	originalSpanCount := countSpans(td)
+	require.Equal(t, 4, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+	_, found := findSummarySpan(td)
+	require.True(t, found)
+}
+
+func TestOTTLConditions_StatusCondition(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`status.code == 2`} // StatusCodeError
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithMixedStatusSpans(t)
+	originalSpanCount := countSpans(td)
+	require.Equal(t, 7, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Less(t, countSpans(td), originalSpanCount)
+}
+
+func TestOTTLConditions_NoSpansMatch(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`attributes["never.match"] == "value"`}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
+	originalSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, originalSpanCount, countSpans(td))
+	_, found := findSummarySpan(td)
+	assert.False(t, found)
+}
+
+func TestOTTLConditions_EvalErrorLogging(t *testing.T) {
+	observedZapCore, observedLogs := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(observedZapCore)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.Conditions = []string{`ParseJSON(attributes["db.operation"])["key"] == "value"`}
+
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	require.NoError(t, err)
+
+	conditions, err := newBoolExprForSpan(
+		cfg.Conditions,
+		standardSpanFuncs(),
+		ottl.PropagateError,
+		settings.TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	p, err := newSpanPruningProcessor(settings, cfg, telemetryBuilder, conditions)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, p.shutdown(context.Background())) }) //nolint:usetesting
+
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
+	originalSpanCount := countSpans(td)
+
+	resultTd, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, originalSpanCount, countSpans(resultTd), "trace should pass through unchanged when condition eval fails")
+
+	entries := observedLogs.All()
+	require.NotEmpty(t, entries)
+
+	foundEvalErrorLog := false
+	for _, entry := range entries {
+		if strings.Contains(entry.Message, "OTTL condition evaluation error") {
+			foundEvalErrorLog = true
+			assert.Equal(t, zapcore.ErrorLevel, entry.Level)
+		}
+	}
+	assert.True(t, foundEvalErrorLog, "expected at least one OTTL condition evaluation error log")
+}
+
+func createTestTraceWithResourceAttr(t *testing.T, serviceName string) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	for i := range 3 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100 + int64(i)*100))
+	}
+
+	return td
 }
