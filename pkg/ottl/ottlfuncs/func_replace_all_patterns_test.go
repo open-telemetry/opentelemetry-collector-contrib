@@ -75,6 +75,26 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 		},
 		{
+			name:    "function replaces at match position not by text",
+			mode:    modeValue,
+			pattern: `world\d`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye hash(world1) and hash(world2)")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
+			},
+		},
+		{
 			name:    "replace only matches (with capture group and hash function)",
 			mode:    modeValue,
 			pattern: "(hello)",
