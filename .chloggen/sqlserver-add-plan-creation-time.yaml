@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `sqlserver.query.plan_creation_time` attribute to the `db.server.top_query` event.
+note: Add `sqlserver.query.plan.creation_time` attribute to the `db.server.top_query` event.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49018]

@@ -126,7 +126,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutStr("sqlserver.procedure_id", sqlserverProcedureIDAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_name", sqlserverProcedureNameAttributeValue)
 	dp.Attributes().PutStr("sqlserver.query.last_started", sqlserverQueryLastStartedAttributeValue)
-	dp.Attributes().PutStr("sqlserver.query.plan_creation_time", sqlserverQueryPlanCreationTimeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.query.plan.creation_time", sqlserverQueryPlanCreationTimeAttributeValue)
 
 }
 
