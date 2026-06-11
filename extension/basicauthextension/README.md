@@ -55,7 +55,7 @@ The extension supports fetching credentials from AWS Secrets Manager with automa
 - `password_key` (required for client_auth): The JSON key containing the password.
 - `value_key` (optional for htpasswd): If set, treats the secret as JSON and extracts this key. Otherwise, the raw secret string is used as htpasswd content.
 
-The extension uses the AWS SDK's default credential chain (`aws-sdk-go-v2/config.LoadDefaultConfig`). This means the collector workload must have an IAM identity that grants `secretsmanager:GetSecretValue` on the target secret. In practice, attach an instance profile role (EC2), a pod identity or IRSA role (EKS), or a task role (ECS) to the workload running the collector.
+The extension uses the AWS SDK's default credential chain (`aws-sdk-go-v2/config.LoadDefaultConfig`). This means the collector workload must have an IAM identity that grants `secretsmanager:GetSecretValue` on the target secret. If the secret is encrypted with a customer managed KMS key (CMK), the identity also needs `kms:Decrypt` on that key's ARN. In practice, attach an instance profile role (EC2), a pod identity or IRSA role (EKS), or a task role (ECS) to the workload running the collector.
 ## Configuration
 
 ```yaml
