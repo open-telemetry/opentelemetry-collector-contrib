@@ -22,7 +22,7 @@ const (
 	fetchTimeout           = 30 * time.Second
 )
 
-// SecretsManagerClient is the subset of the AWS Secrets Manager API used by Resolver.
+// SecretsManagerClient abstracts the AWS Secrets Manager API for testing.
 type SecretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 }
@@ -111,6 +111,8 @@ func (r *Resolver) refreshLoop(ctx context.Context) {
 			}
 			if err := r.processSecret(raw); err != nil {
 				r.logger.Error("failed to process refreshed secret", zap.String("secret_arn", r.secretARN), zap.Error(err))
+			} else {
+				r.logger.Info("secret refreshed successfully", zap.String("secret_arn", r.secretARN))
 			}
 		}
 	}
