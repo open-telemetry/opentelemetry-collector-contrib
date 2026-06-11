@@ -58,6 +58,14 @@ resource_attributes:
     description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
     enabled: true
     type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:postgresql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
+    type: string
 
 attributes:
   bg_buffer_source:
