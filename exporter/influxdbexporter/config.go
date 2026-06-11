@@ -5,6 +5,7 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"golang.org/x/exp/maps"
 )
 
 // V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
@@ -93,7 +93,7 @@ func (cfg *Config) Validate() error {
 	}
 	if len(duplicateSpanDimensions) > 0 {
 		return fmt.Errorf("duplicate span dimension(s) configured: %s",
-			strings.Join(maps.Keys(duplicateSpanDimensions), ","))
+			strings.Join(slices.Collect(maps.Keys(duplicateSpanDimensions)), ","))
 	}
 
 	logRecordDimensions := make(map[string]struct{}, len(cfg.LogRecordDimensions))
@@ -107,7 +107,7 @@ func (cfg *Config) Validate() error {
 	}
 	if len(duplicateLogRecordDimensions) > 0 {
 		return fmt.Errorf("duplicate log record dimension(s) configured: %s",
-			strings.Join(maps.Keys(duplicateLogRecordDimensions), ","))
+			strings.Join(slices.Collect(maps.Keys(duplicateLogRecordDimensions)), ","))
 	}
 
 	// Validate precision
