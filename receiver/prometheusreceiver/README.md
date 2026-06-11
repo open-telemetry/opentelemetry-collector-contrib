@@ -274,7 +274,7 @@ additional scrape metadata metrics are emitted as described in the same Promethe
 documentation.
 
 ## Prometheus API Server
-The Prometheus API server hosts information about active targets, service discovery, metrics, and the rendered Prometheus config. Set `api_server.enabled: true` to expose these debugging endpoints. The block can be omitted (or `enabled` set to `false`) to keep the server disabled.
+The Prometheus API server hosts information about active targets, service discovery, metrics, and the rendered Prometheus config. Set `api_server.enabled: true` to expose these debugging endpoints. The server is disabled by default.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|

@@ -88,14 +88,15 @@ scrape_configs:
 
 	cfg := &Config{
 		PrometheusConfig: (*PromConfig)(promCfg),
-		APIServer: configoptional.Some(apiserver.Config{
+		APIServer: apiserver.Config{
+			Enabled: true,
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "127.0.0.1:0",
 				},
 			},
-		}),
+		},
 		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "http://target-allocator:8080",

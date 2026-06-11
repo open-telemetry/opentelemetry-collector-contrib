@@ -1,5 +1,6 @@
 prometheus/withAPIEnabled:
   api_server:
+    enabled: true
     server_config:
       endpoint: "localhost:9090"
   config:

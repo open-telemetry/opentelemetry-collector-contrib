@@ -70,11 +70,10 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 	)
 	sharedCfg := sharedpromconfig.NewConfig(&baseCfg)
 	var apiServerManager *apiserver.Manager
-	if cfg.APIServer.HasValue() {
-		apiServerCfg := cfg.APIServer.Get()
+	if cfg.APIServer.Enabled {
 		apiServerManager = apiserver.NewManager(
 			set,
-			apiServerCfg,
+			&cfg.APIServer,
 			sharedCfg,
 			registry,
 			registerer,

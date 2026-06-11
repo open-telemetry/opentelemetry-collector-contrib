@@ -17,6 +17,7 @@ const (
 )
 
 type Config struct {
+	Enabled        bool                    `mapstructure:"enabled"`
 	MaxConnections int                     `mapstructure:"max_connections"`
 	ServerConfig   confighttp.ServerConfig `mapstructure:"server_config"`
 }

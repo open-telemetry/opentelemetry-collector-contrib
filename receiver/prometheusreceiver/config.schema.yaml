@@ -7,7 +7,6 @@ type: object
 properties:
   api_server:
     description: APIServer has the settings to enable the receiver to host the Prometheus API server in agent mode. This allows the user to call the endpoint to get the config, service discovery, and targets for debugging purposes.
-    x-optional: true
     $ref: ./internal/apiserver.config
   config:
     x-pointer: true

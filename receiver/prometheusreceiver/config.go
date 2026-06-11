@@ -35,7 +35,7 @@ type Config struct {
 	//  APIServer has the settings to enable the receiver to host the Prometheus API
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
-	APIServer configoptional.Optional[apiserver.Config] `mapstructure:"api_server"`
+	APIServer apiserver.Config `mapstructure:"api_server"`
 
 	// For testing only.
 	ignoreMetadata bool

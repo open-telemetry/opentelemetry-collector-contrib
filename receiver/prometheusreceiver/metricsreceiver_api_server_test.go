@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
@@ -63,13 +62,14 @@ func TestPrometheusAPIServer(t *testing.T) {
 		})
 
 		apiCfg := apiserver.DefaultConfig()
+		apiCfg.Enabled = true
 		apiCfg.ServerConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  endpoint,
 		}
 		receiver, _ := newTestReceiver(t, &Config{
 			PrometheusConfig: cfg,
-			APIServer:        configoptional.Some(apiCfg),
+			APIServer:        apiCfg,
 		})
 		endpointsToReceivers[endpoint] = receiver
 		mp.wg.Wait()
