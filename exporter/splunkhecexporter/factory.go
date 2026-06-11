@@ -13,8 +13,11 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -31,32 +34,35 @@ const (
 	defaultSplunkAppName        = "OpenTelemetry Collector Contrib"
 )
 
-// TODO: Find a place for this to be shared.
 type baseMetricsExporter struct {
 	component.Component
 	consumer.Metrics
 }
 
-// TODO: Find a place for this to be shared.
 type baseLogsExporter struct {
 	component.Component
 	consumer.Logs
 }
 
-// TODO: Find a place for this to be shared.
 type baseTracesExporter struct {
 	component.Component
 	consumer.Traces
 }
 
+type baseProfilesExporter struct {
+	component.Component
+	xconsumer.Profiles
+}
+
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -202,6 +208,42 @@ func createLogsExporter(
 				logger:           set.Logger,
 				next:             logsExporter,
 			},
+			batchperresourceattr.WithMetadataInjection(),
+		),
+	}
+
+	return wrapped, nil
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config,
+) (exporter xexporter.Profiles, err error) {
+	cfg := config.(*Config)
+	c := newProfilesClient(set, cfg)
+
+	profilesExporter, err := xexporterhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		c.pushProfilesData,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(hecQueueSettings(cfg.QueueSettings)),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := &baseProfilesExporter{
+		Component: profilesExporter,
+		Profiles: batchperresourceattr.NewMultiBatchPerResourceProfiles(
+			[]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel},
+			profilesExporter,
 			batchperresourceattr.WithMetadataInjection(),
 		),
 	}

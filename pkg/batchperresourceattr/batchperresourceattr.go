@@ -9,9 +9,11 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 )
@@ -272,6 +274,79 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 			callCtx = injectAttrMetadata(ctx, rls.At(indices[0]).Resource().Attributes(), bt.attrKeys)
 		}
 		errs = multierr.Append(errs, bt.next.ConsumeLogs(callCtx, logsForAttr))
+	}
+	return errs
+}
+
+func NewMultiBatchPerResourceProfiles(attrKeys []string, next xconsumer.Profiles, opts ...Option) xconsumer.Profiles {
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return &batchProfiles{
+		attrKeys:       attrKeys,
+		injectMetadata: o.injectMetadata,
+		next:           next,
+	}
+}
+
+type batchProfiles struct {
+	attrKeys       []string
+	injectMetadata bool
+	next           xconsumer.Profiles
+}
+
+// Capabilities returns the capabilities of the next consumer because batchProfiles doesn't mutate data itself.
+func (bt *batchProfiles) Capabilities() consumer.Capabilities {
+	return bt.next.Capabilities()
+}
+
+func (bt *batchProfiles) ConsumeProfiles(ctx context.Context, pp pprofile.Profiles) error {
+	rls := pp.ResourceProfiles()
+	lenRls := rls.Len()
+	// If zero or one resource profiles, just call next.
+	if lenRls <= 1 {
+		if bt.injectMetadata && lenRls == 1 {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
+		return bt.next.ConsumeProfiles(ctx, pp)
+	}
+
+	indicesByAttr := make(map[string][]int)
+	for i := range lenRls {
+		rl := rls.At(i)
+		var attrVal string
+		for _, k := range bt.attrKeys {
+			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+			}
+		}
+		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
+	}
+	// If there is a single attribute value, then call next.
+	if len(indicesByAttr) <= 1 {
+		if bt.injectMetadata {
+			ctx = injectAttrMetadata(ctx, rls.At(0).Resource().Attributes(), bt.attrKeys)
+		}
+		return bt.next.ConsumeProfiles(ctx, pp)
+	}
+
+	// Build the resource profiles for each attribute value using CopyTo and call next for each one.
+	// The shared Dictionary must be copied to every sub-batch because ResourceProfiles.CopyTo
+	// only copies the resource element, not the parent-level dictionary.
+	var errs error
+	for _, indices := range indicesByAttr {
+		profilesForAttr := pprofile.NewProfiles()
+		pp.Dictionary().CopyTo(profilesForAttr.Dictionary())
+		for _, i := range indices {
+			rl := rls.At(i)
+			rl.CopyTo(profilesForAttr.ResourceProfiles().AppendEmpty())
+		}
+		callCtx := ctx
+		if bt.injectMetadata {
+			callCtx = injectAttrMetadata(ctx, rls.At(indices[0]).Resource().Attributes(), bt.attrKeys)
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeProfiles(callCtx, profilesForAttr))
 	}
 	return errs
 }

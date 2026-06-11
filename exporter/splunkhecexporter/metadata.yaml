@@ -5,6 +5,7 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
+    development: [profiles]
   distributions: [contrib]
   codeowners:
     active: [atoulme, dmitryax]

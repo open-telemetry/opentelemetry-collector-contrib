@@ -293,3 +293,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../../../pkg/translator/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../../pkg/sampling
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../../pkg/translator/pprof
