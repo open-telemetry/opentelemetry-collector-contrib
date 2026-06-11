@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: processor/transform
+
+note: "Wire the OTTL `exemplar` context into the transform processor, enabling `metric_statements` to read and modify exemplar fields."
+
+issues: [49022]
+
+subtext:
+
+change_logs: [user, api]
