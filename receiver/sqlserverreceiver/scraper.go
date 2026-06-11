@@ -1227,7 +1227,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
+		s.logger.Debug("top-query row",
+			zap.Any("query_hash", queryHashVal),
+			zap.Any("plan_hash", queryPlanHashVal),
+			zap.Any("row", row))
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
@@ -1269,7 +1272,9 @@ func (s *sqlServerScraperHelper) retrieveValue(
 ) any {
 	value, err := valueRetriever(row, column)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", column, row[column], err))
+		s.logger.Warn("sqlServerScraperHelper failed parsing column",
+			zap.String("column", column),
+			zap.Error(err))
 		*errs = append(*errs, err)
 	}
 
