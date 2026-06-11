@@ -16,6 +16,7 @@ status:
     emeritus: [djaglowski]
 
 reaggregation_enabled: true
+override_value_enabled: true
 
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
