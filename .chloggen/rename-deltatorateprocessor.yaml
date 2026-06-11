@@ -1,0 +1,11 @@
+change_type: deprecation
+
+component: processor/deltatorate
+
+note: Rename component type from `deltatorate` to `delta_to_rate`. The old name `deltatorate` is kept as a deprecated alias and will be removed in a future release.
+
+issues: [45339]
+
+subtext:
+
+change_logs: []
