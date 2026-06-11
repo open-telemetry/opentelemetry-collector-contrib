@@ -94,6 +94,15 @@ telemetry:
         monotonic: true
       attributes: [policy, sampled, decision]
 
+    processor_tail_sampling_count_spans_with_unparseable_tracestate:
+      description: Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed
+      stability: development
+      unit: "{spans}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_tail_sampling_count_traces_sampled:
       description: Count of traces that were sampled or not per sampling policy
       stability: development

@@ -38,6 +38,14 @@ Count of spans that were sampled or not per sampling policy
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
+### otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate
+
+Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
 Count of traces that were sampled or not per sampling policy

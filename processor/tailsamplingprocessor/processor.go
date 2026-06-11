@@ -858,7 +858,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 	}
 
 	if finalDecision == samplingpolicy.Sampled && haveThreshold && tsp.useTracestate {
-		sampling.WriteEffectiveThreshold(traceData.ReceivedBatches, effectiveThreshold, tsp.logger)
+		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, effectiveThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 	}
 
 	switch finalDecision {
@@ -919,7 +919,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 				sampling.SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.policy", p.name)
 			}
 			if tsp.useTracestate {
-				sampling.WriteEffectiveThreshold(trace.ReceivedBatches, th, tsp.logger)
+				sampling.WriteEffectiveThreshold(ctx, trace.ReceivedBatches, th, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 			}
 			return samplingpolicy.Sampled, p.name
 		}

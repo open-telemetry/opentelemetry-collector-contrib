@@ -4,12 +4,12 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"errors"
+	"context"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -113,34 +113,28 @@ func SetBoolAttrOnScopeSpans(data ptrace.Traces, attrName string, attrValue bool
 // field on every span in td to encode the given effective sampling
 // threshold. Spans whose existing th is already stricter are left
 // unchanged (UpdateTValueWithSampling refuses to lower probability).
-// Spans with unparseable tracestate are skipped.
-func WriteEffectiveThreshold(td ptrace.Traces, th sampling.Threshold, logger *zap.Logger) {
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		sss := rss.At(i).ScopeSpans()
-		for j := 0; j < sss.Len(); j++ {
-			spans := sss.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
+// Spans with unparseable tracestate are counted via
+// unparseableTracestate and skipped.
+func WriteEffectiveThreshold(ctx context.Context, td ptrace.Traces, th sampling.Threshold, unparseableTracestate metric.Int64Counter) {
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
 				ts, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
 				if err != nil {
-					logger.Debug("tailsampling: skipping span with unparseable tracestate", zap.Error(err))
+					unparseableTracestate.Add(ctx, 1)
 					continue
 				}
 				if err := ts.OTelValue().UpdateTValueWithSampling(th); err != nil {
-					if errors.Is(err, sampling.ErrInconsistentSampling) {
-						// Existing threshold is already stricter; spec
-						// forbids lowering it. Leave the span as-is.
-						continue
-					}
-					logger.Debug("tailsampling: failed to update span threshold", zap.Error(err))
+					// UpdateTValueWithSampling only returns
+					// ErrInconsistentSampling: the existing
+					// threshold is stricter and the spec forbids
+					// lowering it. Leave the span as-is.
 					continue
 				}
 				var w strings.Builder
-				if err := ts.Serialize(&w); err != nil {
-					logger.Debug("tailsampling: failed to serialize tracestate", zap.Error(err))
-					continue
-				}
+				// Serialize writes to a strings.Builder, which never
+				// returns an error.
+				_ = ts.Serialize(&w)
 				span.TraceState().FromRaw(w.String())
 			}
 		}

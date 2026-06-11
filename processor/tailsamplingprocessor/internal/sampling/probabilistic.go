@@ -28,6 +28,7 @@ type probabilisticSampler struct {
 	threshold uint64
 	hashSalt  string
 
+	useTraceState       bool
 	tracestateThreshold sampling.Threshold
 }
 
@@ -62,6 +63,7 @@ func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt stri
 		// calculate threshold once
 		threshold:           calculateThreshold(samplingPercentage / 100),
 		hashSalt:            hashSalt,
+		useTraceState:       metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled(),
 		tracestateThreshold: otelThreshold,
 	}
 }
@@ -86,7 +88,7 @@ func (s *probabilisticSampler) Evaluate(ctx context.Context, traceID pcommon.Tra
 func (s *probabilisticSampler) EvaluateWithThreshold(_ context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, sampling.Threshold, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
-	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
+	if s.useTraceState {
 		if scan := scanOTelTracestate(trace.ReceivedBatches); scan.hasSamplingInfo {
 			rnd := scan.randomness
 			if !scan.hasRandomness {
@@ -129,13 +131,10 @@ type tracestateScan struct {
 // th). It short-circuits as soon as both are known.
 func scanOTelTracestate(td ptrace.Traces) tracestateScan {
 	var result tracestateScan
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		sss := rss.At(i).ScopeSpans()
-		for j := 0; j < sss.Len(); j++ {
-			spans := sss.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
-				ts, err := sampling.NewW3CTraceState(spans.At(k).TraceState().AsRaw())
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				ts, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
 				if err != nil {
 					continue
 				}
