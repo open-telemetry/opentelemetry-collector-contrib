@@ -1,0 +1,24 @@
+display_name: AWS Secrets Manager Authenticator Extension
+type: awssecretsmanagerauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [meebok, frzifus, thomasbaldwin, donny-z, lazureykis]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        - "internal/poll.runtime_pollWait"
+  config:
+    client_auth:
+      secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"
+      region: "us-east-1"
+      username_key: "username"
+      password_key: "password"
+      refresh_interval: "5m"

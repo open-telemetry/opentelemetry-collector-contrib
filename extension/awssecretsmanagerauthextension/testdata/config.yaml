@@ -1,0 +1,20 @@
+awssecretsmanagerauth/client:
+  client_auth:
+    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"
+    region: "us-east-1"
+    username_key: "username"
+    password_key: "password"
+    refresh_interval: "5m"
+
+awssecretsmanagerauth/server:
+  htpasswd:
+    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
+    region: "us-east-1"
+    refresh_interval: "5m"
+
+awssecretsmanagerauth/server_json:
+  htpasswd:
+    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-json-secret"
+    region: "us-east-1"
+    value_key: "htpasswd_content"
+    refresh_interval: "5m"
