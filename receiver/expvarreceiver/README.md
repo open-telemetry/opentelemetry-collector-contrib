@@ -6,7 +6,6 @@ which exposes data in JSON format from an HTTP endpoint. The metrics are
 extracted from the `expvar` variable [memstats](https://pkg.go.dev/runtime#MemStats),
 which exposes various information about the Go runtime.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

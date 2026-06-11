@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 						Name:          "pods",
 						Mode:          k8sinventory.PullMode,
 						Interval:      time.Hour,
+						InitialDelay:  10 * time.Minute,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
 					},
@@ -66,6 +67,7 @@ func TestLoadConfig(t *testing.T) {
 						Mode:            k8sinventory.PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
+						InitialDelay:    5 * time.Minute,
 					},
 					{
 						Name:     "events",
@@ -287,6 +289,67 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: "objects[*].interval must not be negative",
 		},
+		{
+			desc: "initial delay with watch mode is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.WatchMode,
+						InitialDelay: time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay can only be used with pull mode",
+		},
+		{
+			desc: "negative initial delay is allowed",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						InitialDelay: -time.Second,
+					},
+				},
+			},
+		},
+		{
+			desc: "initial delay equal to interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						Interval:     10 * time.Minute,
+						InitialDelay: 10 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay must be less than interval",
+		},
+		{
+			desc: "initial delay greater than top-level interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  10 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						InitialDelay: 11 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay must be less than interval",
+		},
 	}
 
 	for _, tt := range tests {
@@ -324,6 +387,7 @@ func TestDeepCopy(t *testing.T) {
 				FieldSelector:    "status.phase=Running",
 				LabelSelector:    "environment in (production),tier in (frontend)",
 				Interval:         time.Hour,
+				InitialDelay:     10 * time.Minute,
 				ResourceVersion:  "1",
 				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
 				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
@@ -349,6 +413,7 @@ func TestDeepCopy(t *testing.T) {
 			actual.FieldSelector = "changed"
 			actual.LabelSelector = "changed"
 			actual.Interval = time.Minute
+			actual.InitialDelay = time.Second
 			actual.ResourceVersion = "changed"
 			actual.ExcludeWatchType[0] = apiWatch.Deleted
 			actual.exclude[apiWatch.Bookmark] = true

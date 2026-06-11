@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/transform
-note: Add the `limit_buckets` method to the `merge_histogram_buckets` OTTL function to reduce explicit histogram bucket counts.
-issues: [48527]
-change_logs: [user]

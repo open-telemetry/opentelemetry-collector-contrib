@@ -387,7 +387,7 @@ func newQueryResourcesResponseMockData(inputSlice []queryResourceMockInput) azme
 
 type metricsClientListResponseMockInput struct {
 	Name       string
-	Unit       armmonitor.Unit
+	Unit       armmonitor.MetricUnit
 	TimeSeries []*armmonitor.TimeSeriesElement
 }
 

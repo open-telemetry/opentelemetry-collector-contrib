@@ -66,7 +66,7 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ### Native Histograms
 
-The exporter supports [Prometheus native histograms](https://prometheus.io/docs/concepts/native_histograms/). OpenTelemetry exponential histograms are automatically converted to the Prometheus native histogram format.
+The exporter supports [Prometheus native histograms](https://prometheus.io/docs/specs/native_histograms/). OpenTelemetry exponential histograms are automatically converted to the Prometheus native histogram format.
 
 To scrape native histograms, configure your Prometheus server to [scrape using protobuf format](https://prometheus.io/docs/prometheus/latest/getting_started/#configure-native-histograms) and to accept native histograms.
 

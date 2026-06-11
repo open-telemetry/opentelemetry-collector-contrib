@@ -5,6 +5,7 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -45,7 +46,7 @@ func TestHTTPServerPush(t *testing.T) {
 	}
 	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(t.Context()))
+		require.NoError(t, srv.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	pprofBody := generatePprofBody(t)
@@ -102,7 +103,7 @@ func TestHTTPServerPush_BodySizeLimit(t *testing.T) {
 	}
 	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(t.Context()))
+		require.NoError(t, srv.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	url := fmt.Sprintf("http://%s%s", addr, PushPath)

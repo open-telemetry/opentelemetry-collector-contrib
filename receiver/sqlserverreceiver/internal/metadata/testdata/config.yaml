@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -95,7 +97,15 @@ all_set:
       attributes: ["type"]
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.parameterization.rate:
+      enabled: true
+      attributes: ["sqlserver.parameterization.result"]
+    sqlserver.plan.execution.rate:
+      enabled: true
+      attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.recompilation.ratio:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
@@ -154,6 +164,8 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -248,7 +260,15 @@ reaggregate_set:
       attributes: []
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.parameterization.rate:
+      enabled: true
+      attributes: []
+    sqlserver.plan.execution.rate:
+      enabled: true
+      attributes: []
     sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.recompilation.ratio:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
@@ -307,6 +327,8 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    sqlserver.attention.rate:
+      enabled: false
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
@@ -401,7 +423,15 @@ none_set:
       attributes: ["type"]
     sqlserver.page.split.rate:
       enabled: false
+    sqlserver.parameterization.rate:
+      enabled: false
+      attributes: ["sqlserver.parameterization.result"]
+    sqlserver.plan.execution.rate:
+      enabled: false
+      attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:
+      enabled: false
+    sqlserver.recompilation.ratio:
       enabled: false
     sqlserver.replica.data.rate:
       enabled: false

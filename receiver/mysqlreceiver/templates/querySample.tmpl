@@ -13,6 +13,7 @@
     COALESCE(thread.processlist_db, '') AS current_database,
     COALESCE(thread.processlist_command, '') AS session_command,
     COALESCE(thread.processlist_state, '') AS session_state,
+    COALESCE(statement.DIGEST_TEXT, statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS digest_text,
     COALESCE(statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS sql_text,
     COALESCE(statement.digest, '') AS fingerprint,
     COALESCE(wait.event_id, statement.event_id, 0) AS activity_event_id,

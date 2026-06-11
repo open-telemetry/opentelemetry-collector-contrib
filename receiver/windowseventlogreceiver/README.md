@@ -4,7 +4,6 @@
 This receiver tails and parses logs from windows event log API using the
 [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

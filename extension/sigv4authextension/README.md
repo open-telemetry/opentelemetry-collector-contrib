@@ -4,7 +4,6 @@
 This extension provides Sigv4 authentication for making requests to AWS services. You can read about the
 [Sigv4 process](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |

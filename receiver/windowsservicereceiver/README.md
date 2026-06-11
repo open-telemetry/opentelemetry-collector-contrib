@@ -4,7 +4,6 @@
 The Windows Service Receiver is a receiver for scraping information about the state of services running on a Windows
 machine.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -25,7 +24,7 @@ By default the Windows Service Receiver will attempt to identify and monitor the
 An example of monitoring three services on a host:
 
 ```yaml
-windowsservice:
+windows_service:
   collection_interval: <duration> # default = 1m
   include_services:
     - service1
@@ -37,7 +36,7 @@ windowsservice:
 The case where you wish to monitor all services present on a host machine, except for `service3`:
 
 ```yaml
-windowsservice:
+windows_service:
   collection_interval: <duration> # default = 1m
   include_services:
   exclude_services:

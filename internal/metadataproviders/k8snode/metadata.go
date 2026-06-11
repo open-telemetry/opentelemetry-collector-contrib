@@ -19,6 +19,8 @@ type Provider interface {
 	NodeUID(ctx context.Context) (string, error)
 	// NodeName returns the current K8S Node Name
 	NodeName(ctx context.Context) (string, error)
+	// ClusterUID returns the K8S cluster UID derived from the kube-system namespace UID
+	ClusterUID(ctx context.Context) (string, error)
 }
 
 type k8snodeProvider struct {
@@ -54,4 +56,16 @@ func (k *k8snodeProvider) NodeName(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to fetch node with name %s from K8s API: %w", k.nodeName, err)
 	}
 	return node.Name, nil
+}
+
+func (k *k8snodeProvider) ClusterUID(ctx context.Context) (string, error) {
+	ns, err := k.k8snodeClient.CoreV1().Namespaces().Get(ctx, "kube-system", metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch kube-system namespace from K8s API: %w", err)
+	}
+	uid := string(ns.UID)
+	if uid == "" {
+		return "", errors.New("kube-system namespace UID is empty")
+	}
+	return uid, nil
 }

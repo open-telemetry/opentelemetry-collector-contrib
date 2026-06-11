@@ -3,7 +3,6 @@
 
 This extension unmarshals and marshals data encoded according to the [OTLP specification](https://opentelemetry.io/docs/specs/otlp/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |

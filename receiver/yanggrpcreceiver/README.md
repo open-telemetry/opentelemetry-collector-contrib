@@ -5,7 +5,6 @@ The YANG/gRPC receiver receives metrics offered using the
 [YANG (Yet Another New Generation) data model](https://en.wikipedia.org/wiki/YANG), expressed over
 [gRPC](https://ciscolearning.github.io/cisco-learning-codelabs/posts/yangsuite-restconf/#0).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

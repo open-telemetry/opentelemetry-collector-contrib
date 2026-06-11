@@ -333,7 +333,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `k8sattr.labelsAnnotationsSingular.allow` | deprecated | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | v0.145.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
 | `processor.k8sattributes.DontEmitV0K8sConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 | `processor.k8sattributes.EmitV1K8sConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 | `processor.k8sattributes.ShareProcessorBetweenPipelines` | alpha | When enabled, processor instances with identical configuration are shared across different signal type pipelines, reducing duplicate Kubernetes API watchers. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450) |

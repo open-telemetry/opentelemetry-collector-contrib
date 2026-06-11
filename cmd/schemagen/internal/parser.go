@@ -41,7 +41,7 @@ func NewParser(cfg *Config) *Parser {
 }
 
 func (p *Parser) Parse() (*Schema, error) {
-	return p.ParsePattern(".")
+	return p.ParsePattern(p.config.Pattern)
 }
 
 func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
@@ -69,6 +69,10 @@ func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 
 	// process types
 	if err := p.processTypes(); err != nil {
+		return nil, err
+	}
+
+	if err := p.expandFactoryMaps(); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +202,7 @@ func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(typeInfo.comms) > 0 {
+	if schemaElement != nil && len(typeInfo.comms) > 0 {
 		if desc, ok := ExtractDescriptionFromComment(typeInfo.comms[0]); ok {
 			schemaElement.setDescription(desc)
 		}
