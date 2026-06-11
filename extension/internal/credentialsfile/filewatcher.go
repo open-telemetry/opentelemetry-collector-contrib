@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
@@ -63,6 +64,27 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 	// fsnotify follows the symlink and watches the underlying inode. On Remove/Chmod
 	// events the watcher is re-added to follow the new symlink target.
 	return watcher.Add(w.path)
+}
+
+func (w *fileWatcher) StartWithRetry(ctx context.Context, maxRetries int, retryInterval time.Duration) error {
+	ticker := time.NewTicker(retryInterval)
+	defer ticker.Stop()
+	counter := 0
+	for {
+		if counter > maxRetries {
+			return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
+		case <-ticker.C:
+			if _, err := os.Stat(w.path); err == nil {
+				return w.Start(ctx)
+			}
+			counter++
+		}
+	}
 }
 
 func (w *fileWatcher) Shutdown() error {

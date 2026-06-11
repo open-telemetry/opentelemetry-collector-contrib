@@ -4,6 +4,19 @@ properties:
   filename:
     description: Filename points to a file that contains the bearer token(s) to use for every RPC.
     type: string
+  file_retry:
+    description: FileRetry configures startup retry behaviour when the file referenced by Filename is not yet available. Disabled by default.
+    type: object
+    properties:
+      enabled:
+        description: Enabled, when true, makes startup retry reading the file referenced by Filename instead of failing immediately when it is missing. Defaults to false.
+        type: boolean
+      max_retries:
+        description: MaxRetries is the maximum number of times to retry reading the file when Enabled is true.
+        type: integer
+      retry_interval:
+        description: RetryInterval is the interval between retries when Enabled is true.
+        $ref: time.duration
   header:
     description: Header specifies the auth-header for the token. Defaults to "Authorization"
     type: string

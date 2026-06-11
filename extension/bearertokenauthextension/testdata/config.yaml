@@ -32,3 +32,10 @@ bearertokenauth/withheader:
   header: "X-Custom-Authorization"
   scheme: ""
   token: "my-token"
+bearertokenauth/withfileretry:
+  scheme: "Bearer"
+  filename: "file-containing.token"
+  file_retry:
+    enabled: true
+    max_retries: 5
+    retry_interval: 2s

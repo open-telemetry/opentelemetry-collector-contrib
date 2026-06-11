@@ -539,3 +539,53 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
+
+func TestBearerStartWithFileRetry(t *testing.T) {
+	dir := t.TempDir()
+	tokenPath := filepath.Join(dir, "delayed.token")
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filename = tokenPath
+	cfg.FileRetry = FileRetryConfig{
+		Enabled:       true,
+		MaxRetries:    20,
+		RetryInterval: 100 * time.Millisecond,
+	}
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	startErr := make(chan error, 1)
+	go func() {
+		startErr <- bauth.Start(t.Context(), componenttest.NewNopHost())
+	}()
+
+	// Create the file after a delay so the watcher has to retry.
+	time.Sleep(250 * time.Millisecond)
+	assert.NoError(t, os.WriteFile(tokenPath, []byte("delayed-token"), 0o600))
+
+	select {
+	case err := <-startErr:
+		assert.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for Start with retry to succeed")
+	}
+
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
+func TestBearerStartWithFileRetryGivesUp(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filename = filepath.Join(t.TempDir(), "never-appears.token")
+	cfg.FileRetry = FileRetryConfig{
+		Enabled:       true,
+		MaxRetries:    2,
+		RetryInterval: 50 * time.Millisecond,
+	}
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	assert.Error(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
