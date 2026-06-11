@@ -52,14 +52,35 @@ var (
 	_ extensionauth.Server = (*basicAuthServer)(nil)
 )
 
+type htpasswdMatcher struct {
+	htp *htpasswd.File
+}
+
+func (m *htpasswdMatcher) verify(username, password string) bool {
+	return m.htp.Match(username, password)
+}
+
 type basicAuthServer struct {
 	htpasswd          *HtpasswdSettings
-	matchFunc         atomic.Pointer[func(string, string) bool]
+	matcher           atomic.Pointer[htpasswdMatcher]
 	awsSecretResolver *awssecretsmanager.Resolver
 	logger            *zap.Logger
 }
 
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
+	if ba.htpasswd.AWSSecret != nil {
+		cfg := ba.htpasswd.AWSSecret
+		onFetch := func(raw string) error {
+			return ba.parseAWSSecret(raw)
+		}
+		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, onFetch)
+		if err := serverResolver.Start(ctx); err != nil {
+			return err
+		}
+		ba.awsSecretResolver = serverResolver
+		return nil
+	}
+
 	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
@@ -72,16 +93,6 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		rs = append(rs, f, strings.NewReader("\n"))
 	}
 
-	if ba.htpasswd.AWSSecret != nil {
-		cfg := ba.htpasswd.AWSSecret
-		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, ba.parseAWSSecret)
-		if err := serverResolver.Start(ctx); err != nil {
-			return err
-		}
-		ba.awsSecretResolver = serverResolver
-		return nil
-	}
-
 	// Ensure that the inline content is read the last.
 	// This way the inline content will override the content from file.
 	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
@@ -92,8 +103,7 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
 
-	matchFn := htp.Match
-	ba.matchFunc.Store(&matchFn)
+	ba.matcher.Store(&htpasswdMatcher{htp: htp})
 	return nil
 }
 
@@ -105,7 +115,11 @@ func (ba *basicAuthServer) Shutdown(_ context.Context) error {
 }
 
 func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	return basicauth.Authenticate(ctx, headers, *ba.matchFunc.Load())
+	m := ba.matcher.Load()
+	if m == nil {
+		return ctx, fmt.Errorf("htpasswd not yet initialized")
+	}
+	return basicauth.Authenticate(ctx, headers, m.verify)
 }
 
 func (ba *basicAuthServer) parseAWSSecret(raw string) error {
@@ -113,8 +127,7 @@ func (ba *basicAuthServer) parseAWSSecret(raw string) error {
 	if err != nil {
 		return err
 	}
-	fn := htp.Match
-	ba.matchFunc.Store(&fn)
+	ba.matcher.CompareAndSwap(ba.matcher.Load(), &htpasswdMatcher{htp: htp})
 	return nil
 }
 
@@ -166,7 +179,10 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 	if ca.AWSSecret != nil {
 		cfg := ca.AWSSecret
-		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, ba.parseAWSSecret)
+		onFetch := func(raw string) error {
+			return ba.parseAWSSecret(raw)
+		}
+		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, onFetch)
 		if err := clientResolver.Start(ctx); err != nil {
 			return fmt.Errorf("start AWS secret resolver: %w", err)
 		}

@@ -405,8 +405,7 @@ func TestServerAuth_AWSSecret(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			fn := htp.Match
-			ext.matchFunc.Store(&fn)
+			ext.matcher.Store(&htpasswdMatcher{htp: htp})
 			return nil
 		},
 	)
