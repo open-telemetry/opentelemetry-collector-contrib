@@ -8,12 +8,42 @@ import (
 	"math"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
+
+// explicitToNHCBHistogramV2 is the RW2 wrapper around explicitToNHCB (see
+// histograms.go); it produces a writev2.Histogram with custom buckets.
+func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram, error) {
+	timestamp := convertTimeStamp(pt.Timestamp())
+
+	if pt.Flags().NoRecordedValue() {
+		// Emit a stale marker, mirroring the classic and exponential paths.
+		return writev2.Histogram{
+			Schema:    histogram.CustomBucketsSchema,
+			Count:     &writev2.Histogram_CountInt{CountInt: value.StaleNaN},
+			Sum:       math.Float64frombits(value.StaleNaN),
+			Timestamp: timestamp,
+		}, nil
+	}
+
+	h, fh, err := explicitToNHCB(pt)
+	if err != nil {
+		return writev2.Histogram{}, err
+	}
+	switch {
+	case h != nil:
+		return writev2.FromIntHistogram(timestamp, h), nil
+	case fh != nil:
+		return writev2.FromFloatHistogram(timestamp, fh), nil
+	default:
+		return writev2.Histogram{}, fmt.Errorf("convertnhcb produced neither an integer nor a float histogram")
+	}
+}
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, name string, metadata metadata,

@@ -8,14 +8,68 @@ import (
 	"math"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/prometheus/prometheus/util/convertnhcb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
 const defaultZeroThreshold = 1e-128
+
+// explicitToNHCB converts an OTLP explicit-bucket histogram data point to a
+// Prometheus histogram with custom buckets (schema -53) via Prometheus' own
+// convertnhcb helper. Exactly one of the returned histograms is non-nil.
+func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
+	th := convertnhcb.NewTempHistogram()
+	// OTLP buckets are non-cumulative; convertnhcb wants cumulative counts. Convert appends the +Inf bucket from SetCount.
+	var cumulative uint64
+	for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
+		cumulative += pt.BucketCounts().At(i)
+		if err := th.SetBucketCount(pt.ExplicitBounds().At(i), float64(cumulative)); err != nil {
+			return nil, nil, err
+		}
+	}
+	if err := th.SetCount(float64(pt.Count())); err != nil {
+		return nil, nil, err
+	}
+	if pt.HasSum() {
+		if err := th.SetSum(pt.Sum()); err != nil {
+			return nil, nil, err
+		}
+	}
+	return th.Convert()
+}
+
+// explicitToNHCBHistogram is the RW1 wrapper around explicitToNHCB.
+func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, error) {
+	timestamp := convertTimeStamp(pt.Timestamp())
+
+	if pt.Flags().NoRecordedValue() {
+		// Emit a stale marker, mirroring the classic and exponential paths.
+		return prompb.Histogram{
+			Schema:    histogram.CustomBucketsSchema,
+			Count:     &prompb.Histogram_CountInt{CountInt: value.StaleNaN},
+			Sum:       math.Float64frombits(value.StaleNaN),
+			Timestamp: timestamp,
+		}, nil
+	}
+
+	h, fh, err := explicitToNHCB(pt)
+	if err != nil {
+		return prompb.Histogram{}, err
+	}
+	switch {
+	case h != nil:
+		return prompb.FromIntHistogram(timestamp, h), nil
+	case fh != nil:
+		return prompb.FromFloatHistogram(timestamp, fh), nil
+	default:
+		return prompb.Histogram{}, fmt.Errorf("convertnhcb produced neither an integer nor a float histogram")
+	}
+}
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
