@@ -24,15 +24,24 @@ const defaultZeroThreshold = 1e-128
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
 func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
 	th := convertnhcb.NewTempHistogram()
-	// OTLP buckets are non-cumulative; convertnhcb wants cumulative counts. Convert appends the +Inf bucket from SetCount.
+	bounds := pt.ExplicitBounds()
+	counts := pt.BucketCounts()
+	// OTLP buckets are non-cumulative; convertnhcb wants cumulative counts.
 	var cumulative uint64
-	for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
-		cumulative += pt.BucketCounts().At(i)
-		if err := th.SetBucketCount(pt.ExplicitBounds().At(i), float64(cumulative)); err != nil {
+	for i := 0; i < bounds.Len() && i < counts.Len(); i++ {
+		cumulative += counts.At(i)
+		if err := th.SetBucketCount(bounds.At(i), float64(cumulative)); err != nil {
 			return nil, nil, err
 		}
 	}
-	if err := th.SetCount(float64(pt.Count())); err != nil {
+	// Total from the bucket counts, not pt.Count(): Convert derives the +Inf bucket
+	// as total - last cumulative, so a pt.Count() below the bucket sum (some sources
+	// emit this) would make it negative and remote write would reject it.
+	total := cumulative
+	if counts.Len() > bounds.Len() { // +Inf overflow bucket
+		total += counts.At(counts.Len() - 1)
+	}
+	if err := th.SetCount(float64(total)); err != nil {
 		return nil, nil, err
 	}
 	if pt.HasSum() {
