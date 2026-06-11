@@ -151,17 +151,16 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 	def, isLocal := schema.Defs[refObj.Ref]
 
 	if ref.packageName == "" {
-		if isLocal {
-			typeSchema = def
-		} else {
+		if !isLocal {
 			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
 		}
+		typeSchema = def
 	} else {
 		innerSchema, cached := r.packageCache[ref.packageName]
 		if !cached {
 			parsed, err := r.loader.Load(cfg, ref.packageName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to load ref schema %q: %v", refObj.Ref, err)
+				return nil, fmt.Errorf("failed to load ref schema %q: %w", refObj.Ref, err)
 			}
 			// Register before recursing so cyclic refs short-circuit here.
 			r.packageCache[ref.packageName] = parsed
