@@ -153,7 +153,7 @@ func TestResolver_RefreshFetchError(t *testing.T) {
 	mock.clearSecret()
 	time.Sleep(300 * time.Millisecond)
 
-	// onFetch was never called with a new value, old value preserved by caller
+	// processSecret was never called with a new value, old value preserved by caller
 	assert.Equal(t, "good-value", received.Load())
 }
 

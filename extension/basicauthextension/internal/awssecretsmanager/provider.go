@@ -28,14 +28,14 @@ type SecretsManagerClient interface {
 }
 
 // Resolver fetches a secret from AWS Secrets Manager and periodically refreshes it.
-// The caller provides an onFetch callback that receives the raw secret string
+// The caller provides a processSecret callback that receives the raw secret string
 // and handles parsing and storage.
 type Resolver struct {
 	secretARN       string
 	region          string
 	refreshInterval time.Duration
 	logger          *zap.Logger
-	onFetch         func(string) error
+	processSecret   func(string) error
 
 	Client SecretsManagerClient
 	cancel context.CancelFunc
@@ -43,10 +43,10 @@ type Resolver struct {
 }
 
 // NewResolver creates a new AWS Secrets Manager resolver.
-// The onFetch callback is called with the raw secret string on each successful fetch.
-// If onFetch returns an error during Start, the error is propagated.
-// If onFetch returns an error during refresh, the error is logged and the old value is retained.
-func NewResolver(secretARN, region string, refreshInterval time.Duration, logger *zap.Logger, onFetch func(string) error) *Resolver {
+// The processSecret callback is called with the raw secret string on each successful fetch.
+// If processSecret returns an error during Start, the error is propagated.
+// If processSecret returns an error during refresh, the error is logged and the old value is retained.
+func NewResolver(secretARN, region string, refreshInterval time.Duration, logger *zap.Logger, processSecret func(string) error) *Resolver {
 	if refreshInterval <= 0 {
 		refreshInterval = DefaultRefreshInterval
 	}
@@ -55,7 +55,7 @@ func NewResolver(secretARN, region string, refreshInterval time.Duration, logger
 		region:          region,
 		refreshInterval: refreshInterval,
 		logger:          logger,
-		onFetch:         onFetch,
+		processSecret:   processSecret,
 	}
 }
 
@@ -72,7 +72,7 @@ func (r *Resolver) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("initial secret fetch: %w", err)
 	}
-	if err := r.onFetch(raw); err != nil {
+	if err := r.processSecret(raw); err != nil {
 		return fmt.Errorf("initial secret processing: %w", err)
 	}
 	r.logger.Debug("initial secret fetch successful", zap.String("secret_arn", r.secretARN))
@@ -109,7 +109,7 @@ func (r *Resolver) refreshLoop(ctx context.Context) {
 				r.logger.Error("failed to refresh secret", zap.String("secret_arn", r.secretARN), zap.Error(err))
 				continue
 			}
-			if err := r.onFetch(raw); err != nil {
+			if err := r.processSecret(raw); err != nil {
 				r.logger.Error("failed to process refreshed secret", zap.String("secret_arn", r.secretARN), zap.Error(err))
 			}
 		}

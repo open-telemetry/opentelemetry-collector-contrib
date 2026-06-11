@@ -70,10 +70,10 @@ type basicAuthServer struct {
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 	if ba.htpasswd.AWSSecret != nil {
 		cfg := ba.htpasswd.AWSSecret
-		onFetch := func(raw string) error {
+		processSecret := func(raw string) error {
 			return ba.parseAWSSecret(raw)
 		}
-		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, onFetch)
+		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, processSecret)
 		if err := serverResolver.Start(ctx); err != nil {
 			return err
 		}
@@ -179,10 +179,10 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 	if ca.AWSSecret != nil {
 		cfg := ca.AWSSecret
-		onFetch := func(raw string) error {
+		processSecret := func(raw string) error {
 			return ba.parseAWSSecret(raw)
 		}
-		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, onFetch)
+		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, processSecret)
 		if err := clientResolver.Start(ctx); err != nil {
 			return fmt.Errorf("start AWS secret resolver: %w", err)
 		}
