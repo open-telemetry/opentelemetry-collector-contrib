@@ -63,8 +63,38 @@ receivers:
 
 ## Permissions
 
-Depending on which metrics you collect, you will need to assign those permissions to the database user:
+### Instance detection
+
+These grants are required to populate the `oracle.db.version`, `oracle.db.role`,
+`oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
+Detection is best-effort; failures are logged at warn level and the receiver continues.
+
+```sql
+GRANT SELECT ON V_$INSTANCE TO <username>;
+GRANT SELECT ON V_$DATABASE TO <username>;
 ```
+
+> **Note:** `sys_context('USERENV', ...)` queries against `DUAL` require no
+> additional grant and are available to all database users.
+
+### Hosting type detection (Oracle >=19c only)
+
+These grants are required to populate the `oracle.db.hosting_type` resource attribute.
+Only applies to Oracle 19c and later. Detection is best-effort; failures are logged at
+warn level and the receiver continues.
+
+```sql
+GRANT SELECT ON V_$DATAFILE TO <username>;
+GRANT SELECT ON V_$PDBS TO <username>;        -- OCI detection, connected to PDB only
+GRANT SELECT ON CDB_SERVICES TO <username>;   -- OCI confirmation, connected to PDB only
+```
+
+### Metrics collection
+
+Depending on which metrics you collect, you will need to assign these
+permissions to the database user:
+
+```sql
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SYSSTAT TO <username>;
 GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
@@ -108,10 +138,14 @@ receivers:
         enabled: true
       db.server.top_query:
         enabled: true
+      db.server.session.wait_sample:
+        enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
       top_query_count: 200                       # The maximum number of queries (N) for which the metrics would be reported
       collection_interval: 60s                   # collection interval for top query collection specifically
     query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
       max_rows_per_query: 100                     # the maximum number of samples to bre reported.
+    session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
+      max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported
 ```
