@@ -5,25 +5,15 @@ package resourceexhaustedretryextension
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/resourceexhaustedretryextension/internal/metadata"
 )
 
-var typ = metadata.Type
-
-// newNopSettings returns Settings with the extension type ID set, compatible with v0.113.0.
-func newNopSettings() extension.Settings {
-	set := extensiontest.NewNopSettings()
-	set.ID = component.NewID(typ)
-	return set
-}
+var typ = component.MustNewType("resource_exhausted_retry")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
@@ -35,21 +25,26 @@ func TestComponentConfigStruct(t *testing.T) {
 
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
-	// Values from metadata.yaml tests::config.
-	cfg := &Config{RetryDelay: time.Second, Jitter: 500 * time.Millisecond}
 
+	cm, err := confmaptest.LoadConf("metadata.yaml")
+	require.NoError(t, err)
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub("tests::config")
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(&cfg))
 	t.Run("shutdown", func(t *testing.T) {
-		e, err := factory.Create(context.Background(), newNopSettings(), cfg)
+		e, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, e.Shutdown(context.Background()))
+		err = e.Shutdown(context.Background())
+		require.NoError(t, err)
 	})
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), newNopSettings(), cfg)
+		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, firstExt.Start(context.Background(), newMdatagenNopHost()))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
-		secondExt, err := factory.Create(context.Background(), newNopSettings(), cfg)
+		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, secondExt.Start(context.Background(), newMdatagenNopHost()))
 		require.NoError(t, secondExt.Shutdown(context.Background()))

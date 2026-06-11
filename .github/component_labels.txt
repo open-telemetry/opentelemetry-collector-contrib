@@ -112,6 +112,7 @@ extension/opampcustommessages extension/opampcustommessages
 extension/opampextension extension/opamp
 extension/pprofextension extension/pprof
 extension/remotetapextension extension/remotetap
+extension/resourceexhaustedretryextension extension/resourceexhaustedretry
 extension/sigv4authextension extension/sigv4auth
 extension/solarwindsapmsettingsextension extension/solarwindsapmsettings
 extension/storage extension/storage
