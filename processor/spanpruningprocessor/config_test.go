@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
 				EnableAttributeLossAnalysis: false,
-				Conditions:                  []string{},
 				// Default from createDefaultConfig should persist when omitted in YAML.
 				AttributeLossExemplarSampleRate: 0,
 			},
@@ -69,7 +68,6 @@ func TestLoadConfig(t *testing.T) {
 				AggregationAttributePrefix:  "batch.",
 				AggregationHistogramBuckets: customHistogramBuckets,
 				EnableAttributeLossAnalysis: false,
-				Conditions:                  []string{},
 				// Default from createDefaultConfig should persist when omitted in YAML.
 				AttributeLossExemplarSampleRate: 0,
 			},
