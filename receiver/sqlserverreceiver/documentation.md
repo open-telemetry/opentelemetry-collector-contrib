@@ -791,6 +791,7 @@ top query
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
 | sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
+| sqlserver.query.plan_creation_time | Timestamp of when the SQL query execution plan was compiled (ISO 8601 format). | Any Str | - |
 
 ## Resource Attributes
 
