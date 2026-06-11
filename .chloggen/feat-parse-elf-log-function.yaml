@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: processor/transform
+component: processor/transformprocessor/internal/logparsingfuncs
 
 note: Add `ParseELF` function to parse W3C Extended Log Format (ELF) log blocks into structured maps.
 
