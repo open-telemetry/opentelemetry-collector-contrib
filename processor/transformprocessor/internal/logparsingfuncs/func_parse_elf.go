@@ -98,7 +98,7 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 			if err != nil {
 				// A malformed #Fields directive would silently poison subsequent data
 				// lines, so treat it as a hard error.
-				if strings.HasPrefix(strings.TrimSpace(line[1:]), "Fields") {
+				if strings.HasPrefix(strings.ToLower(strings.TrimSpace(line[1:])), "fields") {
 					return pcommon.Map{}, fmt.Errorf("invalid ELF: malformed #Fields directive %q: %w", line, err)
 				}
 				// Other unrecognised directives (e.g. bare #Remark) are skipped.
