@@ -304,15 +304,3 @@ To enable this feature gate, use the flag: `--feature-gates=filelog.protobufChec
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
-
-### `filelog.decompressFingerprint`
-
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
-
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
-
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0`
