@@ -47,6 +47,12 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 		}
 
 		if err := tc.ConsumeMetrics(ctx, md); err != nil {
+			if idx > 0 && idx == len(f.cfg.PipelinePriority)-1 {
+				if f.sampleRetryConsumers(ctx, md) {
+					return nil
+				}
+			}
+
 			f.reportConsumerError(idx)
 			continue
 		}

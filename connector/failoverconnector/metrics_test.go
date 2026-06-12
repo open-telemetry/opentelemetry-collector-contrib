@@ -168,6 +168,48 @@ func TestMetricsWithQueue(t *testing.T) {
 	assert.NoError(t, conn.ConsumeMetrics(t.Context(), md))
 }
 
+func TestMetricsImmediateRetryOnLastPipelineFailure(t *testing.T) {
+	var sinkFirst, sinkSecond consumertest.MetricsSink
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}},
+		RetryInterval:    5 * time.Minute,
+	}
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+	})
+
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*metricsFailover)
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+	}()
+
+	md := sampleMetric()
+
+	// 1st pipeline failing logic
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+
+	err = failoverConnector.ConsumeMetrics(t.Context(), md)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, failoverConnector.failover.pS.CurrentPipeline())
+
+	// making 2nd pipeline to fail and recover the 1st one
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+
+	err = failoverConnector.ConsumeMetrics(t.Context(), md)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, failoverConnector.failover.pS.CurrentPipeline())
+}
+
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {
 	_ = conn.ConsumeMetrics(context.Background(), mr)
 	stableIndex := conn.failover.pS.CurrentPipeline()

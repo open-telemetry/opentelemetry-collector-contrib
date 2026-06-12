@@ -48,6 +48,12 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 		}
 
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
+			if idx > 0 && idx == len(f.cfg.PipelinePriority)-1 {
+				if f.sampleRetryConsumers(ctx, td) {
+					return nil
+				}
+			}
+
 			f.reportConsumerError(idx)
 			continue
 		}

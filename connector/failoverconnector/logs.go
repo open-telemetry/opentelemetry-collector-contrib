@@ -47,6 +47,12 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 		}
 
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {
+			if idx > 0 && idx == len(f.cfg.PipelinePriority)-1 {
+				if f.sampleRetryConsumers(ctx, ld) {
+					return nil
+				}
+			}
+
 			f.reportConsumerError(idx)
 			continue
 		}
