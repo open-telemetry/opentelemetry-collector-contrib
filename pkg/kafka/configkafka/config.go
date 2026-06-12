@@ -6,6 +6,7 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -268,9 +269,25 @@ type AutoCommitConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+// franzGoMinBrokerWriteBytes is franz-go's hardcoded 100 MiB floor for
+// kgo.BrokerMaxWriteBytes: values below it are rejected by franz-go at client
+// construction. It is also franz-go's default for that option, so it doubles as
+// the default for ProducerConfig.MaxBrokerWriteBytes, preserving the prior
+// (non-configurable) behavior when left unset.
+const franzGoMinBrokerWriteBytes = 100 << 20 // 104857600
+
 type ProducerConfig struct {
-	// Maximum message bytes the producer will accept to produce (default 1000000)
+	// MaxMessageBytes is the maximum message bytes the producer will accept to
+	// produce. It must be less than or equal to MaxBrokerWriteBytes, and must
+	// fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes.
+	// (default 1000000)
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
+
+	// MaxBrokerWriteBytes is the maximum bytes the producer will write to a
+	// broker in a single request. It must be >= MaxMessageBytes. Maps to
+	// franz-go's kgo.BrokerMaxWriteBytes, whose default (and minimum accepted
+	// value) is 100 MiB. (default 104857600)
+	MaxBrokerWriteBytes int `mapstructure:"max_broker_write_bytes"`
 
 	// RequiredAcks holds the number acknowledgements required before producing
 	// returns successfully. See:
@@ -309,6 +326,7 @@ type ProducerConfig struct {
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
 		MaxMessageBytes:        1000000,
+		MaxBrokerWriteBytes:    franzGoMinBrokerWriteBytes,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
 		FlushMaxMessages:       10000,
@@ -334,6 +352,32 @@ func (c ProducerConfig) Validate() error {
 	}
 	if c.MaxMessageBytes < 0 {
 		return fmt.Errorf("max_message_bytes (%d) must be non-negative", c.MaxMessageBytes)
+	}
+	// Both limits are passed to franz-go as int32, so reject anything that would
+	// overflow on conversion and silently become a negative/invalid size.
+	if c.MaxMessageBytes > math.MaxInt32 {
+		return fmt.Errorf("max_message_bytes (%d) must not exceed %d", c.MaxMessageBytes, math.MaxInt32)
+	}
+	if c.MaxBrokerWriteBytes < 0 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must be non-negative", c.MaxBrokerWriteBytes)
+	}
+	if c.MaxBrokerWriteBytes < franzGoMinBrokerWriteBytes {
+		return fmt.Errorf(
+			"max_broker_write_bytes (%d) must be at least %d (%d MiB, franz-go minimum)",
+			c.MaxBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes,
+			franzGoMinBrokerWriteBytes>>20,
+		)
+	}
+	if c.MaxBrokerWriteBytes > math.MaxInt32 {
+		return fmt.Errorf("max_broker_write_bytes (%d) must not exceed %d", c.MaxBrokerWriteBytes, math.MaxInt32)
+	}
+	if c.MaxMessageBytes > c.MaxBrokerWriteBytes {
+		return fmt.Errorf(
+			"max_message_bytes (%d) cannot be greater than max_broker_write_bytes (%d)",
+			c.MaxMessageBytes,
+			c.MaxBrokerWriteBytes,
+		)
 	}
 	if c.FlushMaxMessages < 1 {
 		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
