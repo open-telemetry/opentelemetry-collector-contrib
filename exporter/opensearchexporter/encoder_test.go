@@ -552,3 +552,105 @@ func TestOTelV1_EncodeTrace_NonRootSpan(t *testing.T) {
 	// Verify durationInNanos = 1 second
 	assert.Equal(t, float64(1000000000), doc["durationInNanos"])
 }
+
+// TestEncodeModel_EncodeTrace_TimestampEqualsStartTimestamp verifies that the
+// encoded span's "@timestamp" field equals the span's StartTimestamp (line 207
+// of encoder.go: sso.Timestamp = span.StartTimestamp().AsTime()).
+func TestEncodeModel_EncodeTrace_TimestampEqualsStartTimestamp(t *testing.T) {
+	model := &encodeModel{}
+	resource := pcommon.NewResource()
+	scope := pcommon.NewInstrumentationScope()
+
+	t.Run("timestamp is set to start timestamp", func(t *testing.T) {
+		startTime := time.Date(2024, 3, 12, 20, 0, 41, 123456789, time.UTC)
+
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(startTime.Add(time.Second)))
+
+		result, err := model.encodeTrace(resource, scope, "", span)
+		require.NoError(t, err)
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(result, &decoded))
+
+		require.Contains(t, decoded, "@timestamp")
+		// JSON marshals time.Time as RFC3339Nano; parse it back for comparison.
+		tsStr, ok := decoded["@timestamp"].(string)
+		require.True(t, ok, "@timestamp should be a string")
+		parsedTS, err := time.Parse(time.RFC3339Nano, tsStr)
+		require.NoError(t, err)
+		assert.True(t, startTime.Equal(parsedTS), "@timestamp %v should equal StartTimestamp %v", parsedTS, startTime)
+	})
+
+	t.Run("timestamp equals start timestamp, not end timestamp", func(t *testing.T) {
+		startTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+		endTime := startTime.Add(5 * time.Second)
+
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+
+		result, err := model.encodeTrace(resource, scope, "", span)
+		require.NoError(t, err)
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(result, &decoded))
+
+		tsStr, ok := decoded["@timestamp"].(string)
+		require.True(t, ok)
+		parsedTS, err := time.Parse(time.RFC3339Nano, tsStr)
+		require.NoError(t, err)
+
+		assert.True(t, startTime.Equal(parsedTS), "@timestamp should equal startTime")
+		assert.False(t, endTime.Equal(parsedTS), "@timestamp should NOT equal endTime")
+	})
+
+	t.Run("zero start timestamp falls back to current time", func(t *testing.T) {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		// StartTimestamp is zero by default
+		before := time.Now()
+
+		result, err := model.encodeTrace(resource, scope, "", span)
+		require.NoError(t, err)
+		after := time.Now()
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(result, &decoded))
+
+		require.Contains(t, decoded, "@timestamp")
+		tsStr, ok := decoded["@timestamp"].(string)
+		require.True(t, ok)
+		parsedTS, err := time.Parse(time.RFC3339Nano, tsStr)
+		require.NoError(t, err)
+
+		assert.False(t, parsedTS.Before(before), "@timestamp should not be before encode start time")
+		assert.False(t, parsedTS.After(after), "@timestamp should not be after encode end time")
+	})
+
+	t.Run("@timestamp matches startTime field in output", func(t *testing.T) {
+		startTime := time.Date(2025, 6, 15, 10, 30, 0, 0, time.UTC)
+
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(startTime.Add(2 * time.Second)))
+
+		result, err := model.encodeTrace(resource, scope, "", span)
+		require.NoError(t, err)
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(result, &decoded))
+
+		tsStr, ok := decoded["@timestamp"].(string)
+		require.True(t, ok)
+		startTimeStr, ok := decoded["startTime"].(string)
+		require.True(t, ok)
+
+		// @timestamp and startTime should represent the same moment
+		assert.Equal(t, startTimeStr, tsStr, "@timestamp should equal startTime in the encoded output")
+	})
+}
