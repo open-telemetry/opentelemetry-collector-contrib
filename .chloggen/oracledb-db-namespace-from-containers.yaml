@@ -19,9 +19,6 @@ subtext: |
   On `db.server.query_sample` and `db.server.top_query` events, `db.namespace`
   now reports the database name instead of the Oracle service
   name. The service name moves to the new `oracle.db.service` attribute.
-  Existing dashboards or queries grouping by `db.namespace` on these events should be updated.
-  Requires Oracle 12c+ and `SELECT` on `V$CONTAINERS`. Both events are still
-  `enabled: false` by default.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
