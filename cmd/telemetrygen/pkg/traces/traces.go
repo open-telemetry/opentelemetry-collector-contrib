@@ -94,6 +94,9 @@ func Start(cfg *Config) error {
 	// SpanProcessors surface export errors via the global otel error handler
 	// rather than returning them from OnEnd, so honor --allow-export-failures
 	// by installing a handler that matches the logs/metrics worker behavior.
+	// Note: the global handler receives every error reported by the otel SDK,
+	// not only export failures, so any other SDK error is treated the same way
+	// (fatal by default, logged-and-continue with --allow-export-failures).
 	if cfg.AllowExportFailures {
 		otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 			logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))

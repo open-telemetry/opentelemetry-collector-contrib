@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
@@ -57,6 +59,15 @@ func (*mockExporter) ForceFlush(context.Context) error {
 
 func (mockExporter) Shutdown(context.Context) error {
 	return nil
+}
+
+// failingExporter fails every Export call.
+type failingExporter struct {
+	mockExporter
+}
+
+func (*failingExporter) Export(context.Context, *metricdata.ResourceMetrics) error {
+	return errors.New("export failed")
 }
 
 func checkMetricTemporality(t *testing.T, ms metricdata.Metrics, metricType MetricType, expectedAggregationTemporality metricdata.Temporality) {
@@ -691,6 +702,41 @@ func TestBatchSizeOne(t *testing.T) {
 
 	assert.Len(t, mockExp.rms, 2, "Should export each metric individually with batch size 1")
 	assert.Empty(t, w.metricBuffer, "Buffer should be empty after each export")
+}
+
+// TestFlushBufferFailureAllowed verifies that a failed batch export does not
+// abort the worker when --allow-export-failures is set.
+func TestFlushBufferFailureAllowed(t *testing.T) {
+	w := &worker{
+		batchSize:     1,
+		metricBuffer:  make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:   sync.Mutex{},
+		allowFailures: true,
+		logger:        zap.NewNop(),
+	}
+
+	metric := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	assert.NotPanics(t, func() {
+		w.addToBuffer(metric, &failingExporter{})
+	})
+	assert.Empty(t, w.metricBuffer, "buffer should be cleared even when export fails")
+}
+
+// TestFlushBufferFailureFatal verifies that a failed batch export aborts the
+// worker when --allow-export-failures is not set. The fatal hook converts
+// logger.Fatal's os.Exit into a panic so the test can observe it.
+func TestFlushBufferFailureFatal(t *testing.T) {
+	w := &worker{
+		batchSize:    1,
+		metricBuffer: make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:  sync.Mutex{},
+		logger:       zap.NewNop().WithOptions(zap.WithFatalHook(zapcore.WriteThenPanic)),
+	}
+
+	metric := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	assert.Panics(t, func() {
+		w.addToBuffer(metric, &failingExporter{})
+	})
 }
 
 func TestMetricsWithLoadSize(t *testing.T) {
