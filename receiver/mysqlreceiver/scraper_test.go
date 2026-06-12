@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/otel/trace"
@@ -94,7 +96,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		actualQuerySamples, err := scraper.scrapeQuerySampleFunc(t.Context())
 		require.NoError(t, err)
@@ -104,9 +107,10 @@ func TestScrape(t *testing.T) {
 		expectedQuerySample, err := golden.ReadLogs(expectedQuerySampleFile)
 		require.NoError(t, err)
 
-		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
-			plogtest.IgnoreTimestamp()))
-		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.Endpoint)
+		require.NoError(t, plogtest.CompareLogs(actualQuerySamples, expectedQuerySample,
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
+		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, "localhost:3306")
 
 		// Scrape top queries
 		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
@@ -120,8 +124,9 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
-			plogtest.IgnoreTimestamp()))
-		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.Endpoint)
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
+		assertLogsHaveInstanceEndpoint(t, actualTopQueries, "localhost:3306")
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -157,7 +162,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		var partialError scrapererror.PartialScrapeError
 		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
@@ -194,11 +199,10 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 }
 
-// assertLogsHaveInstanceEndpoint verifies that every ResourceLogs in logs carries
-// mysql.instance.endpoint as a resource attribute with the expected value.
 func assertLogsHaveInstanceEndpoint(t *testing.T, logs plog.Logs, expectedEndpoint string) {
 	t.Helper()
 	require.Positive(t, logs.ResourceLogs().Len(), "expected at least one ResourceLogs")
@@ -844,6 +848,210 @@ func (c *mockClient) getTopQueries(uint64, uint64, bool) ([]topQuery, error) {
 	}
 
 	return queries, nil
+}
+
+func TestIsLocalEndpoint(t *testing.T) {
+	tests := []struct {
+		host     string
+		expected bool
+	}{
+		{"localhost", true},
+		{"127.0.0.1", true},
+		{"127.1.2.3", true},
+		{"::1", true},
+		{"192.168.1.10", false},
+		{"10.0.0.1", false},
+		{"mysql.example.com", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isLocalEndpoint(tt.host))
+		})
+	}
+}
+
+func TestResolveServiceInstanceSeed(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
+	logger := zap.NewNop()
+
+	tests := []struct {
+		name     string
+		endpoint string
+		expected string
+	}{
+		{
+			name:     "non-local endpoint unchanged",
+			endpoint: "mysql.example.com:3306",
+			expected: "mysql.example.com:3306",
+		},
+		{
+			name:     "non-local IP unchanged",
+			endpoint: "10.0.0.5:3306",
+			expected: "10.0.0.5:3306",
+		},
+		{
+			name:     "localhost replaced with hostname+port",
+			endpoint: "localhost:3306",
+			expected: hostname + ":3306",
+		},
+		{
+			name:     "127.0.0.1 replaced with hostname+port",
+			endpoint: "127.0.0.1:3306",
+			expected: hostname + ":3306",
+		},
+		{
+			name:     "::1 replaced with hostname+port",
+			endpoint: "[::1]:3306",
+			expected: hostname + ":3306",
+		},
+		{
+			name:     "localhost without port replaced with hostname",
+			endpoint: "localhost",
+			expected: hostname,
+		},
+		{
+			name:     "two local DBs on different ports get distinct seeds",
+			endpoint: "localhost:3307",
+			expected: hostname + ":3307",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, resolveServiceInstanceSeed(tt.endpoint, logger))
+		})
+	}
+}
+
+// TestServiceInstanceIDUniqueForLocalEndpoints verifies that two scrapers
+// configured with localhost but representing databases on different hosts
+// produce distinct service.instance.id values. This is simulated by comparing
+// seeds built from two different hostnames against the same port.
+func TestServiceInstanceIDUniqueForLocalEndpoints(t *testing.T) {
+	ns := otelServiceInstanceNamespace
+
+	// Simulate what resolveServiceInstanceSeed returns on two different hosts
+	// both configured with "localhost:3306".
+	seedHost1 := "host-a.example.com:3306"
+	seedHost2 := "host-b.example.com:3306"
+
+	id1 := uuid.NewSHA1(ns, []byte(seedHost1)).String()
+	id2 := uuid.NewSHA1(ns, []byte(seedHost2)).String()
+
+	assert.NotEqual(t, id1, id2,
+		"service.instance.id must differ for the same local endpoint on different hosts")
+}
+
+// TestServiceInstanceIDEmittedWhenEnabled verifies that when service.instance.id
+// is explicitly enabled in the resource attributes config, metrics and logs emit
+// the same valid deterministic UUID v5 value.
+func TestServiceInstanceIDEmittedWhenEnabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServiceInstanceID.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServiceInstanceID.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		globalStatsFile:             "global_stats",
+		innodbStatsFile:             "innodb_stats",
+		tableIoWaitsFile:            "table_io_waits_stats",
+		indexIoWaitsFile:            "index_io_waits_stats",
+		tableStatsFile:              "table_stats",
+		statementEventsFile:         "statement_events",
+		tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
+		replicaStatusFile:           "replica_stats",
+		querySamplesFile:            "query_samples",
+		topQueriesFile:              "top_queries",
+	}
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	metricsServiceInstanceID := requireMetricsServiceInstanceID(t, actualMetrics)
+
+	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
+	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
+
+	for _, scrapeFunc := range []func() (plog.Logs, error){
+		func() (plog.Logs, error) { return scraper.scrapeQuerySampleFunc(t.Context()) },
+		func() (plog.Logs, error) { return scraper.scrapeTopQueryFunc(t.Context()) },
+	} {
+		logs, err := scrapeFunc()
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.ResourceLogs().Len())
+		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+
+		endpointVal, ok := attrs.Get("mysql.instance.endpoint")
+		require.True(t, ok, "mysql.instance.endpoint must be present")
+		assert.Equal(t, "localhost:3306", endpointVal.Str())
+
+		logsServiceInstanceID := requireLogsServiceInstanceID(t, logs)
+		assert.Equal(t, metricsServiceInstanceID, logsServiceInstanceID, "logs and metrics must use the same service.instance.id")
+
+		// Verify determinism: re-derive the expected UUID from the same seed.
+		seed := resolveServiceInstanceSeed("localhost:3306", scraper.logger)
+		expected := uuid.NewSHA1(otelServiceInstanceNamespace, []byte(seed)).String()
+		assert.Equal(t, expected, logsServiceInstanceID, "service.instance.id must be deterministic UUID v5")
+	}
+}
+
+func requireMetricsServiceInstanceID(t *testing.T, metrics pmetric.Metrics) string {
+	t.Helper()
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+	idVal, ok := attrs.Get("service.instance.id")
+	require.True(t, ok, "metrics service.instance.id must be present when enabled")
+	_, err := uuid.Parse(idVal.Str())
+	require.NoError(t, err, "metrics service.instance.id must be a valid UUID, got: %s", idVal.Str())
+	return idVal.Str()
+}
+
+func requireLogsServiceInstanceID(t *testing.T, logs plog.Logs) string {
+	t.Helper()
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	idVal, ok := attrs.Get("service.instance.id")
+	require.True(t, ok, "logs service.instance.id must be present when enabled")
+	_, err := uuid.Parse(idVal.Str())
+	require.NoError(t, err, "logs service.instance.id must be a valid UUID, got: %s", idVal.Str())
+	return idVal.Str()
+}
+
+func TestServiceInstanceIDNotEmittedWhenDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	// ServiceInstanceID.Enabled is false by default — do not set it
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		querySamplesFile: "query_samples",
+		topQueriesFile:   "top_queries",
+	}
+	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
+	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
+
+	for _, scrapeFunc := range []func() (plog.Logs, error){
+		func() (plog.Logs, error) { return scraper.scrapeQuerySampleFunc(t.Context()) },
+		func() (plog.Logs, error) { return scraper.scrapeTopQueryFunc(t.Context()) },
+	} {
+		logs, err := scrapeFunc()
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.ResourceLogs().Len())
+		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+
+		_, ok := attrs.Get("service.instance.id")
+		assert.False(t, ok, "service.instance.id must not be present when disabled")
+	}
 }
 
 func (c *mockClient) explainQuery(digestText, sampleStatement, _, _ string, _ *zap.Logger) string {
