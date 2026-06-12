@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -788,6 +790,27 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 
 		// Cleanup
 		assert.NoError(t, ext.Shutdown(t.Context()))
+	})
+}
+
+func TestBuildAgentConfigPropagatesTLSSetting(t *testing.T) {
+	t.Run("insecure_skip_verify true propagates to skip_ssl_validation", func(t *testing.T) {
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			ClientConfig: confighttp.ClientConfig{
+				TLS: configtls.ClientConfig{InsecureSkipVerify: true},
+			},
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.True(t, agentCfg.GetBool("skip_ssl_validation"))
+	})
+
+	t.Run("insecure_skip_verify false leaves skip_ssl_validation false", func(t *testing.T) {
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.False(t, agentCfg.GetBool("skip_ssl_validation"))
 	})
 }
 
