@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -70,100 +70,61 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 		return pmetric.Metrics{}, err
 	}
 
-	var scrapeErr error
-
-	// 1) list & filter groups
-	lgs, err := s.adm.ListGroups(ctx)
+	lgs, err := s.adm.ListGroupsByType(ctx, []string{"classic", "consumer"})
 	if err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListGroups failed: %w", err)
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListGroupsByType failed: %w", err)
 	}
+
 	var matchedGrpIDs []string
-	for _, g := range lgs.Sorted() {
+	for _, g := range lgs {
 		if s.groupFilter.MatchString(g.Group) {
 			matchedGrpIDs = append(matchedGrpIDs, g.Group)
 		}
 	}
 
-	// 2) list & filter topics
-	td, err := s.adm.ListTopics(ctx) // non-internal only, same as sarama default
+	dgls, err := s.adm.Lag(ctx, matchedGrpIDs...)
 	if err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListTopics failed: %w", err)
-	}
-	var matchedTopics []string
-	for t := range td {
-		if s.topicFilter.MatchString(t) {
-			matchedTopics = append(matchedTopics, t)
-		}
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: Lag failed: %w", err)
 	}
 
-	// 3) compute partition list + end offsets for matched topics
-	endOffsets, err := s.adm.ListEndOffsets(ctx, matchedTopics...)
-	if err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListEndOffsets failed: %w", err)
-	}
-	// Build helpers equivalent to Sarama path
-	topicPartitions := make(map[string][]int32, len(matchedTopics))
-	topicPartitionOffset := make(map[string]map[int32]int64, len(matchedTopics))
-	endOffsets.Each(func(lo kadm.ListedOffset) {
-		// lo.Topic, lo.Partition, lo.Offset
-		if _, ok := topicPartitions[lo.Topic]; !ok {
-			topicPartitions[lo.Topic] = []int32{}
-		}
-		if _, ok := topicPartitionOffset[lo.Topic]; !ok {
-			topicPartitionOffset[lo.Topic] = map[int32]int64{}
-		}
-		topicPartitions[lo.Topic] = append(topicPartitions[lo.Topic], lo.Partition)
-		topicPartitionOffset[lo.Topic][lo.Partition] = lo.Offset
-	})
-
-	// 4) describe groups for member counts
-	dgs, err := s.adm.DescribeGroups(ctx, matchedGrpIDs...)
-	if err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: DescribeGroups failed: %w", err)
-	}
-
+	scrapeErrs := scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	// 5) per group: fetch committed offsets for matched topics and compute metrics
-	gs := dgs.Sorted()
-	for i := range gs {
-		g := &gs[i]
-		grpID := g.Group
-		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(g.Members)), grpID)
-
-		offsets, ferr := s.adm.FetchOffsetsForTopics(ctx, grpID, matchedTopics...)
-		if ferr != nil {
-			scrapeErr = multierr.Append(scrapeErr, fmt.Errorf("franz-go: FetchOffsetsForTopics(%s) failed: %w", grpID, ferr))
+	for group := range dgls {
+		dgl := dgls[group]
+		if dgl.DescribeErr != nil {
+			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: returned error from describing the group. group=%s, error=%w", group, dgl.DescribeErr))
 			continue
 		}
-
-		for topic, parts := range topicPartitions {
-			isConsumed := false
-			var lagSum int64
-			var offsetSum int64
-
-			for _, p := range parts {
-				consumerOffset := int64(-1)
-				if or, ok := offsets.Lookup(topic, p); ok && or.Err == nil {
-					consumerOffset = or.At
-				}
-				offsetSum += consumerOffset
-				s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, grpID, topic, int64(p))
-
-				var consumerLag int64 = -1
-				if consumerOffset != -1 {
-					isConsumed = true
-					if end, ok := topicPartitionOffset[topic][p]; ok {
-						consumerLag = end - consumerOffset
-						lagSum += consumerLag
-					}
-				}
-				s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, grpID, topic, int64(p))
+		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(dgl.Members)), group)
+		if dgl.FetchErr != nil {
+			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: returned error from fetching offsets. group=%s, error=%w", group, dgl.FetchErr))
+			continue
+		}
+		for topic := range dgl.Lag {
+			if !s.topicFilter.MatchString(topic) {
+				continue
 			}
-
+			gmls := dgl.Lag[topic]
+			var isConsumed bool
+			var offsetSum int64
+			var lagSum int64
+			for partition := range gmls {
+				gml := gmls[partition]
+				if gml.Err != nil {
+					scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: returned either the commit error, or the list end offsets error. group=%s, topic=%s, partition=%d, error=%w", group, topic, partition, gml.Err))
+					continue
+				}
+				if gml.Commit.At != -1 {
+					isConsumed = true
+					offsetSum += gml.Commit.At
+					lagSum += gml.Lag // franz-go clamps Lag to >= 0 and only returns Lag == -1 when gml.Err != nil
+					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, gml.Commit.At, group, topic, int64(partition))
+					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, gml.Lag, group, topic, int64(partition))
+				}
+			}
 			if isConsumed {
-				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, grpID, topic)
-				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, grpID, topic)
+				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group, topic)
+				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group, topic)
 			}
 		}
 	}
@@ -171,7 +132,7 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErr
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }
 
 // Factory helper for franz-go path (selected under the feature gate later).
