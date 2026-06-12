@@ -358,6 +358,8 @@ type Logs struct {
 	Level            zapcore.Level `mapstructure:"level"`
 	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
 	OutputPaths      []string      `mapstructure:"output_paths"`
+	// Encoding sets the logger's encoding. Valid values are "json" and "console". 
+	// Defaults to "json".
 	Encoding         string        `mapstructure:"encoding" yaml:"encoding"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.

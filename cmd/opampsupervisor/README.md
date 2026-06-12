@@ -97,7 +97,7 @@ Start the Supervisor:
 ./opampsupervisor --config=supervisor.yaml
 ```
 
-The supervisor's own log encoding is configured under `telemetry.logs.log_format`.
+The supervisor's own log encoding is configured under `telemetry.logs.encoding`.
 Use `console` or `text` for plain-text logs with ISO8601 timestamps. Leave the field
 unset, or set it to `json`, to keep the default JSON output.
 
