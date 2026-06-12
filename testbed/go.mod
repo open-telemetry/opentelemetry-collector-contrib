@@ -243,7 +243,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/nomad/api v0.0.0-20260528135333-5b027732945f // indirect
-	github.com/hashicorp/serf v0.10.1 // indirect
+	github.com/hashicorp/serf v0.10.3-0.20260611143631-fadde19c9a64 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.41.2 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -566,8 +566,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../pkg/translator/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../pkg/sampling
-
-// Fix for mitchellh/mapstructure vulnerability (GHSA-2464-8j7c-4cjm).
-// This fork removes the vulnerable dependency which is pulled in transitively
-// through hashicorp/consul/api.
-replace github.com/hashicorp/serf => github.com/hazzik/serf v0.0.0-20250310055724-a5f04d14dea3
