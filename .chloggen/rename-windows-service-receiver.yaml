@@ -1,6 +1,0 @@
-change_type: deprecation
-component: receiver/windows_service
-note: Rename receiver type from `windowsservice` to `windows_service`
-issues: [45339]
-subtext:
-change_logs: [user]
