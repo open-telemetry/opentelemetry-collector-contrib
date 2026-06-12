@@ -44,6 +44,9 @@ resources:
               unit: '{connections}'
               temporality: cumulative
               monotonic: false
+            - name: apache.request.bandwidth.rate
+              type: gauge
+              unit: By/s
             - name: apache.load.1
               type: gauge
               unit: '%'
@@ -53,6 +56,9 @@ resources:
             - name: apache.load.5
               type: gauge
               unit: '%'
+            - name: apache.request.rate
+              type: gauge
+              unit: '{request}/s'
             - name: apache.request.time
               type: sum
               unit: ms
@@ -101,6 +107,9 @@ resources:
               unit: s
               temporality: cumulative
               monotonic: true
+            - name: apache.worker.limit
+              type: gauge
+              unit: '{worker}'
             - name: apache.workers
               type: sum
               unit: '{workers}'
