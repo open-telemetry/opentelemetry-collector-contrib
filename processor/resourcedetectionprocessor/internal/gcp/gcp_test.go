@@ -223,6 +223,26 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Cloud Run Worker Pool",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:       "my-project",
+				cloudPlatform:   gcp.CloudRunWorkerPool,
+				faaSID:          "1472385723456792345",
+				faaSCloudRegion: "us-central1",
+				faaSName:        "my-service",
+				faaSVersion:     "123456",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_cloud_run",
+				"cloud.region":     "us-central1",
+				"faas.name":        "my-service",
+				"faas.version":     "123456",
+				"faas.instance":    "1472385723456792345",
+			},
+		},
+		{
 			desc: "Cloud Run Job",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:               "my-project",
