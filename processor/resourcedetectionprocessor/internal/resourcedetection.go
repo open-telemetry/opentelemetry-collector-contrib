@@ -245,18 +245,25 @@ func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Cli
 		perAttemptTimeout = client.Timeout
 	}
 
+	var lastDetErr error
 	result, err := backoff.Retry(ctx, func() (detectResult, error) {
 		attemptCtx, cancel := attemptContext(ctx, perAttemptTimeout)
 		defer cancel()
 
 		r, schemaURL, detErr := detector.Detect(attemptCtx)
 		if detErr != nil {
+			lastDetErr = detErr
 			p.logger.Warn("failed to detect resource, will retry", zap.Error(detErr))
 			return detectResult{}, detErr
 		}
 		return detectResult{resource: r, schemaURL: schemaURL}, nil
 	}, opts...)
 	if err != nil {
+		// Preserve the underlying detector error so callers see the real cause,
+		// not just bare context.DeadlineExceeded / backoff.PermanentError wrappers.
+		if lastDetErr != nil && !errors.Is(err, lastDetErr) {
+			err = errors.Join(lastDetErr, err)
+		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			p.logger.Warn("resource detection cancelled", zap.Error(err))
 		} else {

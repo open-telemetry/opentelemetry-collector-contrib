@@ -4,6 +4,7 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -58,6 +59,16 @@ type Config struct {
 	// Retry controls retry/backoff for each detection attempt. Set Enabled=false
 	// to perform a single attempt per detector with no retries.
 	Retry configretry.BackOffConfig `mapstructure:"retry"`
+}
+
+// Validate rejects configurations that would let a hung detector block the
+// pipeline forever: with retry enabled, at least one of the HTTP client timeout
+// or the retry budget must be finite so detection always terminates.
+func (cfg *Config) Validate() error {
+	if cfg.Retry.Enabled && cfg.Timeout == 0 && cfg.Retry.MaxElapsedTime == 0 {
+		return errors.New("retry.enabled requires either timeout > 0 or retry.max_elapsed_time > 0 to bound detection")
+	}
+	return nil
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

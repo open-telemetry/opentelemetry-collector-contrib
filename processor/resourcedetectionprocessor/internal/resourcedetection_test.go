@@ -150,6 +150,8 @@ func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Contains(t, err.Error(), "err1")
+	assert.Contains(t, err.Error(), "err2")
 }
 
 func TestDetectResource_NoDetectors(t *testing.T) {
