@@ -48,6 +48,7 @@ The journald receiver **requires the journalctl binary** to be available in the 
 | `all`                               | 'false'                              | If `true`, very long logs and logs with unprintable characters will also be included.                                                                                                                                                    |
 | `namespace`                         |                                      | Will query the given namespace. See man page [`systemd-journald.service(8)`](https://www.man7.org/linux/man-pages/man8/systemd-journald.service.8.html#JOURNAL_NAMESPACES) for details.                                                  |
 | `convert_message_bytes`             | 'false'                              | If `true` and if the `MESSAGE` field is read [as an array of bytes](https://github.com/systemd/systemd/blob/main/docs/JOURNAL_EXPORT_FORMATS.md#journal-json-format), the array will be converted to string.                             |
+| `convert_to_semantic_conventions` | 'false'                              | If `true`, well-known journald fields are mapped to OpenTelemetry semantic convention attributes instead of being placed in the log body. `MESSAGE` becomes the log body, `PRIORITY` sets the severity, process/host fields become resource attributes (e.g. `process.pid`, `host.name`), and code/thread/syslog fields become log attributes (e.g. `code.file.path`, `syslog.facility.code`). Remaining fields are kept as log attributes with their original journald field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`). |
 | `merge`                             | 'false'                              | If `true`, read from all available journals, including remote ones.                                                                                                                                                                      |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
@@ -56,6 +57,49 @@ The journald receiver **requires the journalctl binary** to be available in the 
 | `root_path`                         |                                      | Chroot to use when executing the journalctl command. Must be an absolute path or empty. When empty (default), no chroot is used when executing journalctl.                                                                               |
 | `journalctl_path`                   | `journalctl`                         | journalctl command to execute. Relative to `root_path`. Must be an absolute path if `root_path` is non-empty. See below for more details                                                                                                 |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                              |
+
+### Semantic Conventions Mapping
+
+When `convert_to_semantic_conventions` is set to `true`, well-known journald fields are mapped to OpenTelemetry semantic convention attributes instead of placing the entire raw journal record in the log body. This provides better interoperability with OpenTelemetry tools and follows established conventions.
+
+#### Log Body and Severity
+
+- `MESSAGE` → The log body (string)
+- `PRIORITY` → Sets the log severity level and severity text:
+  - `0` (emerg) → `FATAL` / `emerg`
+  - `1` (alert) → `ERROR3` / `alert`
+  - `2` (crit) → `ERROR2` / `crit`
+  - `3` (err) → `ERROR` / `err`
+  - `4` (warning) → `WARN` / `warning`
+  - `5` (notice) → `INFO2` / `notice`
+  - `6` (info) → `INFO` / `info`
+  - `7` (debug) → `DEBUG` / `debug`
+
+#### Resource Attributes
+
+Process and host information from journald becomes OpenTelemetry resource attributes:
+
+- `_HOSTNAME` → `host.name`
+- `_PID` → `process.pid` (converted to int64)
+- `_COMM` → `process.command`
+- `_EXE` → `process.executable.path`
+- `_CMDLINE` → `process.command_line`
+
+#### Log Attributes
+
+Code, thread, and syslog information becomes log attributes:
+
+- `CODE_FILE` → `code.file.path`
+- `CODE_FUNC` → `code.function.name`
+- `CODE_LINE` → `code.line.number` (converted to int64)
+- `TID` → `thread.id` (converted to int64)
+- `SYSLOG_FACILITY` → `syslog.facility.code` (converted to int64)
+- `SYSLOG_IDENTIFIER` → `syslog.msg.id`
+- `SYSLOG_PID` → `syslog.pid` (converted to int64)
+
+#### Remaining Fields
+
+All other journald fields are preserved as log attributes with their original field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`).
 
 ### Operators
 
