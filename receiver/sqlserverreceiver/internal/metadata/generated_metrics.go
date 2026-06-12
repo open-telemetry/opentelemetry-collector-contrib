@@ -265,8 +265,8 @@ type AttributeSqlserverBlockType int
 
 const (
 	_ AttributeSqlserverBlockType = iota
-	AttributeSqlserverBlockTypeBlocks
 	AttributeSqlserverBlockTypeAllocated
+	AttributeSqlserverBlockTypeBlocks
 	AttributeSqlserverBlockTypeOwner
 	AttributeSqlserverBlockTypeOwnerAllocated
 )
@@ -274,10 +274,10 @@ const (
 // String returns the string representation of the AttributeSqlserverBlockType.
 func (av AttributeSqlserverBlockType) String() string {
 	switch av {
-	case AttributeSqlserverBlockTypeBlocks:
-		return "blocks"
 	case AttributeSqlserverBlockTypeAllocated:
 		return "allocated"
+	case AttributeSqlserverBlockTypeBlocks:
+		return "blocks"
 	case AttributeSqlserverBlockTypeOwner:
 		return "owner"
 	case AttributeSqlserverBlockTypeOwnerAllocated:
@@ -288,10 +288,70 @@ func (av AttributeSqlserverBlockType) String() string {
 
 // MapAttributeSqlserverBlockType is a helper map of string to AttributeSqlserverBlockType attribute value.
 var MapAttributeSqlserverBlockType = map[string]AttributeSqlserverBlockType{
-	"blocks":          AttributeSqlserverBlockTypeBlocks,
 	"allocated":       AttributeSqlserverBlockTypeAllocated,
+	"blocks":          AttributeSqlserverBlockTypeBlocks,
 	"owner":           AttributeSqlserverBlockTypeOwner,
 	"owner_allocated": AttributeSqlserverBlockTypeOwnerAllocated,
+}
+
+// AttributeSqlserverErrorCategory specifies the value sqlserver.error.category attribute.
+type AttributeSqlserverErrorCategory int
+
+const (
+	_ AttributeSqlserverErrorCategory = iota
+	AttributeSqlserverErrorCategoryDbOffline
+	AttributeSqlserverErrorCategoryInfo
+	AttributeSqlserverErrorCategoryKillConnection
+	AttributeSqlserverErrorCategoryUser
+)
+
+// String returns the string representation of the AttributeSqlserverErrorCategory.
+func (av AttributeSqlserverErrorCategory) String() string {
+	switch av {
+	case AttributeSqlserverErrorCategoryDbOffline:
+		return "db_offline"
+	case AttributeSqlserverErrorCategoryInfo:
+		return "info"
+	case AttributeSqlserverErrorCategoryKillConnection:
+		return "kill_connection"
+	case AttributeSqlserverErrorCategoryUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverErrorCategory is a helper map of string to AttributeSqlserverErrorCategory attribute value.
+var MapAttributeSqlserverErrorCategory = map[string]AttributeSqlserverErrorCategory{
+	"db_offline":      AttributeSqlserverErrorCategoryDbOffline,
+	"info":            AttributeSqlserverErrorCategoryInfo,
+	"kill_connection": AttributeSqlserverErrorCategoryKillConnection,
+	"user":            AttributeSqlserverErrorCategoryUser,
+}
+
+// AttributeSqlserverLockTimeoutKind specifies the value sqlserver.lock.timeout.kind attribute.
+type AttributeSqlserverLockTimeoutKind int
+
+const (
+	_ AttributeSqlserverLockTimeoutKind = iota
+	AttributeSqlserverLockTimeoutKindAll
+	AttributeSqlserverLockTimeoutKindNonzero
+)
+
+// String returns the string representation of the AttributeSqlserverLockTimeoutKind.
+func (av AttributeSqlserverLockTimeoutKind) String() string {
+	switch av {
+	case AttributeSqlserverLockTimeoutKindAll:
+		return "all"
+	case AttributeSqlserverLockTimeoutKindNonzero:
+		return "nonzero"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverLockTimeoutKind is a helper map of string to AttributeSqlserverLockTimeoutKind attribute value.
+var MapAttributeSqlserverLockTimeoutKind = map[string]AttributeSqlserverLockTimeoutKind{
+	"all":     AttributeSqlserverLockTimeoutKindAll,
+	"nonzero": AttributeSqlserverLockTimeoutKindNonzero,
 }
 
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
@@ -547,9 +607,6 @@ var MetricsInfo = metricsInfo{
 	SqlserverLockRequestRate: metricInfo{
 		Name: "sqlserver.lock.request.rate",
 	},
-	SqlserverLockTimeoutNonzeroRate: metricInfo{
-		Name: "sqlserver.lock.timeout.nonzero.rate",
-	},
 	SqlserverLockTimeoutRate: metricInfo{
 		Name: "sqlserver.lock.timeout.rate",
 	},
@@ -704,7 +761,6 @@ type metricsInfo struct {
 	SqlserverLockEscalationRate                 metricInfo
 	SqlserverLockMemory                         metricInfo
 	SqlserverLockRequestRate                    metricInfo
-	SqlserverLockTimeoutNonzeroRate             metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
@@ -1833,27 +1889,61 @@ func newMetricSqlserverDeadlockRate(cfg SqlserverDeadlockRateMetricConfig) metri
 }
 
 type metricSqlserverErrorRate struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   SqlserverErrorRateMetricConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SqlserverErrorRateMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills sqlserver.error.rate metric with initial data.
 func (m *metricSqlserverErrorRate) init() {
 	m.data.SetName("sqlserver.error.rate")
-	m.data.SetDescription("Total number of errors raised by SQL Server, across all error categories.")
+	m.data.SetDescription("Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.")
 	m.data.SetUnit("{errors}/s")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverErrorRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverErrorRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverErrorCategoryAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory) {
+		dp.Attributes().PutStr("sqlserver.error.category", sqlserverErrorCategoryAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1866,6 +1956,11 @@ func (m *metricSqlserverErrorRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverErrorRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2372,7 +2467,7 @@ type metricSqlserverLockMemory struct {
 func (m *metricSqlserverLockMemory) init() {
 	m.data.SetName("sqlserver.lock.memory")
 	m.data.SetDescription("Total amount of memory the SQL Server is using for locks.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -2462,78 +2557,62 @@ func newMetricSqlserverLockRequestRate(cfg SqlserverLockRequestRateMetricConfig)
 	return m
 }
 
-type metricSqlserverLockTimeoutNonzeroRate struct {
-	data     pmetric.Metric                              // data buffer for generated metric.
-	config   SqlserverLockTimeoutNonzeroRateMetricConfig // metric config provided by user.
-	capacity int                                         // max observed number of data points added to the metric.
-}
-
-// init fills sqlserver.lock.timeout.nonzero.rate metric with initial data.
-func (m *metricSqlserverLockTimeoutNonzeroRate) init() {
-	m.data.SetName("sqlserver.lock.timeout.nonzero.rate")
-	m.data.SetDescription("Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.")
-	m.data.SetUnit("{timeouts}/s")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricSqlserverLockTimeoutNonzeroRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverLockTimeoutNonzeroRate) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverLockTimeoutNonzeroRate) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverLockTimeoutNonzeroRate(cfg SqlserverLockTimeoutNonzeroRateMetricConfig) metricSqlserverLockTimeoutNonzeroRate {
-	m := metricSqlserverLockTimeoutNonzeroRate{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSqlserverLockTimeoutRate struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills sqlserver.lock.timeout.rate metric with initial data.
 func (m *metricSqlserverLockTimeoutRate) init() {
 	m.data.SetName("sqlserver.lock.timeout.rate")
-	m.data.SetDescription("Total number of lock timeouts.")
-	m.data.SetUnit("“{timeouts}/s”")
+	m.data.SetDescription("Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).")
+	m.data.SetUnit("{timeouts}/s")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverLockTimeoutKindAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind) {
+		dp.Attributes().PutStr("sqlserver.lock.timeout.kind", sqlserverLockTimeoutKindAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2546,6 +2625,11 @@ func (m *metricSqlserverLockTimeoutRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverLockTimeoutRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -5053,7 +5137,6 @@ type MetricsBuilder struct {
 	metricSqlserverLockEscalationRate                 metricSqlserverLockEscalationRate
 	metricSqlserverLockMemory                         metricSqlserverLockMemory
 	metricSqlserverLockRequestRate                    metricSqlserverLockRequestRate
-	metricSqlserverLockTimeoutNonzeroRate             metricSqlserverLockTimeoutNonzeroRate
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
@@ -5148,7 +5231,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLockEscalationRate:                 newMetricSqlserverLockEscalationRate(mbc.Metrics.SqlserverLockEscalationRate),
 		metricSqlserverLockMemory:                         newMetricSqlserverLockMemory(mbc.Metrics.SqlserverLockMemory),
 		metricSqlserverLockRequestRate:                    newMetricSqlserverLockRequestRate(mbc.Metrics.SqlserverLockRequestRate),
-		metricSqlserverLockTimeoutNonzeroRate:             newMetricSqlserverLockTimeoutNonzeroRate(mbc.Metrics.SqlserverLockTimeoutNonzeroRate),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
@@ -5332,7 +5414,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLockEscalationRate.emit(ils.Metrics())
 	mb.metricSqlserverLockMemory.emit(ils.Metrics())
 	mb.metricSqlserverLockRequestRate.emit(ils.Metrics())
-	mb.metricSqlserverLockTimeoutNonzeroRate.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
@@ -5516,8 +5597,8 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 }
 
 // RecordSqlserverErrorRateDataPoint adds a data point to sqlserver.error.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverErrorRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverErrorRate.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverErrorRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverErrorCategoryAttributeValue AttributeSqlserverErrorCategory) {
+	mb.metricSqlserverErrorRate.recordDataPoint(mb.startTime, ts, val, sqlserverErrorCategoryAttributeValue.String())
 }
 
 // RecordSqlserverIndexSearchRateDataPoint adds a data point to sqlserver.index.search.rate metric.
@@ -5570,14 +5651,9 @@ func (mb *MetricsBuilder) RecordSqlserverLockRequestRateDataPoint(ts pcommon.Tim
 	mb.metricSqlserverLockRequestRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverLockTimeoutNonzeroRateDataPoint adds a data point to sqlserver.lock.timeout.nonzero.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLockTimeoutNonzeroRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockTimeoutNonzeroRate.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockTimeoutRate.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverLockTimeoutKindAttributeValue AttributeSqlserverLockTimeoutKind) {
+	mb.metricSqlserverLockTimeoutRate.recordDataPoint(mb.startTime, ts, val, sqlserverLockTimeoutKindAttributeValue.String())
 }
 
 // RecordSqlserverLockWaitCountDataPoint adds a data point to sqlserver.lock.wait.count metric.

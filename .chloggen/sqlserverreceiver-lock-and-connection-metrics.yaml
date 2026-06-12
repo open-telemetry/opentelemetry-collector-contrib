@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add lock and connection management metrics by extending the `sys.dm_os_performance_counters` query in direct-connection mode.
+note: Add more lock and connection management metrics
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48925]
@@ -18,13 +18,13 @@ issues: [48925]
 subtext: |
   Adds the following metrics, all disabled by default:
     - `sqlserver.connection.reset.rate`
-    - `sqlserver.error.rate`
-    - `sqlserver.lock.block.count` (with `sqlserver.block.type` attribute: blocks, allocated, owner, owner_allocated)
+    - `sqlserver.error.rate` (with `sqlserver.error.category` attribute)
+    - `sqlserver.lock.block.count` (with `sqlserver.block.type` attribute: allocated, blocks, owner, owner_allocated)
     - `sqlserver.lock.escalation.rate`
     - `sqlserver.lock.memory`
     - `sqlserver.lock.request.rate`
-    - `sqlserver.lock.timeout.nonzero.rate`
     - `sqlserver.lock.wait_time.total`
+  Also adds a `sqlserver.lock.timeout.kind` attribute (`all`, `nonzero`) to the existing `sqlserver.lock.timeout.rate` metric.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -498,10 +498,20 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// SqlserverErrorRateMetricAttributeKey specifies the key of an attribute for the sqlserver.error.rate metric.
+type SqlserverErrorRateMetricAttributeKey string
+
+const (
+	SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory SqlserverErrorRateMetricAttributeKey = "sqlserver.error.category"
+)
+
 // SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric.
 type SqlserverErrorRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverErrorRateMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverErrorRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -515,6 +525,24 @@ func (ms *SqlserverErrorRateMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverErrorRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory:
+		default:
+			return fmt.Errorf("metric sqlserver.error.rate doesn't have an attribute %v, valid attributes: [sqlserver.error.category]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -774,30 +802,20 @@ func (ms *SqlserverLockRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// SqlserverLockTimeoutNonzeroRateMetricConfig provides config for the sqlserver.lock.timeout.nonzero.rate metric.
-type SqlserverLockTimeoutNonzeroRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
+// SqlserverLockTimeoutRateMetricAttributeKey specifies the key of an attribute for the sqlserver.lock.timeout.rate metric.
+type SqlserverLockTimeoutRateMetricAttributeKey string
 
-func (ms *SqlserverLockTimeoutNonzeroRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
+const (
+	SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind SqlserverLockTimeoutRateMetricAttributeKey = "sqlserver.lock.timeout.kind"
+)
 
 // SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric.
 type SqlserverLockTimeoutRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverLockTimeoutRateMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -811,6 +829,24 @@ func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverLockTimeoutRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind:
+		default:
+			return fmt.Errorf("metric sqlserver.lock.timeout.rate doesn't have an attribute %v, valid attributes: [sqlserver.lock.timeout.kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1954,7 +1990,6 @@ type MetricsConfig struct {
 	SqlserverLockEscalationRate                 SqlserverLockEscalationRateMetricConfig                 `mapstructure:"sqlserver.lock.escalation.rate"`
 	SqlserverLockMemory                         SqlserverLockMemoryMetricConfig                         `mapstructure:"sqlserver.lock.memory"`
 	SqlserverLockRequestRate                    SqlserverLockRequestRateMetricConfig                    `mapstructure:"sqlserver.lock.request.rate"`
-	SqlserverLockTimeoutNonzeroRate             SqlserverLockTimeoutNonzeroRateMetricConfig             `mapstructure:"sqlserver.lock.timeout.nonzero.rate"`
 	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
@@ -2062,7 +2097,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverErrorRateMetricAttributeKey{SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory},
 		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 			Enabled: false,
@@ -2098,11 +2135,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockRequestRate: SqlserverLockRequestRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverLockTimeoutNonzeroRate: SqlserverLockTimeoutNonzeroRateMetricConfig{
-			Enabled: false,
-		},
 		SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverLockTimeoutRateMetricAttributeKey{SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind},
 		},
 		SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 			Enabled: false,

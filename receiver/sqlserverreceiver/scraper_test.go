@@ -61,7 +61,6 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverLockEscalationRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockMemory.Enabled = enabled
 	cfg.Metrics.SqlserverLockRequestRate.Enabled = enabled
-	cfg.Metrics.SqlserverLockTimeoutNonzeroRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled

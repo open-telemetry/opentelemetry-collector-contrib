@@ -144,7 +144,7 @@ attributes:
     description: The type of lock block tracked by the lock manager.
     type: string
     requirement_level: recommended
-    enum: [blocks, allocated, owner, owner_allocated]
+    enum: [allocated, blocks, owner, owner_allocated]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -173,6 +173,11 @@ attributes:
     description: Deadlock priority value for the session.
     type: int
     requirement_level: recommended
+  sqlserver.error.category:
+    description: The SQL Server error category as reported by the `SQLServer:SQL Errors` performance counter object.
+    type: string
+    requirement_level: recommended
+    enum: [db_offline, info, kill_connection, user]
   sqlserver.estimated_completion_time:
     description: Estimated time remaining for the request to complete, in seconds.
     type: double
@@ -181,6 +186,11 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
+  sqlserver.lock.timeout.kind:
+    description: The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
+    type: string
+    requirement_level: recommended
+    enum: [all, nonzero]
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
@@ -588,12 +598,12 @@ metrics:
     attributes: []
   sqlserver.error.rate:
     enabled: false
-    description: Total number of errors raised by SQL Server, across all error categories.
+    description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
     stability: development
     unit: "{errors}/s"
     gauge:
       value_type: double
-    attributes: []
+    attributes: [sqlserver.error.category]
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -669,7 +679,7 @@ metrics:
     enabled: false
     description: Total amount of memory the SQL Server is using for locks.
     stability: development
-    unit: KBy
+    unit: By
     gauge:
       value_type: int
     attributes: []
@@ -681,22 +691,14 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.lock.timeout.nonzero.rate:
+  sqlserver.lock.timeout.rate:
     enabled: false
-    description: Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
+    description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
     stability: development
     unit: "{timeouts}/s"
     gauge:
       value_type: double
-    attributes: []
-  sqlserver.lock.timeout.rate:
-    enabled: false
-    description: Total number of lock timeouts.
-    stability: development
-    unit: “{timeouts}/s”
-    gauge:
-      value_type: double
-    attributes: []
+    attributes: [sqlserver.lock.timeout.kind]
   sqlserver.lock.wait.count:
     enabled: false
     description: Cumulative count of lock waits that occurred.

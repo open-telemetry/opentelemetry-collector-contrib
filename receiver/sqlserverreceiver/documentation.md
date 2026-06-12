@@ -381,11 +381,17 @@ Total number of deadlocks.
 
 ### sqlserver.error.rate
 
-Total number of errors raised by SQL Server, across all error categories.
+Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {errors}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.error.category | The SQL Server error category as reported by the `SQLServer:SQL Errors` performance counter object. | Str: ``db_offline``, ``info``, ``kill_connection``, ``user`` | Recommended | - |
 
 ### sqlserver.index.search.rate
 
@@ -463,7 +469,7 @@ Number of lock blocks tracked by the lock manager, broken down by block type.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.block.type | The type of lock block tracked by the lock manager. | Str: ``blocks``, ``allocated``, ``owner``, ``owner_allocated`` | Recommended | - |
+| sqlserver.block.type | The type of lock block tracked by the lock manager. | Str: ``allocated``, ``blocks``, ``owner``, ``owner_allocated`` | Recommended | - |
 
 ### sqlserver.lock.escalation.rate
 
@@ -479,7 +485,7 @@ Total amount of memory the SQL Server is using for locks.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | Development |
+| By | Gauge | Int | Development |
 
 ### sqlserver.lock.request.rate
 
@@ -489,21 +495,19 @@ Number of new locks and lock conversions per second requested from the lock mana
 | ---- | ----------- | ---------- | --------- |
 | {requests}/s | Gauge | Double | Development |
 
-### sqlserver.lock.timeout.nonzero.rate
+### sqlserver.lock.timeout.rate
 
-Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
+Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {timeouts}/s | Gauge | Double | Development |
 
-### sqlserver.lock.timeout.rate
+#### Attributes
 
-Total number of lock timeouts.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| “{timeouts}/s” | Gauge | Double | Development |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.lock.timeout.kind | The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them. | Str: ``all``, ``nonzero`` | Recommended | - |
 
 ### sqlserver.lock.wait.count
 

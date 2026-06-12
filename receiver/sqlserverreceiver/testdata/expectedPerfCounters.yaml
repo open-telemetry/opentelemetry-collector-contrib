@@ -1081,13 +1081,17 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock timeouts per second after waiting for more than zero seconds. Distinct from sqlserver.lock.timeout.rate, which also counts immediate (zero-wait) timeouts.
+          - description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
             gauge:
               dataPoints:
                 - asDouble: 0
+                  attributes:
+                    - key: sqlserver.lock.timeout.kind
+                      value:
+                        stringValue: nonzero
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.lock.timeout.nonzero.rate
+            name: sqlserver.lock.timeout.rate
             unit: '{timeouts}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1111,14 +1115,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total number of lock timeouts.
+          - description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
             gauge:
               dataPoints:
                 - asDouble: 0
+                  attributes:
+                    - key: sqlserver.lock.timeout.kind
+                      value:
+                        stringValue: all
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
-            unit: “{timeouts}/s”
+            unit: '{timeouts}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1618,10 +1626,116 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total number of errors raised by SQL Server, across all error categories.
+          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
             gauge:
               dataPoints:
-                - asDouble: 369
+                - asDouble: 0
+                  attributes:
+                    - key: sqlserver.error.category
+                      value:
+                        stringValue: db_offline
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.error.rate
+            unit: '{errors}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+            gauge:
+              dataPoints:
+                - asDouble: 313
+                  attributes:
+                    - key: sqlserver.error.category
+                      value:
+                        stringValue: info
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.error.rate
+            unit: '{errors}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: sqlserver.error.category
+                      value:
+                        stringValue: kill_connection
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.error.rate
+            unit: '{errors}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+            gauge:
+              dataPoints:
+                - asDouble: 56
+                  attributes:
+                    - key: sqlserver.error.category
+                      value:
+                        stringValue: user
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.error.rate
@@ -2342,11 +2456,11 @@ resourceMetrics:
           - description: Total amount of memory the SQL Server is using for locks.
             gauge:
               dataPoints:
-                - asInt: "10288"
+                - asInt: "10534912"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.memory
-            unit: KBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

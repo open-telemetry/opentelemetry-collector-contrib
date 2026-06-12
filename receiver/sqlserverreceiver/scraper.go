@@ -481,10 +481,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const superLatchPromotionsPerSec = "SuperLatch Promotions/sec"
 	const superLatchDemotionsPerSec = "SuperLatch Demotions/sec"
 
-	// "SQL Errors" emits Errors/sec for several error categories;
-	// we only record the aggregate (Total) row.
-	const errorsTotalInstance = "Total"
-
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -585,10 +581,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case diskWriteIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(now, row[valueKey]))
 		case errorsPerSec:
-			// "SQL Errors" emits Errors/sec for multiple categories
-			// (DB Offline Errors, Info Errors, Kill Connection Errors, User Errors, Total).
-			// Record only the Total aggregate to avoid name explosion.
-			if row["instance"] != errorsTotalInstance {
+			category, ok := errorCategoryAttr(row["instance"])
+			if !ok {
 				break
 			}
 			val, err := retrieveFloat(row, valueKey)
@@ -596,7 +590,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, errorsPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverErrorRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverErrorRateDataPoint(now, val.(float64), category)
 			}
 		case executionErrors:
 			val, err := retrieveInt(row, valueKey)
@@ -660,7 +654,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockMemoryKB)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockMemoryDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverLockMemoryDataPoint(now, val.(int64)*1024)
 			}
 		case lockOwnerBlocks:
 			val, err := retrieveInt(row, valueKey)
@@ -692,7 +686,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockTimeoutsNonzeroPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockTimeoutNonzeroRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverLockTimeoutRateDataPoint(now, val.(float64), metadata.AttributeSqlserverLockTimeoutKindNonzero)
 			}
 		case lockTimeoutsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -700,7 +694,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockTimeoutsPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockTimeoutRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverLockTimeoutRateDataPoint(now, val.(float64), metadata.AttributeSqlserverLockTimeoutKindAll)
 			}
 		case lockWaitCount:
 			val, err := retrieveInt(row, valueKey)
@@ -1480,6 +1474,24 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 		err = fmt.Errorf("no value found for column %s", columnName)
 	}
 	return result, err
+}
+
+// errorCategoryAttr maps a SQLServer:SQL Errors counter instance to the
+// sqlserver.error.category attribute value. The "_Total" instance is
+// intentionally skipped since callers can sum the per-category points.
+func errorCategoryAttr(instance string) (metadata.AttributeSqlserverErrorCategory, bool) {
+	switch instance {
+	case "DB Offline Errors":
+		return metadata.AttributeSqlserverErrorCategoryDbOffline, true
+	case "Info Errors":
+		return metadata.AttributeSqlserverErrorCategoryInfo, true
+	case "Kill Connection Errors":
+		return metadata.AttributeSqlserverErrorCategoryKillConnection, true
+	case "User Errors":
+		return metadata.AttributeSqlserverErrorCategoryUser, true
+	default:
+		return 0, false
+	}
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
