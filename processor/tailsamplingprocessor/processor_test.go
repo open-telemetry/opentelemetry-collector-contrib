@@ -223,8 +223,12 @@ func TestTraceIntegrity(t *testing.T) {
 
 	mpe1.SetDecision(samplingpolicy.Sampled)
 
-	// Generate and deliver first span
-	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	// Generate and deliver first span. ConsumeTraces declares MutatesData=true,
+	// so clone before the call to keep the captured `spans` references intact
+	// for the post-consume assertions below.
+	tracesIn := ptrace.NewTraces()
+	traces.CopyTo(tracesIn)
+	require.NoError(t, p.ConsumeTraces(t.Context(), tracesIn))
 
 	// The first tick won't do anything
 	controller.waitForTick()
@@ -335,7 +339,10 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	concurrencyLimiter := make(chan struct{}, 128)
 	defer close(concurrencyLimiter)
 	for _, batch := range batches {
-		// Add the same traceId twice.
+		// Add the same traceId twice. ConsumeTraces declares MutatesData=true,
+		// so each goroutine needs its own copy to race over.
+		batchClone := ptrace.NewTraces()
+		batch.CopyTo(batchClone)
 		wg.Add(2)
 		concurrencyLimiter <- struct{}{}
 		go func(td ptrace.Traces) {
@@ -348,7 +355,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
 			<-concurrencyLimiter
-		}(batch)
+		}(batchClone)
 	}
 
 	wg.Wait()
@@ -397,15 +404,22 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
+	cloneTraces := func(td ptrace.Traces) ptrace.Traces {
+		out := ptrace.NewTraces()
+		td.CopyTo(out)
+		return out
+	}
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
+			// ConsumeTraces declares MutatesData=true, so each call needs its
+			// own copy or only the first one would carry data.
 			for range 10 {
-				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), cloneTraces(td)))
 			}
 			controller.concurrentWithTick(func() {
 				for range 10 {
-					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+					assert.NoError(t, sp.ConsumeTraces(t.Context(), cloneTraces(td)))
 				}
 			})
 			wg.Done()
@@ -543,8 +557,12 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// know exactly when that will happen, so we just write in a loop
 			// until the time must have passed.
 			for time.Since(start) < 2*cfg.DecisionWait {
-				expectedSpans.Add(int64(batch.SpanCount()))
-				err := tsp.ConsumeTraces(t.Context(), batch)
+				// ConsumeTraces declares MutatesData=true, so clone before
+				// each call to keep delivering data on subsequent iterations.
+				clone := ptrace.NewTraces()
+				batch.CopyTo(clone)
+				expectedSpans.Add(int64(clone.SpanCount()))
+				err := tsp.ConsumeTraces(t.Context(), clone)
 				if err != nil {
 					errCh <- err
 				}
