@@ -33,8 +33,8 @@ The default timeout is `1s`.
 By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
 Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
-`recreate` when set, the filestorage extension will automatically rename the corrupted bbolt database and create a new one when certain bbolt panics occur. 
-See (#35899)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899] for more details.
+`recreate` when set, the filestorage extension will automatically rename the corrupted bbolt database and create a new one when certain bbolt panics occur.
+See [#35899](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899) and [#48565](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48565) for more details.
 
 If the database fails to open due to corruption (resulting in a panic), the corrupted file will be automatically renamed to `{filename}.{ISO 8601 timestamp}.backup` and a new data file will be created from scratch. This allows the collector to continue operating even when encountering certain bbolt panics. If no corruption is detected, the existing database continues to be used normally.
 There may still be scenarios where manually removing or renaming the file may be required, and this feature flag is not a panacea for all bbolt panics you can encounter.
@@ -48,6 +48,9 @@ There may still be scenarios where manually removing or renaming the file may be
 - `compaction.on_rebound` (default: false), which happens online when certain criteria are met; it's discussed in more detail below
 
 `compaction.directory` specifies the directory used for compaction (as a midstep).
+
+> [!Warning]
+> When using multiple `file_storage` extension instances, each must have a unique `compaction.directory`. Concurrent compactions sharing the same directory can stomp on each other's temporary files (`tempdb*`) and produce corrupt databases.
 
 `compaction.max_transaction_size` (default: 65536): defines maximum size of the compaction transaction.
 A value of zero will ignore transaction sizes.
