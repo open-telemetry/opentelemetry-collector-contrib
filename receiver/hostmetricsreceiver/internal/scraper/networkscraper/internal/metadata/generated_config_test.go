@@ -26,6 +26,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemNetworkConnectionCount: SystemNetworkConnectionCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkConnectionCountMetricAttributeKey{SystemNetworkConnectionCountMetricAttributeKeyServerAddress, SystemNetworkConnectionCountMetricAttributeKeyServerPort},
+					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -64,6 +69,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemNetworkConnectionCount: SystemNetworkConnectionCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkConnectionCountMetricAttributeKey{SystemNetworkConnectionCountMetricAttributeKeyServerAddress, SystemNetworkConnectionCountMetricAttributeKeyServerPort},
+					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -102,7 +112,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkConnectionsMetricConfig{}, SystemNetworkConntrackCountMetricConfig{}, SystemNetworkConntrackMaxMetricConfig{}, SystemNetworkDroppedMetricConfig{}, SystemNetworkErrorsMetricConfig{}, SystemNetworkIoMetricConfig{}, SystemNetworkPacketsMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkConnectionCountMetricConfig{}, SystemNetworkConnectionsMetricConfig{}, SystemNetworkConntrackCountMetricConfig{}, SystemNetworkConntrackMaxMetricConfig{}, SystemNetworkDroppedMetricConfig{}, SystemNetworkErrorsMetricConfig{}, SystemNetworkIoMetricConfig{}, SystemNetworkPacketsMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -27,12 +27,28 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [tcp]
+  server.address:
+    description: The remote address of the network connection.
+    type: string
+    requirement_level: recommended
+  server.port:
+    description: The remote port of the network connection.
+    type: int
+    requirement_level: recommended
   state:
     description: State of the network connection.
     type: string
     requirement_level: recommended
 
 metrics:
+  system.network.connection.count:
+    enabled: false
+    description: The number of established network connections, grouped by remote endpoint.
+    unit: "{connections}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: [server.address, server.port]
   system.network.connections:
     enabled: true
     description: The number of connections.

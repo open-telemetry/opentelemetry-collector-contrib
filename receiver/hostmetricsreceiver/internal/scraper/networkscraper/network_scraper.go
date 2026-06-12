@@ -6,6 +6,8 @@ package networkscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+	stdnet "net"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -35,21 +37,23 @@ type networkScraper struct {
 	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime    func(context.Context) (uint64, error)
-	ioCounters  func(context.Context, bool) ([]net.IOCountersStat, error)
-	connections func(context.Context, string) ([]net.ConnectionStat, error)
-	conntrack   func(context.Context) ([]net.FilterStat, error)
+	bootTime       func(context.Context) (uint64, error)
+	ioCounters     func(context.Context, bool) ([]net.IOCountersStat, error)
+	connections    func(context.Context, string) ([]net.ConnectionStat, error)
+	conntrack      func(context.Context) ([]net.FilterStat, error)
+	interfaceAddrs func() ([]stdnet.Addr, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*networkScraper, error) {
 	scraper := &networkScraper{
-		settings:    settings,
-		config:      cfg,
-		bootTime:    host.BootTimeWithContext,
-		ioCounters:  net.IOCountersWithContext,
-		connections: net.ConnectionsWithContext,
-		conntrack:   net.FilterCountersWithContext,
+		settings:       settings,
+		config:         cfg,
+		bootTime:       host.BootTimeWithContext,
+		ioCounters:     net.IOCountersWithContext,
+		connections:    net.ConnectionsWithContext,
+		conntrack:      net.FilterCountersWithContext,
+		interfaceAddrs: stdnet.InterfaceAddrs,
 	}
 
 	var err error
@@ -92,7 +96,7 @@ func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	err = s.recordNetworkConnectionsMetrics(ctx)
 	if err != nil {
-		errors.AddPartial(connectionsMetricsLen, err)
+		errors.AddPartial(s.enabledConnectionMetricsLen(), err)
 	}
 
 	err = s.recordNetworkConntrackMetrics(ctx)
@@ -154,7 +158,7 @@ func (s *networkScraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCounters
 }
 
 func (s *networkScraper) recordNetworkConnectionsMetrics(ctx context.Context) error {
-	if !s.config.Metrics.SystemNetworkConnections.Enabled {
+	if s.enabledConnectionMetricsLen() == 0 {
 		return nil
 	}
 
@@ -165,10 +169,27 @@ func (s *networkScraper) recordNetworkConnectionsMetrics(ctx context.Context) er
 		return fmt.Errorf("failed to read TCP connections: %w", err)
 	}
 
-	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
+	if s.config.Metrics.SystemNetworkConnections.Enabled {
+		tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
+		s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
+	}
 
-	s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
+	if s.config.Metrics.SystemNetworkConnectionCount.Enabled {
+		s.recordNetworkConnectionCountMetric(now, connections)
+	}
+
 	return nil
+}
+
+func (s *networkScraper) enabledConnectionMetricsLen() int {
+	count := 0
+	if s.config.Metrics.SystemNetworkConnections.Enabled {
+		count++
+	}
+	if s.config.Metrics.SystemNetworkConnectionCount.Enabled {
+		count++
+	}
+	return count
 }
 
 func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]int64 {
@@ -187,6 +208,114 @@ func (s *networkScraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, c
 	for connectionState, count := range connectionStateCounts {
 		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
 	}
+}
+
+type networkConnectionKey struct {
+	serverAddress string
+	serverPort    int64
+}
+
+func (s *networkScraper) recordNetworkConnectionCountMetric(now pcommon.Timestamp, connections []net.ConnectionStat) {
+	listenPorts := map[uint32]struct{}{}
+	if s.config.Connections.ExcludeListenPorts {
+		listenPorts = buildListenPortSet(connections)
+	}
+
+	var localIPs map[string]struct{}
+	if s.config.Connections.ExcludeLocalhost {
+		localIPs = s.localIPSet()
+	}
+
+	counts := make(map[networkConnectionKey]int64)
+	for _, connection := range connections {
+		if !strings.EqualFold(connection.Status, "ESTABLISHED") {
+			continue
+		}
+		if connection.Raddr.IP == "" || connection.Raddr.Port == 0 {
+			continue
+		}
+		if _, ok := listenPorts[connection.Laddr.Port]; ok {
+			continue
+		}
+		if !s.isConnectionPortAllowed(connection.Raddr.Port) {
+			continue
+		}
+		if s.config.Connections.ExcludeLocalhost && isLocalIP(connection.Raddr.IP, localIPs) {
+			continue
+		}
+
+		key := networkConnectionKey{
+			serverAddress: connection.Raddr.IP,
+			serverPort:    int64(connection.Raddr.Port),
+		}
+		counts[key]++
+	}
+
+	for key, count := range counts {
+		s.mb.RecordSystemNetworkConnectionCountDataPoint(now, count, key.serverAddress, key.serverPort)
+	}
+}
+
+func buildListenPortSet(connections []net.ConnectionStat) map[uint32]struct{} {
+	ports := make(map[uint32]struct{})
+	for _, connection := range connections {
+		if strings.EqualFold(connection.Status, "LISTEN") {
+			ports[connection.Laddr.Port] = struct{}{}
+		}
+	}
+	return ports
+}
+
+func (s *networkScraper) isConnectionPortAllowed(port uint32) bool {
+	if len(s.config.Connections.IncludePorts) > 0 {
+		matched := false
+		for _, includePort := range s.config.Connections.IncludePorts {
+			if includePort == port {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+
+	for _, excludePort := range s.config.Connections.ExcludePorts {
+		if excludePort == port {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *networkScraper) localIPSet() map[string]struct{} {
+	ips := map[string]struct{}{
+		"127.0.0.1": {},
+		"::1":       {},
+		"localhost": {},
+	}
+
+	addrs, err := s.interfaceAddrs()
+	if err != nil {
+		return ips
+	}
+	for _, addr := range addrs {
+		switch typedAddr := addr.(type) {
+		case *stdnet.IPNet:
+			ips[typedAddr.IP.String()] = struct{}{}
+		case *stdnet.IPAddr:
+			ips[typedAddr.IP.String()] = struct{}{}
+		}
+	}
+	return ips
+}
+
+func isLocalIP(ip string, localIPs map[string]struct{}) bool {
+	if _, ok := localIPs[ip]; ok {
+		return true
+	}
+	parsed := stdnet.ParseIP(ip)
+	return parsed != nil && parsed.IsLoopback()
 }
 
 func (s *networkScraper) filterByInterface(ioCounters []net.IOCountersStat) []net.IOCountersStat {
