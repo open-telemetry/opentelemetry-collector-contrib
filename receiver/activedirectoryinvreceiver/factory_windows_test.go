@@ -6,7 +6,6 @@
 package activedirectoryinvreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	f := NewFactory()
 	cfg := createDefaultConfig().(*ADConfig)
 	_, err := f.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(f.Type()),
 		cfg,
 		nil,

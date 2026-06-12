@@ -109,6 +109,6 @@ func (o *adObjectIter) Close() {
 type adRuntimeInfo struct{}
 
 // SupportedOS returns whether the runtime is supported
-func (r *adRuntimeInfo) SupportedOS() bool {
+func (*adRuntimeInfo) SupportedOS() bool {
 	return runtime.GOOS == "windows"
 }
