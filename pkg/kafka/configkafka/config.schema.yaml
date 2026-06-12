@@ -194,8 +194,11 @@ $defs:
         description: Linger controls the linger time for the producer. (default 10ms).
         type: string
         format: duration
+      max_broker_write_bytes:
+        description: MaxBrokerWriteBytes is the maximum bytes the producer will write to a broker in a single request. It must be >= MaxMessageBytes. Maps to franz-go's kgo.BrokerMaxWriteBytes, whose default (and minimum accepted value) is 100 MiB. (default 104857600)
+        type: integer
       max_message_bytes:
-        description: Maximum message bytes the producer will accept to produce (default 1000000)
+        description: MaxMessageBytes is the maximum message bytes the producer will accept to produce. It must be less than or equal to MaxBrokerWriteBytes, and must fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes. (default 1000000)
         type: integer
       required_acks:
         description: 'RequiredAcks holds the number acknowledgements required before producing returns successfully. See: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks Acceptable values are: 0 (NoResponse)   Does not wait for any acknowledgements. 1 (WaitForLocal) Waits for only the leader to write the record to its local log, but does not wait for followers to acknowledge. (default) -1 (WaitForAll)   Waits for all in-sync replicas to acknowledge. In YAML configuration, "all" is accepted as an alias for -1.'

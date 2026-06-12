@@ -19,6 +19,8 @@ The Coralogix processor adds attributes to spans that enable features in Coralog
 
 - `transactions`:
   - `enabled` (`false` by default): enables the transactions feature from the Coralogix processor (more information below).
+- `critical_path`:
+  - `enabled` (`false` by default): enables critical path calculation for complete traces (more information below).
 
 ## Features
 
@@ -57,3 +59,38 @@ config:
           - groupbytrace
           - coralogix
 ```
+
+### Critical path
+
+The critical path feature computes the end-to-end latency path for each complete trace and annotates spans with Coralogix attributes that can be used in the UI and downstream queries.
+
+The computed critical path is a best-effort result derived from span timing and parent-child structure. It should be treated as a heuristic view of latency contribution, especially for traces with ambiguous causality or malformed timestamps.
+
+#### Attributes
+
+- `cgx.critical_path.is_on_path`: Set to `true` when any portion of the span lies on the critical path.
+- `cgx.critical_path.exclusive_duration_ns`: Critical path wall time, in nanoseconds, owned directly by the span.
+- `cgx.critical_path.inclusive_duration_ns`: Total critical path wall time, in nanoseconds, attributable to the span, including descendants on the path.
+
+#### Configuration
+
+**Note**: The critical path feature requires the `groupbytrace` processor to run before the `coralogix` processor in the pipeline so the full trace is available in memory.
+
+```yaml
+config:
+  processors:
+    groupbytrace: {}
+    coralogix:
+      critical_path:
+        enabled: true
+  service:
+    pipelines:
+      traces:
+        processors:
+          - groupbytrace
+          - coralogix
+```
+
+#### Algorithm References
+
+- [Uber CRISP repository](https://github.com/uber-research/CRISP)
