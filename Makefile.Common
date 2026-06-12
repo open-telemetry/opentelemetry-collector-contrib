@@ -381,7 +381,11 @@ run-changed-tests:
 SRC ?= '$(CURDIR)'
 FLAGS ?= '-o=$(CURDIR)/'
 
+# SCHEMAGEN_PKG controls which build of go.opentelemetry.io/collector/cmd/schemagen
+# is invoked. Override (e.g. `SCHEMAGEN_PKG=...@v0.155.0`) to pin a release.
+SCHEMAGEN_PKG ?= go.opentelemetry.io/collector/cmd/schemagen@latest
+
 .PHONY: schemagen
 schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
-	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
+	go run $(SCHEMAGEN_PKG) $(FLAGS) $(SRC)
