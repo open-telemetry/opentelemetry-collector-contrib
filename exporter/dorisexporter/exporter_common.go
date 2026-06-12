@@ -16,6 +16,8 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
 )
 
 const timeFormat = "2006-01-02 15:04:05.999999"
@@ -25,20 +27,44 @@ type commonExporter struct {
 
 	client *http.Client
 
-	logger   *zap.Logger
-	cfg      *Config
-	timeZone *time.Location
-	reporter *progressReporter
+	logger           *zap.Logger
+	cfg              *Config
+	timeZone         *time.Location
+	reporter         *progressReporter
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings, reporterName string) *commonExporter {
+func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings, reporterName string) (*commonExporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
 	return &commonExporter{
 		TelemetrySettings: set,
 		logger:            logger,
 		cfg:               cfg,
 		timeZone:          cfg.timeLocation,
 		reporter:          newProgressReporter(reporterName, cfg.LogProgressInterval, logger),
+		telemetryBuilder:  telemetryBuilder,
+	}, nil
+}
+
+// reportFilteredRows surfaces partial data loss hidden inside a successful
+// stream load response: with max_filter_ratio > 0, Doris may drop up to that
+// fraction of rows and still report Status Success, exposing the count only
+// in the response's NumberFilteredRows field. Without this hook the loss is
+// invisible unless log_response is enabled and someone reads every response.
+func (e *commonExporter) reportFilteredRows(ctx context.Context, response *streamLoadResponse, label string) {
+	if response.NumberFilteredRows <= 0 {
+		return
 	}
+	e.logger.Warn("doris stream load filtered out rows (partial data loss)",
+		zap.Int64("filtered_rows", response.NumberFilteredRows),
+		zap.Int64("loaded_rows", response.NumberLoadedRows),
+		zap.String("label", label),
+		zap.String("error_url", response.ErrorURL),
+	)
+	e.telemetryBuilder.ExporterDorisFilteredRows.Add(ctx, response.NumberFilteredRows)
 }
 
 func (e *commonExporter) formatTime(t time.Time) string {

@@ -33,10 +33,14 @@ type metricsExporter struct {
 	*commonExporter
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *metricsExporter {
-	return &metricsExporter{
-		commonExporter: newExporter(logger, cfg, set, "METRIC"),
+func newMetricsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) (*metricsExporter, error) {
+	commonExporter, err := newExporter(logger, cfg, set, "METRIC")
+	if err != nil {
+		return nil, err
 	}
+	return &metricsExporter{
+		commonExporter: commonExporter,
+	}, nil
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) error {
@@ -276,6 +280,8 @@ func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics me
 		if response.duplication() {
 			e.logger.Warn("label already exists", zap.String("label", metrics.label()), zap.Int("skipped", metrics.size()))
 		}
+
+		e.reportFilteredRows(ctx, &response, metrics.label())
 
 		if e.cfg.LogResponse {
 			e.logger.Info("metric response:\n" + string(body))

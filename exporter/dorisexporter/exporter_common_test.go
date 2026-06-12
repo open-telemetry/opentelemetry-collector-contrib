@@ -15,7 +15,8 @@ import (
 
 func TestNewCommonExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
+	exporter, err := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
+	require.NoError(t, err)
 	require.NotNil(t, exporter)
 }
 
@@ -26,7 +27,8 @@ func TestCommonExporter_FormatTime(t *testing.T) {
 	err := cfg.Validate()
 	require.NoError(t, err)
 
-	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
+	exporter, err := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
+	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
 	now := time.Date(2024, 1, 1, 0, 0, 0, 1000, time.Local)

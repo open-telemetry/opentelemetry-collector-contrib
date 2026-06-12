@@ -13,3 +13,14 @@ status:
 # TODO: Update the exporter to pass the tests
 tests:
   skip_lifecycle: true
+
+telemetry:
+  metrics:
+    exporter_doris_filtered_rows:
+      enabled: true
+      stability: alpha
+      description: Number of rows filtered out (dropped) by Doris during an otherwise successful stream load, as reported by NumberFilteredRows in the stream load response. Non-zero values mean partial data loss within the max_filter_ratio tolerance.
+      unit: "{rows}"
+      sum:
+        value_type: int
+        monotonic: true

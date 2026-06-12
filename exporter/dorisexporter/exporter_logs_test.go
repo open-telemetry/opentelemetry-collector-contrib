@@ -28,7 +28,8 @@ func TestPushLogData(t *testing.T) {
 	require.NoError(t, config.Validate())
 
 	logger := zap.NewNop()
-	exporter := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
+	exporter, err := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 
 	ctx := t.Context()
 
