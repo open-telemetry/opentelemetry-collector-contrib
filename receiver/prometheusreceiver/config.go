@@ -11,6 +11,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
@@ -36,6 +37,20 @@ type Config struct {
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
 	APIServer APIServer `mapstructure:"api_server"`
+
+	// ScrapeOnShutdown enables a final scrape before the receiver closes.
+	//
+	// NOTE: This final scrape ignores the configured scrape interval.
+	ScrapeOnShutdown bool `mapstructure:"scrape_on_shutdown"`
+
+	// DiscoveryReloadOnStartup enables discovering targets immediately on start up as opposed
+	// to waiting for the configured interval before initializing the scrape pools.
+	DiscoveryReloadOnStartup bool `mapstructure:"discovery_reload_on_startup"`
+
+	// InitialScrapeOffset adds a fixed delay before the initial scrape of targets.
+	// This duration is applied on top of the receiver's internal load balancing offset.
+	// It avoids readiness races and backend rate limits immediately after startup.
+	InitialScrapeOffset time.Duration `mapstructure:"initial_scrape_offset"`
 
 	// For testing only.
 	ignoreMetadata bool
