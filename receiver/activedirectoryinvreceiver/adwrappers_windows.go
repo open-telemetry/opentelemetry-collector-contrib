@@ -12,15 +12,17 @@ import (
 	adsi "github.com/go-adsi/adsi"
 )
 
-var _ Client = (*adsiClient)(nil)
-var _ Container = (*adsiContainer)(nil)
-var _ Object = (*adObject)(nil)
-var _ ObjectIter = (*adObjectIter)(nil)
-var _ RuntimeInfo = (*adRuntimeInfo)(nil)
+var (
+	_ Client      = (*adsiClient)(nil)
+	_ Container   = (*adsiContainer)(nil)
+	_ Object      = (*adObject)(nil)
+	_ ObjectIter  = (*adObjectIter)(nil)
+	_ RuntimeInfo = (*adRuntimeInfo)(nil)
+)
 
 type adsiClient struct{}
 
-func (c *adsiClient) Open(path string) (Container, error) {
+func (*adsiClient) Open(path string) (Container, error) {
 	client, err := adsi.NewClient()
 	if err != nil {
 		return nil, err
@@ -71,7 +73,7 @@ type adObject struct {
 }
 
 // Attrs returns the attributes of an Active Directory object
-func (o *adObject) Attrs(key string) ([]interface{}, error) {
+func (o *adObject) Attrs(key string) ([]any, error) {
 	return o.windowsADObject.Attr(key)
 }
 

@@ -42,7 +42,7 @@ func (c *ADConfig) Validate() error {
 	// Compile the regular expression pattern
 	regex := regexp.MustCompile(pattern)
 
-	if len(c.BaseDN) == 0 {
+	if c.BaseDN == "" {
 		return errEmptyDN
 	}
 	// Check if the Base DN is valid

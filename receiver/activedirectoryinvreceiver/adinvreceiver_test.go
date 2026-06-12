@@ -6,7 +6,7 @@ package activedirectoryinvreceiver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -58,9 +58,9 @@ type mockObject struct {
 	mock.Mock
 }
 
-func (mo *mockObject) Attrs(key string) ([]interface{}, error) {
+func (mo *mockObject) Attrs(key string) ([]any, error) {
 	args := mo.Called(key)
-	return args.Get(0).([]interface{}), args.Error(1)
+	return args.Get(0).([]any), args.Error(1)
 }
 
 func (mo *mockObject) ToContainer() (Container, error) {
@@ -113,7 +113,7 @@ func TestStartUnsupportedOS(t *testing.T) {
 
 func TestLogRecord(t *testing.T) {
 	expectedBody := `{"name":"test","mail":"test","department":"test","manager":"test","memberOf":"test"}`
-	var expectedResult, actualResult map[string]interface{}
+	var expectedResult, actualResult map[string]any
 	cfg := createDefaultConfig().(*ADConfig)
 	cfg.PollInterval = 1 * time.Second // Set poll interval to 1s to speed up test
 	sink := &consumertest.LogsSink{}
@@ -143,9 +143,9 @@ func defaultmockClient() Client {
 	mockContainer := &mockContainer{}
 	mockObject := &mockObject{}
 	mockObjectIter := &mockObjectIter{}
-	attrs := []interface{}{"test"}
+	attrs := []any{"test"}
 	mockContainer.On("ToObject").Return(mockObject, nil)
-	mockContainer.On("Children").Return(mockObjectIter, fmt.Errorf("no children"))
+	mockContainer.On("Children").Return(mockObjectIter, errors.New("no children"))
 	mockContainer.On("Close").Return(nil)
 	mockObject.On("Attrs", mock.Anything).Return(attrs, nil)
 	mockObject.On("ToContainer").Return(mockContainer, nil)

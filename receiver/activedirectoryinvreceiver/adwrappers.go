@@ -17,7 +17,7 @@ type Container interface {
 
 // Object is an interface for an Active Directory object
 type Object interface {
-	Attrs(key string) ([]interface{}, error)
+	Attrs(key string) ([]any, error)
 	ToContainer() (Container, error)
 }
 
