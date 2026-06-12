@@ -222,7 +222,7 @@ components:
         - snowflake
         - solace
         - splunk_hec
-        - splunkenterprise
+        - splunk_enterprise
         - sqlquery
         - sqlserver
         - ssh_check

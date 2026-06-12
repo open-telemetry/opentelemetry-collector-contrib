@@ -326,7 +326,7 @@ components:
     - receiver/snowflake
     - receiver/solace
     - receiver/splunk_hec
-    - receiver/splunkenterprise
+    - receiver/splunk_enterprise
     - receiver/sqlquery
     - receiver/sqlserver
     - receiver/ssh_check
