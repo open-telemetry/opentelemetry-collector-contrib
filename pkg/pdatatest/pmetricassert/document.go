@@ -50,6 +50,7 @@ type metricAssertion struct {
 type datapointAssertion struct {
 	Attributes map[string]any `yaml:"attributes,omitempty"`
 	Value      any            `yaml:"value,omitempty"`
+	Rest       map[string]any `yaml:",inline"`
 }
 
 func readDocument(path string) (*document, error) {
