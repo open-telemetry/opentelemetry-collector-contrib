@@ -8,15 +8,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.154.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.60.0
+	go.opentelemetry.io/collector/component v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/component/componenttest v0.154.0
-	go.opentelemetry.io/collector/confmap v1.60.0
+	go.opentelemetry.io/collector/confmap v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/confmap/xconfmap v0.154.0
-	go.opentelemetry.io/collector/consumer v1.60.0
+	go.opentelemetry.io/collector/consumer v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/consumer/consumertest v0.154.0
-	go.opentelemetry.io/collector/pdata v1.60.0
-	go.opentelemetry.io/collector/pipeline v1.60.0
-	go.opentelemetry.io/collector/processor v1.60.0
+	go.opentelemetry.io/collector/pdata v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/pipeline v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/processor v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/processor/processorhelper v0.154.0
 	go.opentelemetry.io/collector/processor/processortest v0.154.0
 	go.uber.org/goleak v1.3.0
@@ -57,10 +57,10 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.60.0 // indirect
+	go.opentelemetry.io/collector/client v1.60.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.154.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.154.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.60.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.154.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.154.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.154.0 // indirect
