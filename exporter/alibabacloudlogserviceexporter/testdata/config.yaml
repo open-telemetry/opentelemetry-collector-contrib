@@ -6,3 +6,4 @@ alibabacloud_logservice/2:
   logstore: "demo-logstore"
   access_key_id: "test-id"
   access_key_secret: "test-secret"
+  security_token: "test-token"

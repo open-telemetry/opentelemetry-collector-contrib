@@ -22,6 +22,7 @@ This exporter supports sending OpenTelemetry data to [LogService](https://www.al
 - `logstore` (required): LogService's store Name. For metrics data, you should use metric store.
 - `access_key_id` (optional): AlibabaCloud access key id.
 - `access_key_secret` (optional): AlibabaCloud access key secret.
+- `security_token` (optional): AlibabaCloud security token for STS credentials.
 - `ecs_ram_role` (optional): set AlibabaCLoud ECS ram role if you are using ACK.
 - `token_file_path` (optional): Set token file path if you are using ACK.
 
