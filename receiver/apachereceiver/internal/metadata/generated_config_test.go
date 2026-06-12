@@ -42,6 +42,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheCurrentConnections: ApacheCurrentConnectionsMetricConfig{
 						Enabled: true,
 					},
+					ApacheIoTransmittedRate: ApacheIoTransmittedRateMetricConfig{
+						Enabled: true,
+					},
 					ApacheLoad1: ApacheLoad1MetricConfig{
 						Enabled: true,
 					},
@@ -49,6 +52,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					ApacheLoad5: ApacheLoad5MetricConfig{
+						Enabled: true,
+					},
+					ApacheRequestRate: ApacheRequestRateMetricConfig{
 						Enabled: true,
 					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
@@ -66,6 +72,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					ApacheUptime: ApacheUptimeMetricConfig{
+						Enabled: true,
+					},
+					ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
 						Enabled: true,
 					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
@@ -100,6 +109,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheCurrentConnections: ApacheCurrentConnectionsMetricConfig{
 						Enabled: false,
 					},
+					ApacheIoTransmittedRate: ApacheIoTransmittedRateMetricConfig{
+						Enabled: false,
+					},
 					ApacheLoad1: ApacheLoad1MetricConfig{
 						Enabled: false,
 					},
@@ -107,6 +119,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					ApacheLoad5: ApacheLoad5MetricConfig{
+						Enabled: false,
+					},
+					ApacheRequestRate: ApacheRequestRateMetricConfig{
 						Enabled: false,
 					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
@@ -126,6 +141,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: false,
 					},
+					ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
+						Enabled: false,
+					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -142,7 +160,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheIoTransmittedRateMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestRateMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerLimitMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

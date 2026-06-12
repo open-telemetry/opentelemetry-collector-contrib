@@ -209,6 +209,9 @@ var MetricsInfo = metricsInfo{
 	ApacheCurrentConnections: metricInfo{
 		Name: "apache.current_connections",
 	},
+	ApacheIoTransmittedRate: metricInfo{
+		Name: "apache.io.transmitted.rate",
+	},
 	ApacheLoad1: metricInfo{
 		Name: "apache.load.1",
 	},
@@ -217,6 +220,9 @@ var MetricsInfo = metricsInfo{
 	},
 	ApacheLoad5: metricInfo{
 		Name: "apache.load.5",
+	},
+	ApacheRequestRate: metricInfo{
+		Name: "apache.request.rate",
 	},
 	ApacheRequestTime: metricInfo{
 		Name: "apache.request.time",
@@ -233,6 +239,9 @@ var MetricsInfo = metricsInfo{
 	ApacheUptime: metricInfo{
 		Name: "apache.uptime",
 	},
+	ApacheWorkerLimit: metricInfo{
+		Name: "apache.worker.limit",
+	},
 	ApacheWorkers: metricInfo{
 		Name: "apache.workers",
 	},
@@ -243,14 +252,17 @@ type metricsInfo struct {
 	ApacheCPULoad            metricInfo
 	ApacheCPUTime            metricInfo
 	ApacheCurrentConnections metricInfo
+	ApacheIoTransmittedRate  metricInfo
 	ApacheLoad1              metricInfo
 	ApacheLoad15             metricInfo
 	ApacheLoad5              metricInfo
+	ApacheRequestRate        metricInfo
 	ApacheRequestTime        metricInfo
 	ApacheRequests           metricInfo
 	ApacheScoreboard         metricInfo
 	ApacheTraffic            metricInfo
 	ApacheUptime             metricInfo
+	ApacheWorkerLimit        metricInfo
 	ApacheWorkers            metricInfo
 }
 
@@ -543,6 +555,56 @@ func newMetricApacheCurrentConnections(cfg ApacheCurrentConnectionsMetricConfig)
 	return m
 }
 
+type metricApacheIoTransmittedRate struct {
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ApacheIoTransmittedRateMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
+}
+
+// init fills apache.io.transmitted.rate metric with initial data.
+func (m *metricApacheIoTransmittedRate) init() {
+	m.data.SetName("apache.io.transmitted.rate")
+	m.data.SetDescription("Average number of bytes transmitted per second since the server was started, as reported by mod_status.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricApacheIoTransmittedRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheIoTransmittedRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheIoTransmittedRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheIoTransmittedRate(cfg ApacheIoTransmittedRateMetricConfig) metricApacheIoTransmittedRate {
+	m := metricApacheIoTransmittedRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricApacheLoad1 struct {
 	data     pmetric.Metric          // data buffer for generated metric.
 	config   ApacheLoad1MetricConfig // metric config provided by user.
@@ -685,6 +747,56 @@ func (m *metricApacheLoad5) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheLoad5(cfg ApacheLoad5MetricConfig) metricApacheLoad5 {
 	m := metricApacheLoad5{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricApacheRequestRate struct {
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   ApacheRequestRateMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
+}
+
+// init fills apache.request.rate metric with initial data.
+func (m *metricApacheRequestRate) init() {
+	m.data.SetName("apache.request.rate")
+	m.data.SetDescription("Average number of requests served per second since the server was started, as reported by mod_status.")
+	m.data.SetUnit("{request}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricApacheRequestRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheRequestRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheRequestRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheRequestRate(cfg ApacheRequestRateMetricConfig) metricApacheRequestRate {
+	m := metricApacheRequestRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -992,6 +1104,56 @@ func newMetricApacheUptime(cfg ApacheUptimeMetricConfig) metricApacheUptime {
 	return m
 }
 
+type metricApacheWorkerLimit struct {
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   ApacheWorkerLimitMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
+}
+
+// init fills apache.worker.limit metric with initial data.
+func (m *metricApacheWorkerLimit) init() {
+	m.data.SetName("apache.worker.limit")
+	m.data.SetDescription("The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.")
+	m.data.SetUnit("{worker}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricApacheWorkerLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheWorkerLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheWorkerLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheWorkerLimit(cfg ApacheWorkerLimitMetricConfig) metricApacheWorkerLimit {
+	m := metricApacheWorkerLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricApacheWorkers struct {
 	data          pmetric.Metric            // data buffer for generated metric.
 	config        ApacheWorkersMetricConfig // metric config provided by user.
@@ -1097,14 +1259,17 @@ type MetricsBuilder struct {
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
+	metricApacheIoTransmittedRate  metricApacheIoTransmittedRate
 	metricApacheLoad1              metricApacheLoad1
 	metricApacheLoad15             metricApacheLoad15
 	metricApacheLoad5              metricApacheLoad5
+	metricApacheRequestRate        metricApacheRequestRate
 	metricApacheRequestTime        metricApacheRequestTime
 	metricApacheRequests           metricApacheRequests
 	metricApacheScoreboard         metricApacheScoreboard
 	metricApacheTraffic            metricApacheTraffic
 	metricApacheUptime             metricApacheUptime
+	metricApacheWorkerLimit        metricApacheWorkerLimit
 	metricApacheWorkers            metricApacheWorkers
 }
 
@@ -1135,14 +1300,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
 		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
 		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
+		metricApacheIoTransmittedRate:  newMetricApacheIoTransmittedRate(mbc.Metrics.ApacheIoTransmittedRate),
 		metricApacheLoad1:              newMetricApacheLoad1(mbc.Metrics.ApacheLoad1),
 		metricApacheLoad15:             newMetricApacheLoad15(mbc.Metrics.ApacheLoad15),
 		metricApacheLoad5:              newMetricApacheLoad5(mbc.Metrics.ApacheLoad5),
+		metricApacheRequestRate:        newMetricApacheRequestRate(mbc.Metrics.ApacheRequestRate),
 		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.Metrics.ApacheRequestTime),
 		metricApacheRequests:           newMetricApacheRequests(mbc.Metrics.ApacheRequests),
 		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.Metrics.ApacheScoreboard),
 		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
 		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
+		metricApacheWorkerLimit:        newMetricApacheWorkerLimit(mbc.Metrics.ApacheWorkerLimit),
 		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
@@ -1232,14 +1400,17 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricApacheCPULoad.emit(ils.Metrics())
 	mb.metricApacheCPUTime.emit(ils.Metrics())
 	mb.metricApacheCurrentConnections.emit(ils.Metrics())
+	mb.metricApacheIoTransmittedRate.emit(ils.Metrics())
 	mb.metricApacheLoad1.emit(ils.Metrics())
 	mb.metricApacheLoad15.emit(ils.Metrics())
 	mb.metricApacheLoad5.emit(ils.Metrics())
+	mb.metricApacheRequestRate.emit(ils.Metrics())
 	mb.metricApacheRequestTime.emit(ils.Metrics())
 	mb.metricApacheRequests.emit(ils.Metrics())
 	mb.metricApacheScoreboard.emit(ils.Metrics())
 	mb.metricApacheTraffic.emit(ils.Metrics())
 	mb.metricApacheUptime.emit(ils.Metrics())
+	mb.metricApacheWorkerLimit.emit(ils.Metrics())
 	mb.metricApacheWorkers.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -1312,6 +1483,16 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Tim
 	return nil
 }
 
+// RecordApacheIoTransmittedRateDataPoint adds a data point to apache.io.transmitted.rate metric.
+func (mb *MetricsBuilder) RecordApacheIoTransmittedRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheIoTransmittedRate, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheIoTransmittedRate.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordApacheLoad1DataPoint adds a data point to apache.load.1 metric.
 func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
@@ -1339,6 +1520,16 @@ func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, input
 		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
 	}
 	mb.metricApacheLoad5.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordApacheRequestRateDataPoint adds a data point to apache.request.rate metric.
+func (mb *MetricsBuilder) RecordApacheRequestRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for ApacheRequestRate, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheRequestRate.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -1380,6 +1571,11 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inpu
 	}
 	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val)
 	return nil
+}
+
+// RecordApacheWorkerLimitDataPoint adds a data point to apache.worker.limit metric.
+func (mb *MetricsBuilder) RecordApacheWorkerLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricApacheWorkerLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
