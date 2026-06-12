@@ -53,6 +53,9 @@ type rawInstaller struct {
 	maxBytes int64
 }
 
+// Install writes the raw bytes by creating or truncating the file at destination.
+// It is the responsibility of the caller to ensure nothing of importance is overwritten.
+// If an error occurs during write, the file at destination will be removed.
 func (r rawInstaller) Install(_ context.Context, pkg []byte, destination string) error {
 	if int64(len(pkg)) > r.maxBytes {
 		return fmt.Errorf("binary exceeds maximum size of %d bytes", r.maxBytes)
@@ -60,6 +63,7 @@ func (r rawInstaller) Install(_ context.Context, pkg []byte, destination string)
 
 	// Create or truncate the destination with executable permissions.
 	if err := os.WriteFile(destination, pkg, 0o700); err != nil { //nolint:gosec // G306: the agent binary must be executable
+		_ = os.Remove(destination)
 		return fmt.Errorf("write binary to destination: %w", err)
 	}
 
