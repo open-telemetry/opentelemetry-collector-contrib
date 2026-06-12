@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: connector/failover
+
+note: Stop the connector's wrapped exporterhelper from imposing its default 5s timeout on the downstream pipeline when `sending_queue` is enabled.
+
+issues: [48567]
+
+subtext: |
+  Previously, enabling `sending_queue` caused the connector to wrap itself in `exporterhelper.NewLogs/Traces/Metrics`, which silently installs a `timeoutSender` with the 5s default `TimeoutConfig.Timeout`. That deadline propagated through to downstream exporters via `ctx.Deadline()`, capping their configured timeouts (e.g., a downstream exporter configured with `timeout: 30s` would only see ~5s of budget at its `pushLogsData`). The connector now passes `WithTimeout(TimeoutConfig{Timeout: 0})` explicitly, matching the pattern used by signalfxexporter and splunkhecexporter. A user-facing `timeout` config field on the connector may be added separately if there is demand for connector-level hang-protection.
+
+change_logs: [user]

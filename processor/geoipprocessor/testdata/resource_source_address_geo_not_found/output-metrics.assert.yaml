@@ -1,0 +1,46 @@
+version: 1
+signal: metrics
+resources:
+    - attributes:
+        ip: 1.2.2.1
+        source.address: 1.2.3.5
+      scopes:
+        - name: MyTestInstrument
+          version: 1.2.3
+          metrics:
+            - name: delta.histogram.test
+              type: histogram
+              temporality: delta
+              datapoints:
+                - attributes:
+                    aaa: bbb
+                  count: 0
+                  explicit_bounds:
+                    - 0.01
+                    - 0.1
+                    - 1
+                    - 10
+                    - 100
+                  bucket_counts:
+                    - 9
+                    - 12
+                    - 17
+                    - 8
+                    - 34
+            - name: storage.amplitude
+              type: sum
+              unit: "1"
+              temporality: cumulative
+              monotonic: false
+              datapoints:
+                - attributes:
+                    a: AAAA
+                  value: 0
+            - name: summary.test
+              type: summary
+            - name: test.gauge
+              type: gauge
+              datapoints:
+                - attributes:
+                    aaa: bbb
+                  value: 345
