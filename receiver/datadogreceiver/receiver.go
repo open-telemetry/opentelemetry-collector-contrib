@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
@@ -175,7 +176,7 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 	}
 
 	var cache *lru.Cache[uint64, pcommon.TraceID]
-	if FullTraceIDFeatureGate.IsEnabled() {
+	if metadata.ReceiverDatadogreceiverEnable128BitTraceIDFeatureGate.IsEnabled() {
 		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
 			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
 		})
