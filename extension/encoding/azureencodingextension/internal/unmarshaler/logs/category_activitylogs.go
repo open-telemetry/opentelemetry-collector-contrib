@@ -88,9 +88,10 @@ func (r *activityLogRecordBase) PutCommonAttributes(attrs pcommon.Map, body pcom
 
 // Non-SemConv attributes for Administrative activity logs
 const (
-	attributeAzureAdministrativeEntity    = "azure.administrative.entity"
-	attributeAzureAdministrativeMessage   = "azure.administrative.message"
-	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
+	attributeAzureAdministrativeEntity        = "azure.administrative.entity"
+	attributeAzureAdministrativeMessage       = "azure.administrative.message"
+	attributeAzureAdministrativeHierarchy     = "azure.administrative.hierarchy"
+	attributeAzureAdministrativeStatusMessage = "azure.administrative.status_message"
 )
 
 // Generic Azure attributes carried by PIM events but not PIM-specific.
@@ -136,9 +137,10 @@ type azureAdministrativeLog struct {
 
 	Properties struct {
 		// Standard Administrative fields
-		Entity    string `json:"entity"`
-		Message   string `json:"message"`
-		Hierarchy string `json:"hierarchy"`
+		Entity        string `json:"entity"`
+		Message       string `json:"message"`
+		Hierarchy     string `json:"hierarchy"`
+		StatusMessage string `json:"statusMessage"`
 
 		// PIM-specific fields (ResourceProviderName=azurerbac)
 		SubscriptionID          *string `json:"SubscriptionID"`
@@ -165,6 +167,7 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeEntity, r.Properties.Entity)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeMessage, r.Properties.Message)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeHierarchy, r.Properties.Hierarchy)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeStatusMessage, r.Properties.StatusMessage)
 
 	// PIM fields
 	// SubscriptionID is also set as a resource attribute (cloud.account.id) by unmarshaler.go from

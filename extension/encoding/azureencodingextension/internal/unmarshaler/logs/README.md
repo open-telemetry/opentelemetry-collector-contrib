@@ -599,6 +599,7 @@ Activity Logs are a type of Azure platform log that provides insight into subscr
 | `entity`                  | `azure.administrative.entity`       | Log Attribute |
 | `message`                 | `azure.administrative.message`      | Log Attribute |
 | `hierarchy`               | `azure.administrative.hierarchy`    | Log Attribute |
+| `statusMessage`           | `azure.administrative.status_message`| Log Attribute |
 
 #### Administrative — PIM (Privileged Identity Management)
 
