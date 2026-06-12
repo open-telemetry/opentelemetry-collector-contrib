@@ -17,11 +17,11 @@ issues: [48965]
 # Use pipe (|) for multiline entries.
 subtext: |
   Extend the execution plan with five additional attributes:
-  - `object_name`: Name of the object referenced by the plan step
-  - `object_type`: Type of the referenced object (e.g., table, index)
-  - `filter_predicates`: Predicates applied as a filter during the step
-  - `partition_start`: Starting partition for partitioned access
-  - `partition_stop`: Ending partition for partitioned access
+  - `OBJECT_NAME`: Name of the object referenced by the plan step
+  - `OBJECT_TYPE`: Type of the referenced object (e.g., table, index)
+  - `FILTER_PREDICATES`: Predicates applied as a filter during the step
+  - `PARTITION_START`: Starting partition for partitioned access
+  - `PARTITION_STOP`: Ending partition for partitioned access
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
