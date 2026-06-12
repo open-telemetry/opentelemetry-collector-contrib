@@ -281,7 +281,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(ctx, &cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -590,6 +590,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
 	defer span.End()
 
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
+		return err
+	}
+
 	srv := server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
 	done := make(chan error, 1)
@@ -599,7 +605,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// Start a one-shot server to get the Collector's agent description
 	// and available components using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
-		endpoint: s.getSupervisorOpAMPListenEndpoint(),
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnecting: func(*http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
@@ -658,11 +664,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}.toServerSettings())
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
-		return err
-	}
-	s.opampServerPort, err = portFromAddr(srv.Addr())
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
 		return err
 	}
 
@@ -942,12 +943,18 @@ func (nopHost) GetExtensions() map[component.ID]component.Component {
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
+	var err error
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
+	if err != nil {
+		return err
+	}
+
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err := s.opampServer.Start(flattenedSettings{
-		endpoint: s.getSupervisorOpAMPListenEndpoint(),
+	err = s.opampServer.Start(flattenedSettings{
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnecting: func(*http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
@@ -958,10 +965,6 @@ func (s *Supervisor) startOpAMPServer() error {
 			connected.Store(false)
 		},
 	}.toServerSettings())
-	if err != nil {
-		return err
-	}
-	s.opampServerPort, err = portFromAddr(s.opampServer.Addr())
 	if err != nil {
 		return err
 	}
@@ -1385,23 +1388,26 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 }
 
 func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
-	var cfg bytes.Buffer
-	resourceAttrs := map[string]string{
-		"service.instance.id": s.persistentState.InstanceID.String(),
+	cfg, err := gyaml.Marshal(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": []map[string]any{
+						{
+							"name":  "service.instance.id",
+							"value": s.persistentState.InstanceID.String(),
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not compose required resource attributes config", zap.Error(err))
+		return nil
 	}
 
-	attrNames := make([]string, 0, len(resourceAttrs))
-	for name := range resourceAttrs {
-		attrNames = append(attrNames, name)
-	}
-	sort.Strings(attrNames)
-
-	cfg.WriteString("service:\n  telemetry:\n    resource:\n      attributes:\n")
-	for _, name := range attrNames {
-		fmt.Fprintf(&cfg, "        - name: %s\n          value: %q\n", name, resourceAttrs[name])
-	}
-
-	return cfg.Bytes()
+	return cfg
 }
 
 func composeClearResourceAttributesConfig() []byte {
@@ -2548,11 +2554,11 @@ func (s *Supervisor) agentConfigFilePath() string {
 	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
 }
 
-func (s *Supervisor) getSupervisorOpAMPListenEndpoint() string {
+func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 	if s.config.Agent.OpAMPServerPort != 0 {
-		return fmt.Sprintf("127.0.0.1:%d", s.config.Agent.OpAMPServerPort)
+		return s.config.Agent.OpAMPServerPort, nil
 	}
-	return "127.0.0.1:0"
+	return s.findRandomPort()
 }
 
 func (s *Supervisor) getFeatureGateFlag() []string {
@@ -2596,27 +2602,14 @@ func bootstrapInfoTimeout(configured time.Duration) time.Duration {
 	return configured
 }
 
-func portFromAddr(addr net.Addr) (int, error) {
-	if addr == nil {
-		return 0, errors.New("opamp server address is not available")
-	}
-
-	tcpAddr, ok := addr.(*net.TCPAddr)
-	if !ok {
-		return 0, fmt.Errorf("unexpected opamp server address type %T", addr)
-	}
-
-	return tcpAddr.Port, nil
-}
-
 func (s *Supervisor) getTracer() trace.Tracer {
 	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
 	return tracer
 }
 
-// The default koanf behavior is to override lists in the config.
-// Instead, we provide this function, which merges the source and destination config's
-// extension lists by concatenating the two.
+// configMergeFunc preserves Supervisor-specific merge semantics that koanf does
+// not provide by default: service extension lists are concatenated and resource
+// attributes are merged by name.
 // Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
 func configMergeFunc(src, dest map[string]any) error {
 	srcExtensions := maps.Search(src, []string{"service", "extensions"})

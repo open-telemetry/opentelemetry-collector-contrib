@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -380,34 +379,10 @@ type Telemetry struct {
 
 type ResourceConfig struct {
 	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
-
-	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
 }
 
 func (c *ResourceConfig) Validate() error {
-	if err := c.ResourceConfig.Validate(); err != nil {
-		return err
-	}
-	return validateExperimentalAttributeFilters(c.DetectionDevelopment)
-}
-
-func validateExperimentalAttributeFilters(cfg *xotelconf.ExperimentalResourceDetection) error {
-	if cfg == nil || cfg.Attributes == nil {
-		return nil
-	}
-
-	for _, pattern := range cfg.Attributes.Included {
-		if _, err := filepath.Match(pattern, ""); err != nil {
-			return fmt.Errorf("resource::detection/development::attributes::included contains invalid glob %q: %w", pattern, err)
-		}
-	}
-	for _, pattern := range cfg.Attributes.Excluded {
-		if _, err := filepath.Match(pattern, ""); err != nil {
-			return fmt.Errorf("resource::detection/development::attributes::excluded contains invalid glob %q: %w", pattern, err)
-		}
-	}
-
-	return nil
+	return c.ResourceConfig.Validate()
 }
 
 type HealthCheck struct {
