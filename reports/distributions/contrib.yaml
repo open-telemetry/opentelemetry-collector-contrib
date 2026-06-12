@@ -93,6 +93,7 @@ components:
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
         - sigv4auth
@@ -101,11 +102,13 @@ components:
         - zipkin_encoding
     processor:
         - attributes
+        - cardinality_guardian
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -235,8 +238,8 @@ components:
         - wavefront
         - webhook_event
         - windows_event_log
+        - windows_service
         - windowsperfcounters
-        - windowsservice
         - yang_grpc
         - zipkin
         - zookeeper
