@@ -156,14 +156,14 @@ receivers:
 
 When the `db.server.query_sample` and/or `db.server.top_query` events are enabled, the receiver can
 extract key-value pairs from leading SQL block comments (`/* key=value */`) and emit them as the
-`query.comments` attribute on the corresponding logs. 
+`db.query.comment_tags` attribute on the corresponding logs.
 
 This behavior is controlled by the `allowed_comment_keys` option, which can be set independently
 under `top_query_collection` and `query_sample_collection`:
 
 - `allowed_comment_keys` (default = `[]`): A list of comment keys to extract. For each enabled
   collection, only keys present in this allowlist are extracted from the leading SQL comment and
-  included (as comma-separated `key=value` pairs) in the `query.comments` attribute.
+  included (as comma-separated `key=value` pairs) in the `db.query.comment_tags` attribute.
 
 Extraction is disabled unless explicitly configured:
 
@@ -189,7 +189,7 @@ receivers:
 ```
 
 Given a query such as `/* application=exampleApp,team=payments */ SELECT * FROM users`, the emitted
-log record will include `query.comments` set to `application=exampleApp,team=payments`. When multiple
+log record will include `db.query.comment_tags` set to `application=exampleApp,team=payments`. When multiple
 keys are extracted, they are emitted as a comma-separated list of `key=value` pairs.
 
-See [documentation](./documentation.md) for details on the `query.comments` attribute.
+See [documentation](./documentation.md) for details on the `db.query.comment_tags` attribute.

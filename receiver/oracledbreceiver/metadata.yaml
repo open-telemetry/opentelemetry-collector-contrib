@@ -59,6 +59,9 @@ attributes:
   db.namespace:
     description: The database name.
     type: string
+  db.query.comment_tags:
+    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces.
+    type: string
   db.query.text:
     description: The text of the database query being executed.
     type: string
@@ -272,9 +275,6 @@ attributes:
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
-  query.comments:
-    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces.
-    type: string
   session_status:
     description: Session status
     type: string
@@ -326,7 +326,7 @@ events:
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
-      - query.comments
+      - db.query.comment_tags
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
@@ -381,7 +381,7 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
-      - query.comments
+      - db.query.comment_tags
       - oracledb.plan_hash_value
       - oracledb.plan.first_load
       - oracledb.plan.last_load

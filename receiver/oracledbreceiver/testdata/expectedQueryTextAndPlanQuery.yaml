@@ -97,7 +97,7 @@ resourceLogs:
               - key: oracledb.procedure_type
                 value:
                   stringValue: PROCEDURE
-              - key: query.comments
+              - key: db.query.comment_tags
                 value:
                   stringValue: ""
               - key: oracledb.plan_hash_value

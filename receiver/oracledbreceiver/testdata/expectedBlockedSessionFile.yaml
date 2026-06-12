@@ -97,7 +97,7 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 15
-              - key: query.comments
+              - key: db.query.comment_tags
                 value:
                   stringValue: ""
               - key: oracledb.query.started
