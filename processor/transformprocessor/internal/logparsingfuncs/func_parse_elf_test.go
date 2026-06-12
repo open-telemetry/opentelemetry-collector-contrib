@@ -219,6 +219,16 @@ func Test_parseELF(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "malformed lowercase #fields directive",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					// lowercase "#fields" without colon must also be a hard error
+					return "#Version: 1.0\n#fields\n00:00:01", nil
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "tab-separated data line",
 			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
 				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
