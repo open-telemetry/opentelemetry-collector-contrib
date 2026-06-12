@@ -143,6 +143,24 @@ metrics:
       value_type: double
       input_type: string
     attributes: []
+  apache.request.bandwidth.rate:
+    enabled: true
+    stability: development
+    description: Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+    unit: "By/s"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  apache.request.rate:
+    enabled: true
+    stability: development
+    description: Average number of requests served per second since the server was started, as reported by mod_status.
+    unit: "{request}/s"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
   apache.request.time:
     enabled: true
     stability: development
@@ -199,6 +217,14 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  apache.worker.limit:
+    enabled: true
+    stability: development
+    description: The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
+    unit: "{worker}"
+    gauge:
+      value_type: int
     attributes: []
   apache.workers:
     enabled: true

@@ -206,6 +206,46 @@ func (ms *ApacheLoad5MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// ApacheRequestBandwidthRateMetricConfig provides config for the apache.request.bandwidth.rate metric.
+type ApacheRequestBandwidthRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheRequestBandwidthRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheRequestRateMetricConfig provides config for the apache.request.rate metric.
+type ApacheRequestRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ApacheRequestTimeMetricConfig provides config for the apache.request.time metric.
 type ApacheRequestTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -334,6 +374,26 @@ func (ms *ApacheUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// ApacheWorkerLimitMetricConfig provides config for the apache.worker.limit metric.
+type ApacheWorkerLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheWorkerLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ApacheWorkersMetricAttributeKey specifies the key of an attribute for the apache.workers metric.
 type ApacheWorkersMetricAttributeKey string
 
@@ -384,19 +444,22 @@ func (ms *ApacheWorkersMetricConfig) Validate() error {
 
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
-	ApacheConnectionsAsync   ApacheConnectionsAsyncMetricConfig   `mapstructure:"apache.connections.async"`
-	ApacheCPULoad            ApacheCPULoadMetricConfig            `mapstructure:"apache.cpu.load"`
-	ApacheCPUTime            ApacheCPUTimeMetricConfig            `mapstructure:"apache.cpu.time"`
-	ApacheCurrentConnections ApacheCurrentConnectionsMetricConfig `mapstructure:"apache.current_connections"`
-	ApacheLoad1              ApacheLoad1MetricConfig              `mapstructure:"apache.load.1"`
-	ApacheLoad15             ApacheLoad15MetricConfig             `mapstructure:"apache.load.15"`
-	ApacheLoad5              ApacheLoad5MetricConfig              `mapstructure:"apache.load.5"`
-	ApacheRequestTime        ApacheRequestTimeMetricConfig        `mapstructure:"apache.request.time"`
-	ApacheRequests           ApacheRequestsMetricConfig           `mapstructure:"apache.requests"`
-	ApacheScoreboard         ApacheScoreboardMetricConfig         `mapstructure:"apache.scoreboard"`
-	ApacheTraffic            ApacheTrafficMetricConfig            `mapstructure:"apache.traffic"`
-	ApacheUptime             ApacheUptimeMetricConfig             `mapstructure:"apache.uptime"`
-	ApacheWorkers            ApacheWorkersMetricConfig            `mapstructure:"apache.workers"`
+	ApacheConnectionsAsync     ApacheConnectionsAsyncMetricConfig     `mapstructure:"apache.connections.async"`
+	ApacheCPULoad              ApacheCPULoadMetricConfig              `mapstructure:"apache.cpu.load"`
+	ApacheCPUTime              ApacheCPUTimeMetricConfig              `mapstructure:"apache.cpu.time"`
+	ApacheCurrentConnections   ApacheCurrentConnectionsMetricConfig   `mapstructure:"apache.current_connections"`
+	ApacheLoad1                ApacheLoad1MetricConfig                `mapstructure:"apache.load.1"`
+	ApacheLoad15               ApacheLoad15MetricConfig               `mapstructure:"apache.load.15"`
+	ApacheLoad5                ApacheLoad5MetricConfig                `mapstructure:"apache.load.5"`
+	ApacheRequestBandwidthRate ApacheRequestBandwidthRateMetricConfig `mapstructure:"apache.request.bandwidth.rate"`
+	ApacheRequestRate          ApacheRequestRateMetricConfig          `mapstructure:"apache.request.rate"`
+	ApacheRequestTime          ApacheRequestTimeMetricConfig          `mapstructure:"apache.request.time"`
+	ApacheRequests             ApacheRequestsMetricConfig             `mapstructure:"apache.requests"`
+	ApacheScoreboard           ApacheScoreboardMetricConfig           `mapstructure:"apache.scoreboard"`
+	ApacheTraffic              ApacheTrafficMetricConfig              `mapstructure:"apache.traffic"`
+	ApacheUptime               ApacheUptimeMetricConfig               `mapstructure:"apache.uptime"`
+	ApacheWorkerLimit          ApacheWorkerLimitMetricConfig          `mapstructure:"apache.worker.limit"`
+	ApacheWorkers              ApacheWorkersMetricConfig              `mapstructure:"apache.workers"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -426,6 +489,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheLoad5: ApacheLoad5MetricConfig{
 			Enabled: true,
 		},
+		ApacheRequestBandwidthRate: ApacheRequestBandwidthRateMetricConfig{
+			Enabled: true,
+		},
+		ApacheRequestRate: ApacheRequestRateMetricConfig{
+			Enabled: true,
+		},
 		ApacheRequestTime: ApacheRequestTimeMetricConfig{
 			Enabled: true,
 		},
@@ -441,6 +510,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ApacheUptime: ApacheUptimeMetricConfig{
+			Enabled: true,
+		},
+		ApacheWorkerLimit: ApacheWorkerLimitMetricConfig{
 			Enabled: true,
 		},
 		ApacheWorkers: ApacheWorkersMetricConfig{
