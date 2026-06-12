@@ -206,11 +206,46 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			continue
 		}
 
-		// Find template from nodes
-		templateNode := findLongestDurationNode(nodes)
+		// Outlier analysis and filtering FIRST (before attribute loss).
+		var outlierResult *outlierAnalysisResult
+		var preservedOutliers []*spanNode
+		aggregateNodes := nodes
+
+		if p.config.EnableOutlierAnalysis {
+			outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+			// Record outlier metrics.
+			if outlierResult != nil && outlierResult.hasOutliers {
+				p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+				if len(outlierResult.correlations) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+				}
+			}
+
+			// Filter outliers when preservation is enabled.
+			if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
+				aggregateNodes, preservedOutliers = filterOutlierNodes(
+					nodes,
+					outlierResult,
+					p.config.OutlierAnalysis,
+				)
+
+				if len(preservedOutliers) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(len(preservedOutliers)))
+				}
+
+				// Skip aggregation if too few normal spans remain.
+				if len(aggregateNodes) < p.config.MinSpansToAggregate {
+					continue
+				}
+			}
+		}
+
+		// Find template from filtered nodes (excludes preserved outliers).
+		templateNode := findLongestDurationNode(aggregateNodes)
 		var lossInfo attributeLossSummary
 		if p.enableAttributeLossAnalysis {
-			lossInfo = analyzeAttributeLoss(nodes, templateNode)
+			lossInfo = analyzeAttributeLoss(aggregateNodes, templateNode)
 			if !lossInfo.isEmpty() {
 				recordCtx := ctx
 				if p.shouldSampleAttributeLossExemplar() {
@@ -222,17 +257,24 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		}
 
 		aggregationGroups[groupKey] = aggregationGroup{
-			nodes:        nodes,
-			depth:        0,
-			lossInfo:     lossInfo,
-			templateNode: templateNode,
+			nodes:             aggregateNodes,
+			depth:             0,
+			lossInfo:          lossInfo,
+			templateNode:      templateNode,
+			outlierAnalysis:   outlierResult,
+			preservedOutliers: preservedOutliers,
 		}
 
-		// Mark spans for removal
-		for _, node := range nodes {
+		// Mark only aggregated spans for removal.
+		for _, node := range aggregateNodes {
 			node.markedForRemoval = true
 		}
-		markedNodes = append(markedNodes, nodes...)
+		markedNodes = append(markedNodes, aggregateNodes...)
+
+		// Mark outliers as preserved (not removed).
+		for _, outlier := range preservedOutliers {
+			outlier.isPreservedOutlier = true
+		}
 	}
 
 	if len(aggregationGroups) == 0 {
@@ -275,7 +317,20 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 				continue
 			}
 
-			// Find the template node (longest duration) for this group
+			// Outlier analysis FIRST (before attribute loss).
+			var outlierResult *outlierAnalysisResult
+			if p.config.EnableOutlierAnalysis {
+				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+				if outlierResult != nil && outlierResult.hasOutliers {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+					if len(outlierResult.correlations) > 0 {
+						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+					}
+				}
+			}
+
+			// Find the template node (longest duration) for this group.
 			templateNode := findLongestDurationNode(nodes)
 			var lossInfo attributeLossSummary
 			if p.enableAttributeLossAnalysis {
@@ -291,10 +346,11 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			}
 
 			aggregationGroups[parentKey] = aggregationGroup{
-				nodes:        nodes,
-				depth:        depth,
-				lossInfo:     lossInfo,
-				templateNode: templateNode,
+				nodes:           nodes,
+				depth:           depth,
+				lossInfo:        lossInfo,
+				templateNode:    templateNode,
+				outlierAnalysis: outlierResult,
 			}
 			// Mark parent nodes for removal
 			for _, node := range nodes {
