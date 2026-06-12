@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	leadingBlockCommentRegex = regexp.MustCompile(`^\s*(/\*.*?\*/\s*)+`)
 	commentContentRegex      = regexp.MustCompile(`/\*(.*?)\*/`)
+	leadingBlockCommentRegex = regexp.MustCompile(`^\s*(/\*.*?\*/\s*)+`)
 )
 
 // ExtractAndFilterComments returns the comma-separated key=value pairs found in
