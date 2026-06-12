@@ -500,6 +500,35 @@ none_set:
       enabled: false
     sqlserver.instance.name:
       enabled: false
+override_set:
+  resource_attributes:
+    host.name:
+      enabled: true
+      override_value: "override-host.name"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
+    service.instance.id:
+      enabled: true
+      override_value: "override-service.instance.id"
+    service.name:
+      enabled: true
+      override_value: "override-service.name"
+    service.namespace:
+      enabled: true
+      override_value: "override-service.namespace"
+    sqlserver.computer.name:
+      enabled: true
+      override_value: "override-sqlserver.computer.name"
+    sqlserver.database.name:
+      enabled: true
+      override_value: "override-sqlserver.database.name"
+    sqlserver.instance.name:
+      enabled: true
+      override_value: "override-sqlserver.instance.name"
 filter_set_include:
   resource_attributes:
     host.name:

@@ -160,19 +160,19 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				ServiceName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServiceNamespace: metadata.ResourceAttributeConfig{
+				ServiceNamespace: metadata.ServiceNamespaceResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
 			},

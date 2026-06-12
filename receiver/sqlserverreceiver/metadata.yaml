@@ -7,6 +7,7 @@ description: |
   are only available when running on Windows.
 
 reaggregation_enabled: true
+override_value_enabled: true
 
 status:
   class: receiver

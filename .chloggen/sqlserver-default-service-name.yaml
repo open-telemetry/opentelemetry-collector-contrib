@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `service.name` and `service.namespace` opt-in resource attributes (disabled by default).
+note: Add `service.name` and `service.namespace` opt-in resource attributes and allow overriding any resource attribute via `override_value`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46176]
@@ -17,8 +17,10 @@ issues: [46176]
 # Use pipe (|) for multiline entries.
 subtext: |
   When `service.name` is enabled, the receiver sets it to `unknown_service:microsoft.sql_server` per OTel specification.
-  When `service.namespace` is enabled, it defaults to an empty string until overridden by future configuration.
-  Enable them under `resource_attributes` if you need the full service identity tuple alongside `service.instance.id`.
+  When `service.namespace` is enabled, it defaults to an empty string until set via configuration.
+  Each resource attribute now accepts an `override_value` under `resource_attributes`, letting users pin
+  values such as `service.name`, `service.namespace`, or `service.instance.id` to uniquely identify
+  database instances across environments.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

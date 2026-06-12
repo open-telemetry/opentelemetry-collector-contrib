@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -83,5 +86,249 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "sqlserver.instance.name-val", sqlserverInstanceNameAttrVal.Str())
 			}
 		})
+	}
+}
+
+func TestResourceBuilderOverrideValue(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+	rb.SetHostName("host.name-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
+	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("host.name")
+		assert.True(t, ok, "host.name should be present")
+		if ok {
+			assert.Equal(t, "override-host.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.computer.name")
+		assert.True(t, ok, "sqlserver.computer.name should be present")
+		if ok {
+			assert.Equal(t, "override-sqlserver.computer.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.database.name")
+		assert.True(t, ok, "sqlserver.database.name should be present")
+		if ok {
+			assert.Equal(t, "override-sqlserver.database.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.instance.name")
+		assert.True(t, ok, "sqlserver.instance.name should be present")
+		if ok {
+			assert.Equal(t, "override-sqlserver.instance.name", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
+func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("host.name")
+		assert.True(t, ok, "host.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-host.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present even without calling Set")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.computer.name")
+		assert.True(t, ok, "sqlserver.computer.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-sqlserver.computer.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.database.name")
+		assert.True(t, ok, "sqlserver.database.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-sqlserver.database.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.instance.name")
+		assert.True(t, ok, "sqlserver.instance.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-sqlserver.instance.name", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.HostName.Enabled = false
+	cfg.ServerAddress.Enabled = false
+	cfg.ServerPort.Enabled = false
+	cfg.ServiceInstanceID.Enabled = false
+	cfg.ServiceName.Enabled = false
+	cfg.ServiceNamespace.Enabled = false
+	cfg.SqlserverComputerName.Enabled = false
+	cfg.SqlserverDatabaseName.Enabled = false
+	cfg.SqlserverInstanceName.Enabled = false
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+// TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
+	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
+	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")
+	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
+	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
+	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
+	assert.Nil(t, cfg.SqlserverComputerName.OverrideValue, "OverrideValue should be nil for sqlserver.computer.name")
+	assert.Nil(t, cfg.SqlserverDatabaseName.OverrideValue, "OverrideValue should be nil for sqlserver.database.name")
+	assert.Nil(t, cfg.SqlserverInstanceName.OverrideValue, "OverrideValue should be nil for sqlserver.instance.name")
+	rb := NewResourceBuilder(cfg)
+	rb.SetHostName("host.name-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
+	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+
+	res := rb.Emit()
+	assert.Equal(t, 9, res.Attributes().Len())
+	hostNameAttrVal, ok := res.Attributes().Get("host.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+	}
+	serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+	}
+	serverPortAttrVal, ok := res.Attributes().Get("server.port")
+	assert.True(t, ok)
+	if ok {
+		assert.EqualValues(t, 11, serverPortAttrVal.Int())
+	}
+	serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+	}
+	serviceNameAttrVal, ok := res.Attributes().Get("service.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
+	}
+	serviceNamespaceAttrVal, ok := res.Attributes().Get("service.namespace")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
+	}
+	sqlserverComputerNameAttrVal, ok := res.Attributes().Get("sqlserver.computer.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "sqlserver.computer.name-val", sqlserverComputerNameAttrVal.Str())
+	}
+	sqlserverDatabaseNameAttrVal, ok := res.Attributes().Get("sqlserver.database.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+	}
+	sqlserverInstanceNameAttrVal, ok := res.Attributes().Get("sqlserver.instance.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "sqlserver.instance.name-val", sqlserverInstanceNameAttrVal.Str())
 	}
 }
