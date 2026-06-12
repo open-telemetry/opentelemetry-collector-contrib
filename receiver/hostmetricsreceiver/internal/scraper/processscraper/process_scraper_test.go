@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdnet "net"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
+	gopsnet "github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -484,6 +486,11 @@ func (p *processHandleMock) IOCountersWithContext(ctx context.Context) (*process
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
 }
 
+func (p *processHandleMock) ConnectionsWithContext(ctx context.Context) ([]gopsnet.ConnectionStat, error) {
+	args := p.MethodCalled("ConnectionsWithContext", ctx)
+	return args.Get(0).([]gopsnet.ConnectionStat), args.Error(1)
+}
+
 func (p *processHandleMock) NumThreadsWithContext(ctx context.Context) (int32, error) {
 	args := p.MethodCalled("NumThreadsWithContext", ctx)
 	return args.Get(0).(int32), args.Error(1)
@@ -553,6 +560,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "IOCountersWithContext", mock.Anything) {
 		handleMock.On("IOCountersWithContext", mock.Anything).Return(&process.IOCountersStat{}, nil)
+	}
+	if !handleMock.IsMethodCallable(t, "ConnectionsWithContext", mock.Anything) {
+		handleMock.On("ConnectionsWithContext", mock.Anything).Return([]gopsnet.ConnectionStat{}, nil)
 	}
 	if !handleMock.IsMethodCallable(t, "PpidWithContext", mock.Anything) {
 		handleMock.On("PpidWithContext", mock.Anything).Return(int32(2), nil)
@@ -1389,6 +1399,80 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScrapeProcessNetworkConnectionCountMetric(t *testing.T) {
+	metricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessNetworkConnectionCount.Enabled = true
+
+	config := &Config{
+		MetricsBuilderConfig: metricsBuilderConfig,
+		Connections: ConnectionConfig{
+			IncludePorts:       []uint32{443, 8443},
+			ExcludePorts:       []uint32{8443},
+			ExcludeLocalhost:   true,
+			ExcludeListenPorts: true,
+		},
+	}
+
+	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
+	require.NoError(t, err)
+	scraper.interfaceAddrs = func() ([]stdnet.Addr, error) {
+		return []stdnet.Addr{&stdnet.IPNet{IP: stdnet.ParseIP("10.0.0.2")}}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	handleMock := &processHandleMock{}
+	handleMock.On("NameWithContext", mock.Anything).Return("app", nil)
+	handleMock.On("ExeWithContext", mock.Anything).Return("app", nil)
+	handleMock.On("CreateTimeWithContext", mock.Anything).Return(int64(100), nil)
+	handleMock.On("ConnectionsWithContext", mock.Anything).Return([]gopsnet.ConnectionStat{
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50001}, Raddr: gopsnet.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50002}, Raddr: gopsnet.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "SYN_SENT", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50003}, Raddr: gopsnet.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50004}, Raddr: gopsnet.Addr{}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50005}, Raddr: gopsnet.Addr{IP: "203.0.113.10"}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50006}, Raddr: gopsnet.Addr{IP: "127.0.0.1", Port: 443}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50007}, Raddr: gopsnet.Addr{IP: "10.0.0.2", Port: 443}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 50008}, Raddr: gopsnet.Addr{IP: "203.0.113.10", Port: 8443}},
+		{Status: "LISTEN", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 60000}},
+		{Status: "ESTABLISHED", Laddr: gopsnet.Addr{IP: "10.0.0.1", Port: 60000}, Raddr: gopsnet.Addr{IP: "203.0.113.10", Port: 443}},
+	}, nil)
+	initDefaultsHandleMock(t, handleMock)
+
+	scraper.getProcessHandles = func(context.Context) (processHandles, error) {
+		return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+	}
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	resourceAttrs := md.ResourceMetrics().At(0).Resource().Attributes()
+	processName, ok := resourceAttrs.Get("process.executable.name")
+	require.True(t, ok)
+	assert.Equal(t, "app", processName.Str())
+
+	require.Equal(t, 1, md.MetricCount())
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "process.network.connection.count", metric.Name())
+	dps := metric.Gauge().DataPoints()
+	require.Equal(t, 1, dps.Len())
+	dp := dps.At(0)
+	assert.Equal(t, int64(2), dp.IntValue())
+	assertAttributeValue(t, dp.Attributes(), "server.address", "203.0.113.10")
+	serverPort, ok := dp.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(443), serverPort.Int())
+}
+
+func assertAttributeValue(t *testing.T, attrs pcommon.Map, name string, expected string) {
+	value, ok := attrs.Get(name)
+	require.True(t, ok)
+	assert.Equal(t, expected, value.Str())
 }
 
 func handleCountErrorIfSupportedOnPlatform() error {

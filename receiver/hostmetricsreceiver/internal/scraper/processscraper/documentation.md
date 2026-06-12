@@ -128,6 +128,21 @@ Percentage of total physical memory that is used by the process.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### process.network.connection.count
+
+The number of established network connections opened by the process, grouped by remote endpoint.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {connections} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| server.address | The remote address of the network connection. | Any Str | Recommended | - |
+| server.port | The remote port of the network connection. | Any Int | Recommended | - |
+
 ### process.open_file_descriptors
 
 Number of file descriptors in use by the process.

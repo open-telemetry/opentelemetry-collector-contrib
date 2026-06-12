@@ -7,11 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdnet "net"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
+	gopsnet "github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
@@ -36,6 +39,7 @@ const (
 	contextSwitchMetricsLen     = 1
 	fileDescriptorMetricsLen    = 1
 	handleMetricsLen            = 1
+	networkConnectionMetricsLen = 1
 	signalMetricsLen            = 1
 	uptimeMetricsLen            = 1
 
@@ -56,6 +60,7 @@ type processScraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
 	getProcessHandles    func(context.Context) (processHandles, error)
+	interfaceAddrs       func() ([]stdnet.Addr, error)
 }
 
 // newProcessScraper creates a Process Scraper
@@ -65,6 +70,7 @@ func newProcessScraper(settings scraper.Settings, cfg *Config) (*processScraper,
 		config:               cfg,
 		getProcessCreateTime: processHandle.CreateTimeWithContext,
 		getProcessHandles:    getGopsutilProcessHandles,
+		interfaceAddrs:       stdnet.InterfaceAddrs,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
 	}
@@ -167,6 +173,10 @@ func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendHandlesMetric(ctx, now, md.handle); err != nil {
 			errs.AddPartial(handleMetricsLen, fmt.Errorf("error reading handle count for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendNetworkConnectionCountMetric(ctx, now, md.handle); err != nil {
+			errs.AddPartial(networkConnectionMetricsLen, fmt.Errorf("error reading network connections for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendSignalsPendingMetric(ctx, now, md.handle); err != nil {
@@ -484,6 +494,125 @@ func (s *processScraper) scrapeAndAppendHandlesMetric(ctx context.Context, now p
 	s.mb.RecordProcessHandlesDataPoint(now, handleCount)
 
 	return nil
+}
+
+type processNetworkConnectionKey struct {
+	serverAddress string
+	serverPort    int64
+}
+
+func (s *processScraper) scrapeAndAppendNetworkConnectionCountMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessNetworkConnectionCount.Enabled {
+		return nil
+	}
+
+	connections, err := handle.ConnectionsWithContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	listenPorts := map[uint32]struct{}{}
+	if s.config.Connections.ExcludeListenPorts {
+		listenPorts = buildListenPortSet(connections)
+	}
+
+	var localIPs map[string]struct{}
+	if s.config.Connections.ExcludeLocalhost {
+		localIPs = s.localIPSet()
+	}
+
+	counts := make(map[processNetworkConnectionKey]int64)
+	for _, connection := range connections {
+		if !strings.EqualFold(connection.Status, "ESTABLISHED") {
+			continue
+		}
+		if connection.Raddr.IP == "" || connection.Raddr.Port == 0 {
+			continue
+		}
+		if _, ok := listenPorts[connection.Laddr.Port]; ok {
+			continue
+		}
+		if !s.isConnectionPortAllowed(connection.Raddr.Port) {
+			continue
+		}
+		if s.config.Connections.ExcludeLocalhost && isLocalIP(connection.Raddr.IP, localIPs) {
+			continue
+		}
+
+		key := processNetworkConnectionKey{
+			serverAddress: connection.Raddr.IP,
+			serverPort:    int64(connection.Raddr.Port),
+		}
+		counts[key]++
+	}
+
+	for key, count := range counts {
+		s.mb.RecordProcessNetworkConnectionCountDataPoint(now, count, key.serverAddress, key.serverPort)
+	}
+
+	return nil
+}
+
+func buildListenPortSet(connections []gopsnet.ConnectionStat) map[uint32]struct{} {
+	ports := make(map[uint32]struct{})
+	for _, connection := range connections {
+		if strings.EqualFold(connection.Status, "LISTEN") {
+			ports[connection.Laddr.Port] = struct{}{}
+		}
+	}
+	return ports
+}
+
+func (s *processScraper) isConnectionPortAllowed(port uint32) bool {
+	if len(s.config.Connections.IncludePorts) > 0 {
+		matched := false
+		for _, includePort := range s.config.Connections.IncludePorts {
+			if includePort == port {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+
+	for _, excludePort := range s.config.Connections.ExcludePorts {
+		if excludePort == port {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *processScraper) localIPSet() map[string]struct{} {
+	ips := map[string]struct{}{
+		"127.0.0.1": {},
+		"::1":       {},
+		"localhost": {},
+	}
+
+	addrs, err := s.interfaceAddrs()
+	if err != nil {
+		return ips
+	}
+	for _, addr := range addrs {
+		switch typedAddr := addr.(type) {
+		case *stdnet.IPNet:
+			ips[typedAddr.IP.String()] = struct{}{}
+		case *stdnet.IPAddr:
+			ips[typedAddr.IP.String()] = struct{}{}
+		}
+	}
+	return ips
+}
+
+func isLocalIP(ip string, localIPs map[string]struct{}) bool {
+	if _, ok := localIPs[ip]; ok {
+		return true
+	}
+	parsed := stdnet.ParseIP(ip)
+	return parsed != nil && parsed.IsLoopback()
 }
 
 func (s *processScraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {

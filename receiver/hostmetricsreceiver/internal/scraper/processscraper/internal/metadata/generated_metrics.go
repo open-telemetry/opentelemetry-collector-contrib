@@ -157,6 +157,9 @@ var MetricsInfo = metricsInfo{
 	ProcessMemoryVirtual: metricInfo{
 		Name: "process.memory.virtual",
 	},
+	ProcessNetworkConnectionCount: metricInfo{
+		Name: "process.network.connection.count",
+	},
 	ProcessOpenFileDescriptors: metricInfo{
 		Name: "process.open_file_descriptors",
 	},
@@ -175,20 +178,21 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	ProcessContextSwitches     metricInfo
-	ProcessCPUTime             metricInfo
-	ProcessCPUUtilization      metricInfo
-	ProcessDiskIo              metricInfo
-	ProcessDiskOperations      metricInfo
-	ProcessHandles             metricInfo
-	ProcessMemoryUsage         metricInfo
-	ProcessMemoryUtilization   metricInfo
-	ProcessMemoryVirtual       metricInfo
-	ProcessOpenFileDescriptors metricInfo
-	ProcessPagingFaults        metricInfo
-	ProcessSignalsPending      metricInfo
-	ProcessThreads             metricInfo
-	ProcessUptime              metricInfo
+	ProcessContextSwitches        metricInfo
+	ProcessCPUTime                metricInfo
+	ProcessCPUUtilization         metricInfo
+	ProcessDiskIo                 metricInfo
+	ProcessDiskOperations         metricInfo
+	ProcessHandles                metricInfo
+	ProcessMemoryUsage            metricInfo
+	ProcessMemoryUtilization      metricInfo
+	ProcessMemoryVirtual          metricInfo
+	ProcessNetworkConnectionCount metricInfo
+	ProcessOpenFileDescriptors    metricInfo
+	ProcessPagingFaults           metricInfo
+	ProcessSignalsPending         metricInfo
+	ProcessThreads                metricInfo
+	ProcessUptime                 metricInfo
 }
 
 type metricInfo struct {
@@ -854,6 +858,98 @@ func newMetricProcessMemoryVirtual(cfg ProcessMemoryVirtualMetricConfig) metricP
 	return m
 }
 
+type metricProcessNetworkConnectionCount struct {
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        ProcessNetworkConnectionCountMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
+}
+
+// init fills process.network.connection.count metric with initial data.
+func (m *metricProcessNetworkConnectionCount) init() {
+	m.data.SetName("process.network.connection.count")
+	m.data.SetDescription("The number of established network connections opened by the process, grouped by remote endpoint.")
+	m.data.SetUnit("{connections}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricProcessNetworkConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serverAddressAttributeValue string, serverPortAttributeValue int64) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ProcessNetworkConnectionCountMetricAttributeKeyServerAddress) {
+		dp.Attributes().PutStr("server.address", serverAddressAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ProcessNetworkConnectionCountMetricAttributeKeyServerPort) {
+		dp.Attributes().PutInt("server.port", serverPortAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessNetworkConnectionCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessNetworkConnectionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessNetworkConnectionCount(cfg ProcessNetworkConnectionCountMetricConfig) metricProcessNetworkConnectionCount {
+	m := metricProcessNetworkConnectionCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessOpenFileDescriptors struct {
 	data     pmetric.Metric                         // data buffer for generated metric.
 	config   ProcessOpenFileDescriptorsMetricConfig // metric config provided by user.
@@ -1154,27 +1250,28 @@ func newMetricProcessUptime(cfg ProcessUptimeMetricConfig) metricProcessUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter   map[string]filter.Filter
-	resourceAttributeExcludeFilter   map[string]filter.Filter
-	metricProcessContextSwitches     metricProcessContextSwitches
-	metricProcessCPUTime             metricProcessCPUTime
-	metricProcessCPUUtilization      metricProcessCPUUtilization
-	metricProcessDiskIo              metricProcessDiskIo
-	metricProcessDiskOperations      metricProcessDiskOperations
-	metricProcessHandles             metricProcessHandles
-	metricProcessMemoryUsage         metricProcessMemoryUsage
-	metricProcessMemoryUtilization   metricProcessMemoryUtilization
-	metricProcessMemoryVirtual       metricProcessMemoryVirtual
-	metricProcessOpenFileDescriptors metricProcessOpenFileDescriptors
-	metricProcessPagingFaults        metricProcessPagingFaults
-	metricProcessSignalsPending      metricProcessSignalsPending
-	metricProcessThreads             metricProcessThreads
-	metricProcessUptime              metricProcessUptime
+	config                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter      map[string]filter.Filter
+	resourceAttributeExcludeFilter      map[string]filter.Filter
+	metricProcessContextSwitches        metricProcessContextSwitches
+	metricProcessCPUTime                metricProcessCPUTime
+	metricProcessCPUUtilization         metricProcessCPUUtilization
+	metricProcessDiskIo                 metricProcessDiskIo
+	metricProcessDiskOperations         metricProcessDiskOperations
+	metricProcessHandles                metricProcessHandles
+	metricProcessMemoryUsage            metricProcessMemoryUsage
+	metricProcessMemoryUtilization      metricProcessMemoryUtilization
+	metricProcessMemoryVirtual          metricProcessMemoryVirtual
+	metricProcessNetworkConnectionCount metricProcessNetworkConnectionCount
+	metricProcessOpenFileDescriptors    metricProcessOpenFileDescriptors
+	metricProcessPagingFaults           metricProcessPagingFaults
+	metricProcessSignalsPending         metricProcessSignalsPending
+	metricProcessThreads                metricProcessThreads
+	metricProcessUptime                 metricProcessUptime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1196,26 +1293,27 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                           mbc,
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        settings.BuildInfo,
-		metricProcessContextSwitches:     newMetricProcessContextSwitches(mbc.Metrics.ProcessContextSwitches),
-		metricProcessCPUTime:             newMetricProcessCPUTime(mbc.Metrics.ProcessCPUTime),
-		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
-		metricProcessDiskIo:              newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
-		metricProcessDiskOperations:      newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
-		metricProcessHandles:             newMetricProcessHandles(mbc.Metrics.ProcessHandles),
-		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
-		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
-		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
-		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(mbc.Metrics.ProcessOpenFileDescriptors),
-		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
-		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
-		metricProcessThreads:             newMetricProcessThreads(mbc.Metrics.ProcessThreads),
-		metricProcessUptime:              newMetricProcessUptime(mbc.Metrics.ProcessUptime),
-		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
+		config:                              mbc,
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           settings.BuildInfo,
+		metricProcessContextSwitches:        newMetricProcessContextSwitches(mbc.Metrics.ProcessContextSwitches),
+		metricProcessCPUTime:                newMetricProcessCPUTime(mbc.Metrics.ProcessCPUTime),
+		metricProcessCPUUtilization:         newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
+		metricProcessDiskIo:                 newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
+		metricProcessDiskOperations:         newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
+		metricProcessHandles:                newMetricProcessHandles(mbc.Metrics.ProcessHandles),
+		metricProcessMemoryUsage:            newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
+		metricProcessMemoryUtilization:      newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
+		metricProcessMemoryVirtual:          newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
+		metricProcessNetworkConnectionCount: newMetricProcessNetworkConnectionCount(mbc.Metrics.ProcessNetworkConnectionCount),
+		metricProcessOpenFileDescriptors:    newMetricProcessOpenFileDescriptors(mbc.Metrics.ProcessOpenFileDescriptors),
+		metricProcessPagingFaults:           newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
+		metricProcessSignalsPending:         newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
+		metricProcessThreads:                newMetricProcessThreads(mbc.Metrics.ProcessThreads),
+		metricProcessUptime:                 newMetricProcessUptime(mbc.Metrics.ProcessUptime),
+		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.ProcessCgroup.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsInclude)
@@ -1344,6 +1442,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUtilization.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtual.emit(ils.Metrics())
+	mb.metricProcessNetworkConnectionCount.emit(ils.Metrics())
 	mb.metricProcessOpenFileDescriptors.emit(ils.Metrics())
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
@@ -1423,6 +1522,11 @@ func (mb *MetricsBuilder) RecordProcessMemoryUtilizationDataPoint(ts pcommon.Tim
 // RecordProcessMemoryVirtualDataPoint adds a data point to process.memory.virtual metric.
 func (mb *MetricsBuilder) RecordProcessMemoryVirtualDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessMemoryVirtual.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordProcessNetworkConnectionCountDataPoint adds a data point to process.network.connection.count metric.
+func (mb *MetricsBuilder) RecordProcessNetworkConnectionCountDataPoint(ts pcommon.Timestamp, val int64, serverAddressAttributeValue string, serverPortAttributeValue int64) {
+	mb.metricProcessNetworkConnectionCount.recordDataPoint(mb.startTime, ts, val, serverAddressAttributeValue, serverPortAttributeValue)
 }
 
 // RecordProcessOpenFileDescriptorsDataPoint adds a data point to process.open_file_descriptors metric.

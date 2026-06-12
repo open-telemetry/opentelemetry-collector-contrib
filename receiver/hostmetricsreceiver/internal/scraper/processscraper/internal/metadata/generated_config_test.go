@@ -63,6 +63,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessMemoryVirtual: ProcessMemoryVirtualMetricConfig{
 						Enabled: true,
 					},
+					ProcessNetworkConnectionCount: ProcessNetworkConnectionCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ProcessNetworkConnectionCountMetricAttributeKey{ProcessNetworkConnectionCountMetricAttributeKeyServerAddress, ProcessNetworkConnectionCountMetricAttributeKeyServerPort},
+					},
 					ProcessOpenFileDescriptors: ProcessOpenFileDescriptorsMetricConfig{
 						Enabled: true,
 					},
@@ -134,6 +139,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessMemoryVirtual: ProcessMemoryVirtualMetricConfig{
 						Enabled: false,
 					},
+					ProcessNetworkConnectionCount: ProcessNetworkConnectionCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ProcessNetworkConnectionCountMetricAttributeKey{ProcessNetworkConnectionCountMetricAttributeKeyServerAddress, ProcessNetworkConnectionCountMetricAttributeKeyServerPort},
+					},
 					ProcessOpenFileDescriptors: ProcessOpenFileDescriptorsMetricConfig{
 						Enabled: false,
 					},
@@ -168,7 +178,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ProcessContextSwitchesMetricConfig{}, ProcessCPUTimeMetricConfig{}, ProcessCPUUtilizationMetricConfig{}, ProcessDiskIoMetricConfig{}, ProcessDiskOperationsMetricConfig{}, ProcessHandlesMetricConfig{}, ProcessMemoryUsageMetricConfig{}, ProcessMemoryUtilizationMetricConfig{}, ProcessMemoryVirtualMetricConfig{}, ProcessOpenFileDescriptorsMetricConfig{}, ProcessPagingFaultsMetricConfig{}, ProcessSignalsPendingMetricConfig{}, ProcessThreadsMetricConfig{}, ProcessUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ProcessContextSwitchesMetricConfig{}, ProcessCPUTimeMetricConfig{}, ProcessCPUUtilizationMetricConfig{}, ProcessDiskIoMetricConfig{}, ProcessDiskOperationsMetricConfig{}, ProcessHandlesMetricConfig{}, ProcessMemoryUsageMetricConfig{}, ProcessMemoryUtilizationMetricConfig{}, ProcessMemoryVirtualMetricConfig{}, ProcessNetworkConnectionCountMetricConfig{}, ProcessOpenFileDescriptorsMetricConfig{}, ProcessPagingFaultsMetricConfig{}, ProcessSignalsPendingMetricConfig{}, ProcessThreadsMetricConfig{}, ProcessUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

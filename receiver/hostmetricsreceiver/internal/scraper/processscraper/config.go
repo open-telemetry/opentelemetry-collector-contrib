@@ -19,6 +19,8 @@ type Config struct {
 	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
 	Include MatchConfig `mapstructure:"include"`
 	Exclude MatchConfig `mapstructure:"exclude"`
+	// Connections specifies process network connection metric settings.
+	Connections ConnectionConfig `mapstructure:"connections"`
 
 	// MuteProcessAllErrors is a flag that will mute all the errors encountered when trying to read metrics of a process.
 	// When this flag is enabled, there is no need to activate any other error suppression flags.
@@ -59,4 +61,15 @@ type MatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Names []string `mapstructure:"names"`
+}
+
+type ConnectionConfig struct {
+	// IncludePorts specifies remote ports that should be included in process connection metrics.
+	IncludePorts []uint32 `mapstructure:"include_ports"`
+	// ExcludePorts specifies remote ports that should be excluded from process connection metrics.
+	ExcludePorts []uint32 `mapstructure:"exclude_ports"`
+	// ExcludeLocalhost specifies whether to exclude local and loopback remote addresses from process connection metrics.
+	ExcludeLocalhost bool `mapstructure:"exclude_localhost"`
+	// ExcludeListenPorts specifies whether to exclude connections from local listening ports from process connection metrics.
+	ExcludeListenPorts bool `mapstructure:"exclude_listen_ports"`
 }

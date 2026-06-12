@@ -5,6 +5,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	gopsnet "github.com/shirou/gopsutil/v4/net"
 	"os"
 	"runtime"
 	"strconv"
@@ -86,6 +87,7 @@ type processHandle interface {
 	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
+	ConnectionsWithContext(context.Context) ([]gopsnet.ConnectionStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
 	ThreadsWithContext(context.Context) (map[int32]*cpu.TimesStat, error)
 	CreateTimeWithContext(context.Context) (int64, error)
