@@ -306,13 +306,51 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan, err := obs.Start(ctx, &kr.wg)
+	stopChan, err := kr.startObserver(ctx, obs, object)
 	if err != nil {
 		return err
 	}
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
 	return nil
+}
+
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
+	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
+		return obs.Start(ctx, &kr.wg)
+	}
+
+	stopChan := make(chan struct{})
+	kr.wg.Add(1)
+	//nolint:modernize // WaitGroup.Go not available without additional dependencies
+	go func() {
+		defer kr.wg.Done()
+
+		timer := time.NewTimer(object.InitialDelay)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+		case <-stopChan:
+			return
+		case <-ctx.Done():
+			return
+		}
+
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err != nil {
+			kr.setting.Logger.Error("failed to start observer after initial delay",
+				zap.String("object", object.Name), zap.Error(err))
+			return
+		}
+		select {
+		case <-stopChan:
+			close(observerStopChan)
+		case <-ctx.Done():
+		}
+	}()
+
+	return stopChan, nil
 }
 
 // handleError handles errors according to the configured error mode
