@@ -56,6 +56,14 @@ type Config struct {
 	// metric recordings that include exemplars when loss analysis is enabled.
 	// Range: 0.0 (disabled) to 1.0 (always).
 	AttributeLossExemplarSampleRate float64 `mapstructure:"attribute_loss_exemplar_sample_rate"`
+
+	// EnableBytesMetrics toggles measurement of serialized trace sizes before
+	// and after pruning. When enabled, records bytes_received, bytes_processed_input,
+	// bytes_processed_output, and bytes_emitted metrics. This serializes each batch
+	// (full batch plus matched subset before and after pruning) and is expensive
+	// for large batches; keep disabled unless needed for capacity analysis.
+	// Default: false
+	EnableBytesMetrics bool `mapstructure:"enable_bytes_metrics"`
 }
 
 var _ component.Config = (*Config)(nil)

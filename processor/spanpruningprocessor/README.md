@@ -80,6 +80,14 @@ processors:
     # Range: 0.0 (disabled) to 1.0 (always)
     # Default: 0 (disabled)
     attribute_loss_exemplar_sample_rate: 0.01
+
+    # Enable measurement of serialized trace sizes before and after pruning
+    # When enabled, records bytes_received, bytes_processed_input,
+    # bytes_processed_output, and bytes_emitted metrics
+    # This serializes each batch (full batch plus matched subset before/after pruning)
+    # and is expensive for large batches
+    # Default: false
+    enable_bytes_metrics: false
 ```
 
 ## Configuration Options
@@ -93,6 +101,7 @@ processors:
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for latency histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (records attribute-loss metrics and adds summary span loss attributes) |
 | `attribute_loss_exemplar_sample_rate` | float64 | 0 (disabled) | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
+| `enable_bytes_metrics` | bool | false | Enable measurement of serialized trace sizes (bytes_received/bytes_processed_input/bytes_processed_output/bytes_emitted metrics) |
 
 ### Glob Pattern Support
 
@@ -334,6 +343,37 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_spans_pruned` | Total number of spans removed by aggregation |
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
+| `otelcol_processor_spanpruning_bytes_received` | Total bytes of serialized traces received before pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_processed_input` | Total bytes of serialized traces in the matched subset, measured before pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_processed_output` | Total bytes of serialized traces in the matched subset, measured after pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_bytes_emitted` | Total bytes of serialized traces emitted after pruning (when `enable_bytes_metrics: true`) |
+
+### Byte metrics semantics
+
+When `enable_bytes_metrics` is enabled, the processor serializes trace data with
+`ptrace.ProtoMarshaler` on each batch. This adds CPU overhead because it measures:
+
+- Full batch bytes before pruning (`bytes_received`)
+- Matched subset bytes before pruning (`bytes_processed_input`)
+- Matched subset bytes after pruning (`bytes_processed_output`)
+- Full batch bytes after pruning (`bytes_emitted`)
+
+**Current behavior (no `conditions` support yet):** the matched subset is the full
+batch, so `bytes_processed_input == bytes_received` and
+`bytes_processed_output == bytes_emitted`.
+
+**Forward-looking note:** once `conditions` support is added, the matched subset may
+be smaller than the full batch.
+
+| Comparison | Valid now? | Future with `conditions` |
+|------------|------------|--------------------------|
+| `bytes_processed_input` vs `bytes_processed_output` | Yes | Yes |
+| `bytes_received` vs `bytes_emitted` | Yes | Yes |
+| `bytes_emitted` vs `bytes_processed_input` | Same scope today (full batch), but values are equal only if pruning does not change serialized size | Not a like-for-like comparison (full batch vs matched subset) |
+
+After aggregation, `bytes_processed_output` can exceed `bytes_processed_input` when
+summary spans are larger than the leaf spans they replace, so matched-byte savings
+can be negative even when pruning is functioning correctly.
 
 ### Histograms
 
@@ -345,5 +385,6 @@ The processor emits the following metrics to help monitor its operation:
 These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
 - Track the compression ratio achieved by aggregation
+- Track byte changes (`bytes_received`/`bytes_emitted`, and currently equivalent `bytes_processed_input`/`bytes_processed_output`)
 - Identify processing bottlenecks via `processing_duration`
 - Understand aggregation patterns via `aggregation_group_size`
