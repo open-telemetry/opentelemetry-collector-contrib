@@ -355,8 +355,8 @@ github.com/hashicorp/memberlist v0.5.4 h1:40YY+3qq2tAUhZIMEK8kqusKZBBjdwJ3NUjvYk
 github.com/hashicorp/memberlist v0.5.4/go.mod h1:OgN6xiIo6RlHUWk+ALjP9e32xWCoQrsOCmHrWCm2MWA=
 github.com/hashicorp/nomad/api v0.0.0-20260528135333-5b027732945f h1:sdf4a6FF3tC1/c0buuizLAwZa/xLu4gWD87qWrzQLvo=
 github.com/hashicorp/nomad/api v0.0.0-20260528135333-5b027732945f/go.mod h1:Kr8imJwigbQ/50BqVae2+JL+AyX+FnzbnuCoIFb6iYg=
-github.com/hazzik/serf v0.0.0-20250310055724-a5f04d14dea3 h1:NhSmQfVaA3hgfn5MMHrOYuGG/Ss5wgBJ11JsDb4cecM=
-github.com/hazzik/serf v0.0.0-20250310055724-a5f04d14dea3/go.mod h1:vBmWM2a3lSJVnxJ2WtNx+KDsmxDc4ngMz9lZhY7Kzh4=
+github.com/hashicorp/serf v0.10.3-0.20260611143631-fadde19c9a64 h1:H8BxD1fzznT3+uNTFUfoXSt7xUcks2Zd8Mi63rYhQqY=
+github.com/hashicorp/serf v0.10.3-0.20260611143631-fadde19c9a64/go.mod h1:49UQJCv54j5c0chPfXA3xUmf27ODARY5I4X0d1IvDRA=
 github.com/hetznercloud/hcloud-go/v2 v2.41.2 h1:fO5zsMgp5oejrtnFj8mYuqlp+iMuirpaKv4b5FYNRdQ=
 github.com/hetznercloud/hcloud-go/v2 v2.41.2/go.mod h1:9OGvC//jbHE4sv2Oyo0bQ2vEWuUMKYoNMyj9Qxz2qcc=
 github.com/ianlancetaylor/demangle v0.0.0-20230524184225-eabc099b10ab/go.mod h1:gx7rwoVhcfuVKG5uya9Hs3Sxj7EIvldVofAWIUtGouw=
