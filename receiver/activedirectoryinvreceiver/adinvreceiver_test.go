@@ -4,7 +4,6 @@
 package activedirectoryinvreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -91,10 +90,10 @@ func TestStart(t *testing.T) {
 	mockRuntime.On("SupportedOS").Return(true)
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), mc, mockRuntime, sink)
 	// Start the receiver
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	// Shutdown the receiver
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -106,7 +105,7 @@ func TestStartUnsupportedOS(t *testing.T) {
 	mockRuntime.On("SupportedOS").Return(false)
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), mockClient, mockRuntime, sink)
 	// Start the receiver
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "active_directory_inv is only supported on Windows")
 }
@@ -122,7 +121,7 @@ func TestLogRecord(t *testing.T) {
 	mockRuntime.On("SupportedOS").Return(true)
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), mockClient, mockRuntime, sink)
 	// Start the receiver
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
@@ -133,7 +132,7 @@ func TestLogRecord(t *testing.T) {
 	err = json.Unmarshal([]byte(result.(string)), &actualResult)
 	require.NoError(t, err)
 	// Shutdown the receiver
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, expectedResult, actualResult)
 }
