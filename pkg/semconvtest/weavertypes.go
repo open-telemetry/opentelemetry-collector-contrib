@@ -1,6 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package semconvtest validates Collector component telemetry against
+// OpenTelemetry semantic conventions using Weaver's live-check.
+//
+// This file reimplements Weaver's live-check report types in Go so the
+// JSON report returned by Weaver can be parsed and inspected.
 package semconvtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
 
 import (

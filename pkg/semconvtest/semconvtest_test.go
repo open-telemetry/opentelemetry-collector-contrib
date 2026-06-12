@@ -7,6 +7,7 @@ package semconvtest_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,16 +23,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest/internal/samplereceiver"
 )
 
-type findingContext struct {
+// recordingTB wraps a *testing.T and captures failures reported via Errorf,
+// so tests can assert that semconvtest marks violations as test failures
+// without failing the real test. Fatal infrastructure errors still pass
+// through to the embedded testing.TB.
+type recordingTB struct {
+	testing.TB
+	failed bool
+	errors []string
+}
+
+func (r *recordingTB) Errorf(format string, args ...any) {
+	r.failed = true
+	r.errors = append(r.errors, fmt.Sprintf(format, args...))
+}
+
+// findingDetails holds the fields we care about from a finding's context
+// payload.
+type findingDetails struct {
 	AttributeName string `json:"attribute_name,omitempty"`
 }
 
 func getAttributeName(f semconvtest.PolicyFinding) string {
-	var ctx findingContext
-	if err := json.Unmarshal(f.Context, &ctx); err != nil {
+	var details findingDetails
+	if err := json.Unmarshal(f.Context, &details); err != nil {
 		return ""
 	}
-	return ctx.AttributeName
+	return details.AttributeName
 }
 
 func findViolationByAttributeName(violations []semconvtest.PolicyFinding, attrName string) *semconvtest.PolicyFinding {
@@ -53,12 +71,6 @@ func findViolationByID(violations []semconvtest.PolicyFinding, id string) *semco
 }
 
 func TestWeaverLogs(t *testing.T) {
-	opts := &semconvtest.WeaverOptions{}
-
-	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, weaver.Shutdown()) }()
-
 	logs := plog.NewLogs()
 	res := logs.ResourceLogs().AppendEmpty()
 	res.Resource().Attributes().PutStr("invalid.resource.attribute", "value")
@@ -66,21 +78,10 @@ func TestWeaverLogs(t *testing.T) {
 	record := scope.LogRecords().AppendEmpty()
 	record.Body().SetStr("hi I am a log")
 
-	err = weaver.TestLogs(logs)
-	require.NoError(t, err)
+	rec := &recordingTB{TB: t}
+	violations := semconvtest.TestLogs(rec, logs)
 
-	content, err := weaver.Stop()
-	require.NoError(t, err)
-
-	report, err := semconvtest.ParseLiveCheckReport(content)
-	require.NoError(t, err)
-
-	require.NotEmpty(t, report.Samples)
-
-	require.True(t, report.HasViolations(), "expected violations for unknown attribute")
-
-	violations := report.GetViolations()
-
+	require.True(t, rec.failed, "expected TestLogs to mark the test as failed")
 	require.Len(t, violations, 1, "expected 1 violation: resource attr")
 
 	resourceAttrViolation := findViolationByAttributeName(violations, "invalid.resource.attribute")
@@ -89,12 +90,6 @@ func TestWeaverLogs(t *testing.T) {
 }
 
 func TestWeaverMetrics(t *testing.T) {
-	opts := &semconvtest.WeaverOptions{}
-
-	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, weaver.Shutdown()) }()
-
 	metrics := pmetric.NewMetrics()
 	res := metrics.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().PutStr("invalid.resource.attribute", "value")
@@ -107,21 +102,10 @@ func TestWeaverMetrics(t *testing.T) {
 	dp.SetIntValue(42)
 	dp.Attributes().PutStr("invalid.datapoint.attribute", "value")
 
-	err = weaver.TestMetrics(metrics)
-	require.NoError(t, err)
+	rec := &recordingTB{TB: t}
+	violations := semconvtest.TestMetrics(rec, metrics)
 
-	content, err := weaver.Stop()
-	require.NoError(t, err)
-
-	report, err := semconvtest.ParseLiveCheckReport(content)
-	require.NoError(t, err)
-
-	require.NotEmpty(t, report.Samples)
-
-	require.True(t, report.HasViolations(), "expected violations for invalid metric")
-
-	violations := report.GetViolations()
-
+	require.True(t, rec.failed, "expected TestMetrics to mark the test as failed")
 	require.Len(t, violations, 3, "expected 3 violations: resource attr, metric, and data point attr")
 
 	resourceAttrViolation := findViolationByAttributeName(violations, "invalid.resource.attribute")
@@ -138,12 +122,6 @@ func TestWeaverMetrics(t *testing.T) {
 }
 
 func TestWeaverTraces(t *testing.T) {
-	opts := &semconvtest.WeaverOptions{}
-
-	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, weaver.Shutdown()) }()
-
 	traces := ptrace.NewTraces()
 	res := traces.ResourceSpans().AppendEmpty()
 	res.Resource().Attributes().PutStr("invalid.resource.attribute", "value")
@@ -153,21 +131,10 @@ func TestWeaverTraces(t *testing.T) {
 	span.SetKind(ptrace.SpanKindClient)
 	span.Attributes().PutStr("invalid.span.attribute", "value")
 
-	err = weaver.TestTraces(traces)
-	require.NoError(t, err)
+	rec := &recordingTB{TB: t}
+	violations := semconvtest.TestTraces(rec, traces)
 
-	content, err := weaver.Stop()
-	require.NoError(t, err)
-
-	report, err := semconvtest.ParseLiveCheckReport(content)
-	require.NoError(t, err)
-
-	require.NotEmpty(t, report.Samples)
-
-	require.True(t, report.HasViolations(), "expected violations for invalid span attributes")
-
-	violations := report.GetViolations()
-
+	require.True(t, rec.failed, "expected TestTraces to mark the test as failed")
 	require.Len(t, violations, 2, "expected 2 violations: resource attr and span attr")
 
 	resourceAttrViolation := findViolationByAttributeName(violations, "invalid.resource.attribute")
@@ -180,40 +147,20 @@ func TestWeaverTraces(t *testing.T) {
 }
 
 // TestWeaverHTTPServerMetrics demonstrates how a receiver author would use
-// semconvtest to validate their component's telemetry against semantic conventions.
-// It creates a sample receiver that emits valid HTTP semconv metrics and asserts
-// that Weaver reports no violations.
+// semconvtest to validate their component's telemetry against semantic
+// conventions: produce pdata with the component, then hand it to
+// semconvtest.TestMetrics along with the *testing.T.
 func TestWeaverHTTPServerMetrics(t *testing.T) {
-	opts := &semconvtest.WeaverOptions{}
-
-	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, weaver.Shutdown()) }()
-
 	factory := samplereceiver.NewFactory()
 	sink := &consumertest.MetricsSink{}
 	settings := receivertest.NewNopSettings(component.MustNewType("sample_http"))
 	recv, err := factory.CreateMetrics(t.Context(), settings, factory.CreateDefaultConfig(), sink)
 	require.NoError(t, err)
 
-	err = recv.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
+	require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, recv.Shutdown(t.Context())) }()
 
 	require.NotEmpty(t, sink.AllMetrics(), "expected receiver to produce metrics")
-	metrics := sink.AllMetrics()[0]
 
-	err = weaver.TestMetrics(metrics)
-	require.NoError(t, err)
-
-	content, err := weaver.Stop()
-	require.NoError(t, err)
-
-	report, err := semconvtest.ParseLiveCheckReport(content)
-	require.NoError(t, err)
-
-	require.NotEmpty(t, report.Samples)
-
-	require.False(t, report.HasViolations(),
-		"expected no violations for valid HTTP semconv metrics, got: %v", report.GetViolations())
+	semconvtest.TestMetrics(t, sink.AllMetrics()[0])
 }
