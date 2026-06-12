@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
@@ -39,6 +40,7 @@ const (
 	otelStatusCodeKey              = "otel.status_code"                   // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
+	isRootSpanKey                  = "span.is_root_span"                  // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
 
 	defaultResourceMetricsCacheSize = 1000
@@ -573,6 +575,9 @@ func (p *connectorImp) buildAttributes(
 	if p.config.EnableMetricsSamplingMethod {
 		capacity++
 	}
+	if p.config.IncludeRootSpanAttribute {
+		capacity++
+	}
 	attr.EnsureCapacity(capacity)
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
@@ -582,6 +587,11 @@ func (p *connectorImp) buildAttributes(
 	}
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	}
+	if p.config.IncludeRootSpanAttribute && span.Kind() == ptrace.SpanKindInternal {
+		if !slices.Contains(p.config.ExcludeDimensions, isRootSpanKey) {
+			attr.PutBool(isRootSpanKey, span.ParentSpanID().IsEmpty())
+		}
 	}
 	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
@@ -699,6 +709,11 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions
 	}
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
+	}
+	if p.config.IncludeRootSpanAttribute && span.Kind() == ptrace.SpanKindInternal {
+		if !slices.Contains(p.config.ExcludeDimensions, isRootSpanKey) {
+			concatDimensionValue(p.keyBuf, strconv.FormatBool(span.ParentSpanID().IsEmpty()), true)
+		}
 	}
 	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {

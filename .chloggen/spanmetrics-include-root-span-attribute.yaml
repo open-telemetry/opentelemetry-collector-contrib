@@ -1,0 +1,17 @@
+change_type: enhancement
+
+component: connector/spanmetrics
+
+note: Add opt-in `include_root_span_attribute` config option that emits a `span.is_root_span` boolean attribute on metrics for INTERNAL spans, indicating whether the span is a root component (no parent span).
+
+issues: []
+
+subtext: |
+  When enabled, INTERNAL spans with no parent span ID emit `span.is_root_span = true`,
+  and INTERNAL spans with a parent emit `span.is_root_span = false`. The attribute is
+  deliberately omitted for all other span kinds (SERVER, CONSUMER, CLIENT, PRODUCER)
+  because `span.kind` already conveys entry-point semantics for those cases.
+  The attribute carries exactly two possible values and does not meaningfully increase
+  metric cardinality. Disabled by default for full backward compatibility.
+
+change_logs: [user]

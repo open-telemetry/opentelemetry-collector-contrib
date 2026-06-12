@@ -111,6 +111,14 @@ type Config struct {
 	// EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics.
 	// When false (default), the attribute is not added.
 	EnableMetricsSamplingMethod bool `mapstructure:"enable_metrics_sampling_method"`
+
+	// IncludeRootSpanAttribute adds the span.is_root_span boolean attribute to metrics,
+	// but only for spans with span.kind = INTERNAL. For all other span kinds the attribute
+	// is omitted because span.kind alone already conveys entry-point semantics
+	// (SERVER/CONSUMER = entry point; CLIENT/PRODUCER = outbound call).
+	// true when the INTERNAL span has no parent (parentSpanID is empty), false otherwise.
+	// When false (default), the attribute is not added.
+	IncludeRootSpanAttribute bool `mapstructure:"include_root_span_attribute"`
 }
 
 type HistogramConfig struct {
@@ -156,16 +164,16 @@ var _ xconfmap.Validator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (c Config) Validate() error {
-	if err := validateDimensions(c.Dimensions); err != nil {
+	if err := validateDimensions(c.Dimensions, c.IncludeRootSpanAttribute); err != nil {
 		return fmt.Errorf("failed validating dimensions: %w", err)
 	}
-	if err := validateDimensions(c.CallsDimensions); err != nil {
+	if err := validateDimensions(c.CallsDimensions, c.IncludeRootSpanAttribute); err != nil {
 		return fmt.Errorf("failed validating calls dimensions: %w", err)
 	}
-	if err := validateDimensions(c.Histogram.Dimensions); err != nil {
+	if err := validateDimensions(c.Histogram.Dimensions, c.IncludeRootSpanAttribute); err != nil {
 		return fmt.Errorf("failed validating histogram dimensions: %w", err)
 	}
-	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
+	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions, c.IncludeRootSpanAttribute); err != nil {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
@@ -221,11 +229,14 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions, and
 // enforces that each entry sets exactly one of Name or Glob.
-func validateDimensions(dimensions []Dimension) error {
+func validateDimensions(dimensions []Dimension, includeRootSpan bool) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
 	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		intervalLabels = append(intervalLabels, collectorInstanceKey)
+	}
+	if includeRootSpan {
+		intervalLabels = append(intervalLabels, isRootSpanKey)
 	}
 
 	for _, key := range intervalLabels {
@@ -268,12 +279,12 @@ func validateDimensions(dimensions []Dimension) error {
 }
 
 // validateEventDimensions checks for empty and duplicates for the dimensions configured.
-func validateEventDimensions(enabled bool, dimensions []Dimension) error {
+func validateEventDimensions(enabled bool, dimensions []Dimension, includeRootSpan bool) error {
 	if !enabled {
 		return nil
 	}
 	if len(dimensions) == 0 {
 		return errors.New("no dimensions configured for events")
 	}
-	return validateDimensions(dimensions)
+	return validateDimensions(dimensions, includeRootSpan)
 }

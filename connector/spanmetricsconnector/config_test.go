@@ -365,9 +365,52 @@ func TestValidateDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDimensions(tc.dimensions)
+			err := validateDimensions(tc.dimensions, false)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateDimensions_IncludeRootSpan(t *testing.T) {
+	tests := []struct {
+		name            string
+		includeRootSpan bool
+		dimensions      []Dimension
+		expectedErr     string
+	}{
+		{
+			name:            "span.is_root_span as custom dim, feature disabled → allowed",
+			includeRootSpan: false,
+			dimensions:      []Dimension{{Name: isRootSpanKey}},
+		},
+		{
+			name:            "span.is_root_span as custom dim, feature enabled → duplicate error",
+			includeRootSpan: true,
+			dimensions:      []Dimension{{Name: isRootSpanKey}},
+			expectedErr:     "duplicate dimension name \"span.is_root_span\"",
+		},
+		{
+			name:            "glob matching span.is_root_span, feature enabled → duplicate error",
+			includeRootSpan: true,
+			dimensions:      []Dimension{{Glob: "span.is_*"}},
+			expectedErr:     "duplicate dimension name \"span.is_root_span\" conflicting with glob \"span.is_*\"",
+		},
+		{
+			name:            "glob matching span.is_root_span, feature disabled → allowed",
+			includeRootSpan: false,
+			dimensions:      []Dimension{{Glob: "span.is_*"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateDimensions(tt.dimensions, tt.includeRootSpan)
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -409,7 +452,7 @@ func TestValidateEventDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateEventDimensions(tc.enabled, tc.dimensions)
+			err := validateEventDimensions(tc.enabled, tc.dimensions, false)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {
@@ -519,6 +562,26 @@ func TestConfigValidate(t *testing.T) {
 				},
 			},
 			expectedErr: "failed validating event dimensions: no dimensions configured for events",
+		},
+		{
+			name: "include_root_span_attribute with span.is_root_span as custom dimension → duplicate error",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				IncludeRootSpanAttribute: true,
+				Dimensions: []Dimension{
+					{Name: isRootSpanKey},
+				},
+			},
+			expectedErr: "failed validating dimensions: duplicate dimension name \"span.is_root_span\"",
+		},
+		{
+			name: "include_root_span_attribute without duplicate dimension → valid",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				IncludeRootSpanAttribute: true,
+			},
 		},
 	}
 

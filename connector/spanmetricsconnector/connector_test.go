@@ -3802,3 +3802,181 @@ func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
 		}
 	})
 }
+
+func TestBuildAttributes_IncludeRootSpanAttribute(t *testing.T) {
+	nonEmptyParent := [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
+
+	tests := []struct {
+		name            string
+		config          Config
+		spanKind        ptrace.SpanKind
+		setParentSpanID *[8]byte
+		expectAttribute bool
+		expectValue     bool
+	}{
+		{
+			name:            "enabled, INTERNAL, no parent → true",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindInternal,
+			expectAttribute: true,
+			expectValue:     true,
+		},
+		{
+			name:            "enabled, INTERNAL, with parent → false",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindInternal,
+			setParentSpanID: &nonEmptyParent,
+			expectAttribute: true,
+			expectValue:     false,
+		},
+		{
+			name:            "enabled, SERVER, no parent → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindServer,
+			expectAttribute: false,
+		},
+		{
+			name:            "enabled, CONSUMER, no parent → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindConsumer,
+			expectAttribute: false,
+		},
+		{
+			name:            "enabled, CLIENT, no parent → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindClient,
+			expectAttribute: false,
+		},
+		{
+			name:            "enabled, PRODUCER, no parent → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindProducer,
+			expectAttribute: false,
+		},
+		{
+			name:            "disabled, INTERNAL, no parent → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: false},
+			spanKind:        ptrace.SpanKindInternal,
+			expectAttribute: false,
+		},
+		{
+			name:            "enabled, INTERNAL, excluded → attribute absent",
+			config:          Config{IncludeRootSpanAttribute: true, ExcludeDimensions: []string{isRootSpanKey}},
+			spanKind:        ptrace.SpanKindInternal,
+			expectAttribute: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: tt.config, instanceID: instanceID}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(tt.spanKind)
+			if tt.setParentSpanID != nil {
+				span.SetParentSpanID(*tt.setParentSpanID)
+			}
+
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, pcommon.NewInstrumentationScope(), false)
+
+			val, ok := attrs.Get(isRootSpanKey)
+			assert.Equal(t, tt.expectAttribute, ok, "span.is_root_span attribute presence")
+			if tt.expectAttribute {
+				assert.Equal(t, tt.expectValue, val.Bool(), "span.is_root_span value")
+			}
+		})
+	}
+}
+
+func TestBuildKey_IncludeRootSpanAttribute(t *testing.T) {
+	// Key format (null-separated): service\x00span.name\x00span.kind[\x00is_root_span]\x00status.code
+	const (
+		keyBase         = "test_service\x00test_span\x00"
+		keyStatusSuffix = "\x00STATUS_CODE_UNSET"
+		keyRootTrue     = "\x00true"
+		keyRootFalse    = "\x00false"
+	)
+
+	nonEmptyParent := [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
+
+	tests := []struct {
+		name            string
+		config          Config
+		spanKind        ptrace.SpanKind
+		setParentSpanID *[8]byte
+		expectedKey     string
+	}{
+		{
+			name:        "enabled, INTERNAL, no parent → true slot present",
+			config:      Config{IncludeRootSpanAttribute: true},
+			spanKind:    ptrace.SpanKindInternal,
+			expectedKey: keyBase + "SPAN_KIND_INTERNAL" + keyRootTrue + keyStatusSuffix,
+		},
+		{
+			name:            "enabled, INTERNAL, with parent → false slot present",
+			config:          Config{IncludeRootSpanAttribute: true},
+			spanKind:        ptrace.SpanKindInternal,
+			setParentSpanID: &nonEmptyParent,
+			expectedKey:     keyBase + "SPAN_KIND_INTERNAL" + keyRootFalse + keyStatusSuffix,
+		},
+		{
+			name:        "enabled, SERVER → slot absent",
+			config:      Config{IncludeRootSpanAttribute: true},
+			spanKind:    ptrace.SpanKindServer,
+			expectedKey: keyBase + "SPAN_KIND_SERVER" + keyStatusSuffix,
+		},
+		{
+			name:        "enabled, CONSUMER → slot absent",
+			config:      Config{IncludeRootSpanAttribute: true},
+			spanKind:    ptrace.SpanKindConsumer,
+			expectedKey: keyBase + "SPAN_KIND_CONSUMER" + keyStatusSuffix,
+		},
+		{
+			name:        "enabled, CLIENT → slot absent",
+			config:      Config{IncludeRootSpanAttribute: true},
+			spanKind:    ptrace.SpanKindClient,
+			expectedKey: keyBase + "SPAN_KIND_CLIENT" + keyStatusSuffix,
+		},
+		{
+			name:        "enabled, PRODUCER → slot absent",
+			config:      Config{IncludeRootSpanAttribute: true},
+			spanKind:    ptrace.SpanKindProducer,
+			expectedKey: keyBase + "SPAN_KIND_PRODUCER" + keyStatusSuffix,
+		},
+		{
+			name:        "disabled, INTERNAL → slot absent",
+			config:      Config{IncludeRootSpanAttribute: false},
+			spanKind:    ptrace.SpanKindInternal,
+			expectedKey: keyBase + "SPAN_KIND_INTERNAL" + keyStatusSuffix,
+		},
+		{
+			name:        "enabled, INTERNAL, excluded → slot absent",
+			config:      Config{IncludeRootSpanAttribute: true, ExcludeDimensions: []string{isRootSpanKey}},
+			spanKind:    ptrace.SpanKindInternal,
+			expectedKey: keyBase + "SPAN_KIND_INTERNAL" + keyStatusSuffix,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IncludeRootSpanAttribute = tt.config.IncludeRootSpanAttribute
+			cfg.ExcludeDimensions = tt.config.ExcludeDimensions
+
+			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
+			require.NoError(t, err)
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(tt.spanKind)
+			if tt.setParentSpanID != nil {
+				span.SetParentSpanID(*tt.setParentSpanID)
+			}
+
+			key := string(c.buildKey("test_service", span, dimensionList{}, dimensionList{}, pcommon.NewMap(), false))
+			assert.Equal(t, tt.expectedKey, key)
+		})
+	}
+}

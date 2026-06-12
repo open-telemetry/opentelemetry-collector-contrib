@@ -85,6 +85,9 @@ properties:
   enable_metrics_sampling_method:
     description: EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics. When false (default), the attribute is not added.
     type: boolean
+  include_root_span_attribute:
+    description: IncludeRootSpanAttribute adds the span.is_root_span boolean attribute to metrics, but only for INTERNAL spans. true when the span has no parent, false otherwise. When false (default), the attribute is not added.
+    type: boolean
   events:
     description: Events defines the configuration for events section of spans.
     $ref: events_config
