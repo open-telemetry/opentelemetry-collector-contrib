@@ -3,7 +3,7 @@ resourceLogs:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: testhost:5432
+            stringValue: localhost:5432
     scopeLogs:
       - logRecords:
           - attributes:
@@ -54,7 +54,7 @@ resourceLogs:
                   doubleValue: 1.2
               - key: postgresql.blocking.pids
                 value:
-                  stringValue: ""
+                  stringValue: '{}'
               - key: postgresql.blocking.start_time
                 value:
                   stringValue: ""
@@ -75,7 +75,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "0"
+            timeUnixNano: "1781255872205847000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
