@@ -470,6 +470,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
 			compositeKey := metricsCompositeKey{
+				namespace:    *v.Namespace,
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
