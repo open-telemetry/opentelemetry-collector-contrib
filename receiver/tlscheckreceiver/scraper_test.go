@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -68,6 +69,31 @@ func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, er
 	}, nil
 }
 
+func mockGetConnectionStateMultipleCerts(_ string) (tls.ConnectionState, error) {
+	leaf := &x509.Certificate{
+		NotBefore: time.Now().Add(-1 * time.Hour),
+		NotAfter:  time.Now().Add(24 * time.Hour),
+		Subject:   pkix.Name{CommonName: "leaf.example.com"},
+		Issuer:    pkix.Name{CommonName: "IntermediateCA"},
+		DNSNames:  []string{"leaf.example.com"},
+	}
+	intermediate := &x509.Certificate{
+		NotBefore: time.Now().Add(-1 * time.Hour),
+		NotAfter:  time.Now().Add(365 * 24 * time.Hour),
+		Subject:   pkix.Name{CommonName: "IntermediateCA"},
+		Issuer:    pkix.Name{CommonName: "RootCA"},
+	}
+	root := &x509.Certificate{
+		NotBefore: time.Now().Add(-1 * time.Hour),
+		NotAfter:  time.Now().Add(10 * 365 * 24 * time.Hour),
+		Subject:   pkix.Name{CommonName: "RootCA"},
+		Issuer:    pkix.Name{CommonName: "RootCA"},
+	}
+	return tls.ConnectionState{
+		PeerCertificates: []*x509.Certificate{leaf, intermediate, root},
+	}, nil
+}
+
 func createMockCertFile(t *testing.T, expiry time.Time) string {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
@@ -117,30 +143,76 @@ func createMockCertFile(t *testing.T, expiry time.Time) string {
 
 // createMockJKSFile creates a JKS keystore containing a single TrustedCertificateEntry
 // and returns its absolute path.
-func createMockJKSFile(t *testing.T, expiry time.Time, password string) string {
+func createMockJKSFile(t *testing.T, expiry time.Time, password string, numTrustedCerts, numPrivateKeys int) string {
 	t.Helper()
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "jks-test.example.com"},
-		Issuer:       pkix.Name{CommonName: "JKSIssuer"},
-		NotBefore:    time.Now().Add(-1 * time.Hour),
-		NotAfter:     expiry,
-	}
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
-	require.NoError(t, err)
-
 	ks := keystorego.New()
-	err = ks.SetTrustedCertificateEntry("test-alias", keystorego.TrustedCertificateEntry{
-		Certificate: keystorego.Certificate{
-			Type:    "X.509",
-			Content: certDER,
-		},
-	})
-	require.NoError(t, err)
+
+	for i := range numTrustedCerts {
+		privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		template := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(i + 1)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("jks-trusted-%d.example.com", i)},
+			Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+		require.NoError(t, err)
+
+		err = ks.SetTrustedCertificateEntry(fmt.Sprintf("trusted-alias-%d", i), keystorego.TrustedCertificateEntry{
+			Certificate: keystorego.Certificate{
+				Type:    "X.509",
+				Content: certDER,
+			},
+		})
+		require.NoError(t, err)
+	}
+
+	for i := range numPrivateKeys {
+		issuerKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		issuerTemplate := &x509.Certificate{
+			SerialNumber: big.NewInt(1),
+			Subject:      pkix.Name{CommonName: "JKSIssuer"},
+			Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		issuerCertDER, err := x509.CreateCertificate(rand.Reader, issuerTemplate, issuerTemplate, &issuerKey.PublicKey, issuerKey)
+		require.NoError(t, err)
+
+		issuerCert, err := x509.ParseCertificate(issuerCertDER)
+		require.NoError(t, err)
+
+		privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		template := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(numTrustedCerts + i + 1)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("jks-private-%d.example.com", i)},
+			Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, template, issuerCert, &privKey.PublicKey, issuerKey)
+		require.NoError(t, err)
+
+		privKeyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
+		require.NoError(t, err)
+
+		err = ks.SetPrivateKeyEntry(fmt.Sprintf("private-alias-%d", i), keystorego.PrivateKeyEntry{
+			PrivateKey: privKeyDER,
+			CertificateChain: []keystorego.Certificate{
+				{Type: "X.509", Content: certDER},
+				{Type: "X.509", Content: issuerCertDER},
+			},
+		}, []byte(password))
+		require.NoError(t, err)
+	}
 
 	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.jks")
 	require.NoError(t, err)
@@ -157,23 +229,39 @@ func createMockJKSFile(t *testing.T, expiry time.Time, password string) string {
 func createMockPKCS12File(t *testing.T, expiry time.Time, password string) string {
 	t.Helper()
 
+	issuerKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	issuerTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject:      pkix.Name{CommonName: "PKCS12Issuer"},
+		Issuer:       pkix.Name{CommonName: "PKCS12Issuer"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     expiry,
+	}
+	issuerCertDER, err := x509.CreateCertificate(rand.Reader, issuerTemplate, issuerTemplate, &issuerKey.PublicKey, issuerKey)
+	require.NoError(t, err)
+
+	issuerCert, err := x509.ParseCertificate(issuerCertDER)
+	require.NoError(t, err)
+
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(2),
+		SerialNumber: big.NewInt(3),
 		Subject:      pkix.Name{CommonName: "pkcs12-test.example.com"},
 		Issuer:       pkix.Name{CommonName: "PKCS12Issuer"},
 		NotBefore:    time.Now().Add(-1 * time.Hour),
 		NotAfter:     expiry,
 	}
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	certDER, err := x509.CreateCertificate(rand.Reader, template, issuerCert, &privKey.PublicKey, issuerKey)
 	require.NoError(t, err)
 
 	cert, err := x509.ParseCertificate(certDER)
 	require.NoError(t, err)
 
-	pfxData, err := pkcs12.Modern.Encode(privKey, cert, nil, password)
+	pfxData, err := pkcs12.Modern.Encode(privKey, cert, []*x509.Certificate{issuerCert}, password)
 	require.NoError(t, err)
 
 	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.p12")
@@ -438,6 +526,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
 	metric := ilms.Metrics().At(0)
+	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
@@ -456,7 +545,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 }
 
 func TestScrape_ValidJKSCertificate(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -482,14 +571,14 @@ func TestScrape_ValidJKSCertificate(t *testing.T) {
 
 	dp := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
 	commonName, _ := dp.Attributes().Get("tlscheck.x509.cn")
-	require.Equal(t, "jks-test.example.com", commonName.AsString())
+	require.Equal(t, "jks-trusted-0.example.com", commonName.AsString())
 
 	timeLeft := dp.IntValue()
 	require.Positive(t, timeLeft, "Time left should be positive for a valid JKS cert")
 }
 
 func TestScrape_ExpiredJKSCertificate(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -512,7 +601,7 @@ func TestScrape_ExpiredJKSCertificate(t *testing.T) {
 }
 
 func TestScrape_WrongPasswordJKS(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct-password")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct-password", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -529,6 +618,71 @@ func TestScrape_WrongPasswordJKS(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.Error(t, err)
 	require.Equal(t, 0, metrics.DataPointCount())
+}
+
+func TestScrape_JKSMultipleAliases(t *testing.T) {
+	testCases := []struct {
+		scrapeAllCerts bool
+		expectedCNs    map[string]bool
+	}{
+		{
+			scrapeAllCerts: false,
+			expectedCNs: map[string]bool{
+				"jks-trusted-0.example.com": true,
+				"jks-trusted-1.example.com": true,
+				"jks-private-0.example.com": true,
+			},
+		},
+		{
+			scrapeAllCerts: true,
+			expectedCNs: map[string]bool{
+				"jks-trusted-0.example.com": true,
+				"jks-trusted-1.example.com": true,
+				"jks-private-0.example.com": true,
+				"JKSIssuer":                 true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprint("ScrapeAllCerts=", tc.scrapeAllCerts), func(t *testing.T) {
+			jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 2, 1)
+			cfg := &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:       jksFile,
+						FileFormat:     FileFormatJKS,
+						Password:       configopaque.String("changeit"),
+						ScrapeAllCerts: tc.scrapeAllCerts,
+					},
+				},
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			}
+			factory := receivertest.NewNopFactory()
+			settings := receivertest.NewNopSettings(factory.Type())
+			s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+			metrics, err := s.scrape(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, len(tc.expectedCNs), metrics.ResourceMetrics().Len())
+
+			commonNames := make(map[string]bool)
+			for i := range metrics.ResourceMetrics().Len() {
+				rm := metrics.ResourceMetrics().At(i)
+				target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+				require.True(t, exists)
+				require.Equal(t, jksFile, target.AsString())
+
+				dps := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
+				require.Equal(t, 1, dps.Len())
+				dp := dps.At(0)
+				cn, _ := dp.Attributes().Get("tlscheck.x509.cn")
+				commonNames[cn.AsString()] = true
+				require.Positive(t, dp.IntValue(), "Time left should be positive for a valid JKS cert")
+			}
+			require.Equal(t, tc.expectedCNs, commonNames)
+		})
+	}
 }
 
 func TestScrape_ValidPKCS12Certificate(t *testing.T) {
@@ -599,7 +753,7 @@ func TestScrape_WrongPasswordPKCS12(t *testing.T) {
 }
 
 func TestScrape_AutoDetectJKSByExtension(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	// FileFormat deliberately omitted; resolveFileFormat infers JKS from ".jks" extension
 	cfg := &Config{
 		Targets: []*CertificateTarget{
@@ -636,6 +790,137 @@ func TestScrape_AutoDetectPKCS12ByExtension(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+}
+
+func TestScrape_AllEndpointCertificates(t *testing.T) {
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "leaf.example.com:443",
+				},
+				ScrapeAllCerts: true,
+			},
+		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateMultipleCerts)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 3, metrics.ResourceMetrics().Len())
+
+	expectedAttrs := []struct {
+		issuer     string
+		commonName string
+	}{
+		{issuer: "CN=IntermediateCA", commonName: "leaf.example.com"},
+		{issuer: "CN=RootCA", commonName: "IntermediateCA"},
+		{issuer: "CN=RootCA", commonName: "RootCA"},
+	}
+	for i, expected := range expectedAttrs {
+		rm := metrics.ResourceMetrics().At(i)
+		target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+		require.True(t, exists)
+		assert.Equal(t, "leaf.example.com:443", target.AsString())
+
+		metric := rm.ScopeMetrics().At(0).Metrics().At(0)
+		assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
+
+		dp := metric.Gauge().DataPoints().At(0)
+		attributes := dp.Attributes()
+		issuer, _ := attributes.Get("tlscheck.x509.issuer")
+		commonName, _ := attributes.Get("tlscheck.x509.cn")
+		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for cert %d", i)
+		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for cert %d", i)
+		assert.Positive(t, dp.IntValue(), "Time left should be positive for a valid cert %d", i)
+	}
+}
+
+func TestScrape_DefaultEndpointOnlyLeafCert(t *testing.T) {
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "leaf.example.com:443",
+				},
+			},
+		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateMultipleCerts)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	metric := rm.ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, 1, metric.Gauge().DataPoints().Len(), "Without ScrapeAllCerts, only the leaf cert should be scraped")
+
+	dp := metric.Gauge().DataPoints().At(0)
+	commonName, _ := dp.Attributes().Get("tlscheck.x509.cn")
+	assert.Equal(t, "leaf.example.com", commonName.AsString())
+}
+
+func TestScrape_AllPEMCertificates(t *testing.T) {
+	caCertFile := createMockCertFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:       caCertFile,
+				ScrapeAllCerts: true,
+			},
+		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 2, metrics.ResourceMetrics().Len())
+
+	expectedAttrs := []struct {
+		issuer     string
+		commonName string
+	}{
+		{
+			issuer:     "CN=FooIssuer",
+			commonName: "test.example.com",
+		},
+		{
+			issuer:     "CN=FooIssuer",
+			commonName: "FooIssuer",
+		},
+	}
+	for i, attrs := range expectedAttrs {
+		rm := metrics.ResourceMetrics().At(i)
+		ilms := rm.ScopeMetrics().At(0)
+		metric := ilms.Metrics().At(0)
+
+		target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+		require.True(t, exists)
+		assert.Equal(t, caCertFile, target.AsString())
+		assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
+		dp := metric.Gauge().DataPoints().At(0)
+
+		// Verify the metric attributes
+		attributes := dp.Attributes()
+		issuer, _ := attributes.Get("tlscheck.x509.issuer")
+		commonName, _ := attributes.Get("tlscheck.x509.cn")
+		assert.Equal(t, attrs.issuer, issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
+		assert.Equal(t, attrs.commonName, commonName.AsString(), "Incorrect common name for target %s", caCertFile)
+
+		// Verify positive time left on cert
+		timeLeft := dp.IntValue()
+		assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+	}
 }
 
 func TestValidateEndpoint(t *testing.T) {
