@@ -43,6 +43,7 @@ The following settings can be optionally configured and have default values:
   - serial_num_before_extension (default `false`): places the serial number before the file extension if there is one. e.g `blob_name_{serial_num}.json` instead of `blob_name.json_{serial_num}`
   - time_parser_enabled (default `true`): controls whether the exporter interprets the format string as a Go time layout. When `false`, values such as `2006` or `15_04_05` are treated as literal text.
   - time_parser_ranges (default `nil`): limits time formatting to specific parts of the blob name. When not set (nil), the entire blob name is time-formatted if `time_parser_enabled` is `true`. Provide a list of character ranges like `["0-10", "15-25"]` to only apply time formatting within those positions. For example, if your blob name is `prefix/2006/01/02/file.json` and you set `time_parser_ranges: ["7-17"]`, only the `2006/01/02` portion will be replaced with actual date values, while `prefix/` and `/file.json` remain unchanged. This is helpful when your blob name contains patterns like `2006` that you want to keep as literal text.
+- compression (default `""`): sets the algorithm used to process the payload before uploading to Azure Blob Storage. Valid values are `gzip`, `zstd`, or no value set (uncompressed). The appropriate extension (`.gz` or `.zst`) is automatically appended to the blob name.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
 - encodings (default using encoding specified in `format`, which is `json`): if specified, uses the encoding extension to encode telemetry data. Overrides format.
   - logs (default `nil`): encoding component id.
@@ -108,6 +109,7 @@ exporter:
     append_blob:
       enabled: true
       separator: "\n"
+    compression: gzip  # or "zstd" or leave unset for no compression
 ```
 
 ### Append Blob
