@@ -84,6 +84,12 @@ type attribute struct {
 	Value string
 }
 
+// scopeCacheKey uniquely identifies an instrumentation scope within a request.
+type scopeCacheKey struct {
+	Scope     identity.Scope
+	SchemaURL string
+}
+
 // metricIdentity contains all the components that uniquely identify a metric.
 // Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
@@ -325,6 +331,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
+		scopeCache  = make(map[scopeCacheKey]pmetric.ScopeMetrics)
 		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) had their resource attributes modified — for example, through target_info.
 		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
 		// This ensures that future requests start with the enriched resource attributes already applied.
@@ -390,7 +397,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, &stats, modifiedResourceMetric, exemplarMap)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap)
 			continue
 		}
 
@@ -409,19 +416,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metricKey := metricID.Hash()
 
 		// Find or create scope
-		var scope pmetric.ScopeMetrics
-		var foundScope bool
-		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
-			s := rm.ScopeMetrics().At(i)
-			if scopeMatchesInfo(s, si) {
-				scope = s
-				foundScope = true
-				break
-			}
-		}
-		if !foundScope {
+		cacheKey := scopeCacheKey{Scope: metricID.Scope, SchemaURL: si.SchemaURL}
+		scope, ok := scopeCache[cacheKey]
+		if !ok {
 			scope = rm.ScopeMetrics().AppendEmpty()
 			applyScopeInfo(scope, si)
+			scopeCache[cacheKey] = scope
 		}
 
 		// Get or create metric
@@ -510,6 +510,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	si scopeInfo,
 	metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
+	scopeCache map[scopeCacheKey]pmetric.ScopeMetrics,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[uint64]pmetric.ExemplarSlice,
@@ -568,19 +569,14 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			scopeID = identity.OfScope(resourceID, is)
 		}
 
-		// Find or create scope (search each time since different histograms might need different scopes)
-		var foundScope bool
-		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
-			s := rm.ScopeMetrics().At(i)
-			if scopeMatchesInfo(s, si) {
-				scope = s
-				foundScope = true
-				break
-			}
-		}
-		if !foundScope {
+		// Find or create scope
+		histScopeKey := scopeCacheKey{Scope: scopeID, SchemaURL: si.SchemaURL}
+		if s, ok := scopeCache[histScopeKey]; ok {
+			scope = s
+		} else {
 			scope = rm.ScopeMetrics().AppendEmpty()
 			applyScopeInfo(scope, si)
+			scopeCache[histScopeKey] = scope
 		}
 
 		h := scopeID.Hash()
@@ -936,22 +932,6 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 	})
 
 	return si
-}
-
-func scopeMatchesInfo(sm pmetric.ScopeMetrics, si scopeInfo) bool {
-	if sm.Scope().Name() != si.Name || sm.Scope().Version() != si.Version || sm.SchemaUrl() != si.SchemaURL {
-		return false
-	}
-	if sm.Scope().Attributes().Len() != len(si.scopeAttrs) {
-		return false
-	}
-	for _, kv := range si.scopeAttrs {
-		v, ok := sm.Scope().Attributes().Get(kv.Key)
-		if !ok || v.Str() != kv.Value {
-			return false
-		}
-	}
-	return true
 }
 
 func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
