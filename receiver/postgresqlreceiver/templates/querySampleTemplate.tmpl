@@ -23,7 +23,9 @@ SELECT
       NULL
     END AS duration_ms,
     -- Blocking info
-    COALESCE(pg_blocking_pids(sa.pid)::TEXT, '{}') AS blocking_pids,
+    CASE WHEN cardinality(pg_blocking_pids(sa.pid)) > 0
+         THEN pg_blocking_pids(sa.pid)::TEXT
+         ELSE '' END AS blocking_pids,
     CASE WHEN bl.waitstart IS NOT NULL
          THEN to_char(bl.waitstart AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
          ELSE '' END AS blocking_start_time,
