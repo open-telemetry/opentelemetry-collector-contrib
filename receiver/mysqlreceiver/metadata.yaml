@@ -13,11 +13,24 @@ status:
     emeritus: [djaglowski]
 
 reaggregation_enabled: true
+override_value_enabled: true
 
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
     enabled: true
+    type: string
+  service.instance.id:
+    description: A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace.
+    enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:mysql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
