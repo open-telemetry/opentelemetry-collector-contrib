@@ -183,6 +183,32 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 	}
 }
 
+func TestTracePayloadApiV02HostnamePropagation(t *testing.T) {
+	traces := getTraces(t)
+	chunks := traceChunksFromTraces(traces)
+
+	const agentHostname = "agent-host-i-0123456789abcdef0"
+	agentPayload := pb.AgentPayload{
+		HostName: agentHostname,
+		TracerPayloads: []*pb.TracerPayload{
+			// Hostname empty -> should inherit the AgentPayload host.
+			{Chunks: chunks},
+			// Hostname already set -> must be preserved.
+			{Hostname: "tracer-set-host", Chunks: chunks},
+		},
+	}
+
+	bytez, err := proto.Marshal(&agentPayload)
+	require.NoError(t, err)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v0.2/traces", io.NopCloser(bytes.NewReader(bytez)))
+
+	translated, err := HandleTracesPayload(req)
+	require.NoError(t, err)
+	require.Len(t, translated, 2)
+	assert.Equal(t, agentHostname, translated[0].Hostname, "empty TracerPayload.Hostname should inherit AgentPayload.HostName")
+	assert.Equal(t, "tracer-set-host", translated[1].Hostname, "existing TracerPayload.Hostname must be preserved")
+}
+
 func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 	numberOfTraces := 2
 	var tracerPayloads []*pb.TracerPayload

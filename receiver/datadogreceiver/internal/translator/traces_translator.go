@@ -528,6 +528,17 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			return nil, err
 		}
 
+		// The Datadog Agent reports the host on the AgentPayload envelope rather
+		// than on each inner TracerPayload (whose Hostname is only populated when
+		// the tracer itself supplied one). Propagate it down so downstream host
+		// resolution can identify the source host instead of falling back to the
+		// collector's own hostname. Per-payload hostnames already set are kept.
+		for _, tracerPayload := range agentPayload.TracerPayloads {
+			if tracerPayload.Hostname == "" {
+				tracerPayload.Hostname = agentPayload.HostName
+			}
+		}
+
 		return agentPayload.TracerPayloads, err
 
 	default:
