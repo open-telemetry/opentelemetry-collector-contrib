@@ -153,6 +153,26 @@ A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is 
 
 The final path in the schema URL _MUST_ be the schema version and the preceding portion of the URL is the _Schema Family_.
 
+### Supported file formats
+
+The processor auto-detects the schema document format via the `file_format` field returned by the schema URL. No configuration is required.
+
+| `file_format` | Status | Notes |
+|---|---|---|
+| `1.0.0`, `1.1.0` | Supported | OTel Schema File Format v1.0 / v1.1 |
+| `manifest/2.0` | Supported | v2 manifest ([OTEP #4815](https://github.com/open-telemetry/opentelemetry-specification/pull/4815)). Processor follows `resolved_registry_uri` to fetch the resolved registry. Both fetches go through the same provider chain, so caching, retry, and storage apply to both. |
+| `resolved/2.0` | Supported | v2 resolved registry. Renames are extracted from `deprecated.renamed_to` entries on `attribute_catalog` and `registry.{metrics,spans,events}`. |
+| `diff/2.0` | Not supported | `weaver registry diff` output is generated on demand and is not published as a static artifact. |
+| `definition/2` | Not supported | Authoring format, not intended for runtime consumption. |
+
+### v2 translation model
+
+v2 supports single-hop translation: any incoming version older than the resolved registry's head version is translated by walking the registry's `deprecated.renamed_to` entries (old name to current name). Unmapped names pass through unchanged. Downgrade (incoming version newer than target) works via the reversed map.
+
+v2's attribute catalog is flat: there is no per-signal scoping. A rename recorded on an attribute applies to every signal that carries it. Span name, metric name, and span event name renames are kept per signal under `registry.{spans,metrics,events}`.
+
+Arbitrary pairwise translation between two non-head registries (e.g. 1.30 to 1.34 when the configured target is 1.40) is not supported; the configured target is treated as the head.
+
 ## Targets Schemas
 
 Targets define a set of schema URLs with a schema identifier that will be used to translate any schema URL that matches the target URL to that version.
