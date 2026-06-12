@@ -41,7 +41,7 @@ func NewParser(cfg *Config) *Parser {
 }
 
 func (p *Parser) Parse() (*Schema, error) {
-	return p.ParsePattern(".")
+	return p.ParsePattern(p.config.Pattern)
 }
 
 func (p *Parser) ParsePattern(pattern string) (*Schema, error) {

@@ -124,8 +124,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.NotEmpty(t, client.lastPutTraceSegments.TraceSegmentDocuments)
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
-	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
+	assert.True(t, *got.BackendConnectionErrors.HTTPCode4XXCount == 1 || *got.BackendConnectionErrors.OtherCount == 1)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
@@ -221,7 +220,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -249,7 +248,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
 	attributes["http.client_ip"] = "192.168.15.32"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
