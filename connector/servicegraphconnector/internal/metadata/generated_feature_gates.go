@@ -10,7 +10,7 @@ var ConnectorServicegraphLegacyLatencyMetricNamesFeatureGate = featuregate.Globa
 	"connector.servicegraph.legacyLatencyMetricNames",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, connector uses legacy latency metric names."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743"),
 	featuregate.WithRegisterFromVersion("v0.80.0"),
 )
 

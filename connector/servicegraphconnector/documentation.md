@@ -36,7 +36,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `connector.servicegraph.legacyLatencyMetricNames` | alpha | When enabled, connector uses legacy latency metric names. | v0.80.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578) |
+| `connector.servicegraph.legacyLatencyMetricNames` | alpha | When enabled, connector uses legacy latency metric names. | v0.80.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743) |
 | `connector.servicegraph.legacyLatencyUnitMs` | alpha | When enabled, connector reports latency in milliseconds, instead of seconds. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488) |
 | `connector.servicegraph.virtualNode` | beta | When enabled and setting `virtual_node_peer_attributes` is not empty, the connector looks for the presence of these attributes in span to create virtual server nodes. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196) |
 
