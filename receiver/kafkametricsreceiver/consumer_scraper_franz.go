@@ -9,8 +9,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/twmb/franz-go/pkg/kadm"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,13 +16,12 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 type consumerScraperFranz struct {
-	adm *kadm.Client
-	cl  *kgo.Client
+	// clients is the shared franz-go admin client provider.
+	clients *franzAdminProvider
 
 	settings    receiver.Settings
 	groupFilter *regexp.Regexp
@@ -37,40 +34,27 @@ type consumerScraperFranz struct {
 func (s *consumerScraperFranz) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	s.host = host
+	if s.clients == nil {
+		s.clients = newFranzAdminProvider(s.config.ClientConfig, s.settings.Logger)
+	}
+	s.clients.retain()
 	return nil
 }
 
 func (s *consumerScraperFranz) shutdown(_ context.Context) error {
-	if s.adm != nil {
-		s.adm.Close()
-		s.adm = nil
+	if s.clients != nil {
+		s.clients.release()
 	}
-	if s.cl != nil {
-		s.cl.Close()
-		s.cl = nil
-	}
-	return nil
-}
-
-func (s *consumerScraperFranz) ensureClients(ctx context.Context) error {
-	if s.adm != nil && s.cl != nil {
-		return nil
-	}
-	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, s.host, s.config.ClientConfig, s.settings.Logger)
-	if err != nil {
-		return fmt.Errorf("failed to create franz-go admin client: %w", err)
-	}
-	s.adm = adm
-	s.cl = cl
 	return nil
 }
 
 func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if err := s.ensureClients(ctx); err != nil {
+	adm, err := s.clients.admin(ctx, s.host)
+	if err != nil {
 		return pmetric.Metrics{}, err
 	}
 
-	lgs, err := s.adm.ListGroupsByType(ctx, []string{"classic", "consumer"})
+	lgs, err := adm.ListGroupsByType(ctx, []string{"classic", "consumer"})
 	if err != nil {
 		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListGroupsByType failed: %w", err)
 	}
@@ -82,7 +66,7 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 		}
 	}
 
-	dgls, err := s.adm.Lag(ctx, matchedGrpIDs...)
+	dgls, err := adm.Lag(ctx, matchedGrpIDs...)
 	if err != nil {
 		return pmetric.Metrics{}, fmt.Errorf("franz-go: Lag failed: %w", err)
 	}
@@ -136,7 +120,7 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 }
 
 // Factory helper for franz-go path (selected under the feature gate later).
-func createConsumerScraperFranz(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
+func createConsumerScraperFranz(_ context.Context, cfg Config, settings receiver.Settings, clients *franzAdminProvider) (scraper.Metrics, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
@@ -150,6 +134,7 @@ func createConsumerScraperFranz(_ context.Context, cfg Config, settings receiver
 		groupFilter: groupFilter,
 		topicFilter: topicFilter,
 		config:      cfg,
+		clients:     clients,
 	}
 	return scraper.NewMetrics(
 		s.scrape,

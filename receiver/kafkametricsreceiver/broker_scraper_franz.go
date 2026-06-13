@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/twmb/franz-go/pkg/kadm"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -19,16 +17,14 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 const logRetentionHours = "log.retention.hours"
 
 type brokerScraperFranz struct {
-	// franz-go handles (lazy created on first scrape)
-	adm *kadm.Client
-	cl  *kgo.Client
+	// clients is the shared franz-go admin client provider.
+	clients *franzAdminProvider
 
 	settings receiver.Settings
 	config   Config
@@ -39,38 +35,25 @@ type brokerScraperFranz struct {
 func (s *brokerScraperFranz) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	s.host = host
+	if s.clients == nil {
+		s.clients = newFranzAdminProvider(s.config.ClientConfig, s.settings.Logger)
+	}
+	s.clients.retain()
 	return nil
 }
 
 func (s *brokerScraperFranz) shutdown(context.Context) error {
-	if s.adm != nil {
-		s.adm.Close()
-		s.adm = nil
+	if s.clients != nil {
+		s.clients.release()
 	}
-	if s.cl != nil {
-		s.cl.Close()
-		s.cl = nil
-	}
-	return nil
-}
-
-func (s *brokerScraperFranz) ensureClients(ctx context.Context) error {
-	if s.cl != nil && s.adm != nil {
-		return nil
-	}
-	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, s.host, s.config.ClientConfig, s.settings.Logger)
-	if err != nil {
-		return fmt.Errorf("failed to create franz-go admin client: %w", err)
-	}
-	s.adm = adm
-	s.cl = cl
 	return nil
 }
 
 func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	scrapeErrs := scrapererror.ScrapeErrors{}
 
-	if err := s.ensureClients(ctx); err != nil {
+	adm, err := s.clients.admin(ctx, s.host)
+	if err != nil {
 		return pmetric.Metrics{}, err
 	}
 
@@ -79,7 +62,7 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
 	// ---- brokers count ----
-	bdetails, err := s.adm.ListBrokers(ctx)
+	bdetails, err := adm.ListBrokers(ctx)
 	if err != nil {
 		// If we cannot list brokers, emit what we have (resource attrs) and return the error
 		scrapeErrs.Add(err)
@@ -93,7 +76,7 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 		return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 	}
 
-	res, err := s.adm.DescribeBrokerConfigs(ctx, brokerIDs...)
+	res, err := adm.DescribeBrokerConfigs(ctx, brokerIDs...)
 	if err != nil {
 		s.settings.Logger.Warn("franz-go: DescribeBrokerConfigs failed", zap.Error(err))
 		scrapeErrs.AddPartial(len(brokerIDs), fmt.Errorf("DescribeBrokerConfigs: %w", err))
@@ -131,10 +114,11 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 }
 
 // factory for franz-go scraper (internal; selected via gate at the call site later)
-func createBrokerScraperFranz(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
+func createBrokerScraperFranz(_ context.Context, cfg Config, settings receiver.Settings, clients *franzAdminProvider) (scraper.Metrics, error) {
 	s := &brokerScraperFranz{
 		settings: settings,
 		config:   cfg,
+		clients:  clients,
 	}
 	return scraper.NewMetrics(
 		s.scrape,
