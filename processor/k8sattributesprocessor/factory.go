@@ -275,7 +275,7 @@ func createProcessorOpts(cfg component.Config) []option {
 		withDeploymentNameFromReplicaSet(oCfg.Extract.DeploymentNameFromReplicaSet),
 		// filters
 		withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar),
-		withFilterNamespace(oCfg.Filter.Namespace),
+		withFilterNamespace(oCfg.Filter.Namespace...),
 		withFilterLabels(oCfg.Filter.Labels...),
 		withFilterFields(oCfg.Filter.Fields...),
 		withAPIConfig(oCfg.APIConfig),

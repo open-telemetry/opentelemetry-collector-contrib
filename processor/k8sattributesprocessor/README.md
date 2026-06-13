@@ -428,13 +428,13 @@ processors:
 
 ### Example 3: Production Deployment with Namespace Filtering
 
-Configuration for monitoring a specific namespace with comprehensive metadata:
+Configuration for monitoring specific namespaces with comprehensive metadata:
 
 ```yaml
 processors:
   k8s_attributes:
     filter:
-      namespace: production
+      namespace: [production, shared-services]
     extract:
       metadata:
         - k8s.namespace.name
@@ -559,13 +559,13 @@ roleRef:
 ```
 
 ### Namespace-scoped RBAC
-When running the k8sattributesprocessor to receive telemetry traffic from pods in a specific namespace, you can use a k8s `Role` and `Rolebinding` to provide collector access to query pods and replicasets in the namespace. This would require setting the `filter::namespace` config as shown below.
+When running the k8sattributesprocessor to receive telemetry traffic from pods in one or more specific namespaces, you can use a k8s `Role` and `Rolebinding` to provide collector access to query pods and replicasets in those namespaces. This would require setting the `filter::namespace` config as shown below.
 ```yaml
 k8s_attributes:
   filter:
-    namespace: <WORKLOAD_NAMESPACE>
+    namespace: [<WORKLOAD_NAMESPACE_1>, <WORKLOAD_NAMESPACE_2>]
 ```
-With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment label/annotation extraction) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment label/annotation extraction) in the selected namespace(s). Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 

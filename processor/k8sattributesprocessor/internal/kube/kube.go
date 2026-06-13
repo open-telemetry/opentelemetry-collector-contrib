@@ -179,10 +179,11 @@ type deleteRequest struct {
 // for performance reasons. We can support adding additional custom filters
 // in future if there is a real need.
 type Filters struct {
-	Node      string
-	Namespace string
-	Fields    []FieldFilter
-	Labels    []LabelFilter
+	Node       string
+	Namespace  string
+	Namespaces []string
+	Fields     []FieldFilter
+	Labels     []LabelFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.

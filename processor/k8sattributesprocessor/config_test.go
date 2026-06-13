@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
-					Namespace:      "ns2",
+					Namespace:      []string{"ns2"},
 					Node:           "ip-111.us-west-2.compute.internal",
 					NodeFromEnvVar: "K8S_NODE",
 					Labels: []FieldFilterConfig{
@@ -111,6 +111,20 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "multi_namespace"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+				},
+				Filter: FilterConfig{
+					Namespace: []string{"team-a", "team-b"},
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
 			},
 		},
 		{
@@ -488,7 +502,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestFilterConfigInvalidEnvVar(t *testing.T) {
 	f := FilterConfig{
-		Namespace:      "ns2",
+		Namespace:      []string{"ns2"},
 		NodeFromEnvVar: "K8S_NODE",
 		Labels:         []FieldFilterConfig{},
 		Fields:         []FieldFilterConfig{},
