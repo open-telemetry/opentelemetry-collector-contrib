@@ -36,8 +36,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.154.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260611154946-8ae0933981eb // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260611154946-8ae0933981eb // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260612191519-af182d232650 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect

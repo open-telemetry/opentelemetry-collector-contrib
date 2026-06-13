@@ -22,8 +22,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/component v1.60.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260612191519-af182d232650 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260611154946-8ae0933981eb // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260611154946-8ae0933981eb // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260612191519-af182d232650 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/pipeline v1.60.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
