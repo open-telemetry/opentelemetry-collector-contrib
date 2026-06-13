@@ -2,6 +2,10 @@ $defs:
   query_sample:
     type: object
     properties:
+      allowed_comment_keys:
+        type: array
+        items:
+          type: string
       max_rows_per_query:
         type: integer
         x-customType: uint64
@@ -14,6 +18,10 @@ $defs:
   top_query_collection:
     type: object
     properties:
+      allowed_comment_keys:
+        type: array
+        items:
+          type: string
       collection_interval:
         type: string
         format: duration
