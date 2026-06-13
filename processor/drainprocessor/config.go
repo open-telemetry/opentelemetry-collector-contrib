@@ -48,6 +48,17 @@ type Config struct {
 	// template string to. Default: "log.record.template".
 	TemplateAttribute string `mapstructure:"template_attribute"`
 
+	// ExtractParameters, when true, writes the body tokens at <*> positions of
+	// the matched template as a slice attribute on the log record. The
+	// attribute is only set when at least one parameter is extracted. Default:
+	// false.
+	ExtractParameters bool `mapstructure:"extract_parameters"`
+
+	// ParamsAttribute is the log record attribute key for the extracted
+	// parameter slice. Only consulted when ExtractParameters is true. Default:
+	// "log.record.template.params".
+	ParamsAttribute string `mapstructure:"params_attribute"`
+
 	// SeedTemplates is a list of pre-known template strings to train on at
 	// startup before any live logs arrive. Improves template stability across
 	// restarts for known log patterns.

@@ -12,6 +12,7 @@ package drain // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"encoding/json"
 	"math"
+	"strings"
 
 	drain3 "github.com/jaeyo/go-drain3/pkg/drain3"
 )
@@ -33,7 +34,8 @@ type Config struct {
 
 // Drain wraps the go-drain3 log clustering engine.
 type Drain struct {
-	inner *drain3.Drain
+	inner           *drain3.Drain
+	extraDelimiters []string
 }
 
 // NewDrain constructs a Drain instance from the provided Config.
@@ -55,23 +57,39 @@ func NewDrain(cfg Config) (*Drain, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Drain{inner: inner}, nil
+	return &Drain{inner: inner, extraDelimiters: cfg.ExtraDelimiters}, nil
+}
+
+// Tokenise splits s the same way go-drain3 does internally: trim whitespace,
+// replace each configured extra delimiter with a space, then split on " ".
+// Exposed so callers building per-record positional metadata (e.g. parameter
+// extraction) tokenise identically to the parse tree.
+func (d *Drain) Tokenise(s string) []string {
+	s = strings.TrimSpace(s)
+	for _, delim := range d.extraDelimiters {
+		s = strings.ReplaceAll(s, delim, " ")
+	}
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, " ")
 }
 
 // Train feeds line to the Drain tree, updating or creating a cluster.
-// Returns the derived template string.
+// Returns the derived template string and its underlying token slice (already
+// split on " "), avoiding the need for callers to re-split the template.
 // An error is returned only on internal go-drain3 failures; callers should
 // log a warning and skip annotation rather than failing the pipeline.
-func (d *Drain) Train(line string) (templateStr string, err error) {
+func (d *Drain) Train(line string) (templateStr string, tokens []string, err error) {
 	cluster, _, err := d.inner.AddLogMessage(line)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if cluster == nil {
 		// go-drain3 returned no cluster without an error; treat as unannotatable.
-		return "", nil
+		return "", nil, nil
 	}
-	return cluster.GetTemplate(), nil
+	return cluster.GetTemplate(), cluster.LogTemplateTokens, nil
 }
 
 // Match searches the existing tree for a cluster matching line without

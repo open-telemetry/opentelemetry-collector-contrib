@@ -73,7 +73,7 @@ func (p *drainProcessor) seed() {
 		if strings.TrimSpace(tmpl) == "" {
 			continue
 		}
-		if _, err := p.drain.Train(tmpl); err != nil {
+		if _, _, err := p.drain.Train(tmpl); err != nil {
 			p.logger.Warn("failed to seed template, skipping", zap.String("template", tmpl), zap.Error(err))
 		}
 	}
@@ -81,7 +81,7 @@ func (p *drainProcessor) seed() {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		if _, err := p.drain.Train(line); err != nil {
+		if _, _, err := p.drain.Train(line); err != nil {
 			p.logger.Warn("failed to seed log line, skipping", zap.String("line", line), zap.Error(err))
 		}
 	}
@@ -159,7 +159,7 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	}
 
 	p.mu.Lock()
-	tmpl, err := p.drain.Train(text)
+	tmpl, tmplTokens, err := p.drain.Train(text)
 	if !p.warmedUp && p.drain.ClusterCount() >= p.config.WarmupMinClusters {
 		p.warmedUp = true
 	}
@@ -175,7 +175,33 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	}
 
 	lr.Attributes().PutStr(p.config.TemplateAttribute, tmpl)
+	if p.config.ExtractParameters {
+		p.extractParams(lr, text, tmplTokens)
+	}
 	p.telemetry.ProcessorDrainLogRecordsAnnotated.Add(ctx, 1)
+}
+
+// extractParams writes body tokens at <*> positions of the template as a slice
+// attribute. The slice is only created when at least one parameter is present.
+func (p *drainProcessor) extractParams(lr plog.LogRecord, body string, tmplTokens []string) {
+	bodyTokens := p.drain.Tokenise(body)
+	if len(bodyTokens) == 0 || len(bodyTokens) != len(tmplTokens) {
+		return
+	}
+	var params []string
+	for i, t := range tmplTokens {
+		if t == "<*>" {
+			params = append(params, bodyTokens[i])
+		}
+	}
+	if len(params) == 0 {
+		return
+	}
+	slice := lr.Attributes().PutEmptySlice(p.config.ParamsAttribute)
+	slice.EnsureCapacity(len(params))
+	for _, v := range params {
+		slice.AppendEmpty().SetStr(v)
+	}
 }
 
 // extractBody returns the text to feed to Drain for the given log record.

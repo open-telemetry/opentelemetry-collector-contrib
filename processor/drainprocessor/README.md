@@ -42,6 +42,10 @@ processors:
     # Output attribute name
     template_attribute: "log.record.template"    # default
 
+    # Parameter extraction (optional)
+    extract_parameters: false                          # default: false
+    params_attribute: "log.record.template.params"     # default
+
     # Seeding (optional)
     seed_templates: []
     seed_logs: []
@@ -65,6 +69,8 @@ processors:
 | `extra_delimiters` | []string | `[]` | Additional token delimiters beyond whitespace (e.g. `[",", ":"]`). |
 | `body_field` | string | `""` | If set, and the log body is a structured map, the value of this top-level key is used as the text to template instead of the full body. |
 | `template_attribute` | string | `"log.record.template"` | Attribute key written with the derived template string. |
+| `extract_parameters` | bool | `false` | When `true`, the body tokens occupying `<*>` positions of the matched template are written as a string slice attribute (see [Parameter extraction](#parameter-extraction)). |
+| `params_attribute` | string | `"log.record.template.params"` | Attribute key for the extracted parameter slice. Only consulted when `extract_parameters` is `true`. |
 | `seed_templates` | []string | `[]` | Template strings to pre-load at startup (see [Seeding](#seeding)). |
 | `seed_logs` | []string | `[]` | Raw example log lines to train on at startup (see [Seeding](#seeding)). |
 | `warmup_min_clusters` | int | `0` | Number of distinct clusters that must be observed before annotation is enabled. `0` disables warmup suppression (see [Warmup suppression](#warmup-suppression)). |
@@ -140,15 +146,40 @@ The processor emits the following internal telemetry metrics:
 
 ## Output attributes
 
-The processor sets the following attribute on each log record:
+The processor sets the following attributes on each log record:
 
 | Attribute | Type | Example | Description |
 |-----------|------|---------|-------------|
 | `log.record.template` | string | `"user <*> logged in from <*>"` | The Drain-derived template string. Stable within an instance once the tree has warmed up. Use this for filtering rules. |
+| `log.record.template.params` | []string | `["alice", "10.0.0.1"]` | Optional. Body tokens at `<*>` positions in the template, in order. Only set when `extract_parameters` is `true` and the matched template has at least one `<*>` position. |
 
-The attribute name is configurable via `template_attribute`.
+The attribute names are configurable via `template_attribute` and `params_attribute`.
 
 > **Semantic conventions**: `log.record.template` aligns with the proposed OTel attribute in [open-telemetry/semantic-conventions#1283](https://github.com/open-telemetry/semantic-conventions/issues/1283) and [#2064](https://github.com/open-telemetry/semantic-conventions/issues/2064). These names may be updated if a convention is formally adopted.
+
+## Parameter extraction
+
+With `extract_parameters: true` the processor writes the body tokens at each `<*>` position of the matched template as a string slice attribute. The values appear in template order, one entry per `<*>`.
+
+```yaml
+processors:
+  drain:
+    extract_parameters: true
+```
+
+Given the body `"user alice logged in from 10.0.0.1"` and the matched template `"user <*> logged in from <*>"`, the resulting attributes are:
+
+```
+log.record.template          = "user <*> logged in from <*>"
+log.record.template.params   = ["alice", "10.0.0.1"]
+```
+
+Notes:
+
+- Extraction is positional and unnamed. No regex configuration is required.
+- Body tokenisation matches the parse tree's: whitespace plus any `extra_delimiters`.
+- The parameter slice is only written when the template contains at least one `<*>`. Fully literal templates (single-record clusters before abstraction) emit no slice.
+- During warmup suppression neither `log.record.template` nor `log.record.template.params` is written.
 
 ## Example pipeline
 
