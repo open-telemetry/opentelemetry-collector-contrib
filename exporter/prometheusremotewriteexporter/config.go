@@ -72,6 +72,12 @@ type Config struct {
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent.
 	RemoteWriteProtoMsg remoteapi.WriteMessageType `mapstructure:"protobuf_message,omitempty"`
+
+	// ConvertHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertHistogramsToNHCB bool `mapstructure:"convert_histograms_to_nhcb"`
+
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_histograms_to_nhcb is set.
+	KeepClassicHistograms bool `mapstructure:"keep_classic_histograms"`
 }
 
 type translationStrategy string

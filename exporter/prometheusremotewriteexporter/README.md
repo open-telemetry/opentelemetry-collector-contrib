@@ -76,6 +76,8 @@ The following settings can be optionally configured:
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
   - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development** and is only partially implemented, thus, not ready for usage.
+- `convert_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Works on both the RW1 and RW2 paths.
+- `keep_classic_histograms` (default = `false`): If `true` (and `convert_histograms_to_nhcb` is enabled), the original classic `_bucket`/`_sum`/`_count` series are emitted alongside the NHCB series. This is intended for a migration window, allowing both representations to be queried in parallel before cutting over. It has no effect unless `convert_histograms_to_nhcb` is also `true`.
 
 
 Example:

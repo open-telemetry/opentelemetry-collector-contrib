@@ -264,6 +264,21 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 			continue
 		}
 
+		// Emit an NHCB series under the base name; with KeepClassicHistograms also keep the classic series.
+		if settings.ConvertHistogramsToNHCB {
+			// Create the series only on success, so a conversion error leaves no empty series.
+			if h, convErr := explicitToNHCBHistogram(pt); convErr != nil {
+				errs = multierr.Append(errs, convErr)
+			} else {
+				nativeTS, _ := c.getOrCreateTimeSeries(createLabels(baseName, baseLabels))
+				nativeTS.Histograms = append(nativeTS.Histograms, h)
+				nativeTS.Exemplars = append(nativeTS.Exemplars, getPromExemplars[pmetric.HistogramDataPoint](pt)...)
+			}
+			if !settings.KeepClassicHistograms {
+				continue
+			}
+		}
+
 		// If the sum is unset, it indicates the _sum metric point should be
 		// omitted
 		if pt.HasSum() {
