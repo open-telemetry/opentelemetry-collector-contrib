@@ -138,6 +138,7 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
         - apache_spark

@@ -151,6 +151,7 @@ receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.154.1-0.20260611154946-8ae0933981eb
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.154.1-0.20260611154946-8ae0933981eb
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.154.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectoryinvreceiver v0.154.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.154.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.154.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver v0.154.0

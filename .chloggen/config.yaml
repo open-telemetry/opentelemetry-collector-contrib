@@ -236,6 +236,7 @@ components:
     - provider/s3
     - provider/secretsmanager
     - receiver/active_directory_ds
+    - receiver/active_directory_inv
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
