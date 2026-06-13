@@ -25,6 +25,8 @@ $defs:
               type: string
               enum:
                 - "cpu"
+                - "host.cpu.socket.id"
+                - "host.cpu.core.id"
             default:
               - "cpu"
       system.cpu.logical.count:
@@ -63,6 +65,8 @@ $defs:
               enum:
                 - "cpu"
                 - "state"
+                - "host.cpu.socket.id"
+                - "host.cpu.core.id"
             default:
               - "cpu"
               - "state"
@@ -88,6 +92,8 @@ $defs:
               enum:
                 - "cpu"
                 - "state"
+                - "host.cpu.socket.id"
+                - "host.cpu.core.id"
             default:
               - "cpu"
               - "state"

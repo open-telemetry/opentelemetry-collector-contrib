@@ -117,7 +117,7 @@ func (m *metricSystemCPUFrequency) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
+func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -127,6 +127,12 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyCpu) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID) {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID) {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 	}
 
 	var s string
@@ -312,7 +318,7 @@ func (m *metricSystemCPUTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -325,6 +331,12 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyHostCPUSocketID) {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyHostCPUCoreID) {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 	}
 
 	var s string
@@ -404,7 +416,7 @@ func (m *metricSystemCPUUtilization) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -417,6 +429,12 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID) {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID) {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 	}
 
 	var s string
@@ -615,8 +633,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemCPUFrequencyDataPoint adds a data point to system.cpu.frequency metric.
-func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
-	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // RecordSystemCPULogicalCountDataPoint adds a data point to system.cpu.logical.count metric.
@@ -630,13 +648,13 @@ func (mb *MetricsBuilder) RecordSystemCPUPhysicalCountDataPoint(ts pcommon.Times
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
