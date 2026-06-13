@@ -211,11 +211,11 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		err = se.updateMetadataWithHTTPClient(ctx, se.httpClient)
 		if err != nil {
 			se.logger.Warn("Initial metadata update failed, will retry asynchronously", zap.Error(err))
-			go se.updateMetadataAsync()
+			go se.updateMetadataAsync(ctx)
 		}
 	}
 
-	go se.heartbeatLoop()
+	go se.heartbeatLoop(ctx)
 
 	return nil
 }
@@ -579,13 +579,13 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 	}
 }
 
-func (se *SumologicExtension) heartbeatLoop() {
+func (se *SumologicExtension) heartbeatLoop(ctx context.Context) {
 	if se.registrationInfo.CollectorCredentialID == "" || se.registrationInfo.CollectorCredentialKey == "" {
 		se.logger.Error("Collector not registered, cannot send heartbeat")
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	innerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		// When the close channel is closed ...
@@ -603,20 +603,20 @@ func (se *SumologicExtension) heartbeatLoop() {
 			return
 
 		default:
-			err := se.sendHeartbeatWithHTTPClient(ctx, se.httpClient)
+			err := se.sendHeartbeatWithHTTPClient(innerCtx, se.httpClient)
 
 			if err != nil {
 				if errors.Is(err, errUnauthorizedHeartbeat) {
 					se.logger.Warn("Heartbeat request unauthorized, re-registering the collector")
 					var colCreds credentials.CollectorCredentials
-					colCreds, err = se.getCredentialsByRegistering(ctx)
+					colCreds, err = se.getCredentialsByRegistering(innerCtx)
 					if err != nil {
 						se.logger.Error("Heartbeat error, cannot register the collector", zap.Error(err))
 						continue
 					}
 
 					// Inject newly received credentials into extension's configuration.
-					if err = se.injectCredentials(ctx, colCreds); err != nil {
+					if err = se.injectCredentials(innerCtx, colCreds); err != nil {
 						se.logger.Error("Heartbeat error, cannot inject new collector credentials", zap.Error(err))
 						continue
 					}
@@ -838,14 +838,14 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 // backoff until the update succeeds or the collector shuts down. It is started
 // when the initial synchronous attempt in Start() fails so that startup is not
 // blocked by transient network unavailability (e.g. Windows boot race).
-func (se *SumologicExtension) updateMetadataAsync() {
-	ctx, cancel := context.WithCancel(context.Background())
+func (se *SumologicExtension) updateMetadataAsync(ctx context.Context) {
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		select {
 		case <-se.closeChan:
 			cancel()
-		case <-ctx.Done():
+		case <-ctxWithCancel.Done():
 		}
 	}()
 
@@ -863,7 +863,7 @@ func (se *SumologicExtension) updateMetadataAsync() {
 		default:
 		}
 
-		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
+		err := se.updateMetadataWithHTTPClient(ctxWithCancel, se.httpClient)
 		if err == nil {
 			se.logger.Info("Async metadata update succeeded")
 			return
