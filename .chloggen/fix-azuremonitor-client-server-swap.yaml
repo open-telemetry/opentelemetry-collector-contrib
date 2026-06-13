@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/azuremonitor
+note: Fix swapped client/server attributes in RemoteDependencyData.Target and RequestData.Source for HTTP, RPC, database, and messaging spans.
+issues: [48759]
+change_logs: [user]
