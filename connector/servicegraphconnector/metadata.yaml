@@ -10,6 +10,25 @@ status:
   codeowners:
     active: [mapno, JaredTan95]
 
+feature_gates:
+  - id: "connector.servicegraph.legacyLatencyMetricNames"
+    description: When enabled, connector uses legacy latency metric names.
+    stage: alpha
+    from_version: v0.80.0
+    reference_url: "https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"
+
+  - id: "connector.servicegraph.legacyLatencyUnitMs"
+    description: When enabled, connector reports latency in milliseconds, instead of seconds.
+    stage: alpha
+    from_version: v0.89.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488
+  
+  - id: "connector.servicegraph.virtualNode"
+    description: When enabled and setting `virtual_node_peer_attributes` is not empty, the connector looks for the presence of these attributes in span to create virtual server nodes.
+    stage: beta
+    from_version: v0.73.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196
+    
 tests:
   config:
 
