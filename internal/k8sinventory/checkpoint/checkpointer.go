@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package watch // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
+package checkpoint // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type checkpointer struct {
+type Checkpointer struct {
 	client storage.Client
 	logger *zap.Logger
 
@@ -22,24 +22,29 @@ type checkpointer struct {
 	// memory across all watch streams. Flush() drains it to persistent storage.
 	mu      sync.Mutex
 	pending map[string]string
+
+	// persistedRVs holds RVs loaded from storage at startup for dedup.
+	// Populated by Load(); read by AlreadySeen().
+	persistedMu  sync.RWMutex
+	persistedRVs map[string]int64
 }
 
 const checkpointKeyFormat = "latestResourceVersion/%s"
 
-func newCheckpointer(client storage.Client, logger *zap.Logger) *checkpointer {
-	return &checkpointer{
+func New(client storage.Client, logger *zap.Logger) *Checkpointer {
+	return &Checkpointer{
 		client:  client,
 		logger:  logger,
 		pending: make(map[string]string),
 	}
 }
 
-func (c *checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType string) (string, error) {
+func (c *Checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType string) (string, error) {
 	if c.client == nil {
 		return "", errors.New("storage client is nil")
 	}
 
-	checkPointKey := c.getCheckpointKey(namespace, objectType)
+	checkPointKey := c.CheckpointKey(namespace, objectType)
 	c.logger.Debug("Retrieving checkpoint, key: "+checkPointKey,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
@@ -67,11 +72,11 @@ func (c *checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType 
 // greater than the current one, acting as a high-watermark. This guards against
 // out-of-order resourceVersions from List() responses (which are ordered by
 // object key, not by resourceVersion).
-func (c *checkpointer) SetCheckpoint(
+func (c *Checkpointer) SetCheckpoint(
 	_ context.Context,
 	namespace, objectType, resourceVersion string,
 ) error {
-	key := c.getCheckpointKey(namespace, objectType)
+	key := c.CheckpointKey(namespace, objectType)
 	if key == "" {
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
@@ -101,7 +106,7 @@ func (c *checkpointer) SetCheckpoint(
 // Flush writes all buffered checkpoints to persistent storage. Only the latest
 // value per key is written, discarding any intermediate updates since the last
 // flush. It is safe to call concurrently from multiple goroutines.
-func (c *checkpointer) Flush(ctx context.Context) error {
+func (c *Checkpointer) Flush(ctx context.Context) error {
 	if c.client == nil {
 		return errors.New("storage client is nil")
 	}
@@ -137,9 +142,39 @@ func (c *checkpointer) Flush(ctx context.Context) error {
 	return nil
 }
 
+// Load reads the persisted RV for each namespace into memory.
+// Must be called before processing initial-list events so AlreadySeen() has data to compare against.
+func (c *Checkpointer) Load(ctx context.Context, namespaces []string, objectType string) {
+	c.persistedMu.Lock()
+	defer c.persistedMu.Unlock()
+	c.persistedRVs = make(map[string]int64)
+	for _, ns := range namespaces {
+		rv, err := c.GetCheckpoint(ctx, ns, objectType)
+		if err != nil || rv == "" {
+			continue
+		}
+		if parsed, err := strconv.ParseInt(rv, 10, 64); err == nil {
+			c.persistedRVs[ns] = parsed
+		}
+	}
+}
+
+// AlreadySeen reports whether the given resourceVersion is ≤ the persisted checkpoint
+// for the namespace, meaning the object was already processed before the last restart.
+func (c *Checkpointer) AlreadySeen(resourceVersion, namespace string) bool {
+	objRV, err := strconv.ParseInt(resourceVersion, 10, 64)
+	if err != nil {
+		return false
+	}
+	c.persistedMu.RLock()
+	persisted, exists := c.persistedRVs[namespace]
+	c.persistedMu.RUnlock()
+	return exists && objRV <= persisted
+}
+
 // DeleteCheckpoint deletes the persisted checkpoint for a given namespace and object type.
 // This is used when the persisted resourceVersion is no longer valid (e.g., after a 410 Gone error).
-func (c *checkpointer) DeleteCheckpoint(
+func (c *Checkpointer) DeleteCheckpoint(
 	ctx context.Context,
 	namespace, objectType string,
 ) error {
@@ -147,7 +182,7 @@ func (c *checkpointer) DeleteCheckpoint(
 		return errors.New("storage client is nil")
 	}
 
-	key := c.getCheckpointKey(namespace, objectType)
+	key := c.CheckpointKey(namespace, objectType)
 	if key == "" {
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
@@ -163,10 +198,10 @@ func (c *checkpointer) DeleteCheckpoint(
 	return nil
 }
 
-// getCheckpointKey generates a unique storage key
+// CheckpointKey generates a unique storage key
 // returns resourceVersion key for global watch stream (without namespace) or
 // per namespace watch stream.
-func (*checkpointer) getCheckpointKey(namespace, objectType string) string {
+func (*Checkpointer) CheckpointKey(namespace, objectType string) string {
 	// when watch stream is cluster-wide or cluster-scoped resource (no namespace),
 	// the resource version is persisted per object type only.
 	if namespace == "" {
