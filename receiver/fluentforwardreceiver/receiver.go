@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -20,6 +21,10 @@ import (
 // Give the event channel a bit of buffer to help reduce backpressure on
 // FluentBit and increase throughput.
 const eventChannelLength = 100
+const (
+	defaultACKWaitTimeout = 30 * time.Second
+	maxPendingACKs        = eventChannelLength
+)
 
 type fluentReceiver struct {
 	collector *collector
@@ -45,10 +50,10 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 		return nil, err
 	}
 
-	eventCh := make(chan event, eventChannelLength)
-	collector := newCollector(eventCh, next, set.Logger, obsrecv, telemetryBuilder)
+	eventCh := make(chan eventWithACK, eventChannelLength)
+	collector := newCollector(eventCh, next, defaultACKWaitTimeout, set.Logger, obsrecv, telemetryBuilder)
 
-	server := newServer(eventCh, set.Logger, telemetryBuilder)
+	server := newServer(eventCh, defaultACKWaitTimeout, set.Logger, telemetryBuilder)
 
 	return &fluentReceiver{
 		collector: collector,

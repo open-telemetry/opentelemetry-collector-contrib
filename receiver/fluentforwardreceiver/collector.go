@@ -5,6 +5,7 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -20,16 +21,18 @@ import (
 // allocations and GC overhead.
 type collector struct {
 	nextConsumer     consumer.Logs
-	eventCh          <-chan event
+	eventCh          <-chan eventWithACK
+	ackWaitTimeout   time.Duration
 	logger           *zap.Logger
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newCollector(eventCh <-chan event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
+func newCollector(eventCh <-chan eventWithACK, next consumer.Logs, ackWaitTimeout time.Duration, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
 	return &collector{
 		nextConsumer:     next,
 		eventCh:          eventCh,
+		ackWaitTimeout:   ackWaitTimeout,
 		logger:           logger,
 		obsrecv:          obsrecv,
 		telemetryBuilder: telemetryBuilder,
@@ -51,26 +54,53 @@ func (c *collector) processEvents(ctx context.Context) {
 			logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 			e.LogRecords().MoveAndAppendTo(logSlice)
 
+			var ackChs []chan error
+			if e.ackCh != nil {
+				ackChs = append(ackChs, e.ackCh)
+			}
+
 			// Pull out anything waiting on the eventCh to get better
 			// efficiency on LogResource allocations.
-			c.fillBufferUntilChanEmpty(logSlice)
+			ackChs = c.fillBufferUntilChanEmpty(logSlice, ackChs)
 
 			logRecordCount := out.LogRecordCount()
 			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
 			obsCtx := c.obsrecv.StartLogsOp(ctx)
-			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
+			consumeCtx, cancel := c.contextWithACKTimeout(obsCtx, len(ackChs))
+			err := c.nextConsumer.ConsumeLogs(consumeCtx, out)
+			cancel()
 			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)
+			c.completeACKs(ackChs, err)
 		}
 	}
 }
 
-func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
+func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice, ackChs []chan error) []chan error {
 	for {
 		select {
 		case e := <-c.eventCh:
 			e.LogRecords().MoveAndAppendTo(dest)
+			if e.ackCh != nil {
+				ackChs = append(ackChs, e.ackCh)
+			}
 		default:
-			return
+			return ackChs
+		}
+	}
+}
+
+func (c *collector) contextWithACKTimeout(ctx context.Context, ackCount int) (context.Context, context.CancelFunc) {
+	if ackCount == 0 || c.ackWaitTimeout <= 0 {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, c.ackWaitTimeout)
+}
+
+func (c *collector) completeACKs(ackChs []chan error, err error) {
+	for _, ackCh := range ackChs {
+		select {
+		case ackCh <- err:
+		default:
 		}
 	}
 }
