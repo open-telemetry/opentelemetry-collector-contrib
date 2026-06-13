@@ -1,0 +1,43 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: internal/aws/cwlogs
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Fix `eventBatch.exceedsLimit` rolling batches at the per-event truncation cap (256 KiB) instead of the 1 MiB per-request PutLogEvents limit. Batches now pack up to the actual service ceiling."
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [48559]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  This is a pre-existing inefficiency unrelated to the new
+  `max_event_payload_bytes` config field. `eventBatch.exceedsLimit` has
+  compared cumulative batch bytes against `maxEventPayloadBytes` (256 KiB)
+  rather than `maxRequestPayloadBytes` (1 MiB) since the original 2022 code.
+  The result: batches have been rolling at ~25% of the PutLogEvents request
+  limit. Workloads with average event size above ~25 KiB will see roughly
+  3-4x fewer PutLogEvents calls for the same data volume after this fix,
+  with no config change required.
+  The fix is also load-bearing for the new configurable per-event cap shipping
+  in the same PR: without it, opted-in users with >256 KiB events would ship
+  each event in its own PutLogEvents call rather than packing up to the 1 MiB
+  service ceiling.
+  The new threshold matches the service-documented batch-size accounting:
+  `sum(message bytes UTF-8) + 26 * num_events`. That is exactly what
+  `byteTotal` already sums (`eventPayloadBytes()` includes the 26-byte
+  `perEventHeaderBytes`), so no envelope-overhead margin is needed.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

@@ -17,20 +17,39 @@ import (
 )
 
 const (
-	// http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
-	// In truncation logic, it assuming this constant value is larger than perEventHeaderBytes + len(truncatedSuffix)
-	defaultMaxEventPayloadBytes = 1024 * 256 // 256KB
-	// http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+	// As of 2025-04-02 the CloudWatch Logs service accepts events up to 1 MiB
+	// (the previous limit was 256 KiB). This package retains a 256 KiB default
+	// for backwards compatibility — callers that need the higher cap can opt in
+	// via the WithMaxEventPayloadBytes pusher option (or, in the awscloudwatchlogs
+	// exporter, the max_event_payload_bytes config field).
+	//
+	// The truncation logic in Event.Validate assumes this value is larger than
+	// perEventHeaderBytes + len(truncatedSuffix).
+	defaultMaxEventPayloadBytes = 1024 * 256 // 256 KiB
+	// https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maxRequestEventCount   = 10000
 	perEventHeaderBytes    = 26
 	maxRequestPayloadBytes = 1024 * 1024 * 1
 
 	truncatedSuffix = "[Truncated...]"
 
+	// MaxAllowedEventPayloadBytes is the upper bound enforced by the CloudWatch
+	// Logs PutLogEvents API itself (1 MiB). Any value larger than this will be
+	// rejected by the service.
+	MaxAllowedEventPayloadBytes = maxRequestPayloadBytes
+	// MinAllowedEventPayloadBytes is the smallest value that still leaves room
+	// for the per-event header plus the truncation suffix.
+	MinAllowedEventPayloadBytes = perEventHeaderBytes + len(truncatedSuffix) + 1
+
 	eventTimestampLimitInPast  = 14 * 24 * time.Hour // None of the log events in the batch can be older than 14 days
 	evenTimestampLimitInFuture = -2 * time.Hour      // None of the log events in the batch can be more than 2 hours in the future.
 )
 
+// maxEventPayloadBytes is the package-level fallback used by callers that have
+// not opted in to a per-pusher value via WithMaxEventPayloadBytes. It is kept
+// as a mutable var for backwards compatibility with existing test code that
+// flips the cap to exercise truncation behavior.
 var maxEventPayloadBytes = defaultMaxEventPayloadBytes
 
 // Event struct to present a log event.
@@ -61,11 +80,22 @@ type StreamKey struct {
 }
 
 func (logEvent *Event) Validate(logger *zap.Logger) error {
-	if logEvent.eventPayloadBytes() > maxEventPayloadBytes {
-		logger.Warn("logpusher: the single log event size is larger than the max event payload allowed. Truncate the log event.",
-			zap.Int("SingleLogEventSize", logEvent.eventPayloadBytes()), zap.Int("maxEventPayloadBytes", maxEventPayloadBytes))
+	return logEvent.validateWithCap(logger, maxEventPayloadBytes)
+}
 
-		newPayload := (*logEvent.InputLogEvent.Message)[0:(maxEventPayloadBytes - perEventHeaderBytes - len(truncatedSuffix))]
+// validateWithCap is the cap-aware sibling of Validate. It truncates the event
+// to fit within the given per-event byte budget and applies the usual
+// timestamp checks. Public callers should use Validate (which delegates here
+// with the package-level default) unless they hold a per-pusher cap.
+func (logEvent *Event) validateWithCap(logger *zap.Logger, byteCap int) error {
+	if byteCap <= 0 {
+		byteCap = maxEventPayloadBytes
+	}
+	if logEvent.eventPayloadBytes() > byteCap {
+		logger.Warn("logpusher: the single log event size is larger than the max event payload allowed. Truncate the log event.",
+			zap.Int("SingleLogEventSize", logEvent.eventPayloadBytes()), zap.Int("maxEventPayloadBytes", byteCap))
+
+		newPayload := (*logEvent.InputLogEvent.Message)[0:(byteCap - perEventHeaderBytes - len(truncatedSuffix))]
 		newPayload += truncatedSuffix
 		logEvent.InputLogEvent.Message = &newPayload
 	}
@@ -121,9 +151,18 @@ func newEventBatch(key StreamKey) *eventBatch {
 	}
 }
 
+// exceedsLimit reports whether adding nextByteTotal more bytes would push the
+// current batch past the PutLogEvents per-request limit (maxRequestPayloadBytes,
+// 1 MiB). The per-event truncation cap (maxEventPayloadBytes, default 256 KiB)
+// is a separate limit and must not be used here; doing so caps batches at 256
+// KiB regardless of how many events would fit under the 1 MiB request ceiling.
+//
+// The 1 MiB batch-size accounting is documented by the service as
+// `sum(message bytes UTF-8) + 26 * num_events`, which is exactly what
+// byteTotal sums (eventPayloadBytes() already includes perEventHeaderBytes).
 func (batch *eventBatch) exceedsLimit(nextByteTotal int) bool {
 	return len(batch.putLogEventsInput.LogEvents) == cap(batch.putLogEventsInput.LogEvents) ||
-		batch.byteTotal+nextByteTotal > maxEventPayloadBytes
+		batch.byteTotal+nextByteTotal > maxRequestPayloadBytes
 }
 
 // isActive checks whether the eventBatch spans more than 24 hours. Returns
@@ -183,6 +222,21 @@ type Pusher interface {
 	ForceFlush(ctx context.Context) error
 }
 
+// PusherOption configures a Pusher at construction time.
+type PusherOption func(*pusherOptions)
+
+type pusherOptions struct {
+	maxEventPayloadBytes int
+}
+
+// WithMaxEventPayloadBytes overrides the per-event payload cap used to truncate
+// oversized events and decide when to roll a batch. Set to a value larger than
+// the package default (256 KiB) to take advantage of the 1 MiB CloudWatch Logs
+// PutLogEvents limit. A value <= 0 means "use the package default."
+func WithMaxEventPayloadBytes(n int) PusherOption {
+	return func(o *pusherOptions) { o.maxEventPayloadBytes = n }
+}
+
 // Struct of logPusher implemented Pusher interface.
 type logPusher struct {
 	mu     sync.Mutex
@@ -196,13 +250,19 @@ type logPusher struct {
 
 	svcStructuredLog Client
 	retryCnt         int
+
+	// maxEventPayloadBytes is the per-event truncation cap. Zero means
+	// "use the package default" (preserved for backwards compatibility
+	// with callers that have not opted in to a per-pusher value).
+	maxEventPayloadBytes int
 }
 
-// NewPusher creates a logPusher instance
+// NewPusher creates a logPusher instance.
 func NewPusher(streamKey StreamKey, retryCnt int,
 	svcStructuredLog Client, logger *zap.Logger,
+	opts ...PusherOption,
 ) Pusher {
-	pusher := newLogPusher(streamKey, svcStructuredLog, logger)
+	pusher := newLogPusher(streamKey, svcStructuredLog, logger, opts...)
 
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
@@ -215,28 +275,47 @@ func NewPusher(streamKey StreamKey, retryCnt int,
 // Only create a logPusher, but not start the instance.
 func newLogPusher(streamKey StreamKey,
 	svcStructuredLog Client, logger *zap.Logger,
+	opts ...PusherOption,
 ) *logPusher {
+	o := pusherOptions{}
+	for _, fn := range opts {
+		fn(&o)
+	}
 	pusher := &logPusher{
-		logGroupName:     aws.String(streamKey.LogGroupName),
-		logStreamName:    aws.String(streamKey.LogStreamName),
-		svcStructuredLog: svcStructuredLog,
-		logger:           logger,
+		logGroupName:         aws.String(streamKey.LogGroupName),
+		logStreamName:        aws.String(streamKey.LogStreamName),
+		svcStructuredLog:     svcStructuredLog,
+		logger:               logger,
+		maxEventPayloadBytes: o.maxEventPayloadBytes,
 	}
 	pusher.logEventBatch = newEventBatch(streamKey)
 
 	return pusher
 }
 
-// AddLogEntry Besides the limit specified by PutLogEvents API, there are some overall limit for the cloudwatchlogs
-// listed here: http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+// effectiveMaxEventPayloadBytes returns the per-pusher cap if one was set via
+// WithMaxEventPayloadBytes, otherwise the package-level default.
+func (p *logPusher) effectiveMaxEventPayloadBytes() int {
+	if p.maxEventPayloadBytes > 0 {
+		return p.maxEventPayloadBytes
+	}
+	return maxEventPayloadBytes
+}
+
+// AddLogEntry. Beyond the per-pusher cap (configurable via WithMaxEventPayloadBytes,
+// default 256 KiB), there are overall PutLogEvents limits documented at
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
 //
-// Need to pay attention to the below 2 limits:
-// Event size 256 KB (maximum). This limit cannot be changed.
-// Batch size 1 MB (maximum). This limit cannot be changed.
+// Two limits to be aware of:
+//   - Per-event size: 1 MiB hard ceiling from the service (was 256 KiB before
+//     2025-04-02). This package defaults to 256 KiB for backwards compatibility;
+//     opt in to the higher cap with WithMaxEventPayloadBytes.
+//   - Per-batch size: 1 MiB hard ceiling from the service. This is not
+//     user-configurable.
 func (p *logPusher) AddLogEntry(ctx context.Context, logEvent *Event) error {
 	var err error
 	if logEvent != nil {
-		err = logEvent.Validate(p.logger)
+		err = logEvent.validateWithCap(p.logger, p.effectiveMaxEventPayloadBytes())
 		if err != nil {
 			return err
 		}
@@ -323,14 +402,16 @@ type multiStreamPusher struct {
 	client           Client
 	pusherMap        map[StreamKey]Pusher
 	logger           *zap.Logger
+	pusherOpts       []PusherOption
 }
 
-func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logger *zap.Logger) *multiStreamPusher {
+func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logger *zap.Logger, pusherOpts ...PusherOption) *multiStreamPusher {
 	return &multiStreamPusher{
 		logStreamManager: logStreamManager,
 		client:           client,
 		logger:           logger,
 		pusherMap:        make(map[StreamKey]Pusher),
+		pusherOpts:       pusherOpts,
 	}
 }
 
@@ -343,7 +424,7 @@ func (m *multiStreamPusher) AddLogEntry(ctx context.Context, event *Event) error
 	var ok bool
 
 	if pusher, ok = m.pusherMap[event.StreamKey]; !ok {
-		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger)
+		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger, m.pusherOpts...)
 		m.pusherMap[event.StreamKey] = pusher
 	}
 
@@ -376,20 +457,24 @@ type multiStreamPusherFactory struct {
 	logStreamManager LogStreamManager
 	logger           *zap.Logger
 	client           Client
+	pusherOpts       []PusherOption
 }
 
-// Creates a new MultiStreamPusherFactory
-func NewMultiStreamPusherFactory(logStreamManager LogStreamManager, client Client, logger *zap.Logger) MultiStreamPusherFactory {
+// NewMultiStreamPusherFactory creates a new MultiStreamPusherFactory. Any
+// PusherOption supplied here is forwarded to every per-stream Pusher the
+// factory creates.
+func NewMultiStreamPusherFactory(logStreamManager LogStreamManager, client Client, logger *zap.Logger, pusherOpts ...PusherOption) MultiStreamPusherFactory {
 	return &multiStreamPusherFactory{
 		logStreamManager: logStreamManager,
 		client:           client,
 		logger:           logger,
+		pusherOpts:       pusherOpts,
 	}
 }
 
 // Factory method to create a Pusher that has support to sending events to multiple log streams
 func (msf *multiStreamPusherFactory) CreateMultiStreamPusher() Pusher {
-	return newMultiStreamPusher(msf.logStreamManager, msf.client, msf.logger)
+	return newMultiStreamPusher(msf.logStreamManager, msf.client, msf.logger, msf.pusherOpts...)
 }
 
 // Manages the creation of streams

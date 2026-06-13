@@ -53,6 +53,19 @@ type Config struct {
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
 	RawLog bool `mapstructure:"raw_log,omitempty"`
+
+	// MaxEventPayloadBytes is the per-event payload cap, in bytes, used to
+	// truncate oversized log events before they are sent to CloudWatch Logs.
+	//
+	// As of 2025-04-02 the CloudWatch Logs PutLogEvents API accepts events up
+	// to 1 MiB (1048576 bytes). Prior to that the limit was 256 KiB. To preserve
+	// backwards compatibility this exporter still defaults to 256 KiB; set this
+	// field to a higher value (e.g. 1048576) to take advantage of the larger
+	// service limit.
+	//
+	// Allowed range: 41 .. 1048576. Values outside that range fail Validate().
+	// A value of 0 means "use the package default (256 KiB)".
+	MaxEventPayloadBytes int `mapstructure:"max_event_payload_bytes,omitempty"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -80,6 +93,16 @@ func (config *Config) Validate() error {
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
+
+	if config.MaxEventPayloadBytes != 0 {
+		if config.MaxEventPayloadBytes < cwlogs.MinAllowedEventPayloadBytes {
+			return errors.New("'max_event_payload_bytes' is too small to fit the per-event header and truncation suffix")
+		}
+		if config.MaxEventPayloadBytes > cwlogs.MaxAllowedEventPayloadBytes {
+			return errors.New("'max_event_payload_bytes' exceeds the CloudWatch Logs per-event API limit (1 MiB)")
+		}
+	}
+
 	return cwlogs.ValidateTagsInput(config.Tags)
 }
 
