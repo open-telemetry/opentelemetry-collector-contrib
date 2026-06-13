@@ -117,6 +117,11 @@ The flow control allows to fine tune the flow control settings for the subscript
   been acked or nacked, the server will stop sending more messages. The sending of messages resumes once the number
   of outstanding bytes is less than this value. If the value is <= 0, there is no limit to the number of outstanding
   bytes.
+* `mod_ack_deadline_seconds` (Optional): The deadline (in seconds) sent via ModifyAckDeadline immediately after a
+  message is received. This tells Pub/Sub the client is actively processing the message, which is required for the
+  dead-letter queue delivery-attempt counter to work correctly with StreamingPull. When processing fails, the
+  message is nacked (deadline set to 0) so it becomes immediately available for redelivery. Defaults to 60. Set to
+  0 to disable.
 
 ```yaml
 flow_control:
@@ -124,6 +129,7 @@ flow_control:
   stream_ack_deadline: 60s
   max_outstanding_messages: 1000000
   max_outstanding_bytes: 1000000
+  mod_ack_deadline_seconds: 60
 ```
 
 More details can be found at [Pub/Sub gRPC StreamingPullRequest](https://docs.cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest)

@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				FlowControlConfig: FlowControlConfig{
 					TriggerAckBatchDuration: 10 * time.Second,
 					StreamAckDeadline:       60 * time.Second,
+					ModAckDeadlineSeconds:   60,
 				},
 			},
 		},
@@ -50,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				FlowControlConfig: FlowControlConfig{
 					TriggerAckBatchDuration: 10 * time.Second,
 					StreamAckDeadline:       60 * time.Second,
+					ModAckDeadlineSeconds:   60,
 				},
 			},
 		},
