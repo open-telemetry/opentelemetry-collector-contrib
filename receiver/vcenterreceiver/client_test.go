@@ -218,6 +218,30 @@ func TestPerfMetricsQuery(t *testing.T) {
 	}, esx)
 }
 
+func TestPerfMetricsQuery_FallbackOnBatchError(t *testing.T) {
+	esx := simulator.ESX()
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		pm := performance.NewManager(c)
+		m := view.NewManager(c)
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			vm:        m,
+			pm:        pm,
+			finder:    finder,
+		}
+		hs, err := finder.DefaultHostSystem(ctx)
+		require.NoError(t, err)
+
+		spec := types.PerfQuerySpec{Format: string(types.PerfFormatNormal), IntervalId: int32(20)}
+
+		metrics, err := client.PerfMetricsQuery(ctx, spec, []string{"invalid.metric.name"}, []types.ManagedObjectReference{hs.Reference()})
+		require.NoError(t, err)
+		require.NotNil(t, metrics)
+		require.Empty(t, metrics.resultsByRef)
+	}, esx)
+}
+
 func TestPerfMetricsQueryBatching(t *testing.T) {
 	vpx := simulator.VPX()
 	vpx.Host = 10

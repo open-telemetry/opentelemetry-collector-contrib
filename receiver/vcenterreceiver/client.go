@@ -327,7 +327,6 @@ func (vc *vcenterClient) PerfMetricsQuery(
 		return &perfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
-
 	batchSize := vc.batchSizeForMetrics(len(names))
 	if batchSize <= 0 || batchSize >= len(objs) {
 		batchSize = max(len(objs), 1)
@@ -337,7 +336,22 @@ func (vc *vcenterClient) PerfMetricsQuery(
 	for batch := range slices.Chunk(objs, batchSize) {
 		sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
 		if err != nil {
-			return nil, err
+			for _, obj := range batch {
+				singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
+				if singleErr != nil {
+					continue
+				}
+
+				singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
+				if singleErr != nil {
+					continue
+				}
+
+				for i := range singleResult {
+					resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
+				}
+			}
+			continue
 		}
 		result, err := vc.pm.ToMetricSeries(ctx, sample)
 		if err != nil {
@@ -348,6 +362,7 @@ func (vc *vcenterClient) PerfMetricsQuery(
 			resultsByRef[result[i].Entity.Value] = &result[i]
 		}
 	}
+
 	return &perfMetricsQueryResult{
 		resultsByRef: resultsByRef,
 	}, nil
