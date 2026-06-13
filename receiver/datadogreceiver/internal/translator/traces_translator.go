@@ -22,7 +22,6 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -200,10 +199,10 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	spanName := ""
 	if method != "" {
 		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
-		newSpan.Attributes().PutStr(string(conventionsv138.RPCServiceKey), service)
+		newSpan.Attributes().PutStr("rpc.service", service)
 		spanName = service + "/" + method
 	} else if service != "" {
-		newSpan.Attributes().PutStr(string(conventionsv138.RPCServiceKey), service)
+		newSpan.Attributes().PutStr("rpc.service", service)
 		spanName = service
 	}
 	if spanName != "" {
