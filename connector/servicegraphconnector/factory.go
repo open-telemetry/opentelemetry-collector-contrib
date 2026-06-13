@@ -17,11 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
 )
 
-const (
-	// The stability level of the processor.
-	connectorStability = component.StabilityLevelDevelopment
-)
-
 var (
 	virtualNodeFeatureGate = metadata.ConnectorServicegraphVirtualNodeFeatureGate
 	// TODO: Remove this feature gate when the legacy metric names are removed.
