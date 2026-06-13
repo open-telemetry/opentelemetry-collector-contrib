@@ -265,7 +265,16 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordVcenterHostMemoryActiveDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryBalloonedDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordVcenterHostMemoryCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryGrantedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1380,6 +1389,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("object")
 						assert.False(t, ok)
 					}
+				case "vcenter.host.memory.active":
+					assert.False(t, validatedMetrics["vcenter.host.memory.active"], "Found a duplicate in the metrics slice: vcenter.host.memory.active")
+					validatedMetrics["vcenter.host.memory.active"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory the host's powered-on VMs are actively using.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.memory.ballooned":
+					assert.False(t, validatedMetrics["vcenter.host.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.host.memory.ballooned")
+					validatedMetrics["vcenter.host.memory.ballooned"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of guest physical memory reclaimed from the host's VMs via the balloon driver.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.memory.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.memory.capacity"], "Found a duplicate in the metrics slice: vcenter.host.memory.capacity")
 					validatedMetrics["vcenter.host.memory.capacity"] = true
@@ -1394,6 +1431,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.host.memory.granted":
+					assert.False(t, validatedMetrics["vcenter.host.memory.granted"], "Found a duplicate in the metrics slice: vcenter.host.memory.granted")
+					validatedMetrics["vcenter.host.memory.granted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of machine memory that is granted to the powered-on VMs on the host.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.memory.usage":
 					assert.False(t, validatedMetrics["vcenter.host.memory.usage"], "Found a duplicate in the metrics slice: vcenter.host.memory.usage")
 					validatedMetrics["vcenter.host.memory.usage"] = true
