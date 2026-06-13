@@ -48,8 +48,19 @@ Each target has the following properties:
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
 - `body` (optional): Request body content for POST, PUT, PATCH, and other methods.
+- `attributes` (optional): A map of static attributes added to every metric produced for this target. Attributes whose key matches one already set by the receiver (for example `http.url`) are ignored.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
+
+```yaml
+receivers:
+  http_check:
+    targets:
+      - endpoint: https://example.com/health
+        attributes:
+          environment: production
+          team: platform
+```
 
 ### Optional Metrics
 

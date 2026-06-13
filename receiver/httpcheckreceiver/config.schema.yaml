@@ -7,6 +7,10 @@ properties:
       x-pointer: true
       type: object
       properties:
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
         auto_content_type:
           type: boolean
         body:
