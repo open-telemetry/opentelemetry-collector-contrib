@@ -1,1 +1,4 @@
 fluent_forward:
+
+fluent_forward/custom:
+  max_packed_forward_bytes: 33554432

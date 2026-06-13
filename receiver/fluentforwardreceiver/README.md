@@ -42,6 +42,9 @@ receivers:
     endpoint: 0.0.0.0:8006
 ```
 
+The `max_packed_forward_bytes` setting controls the maximum raw packed-forward
+payload size before decompression. It defaults to `16777216` bytes.
+
 ## Data Conversion
 
 The receiver converts Fluentd events to OpenTelemetry logs. Each Fluentd event

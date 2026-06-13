@@ -29,3 +29,25 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, xconfmap.Validate(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
+
+func TestLoadConfigWithMaxPackedForwardBytes(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(metadata.Type.String() + "/custom")
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.Equal(t, &Config{MaxPackedForwardBytes: 32 * 1024 * 1024}, cfg)
+}
+
+func TestValidateConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxPackedForwardBytes = 0
+
+	assert.ErrorContains(t, xconfmap.Validate(cfg), "max_packed_forward_bytes must be positive")
+}
