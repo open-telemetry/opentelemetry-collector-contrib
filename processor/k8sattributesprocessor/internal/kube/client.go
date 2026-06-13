@@ -1633,8 +1633,27 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	podToRemove := c.podFromAPI(pod)
-	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	// Look up the cached pod using its UID. Unlike dynamic status attributes (such as IP addresses)
+	// which may be cleared or missing in the final DELETE event payload, the Pod UID is immutable
+	// and guaranteed to be present. Using the cached pod ensures we generate and clean up all keys
+	// under which the pod was originally registered.
+	uidKey := PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), string(pod.UID)),
+	}
+	c.m.RLock()
+	cachedPod, ok := c.Pods[uidKey]
+	c.m.RUnlock()
+
+	var identifiers []PodIdentifier
+	if ok {
+		identifiers = c.getIdentifiersFromAssoc(cachedPod)
+	} else {
+		// Fallback: if the pod was never added to the cache (e.g. startup/informer sync edge cases),
+		// generate deletion keys from the incoming delete event payload directly.
+		podToRemove := c.podFromAPI(pod)
+		identifiers = c.getIdentifiersFromAssoc(podToRemove)
+	}
+
 	for i := range identifiers {
 		id := identifiers[i]
 		p, ok := c.GetPod(id)
