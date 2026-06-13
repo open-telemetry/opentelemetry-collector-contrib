@@ -12,19 +12,27 @@ metrics:
     enabled: false
 ```
 
-### apache.connections.async
+### apache.connection.active
+
+The number of active connections currently attached to the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | false | Development |
+
+### apache.connections
 
 The number of connections in different asynchronous states reported by Apache's server-status.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {connections} | Gauge | Int | Development |
+| {connection} | Gauge | Int | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| connection_state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | Recommended | - |
+| apache.connection.state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | Recommended | - |
 
 ### apache.cpu.load
 
@@ -46,16 +54,8 @@ Jiffs used by processes of given category.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| level | Level of processes. | Str: ``self``, ``children`` | Recommended | - |
-| mode | Mode of processes. | Str: ``system``, ``user`` | Recommended | - |
-
-### apache.current_connections
-
-The number of active connections currently attached to the HTTP server.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | Development |
+| apache.process.level | Level of processes. | Str: ``self``, ``children`` | Recommended | - |
+| cpu.mode | Mode of processes. | Str: ``system``, ``user`` | Recommended | - |
 
 ### apache.load.1
 
@@ -81,6 +81,14 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### apache.request.count
+
+The number of requests serviced by the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
 ### apache.request.time
 
 Total time spent on handling requests.
@@ -88,30 +96,6 @@ Total time spent on handling requests.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
-
-### apache.requests
-
-The number of requests serviced by the HTTP server per second.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
-
-### apache.scoreboard
-
-The number of workers in each state.
-
-The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION) is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
 
 ### apache.traffic
 
@@ -129,19 +113,37 @@ The amount of time that the server has been running in seconds.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
-### apache.workers
+### apache.worker.active
 
-The number of workers currently attached to the HTTP server.
+The number of busy workers currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | Development |
+| {worker} | Sum | Int | Cumulative | false | Development |
+
+### apache.worker.idle
+
+The number of idle workers currently attached to the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
+
+### apache.workers
+
+The number of workers in each state.
+
+The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION) is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| state | The state of workers. | Str: ``busy``, ``idle`` | Recommended | - |
+| apache.worker.state | The state of a worker. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
 
 ## Resource Attributes
 

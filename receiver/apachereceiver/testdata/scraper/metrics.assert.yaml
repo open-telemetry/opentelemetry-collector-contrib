@@ -8,16 +8,21 @@ resources:
         - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
           version: latest
           metrics:
-            - name: apache.connections.async
+            - name: apache.connection.active
+              type: sum
+              unit: '{connection}'
+              temporality: cumulative
+              monotonic: false
+            - name: apache.connections
               type: gauge
-              unit: '{connections}'
+              unit: '{connection}'
               datapoints:
                 - attributes:
-                    connection_state: closing
+                    apache.connection.state: closing
                 - attributes:
-                    connection_state: keepalive
+                    apache.connection.state: keepalive
                 - attributes:
-                    connection_state: writing
+                    apache.connection.state: writing
             - name: apache.cpu.load
               type: gauge
               unit: '%'
@@ -28,22 +33,17 @@ resources:
               monotonic: true
               datapoints:
                 - attributes:
-                    level: children
-                    mode: system
+                    apache.process.level: children
+                    cpu.mode: system
                 - attributes:
-                    level: children
-                    mode: user
+                    apache.process.level: children
+                    cpu.mode: user
                 - attributes:
-                    level: self
-                    mode: system
+                    apache.process.level: self
+                    cpu.mode: system
                 - attributes:
-                    level: self
-                    mode: user
-            - name: apache.current_connections
-              type: sum
-              unit: '{connections}'
-              temporality: cumulative
-              monotonic: false
+                    apache.process.level: self
+                    cpu.mode: user
             - name: apache.load.1
               type: gauge
               unit: '%'
@@ -53,44 +53,16 @@ resources:
             - name: apache.load.5
               type: gauge
               unit: '%'
+            - name: apache.request.count
+              type: sum
+              unit: '{request}'
+              temporality: cumulative
+              monotonic: true
             - name: apache.request.time
               type: sum
               unit: ms
               temporality: cumulative
               monotonic: true
-            - name: apache.requests
-              type: sum
-              unit: '{requests}'
-              temporality: cumulative
-              monotonic: true
-            - name: apache.scoreboard
-              type: sum
-              unit: '{workers}'
-              temporality: cumulative
-              monotonic: false
-              datapoints:
-                - attributes:
-                    state: closing
-                - attributes:
-                    state: dnslookup
-                - attributes:
-                    state: finishing
-                - attributes:
-                    state: idle_cleanup
-                - attributes:
-                    state: keepalive
-                - attributes:
-                    state: logging
-                - attributes:
-                    state: open
-                - attributes:
-                    state: reading
-                - attributes:
-                    state: sending
-                - attributes:
-                    state: starting
-                - attributes:
-                    state: waiting
             - name: apache.traffic
               type: sum
               unit: By
@@ -101,13 +73,41 @@ resources:
               unit: s
               temporality: cumulative
               monotonic: true
+            - name: apache.worker.active
+              type: sum
+              unit: '{worker}'
+              temporality: cumulative
+              monotonic: false
+            - name: apache.worker.idle
+              type: sum
+              unit: '{worker}'
+              temporality: cumulative
+              monotonic: false
             - name: apache.workers
               type: sum
-              unit: '{workers}'
+              unit: '{worker}'
               temporality: cumulative
               monotonic: false
               datapoints:
                 - attributes:
-                    state: busy
+                    apache.worker.state: closing
                 - attributes:
-                    state: idle
+                    apache.worker.state: dnslookup
+                - attributes:
+                    apache.worker.state: finishing
+                - attributes:
+                    apache.worker.state: idle_cleanup
+                - attributes:
+                    apache.worker.state: keepalive
+                - attributes:
+                    apache.worker.state: logging
+                - attributes:
+                    apache.worker.state: open
+                - attributes:
+                    apache.worker.state: reading
+                - attributes:
+                    apache.worker.state: sending
+                - attributes:
+                    apache.worker.state: starting
+                - attributes:
+                    apache.worker.state: waiting
