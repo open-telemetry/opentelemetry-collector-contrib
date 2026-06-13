@@ -166,7 +166,7 @@ components:
         - faro
         - file_log
         - file_stats
-        - flinkmetrics
+        - flink_metrics
         - fluent_forward
         - github
         - gitlab
