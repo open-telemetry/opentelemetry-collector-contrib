@@ -48,6 +48,11 @@ properties:
   redact_all_types:
     description: RedactAllTypes of attributes, including those that are not string, by converting to a string representation. By default only string values are redacted.
     type: boolean
+  skip_conditions:
+    description: SkipConditions is a list of OTTL-style conditions used to skip redaction for matching telemetry.
+    type: array
+    items:
+      type: string
   summary:
     description: Summary controls the verbosity level of the diagnostic attributes that the processor adds to the spans when it redacts or masks other attributes. In some contexts a list of redacted attributes leaks information, while it is valuable when integrating and testing a new configuration. Possible values are `debug`, `info`, and `silent`.
     type: string
