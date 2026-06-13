@@ -18,8 +18,36 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.cursor.cache.hits:
+        description: "OracledbCursorCacheHitsMetricConfig provides config for the oracledb.cursor.cache.hits metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.cache.size:
+        description: "OracledbCursorCacheSizeMetricConfig provides config for the oracledb.cursor.cache.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.open:
+        description: "OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.data_dictionary.hit_ratio:
         description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.db.time:
+        description: "OracledbDbTimeMetricConfig provides config for the oracledb.db.time metric."
         type: object
         properties:
           enabled:
@@ -60,6 +88,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.enqueue.operations:
+        description: "OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.enqueue.kind"
+            default:
+              - "oracledb.enqueue.kind"
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -116,6 +167,29 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.lob.operations:
+        description: "OracledbLobOperationsMetricConfig provides config for the oracledb.lob.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+            default:
+              - "disk.io.direction"
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -172,6 +246,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.parse.time:
+        description: "OracledbParseTimeMetricConfig provides config for the oracledb.parse.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.parse.kind"
+            default:
+              - "oracledb.parse.kind"
       oracledb.parse_calls:
         description: "OracledbParseCallsMetricConfig provides config for the oracledb.parse_calls metric."
         type: object
@@ -306,8 +403,82 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recursive_call.count:
+        description: "OracledbRecursiveCallCountMetricConfig provides config for the oracledb.recursive_call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.recursive_call.cpu.time:
+        description: "OracledbRecursiveCallCPUTimeMetricConfig provides config for the oracledb.recursive_call.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.scan.index_fast_full:
+        description: "OracledbScanIndexFastFullMetricConfig provides config for the oracledb.scan.index_fast_full metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.scan.type"
+            default:
+              - "oracledb.scan.type"
+      oracledb.scan.table.operations:
+        description: "OracledbScanTableOperationsMetricConfig provides config for the oracledb.scan.table.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.scan.type"
+            default:
+              - "oracledb.scan.type"
+      oracledb.scan.table.rows:
+        description: "OracledbScanTableRowsMetricConfig provides config for the oracledb.scan.table.rows metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.active:
+        description: "OracledbSessionActiveMetricConfig provides config for the oracledb.session.active metric."
         type: object
         properties:
           enabled:
@@ -345,6 +516,36 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.sort.operations:
+        description: "OracledbSortOperationsMetricConfig provides config for the oracledb.sort.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.sort.type"
+            default:
+              - "oracledb.sort.type"
+      oracledb.sort.rows:
+        description: "OracledbSortRowsMetricConfig provides config for the oracledb.sort.rows metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sqlnet.io.transferred:
         description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
         type: object
@@ -444,6 +645,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.user_call.count:
+        description: "OracledbUserCallCountMetricConfig provides config for the oracledb.user_call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.user_commits:
         description: "OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric."
         type: object
