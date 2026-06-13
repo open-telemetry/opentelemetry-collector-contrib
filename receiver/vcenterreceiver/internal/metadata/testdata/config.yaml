@@ -69,7 +69,13 @@ all_set:
     vcenter.host.disk.throughput:
       enabled: true
       attributes: ["direction","object"]
+    vcenter.host.memory.active:
+      enabled: true
+    vcenter.host.memory.ballooned:
+      enabled: true
     vcenter.host.memory.capacity:
+      enabled: true
+    vcenter.host.memory.granted:
       enabled: true
     vcenter.host.memory.usage:
       enabled: true
@@ -276,7 +282,13 @@ reaggregate_set:
     vcenter.host.disk.throughput:
       enabled: true
       attributes: []
+    vcenter.host.memory.active:
+      enabled: true
+    vcenter.host.memory.ballooned:
+      enabled: true
     vcenter.host.memory.capacity:
+      enabled: true
+    vcenter.host.memory.granted:
       enabled: true
     vcenter.host.memory.usage:
       enabled: true
@@ -483,7 +495,13 @@ none_set:
     vcenter.host.disk.throughput:
       enabled: false
       attributes: ["direction","object"]
+    vcenter.host.memory.active:
+      enabled: false
+    vcenter.host.memory.ballooned:
+      enabled: false
     vcenter.host.memory.capacity:
+      enabled: false
+    vcenter.host.memory.granted:
       enabled: false
     vcenter.host.memory.usage:
       enabled: false

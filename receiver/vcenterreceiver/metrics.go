@@ -330,6 +330,10 @@ var hostPerfMetricList = []string{
 	// cpu metrics
 	"cpu.reservedCapacity.average",
 	"cpu.totalCapacity.average",
+	// memory metrics
+	"mem.granted.average",
+	"mem.active.average",
+	"mem.vmmemctl.average",
 }
 
 // recordHostPerformanceMetrics records performance metrics for a vSphere Host
@@ -385,6 +389,13 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 				v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, val.Instance)
 			case "disk.write.average":
 				v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
+			// Memory performance counters are reported in KB; convert to MiB to match the other host memory metrics.
+			case "mem.granted.average":
+				v.mb.RecordVcenterHostMemoryGrantedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue/1024)
+			case "mem.active.average":
+				v.mb.RecordVcenterHostMemoryActiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue/1024)
+			case "mem.vmmemctl.average":
+				v.mb.RecordVcenterHostMemoryBalloonedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue/1024)
 			}
 		}
 	}
