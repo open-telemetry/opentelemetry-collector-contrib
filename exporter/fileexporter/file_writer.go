@@ -26,9 +26,6 @@ type fileWriter struct {
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
-	// Ensure only one write operation happens at a time.
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	if _, err := w.file.Write(buf); err != nil {
 		return err
 	}
@@ -39,9 +36,6 @@ func exportMessageAsLine(w *fileWriter, buf []byte) error {
 }
 
 func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
-	// Ensure only one write operation happens at a time.
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
@@ -51,6 +45,12 @@ func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
 }
 
 func (w *fileWriter) export(buf []byte) error {
+	// Ensure only one write operation happens at a time
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if w.file == nil {
+		return io.ErrClosedPipe
+	}
 	return w.exporter(w, buf)
 }
 
@@ -102,7 +102,11 @@ func (w *fileWriter) shutdown() error {
 		close(w.stopTicker)
 		w.mutex.Unlock()
 	}
-	return w.file.Close()
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	err := w.file.Close()
+	w.file = nil
+	return err
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
