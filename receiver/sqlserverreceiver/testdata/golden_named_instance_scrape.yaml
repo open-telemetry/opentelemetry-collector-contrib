@@ -1,6 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.computer.name
           value:
             stringValue: CustomServer
