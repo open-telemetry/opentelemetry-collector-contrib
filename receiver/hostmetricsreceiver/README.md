@@ -121,6 +121,13 @@ network:
 
 ### Process
 
+> [!WARNING]
+> The `process` scraper emits metrics **per process**. On a typical host this can
+> easily produce thousands of metric data points every scrape interval (e.g. 5 000+
+> on a moderately loaded machine). Before enabling it, consider using `include` or
+> `exclude` filters to limit the set of monitored processes, and review your
+> `collection_interval` to avoid excessive metric volume.
+
 ```yaml
 process:
   <include|exclude>:
@@ -134,6 +141,105 @@ process:
   mute_process_cgroup_error: <true|false>
   scrape_process_delay: <time>
 ```
+
+#### Minimal configuration
+
+A minimal configuration that enables the `process` scraper with default settings
+(all processes are scraped):
+
+```yaml
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      process:
+```
+
+To collect only aggregate process counts instead of per-process metrics, use the
+`processes` scraper:
+
+```yaml
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      processes:
+```
+
+#### Full configuration example
+
+A full example enabling both `process` and `processes` scrapers, with filtering,
+optional metrics, and delay:
+
+```yaml
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      process:
+        include:
+          names: [ "myapp", "postgres", "nginx" ]
+          match_type: strict
+        mute_process_all_errors: true
+        scrape_process_delay: 10s
+        metrics:
+          process.cpu.utilization:
+            enabled: true
+          process.memory.utilization:
+            enabled: true
+          process.threads:
+            enabled: true
+      processes:
+```
+
+#### Filtering with `include` and `exclude`
+
+Use `include` and `exclude` to control which processes are scraped. Both support
+`match_type: strict` (exact name match) and `match_type: regexp` (RE2 regular
+expression match). If neither `include` nor `exclude` are set, metrics are
+generated for **all** processes.
+
+**Strict match** -- only scrape processes whose name is exactly `myapp` or `postgres`:
+
+```yaml
+process:
+  include:
+    names: [ "myapp", "postgres" ]
+    match_type: strict
+```
+
+**Regexp match** -- scrape any process whose name starts with `java` or `python`:
+
+```yaml
+process:
+  include:
+    names: [ "^java.*", "^python.*" ]
+    match_type: regexp
+```
+
+**Exclude with regexp** -- scrape all processes except those starting with `test`:
+
+```yaml
+process:
+  exclude:
+    names: [ "^test.*" ]
+    match_type: regexp
+```
+
+#### `scrape_process_delay`
+
+`scrape_process_delay` (default: `0s`) sets the minimum amount of time a process
+must be running before its metrics are collected. This is useful to avoid
+scraping short-lived processes (e.g. cron jobs, build tools, shell one-liners)
+that appear and disappear between collection intervals, reducing noise and
+metric cardinality.
+
+```yaml
+process:
+  scrape_process_delay: 10s
+```
+
+#### Optional settings
 
 The following settings are optional:
 - `mute_process_all_errors` (default: false): mute all the errors encountered when trying to read metrics of a process. When this flag is enabled, there is no need to activate any other error suppression flags.
