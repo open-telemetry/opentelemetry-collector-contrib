@@ -8,10 +8,11 @@ description: |
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [fatsheep9146]
+    active: []
+    emeritus: [fatsheep9146]
 
 tests:
   config:
