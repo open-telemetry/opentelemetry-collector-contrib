@@ -9,6 +9,10 @@ $defs:
         type: string
 type: object
 properties:
+  default_ingest_delay:
+    description: DefaultIngestDelay is used when a metric descriptor does not report Metadata.IngestDelay (typical for user log-based, custom, and external Prometheus metrics). Default 60s preserves the prior hardcoded fallback.
+    type: string
+    format: duration
   endpoint:
     description: Overrides the default monitoring.googleapis.com:443 endpoint. Use this when targeting non-standard universe domains.
     type: string

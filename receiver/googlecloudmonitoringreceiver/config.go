@@ -15,6 +15,7 @@ const (
 	defaultCollectionInterval = 300 * time.Second // Default value for collection interval
 	minCollectionInterval     = 60 * time.Second  // Minimum value for collection interval
 	defaultFetchDelay         = 60 * time.Second  // Default value for fetch delay
+	maxIngestDelay            = 24 * time.Hour    // Maximum allowed default_ingest_delay
 )
 
 type Config struct {
@@ -23,8 +24,12 @@ type Config struct {
 	ProjectID string `mapstructure:"project_id"`
 	// Overrides the default monitoring.googleapis.com:443 endpoint.
 	// Use this when targeting non-standard universe domains.
-	Endpoint    string         `mapstructure:"endpoint"`
-	MetricsList []MetricConfig `mapstructure:"metrics_list"`
+	Endpoint string `mapstructure:"endpoint"`
+	// DefaultIngestDelay is used when a metric descriptor does not report
+	// Metadata.IngestDelay (typical for user log-based, custom, and external
+	// Prometheus metrics). Default 60s preserves the prior hardcoded fallback.
+	DefaultIngestDelay time.Duration  `mapstructure:"default_ingest_delay"`
+	MetricsList        []MetricConfig `mapstructure:"metrics_list"`
 }
 
 type MetricConfig struct {
@@ -37,6 +42,14 @@ type MetricConfig struct {
 func (config *Config) Validate() error {
 	if config.CollectionInterval < minCollectionInterval {
 		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", minCollectionInterval, config.CollectionInterval)
+	}
+
+	if config.DefaultIngestDelay < 0 {
+		return fmt.Errorf("\"default_ingest_delay\" must be non-negative, current value is %v", config.DefaultIngestDelay)
+	}
+
+	if config.DefaultIngestDelay > maxIngestDelay {
+		return fmt.Errorf("\"default_ingest_delay\" must not exceed %v, current value is %v", maxIngestDelay, config.DefaultIngestDelay)
 	}
 
 	if len(config.MetricsList) == 0 {

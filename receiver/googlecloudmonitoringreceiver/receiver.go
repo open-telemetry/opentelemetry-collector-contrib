@@ -101,7 +101,10 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
 		if gDelay <= 0 {
-			gDelay = defaultFetchDelay
+			// Validate() rejects negative DefaultIngestDelay and the factory
+			// seeds it to defaultFetchDelay, so an explicit 0 here means
+			// "no extra delay" rather than "fall back to 60s".
+			gDelay = mr.config.DefaultIngestDelay
 		}
 
 		// Calculate the start and end times
