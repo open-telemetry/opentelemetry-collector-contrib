@@ -600,7 +600,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -702,7 +702,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -777,7 +777,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -898,7 +898,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -2423,6 +2423,138 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 
 		_, err = sendHealthCheckRequest()
 		assert.Error(t, err)
+	})
+}
+
+func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
+	// newTestSupervisor builds a minimal Supervisor for onOpampConnectionSettings tests.
+	// oldEndpoint should use the "http" scheme so that client.Start is asynchronous
+	// and never fails due to the server being absent.
+	newTestSupervisor := func(t *testing.T, oldEndpoint string, reportsHeartbeat bool) *Supervisor {
+		t.Helper()
+
+		ctx, cancel := context.WithCancel(t.Context())
+
+		mp := metric.NewMeterProvider()
+		t.Cleanup(func() { _ = mp.Shutdown(t.Context()) })
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{StringValue: "test-collector"},
+					},
+				},
+			},
+		})
+		availComp := &atomic.Value{}
+
+		s := &Supervisor{
+			runCtx:       ctx,
+			runCtxCancel: cancel,
+			telemetrySettings: telemetrySettings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: zap.NewNop(),
+				},
+			},
+			opampClient: &mockOpAMPClient{setHealthFunc: func(*protobufs.ComponentHealth) {}},
+			config: config.Supervisor{
+				Server: config.OpAMPServer{
+					Endpoint: oldEndpoint,
+				},
+				Capabilities: config.Capabilities{
+					ReportsHeartbeat: reportsHeartbeat,
+				},
+			},
+			heartbeatIntervalSeconds:       30,
+			persistentState:                &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			agentDescription:               agentDesc,
+			availableComponents:            availComp,
+			effectiveConfig:                &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			metrics:                        metrics,
+		}
+
+		t.Cleanup(func() {
+			cancel()
+			stopCtx, stopCancel := context.WithTimeout(t.Context(), time.Second)
+			defer stopCancel()
+			_ = s.opampClient.Stop(stopCtx)
+		})
+
+		return s
+	}
+
+	// freePort returns a TCP port that is not currently listening.
+	// The WS opamp client will get "connection refused" when it tries to connect.
+	freePort := func(t *testing.T) int {
+		t.Helper()
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		require.NoError(t, err)
+		port := ln.Addr().(*net.TCPAddr).Port
+		require.NoError(t, ln.Close())
+		return port
+	}
+
+	t.Run("zero HeartbeatIntervalSeconds leaves interval unchanged when ReportsHeartbeat=true", func(t *testing.T) {
+		// Server-sent zero must leave the current interval unchanged; the supervisor
+		// must NOT pass 0 to the opamp-go client (HTTP rejects it, WS disables heartbeats).
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), true)
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint:      fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
+			HeartbeatIntervalSeconds: 0,
+		})
+		require.NoError(t, err)
+		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval should not change when server sends 0")
+	})
+
+	t.Run("positive HeartbeatIntervalSeconds updates interval when ReportsHeartbeat=true", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), true)
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint:      fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
+			HeartbeatIntervalSeconds: 5,
+		})
+		require.NoError(t, err)
+		assert.EqualValues(t, 5, s.heartbeatIntervalSeconds, "interval should be updated to server-provided value")
+	})
+
+	t.Run("HeartbeatIntervalSeconds is not updated when ReportsHeartbeat=false", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint:      fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
+			HeartbeatIntervalSeconds: 5,
+		})
+		require.NoError(t, err)
+		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval should not change when capability is disabled")
+	})
+
+	t.Run("heartbeat interval reverted when reconnect with new settings fails", func(t *testing.T) {
+		// Old endpoint uses HTTP (Start is async → always returns nil).
+		// New endpoint uses WSS with an invalid CA cert: LoadTLSConfig fails synchronously
+		// before any connection is attempted, giving us a reliable way to trigger the
+		// heartbeat rollback path in onOpampConnectionSettings.
+		oldEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
+
+		s := newTestSupervisor(t, oldEndpoint, true)
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint:      fmt.Sprintf("wss://127.0.0.1:%d", freePort(t)),
+			HeartbeatIntervalSeconds: 5,
+			Certificate: &protobufs.TLSCertificate{
+				// Invalid PEM causes LoadTLSConfig to fail synchronously.
+				CaCert: []byte("not-a-valid-pem-certificate"),
+			},
+		})
+		// The error may be nil (fallback succeeded) or non-nil (fallback also failed).
+		// In either case the heartbeat interval must be reverted to the original value.
+		if err != nil {
+			t.Logf("fallback also failed (expected in some environments): %v", err)
+		}
+		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval must be reverted after failed reconnect")
 	})
 }
 

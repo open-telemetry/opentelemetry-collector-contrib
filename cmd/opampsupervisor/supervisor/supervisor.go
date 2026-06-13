@@ -1102,8 +1102,13 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return err
 	}
 
-	// Update the heartbeat interval if the agent supports it
-	if s.config.Capabilities.ReportsHeartbeat {
+	// Update the heartbeat interval if the agent supports it.
+	// Ignore non-positive intervals from the server and keep the current value.
+	// This avoids passing a zero duration to the opamp-go sender, which rejects
+	// it for HTTP transport and silently disables heartbeats for WebSocket
+	// transport.
+	oldHeartbeatIntervalSeconds := s.heartbeatIntervalSeconds
+	if s.config.Capabilities.ReportsHeartbeat && settings.HeartbeatIntervalSeconds > 0 {
 		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds
 	}
 
@@ -1119,8 +1124,9 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 	if err := s.startOpAMPClient(); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
-		// revert the OpAMP server config
+		// revert the OpAMP server config and heartbeat interval
 		s.config.Server = oldServerConfig
+		s.heartbeatIntervalSeconds = oldHeartbeatIntervalSeconds
 		// start the OpAMP client with the old settings
 		if err := s.startOpAMPClient(); err != nil {
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
@@ -2127,6 +2133,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
 	if !s.config.Capabilities.ReportsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
+		return
 	}
 	remoteConfig := s.remoteConfig.Load()
 	var configHash []byte
