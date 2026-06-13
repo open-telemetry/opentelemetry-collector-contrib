@@ -186,6 +186,12 @@ SELECT DISTINCT
 			,'Log Flushes/sec'
 			,'Log Flush Wait Time'
 			,'Memory broker clerk size'
+			,'Lock Memory (KB)'
+			,'Lock Blocks'
+			,'Lock Blocks Allocated'
+			,'Lock Owner Blocks'
+			,'Lock Owner Blocks Allocated'
+			,'Connection Reset/sec'
 			,'Log Bytes Flushed/sec'
 			,'Bytes Sent to Replica/sec'
 			,'Log Send Queue'
@@ -248,6 +254,8 @@ SELECT DISTINCT
 				,'Number of Deadlocks/sec'
 				,'Lock Waits/sec'
 				,'Latch Waits/sec'
+				,'Lock Requests/sec'
+				,'Lock Wait Time (ms)'
 			)
 		)
 )

@@ -3208,5 +3208,85 @@
     "object": "SQLServer:Plan Cache",
     "sql_instance": "d26d40521426",
     "value": "50"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Connection Reset/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:General Statistics",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "10288"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Blocks",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Blocks Allocated",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "5000"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Owner Blocks",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Owner Blocks Allocated",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "5000"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Requests/sec",
+    "counter_type": "272696576",
+    "instance": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "sql_instance": "d26d40521426",
+    "value": "12345"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Lock Wait Time (ms)",
+    "counter_type": "272696576",
+    "instance": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "sql_instance": "d26d40521426",
+    "value": "271"
   }
 ]
