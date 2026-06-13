@@ -450,7 +450,14 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
-		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+		errMode := ottlfCfg.ErrorMode
+		// errMode is "" when the user did not explicitly set error_mode in their config
+		// (mapstructure leaves the field at its Go zero value). In that case, fall back
+		// to the feature-gate-controlled default. An explicit value always wins.
+		if errMode == "" {
+			errMode = defaultOTTLErrorMode()
+		}
+		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, errMode)
 	case TraceFlags:
 		return sampling.NewTraceFlags(settings), nil
 	default:
