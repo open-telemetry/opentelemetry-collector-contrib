@@ -37,6 +37,8 @@ all_set:
       enabled: true
     container.cpu.throttling_data.throttled_time:
       enabled: true
+    container.cpu.time:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -56,6 +58,8 @@ all_set:
       enabled: true
     container.memory.anon:
       enabled: true
+    container.memory.available:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
@@ -73,6 +77,8 @@ all_set:
     container.memory.inactive_file:
       enabled: true
     container.memory.mapped_file:
+      enabled: true
+    container.memory.paging.faults:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -120,6 +126,8 @@ all_set:
       enabled: true
     container.memory.unevictable:
       enabled: true
+    container.memory.usage:
+      enabled: true
     container.memory.usage.limit:
       enabled: true
     container.memory.usage.max:
@@ -128,6 +136,9 @@ all_set:
       enabled: true
     container.memory.writeback:
       enabled: true
+    container.network.io:
+      enabled: true
+      attributes: ["network.io.direction","network.interface.name"]
     container.network.io.usage.rx_bytes:
       enabled: true
       attributes: ["interface"]
@@ -213,6 +224,8 @@ reaggregate_set:
       enabled: true
     container.cpu.throttling_data.throttled_time:
       enabled: true
+    container.cpu.time:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -232,6 +245,8 @@ reaggregate_set:
       enabled: true
     container.memory.anon:
       enabled: true
+    container.memory.available:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
@@ -249,6 +264,8 @@ reaggregate_set:
     container.memory.inactive_file:
       enabled: true
     container.memory.mapped_file:
+      enabled: true
+    container.memory.paging.faults:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -296,6 +313,8 @@ reaggregate_set:
       enabled: true
     container.memory.unevictable:
       enabled: true
+    container.memory.usage:
+      enabled: true
     container.memory.usage.limit:
       enabled: true
     container.memory.usage.max:
@@ -304,6 +323,9 @@ reaggregate_set:
       enabled: true
     container.memory.writeback:
       enabled: true
+    container.network.io:
+      enabled: true
+      attributes: []
     container.network.io.usage.rx_bytes:
       enabled: true
       attributes: []
@@ -389,6 +411,8 @@ none_set:
       enabled: false
     container.cpu.throttling_data.throttled_time:
       enabled: false
+    container.cpu.time:
+      enabled: false
     container.cpu.usage.kernelmode:
       enabled: false
     container.cpu.usage.percpu:
@@ -408,6 +432,8 @@ none_set:
       enabled: false
     container.memory.anon:
       enabled: false
+    container.memory.available:
+      enabled: false
     container.memory.cache:
       enabled: false
     container.memory.dirty:
@@ -425,6 +451,8 @@ none_set:
     container.memory.inactive_file:
       enabled: false
     container.memory.mapped_file:
+      enabled: false
+    container.memory.paging.faults:
       enabled: false
     container.memory.percent:
       enabled: false
@@ -472,6 +500,8 @@ none_set:
       enabled: false
     container.memory.unevictable:
       enabled: false
+    container.memory.usage:
+      enabled: false
     container.memory.usage.limit:
       enabled: false
     container.memory.usage.max:
@@ -480,6 +510,9 @@ none_set:
       enabled: false
     container.memory.writeback:
       enabled: false
+    container.network.io:
+      enabled: false
+      attributes: ["network.io.direction","network.interface.name"]
     container.network.io.usage.rx_bytes:
       enabled: false
       attributes: ["interface"]

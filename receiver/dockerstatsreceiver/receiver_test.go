@@ -49,12 +49,14 @@ var (
 		cfg.ContainerCPUThrottlingDataPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledTime.Enabled = true
+		cfg.ContainerCPUTime.Enabled = true
 		cfg.ContainerCPUUsageKernelmode.Enabled = true
 		cfg.ContainerCPUUsagePercpu.Enabled = true
 		cfg.ContainerCPUUsageSystem.Enabled = true
 		cfg.ContainerCPUUsageTotal.Enabled = true
 		cfg.ContainerCPUUsageUsermode.Enabled = true
 		cfg.ContainerCPULogicalCount.Enabled = true
+		cfg.ContainerMemoryAvailable.Enabled = true
 		cfg.ContainerMemoryActiveAnon.Enabled = true
 		cfg.ContainerMemoryActiveFile.Enabled = true
 		cfg.ContainerMemoryAnon.Enabled = true
@@ -67,6 +69,7 @@ var (
 		cfg.ContainerMemoryInactiveAnon.Enabled = true
 		cfg.ContainerMemoryInactiveFile.Enabled = true
 		cfg.ContainerMemoryMappedFile.Enabled = true
+		cfg.ContainerMemoryPagingFaults.Enabled = true
 		cfg.ContainerMemoryPercent.Enabled = true
 		cfg.ContainerMemoryPgfault.Enabled = true
 		cfg.ContainerMemoryPgmajfault.Enabled = true
@@ -90,10 +93,12 @@ var (
 		cfg.ContainerMemoryTotalUnevictable.Enabled = true
 		cfg.ContainerMemoryTotalWriteback.Enabled = true
 		cfg.ContainerMemoryUnevictable.Enabled = true
+		cfg.ContainerMemoryUsage.Enabled = true
 		cfg.ContainerMemoryUsageLimit.Enabled = true
 		cfg.ContainerMemoryUsageMax.Enabled = true
 		cfg.ContainerMemoryUsageTotal.Enabled = true
 		cfg.ContainerMemoryWriteback.Enabled = true
+		cfg.ContainerNetworkIo.Enabled = true
 		cfg.ContainerNetworkIoUsageRxBytes.Enabled = true
 		cfg.ContainerNetworkIoUsageRxDropped.Enabled = true
 		cfg.ContainerNetworkIoUsageRxErrors.Enabled = true

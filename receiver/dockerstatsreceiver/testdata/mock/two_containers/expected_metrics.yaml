@@ -195,19 +195,20 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'Number of cores available to the container.'
+          - description: Number of cores available to the container.
             gauge:
               dataPoints:
-                - asInt: 1
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.logical.count
-            unit: "{cpus}"
+            unit: '{cpus}'
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771832637112000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
@@ -240,6 +241,37 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.031093384
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.01
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: kernel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 14930.24
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.01
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
@@ -294,12 +326,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
-          - description: 'Percent of CPU used by the container.'
+          - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -317,6 +349,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "73728"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Container memory available. Not supported on Windows.
+            name: container.memory.available
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2073653248"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -338,16 +379,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: 'Number of times the memory limit was hit.'
+          - description: Number of times the memory limit was hit.
             name: container.memory.fails
             sum:
-              isMonotonic: true
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "{fails}"
+              isMonotonic: true
+            unit: '{fails}'
           - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:
@@ -393,6 +434,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: Container memory paging faults. (Only available with cgroups v1).
+            name: container.memory.paging.faults
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2417"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{faults}'
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
@@ -607,6 +658,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: Memory usage of the container.
+            name: container.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "425984"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
@@ -642,6 +702,33 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+            unit: By
+          - description: Network bytes for the container.
+            name: container.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12394"
+                  attributes:
+                    - key: network.interface.name
+                      value:
+                        stringValue: eth0
+                    - key: network.io.direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: network.interface.name
+                      value:
+                        stringValue: eth0
+                    - key: network.io.direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
             unit: By
           - description: Bytes received by the container.
             name: container.network.io.usage.rx_bytes
@@ -770,13 +857,14 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771832637112000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{restarts}"
+            unit: '{restarts}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 3.017587092456784e+07
+                - asDouble: 1.2213058130514684e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
@@ -980,19 +1068,20 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'Number of cores available to the container.'
+          - description: Number of cores available to the container.
             gauge:
               dataPoints:
-                - asInt: 1
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.logical.count
-            unit: "{cpus}"
+            unit: '{cpus}'
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771832637093000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
@@ -1025,6 +1114,37 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.034117917
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.02
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: kernel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 14834.79
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.01
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
@@ -1079,12 +1199,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
-          - description: 'Percent of CPU used by the container.'
+          - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -1102,6 +1222,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "393216"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Container memory available. Not supported on Windows.
+            name: container.memory.available
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2073305088"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -1123,16 +1252,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: 'Number of times the memory limit was hit.'
+          - description: Number of times the memory limit was hit.
             name: container.memory.fails
             sum:
-              isMonotonic: true
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "{fails}"
+              isMonotonic: true
+            unit: '{fails}'
           - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:
@@ -1178,6 +1307,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: Container memory paging faults. (Only available with cgroups v1).
+            name: container.memory.paging.faults
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2469"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{faults}'
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
@@ -1392,6 +1531,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: Memory usage of the container.
+            name: container.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "774144"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
@@ -1427,6 +1575,33 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+            unit: By
+          - description: Network bytes for the container.
+            name: container.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "11313"
+                  attributes:
+                    - key: network.interface.name
+                      value:
+                        stringValue: eth0
+                    - key: network.io.direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: network.interface.name
+                      value:
+                        stringValue: eth0
+                    - key: network.io.direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
             unit: By
           - description: Bytes received by the container.
             name: container.network.io.usage.rx_bytes
@@ -1555,13 +1730,14 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771832637093000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{restarts}"
+            unit: '{restarts}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 3.0175814949953232e+07
+                - asDouble: 1.2213052533053224e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
