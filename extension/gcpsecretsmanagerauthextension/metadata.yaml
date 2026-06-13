@@ -1,0 +1,24 @@
+display_name: GCP Secret Manager Authenticator Extension
+type: gcpsecretsmanagerauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [meebok, frzifus, thomasbaldwin, donny-z, lazureykis]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        - "internal/poll.runtime_pollWait"
+  config:
+    client_auth:
+      project: "my-gcp-project"
+      secret_name: "my-secret"
+      username_key: "username"
+      password_key: "password"
+      refresh_interval: "5m"
