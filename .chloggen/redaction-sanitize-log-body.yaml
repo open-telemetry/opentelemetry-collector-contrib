@@ -1,0 +1,11 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: processor/redactionprocessor
+
+note: Add optional `url_sanitizer.sanitize_log_body` so URL sanitization applies to string log bodies only when explicitly enabled.
+
+issues: []
+
+change_logs: [user]

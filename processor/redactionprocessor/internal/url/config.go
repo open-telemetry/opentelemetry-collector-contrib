@@ -9,4 +9,6 @@ type URLSanitizationConfig struct {
 	Attributes []string `mapstructure:"attributes"`
 	// SanitizeSpanName controls whether span names should be sanitized.
 	SanitizeSpanName *bool `mapstructure:"sanitize_span_name"`
+	// SanitizeLogBody controls whether string log bodies are sanitized with the URL sanitizer.
+	SanitizeLogBody *bool `mapstructure:"sanitize_log_body"`
 }

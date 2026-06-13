@@ -13,3 +13,7 @@ $defs:
         description: SanitizeSpanName controls whether span names should be sanitized.
         x-pointer: true
         type: boolean
+      sanitize_log_body:
+        description: SanitizeLogBody controls whether string log bodies are sanitized with the URL sanitizer. When omitted, log bodies are not sanitized.
+        x-pointer: true
+        type: boolean
