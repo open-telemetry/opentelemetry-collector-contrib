@@ -243,6 +243,7 @@ processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
+receiver/activedirectoryinvreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
