@@ -1,0 +1,9 @@
+change_type: enhancement
+component: processor/tailsampling
+note: Add `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate to change default `error_mode` to `ignore` for ottl_condition policies
+issues: [48420]
+subtext: |
+  When the feature gate is enabled, the processor defaults to `ignore` mode for OTTL condition
+  evaluations which preserves valid data when an OTTL condition error occurs, improving resiliency.
+  This is a breaking change rolled out via feature gate to allow gradual adoption.
+change_logs: [user]

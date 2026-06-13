@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -1920,4 +1921,53 @@ func (*nonTailStorageExtension) Start(context.Context, component.Host) error {
 
 func (*nonTailStorageExtension) Shutdown(context.Context) error {
 	return nil
+}
+
+func TestOTTLConditionDefaultErrorModeFeatureGate(t *testing.T) {
+	tests := []struct {
+		name              string
+		featureGateEnabled bool
+		expectedErrorMode ottl.ErrorMode
+	}{
+		{
+			name:              "feature gate disabled",
+			featureGateEnabled: false,
+			expectedErrorMode: ottl.PropagateError,
+		},
+		{
+			name:              "feature gate enabled",
+			featureGateEnabled: true,
+			expectedErrorMode: ottl.IgnoreError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prev := metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(
+				metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(),
+				tt.featureGateEnabled,
+			))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(),
+					prev,
+				))
+			})
+
+			cfg := PolicyCfg{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "ottl-test",
+					Type: OTTLCondition,
+					OTTLConditionCfg: OTTLConditionCfg{
+						SpanConditions: []string{"true"},
+					},
+				},
+			}
+
+			evaluator, err := getSharedPolicyEvaluator(processortest.NewNopSettings(metadata.Type), &cfg, nil)
+			require.NoError(t, err)
+			require.NotNil(t, evaluator)
+		})
+	}
 }
