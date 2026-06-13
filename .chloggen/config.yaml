@@ -266,7 +266,7 @@ components:
     - receiver/faro
     - receiver/file_log
     - receiver/file_stats
-    - receiver/flinkmetrics
+    - receiver/flink_metrics
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
