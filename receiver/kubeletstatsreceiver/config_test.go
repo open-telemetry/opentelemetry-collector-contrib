@@ -286,6 +286,32 @@ func TestLoadConfig(t *testing.T) {
 			},
 			expectedValidationErr: "for k8s.pod.memory.node.utilization node setting is required. Check the readme on how to set the required setting",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "connection_pooling"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "https://localhost:10250",
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
+				},
+				MaxIdleConns:        50,
+				MaxIdleConnsPerHost: 5,
+				IdleConnTimeout:     120 * time.Second,
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			},
+		},
 	}
 
 	for _, tt := range tests {

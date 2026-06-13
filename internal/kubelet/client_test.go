@@ -96,9 +96,40 @@ func TestNewKubeConfigClientProvider(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestNewClientProviderWithCustomTransport(t *testing.T) {
+	// Create a custom transport with specific pooling settings
+	customTransport := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     120,
+	}
+
+	p, err := NewClientProviderWithRoundTripper("localhost:9876", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeTLS,
+		},
+		Config: configtls.Config{
+			CAFile:   certPath,
+			CertFile: certPath,
+			KeyFile:  keyFile,
+		},
+	}, zap.NewNop(), customTransport)
+	require.NoError(t, err)
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	c := client.(*clientImpl)
+	tr := c.httpClient.Transport.(*http.Transport)
+	// The transport should be cloned from the custom transport with pooling settings preserved
+	require.Equal(t, 100, tr.MaxIdleConns)
+	require.Equal(t, 10, tr.MaxIdleConnsPerHost)
+	// TLS config should be applied on top
+	require.NotNil(t, tr.TLSClientConfig)
+	require.Len(t, tr.TLSClientConfig.Certificates, 1)
+}
+
 func TestDefaultTLSClient(t *testing.T) {
 	endpoint := "localhost:9876"
-	client, err := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
+	client, err := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "https://"+endpoint, client.baseURL)
@@ -351,7 +382,7 @@ func TestSABadTokenPath(t *testing.T) {
 }
 
 func TestTLSDefaultEndpoint(t *testing.T) {
-	client, err := defaultTLSClient("", true, nil, nil, nil, zap.NewNop())
+	client, err := defaultTLSClient("", true, nil, nil, nil, zap.NewNop(), nil)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(client.baseURL, "https://"))
 	require.True(t, strings.HasSuffix(client.baseURL, ":10250"))

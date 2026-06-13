@@ -58,3 +58,10 @@ kubelet_stats/all_network_interfaces_metrics:
   collect_all_network_interfaces:
     pod: true
     node: true
+kubelet_stats/connection_pooling:
+  collection_interval: 10s
+  auth_type: "serviceAccount"
+  endpoint: "https://localhost:10250"
+  max_idle_conns: 50
+  max_idle_conns_per_host: 5
+  idle_conn_timeout: 120s

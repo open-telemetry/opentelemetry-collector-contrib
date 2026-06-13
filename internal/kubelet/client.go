@@ -32,13 +32,24 @@ type Client interface {
 	Get(path string) ([]byte, error)
 }
 
+// NewClientProvider creates a ClientProvider based on the authentication type.
+// Deprecated: Use NewClientProviderWithRoundTripper for better connection pooling support.
 func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
+	return NewClientProviderWithRoundTripper(endpoint, cfg, logger, nil)
+}
+
+// NewClientProviderWithRoundTripper creates a ClientProvider that uses the provided base RoundTripper
+// for HTTP transport. If baseRT is nil, a default transport is used. The base RoundTripper can be
+// configured with connection pooling settings (e.g., via confighttp.ClientConfig) for better performance.
+// Kubelet-specific authentication (TLS client certs, bearer tokens) is applied on top of this transport.
+func NewClientProviderWithRoundTripper(endpoint string, cfg *ClientConfig, logger *zap.Logger, baseRT http.RoundTripper) (ClientProvider, error) {
 	switch cfg.AuthType {
 	case k8sconfig.AuthTypeTLS:
 		return &tlsClientProvider{
 			endpoint: endpoint,
 			cfg:      cfg,
 			logger:   logger,
+			baseRT:   baseRT,
 		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
 		return &saClientProvider{
@@ -47,11 +58,13 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			cfg:        cfg,
 			tokenPath:  svcAcctTokenPath,
 			logger:     logger,
+			baseRT:     baseRT,
 		}, nil
 	case k8sconfig.AuthTypeNone:
 		return &readOnlyClientProvider{
 			endpoint: endpoint,
 			logger:   logger,
+			baseRT:   baseRT,
 		}, nil
 	case k8sconfig.AuthTypeKubeConfig:
 		return &kubeConfigClientProvider{
@@ -106,10 +119,11 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 type readOnlyClientProvider struct {
 	endpoint string
 	logger   *zap.Logger
+	baseRT   http.RoundTripper
 }
 
 func (p *readOnlyClientProvider) BuildClient() (Client, error) {
-	tr := defaultTransport()
+	tr := p.getBaseTransport()
 	endpoint, err := buildEndpoint(p.endpoint, false, p.logger)
 	if err != nil {
 		return nil, err
@@ -122,10 +136,18 @@ func (p *readOnlyClientProvider) BuildClient() (Client, error) {
 	}, nil
 }
 
+func (p *readOnlyClientProvider) getBaseTransport() http.RoundTripper {
+	if p.baseRT != nil {
+		return p.baseRT
+	}
+	return defaultTransport()
+}
+
 type tlsClientProvider struct {
 	endpoint string
 	cfg      *ClientConfig
 	logger   *zap.Logger
+	baseRT   http.RoundTripper
 }
 
 func (p *tlsClientProvider) BuildClient() (Client, error) {
@@ -144,6 +166,7 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 		[]tls.Certificate{clientCert},
 		nil,
 		p.logger,
+		p.baseRT,
 	)
 }
 
@@ -153,6 +176,7 @@ type saClientProvider struct {
 	cfg        *ClientConfig
 	tokenPath  string
 	logger     *zap.Logger
+	baseRT     http.RoundTripper
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {
@@ -168,7 +192,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to read token file %s: %w", p.tokenPath, err)
 	}
-	tr := defaultTransport()
+	tr := p.getBaseTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
 		InsecureSkipVerify: p.cfg.InsecureSkipVerify,
@@ -192,6 +216,15 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	}, nil
 }
 
+func (p *saClientProvider) getBaseTransport() *http.Transport {
+	if p.baseRT != nil {
+		if tr, ok := p.baseRT.(*http.Transport); ok {
+			return tr.Clone()
+		}
+	}
+	return defaultTransport()
+}
+
 func defaultTLSClient(
 	endpoint string,
 	insecureSkipVerify bool,
@@ -199,8 +232,9 @@ func defaultTLSClient(
 	certificates []tls.Certificate,
 	tok []byte,
 	logger *zap.Logger,
+	baseRT http.RoundTripper,
 ) (*clientImpl, error) {
-	tr := defaultTransport()
+	tr := getBaseTransportOrDefault(baseRT)
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
 		Certificates:       certificates,
@@ -216,6 +250,18 @@ func defaultTLSClient(
 		tok:        tok,
 		logger:     logger,
 	}, nil
+}
+
+// getBaseTransportOrDefault returns a cloned transport from baseRT if it's an *http.Transport,
+// otherwise returns a default transport. This preserves connection pooling settings from the
+// base transport while allowing TLS configuration to be applied.
+func getBaseTransportOrDefault(baseRT http.RoundTripper) *http.Transport {
+	if baseRT != nil {
+		if tr, ok := baseRT.(*http.Transport); ok {
+			return tr.Clone()
+		}
+	}
+	return defaultTransport()
 }
 
 // buildEndpoint builds a kubelet endpoint based on value provided by user and whether secure or read-only endpoint

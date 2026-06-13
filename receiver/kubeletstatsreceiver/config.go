@@ -6,6 +6,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -26,6 +27,22 @@ type Config struct {
 
 	kube.ClientConfig       `mapstructure:",squash"`
 	confignet.TCPAddrConfig `mapstructure:",squash"`
+
+	// HTTP connection pooling settings to reduce TLS handshake overhead.
+	// These settings can significantly improve performance when scraping metrics at high frequency.
+
+	// MaxIdleConns sets the maximum number of idle (keep-alive) connections across all hosts.
+	// Zero means no limit. Default is 100.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost sets the maximum number of idle (keep-alive) connections to keep per-host.
+	// If zero, http.DefaultMaxIdleConnsPerHost (2) is used. For single-host scraping like kubelet,
+	// consider setting this higher (e.g., 10) to improve connection reuse.
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time an idle connection will remain idle before
+	// closing itself. Zero means no limit. Default is 90 seconds.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
