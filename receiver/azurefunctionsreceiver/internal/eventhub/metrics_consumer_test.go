@@ -38,21 +38,30 @@ func makeMetrics() pmetric.Metrics {
 	return m
 }
 
+// makeMetricsWithoutDataPoints returns pmetric.Metrics with a metric descriptor but no data points.
+func makeMetricsWithoutDataPoints() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Metrics().AppendEmpty().SetName("empty.metric")
+	return m
+}
+
 func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 	tests := map[string]struct {
-		content         [][]byte
-		metadata        map[string]string
-		unmarshaler     pmetric.Unmarshaler
-		wantErr         string
-		wantBatches     int
-		wantMetricCount int
+		content          [][]byte
+		metadata         map[string]string
+		unmarshaler      pmetric.Unmarshaler
+		wantErr          string
+		wantBatches      int
+		wantDataPointCount int
 	}{
 		"success_single_message": {
 			content:         [][]byte{[]byte("m1")},
 			metadata:        map[string]string{AttrEventHubName: "single"},
 			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
-			wantBatches:     1,
-			wantMetricCount: 1,
+			wantBatches:        1,
+			wantDataPointCount: 1,
 		},
 		"success_multiple_messages_merged": {
 			content: [][]byte{[]byte("a"), []byte("b")},
@@ -60,9 +69,9 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 				AttrEventHubName:        "hub",
 				AttrEventHubPartitionID: "7",
 			},
-			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
-			wantBatches:     1,
-			wantMetricCount: 2,
+			unmarshaler:        &fakeMetricsUnmarshaler{metrics: makeMetrics()},
+			wantBatches:        1,
+			wantDataPointCount: 2,
 		},
 		"metadata_applied_to_resource_attributes": {
 			content: [][]byte{[]byte("m")},
@@ -72,9 +81,9 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 				AttrEventHubNamespace:     "test-namespace.servicebus.windows.net",
 				AttrEventHubConsumerGroup: "test",
 			},
-			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
-			wantBatches:     1,
-			wantMetricCount: 1,
+			unmarshaler:        &fakeMetricsUnmarshaler{metrics: makeMetrics()},
+			wantBatches:        1,
+			wantDataPointCount: 1,
 		},
 		"unmarshal_error": {
 			content:     [][]byte{[]byte("bad")},
@@ -89,6 +98,11 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 		"no_metrics_to_consume_all_unmarshaled_empty": {
 			content:     [][]byte{[]byte("a"), []byte("b")},
 			unmarshaler: &fakeMetricsUnmarshaler{metrics: pmetric.NewMetrics()},
+			wantErr:     "no metrics to consume",
+		},
+		"no_metrics_to_consume_metric_without_data_points": {
+			content:     [][]byte{[]byte("a")},
+			unmarshaler: &fakeMetricsUnmarshaler{metrics: makeMetricsWithoutDataPoints()},
 			wantErr:     "no metrics to consume",
 		},
 	}
@@ -113,7 +127,7 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 			all := sink.AllMetrics()
 			require.Len(t, all, tt.wantBatches, "metric batches (ConsumeMetrics calls)")
 			if tt.wantBatches > 0 {
-				assert.Equal(t, tt.wantMetricCount, all[0].MetricCount(), "metrics in merged batch")
+				assert.Equal(t, tt.wantDataPointCount, all[0].DataPointCount(), "data points in merged batch")
 			}
 			if len(tt.metadata) > 0 && tt.wantBatches > 0 {
 				md := all[0]

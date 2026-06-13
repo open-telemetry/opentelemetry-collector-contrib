@@ -36,7 +36,7 @@ func (c *MetricsConsumer) ConsumeEvents(ctx context.Context, req trigger.ParsedR
 		if err != nil {
 			return fmt.Errorf("unmarshal message %d: %w", i, err)
 		}
-		if metrics.MetricCount() == 0 {
+		if metrics.DataPointCount() == 0 {
 			continue
 		}
 		if len(req.Metadata) > 0 {
@@ -46,7 +46,7 @@ func (c *MetricsConsumer) ConsumeEvents(ctx context.Context, req trigger.ParsedR
 			metrics.ResourceMetrics().At(j).CopyTo(merged.ResourceMetrics().AppendEmpty())
 		}
 	}
-	if merged.MetricCount() == 0 {
+	if merged.DataPointCount() == 0 {
 		// Same policy as logs: requests that produce no data points are rejected
 		// as permanent errors (anomaly or bad payload).
 		return errors.New("no metrics to consume")
