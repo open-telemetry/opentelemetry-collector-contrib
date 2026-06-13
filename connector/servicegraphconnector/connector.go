@@ -255,19 +255,36 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 
-				connectionType := store.Unknown
-
 				switch span.Kind() {
 				case ptrace.SpanKindProducer:
-					// override connection type and continue processing as span kind client
-					connectionType = store.MessagingSystem
-					fallthrough
+					traceID := span.TraceID()
+					key := store.NewKey(traceID, span.SpanID())
+					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
+						e.TraceID = traceID
+						e.ConnectionType = store.MessagingSystem
+						e.ClientService = serviceName
+						e.ClientLatencySec = spanDuration(span)
+						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
+						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
+
+						if virtualNodeFeatureGate.IsEnabled() {
+							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
+						}
+
+						// A database request will only have one span, we don't wait for the server
+						// span but just copy details from the client span
+						if dbName, ok := getFirstMatchingValue(p.config.DatabaseNameAttributes, rAttributes, span.Attributes()); ok {
+							e.ConnectionType = store.Database
+							e.ServerService = dbName
+							e.ServerLatencySec = spanDuration(span)
+						}
+					})
 				case ptrace.SpanKindClient:
 					traceID := span.TraceID()
 					key := store.NewKey(traceID, span.SpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
-						e.ConnectionType = connectionType
+						e.ConnectionType = store.Unknown
 						e.ClientService = serviceName
 						e.ClientLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
@@ -286,15 +303,81 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						}
 					})
 				case ptrace.SpanKindConsumer:
-					// override connection type and continue processing as span kind server
-					connectionType = store.MessagingSystem
-					fallthrough
+					// If Links are empty, fall back to parent-based correlation
+					// to preserve backward compatibility.
+					if span.Links().Len() == 0 {
+						traceID := span.TraceID()
+						key := store.NewKey(traceID, span.ParentSpanID())
+						isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
+							e.TraceID = traceID
+							e.ConnectionType = store.MessagingSystem
+							e.ServerService = serviceName
+							e.ServerLatencySec = spanDuration(span)
+							e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
+							p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
+						})
+
+						if errors.Is(err, store.ErrTooManyItems) {
+							totalDroppedSpans++
+							p.telemetryBuilder.ConnectorServicegraphDroppedSpans.Add(ctx, 1)
+							continue
+						}
+
+						if err != nil {
+							return err
+						}
+
+						if isNew {
+							p.telemetryBuilder.ConnectorServicegraphTotalEdges.Add(ctx, 1)
+						}
+
+						continue
+					}
+
+					// For Links-based correlation, create a consumer-keyed edge and
+					// set ProducerKey so the store can reconcile producer->many consumers.
+					for l := 0; l < span.Links().Len(); l++ {
+						link := span.Links().At(l)
+						producerTraceID := link.TraceID()
+						producerSpanID := link.SpanID()
+						producerKey := store.NewKey(producerTraceID, producerSpanID)
+
+						// Consumer edge should be keyed by the consumer span so multiple
+						// consumers do not collide on the same key.
+						consumerTraceID := span.TraceID()
+						consumerKey := store.NewKey(consumerTraceID, span.SpanID())
+
+						isNew, err = p.store.UpsertEdge(consumerKey, func(e *store.Edge) {
+							e.TraceID = consumerTraceID
+							e.ConnectionType = store.MessagingSystem
+							e.ServerService = serviceName
+							e.ServerLatencySec = spanDuration(span)
+							e.ProducerKey = producerKey
+							e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
+							p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
+						})
+
+						if errors.Is(err, store.ErrTooManyItems) {
+							totalDroppedSpans++
+							p.telemetryBuilder.ConnectorServicegraphDroppedSpans.Add(ctx, 1)
+							continue
+						}
+
+						if err != nil {
+							return err
+						}
+
+						if isNew {
+							p.telemetryBuilder.ConnectorServicegraphTotalEdges.Add(ctx, 1)
+						}
+					}
+					continue
 				case ptrace.SpanKindServer:
 					traceID := span.TraceID()
 					key := store.NewKey(traceID, span.ParentSpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
-						e.ConnectionType = connectionType
+						e.ConnectionType = store.Unknown
 						e.ServerService = serviceName
 						e.ServerLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
@@ -363,6 +446,11 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 	)
 
 	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
+
+	// Do not convert messaging system edges into virtual nodes on expiry.
+	if e.ConnectionType == store.MessagingSystem {
+		return
+	}
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
