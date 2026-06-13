@@ -42,6 +42,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -323,6 +324,215 @@ service:
 			require.Equal(t, string(gotParsed), got)
 		})
 	}
+}
+
+func TestCollectorCrashLogSnippet(t *testing.T) {
+	s := &Supervisor{
+		config: config.Supervisor{
+			Storage: config.Storage{Directory: t.TempDir()},
+		},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	require.Empty(t, s.collectorCrashLogSnippet())
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "collector failed to start"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent+"\n"), 0o600))
+
+	require.Equal(t, logContent, s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetFiltersErrors(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "INFO collector starting\nlevel=error msg=\"boom\" component=receiver\nDEBUG tear down"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent), 0o600))
+
+	require.Equal(t, "level=error msg=\"boom\" component=receiver", s.collectorCrashLogSnippet())
+}
+
+func TestAppendCollectorCrashDetails(t *testing.T) {
+	t.Run("no snippet", func(t *testing.T) {
+		s := &Supervisor{
+			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+		const base = "collector crashed"
+		require.Equal(t, base, s.appendCollectorCrashDetails(base))
+	})
+
+	t.Run("with snippet", func(t *testing.T) {
+		s := &Supervisor{
+			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+		logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+		require.NoError(t, os.WriteFile(logPath, []byte("oops\nstacktrace"), 0o600))
+
+		msg := s.appendCollectorCrashDetails("collector crashed")
+		require.Contains(t, msg, "Collector log tail:")
+		require.Contains(t, msg, "oops\nstacktrace")
+	})
+}
+
+func TestReadFileTailDropsPartialLine(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "agent.log")
+	require.NoError(t, os.WriteFile(logPath, []byte("first\nsecond\n"), 0o600))
+
+	data, err := readFileTail(logPath, 8)
+	require.NoError(t, err)
+	require.Equal(t, "second\n", string(data))
+}
+
+func TestCollectorCrashLogSnippetPrefersJSON(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	payload := `{"level":"error","component":"receiver","msg":"invalid config","stacktrace":"panic: bad config"}`
+	require.NoError(t, os.WriteFile(logPath, []byte(payload+"\nINFO done"), 0o600))
+
+	require.Equal(t, "level=error component=receiver msg=invalid config stacktrace=panic: bad config", s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetCapturesStacktrace(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	content := "info\npanic: boom\nstack line 1\nstack line 2"
+	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
+
+	require.Equal(t, "panic: boom\nstack line 1\nstack line 2", s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetIncludesConfigErrors(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	content := strings.Join([]string{
+		"INFO collector started",
+		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension",
+		"2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
+		"DEBUG shutting down",
+	}, "\n")
+	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
+
+	require.Equal(t,
+		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension\n2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
+		s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
+	s := &Supervisor{
+		config: config.Supervisor{
+			Storage: config.Storage{Directory: t.TempDir()},
+			Agent:   config.Agent{PassthroughLogs: true},
+		},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
+	s.appendPassthroughLogLine("panic: boom")
+
+	require.Equal(t, "level=error msg=boom\n\npanic: boom", s.collectorCrashLogSnippet())
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.T) {
+	s := &Supervisor{
+		config: config.Supervisor{
+			Storage: config.Storage{Directory: t.TempDir()},
+			Agent:   config.Agent{PassthroughLogs: true},
+		},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"previous run"}`)
+	require.Contains(t, s.appendCollectorCrashDetails("collector crashed"), "previous run")
+
+	s.resetPassthroughLogBuffer()
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
+func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		t.TempDir(),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				supervisorRestartHelperEnv: "sleep",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	s := &Supervisor{
+		runCtx:            t.Context(),
+		commander:         cmdr,
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true}},
+		telemetrySettings: newNopTelemetrySettings(),
+		agentReadyChan:    make(chan struct{}, 1),
+	}
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"previous run"}`)
+	require.NoError(t, cmdr.Start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, cmdr.Stop(t.Context()))
+	})
+
+	require.NoError(t, s.handleRestartCommand())
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
+func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows because the helper uses os.Interrupt")
+	}
+
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		t.TempDir(),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				supervisorRestartHelperEnv: "emit-on-interrupt",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	s := &Supervisor{
+		runCtx:            t.Context(),
+		commander:         cmdr,
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true}},
+		telemetrySettings: newNopTelemetrySettings(),
+		agentReadyChan:    make(chan struct{}, 1),
+	}
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	require.NoError(t, cmdr.Start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, cmdr.Stop(t.Context()))
+	})
+
+	require.NoError(t, s.handleRestartCommand())
+	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
 }
 
 func Test_onMessage(t *testing.T) {
