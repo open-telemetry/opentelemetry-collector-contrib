@@ -15,6 +15,7 @@ components:
     - cmd/oteltestbedcol
     - cmd/schemagen
     - cmd/telemetrygen
+    - connector/alertsgen
     - connector/count
     - connector/datadog
     - connector/exceptions
