@@ -24,32 +24,30 @@ func buildSupervisorResourceConfig(cfg *config.ResourceConfig) (*telemetryconfig
 	resourceCfg.Detectors = nil
 	resourceCfg.Attributes = make([]telemetryconfig.AttributeNameValue, 0, len(cfg.Attributes)+len(cfg.LegacyAttributes)+2)
 
-	defaultAttributes := map[string]any{
+	mergedAttributes := map[string]any{
 		string(conventions.ServiceNameKey):       "opamp-supervisor",
 		string(conventions.ServiceInstanceIDKey): instanceUUID.String(),
 	}
 
-	for name, value := range defaultAttributes {
-		if _, ok := cfg.LegacyAttributes[name]; ok {
-			continue
-		}
-		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
-			Name:  name,
-			Value: value,
-		})
-	}
-
 	for key, value := range cfg.LegacyAttributes {
 		if value == nil {
+			delete(mergedAttributes, key)
 			continue
 		}
+		mergedAttributes[key] = value
+	}
+
+	for _, attr := range cfg.Attributes {
+		mergedAttributes[attr.Name] = attr.Value
+	}
+
+	for key, value := range mergedAttributes {
 		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
 			Name:  key,
 			Value: value,
 		})
 	}
 
-	resourceCfg.Attributes = append(resourceCfg.Attributes, cfg.Attributes...)
 	if resourceCfg.SchemaUrl == nil {
 		schemaURL := conventions.SchemaURL
 		resourceCfg.SchemaUrl = &schemaURL
@@ -80,10 +78,47 @@ func resourceConfigToPcommon(ctx context.Context, resourceCfg *telemetryconfig.R
 
 	for sdkIterator.Next() {
 		kv := sdkIterator.Attribute()
-		if err := attrs.PutEmpty(string(kv.Key)).FromRaw(kv.Value.AsInterface()); err != nil {
+		if err := attrs.PutEmpty(string(kv.Key)).FromRaw(normalizePcommonValue(kv.Value.AsInterface())); err != nil {
 			return pcommon.Resource{}, err
 		}
 	}
 
 	return pcommonResource, nil
+}
+
+func normalizePcommonValue(v any) any {
+	switch value := v.(type) {
+	case []string:
+		out := make([]any, len(value))
+		for i, item := range value {
+			out[i] = item
+		}
+		return out
+	case []bool:
+		out := make([]any, len(value))
+		for i, item := range value {
+			out[i] = item
+		}
+		return out
+	case []int:
+		out := make([]any, len(value))
+		for i, item := range value {
+			out[i] = int64(item)
+		}
+		return out
+	case []int64:
+		out := make([]any, len(value))
+		for i, item := range value {
+			out[i] = item
+		}
+		return out
+	case []float64:
+		out := make([]any, len(value))
+		for i, item := range value {
+			out[i] = item
+		}
+		return out
+	default:
+		return v
+	}
 }
