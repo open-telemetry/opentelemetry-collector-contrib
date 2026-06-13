@@ -246,6 +246,7 @@ body:
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
+      - receiver/activedirectoryinv
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
