@@ -11,6 +11,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.bgwriter.buffers.allocated:
         description: "PostgresqlBgwriterBuffersAllocatedMetricConfig provides config for the postgresql.bgwriter.buffers.allocated metric."
         type: object
@@ -101,6 +117,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.blks_read:
         description: "PostgresqlBlksReadMetricConfig provides config for the postgresql.blks_read metric."
         type: object
@@ -108,6 +140,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.blocks_read:
         description: "PostgresqlBlocksReadMetricConfig provides config for the postgresql.blocks_read metric."
         type: object
@@ -129,8 +177,12 @@ $defs:
               type: string
               enum:
                 - "source"
+                - "db.namespace"
+                - "db.collection.name"
             default:
               - "source"
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.commits:
         description: "PostgresqlCommitsMetricConfig provides config for the postgresql.commits metric."
         type: object
@@ -138,6 +190,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.connection.max:
         description: "PostgresqlConnectionMaxMetricConfig provides config for the postgresql.connection.max metric."
         type: object
@@ -186,6 +254,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.deadlocks:
         description: "PostgresqlDeadlocksMetricConfig provides config for the postgresql.deadlocks metric."
         type: object
@@ -193,6 +277,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.function.calls:
         description: "PostgresqlFunctionCallsMetricConfig provides config for the postgresql.function.calls metric."
         type: object
@@ -214,8 +314,10 @@ $defs:
               type: string
               enum:
                 - "function"
+                - "db.namespace"
             default:
               - "function"
+              - "db.namespace"
       postgresql.index.scans:
         description: "PostgresqlIndexScansMetricConfig provides config for the postgresql.index.scans metric."
         type: object
@@ -223,6 +325,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "db.collection.name"
+                - "postgresql.index.name"
+            default:
+              - "db.namespace"
+              - "db.collection.name"
+              - "postgresql.index.name"
       postgresql.index.size:
         description: "PostgresqlIndexSizeMetricConfig provides config for the postgresql.index.size metric."
         type: object
@@ -230,6 +352,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "db.collection.name"
+                - "postgresql.index.name"
+            default:
+              - "db.namespace"
+              - "db.collection.name"
+              - "postgresql.index.name"
       postgresql.operations:
         description: "PostgresqlOperationsMetricConfig provides config for the postgresql.operations metric."
         type: object
@@ -251,8 +393,12 @@ $defs:
               type: string
               enum:
                 - "operation"
+                - "db.namespace"
+                - "db.collection.name"
             default:
               - "operation"
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.replication.data_delay:
         description: "PostgresqlReplicationDataDelayMetricConfig provides config for the postgresql.replication.data_delay metric."
         type: object
@@ -283,6 +429,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.rows:
         description: "PostgresqlRowsMetricConfig provides config for the postgresql.rows metric."
         type: object
@@ -304,8 +466,12 @@ $defs:
               type: string
               enum:
                 - "state"
+                - "db.namespace"
+                - "db.collection.name"
             default:
               - "state"
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.sequential_scans:
         description: "PostgresqlSequentialScansMetricConfig provides config for the postgresql.sequential_scans metric."
         type: object
@@ -313,6 +479,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "db.collection.name"
+            default:
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.table.count:
         description: "PostgresqlTableCountMetricConfig provides config for the postgresql.table.count metric."
         type: object
@@ -320,6 +504,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.table.size:
         description: "PostgresqlTableSizeMetricConfig provides config for the postgresql.table.size metric."
         type: object
@@ -327,6 +527,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "db.collection.name"
+            default:
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.table.vacuum.count:
         description: "PostgresqlTableVacuumCountMetricConfig provides config for the postgresql.table.vacuum.count metric."
         type: object
@@ -334,6 +552,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "db.collection.name"
+            default:
+              - "db.namespace"
+              - "db.collection.name"
       postgresql.temp.io:
         description: "PostgresqlTempIoMetricConfig provides config for the postgresql.temp.io metric."
         type: object
@@ -341,6 +577,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.temp_files:
         description: "PostgresqlTempFilesMetricConfig provides config for the postgresql.temp_files metric."
         type: object
@@ -348,6 +600,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.tup_deleted:
         description: "PostgresqlTupDeletedMetricConfig provides config for the postgresql.tup_deleted metric."
         type: object
@@ -355,6 +623,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.tup_fetched:
         description: "PostgresqlTupFetchedMetricConfig provides config for the postgresql.tup_fetched metric."
         type: object
@@ -362,6 +646,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.tup_inserted:
         description: "PostgresqlTupInsertedMetricConfig provides config for the postgresql.tup_inserted metric."
         type: object
@@ -369,6 +669,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.tup_returned:
         description: "PostgresqlTupReturnedMetricConfig provides config for the postgresql.tup_returned metric."
         type: object
@@ -376,6 +692,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.tup_updated:
         description: "PostgresqlTupUpdatedMetricConfig provides config for the postgresql.tup_updated metric."
         type: object
@@ -383,6 +715,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       postgresql.wal.age:
         description: "PostgresqlWalAgeMetricConfig provides config for the postgresql.wal.age metric."
         type: object
@@ -545,6 +893,60 @@ $defs:
               $ref: go.opentelemetry.io/collector/filter.config
       postgresql.table.name:
         description: ResourceAttributeConfig provides common config for a postgresql.table.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      server.address:
+        description: ResourceAttributeConfig provides common config for a server.address resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      server.port:
+        description: ResourceAttributeConfig provides common config for a server.port resource attribute.
         type: object
         properties:
           enabled:

@@ -48,6 +48,9 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 > otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
 > ```
 >
+> **Note:** This gate is mutually exclusive with `receiver.postgresql.useOTelSemconv`. Both cannot be
+> enabled at the same time.
+>
 > See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
 ## Configuration
@@ -190,6 +193,17 @@ receivers:
       max_idle: 2
       max_open: 5
 ```
+
+## OpenTelemetry semantic conventions feature gate
+
+The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by default) controls the resource model used by this receiver:
+
+- **Gate disabled (default):** Legacy per-entity resource model. Each database, table, and index emits metrics under a separate resource with `postgresql.database.name`, `postgresql.table.name`, `postgresql.index.name`, and `postgresql.schema.name` as resource attributes. `service.instance.id` is in `host:port` format.
+- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `server.address`, `server.port`, and `service.instance.id` (UUID v5) as resource attributes, aligning with OpenTelemetry semantic conventions.
+
+In both modes, metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+
+This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
 
 ## Metrics
 

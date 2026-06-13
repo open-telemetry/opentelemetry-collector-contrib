@@ -1,9 +1,206 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: Number of buffers allocated.
+            name: postgresql.bgwriter.buffers.allocated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1424"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{buffers}'
+          - description: Number of buffers written.
+            name: postgresql.bgwriter.buffers.writes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "14"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: backend
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: backend_fsync
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: bgwriter
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "67"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: checkpoints
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{buffers}'
+          - description: The number of checkpoints performed.
+            name: postgresql.bgwriter.checkpoint.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: requested
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: scheduled
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{checkpoints}'
+          - description: Total time spent writing and syncing files to disk by checkpoints.
+            name: postgresql.bgwriter.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 102
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: sync
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 20
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ms
+          - description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
+            name: postgresql.bgwriter.maxwritten
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Configured maximum number of client connections allowed
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.connection.max
+            unit: '{connections}'
+          - description: Number of user databases.
+            name: postgresql.database.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{databases}'
+          - description: The number of database locks.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_oid_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_relname_nsp_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_tblspc_relfilenode_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database.locks
+            unit: '{lock}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
         - key: postgresql.database.name
           value:
-            stringValue: postgres
+            stringValue: otel
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -11,38 +208,54 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache. 
+          - description: Number of times disk blocks were found already in the buffer cache.
             name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "3601"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database. 
+          - description: Number of disk blocks read in this database.
             name: postgresql.blks_read
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "254"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{blks_read}'            
+            unit: '{blks_read}'
           - description: The number of commits.
             name: postgresql.commits
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "705"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "8"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The database disk usage.
@@ -50,9 +263,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7248408"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "8180271"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of deadlocks.
             name: postgresql.deadlocks
@@ -60,8 +277,12 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{deadlock}'
           - description: The number of rollbacks.
@@ -69,9 +290,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "58"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Number of user tables in a database.
@@ -79,9 +304,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "2"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{table}'
           - description: Total amount of data written to temporary files by queries.
             name: postgresql.temp.io
@@ -89,6 +318,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -99,8 +332,12 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{temp_file}'
           - description: Number of rows deleted by queries in the database.
@@ -109,50 +346,70 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_deleted}'  
+            unit: '{tup_deleted}'
           - description: Number of rows fetched by queries in the database.
             name: postgresql.tup_fetched
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "1672"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_fetched}'  
+            unit: '{tup_fetched}'
           - description: Number of rows inserted by queries in the database.
             name: postgresql.tup_inserted
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "74"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_inserted}'    
+            unit: '{tup_inserted}'
           - description: Number of rows returned by queries in the database.
             name: postgresql.tup_returned
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "1835"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_returned}'                                        
+            unit: '{tup_returned}'
           - description: Number of rows updated by queries in the database.
             name: postgresql.tup_updated
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "5"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_updated}'            
+            unit: '{tup_updated}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -160,159 +417,439 @@ resourceMetrics:
       attributes:
         - key: postgresql.database.name
           value:
-            stringValue: otel
-        - key: postgresql.table.name
+            stringValue: otel2
+        - key: service.instance.id
           value:
-            stringValue: public.table2
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
-          - description: The number of blocks read.
-            name: postgresql.blocks_read
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: heap_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: heap_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: idx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: toast_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: toast_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: The number of db row operations.
-            name: postgresql.operations
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: del
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: hot_upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: The number of rows in the database.
-            name: postgresql.rows
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: dead
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: live
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: "1"
-          - description: The number of sequential scans.
-            name: postgresql.sequential_scans
+          - description: The number of backends.
+            name: postgresql.backends
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{sequential_scan}'
-          - description: Disk space used by a table.
-            name: postgresql.table.size
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache.
+            name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "5611"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database.
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "340"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_read}'
+          - description: The number of commits.
+            name: postgresql.commits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The database disk usage.
+            name: postgresql.db_size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8245807"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
-          - description: Number of times a table has manually been vacuumed.
-            name: postgresql.table.vacuum.count
+          - description: The number of deadlocks.
+            name: postgresql.deadlocks
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{vacuum}'
+            unit: '{deadlock}'
+          - description: The number of rollbacks.
+            name: postgresql.rollbacks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Number of user tables in a database.
+            name: postgresql.table.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2825408"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "42"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_deleted}'
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2507"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_fetched}'
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "181"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_inserted}'
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2703"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_returned}'
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "18"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_updated}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: postgres
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of backends.
+            name: postgresql.backends
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache.
+            name: postgresql.blks_hit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4830"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database.
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "300"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_read}'
+          - description: The number of commits.
+            name: postgresql.commits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The database disk usage.
+            name: postgresql.db_size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8098351"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of deadlocks.
+            name: postgresql.deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{deadlock}'
+          - description: The number of rollbacks.
+            name: postgresql.rollbacks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Number of user tables in a database.
+            name: postgresql.table.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_deleted}'
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2551"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_fetched}'
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_inserted}'
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7492"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_returned}'
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_updated}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -324,6 +861,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -333,60 +873,108 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: heap_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: heap_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
-                        stringValue: toast_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: idx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: toast_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
+                        stringValue: table1
+                    - key: db.namespace
                       value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -396,32 +984,56 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: db.collection.name
                       value:
-                        stringValue: ins
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: db.collection.name
                       value:
-                        stringValue: upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -431,18 +1043,30 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
@@ -450,8 +1074,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
           - description: Disk space used by a table.
@@ -460,8 +1091,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -469,8 +1107,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuum}'
         scope:
@@ -481,234 +1126,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
-    scopeMetrics:
-      - metrics:
-          - description: The number of backends.
-            name: postgresql.backends
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache. 
-            name: postgresql.blks_hit
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database. 
-            name: postgresql.blks_read
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{blks_read}'            
-          - description: The number of commits.
-            name: postgresql.commits
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "181"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: The database disk usage.
-            name: postgresql.db_size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "7305752"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: By
-          - description: The number of deadlocks.
-            name: postgresql.deadlocks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{deadlock}'
-          - description: The number of rollbacks.
-            name: postgresql.rollbacks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: Number of user tables in a database.
-            name: postgresql.table.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: '{table}'
-          - description: Total amount of data written to temporary files by queries.
-            name: postgresql.temp.io
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: By
-          - description: The number of temp files.
-            name: postgresql.temp_files
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{temp_file}'
-          - description: Number of rows deleted by queries in the database.
-            name: postgresql.tup_deleted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_deleted}'  
-          - description: Number of rows fetched by queries in the database.
-            name: postgresql.tup_fetched
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_fetched}'  
-          - description: Number of rows inserted by queries in the database.
-            name: postgresql.tup_inserted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_inserted}'    
-          - description: Number of rows returned by queries in the database.
-            name: postgresql.tup_returned
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_returned}'                                        
-          - description: Number of rows updated by queries in the database.
-            name: postgresql.tup_updated
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_updated}'            
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
         - key: postgresql.table.name
           value:
-            stringValue: table1
-        - key: postgresql.index.name
+            stringValue: public.table2
+        - key: service.instance.id
           value:
-            stringValue: table1_pkey
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "8192"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: postgresql.table.name
-          value:
-            stringValue: table2
-        - key: postgresql.index.name
-          value:
-            stringValue: table2_pkey
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "8192"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel2
-        - key: postgresql.table.name
-          value:
-            stringValue: public.test2
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -716,62 +1139,110 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1"
+                - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: heap_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
-                  attributes:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "4"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "2"
+                        stringValue: heap_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: source
                       value:
-                        stringValue: toast_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: idx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: toast_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
+                        stringValue: table2
+                    - key: db.namespace
                       value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -779,34 +1250,58 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: db.collection.name
                       value:
-                        stringValue: upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -816,27 +1311,46 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "1"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
           - description: Disk space used by a table.
@@ -844,9 +1358,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "8192"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -854,8 +1375,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuum}'
         scope:
@@ -869,6 +1397,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.test1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -878,60 +1409,108 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: heap_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: heap_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: source
                       value:
-                        stringValue: toast_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: idx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: toast_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
-                    - key: source
+                        stringValue: test1
+                    - key: db.namespace
                       value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -941,32 +1520,56 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: db.collection.name
                       value:
-                        stringValue: ins
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: db.collection.name
                       value:
-                        stringValue: upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "0"
-                  attributes:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: operation
+                      value:
+                        stringValue: upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -976,18 +1579,30 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
@@ -995,8 +1610,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
           - description: Disk space used by a table.
@@ -1005,8 +1627,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -1014,8 +1643,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuum}'
         scope:
@@ -1026,481 +1662,608 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: postgresql.table.name
+          value:
+            stringValue: public.test2
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
     scopeMetrics:
       - metrics:
-          - description: The number of backends.
-            name: postgresql.backends
+          - description: The number of blocks read.
+            name: postgresql.blocks_read
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache. 
-            name: postgresql.blks_hit
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: heap_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: idx_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: idx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database. 
-            name: postgresql.blks_read
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{blks_read}'            
-          - description: The number of commits.
-            name: postgresql.commits
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "182"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: The database disk usage.
-            name: postgresql.db_size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "7346712"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: By
-          - description: The number of deadlocks.
-            name: postgresql.deadlocks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{deadlock}'
-          - description: The number of rollbacks.
-            name: postgresql.rollbacks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: "1"
-          - description: Number of user tables in a database.
-            name: postgresql.table.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: '{table}'
-          - description: Total amount of data written to temporary files by queries.
-            name: postgresql.temp.io
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2825408"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: source
+                      value:
+                        stringValue: toast_read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: By
-          - description: The number of temp files.
-            name: postgresql.temp_files
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{temp_file}'
-          - description: Number of rows deleted by queries in the database.
-            name: postgresql.tup_deleted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_deleted}'  
-          - description: Number of rows fetched by queries in the database.
-            name: postgresql.tup_fetched
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_fetched}'  
-          - description: Number of rows inserted by queries in the database.
-            name: postgresql.tup_inserted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_inserted}'    
-          - description: Number of rows returned by queries in the database.
-            name: postgresql.tup_returned
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_returned}'                                        
-          - description: Number of rows updated by queries in the database.
-            name: postgresql.tup_updated
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{tup_updated}'            
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel2
-        - key: postgresql.table.name
-          value:
-            stringValue: test1
-        - key: postgresql.index.name
-          value:
-            stringValue: test1_pkey
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "8192"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel2
-        - key: postgresql.table.name
-          value:
-            stringValue: test2
-        - key: postgresql.index.name
-          value:
-            stringValue: test2_pkey
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "16384"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel2
-        - key: postgresql.table.name
-          value:
-            stringValue: test1
-        - key: postgresql.index.name
-          value:
-            stringValue: otelindex
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "8192"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel2
-        - key: postgresql.table.name
-          value:
-            stringValue: test2
-        - key: postgresql.index.name
-          value:
-            stringValue: otel2index
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "16384"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: Number of buffers allocated.
-            name: postgresql.bgwriter.buffers.allocated
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "964"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{buffers}'
-          - description: Number of buffers written.
-            name: postgresql.bgwriter.buffers.writes
+            unit: "1"
+          - description: The number of db row operations.
+            name: postgresql.operations
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: bgwriter
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "5"
-                  attributes:
-                    - key: source
+                        stringValue: test2
+                    - key: db.namespace
                       value:
-                        stringValue: backend
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "60"
-                  attributes:
-                    - key: source
+                        stringValue: otel2|public
+                    - key: operation
                       value:
-                        stringValue: checkpoints
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: del
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: source
+                    - key: db.collection.name
                       value:
-                        stringValue: backend_fsync
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{buffers}'
-          - description: The number of checkpoints performed.
-            name: postgresql.bgwriter.checkpoint.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "4"
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: operation
+                      value:
+                        stringValue: hot_upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
                   attributes:
-                    - key: type
+                    - key: db.collection.name
                       value:
-                        stringValue: requested
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: type
+                    - key: db.collection.name
                       value:
-                        stringValue: scheduled
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: '{checkpoints}'
-          - description: Total time spent writing and syncing files to disk by checkpoints.
-            name: postgresql.bgwriter.duration
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asDouble: 9
-                  attributes:
-                    - key: type
+                        stringValue: test2
+                    - key: db.namespace
                       value:
-                        stringValue: sync
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asDouble: 6
-                  attributes:
-                    - key: type
+                        stringValue: otel2|public
+                    - key: operation
                       value:
-                        stringValue: write
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-              isMonotonic: true
-            unit: ms
-          - description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
-            name: postgresql.bgwriter.maxwritten
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
+                        stringValue: upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: Configured maximum number of client connections allowed
-            gauge:
+          - description: The number of rows in the database.
+            name: postgresql.rows
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asInt: "100"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.connection.max
-            unit: '{connections}'
-          - description: Number of user databases.
-            name: postgresql.database.count
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: state
+                      value:
+                        stringValue: dead
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: state
+                      value:
+                        stringValue: live
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            unit: '{databases}'
-          - description: The number of database locks.
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{sequential_scan}'
+          - description: Disk space used by a table.
+            name: postgresql.table.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8192"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Number of times a table has manually been vacuumed.
+            name: postgresql.table.vacuum.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{vacuum}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.index.name
+          value:
+            stringValue: table1_pkey
+        - key: postgresql.table.name
+          value:
+            stringValue: table1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: table1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
             gauge:
               dataPoints:
-                - asInt: "1"
+                - asInt: "8192"
                   attributes:
-                    - key: relation
+                    - key: db.collection.name
                       value:
-                        stringValue: pg_class_relname_nsp_index
-                    - key: mode
+                        stringValue: table1
+                    - key: db.namespace
                       value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
+                        stringValue: otel|public
+                    - key: postgresql.index.name
                       value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
+                        stringValue: table1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.index.name
+          value:
+            stringValue: table2_pkey
+        - key: postgresql.table.name
+          value:
+            stringValue: table2
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
                   attributes:
-                    - key: relation
+                    - key: db.collection.name
                       value:
-                        stringValue: pg_class_tblspc_relfilenode_index
-                    - key: mode
+                        stringValue: table2
+                    - key: db.namespace
                       value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
+                        stringValue: otel|public
+                    - key: postgresql.index.name
                       value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
+                        stringValue: table2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "8192"
                   attributes:
-                    - key: relation
+                    - key: db.collection.name
                       value:
-                        stringValue: pg_locks
-                    - key: mode
+                        stringValue: table2
+                    - key: db.namespace
                       value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
+                        stringValue: otel|public
+                    - key: postgresql.index.name
                       value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
+                        stringValue: table2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel2
+        - key: postgresql.index.name
+          value:
+            stringValue: otel2index
+        - key: postgresql.table.name
+          value:
+            stringValue: test2
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
                   attributes:
-                    - key: relation
+                    - key: db.collection.name
                       value:
-                        stringValue: pg_class
-                    - key: mode
+                        stringValue: test2
+                    - key: db.namespace
                       value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
                       value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-                - asInt: "1"
+                        stringValue: otel2index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "16384"
                   attributes:
-                    - key: relation
+                    - key: db.collection.name
                       value:
-                        stringValue: pg_class_oid_index
-                    - key: mode
+                        stringValue: test2
+                    - key: db.namespace
                       value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
                       value:
-                        stringValue: relation
-                  startTimeUnixNano: "1706802467703361527"
-                  timeUnixNano: "1706802526712082422"
-            name: postgresql.database.locks
-            unit: '{lock}'
+                        stringValue: otel2index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel2
+        - key: postgresql.index.name
+          value:
+            stringValue: otelindex
+        - key: postgresql.table.name
+          value:
+            stringValue: test1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otelindex
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "8192"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otelindex
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel2
+        - key: postgresql.index.name
+          value:
+            stringValue: test1_pkey
+        - key: postgresql.table.name
+          value:
+            stringValue: test1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: test1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "8192"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: test1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel2
+        - key: postgresql.index.name
+          value:
+            stringValue: test2_pkey
+        - key: postgresql.table.name
+          value:
+            stringValue: test2
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32930
+    scopeMetrics:
+      - metrics:
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: test2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "16384"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel2|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: test2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
