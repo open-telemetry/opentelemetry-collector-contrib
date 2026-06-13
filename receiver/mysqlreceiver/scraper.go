@@ -10,10 +10,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"math"
+	"net"
+	"os"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +33,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
+const defaultServiceName = "unknown_service:mysql"
+
+// otelServiceInstanceNamespace is the UUID v5 namespace for service.instance.id,
+// as defined by the OpenTelemetry specification.
+var otelServiceInstanceNamespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+
 type mySQLScraper struct {
 	sqlclient              client
 	logger                 *zap.Logger
@@ -40,6 +49,7 @@ type mySQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	obfuscator             *obfuscator
 	lastExecutionTimestamp time.Time
+	serviceInstanceID      string
 
 	// detectedVersion is the database product and version detected at Connect time.
 	// It is set once during start() and used to stamp scope attributes on emitted logs.
@@ -55,6 +65,8 @@ func newMySQLScraper(
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
+	seed := resolveServiceInstanceSeed(config.Endpoint, settings.Logger)
+	serviceInstanceID := uuid.NewSHA1(otelServiceInstanceNamespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
@@ -64,7 +76,31 @@ func newMySQLScraper(
 		queryPlanCache:         queryPlanCache,
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
+		serviceInstanceID:      serviceInstanceID,
 	}
+}
+
+// resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5
+// seed for service.instance.id. For local endpoints (localhost, loopback IPs),
+// it substitutes the machine hostname so that co-hosted receivers on different
+// machines produce distinct IDs. The port is preserved so two local databases
+// on different ports remain distinguishable.
+func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		return endpoint
+	}
+	if host == "localhost" || (net.ParseIP(host) != nil && net.ParseIP(host).IsLoopback()) {
+		hostname, hostnameErr := os.Hostname()
+		if hostnameErr != nil {
+			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers",
+				zap.String("endpoint", endpoint),
+				zap.Error(hostnameErr))
+			return endpoint
+		}
+		return net.JoinHostPort(hostname, port)
+	}
+	return endpoint
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -177,6 +213,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceInstanceID(m.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
@@ -187,6 +226,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 func (m *mySQLScraper) emitLogsWithScopeAttrs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
 	rb := m.lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceInstanceID(m.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
 	m.setScopeAttributes(logs)
 	return logs, errs.Combine()
