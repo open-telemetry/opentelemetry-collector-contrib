@@ -5,15 +5,21 @@ package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -21,11 +27,131 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
+// shardedAggregator is the common interface for aggregating logs, either as a
+// single bucket or as multiple buckets keyed by metadata combination.
+type shardedAggregator interface {
+	add(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error
+	flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger)
+}
+
+// singleShardAggregator is used when no metadata_keys are configured.
+// It wraps a single logAggregator with no runtime overhead compared to the original behavior.
+type singleShardAggregator struct {
+	aggregator *logAggregator
+}
+
+func (s *singleShardAggregator) add(_ context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error {
+	s.aggregator.Add(resource, scope, logRecord)
+	return nil
+}
+
+func (s *singleShardAggregator) flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+	logs := s.aggregator.Export(ctx)
+	if logs.LogRecordCount() > 0 {
+		if err := nextConsumer.ConsumeLogs(ctx, logs); err != nil {
+			logger.Error("failed to consume logs", zap.Error(err))
+		}
+		s.aggregator.Reset()
+	}
+}
+
+// aggregatorShard holds a logAggregator and the client metadata for one metadata combination.
+type aggregatorShard struct {
+	aggregator *logAggregator
+	clientInfo client.Info
+}
+
+// multiShardAggregator is used when metadata_keys are configured.
+// It maintains one aggregatorShard per unique combination of metadata values.
+type multiShardAggregator struct {
+	metadataKeys             []string
+	metadataCardinalityLimit int
+
+	// Fields below are passed through to newLogAggregator for on-demand shard creation.
+	logCountAttribute string
+	timezone          *time.Location
+	telemetryBuilder  *metadata.TelemetryBuilder
+	includeFields     []string
+
+	shards map[attribute.Set]*aggregatorShard
+	// lock protects the shards map during concurrent lookups and creation.
+	lock sync.Mutex
+}
+
+func (m *multiShardAggregator) add(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error {
+	info := client.FromContext(ctx)
+	attrs := make([]attribute.KeyValue, 0, len(m.metadataKeys))
+	for _, k := range m.metadataKeys {
+		vs := info.Metadata.Get(k)
+		if len(vs) == 1 {
+			attrs = append(attrs, attribute.String(k, vs[0]))
+		} else {
+			attrs = append(attrs, attribute.StringSlice(k, vs))
+		}
+	}
+	aset := attribute.NewSet(attrs...)
+
+	shard, err := m.getOrCreateShard(info, aset)
+	if err != nil {
+		return err
+	}
+
+	shard.aggregator.Add(resource, scope, logRecord)
+	return nil
+}
+
+func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute.Set) (*aggregatorShard, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	shard, ok := m.shards[aset]
+	if ok {
+		return shard, nil
+	}
+
+	if m.metadataCardinalityLimit > 0 && len(m.shards) >= m.metadataCardinalityLimit {
+		return nil, consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
+	}
+
+	md := make(map[string][]string, len(m.metadataKeys))
+	for _, k := range m.metadataKeys {
+		md[k] = info.Metadata.Get(k)
+	}
+	shard = &aggregatorShard{
+		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
+		clientInfo: client.Info{
+			Metadata: client.NewMetadata(md),
+		},
+	}
+	m.shards[aset] = shard
+	return shard, nil
+}
+
+func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+	m.lock.Lock()
+	shards := make([]*aggregatorShard, 0, len(m.shards))
+	for _, s := range m.shards {
+		shards = append(shards, s)
+	}
+	m.lock.Unlock()
+
+	for _, shard := range shards {
+		exportCtx := client.NewContext(context.Background(), shard.clientInfo)
+		logs := shard.aggregator.Export(exportCtx)
+		if logs.LogRecordCount() > 0 {
+			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
+				logger.Error("failed to consume logs", zap.Error(err))
+			}
+			shard.aggregator.Reset()
+		}
+	}
+}
+
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
 	emitInterval time.Duration
 	conditions   *ottl.ConditionSequence[*ottllog.TransformContext]
-	aggregator   *logAggregator
+	aggregator   shardedAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
 	logger       *zap.Logger
@@ -46,9 +172,40 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 		return nil, fmt.Errorf("invalid timezone: %w", err)
 	}
 
+	// Normalize metadata keys to lowercase. HTTP/2 headers are case-insensitive,
+	// but attribute.Set key lookup is case-sensitive — normalizing avoids
+	// duplicate shards for the same logical key.
+	metadataKeys := make([]string, len(cfg.MetadataKeys))
+	for i, k := range cfg.MetadataKeys {
+		metadataKeys[i] = strings.ToLower(k)
+	}
+	sort.Strings(metadataKeys)
+
+	var agg shardedAggregator
+	if len(metadataKeys) == 0 {
+		agg = &singleShardAggregator{
+			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
+		}
+	} else {
+		if cfg.MetadataCardinalityLimit == 0 {
+			settings.Logger.Warn("metadata_keys is set but metadata_cardinality_limit is 0; the number of metadata combinations is unbounded, which may lead to unbounded memory growth. Set metadata_cardinality_limit to a positive value to cap it.",
+				zap.Strings("metadata_keys", metadataKeys),
+			)
+		}
+		agg = &multiShardAggregator{
+			metadataKeys:             metadataKeys,
+			metadataCardinalityLimit: int(cfg.MetadataCardinalityLimit),
+			logCountAttribute:        cfg.LogCountAttribute,
+			timezone:                 timezone,
+			telemetryBuilder:         telemetryBuilder,
+			includeFields:            cfg.IncludeFields,
+			shards:                   make(map[attribute.Set]*aggregatorShard),
+		}
+	}
+
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
+		aggregator:   agg,
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,
@@ -86,6 +243,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
+	var aggregateErr error
 	pl.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
 
@@ -95,7 +253,10 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 
 			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
 				if p.conditions == nil {
-					p.aggregateLog(logRecord, scope, resource)
+					if err := p.aggregateLog(ctx, logRecord, scope, resource); err != nil {
+						aggregateErr = err
+						return false
+					}
 					return true
 				}
 
@@ -109,7 +270,10 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 				if !logMatch {
 					return false
 				}
-				p.aggregateLog(logRecord, scope, resource)
+				if err := p.aggregateLog(ctx, logRecord, scope, resource); err != nil {
+					aggregateErr = err
+					return false
+				}
 				return true
 			})
 			return sl.LogRecords().Len() == 0
@@ -125,12 +289,12 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 		}
 	}
 
-	return nil
+	return aggregateErr
 }
 
-func (p *logDedupProcessor) aggregateLog(logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) {
+func (p *logDedupProcessor) aggregateLog(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	p.remover.RemoveFields(logRecord)
-	p.aggregator.Add(resource, scope, logRecord)
+	return p.aggregator.add(ctx, logRecord, scope, resource)
 }
 
 // handleExportInterval sends metrics at the configured interval.
@@ -160,13 +324,5 @@ func (p *logDedupProcessor) exportLogs(ctx context.Context) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	logs := p.aggregator.Export(ctx)
-	// Only send logs if we have some
-	if logs.LogRecordCount() > 0 {
-		err := p.nextConsumer.ConsumeLogs(ctx, logs)
-		if err != nil {
-			p.logger.Error("failed to consume logs", zap.Error(err))
-		}
-	}
-	p.aggregator.Reset()
+	p.aggregator.flush(ctx, p.nextConsumer, p.logger)
 }
