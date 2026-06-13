@@ -74,6 +74,14 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient, aecmr.logger)
+
+	if aecmr.config.InstanceLevelMetrics {
+		return aecmr.collectInstanceLevelMetrics(ctx)
+	}
+	return aecmr.collectTaskLevelMetrics(ctx)
+}
+
+func (aecmr *awsEcsContainerMetricsReceiver) collectTaskLevelMetrics(ctx context.Context) error {
 	stats, metadata, err := aecmr.provider.GetStats()
 	if err != nil {
 		aecmr.logger.Error("Failed to collect stats", zap.Error(err))
@@ -86,6 +94,26 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 		err = aecmr.nextConsumer.ConsumeMetrics(ctx, md)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (aecmr *awsEcsContainerMetricsReceiver) collectInstanceLevelMetrics(ctx context.Context) error {
+	entries, err := aecmr.provider.GetInstanceStats()
+	if err != nil {
+		aecmr.logger.Error("Failed to collect instance-level stats", zap.Error(err))
+		return err
+	}
+
+	for i := range entries {
+		mds := awsecscontainermetrics.MetricsData(entries[i].Stats, entries[i].Metadata, aecmr.logger)
+		for _, md := range mds {
+			err = aecmr.nextConsumer.ConsumeMetrics(ctx, md)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

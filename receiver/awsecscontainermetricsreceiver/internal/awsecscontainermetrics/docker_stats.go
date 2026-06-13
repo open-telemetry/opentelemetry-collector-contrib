@@ -7,6 +7,11 @@ import "time"
 
 const TaskStatsPath = "/task/stats"
 
+const (
+	InstanceStatsPath    = "/tasks/stats"
+	InstanceMetadataPath = "/tasks"
+)
+
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {
 	Name         string    `json:"name"`
