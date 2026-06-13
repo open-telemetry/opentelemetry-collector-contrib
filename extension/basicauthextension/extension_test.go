@@ -5,18 +5,28 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 )
 
 var credentials = [][]string{
@@ -102,6 +112,7 @@ func TestBasicAuth_NoHeader(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
@@ -113,6 +124,7 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
@@ -136,6 +148,7 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	for _, auth := range [][]string{
 		{"non decodable", "invalid"},
 		{"missing separator", "aW52YWxpZAo="},
@@ -296,4 +309,113 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 		_, err = ext.PerRPCCredentials()
 		assert.Error(t, err)
 	})
+}
+
+type mockSMClient struct {
+	secretString atomic.Pointer[string]
+	err          error
+}
+
+func (m *mockSMClient) GetSecretValue(_ context.Context, _ *secretsmanager.GetSecretValueInput, _ ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	s := m.secretString.Load()
+	return &secretsmanager.GetSecretValueOutput{
+		SecretString: s,
+	}, nil
+}
+
+func (m *mockSMClient) setSecret(s string) {
+	m.secretString.Store(&s)
+}
+
+func TestClientAuth_AWSSecret(t *testing.T) {
+	t.Parallel()
+	secret := map[string]string{"user": "admin", "pass": "secret123"}
+	data, _ := json.Marshal(secret)
+
+	mock := &mockSMClient{}
+	mock.setSecret(string(data))
+
+	ext := &basicAuthClient{
+		clientAuth: &ClientAuthSettings{
+			AWSSecret: &AWSSecretClientConfig{
+				SecretARN:       "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				Region:          "us-east-1",
+				UsernameKey:     "user",
+				PasswordKey:     "pass",
+				RefreshInterval: 5 * time.Minute,
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	cfg := ext.clientAuth.AWSSecret
+	cr := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ext.logger,
+		func(raw string) error {
+			var parsed map[string]any
+			if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+				return err
+			}
+			u := parsed[cfg.UsernameKey].(string)
+			p := parsed[cfg.PasswordKey].(string)
+			ext.creds.CompareAndSwap(ext.creds.Load(), &awsCredentials{username: u, password: p})
+			return nil
+		},
+	)
+	cr.Client = mock
+	require.NoError(t, cr.Start(t.Context()))
+	ext.awsSecretResolver = cr
+	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
+
+	assert.Equal(t, "admin", ext.Username())
+	assert.Equal(t, "secret123", ext.Password())
+
+	rt, err := ext.RoundTripper(&mockRoundTripper{})
+	require.NoError(t, err)
+
+	resp, err := rt.RoundTrip(&http.Request{Method: http.MethodGet})
+	require.NoError(t, err)
+	assert.Contains(t, resp.Header.Get("Authorization"), "Basic ")
+}
+
+func TestServerAuth_AWSSecret(t *testing.T) {
+	t.Parallel()
+
+	mock := &mockSMClient{}
+	mock.setSecret("testuser:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=")
+
+	ext := &basicAuthServer{
+		htpasswd: &HtpasswdSettings{
+			AWSSecret: &AWSSecretHtpasswdConfig{
+				SecretARN:       "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				Region:          "us-east-1",
+				RefreshInterval: 5 * time.Minute,
+			},
+		},
+		logger: zaptest.NewLogger(t),
+	}
+
+	resolver := awssecretsmanager.NewResolver(
+		ext.htpasswd.AWSSecret.SecretARN, ext.htpasswd.AWSSecret.Region,
+		ext.htpasswd.AWSSecret.RefreshInterval, ext.logger,
+		func(raw string) error {
+			htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
+			if err != nil {
+				return err
+			}
+			ext.matcher.Store(&htpasswdMatcher{htp: htp})
+			return nil
+		},
+	)
+	resolver.Client = mock
+	require.NoError(t, resolver.Start(t.Context()))
+	ext.awsSecretResolver = resolver
+	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
+
+	auth := "dGVzdHVzZXI6cGFzc3dvcmQ=" // testuser:password
+	ctx, err := ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
 }

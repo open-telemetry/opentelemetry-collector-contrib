@@ -5,12 +5,14 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/component"
@@ -19,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/awssecretsmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
@@ -35,7 +38,7 @@ func newClientAuthExtension(cfg *Config) *basicAuthClient {
 }
 
 func newServerAuthExtension(cfg *Config) (*basicAuthServer, error) {
-	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
+	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" && cfg.Htpasswd.AWSSecret == nil) {
 		return nil, errNoCredentialSource
 	}
 
@@ -49,13 +52,35 @@ var (
 	_ extensionauth.Server = (*basicAuthServer)(nil)
 )
 
-type basicAuthServer struct {
-	htpasswd  *HtpasswdSettings
-	matchFunc func(username, password string) bool
-	component.ShutdownFunc
+type htpasswdMatcher struct {
+	htp *htpasswd.File
 }
 
-func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
+func (m *htpasswdMatcher) verify(username, password string) bool {
+	return m.htp.Match(username, password)
+}
+
+type basicAuthServer struct {
+	htpasswd          *HtpasswdSettings
+	matcher           atomic.Pointer[htpasswdMatcher]
+	awsSecretResolver *awssecretsmanager.Resolver
+	logger            *zap.Logger
+}
+
+func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
+	if ba.htpasswd.AWSSecret != nil {
+		cfg := ba.htpasswd.AWSSecret
+		processSecret := func(raw string) error {
+			return ba.parseAWSSecret(raw)
+		}
+		serverResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, processSecret)
+		if err := serverResolver.Start(ctx); err != nil {
+			return err
+		}
+		ba.awsSecretResolver = serverResolver
+		return nil
+	}
+
 	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
@@ -71,20 +96,39 @@ func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
 	// Ensure that the inline content is read the last.
 	// This way the inline content will override the content from file.
 	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
-	mr := io.MultiReader(rs...)
 
+	mr := io.MultiReader(rs...)
 	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
 	if err != nil {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
 
-	ba.matchFunc = htp.Match
+	ba.matcher.Store(&htpasswdMatcher{htp: htp})
+	return nil
+}
 
+func (ba *basicAuthServer) Shutdown(_ context.Context) error {
+	if ba.awsSecretResolver != nil {
+		return ba.awsSecretResolver.Shutdown()
+	}
 	return nil
 }
 
 func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	return basicauth.Authenticate(ctx, headers, ba.matchFunc)
+	m := ba.matcher.Load()
+	if m == nil {
+		return ctx, fmt.Errorf("htpasswd not yet initialized")
+	}
+	return basicauth.Authenticate(ctx, headers, m.verify)
+}
+
+func (ba *basicAuthServer) parseAWSSecret(raw string) error {
+	htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
+	if err != nil {
+		return err
+	}
+	ba.matcher.CompareAndSwap(ba.matcher.Load(), &htpasswdMatcher{htp: htp})
+	return nil
 }
 
 var (
@@ -93,11 +137,18 @@ var (
 	_ extensionauth.GRPCClient = (*basicAuthClient)(nil)
 )
 
+type awsCredentials struct {
+	username string
+	password string
+}
+
 type basicAuthClient struct {
-	clientAuth       *ClientAuthSettings
-	logger           *zap.Logger
-	usernameResolver credentialsfile.ValueResolver
-	passwordResolver credentialsfile.ValueResolver
+	clientAuth        *ClientAuthSettings
+	logger            *zap.Logger
+	usernameResolver  credentialsfile.ValueResolver
+	passwordResolver  credentialsfile.ValueResolver
+	awsSecretResolver *awssecretsmanager.Resolver
+	creds             atomic.Pointer[awsCredentials]
 }
 
 func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
@@ -125,6 +176,19 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		}
 		ba.passwordResolver = r
 	}
+
+	if ca.AWSSecret != nil {
+		cfg := ca.AWSSecret
+		processSecret := func(raw string) error {
+			return ba.parseAWSSecret(raw)
+		}
+		clientResolver := awssecretsmanager.NewResolver(cfg.SecretARN, cfg.Region, cfg.RefreshInterval, ba.logger, processSecret)
+		if err := clientResolver.Start(ctx); err != nil {
+			return fmt.Errorf("start AWS secret resolver: %w", err)
+		}
+		ba.awsSecretResolver = clientResolver
+	}
+
 	return nil
 }
 
@@ -136,6 +200,9 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	if ba.passwordResolver != nil {
 		errs = append(errs, ba.passwordResolver.Shutdown())
 	}
+	if ba.awsSecretResolver != nil {
+		errs = append(errs, ba.awsSecretResolver.Shutdown())
+	}
 	return errors.Join(errs...)
 }
 
@@ -143,8 +210,11 @@ func (ba *basicAuthClient) Username() string {
 	if ba.usernameResolver != nil {
 		return ba.usernameResolver.Value()
 	}
-	if ba.clientAuth != nil {
+	if ba.clientAuth != nil && ba.clientAuth.Username != "" {
 		return ba.clientAuth.Username
+	}
+	if c := ba.creds.Load(); c != nil {
+		return c.username
 	}
 	return ""
 }
@@ -153,10 +223,39 @@ func (ba *basicAuthClient) Password() string {
 	if ba.passwordResolver != nil {
 		return ba.passwordResolver.Value()
 	}
-	if ba.clientAuth != nil {
+	if ba.clientAuth != nil && string(ba.clientAuth.Password) != "" {
 		return string(ba.clientAuth.Password)
 	}
+	if c := ba.creds.Load(); c != nil {
+		return c.password
+	}
 	return ""
+}
+
+func (ba *basicAuthClient) parseAWSSecret(raw string) error {
+	cfg := ba.clientAuth.AWSSecret
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return fmt.Errorf("parse secret as JSON: %w", err)
+	}
+	uVal, ok := parsed[cfg.UsernameKey]
+	if !ok {
+		return fmt.Errorf("key %q not found in secret JSON", cfg.UsernameKey)
+	}
+	u, ok := uVal.(string)
+	if !ok {
+		return fmt.Errorf("key %q in secret is not a string", cfg.UsernameKey)
+	}
+	pVal, ok := parsed[cfg.PasswordKey]
+	if !ok {
+		return fmt.Errorf("key %q not found in secret JSON", cfg.PasswordKey)
+	}
+	p, ok := pVal.(string)
+	if !ok {
+		return fmt.Errorf("key %q in secret is not a string", cfg.PasswordKey)
+	}
+	ba.creds.CompareAndSwap(ba.creds.Load(), &awsCredentials{username: u, password: p})
+	return nil
 }
 
 func (ba *basicAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
