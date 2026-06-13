@@ -32,6 +32,8 @@ import (
 const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
+
+	defaultServiceName = "unknown_service:postgresql"
 )
 
 type postgreSQLScraper struct {
@@ -733,6 +735,8 @@ func (*postgreSQLScraper) retrieveBackends(
 
 func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}

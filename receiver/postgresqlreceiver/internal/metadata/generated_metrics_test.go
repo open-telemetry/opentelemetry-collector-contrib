@@ -256,6 +256,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
