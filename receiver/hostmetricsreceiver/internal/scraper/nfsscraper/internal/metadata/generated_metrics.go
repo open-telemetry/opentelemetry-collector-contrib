@@ -81,16 +81,16 @@ type AttributeNetworkTransport int
 
 const (
 	_ AttributeNetworkTransport = iota
-	AttributeNetworkTransportUdp
-	AttributeNetworkTransportTcp
+	AttributeNetworkTransportUDP
+	AttributeNetworkTransportTCP
 )
 
 // String returns the string representation of the AttributeNetworkTransport.
 func (av AttributeNetworkTransport) String() string {
 	switch av {
-	case AttributeNetworkTransportUdp:
+	case AttributeNetworkTransportUDP:
 		return "udp"
-	case AttributeNetworkTransportTcp:
+	case AttributeNetworkTransportTCP:
 		return "tcp"
 	}
 	return ""
@@ -98,8 +98,8 @@ func (av AttributeNetworkTransport) String() string {
 
 // MapAttributeNetworkTransport is a helper map of string to AttributeNetworkTransport attribute value.
 var MapAttributeNetworkTransport = map[string]AttributeNetworkTransport{
-	"udp": AttributeNetworkTransportUdp,
-	"tcp": AttributeNetworkTransportTcp,
+	"udp": AttributeNetworkTransportUDP,
+	"tcp": AttributeNetworkTransportTCP,
 }
 
 // AttributeNfsServerRepcacheStatus specifies the value nfs.server.repcache.status attribute.
