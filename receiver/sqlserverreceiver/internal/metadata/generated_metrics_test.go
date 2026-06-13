@@ -73,6 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
+			aggMap["sqlserver.log_data.io.rate"] = mb.metricSqlserverLogDataIoRate.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
@@ -82,6 +83,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.parameterization.rate"] = mb.metricSqlserverParameterizationRate.config.AggregationStrategy
 			aggMap["sqlserver.plan.execution.rate"] = mb.metricSqlserverPlanExecutionRate.config.AggregationStrategy
 			aggMap["sqlserver.replica.data.rate"] = mb.metricSqlserverReplicaDataRate.config.AggregationStrategy
+			aggMap["sqlserver.replica.flow_control.time"] = mb.metricSqlserverReplicaFlowControlTime.config.AggregationStrategy
+			aggMap["sqlserver.replica.queue.size"] = mb.metricSqlserverReplicaQueueSize.config.AggregationStrategy
 			aggMap["sqlserver.resource_pool.disk.operations"] = mb.metricSqlserverResourcePoolDiskOperations.config.AggregationStrategy
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
 
@@ -195,6 +198,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverLogDataIoRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val", AttributeReplicaDirectionTransmit)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverLogDataIoRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2", AttributeReplicaDirectionReceive)
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverLoginRateDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -291,6 +300,18 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val", AttributeSqlserverReplicaQueueTypeSend)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverReplicaQueueTypeRedo)
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(ts, 3, AttributeDirectionWrite)
@@ -367,6 +388,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverLogDataIoRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
@@ -376,6 +398,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverParameterizationRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverPlanExecutionRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverReplicaDataRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverReplicaFlowControlTime.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverReplicaQueueSize.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverResourcePoolDiskOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTableCount.aggDataPoints)
 			}
@@ -950,6 +974,61 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.log_data.io.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.log_data.io.rate"], "Found a duplicate in the metrics slice: sqlserver.log_data.io.rate")
+						validatedMetrics["sqlserver.log_data.io.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of log data received by the secondary replica from the primary replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+						replicaDirectionAttrVal, ok := dp.Attributes().Get("replica.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmit", replicaDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.log_data.io.rate"], "Found a duplicate in the metrics slice: sqlserver.log_data.io.rate")
+						validatedMetrics["sqlserver.log_data.io.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of log data received by the secondary replica from the primary replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.log_data.io.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.direction")
+						assert.False(t, ok)
+					}
 				case "sqlserver.login.rate":
 					assert.False(t, validatedMetrics["sqlserver.login.rate"], "Found a duplicate in the metrics slice: sqlserver.login.rate")
 					validatedMetrics["sqlserver.login.rate"] = true
@@ -1465,6 +1544,111 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
 						_, ok := dp.Attributes().Get("replica.direction")
+						assert.False(t, ok)
+					}
+				case "sqlserver.replica.flow_control.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.replica.flow_control.time"], "Found a duplicate in the metrics slice: sqlserver.replica.flow_control.time")
+						validatedMetrics["sqlserver.replica.flow_control.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Current flow control lag on the secondary replica, derived from secondary_lag_seconds.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.replica.flow_control.time"], "Found a duplicate in the metrics slice: sqlserver.replica.flow_control.time")
+						validatedMetrics["sqlserver.replica.flow_control.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Current flow control lag on the secondary replica, derived from secondary_lag_seconds.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.replica.flow_control.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.replica.queue.size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.replica.queue.size"], "Found a duplicate in the metrics slice: sqlserver.replica.queue.size")
+						validatedMetrics["sqlserver.replica.queue.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log data queued in the availability group replica pipeline.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
+						sqlserverReplicaQueueTypeAttrVal, ok := dp.Attributes().Get("sqlserver.replica.queue.type")
+						assert.True(t, ok)
+						assert.Equal(t, "send", sqlserverReplicaQueueTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.replica.queue.size"], "Found a duplicate in the metrics slice: sqlserver.replica.queue.size")
+						validatedMetrics["sqlserver.replica.queue.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log data queued in the availability group replica pipeline.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.replica.queue.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.replica.queue.type")
 						assert.False(t, ok)
 					}
 				case "sqlserver.resource_pool.disk.operations":
