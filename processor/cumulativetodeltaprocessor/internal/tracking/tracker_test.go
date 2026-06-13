@@ -268,6 +268,65 @@ func TestMetricTracker_Convert(t *testing.T) {
 	})
 }
 
+// TestMetricTracker_HistogramReset verifies that a regular histogram point
+// whose Count regressed (counter reset) is dropped instead of being emitted
+// as a delta with the full cumulative value, and that the subsequent point is
+// computed as a delta against the post-reset baseline. Regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48278.
+func TestMetricTracker_HistogramReset(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "h",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	histPoint := func(t time.Time, count uint64, sum float64, bucket uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: pcommon.NewTimestampFromTime(t),
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1.0},
+					BucketCounts: []uint64{bucket, 0},
+				},
+			},
+		}
+	}
+
+	now := time.Now()
+
+	// First point is kept as-is (initial value, InitialValueKeep).
+	_, valid := m.Convert(histPoint(now, 10, 100, 10))
+	require.True(t, valid)
+
+	// Second point has higher count: emitted as a delta of (10, 100, [10, 0]).
+	out, valid := m.Convert(histPoint(now.Add(1*time.Second), 20, 200, 20))
+	require.True(t, valid)
+	require.NotNil(t, out.HistogramValue)
+	assert.Equal(t, uint64(10), out.HistogramValue.Count)
+	assert.Equal(t, 100.0, out.HistogramValue.Sum)
+	assert.Equal(t, []uint64{10, 0}, out.HistogramValue.BucketCounts)
+
+	// Third point has lower count: reset. Must be dropped (valid=false), not
+	// emitted with cumulative counts.
+	_, valid = m.Convert(histPoint(now.Add(2*time.Second), 5, 50, 5))
+	assert.False(t, valid, "histogram reset should produce an invalid (dropped) point")
+
+	// Fourth point: delta computed against the post-reset baseline (5/50/[5,0]).
+	out, valid = m.Convert(histPoint(now.Add(3*time.Second), 15, 150, 15))
+	require.True(t, valid)
+	require.NotNil(t, out.HistogramValue)
+	assert.Equal(t, uint64(10), out.HistogramValue.Count)
+	assert.Equal(t, 100.0, out.HistogramValue.Sum)
+	assert.Equal(t, []uint64{10, 0}, out.HistogramValue.BucketCounts)
+}
+
 func Test_metricTracker_removeStale(t *testing.T) {
 	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{
