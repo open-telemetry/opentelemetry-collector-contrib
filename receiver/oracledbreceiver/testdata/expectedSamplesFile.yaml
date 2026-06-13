@@ -25,6 +25,9 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: ""
+              - key: oracle.db.service
+                value:
+                  stringValue: ""
               - key: client.address
                 value:
                   stringValue: TEST-MACHINE
