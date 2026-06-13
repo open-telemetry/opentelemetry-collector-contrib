@@ -14,3 +14,692 @@ tests:
   config:
   goleak:
     skip: true
+
+attributes:
+  project_id:
+    description: GCP project ID.
+    type: string
+  instance_id:
+    description: Spanner instance ID.
+    type: string
+  database:
+    description: Spanner database name.
+    type: string
+  row_range_start_key:
+    description: Spanner ROW_RANGE_START_KEY label.
+    type: string
+  sample_lock_requests:
+    description: Spanner SAMPLE_LOCK_REQUESTS label.
+    type: string
+  query_text:
+    description: Spanner TEXT label.
+    type: string
+  request_tag:
+    description: Spanner REQUEST_TAG label.
+    type: string
+  query_text_truncated:
+    description: Spanner TEXT_TRUNCATED label.
+    type: bool
+  query_text_fingerprint:
+    description: Spanner TEXT_FINGERPRINT label.
+    type: int
+  read_columns:
+    description: Spanner READ_COLUMNS label.
+    type: string
+  fingerprint:
+    description: Spanner FPRINT label.
+    type: int
+  transaction_tag:
+    description: Spanner TRANSACTION_TAG label.
+    type: string
+  write_constructive_columns:
+    description: Spanner WRITE_CONSTRUCTIVE_COLUMNS label.
+    type: string
+  write_delete_tables:
+    description: Spanner WRITE_DELETE_TABLES label.
+    type: string
+  table_name:
+    description: Spanner TABLE_NAME label.
+    type: string
+
+metrics:
+  database_spanner_active_queries_summary_active_count:
+    description: Corresponds to Spanner's ACTIVE_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_active_queries_summary_count_older_than_1s:
+    description: Corresponds to Spanner's COUNT_OLDER_THAN_1S column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_active_queries_summary_count_older_than_10s:
+    description: Corresponds to Spanner's COUNT_OLDER_THAN_10S column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_active_queries_summary_count_older_than_100s:
+    description: Corresponds to Spanner's COUNT_OLDER_THAN_100S column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_lock_stats_top_lock_wait_seconds:
+    description: Corresponds to Spanner's LOCK_WAIT_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - row_range_start_key
+      - sample_lock_requests
+  database_spanner_lock_stats_total_total_lock_wait_seconds:
+    description: Corresponds to Spanner's TOTAL_LOCK_WAIT_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_top_execution_count:
+    description: Corresponds to Spanner's EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_avg_latency_seconds:
+    description: Corresponds to Spanner's AVG_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_avg_rows:
+    description: Corresponds to Spanner's AVG_ROWS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_avg_rows_scanned:
+    description: Corresponds to Spanner's AVG_ROWS_SCANNED column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_avg_cpu_seconds:
+    description: Corresponds to Spanner's AVG_CPU_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_all_failed_execution_count:
+    description: Corresponds to Spanner's ALL_FAILED_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_all_failed_avg_latency_seconds:
+    description: Corresponds to Spanner's ALL_FAILED_AVG_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_cancelled_or_disconnected_execution_count:
+    description: Corresponds to Spanner's CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_timed_out_execution_count:
+    description: Corresponds to Spanner's TIMED_OUT_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_ninety_nine_percentile_latency:
+    description: Corresponds to Spanner's NINETY_NINE_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_ninety_five_percentile_latency:
+    description: Corresponds to Spanner's NINETY_FIVE_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_top_fifty_percentile_latency:
+    description: Corresponds to Spanner's FIFTY_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - query_text
+      - request_tag
+      - query_text_truncated
+      - query_text_fingerprint
+  database_spanner_query_stats_total_execution_count:
+    description: Corresponds to Spanner's EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_query_stats_total_avg_latency_seconds:
+    description: Corresponds to Spanner's AVG_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_total_avg_rows:
+    description: Corresponds to Spanner's AVG_ROWS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+  database_spanner_query_stats_total_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+  database_spanner_query_stats_total_avg_rows_scanned:
+    description: Corresponds to Spanner's AVG_ROWS_SCANNED column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+  database_spanner_query_stats_total_avg_cpu_seconds:
+    description: Corresponds to Spanner's AVG_CPU_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_total_all_failed_execution_count:
+    description: Corresponds to Spanner's ALL_FAILED_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_query_stats_total_all_failed_avg_latency_seconds:
+    description: Corresponds to Spanner's ALL_FAILED_AVG_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_total_cancelled_or_disconnected_execution_count:
+    description: Corresponds to Spanner's CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_query_stats_total_timed_out_execution_count:
+    description: Corresponds to Spanner's TIMED_OUT_EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_query_stats_total_ninety_nine_percentile_latency:
+    description: Corresponds to Spanner's NINETY_NINE_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_total_ninety_five_percentile_latency:
+    description: Corresponds to Spanner's NINETY_FIVE_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_query_stats_total_fifty_percentile_latency:
+    description: Corresponds to Spanner's FIFTY_PERCENTILE_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_read_stats_top_execution_count:
+    description: Corresponds to Spanner's EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_rows:
+    description: Corresponds to Spanner's AVG_ROWS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_cpu_seconds:
+    description: Corresponds to Spanner's AVG_CPU_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_locking_delay_seconds:
+    description: Corresponds to Spanner's AVG_LOCKING_DELAY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_client_wait_seconds:
+    description: Corresponds to Spanner's AVG_CLIENT_WAIT_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_top_avg_leader_refresh_delay_seconds:
+    description: Corresponds to Spanner's AVG_LEADER_REFRESH_DELAY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - read_columns
+      - fingerprint
+  database_spanner_read_stats_total_execution_count:
+    description: Corresponds to Spanner's EXECUTION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_read_stats_total_avg_rows:
+    description: Corresponds to Spanner's AVG_ROWS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: '{row}'
+  database_spanner_read_stats_total_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+  database_spanner_read_stats_total_avg_cpu_seconds:
+    description: Corresponds to Spanner's AVG_CPU_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_read_stats_total_avg_locking_delay_seconds:
+    description: Corresponds to Spanner's AVG_LOCKING_DELAY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_read_stats_total_avg_client_wait_seconds:
+    description: Corresponds to Spanner's AVG_CLIENT_WAIT_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_read_stats_total_avg_leader_refresh_delay_seconds:
+    description: Corresponds to Spanner's AVG_LEADER_REFRESH_DELAY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_txn_stats_top_commit_attempt_count:
+    description: Corresponds to Spanner's COMMIT_ATTEMPT_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_commit_abort_count:
+    description: Corresponds to Spanner's COMMIT_ABORT_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_commit_retry_count:
+    description: Corresponds to Spanner's COMMIT_RETRY_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_commit_failed_precondition_count:
+    description: Corresponds to Spanner's COMMIT_FAILED_PRECONDITION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_avg_participants:
+    description: Corresponds to Spanner's AVG_PARTICIPANTS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_avg_total_latency_seconds:
+    description: Corresponds to Spanner's AVG_TOTAL_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_avg_commit_latency_seconds:
+    description: Corresponds to Spanner's AVG_COMMIT_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_ninety_nine_percentile_total_latency:
+    description: Corresponds to Spanner's NINETY_NINE_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_ninety_five_percentile_total_latency:
+    description: Corresponds to Spanner's NINETY_FIVE_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_top_fifty_percentile_total_latency:
+    description: Corresponds to Spanner's FIFTY_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - fingerprint
+      - transaction_tag
+      - read_columns
+      - write_constructive_columns
+      - write_delete_tables
+  database_spanner_txn_stats_total_commit_attempt_count:
+    description: Corresponds to Spanner's COMMIT_ATTEMPT_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_txn_stats_total_commit_abort_count:
+    description: Corresponds to Spanner's COMMIT_ABORT_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_txn_stats_total_commit_retry_count:
+    description: Corresponds to Spanner's COMMIT_RETRY_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_txn_stats_total_commit_failed_precondition_count:
+    description: Corresponds to Spanner's COMMIT_FAILED_PRECONDITION_COUNT column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+  database_spanner_txn_stats_total_avg_participants:
+    description: Corresponds to Spanner's AVG_PARTICIPANTS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+  database_spanner_txn_stats_total_avg_total_latency_seconds:
+    description: Corresponds to Spanner's AVG_TOTAL_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_txn_stats_total_avg_commit_latency_seconds:
+    description: Corresponds to Spanner's AVG_COMMIT_LATENCY_SECONDS column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_txn_stats_total_avg_bytes:
+    description: Corresponds to Spanner's AVG_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+  database_spanner_txn_stats_total_ninety_nine_percentile_total_latency:
+    description: Corresponds to Spanner's NINETY_NINE_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_txn_stats_total_ninety_five_percentile_total_latency:
+    description: Corresponds to Spanner's NINETY_FIVE_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_txn_stats_total_fifty_percentile_total_latency:
+    description: Corresponds to Spanner's FIFTY_PERCENTILE_TOTAL_LATENCY column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+  database_spanner_table_sizes_top_used_bytes:
+    description: Corresponds to Spanner's USED_BYTES column.
+    stability: development
+    enabled: true
+    gauge:
+      value_type: double
+    unit: by
+    attributes:
+      - table_name
