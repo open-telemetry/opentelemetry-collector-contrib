@@ -165,3 +165,81 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+
+  openshift-test-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - processor/resourcedetectionprocessor
+    runs-on: ubuntu-24.04
+    needs: docker-build
+    # Non-blocking initially while we validate MicroShift stability in CI
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Free disk space
+        run: ./.github/workflows/scripts/free-disk-space.sh
+      - name: Enable KVM access for runner
+        run: sudo chmod 666 /dev/kvm
+      - name: Start MicroShift via CRC
+        uses: crc-org/crc-github-action@466b8741bd91b9ee59f37db92b69f285cacada41 # v1.0.1
+        with:
+          preset: microshift
+      - name: Export KUBECONFIG for MicroShift
+        run: cp ~/.kube/config /tmp/kube-config-otelcol-e2e-testing
+      - name: Install Infrastructure CRD on MicroShift
+        env:
+          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+        run: |
+          SETUP_DIR=.github/workflows/configs/e2e-microshift-setup
+          oc apply -f "${SETUP_DIR}/infrastructure-crd.yaml"
+          oc wait --for=condition=Established crd/infrastructures.config.openshift.io --timeout=30s
+          oc apply -f "${SETUP_DIR}/infrastructure-cr.yaml"
+          oc patch infrastructure cluster --type=merge --subresource=status \
+            -p '{"status":{"infrastructureName":"microshift-ci-cluster","controlPlaneTopology":"SingleReplica","infrastructureTopology":"SingleReplica","platformStatus":{"type":"None"}}}'
+          oc get infrastructure cluster -o yaml
+      - name: Download artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - name: Load Docker image into MicroShift
+        run: |
+          PODMAN_ENV=$(sg libvirt -c "crc podman-env")
+          eval "$PODMAN_ENV"
+          podman load < /tmp/otelcontribcol.tar
+      - name: Resolve host endpoint for CRC network
+        run: |
+          CRC_IP=$(sg libvirt -c "crc ip")
+          HOST_ENDPOINT=$(ip route get "$CRC_IP" | grep -oP 'src \K[\d.]+')
+          echo "HOST_ENDPOINT=${HOST_ENDPOINT}" >> "$GITHUB_ENV"
+          echo "Host endpoint for CRC: ${HOST_ENDPOINT} (VM: ${CRC_IP})"
+      - name: Run OpenShift E2E tests
+        env:
+          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+          HOST_ENDPOINT: ${{ env.HOST_ENDPOINT }}
+        run: |
+          cd ${{ matrix.component }}
+          go test -v --tags=e2e -run TestE2EOpenShiftRealCluster
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  openshift-test:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [openshift-test-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.openshift-test-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.openshift-test-matrix.result }} ]]
+          then
+            echo "All OpenShift matrix jobs passed!"
+          else
+            echo "One or more OpenShift matrix jobs failed."
+            false
+          fi
