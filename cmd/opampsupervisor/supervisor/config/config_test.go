@@ -949,6 +949,7 @@ telemetry:
     level: warn
     error_output_paths: ["stderr"]
     output_paths: ["stdout"]
+    encoding: console
 `
 				config = fmt.Sprintf(config, filepath.Join(tmpDir, "storage"), executablePath)
 
@@ -996,6 +997,7 @@ telemetry:
 							Level:            zapcore.WarnLevel,
 							OutputPaths:      []string{"stdout"},
 							ErrorOutputPaths: []string{"stderr"},
+							Encoding:         "console",
 						},
 					},
 					HealthCheck: DefaultSupervisor().HealthCheck,
