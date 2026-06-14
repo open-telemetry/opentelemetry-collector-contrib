@@ -47,6 +47,11 @@ The following settings can be configured:
   - `record`: Attributes within a data point, log record or a span.
 - `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup.
 
+- `error_mode` (default: `propagate`): Determines how the processor reacts to errors that occur while looking up geolocation data for an IP address. Available values:
+  - `propagate`: Log the error and return it, halting processing of the telemetry item.
+  - `ignore`: Log the error and continue processing (the geolocation attributes are simply not added).
+  - `silent`: Continue processing without logging the error.
+
 ## Examples
 
 ```yaml

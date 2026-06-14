@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
@@ -47,6 +48,15 @@ type Config struct {
 
 	// An array of attribute names, which are used for the IP address lookup
 	Attributes []attribute.Key `mapstructure:"attributes"`
+
+	// ErrorMode determines how the processor reacts to errors that occur while
+	// looking up geolocation data for an IP address.
+	// The supported values are `ignore`, `silent`, and `propagate`.
+	//   - `ignore`: errors are logged and processing continues.
+	//   - `silent`: errors are not logged and processing continues.
+	//   - `propagate`: errors are logged and returned, halting processing.
+	// The default value is `propagate` to preserve existing behavior.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 }
 
 var (
