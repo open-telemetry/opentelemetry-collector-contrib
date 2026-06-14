@@ -185,6 +185,7 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
+    - processor/awsecsattributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
@@ -235,6 +236,7 @@ components:
     - provider/s3
     - provider/secretsmanager
     - receiver/active_directory_ds
+    - receiver/active_directory_inv
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
@@ -264,7 +266,7 @@ components:
     - receiver/faro
     - receiver/file_log
     - receiver/file_stats
-    - receiver/flinkmetrics
+    - receiver/flink_metrics
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
@@ -342,8 +344,8 @@ components:
     - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
+    - receiver/windows_service
     - receiver/windowsperfcounters
-    - receiver/windowsservice
     - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
