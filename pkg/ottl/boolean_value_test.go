@@ -658,9 +658,9 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluator, err := p.newBoolExpr(tt.expr)
-			require.NoError(t, err)
-			_, err = evaluator.Eval(t.Context(), nil)
+			// With constant folding, deterministic converters that return non-bool values
+			// are now caught at parse time rather than eval time.
+			_, err := p.newBoolExpr(tt.expr)
 			assert.Error(t, err)
 		})
 	}

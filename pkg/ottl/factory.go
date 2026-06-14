@@ -4,6 +4,9 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"fmt"
+	"unicode"
+
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
@@ -35,6 +38,10 @@ type Factory[K any] interface {
 
 	// Disallow implementations outside this package.
 	unexportedFactoryFunc()
+
+	// isDeterministic indicates whether the function produced by this Factory
+	// is deterministic and free of side effects.
+	isDeterministic() bool
 }
 
 // CreateFunctionFunc is a function that creates an OTTL function
@@ -44,6 +51,7 @@ type factory[K any] struct {
 	name               string
 	args               Arguments
 	createFunctionFunc CreateFunctionFunc[K]
+	nonDeterministic   bool
 }
 
 //nolint:unused
@@ -61,8 +69,24 @@ func (f *factory[K]) CreateFunction(fCtx FunctionContext, args Arguments) (ExprF
 	return f.createFunctionFunc(fCtx, args)
 }
 
+//nolint:unused
+func (f *factory[K]) isDeterministic() bool {
+	return !f.nonDeterministic
+}
+
 // FactoryOption is an option for a Factory
 type FactoryOption[K any] func(factory *factory[K])
+
+// NonDeterministicConverter marks a converter factory as non-deterministic.
+// Non-deterministic converters produce results that depend on external state,
+// side effects, or the transform context and input telemetry (e.g., Now(), UUID()).
+// When set, the parser will not constant-fold calls to this converter even
+// if all arguments are literals.
+func NonDeterministicConverter[K any]() FactoryOption[K] {
+	return func(f *factory[K]) {
+		f.nonDeterministic = true
+	}
+}
 
 // NewFactory creates a new Factory
 func NewFactory[K any](name string, args Arguments, createFunctionFunc CreateFunctionFunc[K], options ...FactoryOption[K]) Factory[K] {
@@ -74,6 +98,10 @@ func NewFactory[K any](name string, args Arguments, createFunctionFunc CreateFun
 
 	for _, option := range options {
 		option(f)
+	}
+
+	if f.nonDeterministic && (name == "" || !unicode.IsUpper(rune(name[0]))) {
+		panic(fmt.Sprintf("NonDeterministicConverter can only be used with converters (uppercase name), got %q", name))
 	}
 
 	return f

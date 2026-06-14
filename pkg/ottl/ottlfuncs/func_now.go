@@ -21,5 +21,5 @@ func createNowFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.Ex
 }
 
 func NewNowFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Now", nil, createNowFunction[K])
+	return ottl.NewFactory("Now", nil, createNowFunction[K], ottl.NonDeterministicConverter[K]())
 }

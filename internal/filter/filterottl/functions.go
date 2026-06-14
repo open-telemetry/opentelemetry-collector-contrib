@@ -72,7 +72,7 @@ type hasAttributeOnDatapointArguments struct {
 }
 
 func newHasAttributeOnDatapointFactory() ottl.Factory[*ottlmetric.TransformContext] {
-	return ottl.NewFactory("HasAttrOnDatapoint", &hasAttributeOnDatapointArguments{}, createHasAttributeOnDatapointFunction)
+	return ottl.NewFactory("HasAttrOnDatapoint", &hasAttributeOnDatapointArguments{}, createHasAttributeOnDatapointFunction, ottl.NonDeterministicConverter[*ottlmetric.TransformContext]())
 }
 
 func createHasAttributeOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
@@ -96,7 +96,7 @@ type hasAttributeKeyOnDatapointArguments struct {
 }
 
 func newHasAttributeKeyOnDatapointFactory() ottl.Factory[*ottlmetric.TransformContext] {
-	return ottl.NewFactory("HasAttrKeyOnDatapoint", &hasAttributeKeyOnDatapointArguments{}, createHasAttributeKeyOnDatapointFunction)
+	return ottl.NewFactory("HasAttrKeyOnDatapoint", &hasAttributeKeyOnDatapointArguments{}, createHasAttributeKeyOnDatapointFunction, ottl.NonDeterministicConverter[*ottlmetric.TransformContext]())
 }
 
 func createHasAttributeKeyOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {

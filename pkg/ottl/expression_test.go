@@ -216,7 +216,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: "world",
+			want:        "world",
+			wantLiteral: true,
 		},
 		{
 			name: "function call nested pcommon map",
@@ -537,7 +538,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{"world"},
+			want:        []any{"world"},
+			wantLiteral: true,
 		},
 		{
 			name: "nil slice",

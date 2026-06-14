@@ -13,7 +13,7 @@ import (
 )
 
 func NewAdjustedCountFactory() ottl.Factory[*ottlspan.TransformContext] {
-	return ottl.NewFactory("AdjustedCount", nil, createAdjustedCountFunction)
+	return ottl.NewFactory("AdjustedCount", nil, createAdjustedCountFunction, ottl.NonDeterministicConverter[*ottlspan.TransformContext]())
 }
 
 func createAdjustedCountFunction(ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[*ottlspan.TransformContext], error) {

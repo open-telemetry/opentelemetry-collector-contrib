@@ -50,6 +50,7 @@ func replaceAllMatches[K any](target ottl.PMapGetSetter[K], pattern, replacement
 			return nil, fmt.Errorf(invalidRegexErrMsg, "replace_all_matches", literalPattern, err)
 		}
 	}
+	literalReplacement, isLiteralReplacement := ottl.GetLiteralValue(replacement)
 
 	return func(ctx context.Context, tCtx K) (any, error) {
 		cp := compiledPattern
@@ -70,9 +71,13 @@ func replaceAllMatches[K any](target ottl.PMapGetSetter[K], pattern, replacement
 
 		var replacementVal string
 		if fn.IsEmpty() {
-			replacementVal, err = replacement.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
+			if isLiteralReplacement {
+				replacementVal = literalReplacement
+			} else {
+				replacementVal, err = replacement.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
 			}
 		} else {
 			fnVal := fn.Get()
