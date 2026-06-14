@@ -1646,6 +1646,16 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 			},
 		}, nil
 	}
+	if p != nil && p.Name() == "mapKey" {
+		return &StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return "foo", nil
+			},
+			Setter: func(_ context.Context, _, _ any) error {
+				return nil
+			},
+		}, nil
+	}
 	return nil, fmt.Errorf("bad path %v", p)
 }
 
@@ -3080,6 +3090,20 @@ func Test_prependContextToStatementPaths_Success(t *testing.T) {
 			context:          "log",
 			pathContextNames: []string{"log", "resource"},
 			expected:         `set(log.attributes["test"], "pass") where IsMatch(resource.name, "operation[AC]")`,
+		},
+		{
+			name:             "converter key with path parameter without context",
+			statement:        `set(attributes["test"], "pass") where Split("pass|fail", "|")[attributes["bar"]] == nil`,
+			context:          "log",
+			pathContextNames: []string{"log", "resource"},
+			expected:         `set(log.attributes["test"], "pass") where Split("pass|fail", "|")[log.attributes["bar"]] == nil`,
+		},
+		{
+			name:             "converter key with path parameter with context",
+			statement:        `set(log.attributes["test"], "pass") where Split("pass|fail", "|")[log.attributes["bar"]] == nil`,
+			context:          "log",
+			pathContextNames: []string{"log", "resource"},
+			expected:         `set(log.attributes["test"], "pass") where Split("pass|fail", "|")[log.attributes["bar"]] == nil`,
 		},
 	}
 
