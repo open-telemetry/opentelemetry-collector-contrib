@@ -76,10 +76,10 @@ func validateEndpoint(endpoint string) error {
 	}
 	_, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), err)
+		return fmt.Errorf("%w: %s", errInvalidEndpoint, err)
 	}
 	if err := validatePort(port); err != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), err)
+		return fmt.Errorf("%w: %s", errInvalidEndpoint, err)
 	}
 	return nil
 }

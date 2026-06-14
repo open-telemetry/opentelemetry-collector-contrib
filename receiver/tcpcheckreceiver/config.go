@@ -58,12 +58,12 @@ func validateTarget(cfg *confignet.TCPAddrConfig) error {
 
 	_, port, parseErr := net.SplitHostPort(cfg.Endpoint)
 	if parseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
+		return fmt.Errorf("%w: %s", errInvalidEndpoint, parseErr)
 	}
 
 	portParseErr := validatePort(port)
 	if portParseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), portParseErr)
+		return fmt.Errorf("%w: %s", errInvalidEndpoint, portParseErr)
 	}
 
 	return err
