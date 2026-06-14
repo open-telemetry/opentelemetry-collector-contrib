@@ -21,7 +21,7 @@ func Test_newLogAggregator(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields)
+	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields, cfg.TimestampMode)
 	require.Equal(t, cfg.LogCountAttribute, aggregator.logCountAttribute)
 	require.Equal(t, time.UTC, aggregator.timezone)
 	require.NotNil(t, aggregator.resources)
@@ -43,7 +43,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup aggregator
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil, defaultTimestampMode)
 	logRecord := plog.NewLogRecord()
 
 	resource := pcommon.NewResource()
@@ -93,7 +93,7 @@ func Test_logAggregatorReset(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil, defaultTimestampMode)
 	for i := range 2 {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
@@ -128,7 +128,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil)
+	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, TimestampModePreserved)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
 	expectedHash := pdatautil.MapHash(resource.Attributes())
@@ -136,7 +136,9 @@ func Test_logAggregatorExport(t *testing.T) {
 	scope := pcommon.NewInstrumentationScope()
 
 	// Add logRecord
-	aggregator.Add(resource, scope, generateTestLogRecord(t, "body string"))
+	originalLogRecord := generateTestLogRecord(t, "body string")
+	originalTimestamp := originalLogRecord.Timestamp()
+	aggregator.Add(resource, scope, originalLogRecord)
 
 	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -161,7 +163,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.Equal(t, expectedLogRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
 	require.Equal(t, expectedLogRecord.SeverityText(), actualLogRecord.SeverityText())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.ObservedTimestamp().AsTime().UnixMilli())
-	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.Timestamp().AsTime().UnixMilli())
+	require.Equal(t, originalTimestamp, actualLogRecord.Timestamp())
 
 	actualRawAttrs := actualLogRecord.Attributes().AsRaw()
 	for key, val := range expectedLogRecord.Attributes().AsRaw() {
@@ -182,6 +184,78 @@ func Test_logAggregatorExport(t *testing.T) {
 	actualLastObserved, ok := actualRawAttrs[lastObservedTSAttr]
 	require.True(t, ok)
 	require.Equal(t, expectedTimestampStr, actualLastObserved)
+
+	// first_event_timestamp and last_event_timestamp are always stored as RFC3339 strings
+	expectedEventTS := originalTimestamp.AsTime().In(location).Format(time.RFC3339)
+	actualFirstEventTS, ok := actualRawAttrs[firstEventTimestampAttr]
+	require.True(t, ok)
+	require.Equal(t, expectedEventTS, actualFirstEventTS)
+
+	actualLastEventTS, ok := actualRawAttrs[lastEventTimestampAttr]
+	require.True(t, ok)
+	require.Equal(t, expectedEventTS, actualLastEventTS)
+}
+
+func Test_logAggregatorExportTimestampModes(t *testing.T) {
+	oldTimeNow := timeNow
+	defer func() {
+		timeNow = oldTimeNow
+	}()
+
+	location, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+
+	exportTimestamp := time.Now().UTC()
+	timeNow = func() time.Time {
+		return exportTimestamp
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	resource := pcommon.NewResource()
+	scope := pcommon.NewInstrumentationScope()
+
+	testCases := []struct {
+		desc           string
+		mode           TimestampMode
+		checkTimestamp func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp)
+	}{
+		{
+			desc: "observed mode sets timestamp to emitted observed time",
+			mode: TimestampModeObserved,
+			checkTimestamp: func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp) {
+				require.Equal(t, exportTimestamp.UnixMilli(), lr.Timestamp().AsTime().UnixMilli())
+				val, ok := lr.Attributes().Get(firstEventTimestampAttr)
+				require.True(t, ok)
+				require.Equal(t, originalTS.AsTime().In(location).Format(time.RFC3339), val.Str())
+			},
+		},
+		{
+			desc: "preserved mode keeps original timestamp",
+			mode: TimestampModePreserved,
+			checkTimestamp: func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp) {
+				require.Equal(t, originalTS, lr.Timestamp())
+				val, ok := lr.Attributes().Get(firstEventTimestampAttr)
+				require.True(t, ok)
+				require.Equal(t, originalTS.AsTime().In(location).Format(time.RFC3339), val.Str())
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, tc.mode)
+			original := generateTestLogRecord(t, "body")
+			originalTS := original.Timestamp()
+			aggregator.Add(resource, scope, original)
+
+			exported := aggregator.Export(t.Context())
+			require.Equal(t, 1, exported.LogRecordCount())
+			lr := exported.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			tc.checkTimestamp(t, lr, originalTS)
+		})
+	}
 }
 
 func Test_newResourceAggregator(t *testing.T) {
@@ -232,10 +306,13 @@ func Test_logCounterIncrement(t *testing.T) {
 
 	last := time.Now().UTC()
 	timeNow = func() time.Time { return last }
+	eventTS := pcommon.NewTimestampFromTime(last)
+	lc.lastEventTimestamp = eventTS
 	lc.Increment()
 	require.Equal(t, int64(1), lc.count)
 	require.Equal(t, first, lc.firstObservedTimestamp)
 	require.Equal(t, last, lc.lastObservedTimestamp)
+	require.Equal(t, eventTS, lc.lastEventTimestamp)
 }
 
 func Test_getLogKey(t *testing.T) {
