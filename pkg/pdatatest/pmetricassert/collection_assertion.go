@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"gopkg.in/yaml.v3"
 )
 
 // MetricAssertion is the public assertion shape for metric identity checks.
@@ -45,118 +44,6 @@ type ScopesAssertion struct {
 type DatapointsAssertion struct {
 	Exact   []DatapointAssertion `yaml:"-"`
 	Include []DatapointAssertion `yaml:"-"`
-}
-
-// UnmarshalYAML supports these forms:
-// - sequence node (equivalent to metrics/exact)
-// - map node with keys: metrics, metrics/exact, metrics/include
-func (a *MetricsAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, err := unmarshalCollectionBySuffix[MetricAssertion](value, "metrics")
-	if err != nil {
-		return err
-	}
-	a.Exact = exact
-	a.Include = include
-	return nil
-}
-
-func (a MetricsAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include), nil
-}
-
-func (a *ResourcesAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, err := unmarshalCollectionBySuffix[ResourceAssertion](value, "resources")
-	if err != nil {
-		return err
-	}
-	a.Exact = exact
-	a.Include = include
-	return nil
-}
-
-func (a ResourcesAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include), nil
-}
-
-func (a *ScopesAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, err := unmarshalCollectionBySuffix[ScopeAssertion](value, "scopes")
-	if err != nil {
-		return err
-	}
-	a.Exact = exact
-	a.Include = include
-	return nil
-}
-
-func (a ScopesAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include), nil
-}
-
-func (a *DatapointsAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, err := unmarshalCollectionBySuffix[DatapointAssertion](value, "datapoints")
-	if err != nil {
-		return err
-	}
-	a.Exact = exact
-	a.Include = include
-	return nil
-}
-
-func (a DatapointsAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include), nil
-}
-
-func marshalCollection[T any](exact, include []T) any {
-	if len(include) == 0 {
-		return exact
-	}
-	out := map[string]any{}
-	if len(exact) > 0 {
-		out["exact"] = exact
-	}
-	if len(include) > 0 {
-		out["include"] = include
-	}
-	return out
-}
-
-func unmarshalCollectionBySuffix[T any](value *yaml.Node, baseKey string) (exact, include []T, err error) {
-	if value.Kind == yaml.SequenceNode {
-		if err := value.Decode(&exact); err != nil {
-			return nil, nil, fmt.Errorf("decode %s exact assertions: %w", baseKey, err)
-		}
-		return exact, nil, nil
-	}
-
-	if value.Kind != yaml.MappingNode {
-		return nil, nil, fmt.Errorf("%s assertion must be a sequence or map, got YAML kind %d", baseKey, value.Kind)
-	}
-
-	for i := 0; i < len(value.Content); i += 2 {
-		keyNode := value.Content[i]
-		valNode := value.Content[i+1]
-		key := keyNode.Value
-		switch key {
-		case baseKey, baseKey + "/exact", "exact":
-			if len(exact) > 0 {
-				return nil, nil, fmt.Errorf("duplicate %s exact assertion key %q", baseKey, key)
-			}
-			if err := valNode.Decode(&exact); err != nil {
-				return nil, nil, fmt.Errorf("decode %q: %w", key, err)
-			}
-		case baseKey + "/include", "include":
-			if len(include) > 0 {
-				return nil, nil, fmt.Errorf("duplicate %s include assertion key %q", baseKey, key)
-			}
-			if err := valNode.Decode(&include); err != nil {
-				return nil, nil, fmt.Errorf("decode %q: %w", key, err)
-			}
-		default:
-			return nil, nil, fmt.Errorf("unsupported %s assertion key %q", baseKey, key)
-		}
-	}
-
-	return exact, include, nil
 }
 
 // Validate checks actual metrics against exact/include operators.

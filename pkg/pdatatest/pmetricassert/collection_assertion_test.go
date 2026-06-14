@@ -8,25 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"gopkg.in/yaml.v3"
 )
-
-func TestMetricsAssertionUnmarshalYAML(t *testing.T) {
-	var a MetricsAssertion
-	err := yaml.Unmarshal([]byte(`
-metrics/exact:
-  - name: svc.active
-    type: gauge
-metrics/include:
-  - name: svc.requests
-    type: sum
-`), &a)
-	require.NoError(t, err)
-	require.Len(t, a.Exact, 1)
-	require.Equal(t, "svc.active", a.Exact[0].Name)
-	require.Len(t, a.Include, 1)
-	require.Equal(t, "svc.requests", a.Include[0].Name)
-}
 
 func TestMetricsAssertionValidate(t *testing.T) {
 	actual := buildMetricSlice(t, []metricAssertion{

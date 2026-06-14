@@ -6,7 +6,6 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -52,41 +51,36 @@ type datapointAssertion struct {
 	Attributes map[string]any `yaml:"attributes,omitempty"`
 }
 
+// --- UnmarshalYAML Methods ---
+
 func (d *document) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("document must be a map, got YAML kind %d", value.Kind)
 	}
-
-	resourcesNode, err := extractCollectionNodeFromParent(value, "resources")
-	if err != nil {
-		return err
-	}
-
 	for i := 0; i < len(value.Content); i += 2 {
 		key := value.Content[i].Value
 		val := value.Content[i+1]
-		switch {
-		case key == "version":
+		switch key {
+		case "version":
 			if err := val.Decode(&d.Version); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "signal":
+		case "signal":
 			if err := val.Decode(&d.Signal); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "resources" || strings.HasPrefix(key, "resources/"):
-			// Handled through ResourcesAssertion below.
+		case "resources", "resources/exact":
+			if err := val.Decode(&d.Resources.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "resources/include":
+			if err := val.Decode(&d.Resources.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
 		default:
 			return fmt.Errorf("unsupported document key %q", key)
 		}
 	}
-
-	if resourcesNode != nil {
-		if err := d.Resources.UnmarshalYAML(resourcesNode); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -94,33 +88,26 @@ func (r *resourceAssertion) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("resource assertion must be a map, got YAML kind %d", value.Kind)
 	}
-
-	scopesNode, err := extractCollectionNodeFromParent(value, "scopes")
-	if err != nil {
-		return err
-	}
-
 	for i := 0; i < len(value.Content); i += 2 {
 		key := value.Content[i].Value
 		val := value.Content[i+1]
-		switch {
-		case key == "attributes":
+		switch key {
+		case "attributes":
 			if err := val.Decode(&r.Attributes); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "scopes" || strings.HasPrefix(key, "scopes/"):
-			// Handled through ScopesAssertion below.
+		case "scopes", "scopes/exact":
+			if err := val.Decode(&r.Scopes.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "scopes/include":
+			if err := val.Decode(&r.Scopes.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
 		default:
 			return fmt.Errorf("unsupported resource assertion key %q", key)
 		}
 	}
-
-	if scopesNode != nil {
-		if err := r.Scopes.UnmarshalYAML(scopesNode); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -128,37 +115,30 @@ func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("scope assertion must be a map, got YAML kind %d", value.Kind)
 	}
-
-	metricsNode, err := extractCollectionNodeFromParent(value, "metrics")
-	if err != nil {
-		return err
-	}
-
 	for i := 0; i < len(value.Content); i += 2 {
 		key := value.Content[i].Value
 		val := value.Content[i+1]
-		switch {
-		case key == "name":
+		switch key {
+		case "name":
 			if err := val.Decode(&s.Name); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "version":
+		case "version":
 			if err := val.Decode(&s.Version); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "metrics" || strings.HasPrefix(key, "metrics/"):
-			// Handled through MetricsAssertion below.
+		case "metrics", "metrics/exact":
+			if err := val.Decode(&s.Metrics.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "metrics/include":
+			if err := val.Decode(&s.Metrics.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
 		default:
 			return fmt.Errorf("unsupported scope assertion key %q", key)
 		}
 	}
-
-	if metricsNode != nil {
-		if err := s.Metrics.UnmarshalYAML(metricsNode); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -166,92 +146,113 @@ func (m *metricAssertion) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("metric assertion must be a map, got YAML kind %d", value.Kind)
 	}
-
-	datapointsNode, err := extractCollectionNodeFromParent(value, "datapoints")
-	if err != nil {
-		return err
-	}
-
 	for i := 0; i < len(value.Content); i += 2 {
 		key := value.Content[i].Value
 		val := value.Content[i+1]
-		switch {
-		case key == "name":
+		switch key {
+		case "name":
 			if err := val.Decode(&m.Name); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "type":
+		case "type":
 			if err := val.Decode(&m.Type); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "unit":
+		case "unit":
 			if err := val.Decode(&m.Unit); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "temporality":
+		case "temporality":
 			if err := val.Decode(&m.Temporality); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "monotonic":
+		case "monotonic":
 			if err := val.Decode(&m.Monotonic); err != nil {
 				return fmt.Errorf("decode %q: %w", key, err)
 			}
-		case key == "datapoints" || strings.HasPrefix(key, "datapoints/"):
-			// Handled through DatapointsAssertion below.
+		case "datapoints", "datapoints/exact":
+			if err := val.Decode(&m.Datapoints.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "datapoints/include":
+			if err := val.Decode(&m.Datapoints.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
 		default:
 			return fmt.Errorf("unsupported metric assertion key %q", key)
 		}
 	}
-
-	if datapointsNode != nil {
-		if err := m.Datapoints.UnmarshalYAML(datapointsNode); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func extractCollectionNodeFromParent(parent *yaml.Node, baseKey string) (*yaml.Node, error) {
-	var direct *yaml.Node
-	var withSuffix []struct {
-		key string
-		val *yaml.Node
-	}
+// --- MarshalYAML Methods ---
 
-	for i := 0; i < len(parent.Content); i += 2 {
-		key := parent.Content[i].Value
-		val := parent.Content[i+1]
-		switch {
-		case key == baseKey:
-			if direct != nil {
-				return nil, fmt.Errorf("duplicate %s assertion key %q", baseKey, key)
-			}
-			direct = val
-		case strings.HasPrefix(key, baseKey+"/"):
-			withSuffix = append(withSuffix, struct {
-				key string
-				val *yaml.Node
-			}{key: key, val: val})
-		}
+func (d document) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"version": d.Version,
+		"signal":  d.Signal,
 	}
+	if len(d.Resources.Exact) > 0 {
+		out["resources"] = d.Resources.Exact
+	}
+	if len(d.Resources.Include) > 0 {
+		out["resources/include"] = d.Resources.Include
+	}
+	return out, nil
+}
 
-	if direct == nil && len(withSuffix) == 0 {
-		return nil, nil
+func (r resourceAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+	if r.Attributes != nil {
+		out["attributes"] = r.Attributes
 	}
+	if len(r.Scopes.Exact) > 0 {
+		out["scopes"] = r.Scopes.Exact
+	}
+	if len(r.Scopes.Include) > 0 {
+		out["scopes/include"] = r.Scopes.Include
+	}
+	return out, nil
+}
 
-	if len(withSuffix) == 0 {
-		return direct, nil
+func (s scopeAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+	if s.Name != "" {
+		out["name"] = s.Name
 	}
+	if s.Version != "" {
+		out["version"] = s.Version
+	}
+	if len(s.Metrics.Exact) > 0 {
+		out["metrics"] = s.Metrics.Exact
+	}
+	if len(s.Metrics.Include) > 0 {
+		out["metrics/include"] = s.Metrics.Include
+	}
+	return out, nil
+}
 
-	m := &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-	if direct != nil {
-		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: baseKey}, direct)
+func (m metricAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"name": m.Name,
+		"type": m.Type,
 	}
-	for _, entry := range withSuffix {
-		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: entry.key}, entry.val)
+	if m.Unit != "" {
+		out["unit"] = m.Unit
 	}
-	return m, nil
+	if m.Temporality != "" {
+		out["temporality"] = m.Temporality
+	}
+	if m.Monotonic != nil {
+		out["monotonic"] = m.Monotonic
+	}
+	if len(m.Datapoints.Exact) > 0 {
+		out["datapoints"] = m.Datapoints.Exact
+	}
+	if len(m.Datapoints.Include) > 0 {
+		out["datapoints/include"] = m.Datapoints.Include
+	}
+	return out, nil
 }
 
 func readDocument(path string) (*document, error) {
