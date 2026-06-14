@@ -125,7 +125,14 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue))
 		case "Total Duration":
 			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue))
+		case "ReqPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheRequestRateDataPoint(now, metricValue))
+		case "BytesPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheIoTransmittedRateDataPoint(now, metricValue))
 		case "Scoreboard":
+			// The scoreboard length equals the total number of worker slots
+			// (MaxRequestWorkers), so it doubles as the worker-limit gauge.
+			r.mb.RecordApacheWorkerLimitDataPoint(now, int64(len(metricValue)))
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
 				r.mb.RecordApacheScoreboardDataPoint(now, score, state)

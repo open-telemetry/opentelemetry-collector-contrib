@@ -57,6 +57,14 @@ The number of active connections currently attached to the HTTP server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {connections} | Sum | Int | Cumulative | false | Development |
 
+### apache.io.transmitted.rate
+
+Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
 ### apache.load.1
 
 The average server load during the last minute.
@@ -80,6 +88,14 @@ The average server load during the last 5 minutes.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### apache.request.rate
+
+Average number of requests served per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
 
 ### apache.request.time
 
@@ -128,6 +144,14 @@ The amount of time that the server has been running in seconds.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
+
+### apache.worker.limit
+
+The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {worker} | Gauge | Int | Development |
 
 ### apache.workers
 
