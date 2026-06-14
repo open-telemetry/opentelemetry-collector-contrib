@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
@@ -69,7 +68,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	// AWS S3
 	"aws.s3.bucket_name":      string(conventions.AWSS3BucketKey),
 	"aws.response.request_id": string(conventions.AWSRequestIDKey),
-	"aws.service":             string(conventionsv138.RPCServiceKey),
+	"aws.service":             "rpc.service",
 	"aws.operation":           string(conventions.RPCMethodKey),
 
 	// DB
