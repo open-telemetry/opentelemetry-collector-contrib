@@ -263,8 +263,8 @@ func (m metricAssertion) Matches(actual pmetric.Metric) error {
 	}
 
 	actualAssertion := buildMetricAssertion(actual)
-	actualAssertion.Datapoints.Exact = make([]datapointAssertion, 0, len(extractDatapointAttributes(actual)))
-	for _, ed := range extractDatapointAttributes(actual) {
+	actualAssertion.Datapoints.Exact = make([]datapointAssertion, 0, len(extractDatapoints(actual)))
+	for _, ed := range extractDatapoints(actual) {
 		actualAssertion.Datapoints.Exact = append(actualAssertion.Datapoints.Exact, datapointAssertion{
 			Attributes: attrMapToRaw(ed.attributes),
 			Value:      ed.value,
