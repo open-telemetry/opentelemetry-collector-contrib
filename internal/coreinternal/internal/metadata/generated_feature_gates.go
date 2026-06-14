@@ -17,9 +17,17 @@ var InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate = 
 var InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0HTTPConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.20.0 HTTP attributes (http.client_ip)."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295"),
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv HTTP attribute http.flavor (semconv v1.19.0) and semconv v1.20.0 HTTP attributes (http.client_ip)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
+var InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0MessagingConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv messaging attributes messaging.destination and messaging.destination.kind."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
 var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -49,8 +57,16 @@ var InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate = feat
 var InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1HTTPConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with client.address (semconv v1.40.0) alongside legacy http.client_ip to support migration."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295"),
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.protocol.version and client.address (semconv v1.40.0) alongside legacy http.flavor (semconv v1.19.0) and http.client_ip to support migration."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1MessagingConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with messaging.destination.name (semconv v1.40.0) alongside legacy messaging.destination and messaging.destination.kind to support migration."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
 )
 
