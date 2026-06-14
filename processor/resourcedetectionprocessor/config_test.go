@@ -76,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: openshiftConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -85,6 +86,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -94,6 +96,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: ec2Config,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -103,6 +106,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -112,6 +116,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -121,6 +126,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -130,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -140,6 +147,7 @@ func TestLoadConfig(t *testing.T) {
 				Override:        false,
 				DetectorConfig:  detectorCreateDefaultConfig(),
 				RefreshInterval: 5 * time.Second,
+				Retry:           defaultRetryConfig(),
 			},
 		},
 		{
@@ -298,4 +306,63 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.UpcloudConfig)
 	assert.NotNil(t, config.VultrConfig)
 	assert.NotNil(t, config.AlibabaECSConfig)
+}
+
+func TestDefaultConfig_RetryDefaults(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	assert.True(t, cfg.Retry.Enabled, "retry must be enabled by default")
+	assert.Equal(t, 1*time.Second, cfg.Retry.InitialInterval)
+	assert.InDelta(t, 0.5, cfg.Retry.RandomizationFactor, 1e-9)
+	assert.InDelta(t, 2.0, cfg.Retry.Multiplier, 1e-9)
+	assert.Equal(t, 30*time.Second, cfg.Retry.MaxInterval)
+	assert.Equal(t, time.Duration(0), cfg.Retry.MaxElapsedTime, "no explicit retry budget by default (session bounded by client.Timeout)")
+}
+
+func TestConfig_Validate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{
+			name:   "defaults are valid",
+			mutate: func(*Config) {},
+		},
+		{
+			name: "retry enabled with timeout=0 and max_elapsed_time=0 is rejected",
+			mutate: func(c *Config) {
+				c.Timeout = 0
+				c.Retry.MaxElapsedTime = 0
+			},
+			wantErr: "retry.enabled requires either timeout > 0 or retry.max_elapsed_time > 0",
+		},
+		{
+			name: "retry enabled with timeout=0 but max_elapsed_time>0 is valid",
+			mutate: func(c *Config) {
+				c.Timeout = 0
+				c.Retry.MaxElapsedTime = 30 * time.Second
+			},
+		},
+		{
+			name: "retry disabled with timeout=0 is valid",
+			mutate: func(c *Config) {
+				c.Timeout = 0
+				c.Retry.Enabled = false
+				c.Retry.MaxElapsedTime = 0
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			tc.mutate(cfg)
+			err := cfg.Validate()
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
 }
