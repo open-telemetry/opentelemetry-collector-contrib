@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
@@ -42,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: defaultAttributes,
+				ErrorMode:  ottl.PropagateError,
 			},
 		},
 		{
@@ -52,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: defaultAttributes,
+				ErrorMode:  ottl.PropagateError,
 			},
 		},
 		{
@@ -74,7 +77,23 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: []attribute.Key{"client.address", "source.address", "custom.address"},
+				ErrorMode:  ottl.PropagateError,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "error_mode_ignore"),
+			expected: &Config{
+				Context: resource,
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+				Attributes: defaultAttributes,
+				ErrorMode:  ottl.IgnoreError,
+			},
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_error_mode"),
+			unmarshalErrorMessage: "unknown error mode not_a_mode",
 		},
 	}
 
