@@ -22,29 +22,29 @@ const documentVersion = 1
 // identity fields only. Operator-suffix extensions (/include, /count, ...)
 // are tracked as follow-ups.
 type document struct {
-	Version   int                 `yaml:"version"`
-	Signal    string              `yaml:"signal"`
-	Resources []resourceAssertion `yaml:"resources"`
+	Version   int                `yaml:"version"`
+	Signal    string             `yaml:"signal"`
+	Resources ResourcesAssertion `yaml:"resources"`
 }
 
 type resourceAssertion struct {
-	Attributes map[string]any   `yaml:"attributes,omitempty"`
-	Scopes     []scopeAssertion `yaml:"scopes"`
+	Attributes map[string]any  `yaml:"attributes,omitempty"`
+	Scopes     ScopesAssertion `yaml:"scopes"`
 }
 
 type scopeAssertion struct {
-	Name    string            `yaml:"name,omitempty"`
-	Version string            `yaml:"version,omitempty"`
-	Metrics []metricAssertion `yaml:"metrics"`
+	Name    string           `yaml:"name,omitempty"`
+	Version string           `yaml:"version,omitempty"`
+	Metrics MetricsAssertion `yaml:"metrics"`
 }
 
 type metricAssertion struct {
-	Name        string               `yaml:"name"`
-	Type        string               `yaml:"type"`
-	Unit        string               `yaml:"unit,omitempty"`
-	Temporality string               `yaml:"temporality,omitempty"`
-	Monotonic   *bool                `yaml:"monotonic,omitempty"`
-	Datapoints  []datapointAssertion `yaml:"datapoints,omitempty"`
+	Name        string              `yaml:"name"`
+	Type        string              `yaml:"type"`
+	Unit        string              `yaml:"unit,omitempty"`
+	Temporality string              `yaml:"temporality,omitempty"`
+	Monotonic   *bool               `yaml:"monotonic,omitempty"`
+	Datapoints  DatapointsAssertion `yaml:"datapoints,omitempty"`
 }
 
 type datapointAssertion struct {
@@ -56,6 +56,210 @@ type datapointAssertion struct {
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
+}
+
+// --- UnmarshalYAML Methods ---
+
+func (d *document) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("document must be a map, got YAML kind %d", value.Kind)
+	}
+	for i := 0; i < len(value.Content); i += 2 {
+		key := value.Content[i].Value
+		val := value.Content[i+1]
+		switch key {
+		case "version":
+			if err := val.Decode(&d.Version); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "signal":
+			if err := val.Decode(&d.Signal); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "resources", "resources/exact":
+			if err := val.Decode(&d.Resources.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "resources/include":
+			if err := val.Decode(&d.Resources.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		default:
+			return fmt.Errorf("unsupported document key %q", key)
+		}
+	}
+	return nil
+}
+
+func (r *resourceAssertion) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("resource assertion must be a map, got YAML kind %d", value.Kind)
+	}
+	for i := 0; i < len(value.Content); i += 2 {
+		key := value.Content[i].Value
+		val := value.Content[i+1]
+		switch key {
+		case "attributes":
+			if err := val.Decode(&r.Attributes); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "scopes", "scopes/exact":
+			if err := val.Decode(&r.Scopes.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "scopes/include":
+			if err := val.Decode(&r.Scopes.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		default:
+			return fmt.Errorf("unsupported resource assertion key %q", key)
+		}
+	}
+	return nil
+}
+
+func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("scope assertion must be a map, got YAML kind %d", value.Kind)
+	}
+	for i := 0; i < len(value.Content); i += 2 {
+		key := value.Content[i].Value
+		val := value.Content[i+1]
+		switch key {
+		case "name":
+			if err := val.Decode(&s.Name); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "version":
+			if err := val.Decode(&s.Version); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "metrics", "metrics/exact":
+			if err := val.Decode(&s.Metrics.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "metrics/include":
+			if err := val.Decode(&s.Metrics.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		default:
+			return fmt.Errorf("unsupported scope assertion key %q", key)
+		}
+	}
+	return nil
+}
+
+func (m *metricAssertion) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("metric assertion must be a map, got YAML kind %d", value.Kind)
+	}
+	for i := 0; i < len(value.Content); i += 2 {
+		key := value.Content[i].Value
+		val := value.Content[i+1]
+		switch key {
+		case "name":
+			if err := val.Decode(&m.Name); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "type":
+			if err := val.Decode(&m.Type); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "unit":
+			if err := val.Decode(&m.Unit); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "temporality":
+			if err := val.Decode(&m.Temporality); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "monotonic":
+			if err := val.Decode(&m.Monotonic); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "datapoints", "datapoints/exact":
+			if err := val.Decode(&m.Datapoints.Exact); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		case "datapoints/include":
+			if err := val.Decode(&m.Datapoints.Include); err != nil {
+				return fmt.Errorf("decode %q: %w", key, err)
+			}
+		default:
+			return fmt.Errorf("unsupported metric assertion key %q", key)
+		}
+	}
+	return nil
+}
+
+// --- MarshalYAML Methods ---
+
+func (d document) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"version": d.Version,
+		"signal":  d.Signal,
+	}
+	if len(d.Resources.Exact) > 0 {
+		out["resources"] = d.Resources.Exact
+	}
+	if len(d.Resources.Include) > 0 {
+		out["resources/include"] = d.Resources.Include
+	}
+	return out, nil
+}
+
+func (r resourceAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+	if r.Attributes != nil {
+		out["attributes"] = r.Attributes
+	}
+	if len(r.Scopes.Exact) > 0 {
+		out["scopes"] = r.Scopes.Exact
+	}
+	if len(r.Scopes.Include) > 0 {
+		out["scopes/include"] = r.Scopes.Include
+	}
+	return out, nil
+}
+
+func (s scopeAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+	if s.Name != "" {
+		out["name"] = s.Name
+	}
+	if s.Version != "" {
+		out["version"] = s.Version
+	}
+	if len(s.Metrics.Exact) > 0 {
+		out["metrics"] = s.Metrics.Exact
+	}
+	if len(s.Metrics.Include) > 0 {
+		out["metrics/include"] = s.Metrics.Include
+	}
+	return out, nil
+}
+
+func (m metricAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"name": m.Name,
+		"type": m.Type,
+	}
+	if m.Unit != "" {
+		out["unit"] = m.Unit
+	}
+	if m.Temporality != "" {
+		out["temporality"] = m.Temporality
+	}
+	if m.Monotonic != nil {
+		out["monotonic"] = m.Monotonic
+	}
+	if len(m.Datapoints.Exact) > 0 {
+		out["datapoints"] = m.Datapoints.Exact
+	}
+	if len(m.Datapoints.Include) > 0 {
+		out["datapoints/include"] = m.Datapoints.Include
+	}
+	return out, nil
 }
 
 func readDocument(path string) (*document, error) {
@@ -88,15 +292,35 @@ func readDocument(path string) (*document, error) {
 // before comparison, so pmetricassert does not accept the empty-metric
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 0 {
-					m.Datapoints = []datapointAssertion{{}}
-				}
-			}
-		}
+	for i := range doc.Resources.Exact {
+		expandResourceShorthand(&doc.Resources.Exact[i])
+	}
+	for i := range doc.Resources.Include {
+		expandResourceShorthand(&doc.Resources.Include[i])
+	}
+}
+
+func expandResourceShorthand(r *resourceAssertion) {
+	for i := range r.Scopes.Exact {
+		expandScopeShorthand(&r.Scopes.Exact[i])
+	}
+	for i := range r.Scopes.Include {
+		expandScopeShorthand(&r.Scopes.Include[i])
+	}
+}
+
+func expandScopeShorthand(s *scopeAssertion) {
+	for i := range s.Metrics.Exact {
+		expandMetricShorthand(&s.Metrics.Exact[i])
+	}
+	for i := range s.Metrics.Include {
+		expandMetricShorthand(&s.Metrics.Include[i])
+	}
+}
+
+func expandMetricShorthand(m *metricAssertion) {
+	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 {
+		m.Datapoints.Exact = []datapointAssertion{{}}
 	}
 }
 
@@ -113,14 +337,43 @@ func writeDocument(path string, doc *document) error {
 // single empty-attribute datapoint so the emitted YAML reads as "metric with
 // no dimensioning attributes" rather than "metric with one empty datapoint".
 func compactShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 && m.Datapoints[0].Value == nil {
-					m.Datapoints = nil
-				}
-			}
-		}
+	for i := range doc.Resources.Exact {
+		compactResourceShorthand(&doc.Resources.Exact[i])
+	}
+	for i := range doc.Resources.Include {
+		compactResourceShorthand(&doc.Resources.Include[i])
+	}
+	if len(doc.Resources.Include) == 0 {
+		doc.Resources = ResourcesAssertion{Exact: doc.Resources.Exact}
+	}
+}
+
+func compactResourceShorthand(r *resourceAssertion) {
+	for i := range r.Scopes.Exact {
+		compactScopeShorthand(&r.Scopes.Exact[i])
+	}
+	for i := range r.Scopes.Include {
+		compactScopeShorthand(&r.Scopes.Include[i])
+	}
+	if len(r.Scopes.Include) == 0 {
+		r.Scopes = ScopesAssertion{Exact: r.Scopes.Exact}
+	}
+}
+
+func compactScopeShorthand(s *scopeAssertion) {
+	for i := range s.Metrics.Exact {
+		compactMetricShorthand(&s.Metrics.Exact[i])
+	}
+	for i := range s.Metrics.Include {
+		compactMetricShorthand(&s.Metrics.Include[i])
+	}
+	if len(s.Metrics.Include) == 0 {
+		s.Metrics = MetricsAssertion{Exact: s.Metrics.Exact}
+	}
+}
+
+func compactMetricShorthand(m *metricAssertion) {
+	if len(m.Datapoints.Exact) == 1 && len(m.Datapoints.Exact[0].Attributes) == 0 && m.Datapoints.Exact[0].Value == nil && len(m.Datapoints.Include) == 0 {
+		m.Datapoints = DatapointsAssertion{}
 	}
 }
