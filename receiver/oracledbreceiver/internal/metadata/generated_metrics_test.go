@@ -68,6 +68,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["oracledb.execution.utilization"] = mb.metricOracledbExecutionUtilization.config.AggregationStrategy
+			aggMap["oracledb.java.heap.usage"] = mb.metricOracledbJavaHeapUsage.config.AggregationStrategy
+			aggMap["oracledb.os.cpu.time"] = mb.metricOracledbOsCPUTime.config.AggregationStrategy
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
@@ -163,6 +165,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbHostCPUUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordOracledbJavaHeapUsageDataPoint(ts, "1", AttributeOracledbJavaHeapStateLive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbJavaHeapUsageDataPoint(ts, "3", AttributeOracledbJavaHeapStateTotal)
+			}
+
+			allMetricsCount++
 			mb.RecordOracledbLibraryCacheUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -171,6 +179,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbLogonsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbOsCPUTimeDataPoint(ts, 1, AttributeOracledbOsCPUStateSystem)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbOsCPUTimeDataPoint(ts, 3, AttributeOracledbOsCPUStateUser)
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbOsSwapsDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
@@ -241,6 +258,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbProcessLastNonIdleTimeDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
@@ -257,6 +277,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSessionNonIdleTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSessionNonIdleWaitsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbSessionStoredProcedureUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -336,6 +365,8 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricOracledbExecutionUtilization.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbJavaHeapUsage.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbOsCPUTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
@@ -669,6 +700,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.java.heap.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.java.heap.usage"], "Found a duplicate in the metrics slice: oracledb.java.heap.usage")
+						validatedMetrics["oracledb.java.heap.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Size of Oracle's in-database JVM (OJVM) call heap in bytes. Sourced from v$sysstat names java call heap live size (oracledb.java.heap.state=live), java call heap total size (oracledb.java.heap.state=total), and java call heap used size (oracledb.java.heap.state=used).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						oracledbJavaHeapStateAttrVal, ok := dp.Attributes().Get("oracledb.java.heap.state")
+						assert.True(t, ok)
+						assert.Equal(t, "live", oracledbJavaHeapStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.java.heap.usage"], "Found a duplicate in the metrics slice: oracledb.java.heap.usage")
+						validatedMetrics["oracledb.java.heap.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Size of Oracle's in-database JVM (OJVM) call heap in bytes. Sourced from v$sysstat names java call heap live size (oracledb.java.heap.state=live), java call heap total size (oracledb.java.heap.state=total), and java call heap used size (oracledb.java.heap.state=used).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.java.heap.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracledb.java.heap.state")
+						assert.False(t, ok)
+					}
 				case "oracledb.library_cache.utilization":
 					assert.False(t, validatedMetrics["oracledb.library_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.library_cache.utilization")
 					validatedMetrics["oracledb.library_cache.utilization"] = true
@@ -702,6 +773,64 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of logon operations", mi.Description())
 					assert.Equal(t, "{operation}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.os.cpu.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.os.cpu.time"], "Found a duplicate in the metrics slice: oracledb.os.cpu.time")
+						validatedMetrics["oracledb.os.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (oracledb.os.cpu.state=system) and OS User time used (oracledb.os.cpu.state=user).", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						oracledbOsCPUStateAttrVal, ok := dp.Attributes().Get("oracledb.os.cpu.state")
+						assert.True(t, ok)
+						assert.Equal(t, "system", oracledbOsCPUStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.os.cpu.time"], "Found a duplicate in the metrics slice: oracledb.os.cpu.time")
+						validatedMetrics["oracledb.os.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (oracledb.os.cpu.state=system) and OS User time used (oracledb.os.cpu.state=user).", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["oracledb.os.cpu.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("oracledb.os.cpu.state")
+						assert.False(t, ok)
+					}
+				case "oracledb.os.swaps":
+					assert.False(t, validatedMetrics["oracledb.os.swaps"], "Found a duplicate in the metrics slice: oracledb.os.swaps")
+					validatedMetrics["oracledb.os.swaps"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of OS swap operations, as accounted by Oracle. Sourced from v$sysstat name OS Swaps.", mi.Description())
+					assert.Equal(t, "{swaps}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1069,6 +1198,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.process.last_non_idle.time":
+					assert.False(t, validatedMetrics["oracledb.process.last_non_idle.time"], "Found a duplicate in the metrics slice: oracledb.process.last_non_idle.time")
+					validatedMetrics["oracledb.process.last_non_idle.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Epoch time in seconds at which the process was last active (non-idle), as reported by Oracle. Sourced from v$sysstat name process last non-idle time.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.processes.limit":
 					assert.False(t, validatedMetrics["oracledb.processes.limit"], "Found a duplicate in the metrics slice: oracledb.processes.limit")
 					validatedMetrics["oracledb.processes.limit"] = true
@@ -1131,6 +1272,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.session.non_idle.time":
+					assert.False(t, validatedMetrics["oracledb.session.non_idle.time"], "Found a duplicate in the metrics slice: oracledb.session.non_idle.time")
+					validatedMetrics["oracledb.session.non_idle.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.session.non_idle.waits":
+					assert.False(t, validatedMetrics["oracledb.session.non_idle.waits"], "Found a duplicate in the metrics slice: oracledb.session.non_idle.waits")
+					validatedMetrics["oracledb.session.non_idle.waits"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.", mi.Description())
+					assert.Equal(t, "{waits}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.session.stored_procedure.usage":
+					assert.False(t, validatedMetrics["oracledb.session.stored_procedure.usage"], "Found a duplicate in the metrics slice: oracledb.session.stored_procedure.usage")
+					validatedMetrics["oracledb.session.stored_procedure.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.sessions.limit":
 					assert.False(t, validatedMetrics["oracledb.sessions.limit"], "Found a duplicate in the metrics slice: oracledb.sessions.limit")
 					validatedMetrics["oracledb.sessions.limit"] = true

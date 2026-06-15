@@ -96,6 +96,18 @@ const (
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
+	// PR5b: Session, JVM & OS Resources v$sysstat names
+	sessionNonIdleWaitCount     = "non-idle wait count"
+	sessionNonIdleWaitTime      = "non-idle wait time"
+	sessionStoredProcedureSpace = "session stored procedure space"
+	processLastNonIdleTime      = "process last non-idle time"
+	javaCallHeapLiveSize        = "java call heap live size"
+	javaCallHeapTotalSize       = "java call heap total size"
+	javaCallHeapUsedSize        = "java call heap used size"
+	osSystemTimeUsed            = "OS System time used"
+	osUserTimeUsed              = "OS User time used"
+	osSwaps                     = "OS Swaps"
+
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = `
@@ -308,7 +320,14 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoCacheWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionNonIdleWaits.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionNonIdleTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbProcessLastNonIdleTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJavaHeapUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbOsCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -512,6 +531,59 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case sqlnetBytesSentToDBLink:
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// PR5b: Session, JVM & OS Resources
+			case sessionNonIdleWaitCount:
+				if err := s.mb.RecordOracledbSessionNonIdleWaitsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionNonIdleWaitTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionNonIdleWaitTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbSessionNonIdleTimeDataPoint(now, value/100)
+				}
+			case sessionStoredProcedureSpace:
+				if err := s.mb.RecordOracledbSessionStoredProcedureUsageDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case processLastNonIdleTime:
+				if err := s.mb.RecordOracledbProcessLastNonIdleTimeDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case javaCallHeapLiveSize:
+				if err := s.mb.RecordOracledbJavaHeapUsageDataPoint(now, row["VALUE"], metadata.AttributeOracledbJavaHeapStateLive); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case javaCallHeapTotalSize:
+				if err := s.mb.RecordOracledbJavaHeapUsageDataPoint(now, row["VALUE"], metadata.AttributeOracledbJavaHeapStateTotal); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case javaCallHeapUsedSize:
+				if err := s.mb.RecordOracledbJavaHeapUsageDataPoint(now, row["VALUE"], metadata.AttributeOracledbJavaHeapStateUsed); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case osSystemTimeUsed:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osSystemTimeUsed, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbOsCPUTimeDataPoint(now, value/100, metadata.AttributeOracledbOsCPUStateSystem)
+				}
+			case osUserTimeUsed:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osUserTimeUsed, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbOsCPUTimeDataPoint(now, value/100, metadata.AttributeOracledbOsCPUStateUser)
+				}
+			case osSwaps:
+				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}
