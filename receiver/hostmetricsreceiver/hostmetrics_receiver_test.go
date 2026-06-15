@@ -8,6 +8,7 @@ import (
 	"errors"
 	"maps"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
@@ -55,7 +56,6 @@ var allMetrics = []string{
 	"system.network.packets",
 	"system.paging.faults",
 	"system.paging.operations",
-	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -63,6 +63,10 @@ var resourceMetrics = []string{
 	"process.memory.usage",
 	"process.memory.virtual",
 	"process.disk.io",
+}
+
+var dataDependentMetrics = []string{
+	"system.paging.usage",
 }
 
 var systemSpecificMetrics = map[string][]string{
@@ -156,9 +160,14 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		expectedMetrics = append(expectedMetrics, systemSpecificMetricsNFS[runtime.GOOS]...)
 	}
 
-	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
+	}
+	for metric := range returnedMetrics {
+		if slices.Contains(expectedMetrics, metric) || slices.Contains(dataDependentMetrics, metric) {
+			continue
+		}
+		assert.Failf(t, "Unexpected metric found", "metric %q was not expected", metric)
 	}
 
 	// verify the expected list of resource metrics returned (Linux & Windows only)

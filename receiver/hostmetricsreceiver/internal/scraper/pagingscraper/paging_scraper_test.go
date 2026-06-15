@@ -31,6 +31,12 @@ func TestScrape(t *testing.T) {
 
 	config := metadata.NewDefaultMetricsBuilderConfig()
 	config.Metrics.SystemPagingUtilization.Enabled = true
+	testPageFileStats := []*pageFileStats{{
+		deviceName: "pagefile",
+		usedBytes:  200,
+		freeBytes:  800,
+		totalBytes: 1000,
+	}}
 
 	testCases := []testCase{
 		{
@@ -62,6 +68,9 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
+			scraper.getPageFileStats = func() ([]*pageFileStats, error) {
+				return testPageFileStats, nil
+			}
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
