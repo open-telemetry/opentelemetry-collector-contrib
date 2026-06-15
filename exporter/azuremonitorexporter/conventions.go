@@ -233,11 +233,11 @@ func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventionsv138.RPCSystemKey):
 		attrs.RPCSystem = v.Str()
-	case string(conventionsv138.RPCSystemKey):
+	case string(conventionsv138.RPCServiceKey):
 		attrs.RPCService = v.Str()
 	case string(conventions.RPCMethodKey):
 		attrs.RPCMethod = v.Str()
-	case "rpc.grpc.status_code":
+	case string(conventionsv138.RPCGRPCStatusCodeKey):
 		attrs.RPCGRPCStatusCode = v.Int()
 
 	case string(conventions.ServerAddressKey):
