@@ -481,11 +481,6 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 	}
 }
 
-// isQuietMode returns true if the operator is configured to use quiet mode
-func (p *Parser) isQuietMode() bool {
-	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
-}
-
 // newOctetCountingRFC3164ParseFunc returns a parse function that handles
 // RFC6587 octet counting framing with RFC3164 message format.
 // The input format is "length message" where length is the byte count of the message.
