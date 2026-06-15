@@ -81,7 +81,7 @@ keep an `aws.ecs.*` (or legacy) key.
 | Attribute                      | Description                                                              |
 |--------------------------------|--------------------------------------------------------------------------|
 | `container.id`                 | The container (Docker) ID                                                |
-| `container.name`               | The container name                                                       |
+| `container.name`               | The container name from the ECS task definition (e.g. `cadvisor`)        |
 | `container.image.name`         | The container image name                                                 |
 | `container.image.id`           | The container image ID                                                   |
 | `container.label.*`            | User-defined (non-ECS) container labels                                 |
@@ -92,7 +92,7 @@ keep an `aws.ecs.*` (or legacy) key.
 | `aws.ecs.cluster`              | The ECS cluster name                                                     |
 | `aws.ecs.container.name`       | The container name assigned by the ECS Agent                            |
 | `aws.ecs.task.known.status`    | The lifecycle state of the container                                    |
-| `docker.name`                  | The Docker container name (as shown by `docker ps`)                     |
+| `docker.name`                  | The runtime Docker container name the ECS Agent assigns (e.g. `ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800`), as shown by `docker ps` — distinct from `container.name` above |
 | `container.cpu.limit` / `container.memory.limit` | The CPU and memory limits of the container             |
 | `created.at` / `started.at`    | Container creation and start timestamps                                 |
 | `desired.status`               | The desired status of the container                                     |
