@@ -134,7 +134,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbCommandTypeAttributeValue int64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64, oracledbProcedureExecutionCountAttributeValue int64, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureTypeAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbPlanLastLoadAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbCommandTypeAttributeValue int64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64, oracledbProcedureExecutionCountAttributeValue int64, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureTypeAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbPlanFirstLoadAttributeValue string, oracledbPlanLastLoadAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -175,6 +175,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutStr("oracledb.procedure_name", oracledbProcedureNameAttributeValue)
 	dp.Attributes().PutStr("oracledb.procedure_type", oracledbProcedureTypeAttributeValue)
 	dp.Attributes().PutStr("oracledb.plan_hash_value", oracledbPlanHashValueAttributeValue)
+	dp.Attributes().PutStr("oracledb.plan.first_load", oracledbPlanFirstLoadAttributeValue)
 	dp.Attributes().PutStr("oracledb.plan.last_load", oracledbPlanLastLoadAttributeValue)
 
 }
@@ -230,6 +231,36 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbHostingType.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbPdb.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbPdb.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbRole.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbRole.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbVersion.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbVersion.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracledbInstanceName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.OracledbInstanceName.EventsInclude)
@@ -336,6 +367,6 @@ func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context,
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbCommandTypeAttributeValue int64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64, oracledbProcedureExecutionCountAttributeValue int64, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureTypeAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbPlanLastLoadAttributeValue string) {
-	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbServerNameAttributeValue, dbQueryTextAttributeValue, oracledbQueryPlanAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbApplicationWaitTimeAttributeValue, oracledbBufferGetsAttributeValue, oracledbClusterWaitTimeAttributeValue, oracledbCommandTypeAttributeValue, oracledbConcurrencyWaitTimeAttributeValue, oracledbCPUTimeAttributeValue, oracledbDirectReadsAttributeValue, oracledbDirectWritesAttributeValue, oracledbDiskReadsAttributeValue, oracledbElapsedTimeAttributeValue, oracledbExecutionsAttributeValue, oracledbPhysicalReadBytesAttributeValue, oracledbPhysicalReadRequestsAttributeValue, oracledbPhysicalWriteBytesAttributeValue, oracledbPhysicalWriteRequestsAttributeValue, oracledbRowsProcessedAttributeValue, oracledbUserIoWaitTimeAttributeValue, oracledbProcedureExecutionCountAttributeValue, oracledbProcedureIDAttributeValue, oracledbProcedureNameAttributeValue, oracledbProcedureTypeAttributeValue, oracledbPlanHashValueAttributeValue, oracledbPlanLastLoadAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbCommandTypeAttributeValue int64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64, oracledbProcedureExecutionCountAttributeValue int64, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureTypeAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbPlanFirstLoadAttributeValue string, oracledbPlanLastLoadAttributeValue string) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbServerNameAttributeValue, dbQueryTextAttributeValue, oracledbQueryPlanAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbApplicationWaitTimeAttributeValue, oracledbBufferGetsAttributeValue, oracledbClusterWaitTimeAttributeValue, oracledbCommandTypeAttributeValue, oracledbConcurrencyWaitTimeAttributeValue, oracledbCPUTimeAttributeValue, oracledbDirectReadsAttributeValue, oracledbDirectWritesAttributeValue, oracledbDiskReadsAttributeValue, oracledbElapsedTimeAttributeValue, oracledbExecutionsAttributeValue, oracledbPhysicalReadBytesAttributeValue, oracledbPhysicalReadRequestsAttributeValue, oracledbPhysicalWriteBytesAttributeValue, oracledbPhysicalWriteRequestsAttributeValue, oracledbRowsProcessedAttributeValue, oracledbUserIoWaitTimeAttributeValue, oracledbProcedureExecutionCountAttributeValue, oracledbProcedureIDAttributeValue, oracledbProcedureNameAttributeValue, oracledbProcedureTypeAttributeValue, oracledbPlanHashValueAttributeValue, oracledbPlanFirstLoadAttributeValue, oracledbPlanLastLoadAttributeValue)
 }

@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
@@ -68,7 +68,7 @@ jobs:
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
       mode: ${{ steps.post.outputs.mode }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
       - name: Compute scope
@@ -157,7 +157,7 @@ jobs:
         group: ${{ fromJSON(needs.ci-scope.outputs.direct_matrix) }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -205,7 +205,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: 1.25.11 # TODO: revert to oldstable when actions/setup-go reliably resolves oldstable to 1.25.11
@@ -242,7 +242,7 @@ jobs:
           - schemas-and-templates
           - read-only-checks
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -278,7 +278,7 @@ jobs:
         group: ${{ fromJSON(needs.ci-scope.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -343,13 +343,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [unittest]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -362,7 +362,7 @@ jobs:
         group: ${{ fromJSON(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -382,7 +382,7 @@ jobs:
           group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
           echo "key=docker-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
-        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
+        uses: AndreKurait/docker-cache@7a3887908bdb97935395833df69b060cfcca0f7f # 0.7.0
         with:
           key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
@@ -402,12 +402,12 @@ jobs:
           - receiver/icmpcheckreceiver
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Cache Docker images.
-        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
+        uses: AndreKurait/docker-cache@7a3887908bdb97935395833df69b060cfcca0f7f # 0.7.0
         with:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
@@ -436,7 +436,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -447,7 +447,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -459,7 +459,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -488,7 +488,7 @@ jobs:
     # write a parallel PR-scoped entry and pressure the 10 GB pool) and
     # builds cold on the larger CNCF hardware.
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: oldstable
@@ -550,7 +550,7 @@ jobs:
             arch: ppc64
             runner: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -570,7 +570,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           sparse-checkout: |
             .github/workflows/scripts/verify-dist-files-exist.sh
@@ -588,7 +588,7 @@ jobs:
     needs: [lint, unittest, integration-tests]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -625,7 +625,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
 
@@ -710,7 +710,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable

@@ -220,6 +220,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.attention.rate
+
+Number of SQL attentions (client cancellation interrupts) received per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {attentions}/s | Gauge | Double | Development |
+
 ### sqlserver.computer.uptime
 
 Computer uptime.
@@ -558,6 +566,34 @@ Total number of page lookups.
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
 
+### sqlserver.parameterization.rate
+
+Rate of auto-parameterization activity, broken down by result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {params}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.parameterization.result | The result of an auto-parameterization attempt by the SQL Server query optimizer. | Str: ``auto_attempted``, ``safe``, ``unsafe``, ``failed``, ``forced`` | Recommended | - |
+
+### sqlserver.plan.execution.rate
+
+Rate of plan executions, classified by plan guide result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {executions}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.plan.guidance.result | Whether a SQL plan execution successfully used a matching plan guide (guided) or did not (misguided). | Str: ``guided``, ``misguided`` | Recommended | - |
+
 ### sqlserver.processes.blocked
 
 The number of processes that are currently blocked
@@ -567,6 +603,14 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {processes} | Gauge | Int | Development |
+
+### sqlserver.recompilation.ratio
+
+Ratio of SQL recompilations to compilations, expressed as a percentage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### sqlserver.replica.data.rate
 
@@ -686,6 +730,7 @@ query sample
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
 | sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int | - |
 | sqlserver.blocking.start_time | Timestamp of when the current blocking wait began (ISO 8601 format). | Any Str | - |
+| sqlserver.client.app.name | Name of the client application that initiated the session. | Any Str | - |
 | sqlserver.context_info | Context information for the session, represented as a hexadecimal string. | Any Str | - |
 | sqlserver.command | SQL command type being executed. | Any Str | - |
 | sqlserver.cpu_time | CPU time consumed by the query, in seconds. | Any Double | - |
@@ -703,6 +748,8 @@ query sample
 | sqlserver.wait.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
+| sqlserver.session.duration | Total elapsed time in seconds the session has been actively executing requests. | Any Double | - |
+| sqlserver.session.start_time | Timestamp when the session was established (ISO 8601 format). | Any Str | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |
@@ -744,6 +791,7 @@ top query
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
 | sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
+| sqlserver.query.plan.creation_time | Timestamp of when the SQL query execution plan was compiled (ISO 8601 format). | Any Str | - |
 
 ## Resource Attributes
 

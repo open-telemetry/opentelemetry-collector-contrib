@@ -108,10 +108,9 @@ func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metric
 			dimensions.dpAttrs.CopyTo(dp.Attributes())
 
 			stream := identity.OfStream(metricID, dp)
-			if ts, ok := mt.streamHasTimestamp(stream); ok {
-				dp.SetStartTimestamp(ts)
+			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+				dp.SetStartTimestamp(startTs)
 			}
-			mt.updateLastTsForStream(stream, dp.Timestamp())
 		}
 	}
 	return bt.Metrics
@@ -164,11 +163,9 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 			dp.SetDoubleValue(val)
 
 			stream := identity.OfStream(metricID, dp)
-			ts, ok := mt.streamHasTimestamp(stream)
-			if ok {
-				dp.SetStartTimestamp(ts)
+			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+				dp.SetStartTimestamp(startTs)
 			}
-			mt.updateLastTsForStream(stream, dp.Timestamp())
 		}
 	}
 	return bt.Metrics
