@@ -116,6 +116,7 @@ func TestComponentParser(t *testing.T) {
 					"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen",
 				},
 				Namespace: "github.com/open-telemetry/opentelemetry-collector-contrib",
+				Pattern:   ".",
 			}
 			if tc.rootType != "" {
 				cfg.ConfigType = tc.rootType
