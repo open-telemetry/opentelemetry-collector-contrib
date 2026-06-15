@@ -78,7 +78,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
@@ -94,7 +94,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
@@ -187,7 +187,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
@@ -203,7 +203,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
@@ -219,7 +219,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
@@ -235,7 +235,7 @@ func Test_parseLEEF(t *testing.T) {
 				"leef.product.name":    "Product",
 				"leef.product.version": "1.0",
 				"leef.event.id":        "EventID",
-				"leef.attributes":           map[string]any{},
+				"leef.attributes":      map[string]any{},
 			},
 		},
 		{
