@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata"
 )
 
 func containerResource(cm *ecsutil.ContainerMetadata, logger *zap.Logger) pcommon.Resource {
@@ -28,7 +29,12 @@ func containerResource(cm *ecsutil.ContainerMetadata, logger *zap.Logger) pcommo
 	resource.Attributes().PutStr(attributeECSDockerName, cm.DockerName)
 	resource.Attributes().PutStr(string(conventions.ContainerImageNameKey), image.Repository)
 	resource.Attributes().PutStr(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().PutStr(string(conventionsv121.ContainerImageTagKey), image.Tag)
+	if metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		resource.Attributes().PutEmptySlice(string(conventions.ContainerImageTagsKey)).AppendEmpty().SetStr(image.Tag)
+	}
+	if !metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate.IsEnabled() {
+		resource.Attributes().PutStr(string(conventionsv121.ContainerImageTagKey), image.Tag)
+	}
 	resource.Attributes().PutStr(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().PutStr(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
