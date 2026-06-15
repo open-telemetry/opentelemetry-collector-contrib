@@ -1,6 +1,0 @@
-change_type: deprecation
-component: receiver/kubelet_stats
-note: Rename receiver type from `kubeletstats` to `kubelet_stats`
-issues: [45339]
-subtext:
-change_logs: [user]

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,12 +48,13 @@ type WatchClient struct {
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
 	stopCh                 chan struct{}
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
+	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -93,17 +95,25 @@ type WatchClient struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-// Extract replicaset name from the pod name. Pod name is created using
-// format: [deployment-name]-[Random-String-For-ReplicaSet]
-var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
-
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
+// time-hash-int is the unix timestamp in minutes of the job creation time
+// 8 digits will last until 2160, we are safe for a while
+var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
 
-// Extract Deployment name from the ReplicaSet name. Deployment name is created using
-// format: [deployment-name]-[hash]
-var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
+// cronJobSuffixTimeSkewMinutes is the maximum allowed difference
+// in minutes between pod creation time and the timestamp suffix
+// in the job name (created by cronjob)
+// If the suffix falls outside of the range, it is assumed that it's not a cronjob
+// (i.e. the suffix is human generated, like a date 20260407)
+const cronJobSuffixTimeSkewMinutes int64 = 60 * 24 // 1 day
+
+// podTemplateHashLabel contains the label that K8s Deployment
+// controller adds to ReplicaSets to ensure that child ReplicaSets
+// do not overlap. ReplicaSet name is constructed as [deployment-name]-[podTemplateHash]
+// K8s doc ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#pod-template-hash-label
+// K8s code ref: https://github.com/kubernetes/kubernetes/blob/b31119d205a839aab40b2d819a58d4fabacd9b47/pkg/controller/deployment/sync.go#L207
+const podTemplateHashLabel = "pod-template-hash"
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -125,6 +135,8 @@ func New(
 	informersFactory InformersFactoryList,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
+	watchSyncPeriod time.Duration,
+	podDeleteGracePeriod time.Duration,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -137,12 +149,13 @@ func New(
 		Filters:                filters,
 		Associations:           associations,
 		Exclude:                exclude,
-		replicasetRegex:        rRegex,
 		cronJobRegex:           cronJobRegex,
 		stopCh:                 make(chan struct{}),
 		telemetryBuilder:       telemetryBuilder,
 		waitForMetadata:        waitForMetadata,
 		waitForMetadataTimeout: waitForMetadataTimeout,
+		watchSyncPeriod:        watchSyncPeriod,
+		podDeleteGracePeriod:   podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -174,7 +187,9 @@ func New(
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
 	if informersFactory.newInformer == nil {
-		informersFactory.newInformer = newSharedInformer
+		informersFactory.newInformer = func(client kubernetes.Interface, ns string, ls labels.Selector, fs fields.Selector) cache.SharedInformer {
+			return newSharedInformer(client, ns, ls, fs, watchSyncPeriod)
+		}
 	}
 
 	if informersFactory.newNamespaceInformer == nil {
@@ -182,11 +197,15 @@ func New(
 		case c.extractNamespaceLabelsAnnotations():
 			// if rules to extract metadata from namespace is configured use namespace shared informer containing
 			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-			informersFactory.newNamespaceInformer = newNamespaceSharedInformer
+			informersFactory.newNamespaceInformer = func(client clientmeta.Interface) cache.SharedInformer {
+				return newNamespaceSharedInformer(client, watchSyncPeriod)
+			}
 		case rules.ClusterUID:
 			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
-			informersFactory.newNamespaceInformer = newKubeSystemSharedInformer
+			informersFactory.newNamespaceInformer = func(client clientmeta.Interface) cache.SharedInformer {
+				return newKubeSystemSharedInformer(client, watchSyncPeriod)
+			}
 		default:
 			informersFactory.newNamespaceInformer = NewNoOpInformer
 		}
@@ -209,9 +228,20 @@ func New(
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
-	if rules.DeploymentName || rules.DeploymentUID {
+	// Enable the ReplicaSet informer when any of the following applies:
+	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
+	//   2) DeploymentUID is enabled
+	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
+	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
+		c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations()
+
+	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
+			informersFactory.newReplicaSetInformer = func(client clientmeta.Interface, namespace string) cache.SharedInformer {
+				return newReplicaSetSharedInformer(client, namespace, watchSyncPeriod)
+			}
 		}
 
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
@@ -221,23 +251,23 @@ func New(
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node)
+		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node, watchSyncPeriod)
 	}
 
 	if c.extractDeploymentLabelsAnnotations() {
-		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace)
+		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractStatefulSetLabelsAnnotations() {
-		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace)
+		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractDaemonSetLabelsAnnotations() {
-		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace)
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace)
+		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
 }
@@ -245,14 +275,12 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	// Start the delete loop for cleaning up old pods from cache
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+	go c.deleteLoop(time.Second*30, c.podDeleteGracePeriod)
 
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	// The replicaset informer is needed to get the deployment UID.
-	// It is also needed to get the deployment name if the feature gate is not enabled.
-	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
+	if c.replicasetInformer != nil {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -931,11 +959,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
-					if c.Rules.DeploymentNameFromReplicaSet {
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
+					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name
+						c.logger.Debug("Used ReplicaSet Informer to get deployment name", zap.String("replicaSetName", replicaset.Name), zap.String("deploymentName", replicaset.Deployment.Name))
+					} else {
+						// Will be blank if not a ReplicaSet managed by a Deployment
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels[podTemplateHashLabel])
+						c.logger.Debug("used heuristics for deployment name", zap.String("replicaSetName", ref.Name), zap.String("deploymentName", deploymentName))
 					}
+
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
@@ -985,15 +1020,24 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						name := parts[1]
+					var cronjobName string
+					// Attempt to use the Job informer when it is running (e.g. k8s.cronjob.uid or from: job
+					// label/annotation extraction). Otherwise fall back to heuristics on the Job name suffix.
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						cronjobName = job.CronJob.Name
+						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
+					} else {
+						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
+						c.logger.Debug("used heuristics for cronjob name", zap.String("cronjob", cronjobName))
+					}
+
+					if cronjobName != "" {
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = name
+							tags[string(conventions.K8SCronJobNameKey)] = cronjobName
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = name
+							tags[string(conventions.ServiceNameKey)] = cronjobName
 						}
 					}
 				}
@@ -1082,7 +1126,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		},
 	}
 
-	if rules.StartTime {
+	// Creation time is required for k8s.pod.start_time and for CronJob name heuristics
+	// (Job name suffix vs pod creation) when k8s.pod.start_time is not extracted.
+	if rules.StartTime || rules.CronJobName || rules.ServiceName {
 		transformedPod.SetCreationTimestamp(pod.GetCreationTimestamp())
 	}
 
@@ -1147,7 +1193,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
+	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion || rules.DeploymentName {
 		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 
@@ -1990,24 +2036,40 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 }
 
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
-// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
-// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
-func extractDeploymentNameFromReplicaSet(replicasetName string) string {
-	if replicasetName == "" {
+func extractDeploymentNameFromReplicaSet(replicasetName, podTemplateHash string) string {
+	// TemplateHash Empty means it's not a ReplicaSet managed by a Deployment
+	if replicasetName == "" || podTemplateHash == "" || !strings.HasSuffix(replicasetName, "-"+podTemplateHash) {
+		return ""
+	}
+	// Remove the pod template hash suffix and the hyphen
+	return replicasetName[:len(replicasetName)-len(podTemplateHash)-1]
+}
+
+// extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
+// a heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
+// If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
+func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
+	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
+	// time value in minutes).
+	parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+	if len(parts) != 3 {
+		return ""
+	}
+	suffixMinutes, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		c.logger.Debug("failed to parse cronjob timestamp", zap.Error(err))
+		// assume not a cronjob
+		return ""
+	}
+	podMinutes := pod.GetCreationTimestamp().Unix() / 60
+	diff := podMinutes - suffixMinutes
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > cronJobSuffixTimeSkewMinutes {
+		// assume not a cronjob
 		return ""
 	}
 
-	parts := strings.Split(replicasetName, "-")
-	if len(parts) < 2 {
-		return ""
-	}
-
-	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
-	lastPart := parts[len(parts)-1]
-	if deploymentHashSuffixPattern.MatchString(lastPart) {
-		// Return everything except the last part (the hash), joined back by hyphens.
-		return strings.Join(parts[:len(parts)-1], "-")
-	}
-
-	return ""
+	return parts[1]
 }

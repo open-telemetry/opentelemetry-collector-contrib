@@ -7,18 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-)
 
-var MultiTagParsingFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.datadogreceiver.EnableMultiTagParsing",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, parses `key:value` tags with duplicate keys into a slice attribute."),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 // See:
@@ -195,7 +188,7 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 				// type string[]
 				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
 			} else {
-				if !MultiTagParsingFeatureGate.IsEnabled() {
+				if !metadata.ReceiverDatadogreceiverEnableMultiTagParsingFeatureGate.IsEnabled() {
 					attrs.dp.PutStr(key, val)
 				} else {
 					// Datadog does, semantically, generate tags with the same key prefix but different values
