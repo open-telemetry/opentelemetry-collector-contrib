@@ -1861,9 +1861,7 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	require.Equal(t, []string{spanID.String()}, sample.Label["span_id"])
 	require.Equal(t, []string{traceID.String()}, sample.Label["trace_id"])
 	require.Equal(t, []string{"100"}, sample.Label["source.event.period"])
-	// TODO: TimeNanos currently carries only the sub-second component; full Unix
-	// nanosecond timestamp to be addressed in a follow-up.
-	require.Equal(t, int64(ts.Nanosecond()), pprofProfile.TimeNanos)
+	require.Equal(t, ts.UnixNano(), pprofProfile.TimeNanos)
 }
 
 // TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
