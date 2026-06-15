@@ -37,6 +37,8 @@ The following settings are optional:
 * `timeout` (default: 60s): The time the scrape function will wait for a response before returning empty.
 * `build_version_info` (default: false): Elect to run an additional scrape which will retrieve build and version info for the configured endpoints and attach this as attributes to the selected metrics. A value of false will report an empty string as the attribute value but will speed up the receiver slightly.
 
+> **Note:** The receiver type has been renamed from `splunkenterprise` to `splunk_enterprise`. The old name is still accepted but will log a deprecation warning.
+
 ## Basic Example:
 
 ```yaml
@@ -51,7 +53,7 @@ extensions:
             password: securityFirst
 
 receivers:
-    splunkenterprise:
+    splunk_enterprise:
         indexer:
             auth: 
               authenticator: basicauth/indexer
