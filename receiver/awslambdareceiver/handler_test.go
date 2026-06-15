@@ -229,14 +229,21 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
 			s3Service.EXPECT().
-				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey).
-				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
+				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey, gomock.Any()).
+				Return(internal.NewBytesS3ObjectReader(test.s3MockContent.data), nil).
 				AnyTimes()
 
 			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(test.extension), test.eventConsumer)
 
+			// Set the S3 object size to match the mock data so that
+			// io.NewSectionReader in the handler sees the correct length.
+			s3Event := test.s3Event
+			if len(s3Event.Records) > 0 && len(test.s3MockContent.data) > 0 {
+				s3Event.Records[0].S3.Object.Size = int64(len(test.s3MockContent.data))
+			}
+
 			var event json.RawMessage
-			event, err := json.Marshal(test.s3Event)
+			event, err := json.Marshal(s3Event)
 			require.NoError(t, err)
 
 			errP := handler.handle(t.Context(), event)
@@ -531,7 +538,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
 					Object: events.S3Object{
 						Key:  "test-file.txt",
-						Size: 10,
+						Size: int64(len("object content")),
 					},
 				},
 			},
@@ -565,8 +572,8 @@ func TestConsumerErrorHandling(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
-			s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(io.NopCloser(bytes.NewReader([]byte("object content"))), nil).
+			s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(internal.NewBytesS3ObjectReader([]byte("object content")), nil).
 				Times(1)
 
 			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(&customLogUnmarshaler{}), &noOpLogsConsumer{err: test.consumerErr})
@@ -861,8 +868,13 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			ctr := gomock.NewController(t)
 			s3Service := internal.NewMockS3Service(ctr)
 			s3Service.EXPECT().
-				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey).
-				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
+				GetReader(
+					gomock.Any(),
+					test.s3MockContent.bucketName,
+					test.s3MockContent.objectKey,
+					test.s3Event.Records[0].S3.Object.Size,
+				).
+				Return(internal.NewBytesS3ObjectReader(test.s3MockContent.data), nil).
 				AnyTimes()
 
 			router := newLogsDecoderRouter(test.encodings, test.decoders)
@@ -887,6 +899,80 @@ func loadCompressedData(t *testing.T, file string) string {
 
 	compressed := compressData(t, data)
 	return base64.StdEncoding.EncodeToString(compressed)
+}
+
+// TestS3Handler_NonGzip_ReaderAt verifies that for a non-gzip S3 object the reader
+// passed to the decoder implements io.ReaderAt, enabling random access to S3 data.
+func TestS3Handler_NonGzip_ReaderAt(t *testing.T) {
+	data := []byte("plain non-gzip content for random access testing")
+
+	ctrl := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(ctrl)
+	s3Service.EXPECT().
+		GetReader(gomock.Any(), "bucket", "key.txt", int64(len(data))).
+		Return(internal.NewBytesS3ObjectReader(data), nil).
+		Times(1)
+
+	var gotData []byte
+	readerAtDecoder := &readerAtLogsDecoderFactory{
+		onDecode: func(r io.ReaderAt, size int64) {
+			gotData = make([]byte, size)
+			_, err := r.ReadAt(gotData, 0)
+			require.NoError(t, err)
+		},
+	}
+
+	s3Event := events.S3Event{Records: []events.S3EventRecord{{
+		EventSource: "aws:s3",
+		S3: events.S3Entity{
+			Bucket: events.S3Bucket{Name: "bucket", Arn: "arn:aws:s3:::bucket"},
+			Object: events.S3Object{
+				Key:           "key.txt",
+				URLDecodedKey: "key.txt",
+				Size:          int64(len(data)),
+			},
+		},
+	}}}
+	event, err := json.Marshal(s3Event)
+	require.NoError(t, err)
+
+	handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(readerAtDecoder), &noOpLogsConsumer{})
+	require.NoError(t, handler.handle(t.Context(), event))
+	require.Equal(t, data, gotData)
+}
+
+// readerAtLogsDecoderFactory is a logs decoder factory that asserts the reader
+// passed to NewLogsDecoder also implements io.ReaderAt, then calls onDecode with it.
+type readerAtLogsDecoderFactory struct {
+	onDecode func(r io.ReaderAt, size int64)
+}
+
+func (*readerAtLogsDecoderFactory) Start(_ context.Context, _ component.Host) error { return nil }
+func (*readerAtLogsDecoderFactory) Shutdown(_ context.Context) error                { return nil }
+
+func (f *readerAtLogsDecoderFactory) NewLogsDecoder(r io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	ra, ok := r.(io.ReaderAt)
+	if !ok {
+		return nil, errors.New("reader does not implement io.ReaderAt")
+	}
+	sizer, ok := r.(interface{ Size() int64 })
+	if !ok {
+		return nil, errors.New("reader does not expose Size()")
+	}
+	if f.onDecode != nil {
+		f.onDecode(ra, sizer.Size())
+	}
+	isEOF := false
+	return xstreamencoding.NewLogsDecoderAdapter(
+		func() (plog.Logs, error) {
+			if isEOF {
+				return plog.Logs{}, io.EOF
+			}
+			isEOF = true
+			return plog.NewLogs(), nil
+		},
+		func() int64 { return 0 },
+	), nil
 }
 
 func compressData(t *testing.T, data []byte) []byte {

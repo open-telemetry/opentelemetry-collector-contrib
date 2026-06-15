@@ -252,6 +252,7 @@ receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
 receiver/awslambdareceiver
+receiver/awslambdareceiver/integrationtest
 receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver

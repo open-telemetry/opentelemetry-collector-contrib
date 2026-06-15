@@ -4,7 +4,6 @@
 package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver"
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -32,9 +31,6 @@ import (
 
 // s3StreamBatchSize defines the size of data chunks read from S3 object stream for processing.
 const s3StreamBatchSize = 10_000_000 // 10MB chunks
-
-// readerBufferSize defines the buffer size for buffered readers.
-const readerBufferSize = 128 * 1024 // 128KB buffer size
 
 type (
 	handlerRegistry map[eventType]lambdaEventHandler
@@ -205,12 +201,15 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 		return nil
 	}
 
-	reader, err := s.s3Service.GetReader(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey)
+	reader, err := s.s3Service.GetReader(
+		ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey, parsedEvent.S3.Object.Size,
+	)
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
-	var decodeReader io.Reader = bufio.NewReaderSize(reader, readerBufferSize)
+	var decodeReader io.Reader = reader
 	if strings.HasSuffix(parsedEvent.S3.Object.URLDecodedKey, ".gz") {
 		gr, grErr := gzip.NewReader(decodeReader)
 		if grErr != nil {
