@@ -219,8 +219,29 @@ var MapAttributeOracledbSortType = map[string]AttributeOracledbSortType{
 }
 
 var MetricsInfo = metricsInfo{
+	OracledbBufferCount: metricInfo{
+		Name: "oracledb.buffer.count",
+	},
+	OracledbBufferRequests: metricInfo{
+		Name: "oracledb.buffer.requests",
+	},
+	OracledbBufferScanned: metricInfo{
+		Name: "oracledb.buffer.scanned",
+	},
+	OracledbBufferCacheBlockChanges: metricInfo{
+		Name: "oracledb.buffer_cache.block.changes",
+	},
+	OracledbBufferCacheBlockGets: metricInfo{
+		Name: "oracledb.buffer_cache.block.gets",
+	},
 	OracledbBufferCacheUtilization: metricInfo{
 		Name: "oracledb.buffer_cache.utilization",
+	},
+	OracledbCheckpointBuffers: metricInfo{
+		Name: "oracledb.checkpoint.buffers",
+	},
+	OracledbCheckpointCompleted: metricInfo{
+		Name: "oracledb.checkpoint.completed",
 	},
 	OracledbConsistentGets: metricInfo{
 		Name: "oracledb.consistent_gets",
@@ -237,29 +258,8 @@ var MetricsInfo = metricsInfo{
 	OracledbDatabaseWaitUtilization: metricInfo{
 		Name: "oracledb.database.wait.utilization",
 	},
-	OracledbDbBlockCacheGets: metricInfo{
-		Name: "oracledb.db.block.cache_gets",
-	},
-	OracledbDbBlockChanges: metricInfo{
-		Name: "oracledb.db.block.changes",
-	},
 	OracledbDbBlockGets: metricInfo{
 		Name: "oracledb.db_block_gets",
-	},
-	OracledbDbwrBuffersScanned: metricInfo{
-		Name: "oracledb.dbwr.buffers_scanned",
-	},
-	OracledbDbwrCheckpointBuffersWritten: metricInfo{
-		Name: "oracledb.dbwr.checkpoint.buffers_written",
-	},
-	OracledbDbwrCheckpoints: metricInfo{
-		Name: "oracledb.dbwr.checkpoints",
-	},
-	OracledbDbwrFreeBuffersFound: metricInfo{
-		Name: "oracledb.dbwr.free_buffers_found",
-	},
-	OracledbDbwrMakeFreeRequests: metricInfo{
-		Name: "oracledb.dbwr.make_free_requests",
 	},
 	OracledbDdlStatementsParallelized: metricInfo{
 		Name: "oracledb.ddl_statements_parallelized",
@@ -438,20 +438,20 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	OracledbBufferCount                           metricInfo
+	OracledbBufferRequests                        metricInfo
+	OracledbBufferScanned                         metricInfo
+	OracledbBufferCacheBlockChanges               metricInfo
+	OracledbBufferCacheBlockGets                  metricInfo
 	OracledbBufferCacheUtilization                metricInfo
+	OracledbCheckpointBuffers                     metricInfo
+	OracledbCheckpointCompleted                   metricInfo
 	OracledbConsistentGets                        metricInfo
 	OracledbCPUTime                               metricInfo
 	OracledbDataDictionaryHitRatio                metricInfo
 	OracledbDatabaseCPUUtilization                metricInfo
 	OracledbDatabaseWaitUtilization               metricInfo
-	OracledbDbBlockCacheGets                      metricInfo
-	OracledbDbBlockChanges                        metricInfo
 	OracledbDbBlockGets                           metricInfo
-	OracledbDbwrBuffersScanned                    metricInfo
-	OracledbDbwrCheckpointBuffersWritten          metricInfo
-	OracledbDbwrCheckpoints                       metricInfo
-	OracledbDbwrFreeBuffersFound                  metricInfo
-	OracledbDbwrMakeFreeRequests                  metricInfo
 	OracledbDdlStatementsParallelized             metricInfo
 	OracledbDmlLocksLimit                         metricInfo
 	OracledbDmlLocksUsage                         metricInfo
@@ -514,6 +514,266 @@ type metricInfo struct {
 	Attributes []string
 }
 
+type metricOracledbBufferCount struct {
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   OracledbBufferCountMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.buffer.count metric with initial data.
+func (m *metricOracledbBufferCount) init() {
+	m.data.SetName("oracledb.buffer.count")
+	m.data.SetDescription("Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').")
+	m.data.SetUnit("{buffers}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbBufferCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbBufferCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbBufferCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbBufferCount(cfg OracledbBufferCountMetricConfig) metricOracledbBufferCount {
+	m := metricOracledbBufferCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbBufferRequests struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbBufferRequestsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.buffer.requests metric with initial data.
+func (m *metricOracledbBufferRequests) init() {
+	m.data.SetName("oracledb.buffer.requests")
+	m.data.SetDescription("Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.")
+	m.data.SetUnit("{requests}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbBufferRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbBufferRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbBufferRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbBufferRequests(cfg OracledbBufferRequestsMetricConfig) metricOracledbBufferRequests {
+	m := metricOracledbBufferRequests{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbBufferScanned struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbBufferScannedMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.buffer.scanned metric with initial data.
+func (m *metricOracledbBufferScanned) init() {
+	m.data.SetName("oracledb.buffer.scanned")
+	m.data.SetDescription("Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').")
+	m.data.SetUnit("{buffers}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbBufferScanned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbBufferScanned) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbBufferScanned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbBufferScanned(cfg OracledbBufferScannedMetricConfig) metricOracledbBufferScanned {
+	m := metricOracledbBufferScanned{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbBufferCacheBlockChanges struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   OracledbBufferCacheBlockChangesMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.buffer_cache.block.changes metric with initial data.
+func (m *metricOracledbBufferCacheBlockChanges) init() {
+	m.data.SetName("oracledb.buffer_cache.block.changes")
+	m.data.SetDescription("Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.")
+	m.data.SetUnit("{changes}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbBufferCacheBlockChanges) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbBufferCacheBlockChanges) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbBufferCacheBlockChanges) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbBufferCacheBlockChanges(cfg OracledbBufferCacheBlockChangesMetricConfig) metricOracledbBufferCacheBlockChanges {
+	m := metricOracledbBufferCacheBlockChanges{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbBufferCacheBlockGets struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   OracledbBufferCacheBlockGetsMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.buffer_cache.block.gets metric with initial data.
+func (m *metricOracledbBufferCacheBlockGets) init() {
+	m.data.SetName("oracledb.buffer_cache.block.gets")
+	m.data.SetDescription("Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbBufferCacheBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbBufferCacheBlockGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbBufferCacheBlockGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbBufferCacheBlockGets(cfg OracledbBufferCacheBlockGetsMetricConfig) metricOracledbBufferCacheBlockGets {
+	m := metricOracledbBufferCacheBlockGets{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbBufferCacheUtilization struct {
 	data     pmetric.Metric                             // data buffer for generated metric.
 	config   OracledbBufferCacheUtilizationMetricConfig // metric config provided by user.
@@ -556,6 +816,110 @@ func (m *metricOracledbBufferCacheUtilization) emit(metrics pmetric.MetricSlice)
 
 func newMetricOracledbBufferCacheUtilization(cfg OracledbBufferCacheUtilizationMetricConfig) metricOracledbBufferCacheUtilization {
 	m := metricOracledbBufferCacheUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbCheckpointBuffers struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbCheckpointBuffersMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.checkpoint.buffers metric with initial data.
+func (m *metricOracledbCheckpointBuffers) init() {
+	m.data.SetName("oracledb.checkpoint.buffers")
+	m.data.SetDescription("Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').")
+	m.data.SetUnit("{buffers}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbCheckpointBuffers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbCheckpointBuffers) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbCheckpointBuffers) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbCheckpointBuffers(cfg OracledbCheckpointBuffersMetricConfig) metricOracledbCheckpointBuffers {
+	m := metricOracledbCheckpointBuffers{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbCheckpointCompleted struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   OracledbCheckpointCompletedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.checkpoint.completed metric with initial data.
+func (m *metricOracledbCheckpointCompleted) init() {
+	m.data.SetName("oracledb.checkpoint.completed")
+	m.data.SetDescription("Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.")
+	m.data.SetUnit("{checkpoints}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbCheckpointCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbCheckpointCompleted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbCheckpointCompleted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbCheckpointCompleted(cfg OracledbCheckpointCompletedMetricConfig) metricOracledbCheckpointCompleted {
+	m := metricOracledbCheckpointCompleted{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -818,110 +1182,6 @@ func newMetricOracledbDatabaseWaitUtilization(cfg OracledbDatabaseWaitUtilizatio
 	return m
 }
 
-type metricOracledbDbBlockCacheGets struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   OracledbDbBlockCacheGetsMetricConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.db.block.cache_gets metric with initial data.
-func (m *metricOracledbDbBlockCacheGets) init() {
-	m.data.SetName("oracledb.db.block.cache_gets")
-	m.data.SetDescription("Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.")
-	m.data.SetUnit("{gets}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbBlockCacheGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbBlockCacheGets) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbBlockCacheGets) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbBlockCacheGets(cfg OracledbDbBlockCacheGetsMetricConfig) metricOracledbDbBlockCacheGets {
-	m := metricOracledbDbBlockCacheGets{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbBlockChanges struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   OracledbDbBlockChangesMetricConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.db.block.changes metric with initial data.
-func (m *metricOracledbDbBlockChanges) init() {
-	m.data.SetName("oracledb.db.block.changes")
-	m.data.SetDescription("Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.")
-	m.data.SetUnit("{changes}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbBlockChanges) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbBlockChanges) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbBlockChanges) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbBlockChanges(cfg OracledbDbBlockChangesMetricConfig) metricOracledbDbBlockChanges {
-	m := metricOracledbDbBlockChanges{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbDbBlockGets struct {
 	data     pmetric.Metric                  // data buffer for generated metric.
 	config   OracledbDbBlockGetsMetricConfig // metric config provided by user.
@@ -966,266 +1226,6 @@ func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbDbBlockGets(cfg OracledbDbBlockGetsMetricConfig) metricOracledbDbBlockGets {
 	m := metricOracledbDbBlockGets{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbwrBuffersScanned struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   OracledbDbwrBuffersScannedMetricConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.dbwr.buffers_scanned metric with initial data.
-func (m *metricOracledbDbwrBuffersScanned) init() {
-	m.data.SetName("oracledb.dbwr.buffers_scanned")
-	m.data.SetDescription("Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').")
-	m.data.SetUnit("{buffers}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbwrBuffersScanned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbwrBuffersScanned) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbwrBuffersScanned) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbwrBuffersScanned(cfg OracledbDbwrBuffersScannedMetricConfig) metricOracledbDbwrBuffersScanned {
-	m := metricOracledbDbwrBuffersScanned{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbwrCheckpointBuffersWritten struct {
-	data     pmetric.Metric                                   // data buffer for generated metric.
-	config   OracledbDbwrCheckpointBuffersWrittenMetricConfig // metric config provided by user.
-	capacity int                                              // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.dbwr.checkpoint.buffers_written metric with initial data.
-func (m *metricOracledbDbwrCheckpointBuffersWritten) init() {
-	m.data.SetName("oracledb.dbwr.checkpoint.buffers_written")
-	m.data.SetDescription("Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').")
-	m.data.SetUnit("{buffers}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbwrCheckpointBuffersWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbwrCheckpointBuffersWritten) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbwrCheckpointBuffersWritten) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbwrCheckpointBuffersWritten(cfg OracledbDbwrCheckpointBuffersWrittenMetricConfig) metricOracledbDbwrCheckpointBuffersWritten {
-	m := metricOracledbDbwrCheckpointBuffersWritten{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbwrCheckpoints struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   OracledbDbwrCheckpointsMetricConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.dbwr.checkpoints metric with initial data.
-func (m *metricOracledbDbwrCheckpoints) init() {
-	m.data.SetName("oracledb.dbwr.checkpoints")
-	m.data.SetDescription("Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.")
-	m.data.SetUnit("{checkpoints}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbwrCheckpoints) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbwrCheckpoints) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbwrCheckpoints) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbwrCheckpoints(cfg OracledbDbwrCheckpointsMetricConfig) metricOracledbDbwrCheckpoints {
-	m := metricOracledbDbwrCheckpoints{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbwrFreeBuffersFound struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   OracledbDbwrFreeBuffersFoundMetricConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.dbwr.free_buffers_found metric with initial data.
-func (m *metricOracledbDbwrFreeBuffersFound) init() {
-	m.data.SetName("oracledb.dbwr.free_buffers_found")
-	m.data.SetDescription("Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').")
-	m.data.SetUnit("{buffers}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbwrFreeBuffersFound) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbwrFreeBuffersFound) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbwrFreeBuffersFound) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbwrFreeBuffersFound(cfg OracledbDbwrFreeBuffersFoundMetricConfig) metricOracledbDbwrFreeBuffersFound {
-	m := metricOracledbDbwrFreeBuffersFound{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbDbwrMakeFreeRequests struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   OracledbDbwrMakeFreeRequestsMetricConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.dbwr.make_free_requests metric with initial data.
-func (m *metricOracledbDbwrMakeFreeRequests) init() {
-	m.data.SetName("oracledb.dbwr.make_free_requests")
-	m.data.SetDescription("Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.")
-	m.data.SetUnit("{requests}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbDbwrMakeFreeRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbDbwrMakeFreeRequests) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbDbwrMakeFreeRequests) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbDbwrMakeFreeRequests(cfg OracledbDbwrMakeFreeRequestsMetricConfig) metricOracledbDbwrMakeFreeRequests {
-	m := metricOracledbDbwrMakeFreeRequests{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4415,20 +4415,20 @@ type MetricsBuilder struct {
 	buildInfo                                           component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter                      map[string]filter.Filter
 	resourceAttributeExcludeFilter                      map[string]filter.Filter
+	metricOracledbBufferCount                           metricOracledbBufferCount
+	metricOracledbBufferRequests                        metricOracledbBufferRequests
+	metricOracledbBufferScanned                         metricOracledbBufferScanned
+	metricOracledbBufferCacheBlockChanges               metricOracledbBufferCacheBlockChanges
+	metricOracledbBufferCacheBlockGets                  metricOracledbBufferCacheBlockGets
 	metricOracledbBufferCacheUtilization                metricOracledbBufferCacheUtilization
+	metricOracledbCheckpointBuffers                     metricOracledbCheckpointBuffers
+	metricOracledbCheckpointCompleted                   metricOracledbCheckpointCompleted
 	metricOracledbConsistentGets                        metricOracledbConsistentGets
 	metricOracledbCPUTime                               metricOracledbCPUTime
 	metricOracledbDataDictionaryHitRatio                metricOracledbDataDictionaryHitRatio
 	metricOracledbDatabaseCPUUtilization                metricOracledbDatabaseCPUUtilization
 	metricOracledbDatabaseWaitUtilization               metricOracledbDatabaseWaitUtilization
-	metricOracledbDbBlockCacheGets                      metricOracledbDbBlockCacheGets
-	metricOracledbDbBlockChanges                        metricOracledbDbBlockChanges
 	metricOracledbDbBlockGets                           metricOracledbDbBlockGets
-	metricOracledbDbwrBuffersScanned                    metricOracledbDbwrBuffersScanned
-	metricOracledbDbwrCheckpointBuffersWritten          metricOracledbDbwrCheckpointBuffersWritten
-	metricOracledbDbwrCheckpoints                       metricOracledbDbwrCheckpoints
-	metricOracledbDbwrFreeBuffersFound                  metricOracledbDbwrFreeBuffersFound
-	metricOracledbDbwrMakeFreeRequests                  metricOracledbDbwrMakeFreeRequests
 	metricOracledbDdlStatementsParallelized             metricOracledbDdlStatementsParallelized
 	metricOracledbDmlLocksLimit                         metricOracledbDmlLocksLimit
 	metricOracledbDmlLocksUsage                         metricOracledbDmlLocksUsage
@@ -4509,20 +4509,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                       pmetric.NewMetrics(),
 		buildInfo:                                           settings.BuildInfo,
+		metricOracledbBufferCount:                           newMetricOracledbBufferCount(mbc.Metrics.OracledbBufferCount),
+		metricOracledbBufferRequests:                        newMetricOracledbBufferRequests(mbc.Metrics.OracledbBufferRequests),
+		metricOracledbBufferScanned:                         newMetricOracledbBufferScanned(mbc.Metrics.OracledbBufferScanned),
+		metricOracledbBufferCacheBlockChanges:               newMetricOracledbBufferCacheBlockChanges(mbc.Metrics.OracledbBufferCacheBlockChanges),
+		metricOracledbBufferCacheBlockGets:                  newMetricOracledbBufferCacheBlockGets(mbc.Metrics.OracledbBufferCacheBlockGets),
 		metricOracledbBufferCacheUtilization:                newMetricOracledbBufferCacheUtilization(mbc.Metrics.OracledbBufferCacheUtilization),
+		metricOracledbCheckpointBuffers:                     newMetricOracledbCheckpointBuffers(mbc.Metrics.OracledbCheckpointBuffers),
+		metricOracledbCheckpointCompleted:                   newMetricOracledbCheckpointCompleted(mbc.Metrics.OracledbCheckpointCompleted),
 		metricOracledbConsistentGets:                        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
 		metricOracledbCPUTime:                               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
 		metricOracledbDataDictionaryHitRatio:                newMetricOracledbDataDictionaryHitRatio(mbc.Metrics.OracledbDataDictionaryHitRatio),
 		metricOracledbDatabaseCPUUtilization:                newMetricOracledbDatabaseCPUUtilization(mbc.Metrics.OracledbDatabaseCPUUtilization),
 		metricOracledbDatabaseWaitUtilization:               newMetricOracledbDatabaseWaitUtilization(mbc.Metrics.OracledbDatabaseWaitUtilization),
-		metricOracledbDbBlockCacheGets:                      newMetricOracledbDbBlockCacheGets(mbc.Metrics.OracledbDbBlockCacheGets),
-		metricOracledbDbBlockChanges:                        newMetricOracledbDbBlockChanges(mbc.Metrics.OracledbDbBlockChanges),
 		metricOracledbDbBlockGets:                           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
-		metricOracledbDbwrBuffersScanned:                    newMetricOracledbDbwrBuffersScanned(mbc.Metrics.OracledbDbwrBuffersScanned),
-		metricOracledbDbwrCheckpointBuffersWritten:          newMetricOracledbDbwrCheckpointBuffersWritten(mbc.Metrics.OracledbDbwrCheckpointBuffersWritten),
-		metricOracledbDbwrCheckpoints:                       newMetricOracledbDbwrCheckpoints(mbc.Metrics.OracledbDbwrCheckpoints),
-		metricOracledbDbwrFreeBuffersFound:                  newMetricOracledbDbwrFreeBuffersFound(mbc.Metrics.OracledbDbwrFreeBuffersFound),
-		metricOracledbDbwrMakeFreeRequests:                  newMetricOracledbDbwrMakeFreeRequests(mbc.Metrics.OracledbDbwrMakeFreeRequests),
 		metricOracledbDdlStatementsParallelized:             newMetricOracledbDdlStatementsParallelized(mbc.Metrics.OracledbDdlStatementsParallelized),
 		metricOracledbDmlLocksLimit:                         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
 		metricOracledbDmlLocksUsage:                         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
@@ -4698,20 +4698,20 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricOracledbBufferCount.emit(ils.Metrics())
+	mb.metricOracledbBufferRequests.emit(ils.Metrics())
+	mb.metricOracledbBufferScanned.emit(ils.Metrics())
+	mb.metricOracledbBufferCacheBlockChanges.emit(ils.Metrics())
+	mb.metricOracledbBufferCacheBlockGets.emit(ils.Metrics())
 	mb.metricOracledbBufferCacheUtilization.emit(ils.Metrics())
+	mb.metricOracledbCheckpointBuffers.emit(ils.Metrics())
+	mb.metricOracledbCheckpointCompleted.emit(ils.Metrics())
 	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
 	mb.metricOracledbDataDictionaryHitRatio.emit(ils.Metrics())
 	mb.metricOracledbDatabaseCPUUtilization.emit(ils.Metrics())
 	mb.metricOracledbDatabaseWaitUtilization.emit(ils.Metrics())
-	mb.metricOracledbDbBlockCacheGets.emit(ils.Metrics())
-	mb.metricOracledbDbBlockChanges.emit(ils.Metrics())
 	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
-	mb.metricOracledbDbwrBuffersScanned.emit(ils.Metrics())
-	mb.metricOracledbDbwrCheckpointBuffersWritten.emit(ils.Metrics())
-	mb.metricOracledbDbwrCheckpoints.emit(ils.Metrics())
-	mb.metricOracledbDbwrFreeBuffersFound.emit(ils.Metrics())
-	mb.metricOracledbDbwrMakeFreeRequests.emit(ils.Metrics())
 	mb.metricOracledbDdlStatementsParallelized.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
@@ -4798,9 +4798,79 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
+// RecordOracledbBufferCountDataPoint adds a data point to oracledb.buffer.count metric.
+func (mb *MetricsBuilder) RecordOracledbBufferCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbBufferCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbBufferCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbBufferRequestsDataPoint adds a data point to oracledb.buffer.requests metric.
+func (mb *MetricsBuilder) RecordOracledbBufferRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbBufferRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbBufferRequests.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbBufferScannedDataPoint adds a data point to oracledb.buffer.scanned metric.
+func (mb *MetricsBuilder) RecordOracledbBufferScannedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbBufferScanned, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbBufferScanned.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbBufferCacheBlockChangesDataPoint adds a data point to oracledb.buffer_cache.block.changes metric.
+func (mb *MetricsBuilder) RecordOracledbBufferCacheBlockChangesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbBufferCacheBlockChanges, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbBufferCacheBlockChanges.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbBufferCacheBlockGetsDataPoint adds a data point to oracledb.buffer_cache.block.gets metric.
+func (mb *MetricsBuilder) RecordOracledbBufferCacheBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbBufferCacheBlockGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbBufferCacheBlockGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbBufferCacheUtilizationDataPoint adds a data point to oracledb.buffer_cache.utilization metric.
 func (mb *MetricsBuilder) RecordOracledbBufferCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbBufferCacheUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbCheckpointBuffersDataPoint adds a data point to oracledb.checkpoint.buffers metric.
+func (mb *MetricsBuilder) RecordOracledbCheckpointBuffersDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbCheckpointBuffers, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbCheckpointBuffers.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbCheckpointCompletedDataPoint adds a data point to oracledb.checkpoint.completed metric.
+func (mb *MetricsBuilder) RecordOracledbCheckpointCompletedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbCheckpointCompleted, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbCheckpointCompleted.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
@@ -4833,26 +4903,6 @@ func (mb *MetricsBuilder) RecordOracledbDatabaseWaitUtilizationDataPoint(ts pcom
 	mb.metricOracledbDatabaseWaitUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbDbBlockCacheGetsDataPoint adds a data point to oracledb.db.block.cache_gets metric.
-func (mb *MetricsBuilder) RecordOracledbDbBlockCacheGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbBlockCacheGets, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbBlockCacheGets.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbBlockChangesDataPoint adds a data point to oracledb.db.block.changes metric.
-func (mb *MetricsBuilder) RecordOracledbDbBlockChangesDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbBlockChanges, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbBlockChanges.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
 // RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
 func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -4860,56 +4910,6 @@ func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbDbBlockGets.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbwrBuffersScannedDataPoint adds a data point to oracledb.dbwr.buffers_scanned metric.
-func (mb *MetricsBuilder) RecordOracledbDbwrBuffersScannedDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbwrBuffersScanned, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbwrBuffersScanned.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbwrCheckpointBuffersWrittenDataPoint adds a data point to oracledb.dbwr.checkpoint.buffers_written metric.
-func (mb *MetricsBuilder) RecordOracledbDbwrCheckpointBuffersWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbwrCheckpointBuffersWritten, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbwrCheckpointBuffersWritten.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbwrCheckpointsDataPoint adds a data point to oracledb.dbwr.checkpoints metric.
-func (mb *MetricsBuilder) RecordOracledbDbwrCheckpointsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbwrCheckpoints, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbwrCheckpoints.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbwrFreeBuffersFoundDataPoint adds a data point to oracledb.dbwr.free_buffers_found metric.
-func (mb *MetricsBuilder) RecordOracledbDbwrFreeBuffersFoundDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbwrFreeBuffersFound, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbwrFreeBuffersFound.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbDbwrMakeFreeRequestsDataPoint adds a data point to oracledb.dbwr.make_free_requests metric.
-func (mb *MetricsBuilder) RecordOracledbDbwrMakeFreeRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbDbwrMakeFreeRequests, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbDbwrMakeFreeRequests.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

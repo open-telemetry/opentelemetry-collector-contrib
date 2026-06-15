@@ -82,7 +82,7 @@ const (
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
 
-	// Buffer cache + DBWR v$sysstat names (PR4b)
+	// Buffer cache and DBWR v$sysstat names
 	dbBlockChanges               = "db block changes"
 	dbBlockGetsFromCache         = "db block gets from cache"
 	dbwrBuffersScanned           = "DBWR buffers scanned"
@@ -321,13 +321,13 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbBlockChanges.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbBlockCacheGets.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbwrBuffersScanned.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbwrCheckpointBuffersWritten.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbwrCheckpoints.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbwrFreeBuffersFound.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbDbwrMakeFreeRequests.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferScanned.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -533,33 +533,33 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			// Buffer cache + DBWR v$sysstat statistics (PR4b)
+			// Buffer cache and DBWR v$sysstat statistics
 			case dbBlockChanges:
-				if err := s.mb.RecordOracledbDbBlockChangesDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferCacheBlockChangesDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbBlockGetsFromCache:
-				if err := s.mb.RecordOracledbDbBlockCacheGetsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrBuffersScanned:
-				if err := s.mb.RecordOracledbDbwrBuffersScannedDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferScannedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrCheckpointBuffersWritten:
-				if err := s.mb.RecordOracledbDbwrCheckpointBuffersWrittenDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrCheckpoints:
-				if err := s.mb.RecordOracledbDbwrCheckpointsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrFreeBuffersFound:
-				if err := s.mb.RecordOracledbDbwrFreeBuffersFoundDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferCountDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrMakeFreeRequests:
-				if err := s.mb.RecordOracledbDbwrMakeFreeRequestsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

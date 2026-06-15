@@ -392,6 +392,56 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.buffer.count:
+    description: Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffers}"
+  oracledb.buffer.requests:
+    description: Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+  oracledb.buffer.scanned:
+    description: Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffers}"
+  oracledb.buffer_cache.block.changes:
+    description: Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{changes}"
+  oracledb.buffer_cache.block.gets:
+    description: Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{gets}"
   oracledb.buffer_cache.utilization:
     description: Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
     enabled: false
@@ -399,6 +449,26 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.checkpoint.buffers:
+    description: Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffers}"
+  oracledb.checkpoint.completed:
+    description: Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{checkpoints}"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
@@ -439,26 +509,6 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.db.block.cache_gets:
-    description: Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{gets}"
-  oracledb.db.block.changes:
-    description: Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{changes}"
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -469,56 +519,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
-  oracledb.dbwr.buffers_scanned:
-    description: Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{buffers}"
-  oracledb.dbwr.checkpoint.buffers_written:
-    description: Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{buffers}"
-  oracledb.dbwr.checkpoints:
-    description: Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{checkpoints}"
-  oracledb.dbwr.free_buffers_found:
-    description: Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{buffers}"
-  oracledb.dbwr.make_free_requests:
-    description: Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{requests}"
   oracledb.ddl_statements_parallelized:
     description: Number of DDL statements that were executed in parallel
     enabled: false

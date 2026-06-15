@@ -74,7 +74,7 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
-		// PR4b: buffer cache + DBWR v$sysstat rows
+		// Buffer cache and DBWR v$sysstat rows
 		{"NAME": dbBlockChanges, "VALUE": "8800000"},
 		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
 		{"NAME": dbwrBuffersScanned, "VALUE": "55000"},
@@ -406,15 +406,15 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
 }
 
-func TestScraper_ScrapeBufferCacheDbwrMetrics(t *testing.T) {
+func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbDbBlockChanges.Enabled = true
-	cfg.Metrics.OracledbDbBlockCacheGets.Enabled = true
-	cfg.Metrics.OracledbDbwrBuffersScanned.Enabled = true
-	cfg.Metrics.OracledbDbwrCheckpointBuffersWritten.Enabled = true
-	cfg.Metrics.OracledbDbwrCheckpoints.Enabled = true
-	cfg.Metrics.OracledbDbwrFreeBuffersFound.Enabled = true
-	cfg.Metrics.OracledbDbwrMakeFreeRequests.Enabled = true
+	cfg.Metrics.OracledbBufferCacheBlockChanges.Enabled = true
+	cfg.Metrics.OracledbBufferCacheBlockGets.Enabled = true
+	cfg.Metrics.OracledbBufferScanned.Enabled = true
+	cfg.Metrics.OracledbCheckpointBuffers.Enabled = true
+	cfg.Metrics.OracledbCheckpointCompleted.Enabled = true
+	cfg.Metrics.OracledbBufferCount.Enabled = true
+	cfg.Metrics.OracledbBufferRequests.Enabled = true
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
@@ -448,13 +448,13 @@ func TestScraper_ScrapeBufferCacheDbwrMetrics(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, int64(8800000), got["oracledb.db.block.changes"])
-	assert.Equal(t, int64(7700000), got["oracledb.db.block.cache_gets"])
-	assert.Equal(t, int64(55000), got["oracledb.dbwr.buffers_scanned"])
-	assert.Equal(t, int64(12000), got["oracledb.dbwr.checkpoint.buffers_written"])
-	assert.Equal(t, int64(320), got["oracledb.dbwr.checkpoints"])
-	assert.Equal(t, int64(48000), got["oracledb.dbwr.free_buffers_found"])
-	assert.Equal(t, int64(6100), got["oracledb.dbwr.make_free_requests"])
+	assert.Equal(t, int64(8800000), got["oracledb.buffer_cache.block.changes"])
+	assert.Equal(t, int64(7700000), got["oracledb.buffer_cache.block.gets"])
+	assert.Equal(t, int64(55000), got["oracledb.buffer.scanned"])
+	assert.Equal(t, int64(12000), got["oracledb.checkpoint.buffers"])
+	assert.Equal(t, int64(320), got["oracledb.checkpoint.completed"])
+	assert.Equal(t, int64(48000), got["oracledb.buffer.count"])
+	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

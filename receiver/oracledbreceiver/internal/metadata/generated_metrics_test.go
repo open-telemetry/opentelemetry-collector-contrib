@@ -86,7 +86,28 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
+			mb.RecordOracledbBufferCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbBufferRequestsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbBufferScannedDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbBufferCacheBlockChangesDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbBufferCacheBlockGetsDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordOracledbBufferCacheUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbCheckpointBuffersDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbCheckpointCompletedDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbConsistentGetsDataPoint(ts, "1")
@@ -104,28 +125,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbDatabaseWaitUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbDbBlockCacheGetsDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbBlockChangesDataPoint(ts, "1")
-
-			allMetricsCount++
 			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbwrBuffersScannedDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbwrCheckpointBuffersWrittenDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbwrCheckpointsDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbwrFreeBuffersFoundDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbDbwrMakeFreeRequestsDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "1")
@@ -367,6 +367,76 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
+				case "oracledb.buffer.count":
+					assert.False(t, validatedMetrics["oracledb.buffer.count"], "Found a duplicate in the metrics slice: oracledb.buffer.count")
+					validatedMetrics["oracledb.buffer.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').", mi.Description())
+					assert.Equal(t, "{buffers}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.buffer.requests":
+					assert.False(t, validatedMetrics["oracledb.buffer.requests"], "Found a duplicate in the metrics slice: oracledb.buffer.requests")
+					validatedMetrics["oracledb.buffer.requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
+					assert.Equal(t, "{requests}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.buffer.scanned":
+					assert.False(t, validatedMetrics["oracledb.buffer.scanned"], "Found a duplicate in the metrics slice: oracledb.buffer.scanned")
+					validatedMetrics["oracledb.buffer.scanned"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').", mi.Description())
+					assert.Equal(t, "{buffers}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.buffer_cache.block.changes":
+					assert.False(t, validatedMetrics["oracledb.buffer_cache.block.changes"], "Found a duplicate in the metrics slice: oracledb.buffer_cache.block.changes")
+					validatedMetrics["oracledb.buffer_cache.block.changes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.", mi.Description())
+					assert.Equal(t, "{changes}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.buffer_cache.block.gets":
+					assert.False(t, validatedMetrics["oracledb.buffer_cache.block.gets"], "Found a duplicate in the metrics slice: oracledb.buffer_cache.block.gets")
+					validatedMetrics["oracledb.buffer_cache.block.gets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.", mi.Description())
+					assert.Equal(t, "{gets}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.buffer_cache.utilization":
 					assert.False(t, validatedMetrics["oracledb.buffer_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.buffer_cache.utilization")
 					validatedMetrics["oracledb.buffer_cache.utilization"] = true
@@ -379,6 +449,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.checkpoint.buffers":
+					assert.False(t, validatedMetrics["oracledb.checkpoint.buffers"], "Found a duplicate in the metrics slice: oracledb.checkpoint.buffers")
+					validatedMetrics["oracledb.checkpoint.buffers"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').", mi.Description())
+					assert.Equal(t, "{buffers}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.checkpoint.completed":
+					assert.False(t, validatedMetrics["oracledb.checkpoint.completed"], "Found a duplicate in the metrics slice: oracledb.checkpoint.completed")
+					validatedMetrics["oracledb.checkpoint.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.", mi.Description())
+					assert.Equal(t, "{checkpoints}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.consistent_gets":
 					assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
 					validatedMetrics["oracledb.consistent_gets"] = true
@@ -443,34 +541,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.db.block.cache_gets":
-					assert.False(t, validatedMetrics["oracledb.db.block.cache_gets"], "Found a duplicate in the metrics slice: oracledb.db.block.cache_gets")
-					validatedMetrics["oracledb.db.block.cache_gets"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.", mi.Description())
-					assert.Equal(t, "{gets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.db.block.changes":
-					assert.False(t, validatedMetrics["oracledb.db.block.changes"], "Found a duplicate in the metrics slice: oracledb.db.block.changes")
-					validatedMetrics["oracledb.db.block.changes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.", mi.Description())
-					assert.Equal(t, "{changes}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.db_block_gets":
 					assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
 					validatedMetrics["oracledb.db_block_gets"] = true
@@ -478,76 +548,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of times a current block was requested from the buffer cache.", mi.Description())
 					assert.Equal(t, "{gets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.dbwr.buffers_scanned":
-					assert.False(t, validatedMetrics["oracledb.dbwr.buffers_scanned"], "Found a duplicate in the metrics slice: oracledb.dbwr.buffers_scanned")
-					validatedMetrics["oracledb.dbwr.buffers_scanned"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').", mi.Description())
-					assert.Equal(t, "{buffers}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.dbwr.checkpoint.buffers_written":
-					assert.False(t, validatedMetrics["oracledb.dbwr.checkpoint.buffers_written"], "Found a duplicate in the metrics slice: oracledb.dbwr.checkpoint.buffers_written")
-					validatedMetrics["oracledb.dbwr.checkpoint.buffers_written"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').", mi.Description())
-					assert.Equal(t, "{buffers}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.dbwr.checkpoints":
-					assert.False(t, validatedMetrics["oracledb.dbwr.checkpoints"], "Found a duplicate in the metrics slice: oracledb.dbwr.checkpoints")
-					validatedMetrics["oracledb.dbwr.checkpoints"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.", mi.Description())
-					assert.Equal(t, "{checkpoints}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.dbwr.free_buffers_found":
-					assert.False(t, validatedMetrics["oracledb.dbwr.free_buffers_found"], "Found a duplicate in the metrics slice: oracledb.dbwr.free_buffers_found")
-					validatedMetrics["oracledb.dbwr.free_buffers_found"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').", mi.Description())
-					assert.Equal(t, "{buffers}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.dbwr.make_free_requests":
-					assert.False(t, validatedMetrics["oracledb.dbwr.make_free_requests"], "Found a duplicate in the metrics slice: oracledb.dbwr.make_free_requests")
-					validatedMetrics["oracledb.dbwr.make_free_requests"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
-					assert.Equal(t, "{requests}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
