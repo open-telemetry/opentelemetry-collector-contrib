@@ -4,7 +4,6 @@
 This receiver fetches metrics for a server running a [Redfish](https://en.wikipedia.org/wiki/Redfish_(specification))
 API.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
