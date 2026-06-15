@@ -51,13 +51,13 @@ type AttributeProtocol int
 
 const (
 	_ AttributeProtocol = iota
-	AttributeProtocolTcp
+	AttributeProtocolTCP
 )
 
 // String returns the string representation of the AttributeProtocol.
 func (av AttributeProtocol) String() string {
 	switch av {
-	case AttributeProtocolTcp:
+	case AttributeProtocolTCP:
 		return "tcp"
 	}
 	return ""
@@ -65,7 +65,7 @@ func (av AttributeProtocol) String() string {
 
 // MapAttributeProtocol is a helper map of string to AttributeProtocol attribute value.
 var MapAttributeProtocol = map[string]AttributeProtocol{
-	"tcp": AttributeProtocolTcp,
+	"tcp": AttributeProtocolTCP,
 }
 
 var MetricsInfo = metricsInfo{
