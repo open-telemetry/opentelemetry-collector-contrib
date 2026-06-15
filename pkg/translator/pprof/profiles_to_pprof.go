@@ -307,7 +307,7 @@ func sampleToPprofValues(s pprofile.Sample) ([]int64, error) {
 		}
 		return vals, nil
 	default:
-		return []int64{}, fmt.Errorf("unknown sample shape")
+		return []int64{}, errors.New("unknown sample shape")
 	}
 }
 
