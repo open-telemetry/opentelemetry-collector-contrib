@@ -12,7 +12,7 @@ import (
 type SystemCPUFrequencyMetricAttributeKey string
 
 const (
-	SystemCPUFrequencyMetricAttributeKeyCpu SystemCPUFrequencyMetricAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyCPU SystemCPUFrequencyMetricAttributeKey = "cpu"
 )
 
 // SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric.
@@ -41,7 +41,7 @@ func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUFrequencyMetricAttributeKeyCpu:
+		case SystemCPUFrequencyMetricAttributeKeyCPU:
 		default:
 			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu]", val)
 		}
@@ -100,7 +100,7 @@ func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 type SystemCPUTimeMetricAttributeKey string
 
 const (
-	SystemCPUTimeMetricAttributeKeyCpu   SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyCPU   SystemCPUTimeMetricAttributeKey = "cpu"
 	SystemCPUTimeMetricAttributeKeyState SystemCPUTimeMetricAttributeKey = "state"
 )
 
@@ -130,7 +130,7 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SystemCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState:
+		case SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state]", val)
 		}
@@ -149,7 +149,7 @@ func (ms *SystemCPUTimeMetricConfig) Validate() error {
 type SystemCPUUtilizationMetricAttributeKey string
 
 const (
-	SystemCPUUtilizationMetricAttributeKeyCpu   SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyCPU   SystemCPUUtilizationMetricAttributeKey = "cpu"
 	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
 )
 
@@ -179,7 +179,7 @@ func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState:
+		case SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
 		}
@@ -208,7 +208,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
+			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
 		},
 		SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 			Enabled: false,
@@ -219,12 +219,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
 		},
 		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 		},
 	}
 }
