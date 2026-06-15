@@ -1,0 +1,5 @@
+change_type: enhancement
+component: processor/resource_detection
+note: Attach entity refs to resources detected by the `system`, `gcp`, and `k8s_api` detectors.
+issues: [49073]
+change_logs: [user]
