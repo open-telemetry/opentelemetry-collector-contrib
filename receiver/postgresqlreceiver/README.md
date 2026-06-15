@@ -191,6 +191,50 @@ receivers:
       max_open: 5
 ```
 
+## Query execution and performance
+
+The receiver issues a query against the monitored database only when at least one of the metrics the query
+feeds is enabled. Disabling every metric backed by a given query stops that query from being run, which can
+meaningfully reduce the load placed on the database.
+
+This is especially useful when running multiple receiver instances that collect different metrics at different
+intervals — for example, scraping the cheap cluster-wide metrics frequently while collecting the more
+expensive per-table or per-index metrics on a separate instance with a long `collection_interval`. Because a
+query is skipped entirely when its metrics are disabled, an instance configured for the cheap metrics no longer
+pays for the expensive queries.
+
+The table below maps each query to the metrics it feeds and how its cost scales. *Per database* queries run
+once for every database in `databases` (or every non-template database when `databases` is empty) on each
+scrape; *per table* and *per index* queries additionally inspect every table or index in that database.
+
+| Query source | Metrics | Cost |
+|---|---|---|
+| `pg_stat_activity` | `postgresql.backends` | once per scrape |
+| `pg_catalog.pg_database` | `postgresql.db_size` | once per scrape |
+| `pg_stat_database` | `postgresql.blks_hit`<br>`postgresql.blks_read`<br>`postgresql.commits`<br>`postgresql.deadlocks`<br>`postgresql.rollbacks`<br>`postgresql.temp.io`<br>`postgresql.temp_files`<br>`postgresql.tup_deleted`<br>`postgresql.tup_fetched`<br>`postgresql.tup_inserted`<br>`postgresql.tup_returned`<br>`postgresql.tup_updated` | once per scrape |
+| `pg_stat_bgwriter` / `pg_stat_checkpointer` | `postgresql.bgwriter.buffers.allocated`<br>`postgresql.bgwriter.buffers.writes`<br>`postgresql.bgwriter.checkpoint.count`<br>`postgresql.bgwriter.duration`<br>`postgresql.bgwriter.maxwritten` | once per scrape |
+| `pg_stat_archiver` | `postgresql.wal.age` | once per scrape |
+| `pg_stat_replication` | `postgresql.replication.data_delay`<br>`postgresql.wal.delay`<br>`postgresql.wal.lag` | once per scrape |
+| `SHOW max_connections` | `postgresql.connection.max` | once per scrape |
+| `pg_locks` joined with `pg_class` | `postgresql.database.locks` | once per scrape |
+| `pg_stat_user_tables` (computes `pg_relation_size` for every table) | `postgresql.operations`<br>`postgresql.rows`<br>`postgresql.sequential_scans`<br>`postgresql.table.count`<br>`postgresql.table.size`<br>`postgresql.table.vacuum.count` | **per database, scans every table** |
+| `pg_statio_user_tables` | `postgresql.blocks_read` | **per database, scans every table** |
+| `pg_stat_user_indexes` (computes `pg_relation_size` for every index) | `postgresql.index.scans`<br>`postgresql.index.size` | **per database, scans every index** |
+| `pg_stat_user_functions` | `postgresql.function.calls` | per database |
+
+`postgresql.database.count` is derived from the list of databases and requires no additional query.
+
+> [!NOTE]
+> The per-table and per-index queries are the most expensive, because they compute a relation size for every
+> table or index in every monitored database, so their cost grows with both the number of objects and the
+> number of databases. On large databases, disabling these metrics is the most effective way to reduce the
+> receiver's impact.
+>
+> `postgresql.table.count` is normally derived from the per-table query — its value is simply the number of
+> tables that query returns. As a special case, when `postgresql.table.count` is the *only* enabled table
+> metric, the receiver instead issues a lightweight `COUNT(*)` over `pg_class` (filtered to the same relations
+> as `pg_stat_user_tables`), avoiding the per-table relation-size computation entirely.
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)

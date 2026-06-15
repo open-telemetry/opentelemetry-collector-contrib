@@ -58,6 +58,7 @@ type client interface {
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
+	getTableCount(ctx context.Context) (int64, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
@@ -449,6 +450,33 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 		}
 	}
 	return ts, errors
+}
+
+// getTableCount returns the number of user tables in the connected database.
+// It backs the postgresql.table.count metric when the more expensive per-table
+// metrics (getDatabaseTableMetrics) are not needed.
+//
+// The result must equal len(getDatabaseTableMetrics), which counts the rows of
+// pg_stat_user_tables. That view is pg_stat_all_tables (relkind in r/t/m/p)
+// restricted to user schemas, so this query reproduces the same relation set by
+// filtering pg_class directly. Counting pg_class is significantly cheaper because
+// it avoids the per-table pg_relation_size() computation the full query performs.
+// Note relkind 't' (TOAST) is always in pg_toast and is therefore excluded by the
+// schema filter, matching the view.
+func (c *postgreSQLClient) getTableCount(ctx context.Context) (int64, error) {
+	query := `SELECT count(*) FROM pg_class
+	WHERE relkind IN ('r', 't', 'm', 'p')
+	AND relnamespace NOT IN (
+		SELECT oid FROM pg_namespace
+		WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+	);`
+
+	row := c.client.QueryRowContext(ctx, query)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 type tableIOStats struct {

@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tj/assert"
@@ -152,6 +153,77 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run
+}
+
+// TestTableCountMatchesTableMetrics verifies, against a real PostgreSQL instance,
+// that the cheap getTableCount query returns exactly the same count as the number
+// of tables the full getDatabaseTableMetrics query reports. The fixture deliberately
+// includes a partitioned table and a materialized view (not just ordinary tables),
+// so this also guards against a relkind filter that would undercount them and make
+// postgresql.table.count depend on which other table metrics are enabled.
+func TestTableCountMatchesTableMetrics(t *testing.T) {
+	t.Run("pre17", tableCountEquivalenceTest(pre17TestVersion))
+	t.Run("post17", tableCountEquivalenceTest(post17TestVersion))
+}
+
+func tableCountEquivalenceTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ProviderType: testcontainers.ProviderPodman,
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-table-count-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					WaitingFor: wait.ForListeningPort(postgresqlPort).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			})
+		require.NoError(t, err)
+		require.NoError(t, ci.Start(t.Context()))
+		defer testcontainers.CleanupContainer(t, ci)
+
+		host, err := ci.Host(t.Context())
+		require.NoError(t, err)
+		port, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Endpoint = net.JoinHostPort(host, port.Port())
+		cfg.Username = "otelu"
+		cfg.Password = "otelp"
+		cfg.Databases = []string{"otel"}
+		cfg.Insecure = true
+
+		factory := newDefaultClientFactory(cfg)
+		client, err := factory.getClient("otel")
+		require.NoError(t, err)
+		defer client.Close()
+
+		tableMetrics, err := client.getDatabaseTableMetrics(t.Context(), "otel")
+		require.NoError(t, err)
+		count, err := client.getTableCount(t.Context())
+		require.NoError(t, err)
+
+		// The fixture has 2 ordinary tables + 1 partitioned parent + 2 partitions +
+		// 1 materialized view = 6 relations in pg_stat_user_tables. Asserting more
+		// than 2 ensures the partitioned table and materialized view are actually
+		// present, so a relkind='r'-only count would fail this test.
+		assert.Greater(t, len(tableMetrics), 2,
+			"fixture should include partitioned tables and materialized views, not just ordinary tables")
+		assert.Equal(t, int64(len(tableMetrics)), count,
+			"cheap table count must equal the number of tables the full per-table query returns")
+	}
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {

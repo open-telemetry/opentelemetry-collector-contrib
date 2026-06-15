@@ -451,9 +451,41 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
-	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	m := p.config.Metrics
+
+	// The per-table stats query (getDatabaseTableMetrics) is also where block-read
+	// metrics are emitted, since those are recorded inside the loop keyed off its
+	// results. So it is required whenever any per-table stat OR blocks_read is wanted.
+	perTableStatsEnabled := m.PostgresqlRows.Enabled ||
+		m.PostgresqlOperations.Enabled ||
+		m.PostgresqlTableSize.Enabled ||
+		m.PostgresqlTableVacuumCount.Enabled ||
+		m.PostgresqlSequentialScans.Enabled
+	blocksReadEnabled := m.PostgresqlBlocksRead.Enabled
+	needTableMetrics := perTableStatsEnabled || blocksReadEnabled
+
+	if !needTableMetrics {
+		// None of the per-table metrics are needed. If only the table count is
+		// wanted, satisfy it with a cheap COUNT(*) instead of the full per-table
+		// query, which computes a relation size for every table.
+		if !m.PostgresqlTableCount.Enabled {
+			return 0
+		}
+		count, err := dbClient.getTableCount(ctx)
+		if err != nil {
+			errs.addPartial(err)
+			return 0
+		}
+		return count
+	}
+
+	var blockReads map[tableIdentifier]tableIOStats
+	if blocksReadEnabled {
+		var err error
+		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
 	}
 
 	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
@@ -506,6 +538,9 @@ func (p *postgreSQLScraper) collectIndexes(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.config.Metrics.PostgresqlIndexScans.Enabled && !p.config.Metrics.PostgresqlIndexSize.Enabled {
+		return
+	}
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -533,6 +568,9 @@ func (p *postgreSQLScraper) collectFunctions(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.config.Metrics.PostgresqlFunctionCalls.Enabled {
+		return
+	}
 	funcStats, err := client.getFunctionStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -558,6 +596,14 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	client client,
 	errs *errsMux,
 ) {
+	m := p.config.Metrics
+	if !(m.PostgresqlBgwriterBuffersAllocated.Enabled ||
+		m.PostgresqlBgwriterBuffersWrites.Enabled ||
+		m.PostgresqlBgwriterCheckpointCount.Enabled ||
+		m.PostgresqlBgwriterDuration.Enabled ||
+		m.PostgresqlBgwriterMaxwritten.Enabled) {
+		return
+	}
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -590,6 +636,9 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	client client,
 	errs *errsMux,
 ) {
+	if !p.config.Metrics.PostgresqlDatabaseLocks.Enabled {
+		return
+	}
 	dbLocks, err := client.getDatabaseLocks(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database locks", zap.Error(err))
@@ -607,6 +656,9 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	client client,
 	errs *errsMux,
 ) {
+	if !p.config.Metrics.PostgresqlConnectionMax.Enabled {
+		return
+	}
 	mc, err := client.getMaxConnections(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -621,6 +673,12 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	client client,
 	errs *errsMux,
 ) {
+	m := p.config.Metrics
+	if !(m.PostgresqlReplicationDataDelay.Enabled ||
+		m.PostgresqlWalDelay.Enabled ||
+		m.PostgresqlWalLag.Enabled) {
+		return
+	}
 	rss, err := client.getReplicationStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -660,6 +718,9 @@ func (p *postgreSQLScraper) collectWalAge(
 	client client,
 	errs *errsMux,
 ) {
+	if !p.config.Metrics.PostgresqlWalAge.Enabled {
+		return
+	}
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
 	if errors.Is(err, errNoLastArchive) {
 		// return no error as there is no last archive to derive the value from
@@ -681,6 +742,21 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	m := p.config.Metrics
+	if !(m.PostgresqlCommits.Enabled ||
+		m.PostgresqlRollbacks.Enabled ||
+		m.PostgresqlDeadlocks.Enabled ||
+		m.PostgresqlTempFiles.Enabled ||
+		m.PostgresqlTempIo.Enabled ||
+		m.PostgresqlTupUpdated.Enabled ||
+		m.PostgresqlTupReturned.Enabled ||
+		m.PostgresqlTupFetched.Enabled ||
+		m.PostgresqlTupInserted.Enabled ||
+		m.PostgresqlTupDeleted.Enabled ||
+		m.PostgresqlBlksHit.Enabled ||
+		m.PostgresqlBlksRead.Enabled) {
+		return
+	}
 	dbStats, err := client.getDatabaseStats(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
@@ -701,6 +777,9 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	if !p.config.Metrics.PostgresqlDbSize.Enabled {
+		return
+	}
 	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
@@ -712,7 +791,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (*postgreSQLScraper) retrieveBackends(
+func (p *postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -721,6 +800,9 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	if !p.config.Metrics.PostgresqlBackends.Enabled {
+		return
+	}
 	activityByDB, err := client.getBackends(ctx, databases)
 	if err != nil {
 		errs.addPartial(err)
