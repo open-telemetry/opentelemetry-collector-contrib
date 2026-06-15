@@ -68,7 +68,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -102,7 +102,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -148,7 +148,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -170,7 +170,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
