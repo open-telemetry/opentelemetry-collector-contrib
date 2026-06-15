@@ -25,8 +25,57 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.db.block.cache_gets:
+        description: "OracledbDbBlockCacheGetsMetricConfig provides config for the oracledb.db.block.cache_gets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.db.block.changes:
+        description: "OracledbDbBlockChangesMetricConfig provides config for the oracledb.db.block.changes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.db_block_gets:
         description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.dbwr.buffers_scanned:
+        description: "OracledbDbwrBuffersScannedMetricConfig provides config for the oracledb.dbwr.buffers_scanned metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.dbwr.checkpoint.buffers_written:
+        description: "OracledbDbwrCheckpointBuffersWrittenMetricConfig provides config for the oracledb.dbwr.checkpoint.buffers_written metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.dbwr.checkpoints:
+        description: "OracledbDbwrCheckpointsMetricConfig provides config for the oracledb.dbwr.checkpoints metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.dbwr.free_buffers_found:
+        description: "OracledbDbwrFreeBuffersFoundMetricConfig provides config for the oracledb.dbwr.free_buffers_found metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.dbwr.make_free_requests:
+        description: "OracledbDbwrMakeFreeRequestsMetricConfig provides config for the oracledb.dbwr.make_free_requests metric."
         type: object
         properties:
           enabled:

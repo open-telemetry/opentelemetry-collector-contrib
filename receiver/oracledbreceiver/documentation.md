@@ -281,6 +281,22 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.db.block.cache_gets
+
+Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {gets} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.db.block.changes
+
+Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {changes} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.db_block_gets
 
 Number of times a current block was requested from the buffer cache.
@@ -288,6 +304,46 @@ Number of times a current block was requested from the buffer cache.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.dbwr.buffers_scanned
+
+Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffers} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.dbwr.checkpoint.buffers_written
+
+Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffers} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.dbwr.checkpoints
+
+Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {checkpoints} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.dbwr.free_buffers_found
+
+Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffers} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.dbwr.make_free_requests
+
+Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.ddl_statements_parallelized
 

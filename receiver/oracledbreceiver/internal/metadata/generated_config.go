@@ -129,6 +129,46 @@ func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
+// OracledbDbBlockCacheGetsMetricConfig provides config for the oracledb.db.block.cache_gets metric.
+type OracledbDbBlockCacheGetsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbBlockCacheGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbBlockChangesMetricConfig provides config for the oracledb.db.block.changes metric.
+type OracledbDbBlockChangesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbBlockChangesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric.
 type OracledbDbBlockGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -136,6 +176,106 @@ type OracledbDbBlockGetsMetricConfig struct {
 }
 
 func (ms *OracledbDbBlockGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbwrBuffersScannedMetricConfig provides config for the oracledb.dbwr.buffers_scanned metric.
+type OracledbDbwrBuffersScannedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbwrBuffersScannedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbwrCheckpointBuffersWrittenMetricConfig provides config for the oracledb.dbwr.checkpoint.buffers_written metric.
+type OracledbDbwrCheckpointBuffersWrittenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbwrCheckpointBuffersWrittenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbwrCheckpointsMetricConfig provides config for the oracledb.dbwr.checkpoints metric.
+type OracledbDbwrCheckpointsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbwrCheckpointsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbwrFreeBuffersFoundMetricConfig provides config for the oracledb.dbwr.free_buffers_found metric.
+type OracledbDbwrFreeBuffersFoundMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbwrFreeBuffersFoundMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbDbwrMakeFreeRequestsMetricConfig provides config for the oracledb.dbwr.make_free_requests metric.
+type OracledbDbwrMakeFreeRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDbwrMakeFreeRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1513,7 +1653,14 @@ type MetricsConfig struct {
 	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDatabaseCPUUtilization                OracledbDatabaseCPUUtilizationMetricConfig                `mapstructure:"oracledb.database.cpu.utilization"`
 	OracledbDatabaseWaitUtilization               OracledbDatabaseWaitUtilizationMetricConfig               `mapstructure:"oracledb.database.wait.utilization"`
+	OracledbDbBlockCacheGets                      OracledbDbBlockCacheGetsMetricConfig                      `mapstructure:"oracledb.db.block.cache_gets"`
+	OracledbDbBlockChanges                        OracledbDbBlockChangesMetricConfig                        `mapstructure:"oracledb.db.block.changes"`
 	OracledbDbBlockGets                           OracledbDbBlockGetsMetricConfig                           `mapstructure:"oracledb.db_block_gets"`
+	OracledbDbwrBuffersScanned                    OracledbDbwrBuffersScannedMetricConfig                    `mapstructure:"oracledb.dbwr.buffers_scanned"`
+	OracledbDbwrCheckpointBuffersWritten          OracledbDbwrCheckpointBuffersWrittenMetricConfig          `mapstructure:"oracledb.dbwr.checkpoint.buffers_written"`
+	OracledbDbwrCheckpoints                       OracledbDbwrCheckpointsMetricConfig                       `mapstructure:"oracledb.dbwr.checkpoints"`
+	OracledbDbwrFreeBuffersFound                  OracledbDbwrFreeBuffersFoundMetricConfig                  `mapstructure:"oracledb.dbwr.free_buffers_found"`
+	OracledbDbwrMakeFreeRequests                  OracledbDbwrMakeFreeRequestsMetricConfig                  `mapstructure:"oracledb.dbwr.make_free_requests"`
 	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
 	OracledbDmlLocksLimit                         OracledbDmlLocksLimitMetricConfig                         `mapstructure:"oracledb.dml_locks.limit"`
 	OracledbDmlLocksUsage                         OracledbDmlLocksUsageMetricConfig                         `mapstructure:"oracledb.dml_locks.usage"`
@@ -1591,7 +1738,28 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
 			Enabled: false,
 		},
+		OracledbDbBlockCacheGets: OracledbDbBlockCacheGetsMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbBlockChanges: OracledbDbBlockChangesMetricConfig{
+			Enabled: false,
+		},
 		OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbwrBuffersScanned: OracledbDbwrBuffersScannedMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbwrCheckpointBuffersWritten: OracledbDbwrCheckpointBuffersWrittenMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbwrCheckpoints: OracledbDbwrCheckpointsMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbwrFreeBuffersFound: OracledbDbwrFreeBuffersFoundMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbwrMakeFreeRequests: OracledbDbwrMakeFreeRequestsMetricConfig{
 			Enabled: false,
 		},
 		OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedMetricConfig{

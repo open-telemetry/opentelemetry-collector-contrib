@@ -74,6 +74,14 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// PR4b: buffer cache + DBWR v$sysstat rows
+		{"NAME": dbBlockChanges, "VALUE": "8800000"},
+		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
+		{"NAME": dbwrBuffersScanned, "VALUE": "55000"},
+		{"NAME": dbwrCheckpointBuffersWritten, "VALUE": "12000"},
+		{"NAME": dbwrCheckpoints, "VALUE": "320"},
+		{"NAME": dbwrFreeBuffersFound, "VALUE": "48000"},
+		{"NAME": dbwrMakeFreeRequests, "VALUE": "6100"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -396,6 +404,57 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
 	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
+func TestScraper_ScrapeBufferCacheDbwrMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbDbBlockChanges.Enabled = true
+	cfg.Metrics.OracledbDbBlockCacheGets.Enabled = true
+	cfg.Metrics.OracledbDbwrBuffersScanned.Enabled = true
+	cfg.Metrics.OracledbDbwrCheckpointBuffersWritten.Enabled = true
+	cfg.Metrics.OracledbDbwrCheckpoints.Enabled = true
+	cfg.Metrics.OracledbDbwrFreeBuffersFound.Enabled = true
+	cfg.Metrics.OracledbDbwrMakeFreeRequests.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// metricName -> int value (none of these metrics carry attributes)
+	got := map[string]int64{}
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		if dps.Len() > 0 {
+			got[me.Name()] = dps.At(0).IntValue()
+		}
+	}
+
+	assert.Equal(t, int64(8800000), got["oracledb.db.block.changes"])
+	assert.Equal(t, int64(7700000), got["oracledb.db.block.cache_gets"])
+	assert.Equal(t, int64(55000), got["oracledb.dbwr.buffers_scanned"])
+	assert.Equal(t, int64(12000), got["oracledb.dbwr.checkpoint.buffers_written"])
+	assert.Equal(t, int64(320), got["oracledb.dbwr.checkpoints"])
+	assert.Equal(t, int64(48000), got["oracledb.dbwr.free_buffers_found"])
+	assert.Equal(t, int64(6100), got["oracledb.dbwr.make_free_requests"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

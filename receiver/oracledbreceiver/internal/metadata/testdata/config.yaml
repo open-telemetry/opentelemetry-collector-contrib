@@ -13,7 +13,21 @@ all_set:
       enabled: true
     oracledb.database.wait.utilization:
       enabled: true
+    oracledb.db.block.cache_gets:
+      enabled: true
+    oracledb.db.block.changes:
+      enabled: true
     oracledb.db_block_gets:
+      enabled: true
+    oracledb.dbwr.buffers_scanned:
+      enabled: true
+    oracledb.dbwr.checkpoint.buffers_written:
+      enabled: true
+    oracledb.dbwr.checkpoints:
+      enabled: true
+    oracledb.dbwr.free_buffers_found:
+      enabled: true
+    oracledb.dbwr.make_free_requests:
       enabled: true
     oracledb.ddl_statements_parallelized:
       enabled: true
@@ -172,7 +186,21 @@ reaggregate_set:
       enabled: true
     oracledb.database.wait.utilization:
       enabled: true
+    oracledb.db.block.cache_gets:
+      enabled: true
+    oracledb.db.block.changes:
+      enabled: true
     oracledb.db_block_gets:
+      enabled: true
+    oracledb.dbwr.buffers_scanned:
+      enabled: true
+    oracledb.dbwr.checkpoint.buffers_written:
+      enabled: true
+    oracledb.dbwr.checkpoints:
+      enabled: true
+    oracledb.dbwr.free_buffers_found:
+      enabled: true
+    oracledb.dbwr.make_free_requests:
       enabled: true
     oracledb.ddl_statements_parallelized:
       enabled: true
@@ -331,7 +359,21 @@ none_set:
       enabled: false
     oracledb.database.wait.utilization:
       enabled: false
+    oracledb.db.block.cache_gets:
+      enabled: false
+    oracledb.db.block.changes:
+      enabled: false
     oracledb.db_block_gets:
+      enabled: false
+    oracledb.dbwr.buffers_scanned:
+      enabled: false
+    oracledb.dbwr.checkpoint.buffers_written:
+      enabled: false
+    oracledb.dbwr.checkpoints:
+      enabled: false
+    oracledb.dbwr.free_buffers_found:
+      enabled: false
+    oracledb.dbwr.make_free_requests:
       enabled: false
     oracledb.ddl_statements_parallelized:
       enabled: false
