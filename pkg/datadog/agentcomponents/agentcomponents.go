@@ -142,7 +142,7 @@ func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, 
 // This function uses the options pattern to allow different modules to configure
 // the component with their specific needs.
 func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
-	pkgconfig := pkgconfigcreate.NewConfig(name, "")
+	pkgconfig := pkgconfigcreate.NewConfig("DD", "")
 
 	// Apply all configuration options
 	for _, opt := range options {
