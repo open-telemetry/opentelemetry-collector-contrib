@@ -174,6 +174,9 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
+			if attr == "rpc.service" && metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+				continue
+			}
 			val = stringPool.Intern(val)                           // No need to intern the key if we already have it
 			if attr == string(conventions.ContainerImageTagsKey) { // type: string[]
 				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)

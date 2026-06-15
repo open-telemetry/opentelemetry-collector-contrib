@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.datadogreceiver.DontEmitDeprecatedRPCServiceAttr` | alpha | When enabled, the receiver no longer emits the deprecated rpc.service attribute on gRPC spans or resource attributes. The service name is already captured in the span name (service/method) and rpc.method. | v0.154.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095) |
 | `receiver.datadogreceiver.Enable128BitTraceID` | alpha | When enabled, adds support for 128bits TraceIDs for spans coming from Datadog instrumented services. | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36926) |
 | `receiver.datadogreceiver.EnableMultiTagParsing` | alpha | When enabled, parses `key:value` tags with duplicate keys into a slice attribute. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747) |
 

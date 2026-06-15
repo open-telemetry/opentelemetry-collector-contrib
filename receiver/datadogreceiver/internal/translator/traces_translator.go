@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -199,10 +200,14 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	spanName := ""
 	if method != "" {
 		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
-		newSpan.Attributes().PutStr("rpc.service", service)
+		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+			newSpan.Attributes().PutStr("rpc.service", service)
+		}
 		spanName = service + "/" + method
 	} else if service != "" {
-		newSpan.Attributes().PutStr("rpc.service", service)
+		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+			newSpan.Attributes().PutStr("rpc.service", service)
+		}
 		spanName = service
 	}
 	if spanName != "" {
