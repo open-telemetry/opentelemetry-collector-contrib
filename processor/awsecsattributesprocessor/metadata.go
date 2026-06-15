@@ -84,13 +84,19 @@ func (m *containerMetadata) flat() map[string]any {
 	flattened["aws.ecs.cluster"] = labels["com.amazonaws.ecs.cluster"]
 	flattened["aws.ecs.container.name"] = labels["com.amazonaws.ecs.container-name"]
 	flattened["aws.ecs.task.known.status"] = m.KnownStatus
-	flattened["created.at"] = m.CreatedAt.Format(time.RFC3339Nano)
 	flattened["desired.status"] = m.DesiredStatus
 	flattened["docker.name"] = m.DockerName
-	flattened["limits.cpu"] = m.Limits.CPU
-	flattened["limits.memory"] = m.Limits.Memory
-	flattened["started.at"] = m.StartedAt.Format(time.RFC3339Nano)
-	flattened["type"] = m.Type
+	flattened["container.cpu.limit"] = m.Limits.CPU
+	flattened["container.memory.limit"] = m.Limits.Memory
+	flattened["aws.ecs.container.type"] = m.Type
+
+	// Timestamps are only emitted when present; ECS may omit them.
+	if !m.CreatedAt.IsZero() {
+		flattened["created.at"] = m.CreatedAt.Format(time.RFC3339Nano)
+	}
+	if !m.StartedAt.IsZero() {
+		flattened["started.at"] = m.StartedAt.Format(time.RFC3339Nano)
+	}
 
 	// add networks
 	for i, nw := range m.Networks {

@@ -42,7 +42,7 @@ func TestConsumeLogs(t *testing.T) {
 			name:     "filter to aws attributes",
 			cfg:      &Config{CacheTTL: 60, Attributes: []string{"^aws.*"}, ContainerID: ContainerID{Sources: []string{"container.id"}}},
 			record:   logsWith("container.id", testContainerID),
-			wantLen:  7 + 1, // 7 aws.* keys + container.id
+			wantLen:  8 + 1, // 8 aws.* keys + container.id
 			wantAttr: "aws.ecs.task.arn",
 			wantVal:  "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
 		},

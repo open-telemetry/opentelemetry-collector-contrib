@@ -5,6 +5,8 @@ package awsecsattributesprocessor
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -104,6 +106,17 @@ func TestFetchMetadata(t *testing.T) {
 
 	_, err = fetchMetadata(t.Context(), "http://127.0.0.1:0/nope")
 	require.Error(t, err)
+}
+
+func TestFetchMetadataNon200(t *testing.T) {
+	// A non-200 response must error instead of decoding the body as metadata.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+
+	_, err := fetchMetadata(t.Context(), srv.URL)
+	require.ErrorContains(t, err, "status 500")
 }
 
 func TestContainerIDFromAttrs(t *testing.T) {

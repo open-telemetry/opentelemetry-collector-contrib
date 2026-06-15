@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -243,6 +245,12 @@ func fetchMetadata(ctx context.Context, url string) (containerMetadata, error) {
 		return md, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// Avoid decoding/caching an error body (e.g. a 4xx/5xx page) as metadata.
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return md, fmt.Errorf("container metadata endpoint returned status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&md); err != nil {
 		return md, err

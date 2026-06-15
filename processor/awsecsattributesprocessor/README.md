@@ -93,9 +93,10 @@ keep an `aws.ecs.*` (or legacy) key.
 | `aws.ecs.container.name`       | The container name assigned by the ECS Agent                            |
 | `aws.ecs.task.known.status`    | The lifecycle state of the container                                    |
 | `docker.name`                  | The Docker container name (as shown by `docker ps`)                     |
-| `limits.cpu` / `limits.memory` | The CPU and memory limits of the container                             |
+| `container.cpu.limit` / `container.memory.limit` | The CPU and memory limits of the container             |
 | `created.at` / `started.at`    | Container creation and start timestamps                                 |
-| `desired.status` / `type`      | The desired status and type of the container                           |
+| `desired.status`               | The desired status of the container                                     |
+| `aws.ecs.container.type`       | The ECS container type (e.g. `NORMAL`, `CNI_PAUSE`)                     |
 | `networks.*`                   | The network mode(s) and IPv4 address(es) of the container              |
 | `ports.*`                      | The published container ports                                           |
 | `volumes.*`                       | The container volume mounts                                             |
