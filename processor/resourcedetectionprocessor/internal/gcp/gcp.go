@@ -52,6 +52,11 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}, nil
 }
 
+var (
+	_ internal.Detector       = (*detector)(nil)
+	_ internal.EntityDetector = (*detector)(nil)
+)
+
 type detector struct {
 	logger           *zap.Logger
 	detector         gcpDetector
@@ -187,6 +192,42 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		// We don't support this platform yet, so just return with what we have
 	}
 	return d.rb.Emit(), conventions.SchemaURL, errs
+}
+
+// EntityRefs implements internal.EntityDetector.
+func (d *detector) EntityRefs(res pcommon.Resource) []internal.DetectedEntity {
+	attrs := res.Attributes()
+	var entities []internal.DetectedEntity
+
+	if hasAttribute(attrs, string(conventions.CloudProviderKey)) && hasAttribute(attrs, string(conventions.CloudAccountIDKey)) {
+		ent := internal.DetectedEntity{
+			SchemaURL: conventions.SchemaURL,
+			Type:      internal.EntityTypeCloudAccount,
+			IDKeys:    []string{string(conventions.CloudProviderKey), string(conventions.CloudAccountIDKey)},
+		}
+		for _, k := range []string{string(conventions.CloudPlatformKey), string(conventions.CloudRegionKey)} {
+			if _, ok := attrs.Get(k); ok {
+				ent.DescriptionKeys = append(ent.DescriptionKeys, k)
+			}
+		}
+		entities = append(entities, ent)
+	}
+
+	if _, ok := attrs.Get(string(conventions.K8SClusterNameKey)); ok {
+		entities = append(entities, internal.DetectedEntity{
+			SchemaURL:               conventions.SchemaURL,
+			Type:                    internal.EntityTypeK8sCluster,
+			IDKeys:                  []string{string(conventions.K8SClusterNameKey)},
+			IDContextTypeCandidates: []string{internal.EntityTypeCloudAccount},
+		})
+	}
+
+	return entities
+}
+
+func hasAttribute(attrs pcommon.Map, key string) bool {
+	_, ok := attrs.Get(key)
+	return ok
 }
 
 type instancesAPI interface {

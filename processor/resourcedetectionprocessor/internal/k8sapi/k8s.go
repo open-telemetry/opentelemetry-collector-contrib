@@ -24,7 +24,10 @@ const (
 	TypeStrAlias = "k8snode" // Deprecated: use TypeStr
 )
 
-var _ internal.Detector = (*detector)(nil)
+var (
+	_ internal.Detector       = (*detector)(nil)
+	_ internal.EntityDetector = (*detector)(nil)
+)
 
 type detector struct {
 	provider k8snode.Provider
@@ -90,4 +93,43 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+// EntityRefs implements internal.EntityDetector.
+func (d *detector) EntityRefs(res pcommon.Resource) []internal.DetectedEntity {
+	attrs := res.Attributes()
+	var entities []internal.DetectedEntity
+
+	node := internal.DetectedEntity{
+		SchemaURL: conventions.SchemaURL,
+		Type:      internal.EntityTypeK8sNode,
+	}
+	switch {
+	case hasKey(attrs, string(conventions.K8SNodeUIDKey)):
+		node.IDKeys = []string{string(conventions.K8SNodeUIDKey)}
+		if hasKey(attrs, string(conventions.K8SNodeNameKey)) {
+			node.DescriptionKeys = []string{string(conventions.K8SNodeNameKey)}
+		}
+	case hasKey(attrs, string(conventions.K8SNodeNameKey)):
+		node.IDKeys = []string{string(conventions.K8SNodeNameKey)}
+		node.IDContextTypeCandidates = []string{internal.EntityTypeK8sCluster}
+	}
+	if len(node.IDKeys) > 0 {
+		entities = append(entities, node)
+	}
+
+	if hasKey(attrs, string(conventions.K8SClusterUIDKey)) {
+		entities = append(entities, internal.DetectedEntity{
+			SchemaURL: conventions.SchemaURL,
+			Type:      internal.EntityTypeK8sCluster,
+			IDKeys:    []string{string(conventions.K8SClusterUIDKey)},
+		})
+	}
+
+	return entities
+}
+
+func hasKey(attrs pcommon.Map, key string) bool {
+	_, ok := attrs.Get(key)
+	return ok
 }

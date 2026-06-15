@@ -195,7 +195,10 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		}(detector, ch)
 	}
 
-	for _, ch := range resultsChan {
+	// Entity declarations are collected in configured detector order so that
+	// entity identity conflicts follow the same precedence rule as attributes.
+	var entities []DetectedEntity
+	for i, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
 			joinedErr = errors.Join(joinedErr, result.err)
@@ -204,7 +207,12 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		successes++
 		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
 		MergeResource(res, result.resource, false)
+		if detector, ok := p.detectors[i].(EntityDetector); ok {
+			entities = append(entities, detector.EntityRefs(result.resource)...)
+		}
 	}
+
+	appendEntityRefs(res, resolveEntities(entities, p.logger), p.logger)
 
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
 

@@ -58,6 +58,7 @@ func (rdp *resourceDetectionProcessor) processTraces(ctx context.Context, td ptr
 		rss := rs.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
 		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeEntityRefs(rss.Resource(), res, rdp.override)
 	}
 	return td, nil
 }
@@ -70,6 +71,7 @@ func (rdp *resourceDetectionProcessor) processMetrics(ctx context.Context, md pm
 		rss := rm.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
 		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeEntityRefs(rss.Resource(), res, rdp.override)
 	}
 	return md, nil
 }
@@ -82,6 +84,7 @@ func (rdp *resourceDetectionProcessor) processLogs(ctx context.Context, ld plog.
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
 		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeEntityRefs(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }
@@ -94,6 +97,7 @@ func (rdp *resourceDetectionProcessor) processProfiles(ctx context.Context, ld p
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
 		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeEntityRefs(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }

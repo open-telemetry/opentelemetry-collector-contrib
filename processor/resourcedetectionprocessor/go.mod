@@ -40,6 +40,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.154.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/pdata v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/processor v1.60.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/processor/processorhelper v0.154.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.154.1-0.20260611154946-8ae0933981eb
@@ -176,7 +177,6 @@ require (
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.154.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.154.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.154.1-0.20260611154946-8ae0933981eb // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/pipeline v1.60.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.154.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/collector/receiver v1.60.1-0.20260611154946-8ae0933981eb // indirect

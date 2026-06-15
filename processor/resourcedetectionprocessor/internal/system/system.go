@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -33,7 +34,10 @@ var hostnameSourcesMap = map[string]func(*Detector) (string, error){
 	"lookup": reverseLookupHost,
 }
 
-var _ internal.Detector = (*Detector)(nil)
+var (
+	_ internal.Detector       = (*Detector)(nil)
+	_ internal.EntityDetector = (*Detector)(nil)
+)
 
 // Detector is a system metadata detector
 type Detector struct {
@@ -178,6 +182,33 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	return pcommon.NewResource(), "", errors.New("all hostname sources failed to get hostname")
+}
+
+// EntityRefs implements internal.EntityDetector.
+func (d *Detector) EntityRefs(res pcommon.Resource) []internal.DetectedEntity {
+	attrs := res.Attributes()
+	idKey := string(conventions.HostIDKey)
+	if _, ok := attrs.Get(idKey); !ok {
+		idKey = string(conventions.HostNameKey)
+		if _, ok = attrs.Get(idKey); !ok {
+			return nil
+		}
+	}
+
+	descriptionKeys := make([]string, 0, attrs.Len())
+	for k := range attrs.All() {
+		if k != idKey {
+			descriptionKeys = append(descriptionKeys, k)
+		}
+	}
+	sort.Strings(descriptionKeys)
+
+	return []internal.DetectedEntity{{
+		SchemaURL:       conventions.SchemaURL,
+		Type:            internal.EntityTypeHost,
+		IDKeys:          []string{idKey},
+		DescriptionKeys: descriptionKeys,
+	}}
 }
 
 // getHostname returns OS hostname
