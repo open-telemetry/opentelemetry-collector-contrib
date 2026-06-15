@@ -114,6 +114,7 @@ func getResourceSemanticConventionAttributeNames() []string {
 		string(conventions.DeviceManufacturerKey),
 		string(conventions.FaaSNameKey),
 		string(conventionsv118.FaaSIDKey),
+		string(conventions.CloudResourceIDKey),
 		string(conventions.FaaSVersionKey),
 		string(conventions.FaaSInstanceKey),
 		string(conventions.FaaSMaxMemoryKey),
@@ -513,7 +514,20 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 			continue
 		}
 		if value, ok := tags[key]; ok {
-			resource.Attributes().PutStr(key, value)
+			keys := []string{key}
+			if key == string(conventionsv118.FaaSIDKey) {
+				keys = nil
+				if !metadata.PkgTranslatorZipkinDontEmitV0CloudResourceConventionsFeatureGate.IsEnabled() {
+					keys = append(keys, key)
+				}
+				if metadata.PkgTranslatorZipkinEmitV1CloudResourceConventionsFeatureGate.IsEnabled() {
+					keys = append(keys, string(conventions.CloudResourceIDKey))
+				}
+			}
+
+			for _, k := range keys {
+				resource.Attributes().PutStr(k, value)
+			}
 			delete(tags, key)
 		}
 	}
