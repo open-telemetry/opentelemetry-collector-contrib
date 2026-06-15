@@ -724,7 +724,7 @@ The returned map has the following top-level fields:
 
 * `leef.version` — the LEEF version (`"1.0"` or `"2.0"`).
 * `leef.vendor`, `leef.product.name`, `leef.product.version`, `leef.event.id` — the LEEF header fields.
-* `attributes` — a map of the parsed key/value attribute pairs.
+* `leef.attributes` — a map of the parsed key/value attribute pairs.
 
 For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter is taken from the header and must be either a single character or a `0x`-prefixed hex value decoding to a single byte (e.g. `0x09` for tab). An empty delimiter field defaults to tab. The delimiter field is also optional: if the position normally occupied by the delimiter looks like the start of an attribute (i.e. contains `=`), it is treated as the first attribute and the delimiter defaults to tab.
 

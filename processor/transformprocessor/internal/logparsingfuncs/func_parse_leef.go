@@ -250,7 +250,7 @@ func buildLEEFResult(header leefHeader, attributes map[string]string) pcommon.Ma
 	result.PutStr("leef.product.version", header.productVersion)
 	result.PutStr("leef.event.id", header.eventID)
 
-	attrsMap := result.PutEmptyMap("attributes")
+	attrsMap := result.PutEmptyMap("leef.attributes")
 	attrsMap.EnsureCapacity(len(attributes))
 	for k, v := range attributes {
 		attrsMap.PutStr(k, v)
