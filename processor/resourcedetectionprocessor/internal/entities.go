@@ -106,24 +106,34 @@ func breakContextCycles(entities []DetectedEntity, byType map[string]int, logger
 
 func appendEntityRefs(res pcommon.Resource, entities []DetectedEntity, logger *zap.Logger) {
 	attrs := res.Attributes()
-	entityRefs := xentity.ResourceEntityRefs(res)
+	entityMap := xentity.ResourceEntities(res)
 	for _, ent := range entities {
 		if !hasAllKeys(attrs, ent.IDKeys) {
 			logger.Warn("skipping entity: some id keys are missing in the detected resource",
 				zap.String("entity.type", ent.Type), zap.Strings("entity.id_keys", ent.IDKeys))
 			continue
 		}
-		ref := entityRefs.AppendEmpty()
-		ref.SetSchemaUrl(ent.SchemaURL)
-		ref.SetType(ent.Type)
-		ref.IdKeys().FromRaw(ent.IDKeys)
-		for _, k := range ent.DescriptionKeys {
-			if _, ok := attrs.Get(k); ok {
-				ref.DescriptionKeys().Append(k)
-			}
+		entity := entityMap.PutEmpty(ent.Type)
+		entity.SetSchemaURL(ent.SchemaURL)
+		entity.SetIDContextType(ent.idContextType)
+		for _, k := range ent.IDKeys {
+			copyResourceAttribute(attrs, entity.IdentifyingAttributes(), k)
 		}
-		ref.SetIdContextType(ent.idContextType)
+		for _, k := range ent.DescriptionKeys {
+			copyResourceAttribute(attrs, entity.DescriptiveAttributes(), k)
+		}
 	}
+}
+
+func copyResourceAttribute(attrs pcommon.Map, target xentity.EntityAttributeMap, key string) bool {
+	val, ok := attrs.Get(key)
+	if !ok {
+		return false
+	}
+	copied := pcommon.NewValueEmpty()
+	val.CopyTo(copied)
+	copied.CopyTo(target.PutEmpty(key))
+	return true
 }
 
 // MergeEntityRefs copies entity refs from one resource to another after the

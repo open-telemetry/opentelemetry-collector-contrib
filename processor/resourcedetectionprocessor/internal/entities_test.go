@@ -114,47 +114,50 @@ func TestAppendEntityRefs(t *testing.T) {
 		{Type: "host", IDKeys: []string{"host.id"}},
 	}, zap.NewNop())
 
-	refs := xentity.ResourceEntityRefs(res)
-	require.Equal(t, 1, refs.Len())
-	ref := refs.At(0)
-	assert.Equal(t, "k8s.node", ref.Type())
-	assert.Equal(t, "https://test", ref.SchemaUrl())
-	assert.Equal(t, []string{"k8s.node.name"}, ref.IdKeys().AsRaw())
-	assert.Equal(t, []string{"k8s.cluster.name"}, ref.DescriptionKeys().AsRaw())
-	assert.Equal(t, "k8s.cluster", ref.IdContextType())
+	entities := xentity.ResourceEntities(res)
+	require.Equal(t, 1, entities.Len())
+	entity, ok := entities.Get("k8s.node")
+	require.True(t, ok)
+	assert.Equal(t, "https://test", entity.SchemaURL())
+	assert.Equal(t, "k8s.cluster", entity.IDContextType())
+
+	idVal, ok := entity.IdentifyingAttributes().Get("k8s.node.name")
+	require.True(t, ok)
+	assert.Equal(t, "node-1", idVal.Str())
+	descVal, ok := entity.DescriptiveAttributes().Get("k8s.cluster.name")
+	require.True(t, ok)
+	assert.Equal(t, "cluster-1", descVal.Str())
+	_, ok = entity.DescriptiveAttributes().Get("missing")
+	assert.False(t, ok)
 }
 
 func TestMergeEntityRefs(t *testing.T) {
 	from := pcommon.NewResource()
-	from.Attributes().PutStr("k8s.node.name", "node-1")
-	from.Attributes().PutStr("host.id", "host-1")
-	fromRefs := xentity.ResourceEntityRefs(from)
-	node := fromRefs.AppendEmpty()
-	node.SetType("k8s.node")
-	node.IdKeys().Append("k8s.node.name")
-	node.SetIdContextType("k8s.cluster")
-	host := fromRefs.AppendEmpty()
-	host.SetType("host")
-	host.IdKeys().Append("host.id")
+	fromEntities := xentity.ResourceEntities(from)
+	node := fromEntities.PutEmpty("k8s.node")
+	node.IdentifyingAttributes().PutStr("k8s.node.name", "node-1")
+	node.SetIDContextType("k8s.cluster")
+	host := fromEntities.PutEmpty("host")
+	host.IdentifyingAttributes().PutStr("host.id", "host-1")
 
 	to := pcommon.NewResource()
-	to.Attributes().PutStr("k8s.node.name", "node-1")
-	existing := xentity.ResourceEntityRefs(to).AppendEmpty()
-	existing.SetType("k8s.node")
-	existing.IdKeys().Append("k8s.node.name")
+	existing := xentity.ResourceEntities(to).PutEmpty("k8s.node")
+	existing.IdentifyingAttributes().PutStr("k8s.node.name", "node-1")
 
 	MergeEntityRefs(to, from, false)
 
-	toRefs := xentity.ResourceEntityRefs(to)
-	require.Equal(t, 1, toRefs.Len())
-	assert.Equal(t, "k8s.node", toRefs.At(0).Type())
-	assert.Empty(t, toRefs.At(0).IdContextType())
+	toEntities := xentity.ResourceEntities(to)
+	require.Equal(t, 1, toEntities.Len())
+	entity, ok := toEntities.Get("k8s.node")
+	require.True(t, ok)
+	assert.Empty(t, entity.IDContextType())
 
 	MergeEntityRefs(to, from, true)
-	toRefs = xentity.ResourceEntityRefs(to)
-	require.Equal(t, 1, toRefs.Len())
-	assert.Equal(t, "k8s.node", toRefs.At(0).Type())
-	assert.Equal(t, "k8s.cluster", toRefs.At(0).IdContextType())
+	toEntities = xentity.ResourceEntities(to)
+	require.Equal(t, 1, toEntities.Len())
+	entity, ok = toEntities.Get("k8s.node")
+	require.True(t, ok)
+	assert.Equal(t, "k8s.cluster", entity.IDContextType())
 }
 
 func TestDetectResourceEntities(t *testing.T) {
@@ -226,10 +229,10 @@ func contextByType(entities []DetectedEntity) map[string]string {
 }
 
 func contextByRef(res pcommon.Resource) map[string]string {
-	refs := xentity.ResourceEntityRefs(res)
-	got := make(map[string]string, refs.Len())
-	for i := 0; i < refs.Len(); i++ {
-		got[refs.At(i).Type()] = refs.At(i).IdContextType()
+	entities := xentity.ResourceEntities(res)
+	got := make(map[string]string, entities.Len())
+	for typ, entity := range entities.All() {
+		got[typ] = entity.IDContextType()
 	}
 	return got
 }

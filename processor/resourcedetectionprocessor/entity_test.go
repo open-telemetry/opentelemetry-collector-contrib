@@ -66,11 +66,11 @@ func TestProcessorAttachesEntityRefs(t *testing.T) {
 	res := out.ResourceSpans().At(0).Resource()
 	assert.Equal(t, "node-1", mustStr(t, res.Attributes(), "k8s.node.name"))
 
-	refs := xentity.ResourceEntityRefs(res)
-	require.Equal(t, 2, refs.Len())
+	entities := xentity.ResourceEntities(res)
+	require.Equal(t, 2, entities.Len())
 	got := map[string]string{}
-	for i := 0; i < refs.Len(); i++ {
-		got[refs.At(i).Type()] = refs.At(i).IdContextType()
+	for typ, entity := range entities.All() {
+		got[typ] = entity.IDContextType()
 	}
 	assert.Equal(t, map[string]string{
 		"k8s.node":    "k8s.cluster",
