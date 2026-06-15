@@ -109,6 +109,8 @@ func basicSliceByte() (ExprFunc[any], error) {
 	}, nil
 }
 
+// outdated unittest - OTTL operate on pdata natively. this left as guardrails as long as []any, []V
+// fallbacks exists and MUST be refactored when that support drop
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -760,6 +762,8 @@ func Test_newGetter(t *testing.T) {
 	})
 }
 
+// outdated unittest - OTTL operate on pdata natively. this left as guardrails as long as []any, []V
+// fallbacks exists and MUST be refactored when that support drop
 func Test_exprGetter_Get_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2197,6 +2201,8 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+// outdated unittest - OTTL operate on pdata natively. this left as guardrails as long as []any, []V
+// fallbacks exists and MUST be refactored when that support drop
 func Test_StandardPSliceGetter(t *testing.T) {
 	tests := []struct {
 		name             string

@@ -2273,10 +2273,10 @@ func Test_ParseValueExpression_full(t *testing.T) {
 			name:            "hex values",
 			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
 			expected: func() any {
-				return []any{
-					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-				}
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetEmptyBytes().FromRaw([]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0})
+				s.AppendEmpty().SetEmptyBytes().FromRaw([]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0})
+				return s
 			},
 		},
 		{
@@ -2301,22 +2301,24 @@ func Test_ParseValueExpression_full(t *testing.T) {
 			name:            "string list",
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
-				return []any{"list", "of", "strings"}
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetStr("list")
+				s.AppendEmpty().SetStr("of")
+				s.AppendEmpty().SetStr("strings")
+				return s
 			},
 		},
 		{
 			name:            "nested list",
 			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
 			expected: func() any {
-				m1 := pcommon.NewMap()
+				s := pcommon.NewSlice()
+				m1 := s.AppendEmpty().SetEmptyMap()
 				m1.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 
-				m2 := pcommon.NewMap()
+				m2 := s.AppendEmpty().SetEmptyMap()
 				m2.PutStr("bar", "baz")
-				return []any{
-					m1,
-					m2,
-				}
+				return s
 			},
 		},
 	}
