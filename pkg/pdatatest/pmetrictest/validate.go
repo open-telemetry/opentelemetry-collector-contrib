@@ -16,6 +16,9 @@ import (
 
 // ValidateMetrics reports semantic errors in md (Metrics Data).
 // Currently it checks:
+//   - No ResourceMetrics entry has an empty ScopeMetrics set.
+//   - No ScopeMetrics entry has an empty Metrics set.
+//   - No typed Metric has an empty datapoint set.
 //   - No two datapoints within the same metric share identical attribute sets.
 //   - No two metrics share the same name under the same scope.
 //   - No two ScopeMetrics share the same scope (name + version) under the same resource.
@@ -29,11 +32,29 @@ func ValidateMetrics(md pmetric.Metrics) error {
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		sms := rm.ScopeMetrics()
+		if sms.Len() == 0 {
+			errs = multierr.Append(errs, fmt.Errorf(
+				`resource metrics at index %d with resource "%v" has no scope metrics`,
+				i, rm.Resource().Attributes().AsRaw(),
+			))
+		}
 		for j := 0; j < sms.Len(); j++ {
 			sm := sms.At(j)
 			ms := sm.Metrics()
+			if ms.Len() == 0 {
+				errPrefix := fmt.Sprintf(`resource "%v": scope %q`,
+					rm.Resource().Attributes().AsRaw(), sm.Scope().Name())
+				errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, fmt.Errorf(
+					"scope metrics at index %d has no metrics", j,
+				)))
+			}
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
+				if err := validateDatapointPresence(m); err != nil {
+					errPrefix := fmt.Sprintf(`resource "%v": scope %q: metric %q`,
+						rm.Resource().Attributes().AsRaw(), sm.Scope().Name(), m.Name())
+					errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
+				}
 				if err := validateDatapointUniqueness(m); err != nil {
 					errPrefix := fmt.Sprintf(`resource "%v": scope %q: metric %q`,
 						rm.Resource().Attributes().AsRaw(), sm.Scope().Name(), m.Name())
@@ -63,6 +84,32 @@ func ValidateMetrics(md pmetric.Metrics) error {
 	}
 
 	return errs
+}
+
+// validateDatapointPresence checks that typed metrics have at least one datapoint.
+func validateDatapointPresence(m pmetric.Metric) error {
+	//exhaustive:enforce
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		return checkDatapointPresence("gauge", m.Gauge().DataPoints().Len())
+	case pmetric.MetricTypeSum:
+		return checkDatapointPresence("sum", m.Sum().DataPoints().Len())
+	case pmetric.MetricTypeHistogram:
+		return checkDatapointPresence("histogram", m.Histogram().DataPoints().Len())
+	case pmetric.MetricTypeExponentialHistogram:
+		return checkDatapointPresence("exponential histogram", m.ExponentialHistogram().DataPoints().Len())
+	case pmetric.MetricTypeSummary:
+		return checkDatapointPresence("summary", m.Summary().DataPoints().Len())
+	case pmetric.MetricTypeEmpty:
+	}
+	return nil
+}
+
+func checkDatapointPresence(metricType string, count int) error {
+	if count == 0 {
+		return fmt.Errorf("%s metric has no datapoints", metricType)
+	}
+	return nil
 }
 
 // validateDatapointUniqueness checks that no two datapoints within the given

@@ -208,15 +208,36 @@ func TestValidateMetrics(t *testing.T) {
 	})
 
 	t.Run("no-datapoints", func(t *testing.T) {
-		md := pmetric.NewMetrics()
-		rm := md.ResourceMetrics().AppendEmpty()
-		sm := rm.ScopeMetrics().AppendEmpty()
-		m := sm.Metrics().AppendEmpty()
-		m.SetName("empty.metric")
-		m.SetEmptyGauge()
-		// No datapoints added — should be valid.
+		tests := []struct {
+			name      string
+			setMetric func(pmetric.Metric)
+		}{
+			{name: "gauge", setMetric: func(m pmetric.Metric) { m.SetEmptyGauge() }},
+			{name: "sum", setMetric: func(m pmetric.Metric) { m.SetEmptySum() }},
+			{name: "histogram", setMetric: func(m pmetric.Metric) { m.SetEmptyHistogram() }},
+			{name: "exponential-histogram", setMetric: func(m pmetric.Metric) { m.SetEmptyExponentialHistogram() }},
+			{name: "summary", setMetric: func(m pmetric.Metric) { m.SetEmptySummary() }},
+		}
 
-		assert.NoError(t, ValidateMetrics(md))
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				md := pmetric.NewMetrics()
+				rm := md.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("host.name", "worker-42")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("my.scope")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("empty." + tt.name)
+				tt.setMetric(m)
+
+				err := ValidateMetrics(md)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), `resource "map[host.name:worker-42]"`)
+				assert.Contains(t, err.Error(), `scope "my.scope"`)
+				assert.Contains(t, err.Error(), `metric "empty.`+tt.name+`"`)
+				assert.Contains(t, err.Error(), "metric has no datapoints")
+			})
+		}
 	})
 
 	t.Run("single-datapoint", func(t *testing.T) {
@@ -235,6 +256,32 @@ func TestValidateMetrics(t *testing.T) {
 	t.Run("empty-metrics", func(t *testing.T) {
 		md := pmetric.NewMetrics()
 		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("resource-metrics-with-empty-scope-metrics", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `resource metrics at index 0`)
+		assert.Contains(t, err.Error(), `resource "map[host.name:worker-42]"`)
+		assert.Contains(t, err.Error(), "has no scope metrics")
+	})
+
+	t.Run("scope-metrics-with-empty-metrics", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("my.scope")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `resource "map[host.name:worker-42]"`)
+		assert.Contains(t, err.Error(), `scope "my.scope"`)
+		assert.Contains(t, err.Error(), "scope metrics at index 0 has no metrics")
 	})
 
 	t.Run("error-includes-resource-and-scope-context", func(t *testing.T) {
@@ -312,11 +359,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		m1 := sm.Metrics().AppendEmpty()
 		m1.SetName("http.requests")
-		m1.SetEmptyGauge()
+		m1.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		m2 := sm.Metrics().AppendEmpty()
 		m2.SetName("http.requests")
-		m2.SetEmptyGauge()
+		m2.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -330,11 +377,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		m1 := sm.Metrics().AppendEmpty()
 		m1.SetName("http.requests")
-		m1.SetEmptyGauge()
+		m1.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		m2 := sm.Metrics().AppendEmpty()
 		m2.SetName("http.requests")
-		m2.SetEmptySum()
+		m2.SetEmptySum().DataPoints().AppendEmpty()
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -348,11 +395,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		m1 := sm.Metrics().AppendEmpty()
 		m1.SetName("http.requests")
-		m1.SetEmptyGauge()
+		m1.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		m2 := sm.Metrics().AppendEmpty()
 		m2.SetName("http.duration")
-		m2.SetEmptySum()
+		m2.SetEmptySum().DataPoints().AppendEmpty()
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -366,7 +413,7 @@ func TestValidateMetrics(t *testing.T) {
 		for range 3 {
 			m := sm.Metrics().AppendEmpty()
 			m.SetName("http.requests")
-			m.SetEmptyGauge()
+			m.SetEmptyGauge().DataPoints().AppendEmpty()
 		}
 
 		err := ValidateMetrics(md)
@@ -383,17 +430,17 @@ func TestValidateMetrics(t *testing.T) {
 		// Two pairs of duplicate names.
 		m1 := sm.Metrics().AppendEmpty()
 		m1.SetName("metric.a")
-		m1.SetEmptyGauge()
+		m1.SetEmptyGauge().DataPoints().AppendEmpty()
 		m2 := sm.Metrics().AppendEmpty()
 		m2.SetName("metric.a")
-		m2.SetEmptyGauge()
+		m2.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		m3 := sm.Metrics().AppendEmpty()
 		m3.SetName("metric.b")
-		m3.SetEmptySum()
+		m3.SetEmptySum().DataPoints().AppendEmpty()
 		m4 := sm.Metrics().AppendEmpty()
 		m4.SetName("metric.b")
-		m4.SetEmptySum()
+		m4.SetEmptySum().DataPoints().AppendEmpty()
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -410,11 +457,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		m1 := sm.Metrics().AppendEmpty()
 		m1.SetName("http.requests")
-		m1.SetEmptyGauge()
+		m1.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		m2 := sm.Metrics().AppendEmpty()
 		m2.SetName("http.requests")
-		m2.SetEmptyGauge()
+		m2.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -430,7 +477,7 @@ func TestValidateMetrics(t *testing.T) {
 
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("http.requests")
-		m.SetEmptyGauge()
+		m.SetEmptyGauge().DataPoints().AppendEmpty()
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -442,10 +489,12 @@ func TestValidateMetrics(t *testing.T) {
 		sm1 := rm.ScopeMetrics().AppendEmpty()
 		sm1.Scope().SetName("my.scope")
 		sm1.Scope().SetVersion("1.0")
+		appendValidMetric(sm1, "metric.one")
 
 		sm2 := rm.ScopeMetrics().AppendEmpty()
 		sm2.Scope().SetName("my.scope")
 		sm2.Scope().SetVersion("1.0")
+		appendValidMetric(sm2, "metric.two")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -458,9 +507,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		sm1 := rm.ScopeMetrics().AppendEmpty()
 		sm1.Scope().SetName("scope.a")
+		appendValidMetric(sm1, "metric.a")
 
 		sm2 := rm.ScopeMetrics().AppendEmpty()
 		sm2.Scope().SetName("scope.b")
+		appendValidMetric(sm2, "metric.b")
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -472,10 +523,12 @@ func TestValidateMetrics(t *testing.T) {
 		sm1 := rm.ScopeMetrics().AppendEmpty()
 		sm1.Scope().SetName("my.scope")
 		sm1.Scope().SetVersion("1.0")
+		appendValidMetric(sm1, "metric.one")
 
 		sm2 := rm.ScopeMetrics().AppendEmpty()
 		sm2.Scope().SetName("my.scope")
 		sm2.Scope().SetVersion("2.0")
+		appendValidMetric(sm2, "metric.two")
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -487,6 +540,7 @@ func TestValidateMetrics(t *testing.T) {
 		for range 3 {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("my.scope")
+			appendValidMetric(sm, "metric")
 		}
 
 		err := ValidateMetrics(md)
@@ -501,13 +555,17 @@ func TestValidateMetrics(t *testing.T) {
 
 		sm1 := rm.ScopeMetrics().AppendEmpty()
 		sm1.Scope().SetName("scope.a")
+		appendValidMetric(sm1, "metric.a.one")
 		sm2 := rm.ScopeMetrics().AppendEmpty()
 		sm2.Scope().SetName("scope.a")
+		appendValidMetric(sm2, "metric.a.two")
 
 		sm3 := rm.ScopeMetrics().AppendEmpty()
 		sm3.Scope().SetName("scope.b")
+		appendValidMetric(sm3, "metric.b.one")
 		sm4 := rm.ScopeMetrics().AppendEmpty()
 		sm4.Scope().SetName("scope.b")
+		appendValidMetric(sm4, "metric.b.two")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -520,8 +578,10 @@ func TestValidateMetrics(t *testing.T) {
 		rm := md.ResourceMetrics().AppendEmpty()
 
 		// Two ScopeMetrics with empty scope name and version (they are duplicates)
-		rm.ScopeMetrics().AppendEmpty()
-		rm.ScopeMetrics().AppendEmpty()
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		appendValidMetric(sm1, "metric.one")
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		appendValidMetric(sm2, "metric.two")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -534,6 +594,7 @@ func TestValidateMetrics(t *testing.T) {
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("my.scope")
+		appendValidMetric(sm, "metric")
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -545,9 +606,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		sm1 := rm.ScopeMetrics().AppendEmpty()
 		sm1.Scope().SetName("my.scope")
+		appendValidMetric(sm1, "metric.one")
 
 		sm2 := rm.ScopeMetrics().AppendEmpty()
 		sm2.Scope().SetName("my.scope")
+		appendValidMetric(sm2, "metric.two")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -560,9 +623,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		rm1 := md.ResourceMetrics().AppendEmpty()
 		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm1, "scope", "metric")
 
 		rm2 := md.ResourceMetrics().AppendEmpty()
 		rm2.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm2, "scope", "metric")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -574,9 +639,11 @@ func TestValidateMetrics(t *testing.T) {
 
 		rm1 := md.ResourceMetrics().AppendEmpty()
 		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm1, "scope", "metric")
 
 		rm2 := md.ResourceMetrics().AppendEmpty()
 		rm2.Resource().Attributes().PutStr("host.name", "worker-99")
+		appendValidScopeMetrics(rm2, "scope", "metric")
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
@@ -587,6 +654,7 @@ func TestValidateMetrics(t *testing.T) {
 		for range 3 {
 			rm := md.ResourceMetrics().AppendEmpty()
 			rm.Resource().Attributes().PutStr("host.name", "worker-42")
+			appendValidScopeMetrics(rm, "scope", "metric")
 		}
 
 		err := ValidateMetrics(md)
@@ -600,13 +668,17 @@ func TestValidateMetrics(t *testing.T) {
 
 		rm1 := md.ResourceMetrics().AppendEmpty()
 		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm1, "scope", "metric")
 		rm2 := md.ResourceMetrics().AppendEmpty()
 		rm2.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm2, "scope", "metric")
 
 		rm3 := md.ResourceMetrics().AppendEmpty()
 		rm3.Resource().Attributes().PutStr("host.name", "worker-99")
+		appendValidScopeMetrics(rm3, "scope", "metric")
 		rm4 := md.ResourceMetrics().AppendEmpty()
 		rm4.Resource().Attributes().PutStr("host.name", "worker-99")
+		appendValidScopeMetrics(rm4, "scope", "metric")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -618,8 +690,8 @@ func TestValidateMetrics(t *testing.T) {
 		md := pmetric.NewMetrics()
 
 		// Two ResourceMetrics with empty attributes — they are duplicates.
-		md.ResourceMetrics().AppendEmpty()
-		md.ResourceMetrics().AppendEmpty()
+		appendValidScopeMetrics(md.ResourceMetrics().AppendEmpty(), "scope", "metric")
+		appendValidScopeMetrics(md.ResourceMetrics().AppendEmpty(), "scope", "metric")
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
@@ -631,7 +703,20 @@ func TestValidateMetrics(t *testing.T) {
 
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+		appendValidScopeMetrics(rm, "scope", "metric")
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
+}
+
+func appendValidMetric(sm pmetric.ScopeMetrics, name string) {
+	m := sm.Metrics().AppendEmpty()
+	m.SetName(name)
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+}
+
+func appendValidScopeMetrics(rm pmetric.ResourceMetrics, scopeName, metricName string) {
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName(scopeName)
+	appendValidMetric(sm, metricName)
 }

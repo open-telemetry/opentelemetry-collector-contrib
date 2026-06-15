@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/pdatatest
+note: Reject empty ResourceMetrics, ScopeMetrics, and typed metrics in ValidateMetrics
+issues: [49072]
+change_logs: [api]
