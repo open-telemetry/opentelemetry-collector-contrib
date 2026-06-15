@@ -57,6 +57,9 @@ func TestConvertToOtel(t *testing.T) {
 			SequenceNum:     1,
 			SamplingRate:    1,
 			TcpFlags:        1,
+			InIf:            5,
+			OutIf:           10,
+			IpTos:           46,
 		},
 	}
 
@@ -87,6 +90,9 @@ func TestConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.sampling_rate", 1)
 	expectedAttributes.PutStr("flow.sampler_address", "192.168.1.100")
 	expectedAttributes.PutInt("flow.tcp_flags", 1)
+	expectedAttributes.PutInt("flow.in_if", 5)
+	expectedAttributes.PutInt("flow.out_if", 10)
+	expectedAttributes.PutInt("flow.ip_tos", 46)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }
@@ -121,6 +127,9 @@ func TestEmptyConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.sampling_rate", 0)
 	expectedAttributes.PutStr("flow.sampler_address", "invalid IP")
 	expectedAttributes.PutInt("flow.tcp_flags", 0)
+	expectedAttributes.PutInt("flow.in_if", 0)
+	expectedAttributes.PutInt("flow.out_if", 0)
+	expectedAttributes.PutInt("flow.ip_tos", 0)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }

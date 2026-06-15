@@ -107,6 +107,9 @@ The log record will have the following attributes (with examples):
 * **flow.sampling_rate**: Int(0)
 * **flow.sampler_address**: Str(172.28.176.1)
 * **flow.tcp_flags**: Int(0)
+* **flow.in_if**: Int(5)
+* **flow.out_if**: Int(10)
+* **flow.ip_tos**: Int(46)
 
 The log record timestamps will be:
 
