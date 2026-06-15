@@ -6,7 +6,6 @@ The **Isolation Forest processor** adds inline, unsupervised anomaly detection t
 learns normal behaviour from recent telemetry and tags, scores, or optionally drops anomalies *in‑flight* – no
 external ML service required.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |

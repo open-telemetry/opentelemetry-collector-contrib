@@ -28,6 +28,7 @@ type (
 	ComponentOverride  struct {
 		ConfigName  string           `yaml:"configName"`
 		FactoryMaps []FactoryMapSpec `yaml:"factoryMaps,omitempty"`
+		OverlayFile string           `yaml:"overlayFile,omitempty"`
 	}
 	FactoryMapSpec struct {
 		// Property is the JSON-schema key under the root config object where the
