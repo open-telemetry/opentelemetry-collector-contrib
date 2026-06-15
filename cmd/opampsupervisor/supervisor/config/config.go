@@ -372,17 +372,9 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource ResourceConfig `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
-}
-
-type ResourceConfig struct {
-	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
-}
-
-func (c *ResourceConfig) Validate() error {
-	return c.ResourceConfig.Validate()
 }
 
 type HealthCheck struct {

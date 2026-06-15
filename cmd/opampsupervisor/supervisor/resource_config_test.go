@@ -23,16 +23,14 @@ func TestInitTelemetrySettingsWithDeclarativeResourceConfig(t *testing.T) {
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		},
-		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				Resource: otelconf.Resource{
-					SchemaUrl: &schemaURL,
-					Attributes: []otelconf.AttributeNameValue{
-						{Name: "custom.bool", Value: true},
-						{Name: "service.name", Value: "custom-supervisor"},
-					},
-					Detectors: &otelconf.Detectors{},
+		Resource: otelconftelemetry.ResourceConfig{
+			Resource: otelconf.Resource{
+				SchemaUrl: &schemaURL,
+				Attributes: []otelconf.AttributeNameValue{
+					{Name: "custom.bool", Value: true},
+					{Name: "service.name", Value: "custom-supervisor"},
 				},
+				Detectors: &otelconf.Detectors{},
 			},
 		},
 	})
@@ -57,11 +55,9 @@ func TestInitTelemetrySettingsWithLegacyNilResourceOverride(t *testing.T) {
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		},
-		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				LegacyAttributes: map[string]any{
-					"service.name": nil,
-				},
+		Resource: otelconftelemetry.ResourceConfig{
+			LegacyAttributes: map[string]any{
+				"service.name": nil,
 			},
 		},
 	})

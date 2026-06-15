@@ -41,9 +41,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
@@ -290,37 +290,20 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		return telemetrySettings{}, err
 	}
 
-	xReaders, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.MetricReader, []xotelconf.MetricReader](readers)
-	if err != nil {
-		return telemetrySettings{}, err
-	}
-	xSpanProcessors, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.SpanProcessor, []xotelconf.SpanProcessor](cfg.Traces.Processors)
-	if err != nil {
-		return telemetrySettings{}, err
-	}
-	xLogProcessors, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.LogRecordProcessor, []xotelconf.LogRecordProcessor](cfg.Logs.Processors)
-	if err != nil {
-		return telemetrySettings{}, err
-	}
-	xResourceCfg, err := convertConfigValue[telemetryconfig.Resource, xotelconf.Resource](*resourceCfg)
-	if err != nil {
-		return telemetrySettings{}, err
-	}
-
-	sdk, err := xotelconf.NewSDK(
-		xotelconf.WithContext(ctx),
-		xotelconf.WithOpenTelemetryConfiguration(
-			xotelconf.OpenTelemetryConfiguration{
-				MeterProvider: &xotelconf.MeterProvider{
-					Readers: xReaders,
+	sdk, err := telemetryconfig.NewSDK(
+		telemetryconfig.WithContext(ctx),
+		telemetryconfig.WithOpenTelemetryConfiguration(
+			telemetryconfig.OpenTelemetryConfiguration{
+				MeterProvider: &telemetryconfig.MeterProvider{
+					Readers: readers,
 				},
-				TracerProvider: &xotelconf.TracerProvider{
-					Processors: xSpanProcessors,
+				TracerProvider: &telemetryconfig.TracerProvider{
+					Processors: cfg.Traces.Processors,
 				},
-				LoggerProvider: &xotelconf.LoggerProvider{
-					Processors: xLogProcessors,
+				LoggerProvider: &telemetryconfig.LoggerProvider{
+					Processors: cfg.Logs.Processors,
 				},
-				Resource: &xResourceCfg,
+				Resource: resourceCfg,
 			},
 		),
 	)
@@ -354,87 +337,6 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		},
 		lp,
 	}, nil
-}
-
-func convertConfigValue[S, D any](src S) (D, error) {
-	var zero D
-
-	b, err := gyaml.Marshal(src)
-	if err != nil {
-		return zero, err
-	}
-
-	var out D
-	if err := gyaml.Unmarshal(b, &out); err != nil {
-		return zero, err
-	}
-
-	return out, nil
-}
-
-func convertConfigValueWithOTLPRewrite[S, D any](src S) (D, error) {
-	var zero D
-
-	b, err := gyaml.Marshal(src)
-	if err != nil {
-		return zero, err
-	}
-
-	var raw any
-	if unmarshalErr := gyaml.Unmarshal(b, &raw); unmarshalErr != nil {
-		return zero, unmarshalErr
-	}
-
-	rewritten, err := gyaml.Marshal(rewriteLegacyOTLPKeys(raw))
-	if err != nil {
-		return zero, err
-	}
-
-	var out D
-	if err := gyaml.Unmarshal(rewritten, &out); err != nil {
-		return zero, err
-	}
-
-	return out, nil
-}
-
-func rewriteLegacyOTLPKeys(v any) any {
-	switch value := v.(type) {
-	case map[string]any:
-		for key, child := range value {
-			value[key] = rewriteLegacyOTLPKeys(child)
-		}
-
-		otlpValue, ok := value["otlp"]
-		if !ok {
-			return value
-		}
-
-		otlpMap, ok := otlpValue.(map[string]any)
-		if !ok {
-			return value
-		}
-
-		protocol, _ := otlpMap["protocol"].(string)
-		delete(otlpMap, "protocol")
-		switch {
-		case strings.HasPrefix(protocol, "http/"):
-			value["otlp_http"] = otlpMap
-			delete(value, "otlp")
-		case protocol == "", protocol == "grpc", strings.HasPrefix(protocol, "grpc/"):
-			value["otlp_grpc"] = otlpMap
-			delete(value, "otlp")
-		}
-
-		return value
-	case []any:
-		for i, child := range value {
-			value[i] = rewriteLegacyOTLPKeys(child)
-		}
-		return value
-	default:
-		return value
-	}
 }
 
 func (s *Supervisor) Start(ctx context.Context) error {
@@ -596,6 +498,18 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	bootstrapConfig, err := s.composeNoopConfig()
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
+		return err
+	}
+
+	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
+		return fmt.Errorf("failed to write agent config: %w", err)
+	}
+
 	srv := server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
 	done := make(chan error, 1)
@@ -667,18 +581,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	bootstrapConfig, err := s.composeNoopConfig()
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
-		return err
-	}
-
-	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
-		return fmt.Errorf("failed to write agent config: %w", err)
-	}
-
 	defer func() {
 		if stopErr := srv.Stop(s.runCtx); stopErr != nil {
 			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
@@ -715,7 +617,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	case <-time.After(bootstrapInfoTimeout(s.config.Agent.BootstrapTimeout)):
+	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
 			msg := "collector connected but never responded with an AgentDescription message"
 			span.SetStatus(codes.Error, msg)
@@ -1529,7 +1431,7 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 		return nil
 	}
 
-	var resourceCfg config.ResourceConfig
+	var resourceCfg otelconftelemetry.ResourceConfig
 	if err := collectorconfmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
 		return err
 	}
@@ -2593,13 +2495,6 @@ func (*Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
-}
-
-func bootstrapInfoTimeout(configured time.Duration) time.Duration {
-	if configured < 8*time.Second {
-		return 8 * time.Second
-	}
-	return configured
 }
 
 func (s *Supervisor) getTracer() trace.Tracer {

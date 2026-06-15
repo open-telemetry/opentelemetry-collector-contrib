@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	collectorconfmap "go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -497,7 +498,7 @@ service:
 		assert.NotContains(t, resource, "service.instance.id")
 		assert.NotContains(t, resource, "service.version")
 
-		var resourceCfg config.ResourceConfig
+		var resourceCfg otelconftelemetry.ResourceConfig
 		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -571,7 +572,7 @@ service:
 		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg config.ResourceConfig
+		var resourceCfg otelconftelemetry.ResourceConfig
 		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -636,7 +637,7 @@ service:
 		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg config.ResourceConfig
+		var resourceCfg otelconftelemetry.ResourceConfig
 		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -718,7 +719,7 @@ service:
 		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg config.ResourceConfig
+		var resourceCfg otelconftelemetry.ResourceConfig
 		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -796,7 +797,7 @@ service:
 		resource, ok := k.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg config.ResourceConfig
+		var resourceCfg otelconftelemetry.ResourceConfig
 		require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -810,22 +811,6 @@ service:
 		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
 		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
 	})
-}
-
-func TestRewriteLegacyOTLPKeysSupportsBareGRPCProtocol(t *testing.T) {
-	cfg := map[string]any{
-		"exporter": map[string]any{
-			"otlp": map[string]any{
-				"endpoint": "localhost:4317",
-				"protocol": "grpc",
-			},
-		},
-	}
-
-	got := rewriteLegacyOTLPKeys(cfg).(map[string]any)
-	exporter := got["exporter"].(map[string]any)
-	assert.NotContains(t, exporter, "otlp")
-	assert.Equal(t, map[string]any{"endpoint": "localhost:4317"}, exporter["otlp_grpc"])
 }
 
 func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing.T) {
