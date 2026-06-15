@@ -95,7 +95,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.logger.Info("Fallible detector failed. This attribute will not be available.",
 				zap.String("key", string(conventions.HostNameKey)), zap.Error(err))
 		}
-	case gcp.CloudRun:
+	case gcp.CloudRun, gcp.CloudRunWorkerPool:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
