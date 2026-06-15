@@ -1,5 +1,6 @@
 display_name: Splunk Enterprise Receiver
-type: splunkenterprise
+type: splunk_enterprise
+deprecated_type: splunkenterprise
 
 description: |
   The Splunk Enterprise Receiver is a pull based tool which enables the ingestion of performance metrics describing the operational status of a user's Splunk Enterprise deployment to an appropriate observability tool.
