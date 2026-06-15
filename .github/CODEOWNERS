@@ -246,6 +246,7 @@ processor/transformprocessor/                                    @open-telemetry
 processor/transformprocessor/internal/logparsingfuncs/           @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @Dylan-M
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/activedirectoryinvreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti @pankaj101A @jagan2221
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17
 receiver/apachesparkreceiver/                                    @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @mrsillydog
