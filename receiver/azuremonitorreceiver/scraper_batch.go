@@ -442,10 +442,9 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 		return
 	}
 
-	seenMetrics := map[string]struct{}{}
 	discoveredNamespaces := map[string]struct{}{}
 
-	s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, nil, seenMetrics, discoveredNamespaces)
+	s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, nil, discoveredNamespaces)
 
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
@@ -459,7 +458,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: to.Ptr(configNamespace),
 		}
-		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, seenMetrics, nil)
+		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, nil)
 	}
 
 	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
@@ -471,7 +470,6 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 
 // collectMetricDefinitionsByType pages through a MetricDefinitions pager and registers each
 // metric definition into the resourceType's metricsByCompositeKey map.
-// seenMetrics prevents duplicates when the same metric appears across multiple pager calls.
 // discoveredNamespaces, when non-nil, is populated with the lowercased namespaces seen in this call.
 // TODO: Partially duplicate of collectMetricDefinitions in scraper.go
 func (s *azureBatchScraper) collectMetricDefinitionsByType(
@@ -479,7 +477,6 @@ func (s *azureBatchScraper) collectMetricDefinitionsByType(
 	subscriptionID, resourceType, resourceID string,
 	clientMetricsDefinitions *armmonitor.MetricDefinitionsClient,
 	opts *armmonitor.MetricDefinitionsClientListOptions,
-	seenMetrics map[string]struct{},
 	discoveredNamespaces map[string]struct{},
 ) {
 	pager := clientMetricsDefinitions.NewListPager(resourceID, opts)
@@ -507,14 +504,6 @@ func (s *azureBatchScraper) collectMetricDefinitionsByType(
 			if discoveredNamespaces != nil {
 				discoveredNamespaces[strings.ToLower(metricNamespace)] = struct{}{}
 			}
-
-			// Skip duplicate (namespace, metricName) pairs that may appear when the same
-			// metric is returned by both the default call and a namespace-filtered call.
-			seenKey := strings.ToLower(metricNamespace) + "\x00" + metricName
-			if _, seen := seenMetrics[seenKey]; seen {
-				continue
-			}
-			seenMetrics[seenKey] = struct{}{}
 
 			metricAggregations := getMetricAggregations(metricNamespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
