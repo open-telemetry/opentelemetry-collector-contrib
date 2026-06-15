@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -186,7 +188,7 @@ func TestHTTPHeaders(t *testing.T) {
 }
 
 func TestKeyOverlapWithFeatureGate(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(MultiTagParsingFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverDatadogreceiverEnableMultiTagParsingFeatureGate.ID(), true))
 
 	expected := "[\"value1\",\"value2\"]"
 	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}
@@ -200,7 +202,7 @@ func TestKeyOverlapWithFeatureGate(t *testing.T) {
 }
 
 func TestKeyOverlapWithoutFeatureGate(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(MultiTagParsingFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverDatadogreceiverEnableMultiTagParsingFeatureGate.ID(), false))
 
 	expected := "value2"
 	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}

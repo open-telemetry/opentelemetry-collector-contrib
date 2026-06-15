@@ -17,18 +17,18 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/client v1.60.0
-	go.opentelemetry.io/collector/component v1.60.0
-	go.opentelemetry.io/collector/component/componenttest v0.154.0
-	go.opentelemetry.io/collector/featuregate v1.60.0
-	go.opentelemetry.io/collector/pdata v1.60.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.0
+	go.opentelemetry.io/collector/client v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/component v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/component/componenttest v0.154.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/pdata v1.60.1-0.20260611154946-8ae0933981eb
+	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260611154946-8ae0933981eb
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.38.0
 	google.golang.org/grpc v1.81.1
 )
 
@@ -49,7 +49,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.154.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.154.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260611154946-8ae0933981eb // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
