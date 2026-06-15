@@ -16,9 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/events"
+	"github.com/moby/moby/client"
 	"go.uber.org/zap"
 )
 
@@ -245,7 +244,7 @@ func ecsMetadataEndpointsFromTaskOrEmpty(ctx context.Context, logger *zap.Logger
 func getEndpoints(ctx context.Context, logger *zap.Logger) (map[string][]string, []containerMetadata, error) {
 	m := make(map[string][]string)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.WithHostFromEnv())
 	if err != nil {
 		if isDockerClientCreationRecoverable(err) {
 			logger.Debug("failed to create Docker client; falling back to ECS task metadata", zap.Error(err))
@@ -255,7 +254,7 @@ func getEndpoints(ctx context.Context, logger *zap.Logger) (map[string][]string,
 	}
 	defer cli.Close() // closing the client avoids leaking connections
 
-	containers, err := cli.ContainerList(ctx, container.ListOptions{})
+	containers, err := cli.ContainerList(ctx, client.ContainerListOptions{})
 	if err != nil {
 		if isDockerUnavailableError(err) {
 			logger.Debug("failed to fetch Docker containers; falling back to ECS task metadata", zap.Error(err))
@@ -264,14 +263,17 @@ func getEndpoints(ctx context.Context, logger *zap.Logger) (map[string][]string,
 		return m, nil, fmt.Errorf("failed to fetch Docker containers: %w", err)
 	}
 
-	for i := range containers {
-		id := containers[i].ID
-		containerInfo, err := cli.ContainerInspect(ctx, id)
+	for i := range containers.Items {
+		id := containers.Items[i].ID
+		info, err := cli.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
 		if err != nil {
-			return m, nil, fmt.Errorf("failed to inspect Docker container %s: %w", id, err)
+			// A container can exit between ContainerList and ContainerInspect; skip it
+			// and continue discovering the remaining containers rather than failing.
+			logger.Debug("failed to inspect Docker container; skipping", zap.String("container_id", id), zap.Error(err))
+			continue
 		}
 
-		if endpoints := parseMetadataEndpoints(containerInfo.Config.Env); len(endpoints) > 0 {
+		if endpoints := parseMetadataEndpoints(info.Container.Config.Env); len(endpoints) > 0 {
 			m[containerMetadataCacheKey(id)] = endpoints
 		}
 	}
@@ -304,7 +306,9 @@ func startDockerMetadataSync(logger *zap.Logger, cli *client.Client, stop <-chan
 		if cli != nil {
 			evCtx, cancel := context.WithCancel(context.Background())
 			defer cancel() // stop the events stream when the goroutine returns
-			evCh, errCh = cli.Events(evCtx, events.ListOptions{})
+			res := cli.Events(evCtx, client.EventsListOptions{})
+			evCh = res.Messages
+			errCh = res.Err
 		}
 
 		for {

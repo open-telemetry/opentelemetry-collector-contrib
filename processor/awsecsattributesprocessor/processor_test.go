@@ -118,6 +118,39 @@ func TestContainerIDFromAttrs(t *testing.T) {
 	require.Empty(t, containerIDFromAttrs(attrs, "missing"))
 }
 
+func TestEnrichResourceSkipsNilMetadata(t *testing.T) {
+	c := newTestCore(t, defaultTestConfig(), staticEndpoints("http://unused"))
+	// Metadata that lacks the ECS managed labels: the aws.ecs.* label-derived
+	// values are nil and must not be written as the literal "<nil>".
+	c.metadata[testContainerID] = containerMetadata{DockerID: "abc", Image: "img:1"}
+
+	res := pcommon.NewResource()
+	res.Attributes().PutStr("container.id", testContainerID)
+	c.enrichResource(t.Context(), res)
+
+	_, hasCluster := res.Attributes().Get("aws.ecs.cluster")
+	require.False(t, hasCluster, "nil managed-label value must be skipped, not stringified")
+	v, ok := res.Attributes().Get("docker.id")
+	require.True(t, ok)
+	require.Equal(t, "abc", v.AsString())
+}
+
+func TestEnrichResourceNoContainerID(t *testing.T) {
+	// An empty container ID must short-circuit without triggering a metadata sync.
+	synced := false
+	c := newTestCore(t, defaultTestConfig(), func(context.Context, *zap.Logger) (map[string][]string, []containerMetadata, error) {
+		synced = true
+		return nil, nil, nil
+	})
+
+	res := pcommon.NewResource()
+	res.Attributes().PutStr("unrelated", "x")
+	c.enrichResource(t.Context(), res)
+
+	require.False(t, synced, "no container ID should not trigger a sync")
+	require.Equal(t, 1, res.Attributes().Len())
+}
+
 func TestStartShutdownLifecycle(t *testing.T) {
 	srv := newMetadataServer(t)
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints(srv.URL))

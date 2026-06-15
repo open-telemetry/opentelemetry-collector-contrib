@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -56,7 +56,7 @@ func newCore(logger *zap.Logger, cfg *Config, endpoints endpointsFn) *ecsCore {
 		logger:    logger,
 		endpoints: endpoints,
 		newDockerClient: func() (*client.Client, error) {
-			return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+			return client.New(client.WithHostFromEnv())
 		},
 		metadata:    make(map[string]containerMetadata),
 		metadataAge: time.Now(),
@@ -80,7 +80,7 @@ func (e *ecsCore) Start(ctx context.Context, _ component.Host) error {
 		e.logger.Warn("failed to initialize Docker API client; using ECS task metadata when available", zap.Error(err))
 	} else {
 		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		_, pingErr := cli.Ping(pingCtx)
+		_, pingErr := cli.Ping(pingCtx, client.PingOptions{})
 		cancel()
 		if pingErr != nil {
 			e.logger.Debug("docker daemon unreachable; skipping Docker events", zap.Error(pingErr))
@@ -200,6 +200,12 @@ func (e *ecsCore) syncMetadata(ctx context.Context, endpoints map[string][]strin
 // cached metadata, and writes the configured attributes onto the resource.
 func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
 	containerID := containerIDFromAttrs(res.Attributes(), e.cfg.Sources...)
+	if containerID == "" {
+		// No container ID on this resource: enrichment cannot succeed, so skip it
+		// rather than triggering a (cache-missing) metadata sync per resource.
+		return
+	}
+
 	md, err := e.get(ctx, containerID)
 	if err != nil {
 		e.logger.Debug("unable to retrieve metadata",
@@ -210,6 +216,11 @@ func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
 	}
 
 	for k, v := range md.flat() {
+		// Skip metadata that ECS did not provide (e.g. a missing managed label),
+		// which would otherwise be stringified to the literal "<nil>".
+		if v == nil {
+			continue
+		}
 		val := fmt.Sprintf("%v", v)
 		if !e.cfg.allowAttr(k) || val == "" {
 			continue
