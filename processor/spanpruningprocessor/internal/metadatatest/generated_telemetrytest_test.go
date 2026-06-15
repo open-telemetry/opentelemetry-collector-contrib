@@ -23,6 +23,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorSpanpruningAggregationsCreated.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeLoss.Record(context.Background(), 1)
+	tb.ProcessorSpanpruningOutliersCorrelationsDetected.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningOutliersDetected.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningOutliersPreserved.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningParentAttributeDiversityLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningParentAttributeLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningProcessingDuration.Record(context.Background(), 1)
@@ -40,6 +43,15 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningLeafAttributeLoss(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningOutliersDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningOutliersPreserved(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningParentAttributeDiversityLoss(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
