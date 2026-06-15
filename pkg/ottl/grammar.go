@@ -220,6 +220,11 @@ func (c *converter) accept(v grammarVisitor) {
 			a.accept(v)
 		}
 	}
+	if c.Keys != nil {
+		for _, k := range c.Keys {
+			k.accept(v)
+		}
+	}
 }
 
 type lambdaExpr struct {

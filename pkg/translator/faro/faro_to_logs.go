@@ -21,6 +21,8 @@ import (
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro/internal/metadata"
 )
 
 type kvTime struct {
@@ -124,7 +126,12 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
 	rls.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
-	rls.Resource().Attributes().PutStr(string(conventionsv126.DeploymentEnvironmentKey), payload.Meta.App.Environment)
+	if !metadata.PkgTranslatorFaroDontEmitV0DeploymentEnvironmentConventionsFeatureGate.IsEnabled() {
+		rls.Resource().Attributes().PutStr(string(conventionsv126.DeploymentEnvironmentKey), payload.Meta.App.Environment)
+	}
+	if metadata.PkgTranslatorFaroEmitV1DeploymentEnvironmentConventionsFeatureGate.IsEnabled() {
+		rls.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentNameKey), payload.Meta.App.Environment)
+	}
 	if payload.Meta.App.Namespace != "" {
 		rls.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)
 	}

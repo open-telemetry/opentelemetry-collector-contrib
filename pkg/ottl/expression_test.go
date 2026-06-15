@@ -110,6 +110,30 @@ func basicSliceByte() (ExprFunc[any], error) {
 	}, nil
 }
 
+func strFoo() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "foo", nil
+	}, nil
+}
+
+func intZero() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return int64(0), nil
+	}, nil
+}
+
+func returnsNilKey() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func returnsBoolKey() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return true, nil
+	}, nil
+}
+
 func Test_newGetter(t *testing.T) {
 	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
@@ -392,6 +416,145 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want: byte('p'),
+		},
+		{
+			name: "function call nested pcommon map dynamic string key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "StrFoo",
+									},
+								},
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested map dynamic string key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Map",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "StrFoo",
+									},
+								},
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call pcommon slice dynamic int key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []key{
+							{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(0),
+											},
+										},
+									},
+								},
+							},
+							{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(0),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested slice dynamic int key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "IntZero",
+									},
+								},
+							},
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "IntZero",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested SliceString dynamic int key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceString",
+						Keys: []key{
+							{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(0),
+											},
+										},
+									},
+								},
+							},
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "IntZero",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
 		},
 		{
 			name: "enum",
@@ -754,6 +917,8 @@ func Test_newGetter(t *testing.T) {
 		createFactory("SliceInteger", &struct{}{}, basicSliceInteger),
 		createFactory("SliceFloat", &struct{}{}, basicSliceFloat),
 		createFactory("SliceByte", &struct{}{}, basicSliceByte),
+		createFactory("StrFoo", &struct{}{}, strFoo),
+		createFactory("IntZero", &struct{}{}, intZero),
 	)
 
 	p, _ := NewParser[any](
@@ -799,6 +964,49 @@ func Test_newGetter(t *testing.T) {
 		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
 	})
+}
+
+func Test_newGetter_dynamic_path_key(t *testing.T) {
+	functions := CreateFactoryMap(
+		createFactory("PMap", &struct{}{}, pmap),
+	)
+
+	p, err := NewParser[any](
+		functions,
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	val := value{
+		Literal: &mathExprLiteral{
+			Converter: &converter{
+				Function: "PMap",
+				Keys: []key{
+					{
+						Expression: &mathExprLiteral{
+							Path: &path{
+								Fields: []field{
+									{Name: "mapKey"},
+								},
+							},
+						},
+					},
+					{
+						String: ottltest.Strp("bar"),
+					},
+				},
+			},
+		},
+	}
+
+	reader, err := p.newParseContext().newGetter(val)
+	require.NoError(t, err)
+
+	got, err := reader.Get(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, "pass", got)
 }
 
 func Test_exprGetter_Get_Invalid(t *testing.T) {
@@ -935,6 +1143,133 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 			},
 			err: errors.New("type string does not support string indexing"),
 		},
+		{
+			name: "dynamic key not in pcommon map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "StrFoo",
+									},
+								},
+							},
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "StrFoo",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("key not found in map"),
+		},
+		{
+			name: "dynamic key invalid type for indexing",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "StrFoo",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("type string does not support string indexing"),
+		},
+		{
+			name: "dynamic key invalid index type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "IntZero",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("type string does not support int indexing"),
+		},
+		{
+			name: "malformed empty indexing key",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []key{
+							{},
+						},
+					},
+				},
+			},
+			err: errors.New("malformed or empty indexing key"),
+		},
+		{
+			name: "dynamic key expression returns nil",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "ReturnsNilKey",
+									},
+								},
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			err: errNilKeyExpressionResult,
+		},
+		{
+			name: "dynamic key expression returns invalid type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []key{
+							{
+								Expression: &mathExprLiteral{
+									Converter: &converter{
+										Function: "ReturnsBoolKey",
+									},
+								},
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("key expression must evaluate to string or int, got bool"),
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -943,6 +1278,10 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 		createFactory("Map", &struct{}{}, basicMap),
 		createFactory("PSlice", &struct{}{}, pslice),
 		createFactory("Slice", &struct{}{}, basicSlice),
+		createFactory("StrFoo", &struct{}{}, strFoo),
+		createFactory("IntZero", &struct{}{}, intZero),
+		createFactory("ReturnsNilKey", &struct{}{}, returnsNilKey),
+		createFactory("ReturnsBoolKey", &struct{}{}, returnsBoolKey),
 	)
 
 	p, _ := NewParser[any](
@@ -3407,6 +3746,135 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 			assert.Equal(t, s, val)
 		})
 	}
+}
+
+func Test_coerceToIndexKey(t *testing.T) {
+	strVal := "foo"
+	intVal := 3
+	int64Val := int64(4)
+
+	tests := []struct {
+		name    string
+		val     any
+		want    any
+		wantErr error
+	}{
+		{
+			name: "string",
+			val:  "foo",
+			want: "foo",
+		},
+		{
+			name: "int64",
+			val:  int64Val,
+			want: int64Val,
+		},
+		{
+			name: "int",
+			val:  intVal,
+			want: int64(3),
+		},
+		{
+			name: "string pointer",
+			val:  &strVal,
+			want: "foo",
+		},
+		{
+			name: "int pointer",
+			val:  &intVal,
+			want: int64(3),
+		},
+		{
+			name: "int64 pointer",
+			val:  &int64Val,
+			want: int64(4),
+		},
+		{
+			name:    "nil string pointer",
+			val:     (*string)(nil),
+			wantErr: errNilKeyExpressionResult,
+		},
+		{
+			name:    "nil int pointer",
+			val:     (*int)(nil),
+			wantErr: errNilKeyExpressionResult,
+		},
+		{
+			name:    "nil int64 pointer",
+			val:     (*int64)(nil),
+			wantErr: errNilKeyExpressionResult,
+		},
+		{
+			name: "pcommon string",
+			val:  pcommon.NewValueStr("bar"),
+			want: "bar",
+		},
+		{
+			name: "pcommon int",
+			val:  pcommon.NewValueInt(5),
+			want: int64(5),
+		},
+		{
+			name:    "pcommon bool",
+			val:     pcommon.NewValueBool(true),
+			wantErr: errors.New("key expression must evaluate to string or int, got Bool"),
+		},
+		{
+			name:    "unsupported type",
+			val:     true,
+			wantErr: errors.New("key expression must evaluate to string or int, got bool"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := coerceToIndexKey(tt.val)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, err)
+				assert.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_resolveExpressionIndexKey(t *testing.T) {
+	ctx := t.Context()
+
+	t.Run("malformed or empty indexing key", func(t *testing.T) {
+		_, err := resolveExpressionIndexKey(ctx, nil, &baseKey[any]{})
+		require.Error(t, err)
+		assert.Equal(t, errors.New("malformed or empty indexing key"), err)
+	})
+
+	t.Run("nil key expression result", func(t *testing.T) {
+		key := &baseKey[any]{
+			g: &StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+				Setter: func(_ context.Context, _, _ any) error {
+					return nil
+				},
+			},
+		}
+		_, err := resolveExpressionIndexKey(ctx, nil, key)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errNilKeyExpressionResult)
+	})
+
+	t.Run("typed nil string pointer in interface", func(t *testing.T) {
+		var s *string
+		key := &baseKey[any]{
+			g: newLiteral[any, any](s),
+		}
+		_, err := resolveExpressionIndexKey(ctx, nil, key)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errNilKeyExpressionResult)
+	})
 }
 
 type errLiteral[K any] struct {

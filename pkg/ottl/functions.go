@@ -153,7 +153,7 @@ func (p *Parser[K]) buildPathContextNamesText(path string) string {
 
 	i := 0
 	for ctx := range p.pathContextNames {
-		builder.WriteString(fmt.Sprintf(`"%s%s"`, ctx, suffix))
+		fmt.Fprintf(&builder, `"%s%s"`, ctx, suffix)
 		if i != len(p.pathContextNames)-1 {
 			builder.WriteString(", ")
 		}

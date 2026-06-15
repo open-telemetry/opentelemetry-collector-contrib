@@ -84,12 +84,14 @@ func getIndexedValue[K any](ctx context.Context, tCtx K, val any, keys []Key[K])
 	if len(keys) == 0 {
 		return val, nil
 	}
+
 	result := val
 	for _, k := range keys {
 		rawKeyVal, err := resolveIndexKey[K](ctx, tCtx, k)
 		if err != nil {
 			return nil, err
 		}
+
 		switch keyVal := rawKeyVal.(type) {
 		case string:
 			switch r := result.(type) {
@@ -163,49 +165,75 @@ func getElementByIndex[T any](r []T, idx int64) (any, error) {
 }
 
 func resolveIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
-	if v, err := key.String(ctx, tCtx); err == nil && v != nil {
-		return *v, nil
-	}
-	if v, err := key.Int(ctx, tCtx); err == nil && v != nil {
-		return *v, nil
+	if strKey, err := key.String(ctx, tCtx); err != nil {
+		return nil, err
+	} else if strKey != nil {
+		return *strKey, nil
 	}
 
+	if intKey, err := key.Int(ctx, tCtx); err != nil {
+		return nil, err
+	} else if intKey != nil {
+		return *intKey, nil
+	}
+
+	return resolveExpressionIndexKey(ctx, tCtx, key)
+}
+
+var errNilKeyExpressionResult = errors.New("key expression returned nil, expected an int or string")
+
+func resolveExpressionIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
 	keyGetter, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
 	if keyGetter == nil {
-		return nil, errors.New("key expression returned nil, expected a getter")
+		return nil, errors.New("malformed or empty indexing key")
 	}
+
 	evalKey, err := keyGetter.Get(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
 	if evalKey == nil {
-		return nil, errors.New("key expression returned nil, expected an int or string")
+		return nil, errNilKeyExpressionResult
 	}
 
-	switch typedRes := evalKey.(type) {
+	return coerceToIndexKey(evalKey)
+}
+
+func coerceToIndexKey(val any) (any, error) {
+	switch v := val.(type) {
 	case string, int64:
-		return typedRes, nil
+		return v, nil
 	case int:
-		return int64(typedRes), nil
+		return int64(v), nil
 	case *string:
-		return *typedRes, nil
-	case *int:
-		return int64(*typedRes), nil
-	case *int64:
-		return *typedRes, nil
-	case pcommon.Value:
-		if typedRes.Type() == pcommon.ValueTypeStr {
-			return typedRes.Str(), nil
+		if v == nil {
+			return nil, errNilKeyExpressionResult
 		}
-		if typedRes.Type() == pcommon.ValueTypeInt {
-			return typedRes.Int(), nil
+		return *v, nil
+	case *int:
+		if v == nil {
+			return nil, errNilKeyExpressionResult
+		}
+		return int64(*v), nil
+	case *int64:
+		if v == nil {
+			return nil, errNilKeyExpressionResult
+		}
+		return *v, nil
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeStr:
+			return v.Str(), nil
+		case pcommon.ValueTypeInt:
+			return v.Int(), nil
+		default:
+			return nil, fmt.Errorf("key expression must evaluate to string or int, got %s", v.Type().String())
 		}
 	}
-
-	return nil, fmt.Errorf("key expression must evaluate to string or int, got %T", evalKey)
+	return nil, fmt.Errorf("key expression must evaluate to string or int, got %T", val)
 }
 
 type listGetter[K any] struct {
