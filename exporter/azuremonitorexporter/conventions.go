@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
@@ -230,9 +231,9 @@ type rpcAttributes struct {
 // MapAttribute attempts to map a Span attribute to one of the known types
 func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case "rpc.system":
+	case string(conventionsv138.RPCSystemKey):
 		attrs.RPCSystem = v.Str()
-	case "rpc.service":
+	case string(conventionsv138.RPCSystemKey):
 		attrs.RPCService = v.Str()
 	case string(conventions.RPCMethodKey):
 		attrs.RPCMethod = v.Str()
