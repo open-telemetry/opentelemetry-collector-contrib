@@ -130,7 +130,7 @@ func TestEnrichResourceSkipsNilMetadata(t *testing.T) {
 
 	_, hasCluster := res.Attributes().Get("aws.ecs.cluster")
 	require.False(t, hasCluster, "nil managed-label value must be skipped, not stringified")
-	v, ok := res.Attributes().Get("docker.id")
+	v, ok := res.Attributes().Get("container.id")
 	require.True(t, ok)
 	require.Equal(t, "abc", v.AsString())
 }

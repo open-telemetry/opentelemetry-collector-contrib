@@ -20,10 +20,10 @@ func TestMetadataFlattenEmptyLabels(t *testing.T) {
 	// A document with nil Labels must not panic and must still emit the base keys.
 	md := containerMetadata{DockerID: "abc", Image: "img:latest"}
 	flat := md.flat()
-	require.Equal(t, "abc", flat["docker.id"])
-	require.Equal(t, "img:latest", flat["image"])
-	// No labels means no labels.* keys.
+	require.Equal(t, "abc", flat["container.id"])
+	require.Equal(t, "img:latest", flat["container.image.name"])
+	// No labels means no container.label.* keys.
 	for k := range flat {
-		require.NotContains(t, k, "labels.")
+		require.NotContains(t, k, "container.label.")
 	}
 }

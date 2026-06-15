@@ -74,25 +74,30 @@ The processor can attach the following resource attributes. By default (when
 `attributes` is omitted) all of them are collected; otherwise only the keys
 matching the configured `attributes` regex patterns are kept.
 
-| Attribute                         | Description                                                              |
-|-----------------------------------|--------------------------------------------------------------------------|
-| `aws.ecs.cluster`                 | The ECS cluster name                                                      |
-| `aws.ecs.container.arn`           | The ECS container instance ARN                                           |
-| `aws.ecs.container.name`          | The container name assigned by the ECS Agent                            |
-| `aws.ecs.task.arn`                | The ECS task ARN                                                         |
-| `aws.ecs.task.definition.family`  | The ECS task definition family                                          |
-| `aws.ecs.task.definition.version` | The ECS task definition version                                         |
-| `aws.ecs.task.known.status`       | The lifecycle state of the container                                    |
-| `image`                           | The container image                                                      |
-| `image.id`                        | The container image ID                                                   |
-| `docker.id`                       | The Docker container ID                                                  |
-| `docker.name`                     | The Docker container name (as shown by `docker ps`)                     |
-| `name`                            | The container name (same as `aws.ecs.container.name`)                   |
-| `limits.cpu` / `limits.memory`    | The CPU and memory limits of the container                             |
-| `created.at` / `started.at`       | Container creation and start timestamps                                 |
-| `desired.status` / `type`         | The desired status and type of the container                           |
-| `networks.*`                      | The network mode(s) and IPv4 address(es) of the container              |
-| `ports.*`                         | The published container ports                                           |
+Where an OpenTelemetry [semantic convention](https://opentelemetry.io/docs/specs/semconv/registry/attributes/)
+exists for an attribute it is used; ECS-specific values that have no convention
+keep an `aws.ecs.*` (or legacy) key.
+
+| Attribute                      | Description                                                              |
+|--------------------------------|--------------------------------------------------------------------------|
+| `container.id`                 | The container (Docker) ID                                                |
+| `container.name`               | The container name                                                       |
+| `container.image.name`         | The container image name                                                 |
+| `container.image.id`           | The container image ID                                                   |
+| `container.label.*`            | User-defined (non-ECS) container labels                                 |
+| `aws.ecs.container.arn`        | The ECS container instance ARN                                          |
+| `aws.ecs.task.arn`             | The ECS task ARN                                                         |
+| `aws.ecs.task.family`          | The ECS task definition family                                          |
+| `aws.ecs.task.revision`        | The ECS task definition revision (version)                              |
+| `aws.ecs.cluster`              | The ECS cluster name                                                     |
+| `aws.ecs.container.name`       | The container name assigned by the ECS Agent                            |
+| `aws.ecs.task.known.status`    | The lifecycle state of the container                                    |
+| `docker.name`                  | The Docker container name (as shown by `docker ps`)                     |
+| `limits.cpu` / `limits.memory` | The CPU and memory limits of the container                             |
+| `created.at` / `started.at`    | Container creation and start timestamps                                 |
+| `desired.status` / `type`      | The desired status and type of the container                           |
+| `networks.*`                   | The network mode(s) and IPv4 address(es) of the container              |
+| `ports.*`                      | The published container ports                                           |
 | `volumes.*`                       | The container volume mounts                                             |
 | `labels.*`                        | User-defined (non-ECS) Docker labels                                    |
 
@@ -125,6 +130,6 @@ processors:
     # collect attributes whose keys match these patterns
     attributes:
       - '^aws.ecs.*'
-      - '^docker.*'
+      - '^container.*'
     cache_ttl: 300
 ```

@@ -23,7 +23,8 @@ func TestConsumeMetrics(t *testing.T) {
 	require.NoError(t, p.ConsumeMetrics(t.Context(), md))
 
 	attrs := md.ResourceMetrics().At(0).Resource().Attributes()
-	require.Equal(t, len(expectedFlattenedMetadata)+1, attrs.Len())
+	// container.id source is overwritten by the enriched container.id.
+	require.Equal(t, len(expectedFlattenedMetadata), attrs.Len())
 	v, ok := attrs.Get("aws.ecs.cluster")
 	require.True(t, ok)
 	require.Equal(t, "cds-305", v.AsString())

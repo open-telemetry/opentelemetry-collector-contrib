@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"regexp"
 	"time"
+
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // containerMetadata is the container metadata document returned by the ECS task
@@ -68,22 +70,25 @@ func (m *containerMetadata) flat() map[string]any {
 		labels = make(map[string]any)
 	}
 
-	flattened["aws.ecs.container.arn"] = m.ContainerARN
-	flattened["aws.ecs.task.known.status"] = m.KnownStatus
+	// Attributes that map to OpenTelemetry semantic conventions.
+	flattened[string(conventions.AWSECSContainerARNKey)] = m.ContainerARN
+	flattened[string(conventions.AWSECSTaskARNKey)] = labels["com.amazonaws.ecs.task-arn"]
+	flattened[string(conventions.AWSECSTaskFamilyKey)] = labels["com.amazonaws.ecs.task-definition-family"]
+	flattened[string(conventions.AWSECSTaskRevisionKey)] = labels["com.amazonaws.ecs.task-definition-version"]
+	flattened[string(conventions.ContainerIDKey)] = m.DockerID
+	flattened[string(conventions.ContainerNameKey)] = m.Name
+	flattened[string(conventions.ContainerImageNameKey)] = m.Image
+	flattened[string(conventions.ContainerImageIDKey)] = m.ImageID
+
+	// ECS-specific attributes that have no semantic-convention equivalent.
 	flattened["aws.ecs.cluster"] = labels["com.amazonaws.ecs.cluster"]
 	flattened["aws.ecs.container.name"] = labels["com.amazonaws.ecs.container-name"]
-	flattened["aws.ecs.task.arn"] = labels["com.amazonaws.ecs.task-arn"]
-	flattened["aws.ecs.task.definition.family"] = labels["com.amazonaws.ecs.task-definition-family"]
-	flattened["aws.ecs.task.definition.version"] = labels["com.amazonaws.ecs.task-definition-version"]
+	flattened["aws.ecs.task.known.status"] = m.KnownStatus
 	flattened["created.at"] = m.CreatedAt.Format(time.RFC3339Nano)
 	flattened["desired.status"] = m.DesiredStatus
-	flattened["docker.id"] = m.DockerID
 	flattened["docker.name"] = m.DockerName
-	flattened["image"] = m.Image
-	flattened["image.id"] = m.ImageID
 	flattened["limits.cpu"] = m.Limits.CPU
 	flattened["limits.memory"] = m.Limits.Memory
-	flattened["name"] = m.Name
 	flattened["started.at"] = m.StartedAt.Format(time.RFC3339Nano)
 	flattened["type"] = m.Type
 
@@ -109,10 +114,10 @@ func (m *containerMetadata) flat() map[string]any {
 		flattened[fmt.Sprintf("volumes.%d.source", i)] = vol.Source
 	}
 
-	// add user-defined (non-ECS) labels
+	// add user-defined (non-ECS) labels under the container.label.* namespace
 	for key, value := range labels {
 		if !ecsLabelsRe.MatchString(key) {
-			flattened[fmt.Sprintf("labels.%s", key)] = value
+			flattened[fmt.Sprintf("container.label.%s", key)] = value
 		}
 	}
 

@@ -29,10 +29,12 @@ func TestConsumeLogs(t *testing.T) {
 		wantVal  string
 	}{
 		{
-			name:     "collect all attributes by default",
-			cfg:      &Config{CacheTTL: 60, ContainerID: ContainerID{Sources: []string{"container.id"}}},
-			record:   logsWith("container.id", testContainerID),
-			wantLen:  len(expectedFlattenedMetadata) + 1, // + container.id
+			name:   "collect all attributes by default",
+			cfg:    &Config{CacheTTL: 60, ContainerID: ContainerID{Sources: []string{"container.id"}}},
+			record: logsWith("container.id", testContainerID),
+			// The source attribute is container.id, which the enriched container.id
+			// (mapped from the Docker ID) overwrites rather than adds.
+			wantLen:  len(expectedFlattenedMetadata),
 			wantAttr: "aws.ecs.cluster",
 			wantVal:  "cds-305",
 		},
@@ -48,8 +50,8 @@ func TestConsumeLogs(t *testing.T) {
 			name:     "container id read from log.file.name with suffix",
 			cfg:      &Config{CacheTTL: 60, ContainerID: ContainerID{Sources: []string{"log.file.name"}}},
 			record:   logsWith("log.file.name", testContainerID+"-json.log"),
-			wantLen:  len(expectedFlattenedMetadata) + 1,
-			wantAttr: "image",
+			wantLen:  len(expectedFlattenedMetadata) + 1, // + log.file.name source
+			wantAttr: "container.image.name",
 			wantVal:  "gcr.io/cadvisor/cadvisor:latest",
 		},
 	}
