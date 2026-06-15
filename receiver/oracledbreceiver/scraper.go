@@ -82,7 +82,7 @@ const (
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
 
-	// Redo log v$sysstat names (PR4a)
+	// Redo log v$sysstat names
 	redoWriteTime           = "redo write time"
 	redoWriterLatchingTime  = "redo writer latching time"
 	redoLogSpaceWaitTime    = "redo log space wait time"
@@ -326,8 +326,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoWrites.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoBlocksWritten.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoBlocks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoBufferAllocationRetries.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoLogSpaceRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoLogSwitchInterrupts.Enabled
@@ -536,7 +536,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			// Redo log v$sysstat statistics (PR4a)
+			// Redo log v$sysstat statistics
 			case redoWriteTime:
 				if err := s.recordRedoTime(now, row["VALUE"], metadata.AttributeOracledbRedoKindWrite); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
@@ -558,11 +558,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoWrites:
-				if err := s.mb.RecordOracledbRedoWritesDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoBlocksWritten:
-				if err := s.mb.RecordOracledbRedoBlocksWrittenDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoBlocksDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoBufferAllocRetries:

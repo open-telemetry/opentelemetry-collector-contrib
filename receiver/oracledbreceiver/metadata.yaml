@@ -825,7 +825,7 @@ metrics:
     gauge:
       value_type: double
     unit: By
-  oracledb.redo.blocks_written:
+  oracledb.redo.blocks:
     description: Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
     enabled: false
     stability: development
@@ -865,6 +865,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{interrupts}"
+  oracledb.redo.operations:
+    description: Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
   oracledb.redo.size:
     description: Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
     enabled: false
@@ -885,16 +895,6 @@ metrics:
       value_type: double
     unit: s
     attributes: [oracledb.redo.kind]
-  oracledb.redo.writes:
-    description: Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{writes}"
   oracledb.redo_allocation.utilization:
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false

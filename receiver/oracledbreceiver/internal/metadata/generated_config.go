@@ -1063,13 +1063,13 @@ func (ms *OracledbRecycleBinLimitMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// OracledbRedoBlocksWrittenMetricConfig provides config for the oracledb.redo.blocks_written metric.
-type OracledbRedoBlocksWrittenMetricConfig struct {
+// OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric.
+type OracledbRedoBlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbRedoBlocksWrittenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbRedoBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1130,6 +1130,26 @@ type OracledbRedoLogSwitchInterruptsMetricConfig struct {
 }
 
 func (ms *OracledbRedoLogSwitchInterruptsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric.
+type OracledbRedoOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbRedoOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1208,26 +1228,6 @@ func (ms *OracledbRedoTimeMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	return nil
-}
-
-// OracledbRedoWritesMetricConfig provides config for the oracledb.redo.writes metric.
-type OracledbRedoWritesMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRedoWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1722,13 +1722,13 @@ type MetricsConfig struct {
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
-	OracledbRedoBlocksWritten                     OracledbRedoBlocksWrittenMetricConfig                     `mapstructure:"oracledb.redo.blocks_written"`
+	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
 	OracledbRedoBufferAllocationRetries           OracledbRedoBufferAllocationRetriesMetricConfig           `mapstructure:"oracledb.redo.buffer_allocation.retries"`
 	OracledbRedoLogSpaceRequests                  OracledbRedoLogSpaceRequestsMetricConfig                  `mapstructure:"oracledb.redo.log_space.requests"`
 	OracledbRedoLogSwitchInterrupts               OracledbRedoLogSwitchInterruptsMetricConfig               `mapstructure:"oracledb.redo.log_switch.interrupts"`
+	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
 	OracledbRedoSize                              OracledbRedoSizeMetricConfig                              `mapstructure:"oracledb.redo.size"`
 	OracledbRedoTime                              OracledbRedoTimeMetricConfig                              `mapstructure:"oracledb.redo.time"`
-	OracledbRedoWrites                            OracledbRedoWritesMetricConfig                            `mapstructure:"oracledb.redo.writes"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
@@ -1897,7 +1897,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
-		OracledbRedoBlocksWritten: OracledbRedoBlocksWrittenMetricConfig{
+		OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
 			Enabled: false,
 		},
 		OracledbRedoBufferAllocationRetries: OracledbRedoBufferAllocationRetriesMetricConfig{
@@ -1909,6 +1909,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbRedoLogSwitchInterrupts: OracledbRedoLogSwitchInterruptsMetricConfig{
 			Enabled: false,
 		},
+		OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
+			Enabled: false,
+		},
 		OracledbRedoSize: OracledbRedoSizeMetricConfig{
 			Enabled: false,
 		},
@@ -1916,9 +1919,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoKind},
-		},
-		OracledbRedoWrites: OracledbRedoWritesMetricConfig{
-			Enabled: false,
 		},
 		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
 			Enabled: false,

@@ -507,7 +507,7 @@ Total size of the recycle bin.
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
 
-### oracledb.redo.blocks_written
+### oracledb.redo.blocks
 
 Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
 
@@ -539,6 +539,14 @@ Number of times a redo log switch was interrupted (v$sysstat 'redo log switch in
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {interrupts} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.redo.operations
+
+Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.redo.size
 
 Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
@@ -560,14 +568,6 @@ Cumulative time, in seconds, spent in each phase of the redo pipeline (converted
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.redo.kind | The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, latching = redo allocation/copy latch waits, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit). | Str: ``write``, ``latching``, ``log_space_wait``, ``synch`` | Recommended | - |
-
-### oracledb.redo.writes
-
-Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {writes} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.redo_allocation.utilization
 

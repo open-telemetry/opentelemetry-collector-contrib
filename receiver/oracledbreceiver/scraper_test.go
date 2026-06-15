@@ -74,7 +74,7 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
-		// PR4a: redo log v$sysstat rows (redo time values are in centiseconds)
+		// Redo log v$sysstat rows (redo time values are in centiseconds)
 		{"NAME": redoWriteTime, "VALUE": "1500"},
 		{"NAME": redoWriterLatchingTime, "VALUE": "300"},
 		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
@@ -415,8 +415,8 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbRedoTime.Enabled = true
 	cfg.Metrics.OracledbRedoSize.Enabled = true
-	cfg.Metrics.OracledbRedoWrites.Enabled = true
-	cfg.Metrics.OracledbRedoBlocksWritten.Enabled = true
+	cfg.Metrics.OracledbRedoOperations.Enabled = true
+	cfg.Metrics.OracledbRedoBlocks.Enabled = true
 	cfg.Metrics.OracledbRedoBufferAllocationRetries.Enabled = true
 	cfg.Metrics.OracledbRedoLogSpaceRequests.Enabled = true
 	cfg.Metrics.OracledbRedoLogSwitchInterrupts.Enabled = true
@@ -475,8 +475,8 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 
 	// Standalone redo counters pass v$sysstat VALUE straight through.
 	assert.Equal(t, int64(104857600), intVals["oracledb.redo.size"][""])
-	assert.Equal(t, int64(45000), intVals["oracledb.redo.writes"][""])
-	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks_written"][""])
+	assert.Equal(t, int64(45000), intVals["oracledb.redo.operations"][""])
+	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks"][""])
 	assert.Equal(t, int64(12), intVals["oracledb.redo.buffer_allocation.retries"][""])
 	assert.Equal(t, int64(34), intVals["oracledb.redo.log_space.requests"][""])
 	assert.Equal(t, int64(5), intVals["oracledb.redo.log_switch.interrupts"][""])

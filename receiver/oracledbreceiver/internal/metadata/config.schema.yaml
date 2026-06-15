@@ -313,8 +313,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.redo.blocks_written:
-        description: "OracledbRedoBlocksWrittenMetricConfig provides config for the oracledb.redo.blocks_written metric."
+      oracledb.redo.blocks:
+        description: "OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric."
         type: object
         properties:
           enabled:
@@ -341,6 +341,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.redo.operations:
+        description: "OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.redo.size:
         description: "OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric."
         type: object
@@ -350,13 +357,6 @@ $defs:
             default: false
       oracledb.redo.time:
         description: "OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.redo.writes:
-        description: "OracledbRedoWritesMetricConfig provides config for the oracledb.redo.writes metric."
         type: object
         properties:
           enabled:
