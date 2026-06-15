@@ -56,6 +56,10 @@ attributes:
   client.port:
     description: TCP port used by the client.
     type: int
+  cpu.mode:
+    description: The mode in which the CPU time was consumed, as accounted by Oracle.
+    type: string
+    enum: [system, user]
   db.namespace:
     description: The database name.
     type: string
@@ -167,17 +171,9 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
-  oracledb.java.heap.state:
-    description: Which portion of the in-database JVM call heap the measurement reports (live, total, or used).
-    type: string
-    enum: [live, total, used]
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
-  oracledb.os.cpu.state:
-    description: Whether the OS CPU time was consumed in system (kernel) or user mode, as accounted by Oracle. Mirrors the semconv system.cpu.state value set.
-    type: string
-    enum: [system, user]
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
@@ -570,10 +566,24 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.java.heap.usage:
-    attributes:
-      - oracledb.java.heap.state
-    description: Size of Oracle's in-database JVM (OJVM) call heap in bytes. Sourced from v$sysstat names java call heap live size (oracledb.java.heap.state=live), java call heap total size (oracledb.java.heap.state=total), and java call heap used size (oracledb.java.heap.state=used).
+  oracledb.java.heap.committed:
+    description: Total size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Parallels semconv jvm.memory.committed.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.java.heap.live:
+    description: Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.java.heap.used:
+    description: Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Parallels semconv jvm.memory.used.
     enabled: false
     stability: development
     gauge:
@@ -609,8 +619,8 @@ metrics:
     unit: "{operation}"
   oracledb.os.cpu.time:
     attributes:
-      - oracledb.os.cpu.state
-    description: Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (oracledb.os.cpu.state=system) and OS User time used (oracledb.os.cpu.state=user).
+      - cpu.mode
+    description: Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user).
     enabled: false
     stability: development
     sum:
@@ -816,14 +826,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{writes}"
-  oracledb.process.last_non_idle.time:
-    description: Epoch time in seconds at which the process was last active (non-idle), as reported by Oracle. Sourced from v$sysstat name process last non-idle time.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: s
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
@@ -864,7 +866,15 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.session.non_idle.time:
+  oracledb.session.stored_procedure.usage:
+    description: Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.session.wait.time:
     description: Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.
     enabled: false
     stability: development
@@ -873,7 +883,7 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
-  oracledb.session.non_idle.waits:
+  oracledb.session.waits:
     description: Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.
     enabled: false
     stability: development
@@ -883,14 +893,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{waits}"
-  oracledb.session.stored_procedure.usage:
-    description: Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: By
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true

@@ -44,9 +44,12 @@ all_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.java.heap.usage:
+    oracledb.java.heap.committed:
       enabled: true
-      attributes: ["oracledb.java.heap.state"]
+    oracledb.java.heap.live:
+      enabled: true
+    oracledb.java.heap.used:
+      enabled: true
     oracledb.library_cache.utilization:
       enabled: true
     oracledb.logical_reads:
@@ -55,7 +58,7 @@ all_set:
       enabled: true
     oracledb.os.cpu.time:
       enabled: true
-      attributes: ["oracledb.os.cpu.state"]
+      attributes: ["cpu.mode"]
     oracledb.os.swaps:
       enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
@@ -99,8 +102,6 @@ all_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
-    oracledb.process.last_non_idle.time:
-      enabled: true
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -111,11 +112,11 @@ all_set:
       enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
-    oracledb.session.non_idle.time:
-      enabled: true
-    oracledb.session.non_idle.waits:
-      enabled: true
     oracledb.session.stored_procedure.usage:
+      enabled: true
+    oracledb.session.wait.time:
+      enabled: true
+    oracledb.session.waits:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -219,9 +220,12 @@ reaggregate_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.java.heap.usage:
+    oracledb.java.heap.committed:
       enabled: true
-      attributes: []
+    oracledb.java.heap.live:
+      enabled: true
+    oracledb.java.heap.used:
+      enabled: true
     oracledb.library_cache.utilization:
       enabled: true
     oracledb.logical_reads:
@@ -274,8 +278,6 @@ reaggregate_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
-    oracledb.process.last_non_idle.time:
-      enabled: true
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -286,11 +288,11 @@ reaggregate_set:
       enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
-    oracledb.session.non_idle.time:
-      enabled: true
-    oracledb.session.non_idle.waits:
-      enabled: true
     oracledb.session.stored_procedure.usage:
+      enabled: true
+    oracledb.session.wait.time:
+      enabled: true
+    oracledb.session.waits:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -394,9 +396,12 @@ none_set:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
-    oracledb.java.heap.usage:
+    oracledb.java.heap.committed:
       enabled: false
-      attributes: ["oracledb.java.heap.state"]
+    oracledb.java.heap.live:
+      enabled: false
+    oracledb.java.heap.used:
+      enabled: false
     oracledb.library_cache.utilization:
       enabled: false
     oracledb.logical_reads:
@@ -405,7 +410,7 @@ none_set:
       enabled: false
     oracledb.os.cpu.time:
       enabled: false
-      attributes: ["oracledb.os.cpu.state"]
+      attributes: ["cpu.mode"]
     oracledb.os.swaps:
       enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
@@ -449,8 +454,6 @@ none_set:
       enabled: false
     oracledb.physical_writes_direct:
       enabled: false
-    oracledb.process.last_non_idle.time:
-      enabled: false
     oracledb.processes.limit:
       enabled: false
     oracledb.processes.usage:
@@ -461,11 +464,11 @@ none_set:
       enabled: false
     oracledb.redo_allocation.utilization:
       enabled: false
-    oracledb.session.non_idle.time:
-      enabled: false
-    oracledb.session.non_idle.waits:
-      enabled: false
     oracledb.session.stored_procedure.usage:
+      enabled: false
+    oracledb.session.wait.time:
+      enabled: false
+    oracledb.session.waits:
       enabled: false
     oracledb.sessions.limit:
       enabled: false

@@ -116,6 +116,27 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.java.heap.committed:
+        description: "OracledbJavaHeapCommittedMetricConfig provides config for the oracledb.java.heap.committed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.java.heap.live:
+        description: "OracledbJavaHeapLiveMetricConfig provides config for the oracledb.java.heap.live metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.java.heap.used:
+        description: "OracledbJavaHeapUsedMetricConfig provides config for the oracledb.java.heap.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -125,6 +146,20 @@ $defs:
             default: true
       oracledb.logons:
         description: "OracledbLogonsMetricConfig provides config for the oracledb.logons metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.os.cpu.time:
+        description: "OracledbOsCPUTimeMetricConfig provides config for the oracledb.os.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.os.swaps:
+        description: "OracledbOsSwapsMetricConfig provides config for the oracledb.os.swaps metric."
         type: object
         properties:
           enabled:
@@ -308,6 +343,27 @@ $defs:
             default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.stored_procedure.usage:
+        description: "OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.wait.time:
+        description: "OracledbSessionWaitTimeMetricConfig provides config for the oracledb.session.wait.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.waits:
+        description: "OracledbSessionWaitsMetricConfig provides config for the oracledb.session.waits metric."
         type: object
         properties:
           enabled:

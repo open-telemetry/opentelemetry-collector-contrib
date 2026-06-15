@@ -457,23 +457,13 @@ func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// OracledbJavaHeapUsageMetricAttributeKey specifies the key of an attribute for the oracledb.java.heap.usage metric.
-type OracledbJavaHeapUsageMetricAttributeKey string
-
-const (
-	OracledbJavaHeapUsageMetricAttributeKeyOracledbJavaHeapState OracledbJavaHeapUsageMetricAttributeKey = "oracledb.java.heap.state"
-)
-
-// OracledbJavaHeapUsageMetricConfig provides config for the oracledb.java.heap.usage metric.
-type OracledbJavaHeapUsageMetricConfig struct {
+// OracledbJavaHeapCommittedMetricConfig provides config for the oracledb.java.heap.committed metric.
+type OracledbJavaHeapCommittedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbJavaHeapUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbJavaHeapUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbJavaHeapCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -487,21 +477,43 @@ func (ms *OracledbJavaHeapUsageMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *OracledbJavaHeapUsageMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbJavaHeapUsageMetricAttributeKeyOracledbJavaHeapState:
-		default:
-			return fmt.Errorf("metric oracledb.java.heap.usage doesn't have an attribute %v, valid attributes: [oracledb.java.heap.state]", val)
-		}
+// OracledbJavaHeapLiveMetricConfig provides config for the oracledb.java.heap.live metric.
+type OracledbJavaHeapLiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJavaHeapLiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
 	}
 
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJavaHeapUsedMetricConfig provides config for the oracledb.java.heap.used metric.
+type OracledbJavaHeapUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJavaHeapUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -569,7 +581,7 @@ func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 type OracledbOsCPUTimeMetricAttributeKey string
 
 const (
-	OracledbOsCPUTimeMetricAttributeKeyOracledbOsCPUState OracledbOsCPUTimeMetricAttributeKey = "oracledb.os.cpu.state"
+	OracledbOsCPUTimeMetricAttributeKeyCPUMode OracledbOsCPUTimeMetricAttributeKey = "cpu.mode"
 )
 
 // OracledbOsCPUTimeMetricConfig provides config for the oracledb.os.cpu.time metric.
@@ -598,9 +610,9 @@ func (ms *OracledbOsCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbOsCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbOsCPUTimeMetricAttributeKeyOracledbOsCPUState:
+		case OracledbOsCPUTimeMetricAttributeKeyCPUMode:
 		default:
-			return fmt.Errorf("metric oracledb.os.cpu.time doesn't have an attribute %v, valid attributes: [oracledb.os.cpu.state]", val)
+			return fmt.Errorf("metric oracledb.os.cpu.time doesn't have an attribute %v, valid attributes: [cpu.mode]", val)
 		}
 	}
 
@@ -1099,26 +1111,6 @@ func (ms *OracledbPhysicalWritesDirectMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// OracledbProcessLastNonIdleTimeMetricConfig provides config for the oracledb.process.last_non_idle.time metric.
-type OracledbProcessLastNonIdleTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbProcessLastNonIdleTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbProcessesLimitMetricConfig provides config for the oracledb.processes.limit metric.
 type OracledbProcessesLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1219,46 +1211,6 @@ func (ms *OracledbRedoAllocationUtilizationMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// OracledbSessionNonIdleTimeMetricConfig provides config for the oracledb.session.non_idle.time metric.
-type OracledbSessionNonIdleTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbSessionNonIdleTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// OracledbSessionNonIdleWaitsMetricConfig provides config for the oracledb.session.non_idle.waits metric.
-type OracledbSessionNonIdleWaitsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbSessionNonIdleWaitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric.
 type OracledbSessionStoredProcedureUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1266,6 +1218,46 @@ type OracledbSessionStoredProcedureUsageMetricConfig struct {
 }
 
 func (ms *OracledbSessionStoredProcedureUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSessionWaitTimeMetricConfig provides config for the oracledb.session.wait.time metric.
+type OracledbSessionWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSessionWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSessionWaitsMetricConfig provides config for the oracledb.session.waits metric.
+type OracledbSessionWaitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSessionWaitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1724,7 +1716,9 @@ type MetricsConfig struct {
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
-	OracledbJavaHeapUsage                         OracledbJavaHeapUsageMetricConfig                         `mapstructure:"oracledb.java.heap.usage"`
+	OracledbJavaHeapCommitted                     OracledbJavaHeapCommittedMetricConfig                     `mapstructure:"oracledb.java.heap.committed"`
+	OracledbJavaHeapLive                          OracledbJavaHeapLiveMetricConfig                          `mapstructure:"oracledb.java.heap.live"`
+	OracledbJavaHeapUsed                          OracledbJavaHeapUsedMetricConfig                          `mapstructure:"oracledb.java.heap.used"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
@@ -1749,15 +1743,14 @@ type MetricsConfig struct {
 	OracledbPhysicalWriteIoRequests               OracledbPhysicalWriteIoRequestsMetricConfig               `mapstructure:"oracledb.physical_write_io_requests"`
 	OracledbPhysicalWrites                        OracledbPhysicalWritesMetricConfig                        `mapstructure:"oracledb.physical_writes"`
 	OracledbPhysicalWritesDirect                  OracledbPhysicalWritesDirectMetricConfig                  `mapstructure:"oracledb.physical_writes_direct"`
-	OracledbProcessLastNonIdleTime                OracledbProcessLastNonIdleTimeMetricConfig                `mapstructure:"oracledb.process.last_non_idle.time"`
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
-	OracledbSessionNonIdleTime                    OracledbSessionNonIdleTimeMetricConfig                    `mapstructure:"oracledb.session.non_idle.time"`
-	OracledbSessionNonIdleWaits                   OracledbSessionNonIdleWaitsMetricConfig                   `mapstructure:"oracledb.session.non_idle.waits"`
 	OracledbSessionStoredProcedureUsage           OracledbSessionStoredProcedureUsageMetricConfig           `mapstructure:"oracledb.session.stored_procedure.usage"`
+	OracledbSessionWaitTime                       OracledbSessionWaitTimeMetricConfig                       `mapstructure:"oracledb.session.wait.time"`
+	OracledbSessionWaits                          OracledbSessionWaitsMetricConfig                          `mapstructure:"oracledb.session.waits"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
@@ -1841,10 +1834,14 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbJavaHeapUsage: OracledbJavaHeapUsageMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbJavaHeapUsageMetricAttributeKey{OracledbJavaHeapUsageMetricAttributeKeyOracledbJavaHeapState},
+		OracledbJavaHeapCommitted: OracledbJavaHeapCommittedMetricConfig{
+			Enabled: false,
+		},
+		OracledbJavaHeapLive: OracledbJavaHeapLiveMetricConfig{
+			Enabled: false,
+		},
+		OracledbJavaHeapUsed: OracledbJavaHeapUsedMetricConfig{
+			Enabled: false,
 		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
 			Enabled: false,
@@ -1858,7 +1855,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbOsCPUTime: OracledbOsCPUTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbOsCPUTimeMetricAttributeKey{OracledbOsCPUTimeMetricAttributeKeyOracledbOsCPUState},
+			EnabledAttributes:   []OracledbOsCPUTimeMetricAttributeKey{OracledbOsCPUTimeMetricAttributeKeyCPUMode},
 		},
 		OracledbOsSwaps: OracledbOsSwapsMetricConfig{
 			Enabled: false,
@@ -1926,9 +1923,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectMetricConfig{
 			Enabled: false,
 		},
-		OracledbProcessLastNonIdleTime: OracledbProcessLastNonIdleTimeMetricConfig{
-			Enabled: false,
-		},
 		OracledbProcessesLimit: OracledbProcessesLimitMetricConfig{
 			Enabled: true,
 		},
@@ -1944,13 +1938,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbSessionNonIdleTime: OracledbSessionNonIdleTimeMetricConfig{
-			Enabled: false,
-		},
-		OracledbSessionNonIdleWaits: OracledbSessionNonIdleWaitsMetricConfig{
-			Enabled: false,
-		},
 		OracledbSessionStoredProcedureUsage: OracledbSessionStoredProcedureUsageMetricConfig{
+			Enabled: false,
+		},
+		OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{
+			Enabled: false,
+		},
+		OracledbSessionWaits: OracledbSessionWaitsMetricConfig{
 			Enabled: false,
 		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{

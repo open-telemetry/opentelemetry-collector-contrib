@@ -73,11 +73,10 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
-		// PR5b: Session, JVM & OS Resources v$sysstat rows
+		// Session, JVM & OS resource v$sysstat rows
 		{"NAME": sessionNonIdleWaitCount, "VALUE": "98765"},
 		{"NAME": sessionNonIdleWaitTime, "VALUE": "4500"}, // cs -> 45 s
 		{"NAME": sessionStoredProcedureSpace, "VALUE": "262144"},
-		{"NAME": processLastNonIdleTime, "VALUE": "1718409600"},
 		{"NAME": javaCallHeapLiveSize, "VALUE": "1048576"},
 		{"NAME": javaCallHeapTotalSize, "VALUE": "4194304"},
 		{"NAME": javaCallHeapUsedSize, "VALUE": "2097152"},
@@ -410,11 +409,12 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 
 func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbSessionNonIdleWaits.Enabled = true
-	cfg.Metrics.OracledbSessionNonIdleTime.Enabled = true
+	cfg.Metrics.OracledbSessionWaits.Enabled = true
+	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
 	cfg.Metrics.OracledbSessionStoredProcedureUsage.Enabled = true
-	cfg.Metrics.OracledbProcessLastNonIdleTime.Enabled = true
-	cfg.Metrics.OracledbJavaHeapUsage.Enabled = true
+	cfg.Metrics.OracledbJavaHeapUsed.Enabled = true
+	cfg.Metrics.OracledbJavaHeapCommitted.Enabled = true
+	cfg.Metrics.OracledbJavaHeapLive.Enabled = true
 	cfg.Metrics.OracledbOsCPUTime.Enabled = true
 	cfg.Metrics.OracledbOsSwaps.Enabled = true
 
@@ -438,15 +438,14 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 
 	got := collectNumberDataPoints(m)
 
-	assert.InDelta(t, float64(98765), got["oracledb.session.non_idle.waits"][""], 1e-9)
-	assert.InDelta(t, 45.0, got["oracledb.session.non_idle.time"][""], 1e-9)
+	assert.InDelta(t, float64(98765), got["oracledb.session.waits"][""], 1e-9)
+	assert.InDelta(t, 45.0, got["oracledb.session.wait.time"][""], 1e-9)
 	assert.InDelta(t, float64(262144), got["oracledb.session.stored_procedure.usage"][""], 1e-9)
-	assert.InDelta(t, float64(1718409600), got["oracledb.process.last_non_idle.time"][""], 1e-9)
-	assert.InDelta(t, float64(1048576), got["oracledb.java.heap.usage"]["oracledb.java.heap.state=live"], 1e-9)
-	assert.InDelta(t, float64(4194304), got["oracledb.java.heap.usage"]["oracledb.java.heap.state=total"], 1e-9)
-	assert.InDelta(t, float64(2097152), got["oracledb.java.heap.usage"]["oracledb.java.heap.state=used"], 1e-9)
-	assert.InDelta(t, 9.0, got["oracledb.os.cpu.time"]["oracledb.os.cpu.state=system"], 1e-9)
-	assert.InDelta(t, 33.0, got["oracledb.os.cpu.time"]["oracledb.os.cpu.state=user"], 1e-9)
+	assert.InDelta(t, float64(1048576), got["oracledb.java.heap.live"][""], 1e-9)
+	assert.InDelta(t, float64(4194304), got["oracledb.java.heap.committed"][""], 1e-9)
+	assert.InDelta(t, float64(2097152), got["oracledb.java.heap.used"][""], 1e-9)
+	assert.InDelta(t, 9.0, got["oracledb.os.cpu.time"]["cpu.mode=system"], 1e-9)
+	assert.InDelta(t, 33.0, got["oracledb.os.cpu.time"]["cpu.mode=user"], 1e-9)
 	assert.InDelta(t, float64(17), got["oracledb.os.swaps"][""], 1e-9)
 }
 
