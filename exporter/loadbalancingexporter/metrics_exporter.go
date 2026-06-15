@@ -127,10 +127,9 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 	// Now assign each batch to an exporter, and merge as we go
 	metricsByExporter := map[*wrappedExporter]pmetric.Metrics{}
-	exporterEndpoints := map[*wrappedExporter]string{}
 
 	for routingID, mds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
 			return err
 		}
@@ -140,27 +139,56 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			exp.consumeWG.Add(1)
 			expMetrics = pmetric.NewMetrics()
 			metricsByExporter[exp] = expMetrics
-			exporterEndpoints[exp] = endpoint
 		}
 
 		metrics.Merge(expMetrics, mds)
 	}
 
-	var errs error
-	for exp, mds := range metricsByExporter {
-		start := time.Now()
-		err := exp.ConsumeMetrics(ctx, mds)
-		duration := time.Since(start)
+	type metricConsumeResult struct {
+		exp      *wrappedExporter
+		mds      pmetric.Metrics
+		err      error
+		duration time.Duration
+	}
 
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	results := make(chan metricConsumeResult, len(metricsByExporter))
+	for exp, mds := range metricsByExporter {
+		go func(exp *wrappedExporter, mds pmetric.Metrics) {
+			start := time.Now()
+			err := exp.ConsumeMetrics(ctx, mds)
+			duration := time.Since(start)
+			exp.consumeWG.Done()
+			results <- metricConsumeResult{
+				exp:      exp,
+				mds:      mds,
+				err:      err,
+				duration: duration,
+			}
+		}(exp, mds)
+	}
+
+	var errs error
+	var failedMetrics *pmetric.Metrics
+
+	for range metricsByExporter {
+		res := <-results
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, res.duration.Milliseconds(), metric.WithAttributeSet(res.exp.endpointAttr))
+		if res.err == nil {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(res.exp.successAttr))
 		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export metrics", zap.Error(err))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(res.exp.failureAttr))
+			e.logger.Debug("failed to export metrics", zap.Error(res.err))
+			if failedMetrics == nil {
+				metrics := pmetric.NewMetrics()
+				failedMetrics = &metrics
+			}
+			failedMetricsFromError(res.err, res.mds).ResourceMetrics().MoveAndAppendTo(failedMetrics.ResourceMetrics())
+			errs = multierr.Append(errs, res.err)
 		}
+	}
+
+	if errs != nil && failedMetrics != nil && failedMetrics.MetricCount() > 0 {
+		return consumererror.NewMetrics(errs, *failedMetrics)
 	}
 
 	return errs
