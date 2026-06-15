@@ -319,6 +319,14 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.gc.current_block.receive.time
+
+Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.host.cpu.utilization
 
 Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
@@ -334,6 +342,28 @@ Fraction of library cache pin requests that found the object already cached, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.lock.time
+
+Cumulative time spent on transaction lock activity, in seconds (converted from centiseconds). Sourced from v$sysstat names transaction lock background get time (oracledb.lock.kind=background) and transaction lock foreground wait time (oracledb.lock.kind=foreground).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.lock.kind | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
+
+### oracledb.lock.wait.time
+
+Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### oracledb.logons
 
@@ -499,6 +529,14 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.recovery.blocks_read
+
+Number of blocks read during instance or media recovery. Sourced from v$sysstat name recovery blocks read.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {blocks} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.recycle_bin.limit
 
 Total size of the recycle bin.
@@ -522,6 +560,22 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.smon.instance_recovery.posts
+
+Number of times SMON was posted to perform instance recovery. Sourced from v$sysstat name SMON posted for instance recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {posts} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.smon.txn_recovery.posts
+
+Number of times SMON was posted to perform transaction recovery for other instances. Sourced from v$sysstat name SMON posted for txn recovery for other instances.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {posts} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.sort.ratio
 
@@ -575,6 +629,14 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### oracledb.transaction.rollbacks
+
+Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rollbacks} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

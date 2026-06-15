@@ -73,6 +73,15 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// PR5a: Transactions, Locks & Recovery v$sysstat rows
+		{"NAME": transactionRollbacks, "VALUE": "4521"},
+		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
+		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s
+		{"NAME": totalLockTime, "VALUE": "2500"},                 // cs -> 25 s
+		{"NAME": recoveryBlocksRead, "VALUE": "8800"},
+		{"NAME": smonInstanceRecoveryPosts, "VALUE": "12"},
+		{"NAME": smonTxnRecoveryPosts, "VALUE": "7"},
+		{"NAME": gcCurrentBlockReceiveTime, "VALUE": "640"}, // cs -> 6.4 s
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -395,6 +404,84 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
 	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
+func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
+	cfg.Metrics.OracledbLockTime.Enabled = true
+	cfg.Metrics.OracledbLockWaitTime.Enabled = true
+	cfg.Metrics.OracledbRecoveryBlocksRead.Enabled = true
+	cfg.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled = true
+	cfg.Metrics.OracledbSmonTxnRecoveryPosts.Enabled = true
+	cfg.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	got := collectNumberDataPoints(m)
+
+	assert.InDelta(t, float64(4521), got["oracledb.transaction.rollbacks"][""], 1e-9)
+	assert.InDelta(t, 3.5, got["oracledb.lock.time"]["oracledb.lock.kind=background"], 1e-9)
+	assert.InDelta(t, 12.0, got["oracledb.lock.time"]["oracledb.lock.kind=foreground"], 1e-9)
+	assert.InDelta(t, 25.0, got["oracledb.lock.wait.time"][""], 1e-9)
+	assert.InDelta(t, float64(8800), got["oracledb.recovery.blocks_read"][""], 1e-9)
+	assert.InDelta(t, float64(12), got["oracledb.smon.instance_recovery.posts"][""], 1e-9)
+	assert.InDelta(t, float64(7), got["oracledb.smon.txn_recovery.posts"][""], 1e-9)
+	assert.InDelta(t, 6.4, got["oracledb.gc.current_block.receive.time"][""], 1e-9)
+}
+
+// collectNumberDataPoints flattens all Sum and Gauge metrics from a scrape into
+// metricName -> sorted-attribute-signature -> numeric value (doubles preserved).
+func collectNumberDataPoints(m pmetric.Metrics) map[string]map[string]float64 {
+	got := map[string]map[string]float64{}
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		var dps pmetric.NumberDataPointSlice
+		switch me.Type() {
+		case pmetric.MetricTypeSum:
+			dps = me.Sum().DataPoints()
+		case pmetric.MetricTypeGauge:
+			dps = me.Gauge().DataPoints()
+		default:
+			continue
+		}
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			var keys []string
+			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+				keys = append(keys, k+"="+v.AsString())
+				return true
+			})
+			sort.Strings(keys)
+			sig := strings.Join(keys, ",")
+			if _, ok := got[me.Name()]; !ok {
+				got[me.Name()] = map[string]float64{}
+			}
+			if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
+				got[me.Name()][sig] = dp.DoubleValue()
+			} else {
+				got[me.Name()][sig] = float64(dp.IntValue())
+			}
+		}
+	}
+	return got
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

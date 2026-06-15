@@ -40,11 +40,18 @@ all_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: true
+    oracledb.gc.current_block.receive.time:
+      enabled: true
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
     oracledb.library_cache.utilization:
+      enabled: true
+    oracledb.lock.time:
+      enabled: true
+      attributes: ["oracledb.lock.kind"]
+    oracledb.lock.wait.time:
       enabled: true
     oracledb.logical_reads:
       enabled: true
@@ -97,6 +104,8 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recovery.blocks_read:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo_allocation.utilization:
@@ -107,6 +116,10 @@ all_set:
       enabled: true
       attributes: ["session_type","session_status"]
     oracledb.shared_pool.utilization:
+      enabled: true
+    oracledb.smon.instance_recovery.posts:
+      enabled: true
+    oracledb.smon.txn_recovery.posts:
       enabled: true
     oracledb.sort.ratio:
       enabled: true
@@ -126,6 +139,8 @@ all_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: ["tablespace_name"]
+    oracledb.transaction.rollbacks:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -199,11 +214,18 @@ reaggregate_set:
       attributes: []
     oracledb.executions:
       enabled: true
+    oracledb.gc.current_block.receive.time:
+      enabled: true
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
     oracledb.library_cache.utilization:
+      enabled: true
+    oracledb.lock.time:
+      enabled: true
+      attributes: []
+    oracledb.lock.wait.time:
       enabled: true
     oracledb.logical_reads:
       enabled: true
@@ -256,6 +278,8 @@ reaggregate_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recovery.blocks_read:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo_allocation.utilization:
@@ -266,6 +290,10 @@ reaggregate_set:
       enabled: true
       attributes: []
     oracledb.shared_pool.utilization:
+      enabled: true
+    oracledb.smon.instance_recovery.posts:
+      enabled: true
+    oracledb.smon.txn_recovery.posts:
       enabled: true
     oracledb.sort.ratio:
       enabled: true
@@ -285,6 +313,8 @@ reaggregate_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: []
+    oracledb.transaction.rollbacks:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -358,11 +388,18 @@ none_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: false
+    oracledb.gc.current_block.receive.time:
+      enabled: false
     oracledb.hard_parses:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
     oracledb.library_cache.utilization:
+      enabled: false
+    oracledb.lock.time:
+      enabled: false
+      attributes: ["oracledb.lock.kind"]
+    oracledb.lock.wait.time:
       enabled: false
     oracledb.logical_reads:
       enabled: false
@@ -415,6 +452,8 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
+    oracledb.recovery.blocks_read:
+      enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
     oracledb.redo_allocation.utilization:
@@ -425,6 +464,10 @@ none_set:
       enabled: false
       attributes: ["session_type","session_status"]
     oracledb.shared_pool.utilization:
+      enabled: false
+    oracledb.smon.instance_recovery.posts:
+      enabled: false
+    oracledb.smon.txn_recovery.posts:
       enabled: false
     oracledb.sort.ratio:
       enabled: false
@@ -444,6 +487,8 @@ none_set:
     oracledb.tablespace_size.usage:
       enabled: false
       attributes: ["tablespace_name"]
+    oracledb.transaction.rollbacks:
+      enabled: false
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:

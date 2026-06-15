@@ -417,6 +417,26 @@ func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// OracledbGcCurrentBlockReceiveTimeMetricConfig provides config for the oracledb.gc.current_block.receive.time metric.
+type OracledbGcCurrentBlockReceiveTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbGcCurrentBlockReceiveTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric.
 type OracledbHardParsesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -464,6 +484,74 @@ type OracledbLibraryCacheUtilizationMetricConfig struct {
 }
 
 func (ms *OracledbLibraryCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbLockTimeMetricAttributeKey specifies the key of an attribute for the oracledb.lock.time metric.
+type OracledbLockTimeMetricAttributeKey string
+
+const (
+	OracledbLockTimeMetricAttributeKeyOracledbLockKind OracledbLockTimeMetricAttributeKey = "oracledb.lock.kind"
+)
+
+// OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric.
+type OracledbLockTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbLockTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbLockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbLockTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbLockTimeMetricAttributeKeyOracledbLockKind:
+		default:
+			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.lock.kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbLockWaitTimeMetricConfig provides config for the oracledb.lock.wait.time metric.
+type OracledbLockWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbLockWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1043,6 +1131,26 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
+// OracledbRecoveryBlocksReadMetricConfig provides config for the oracledb.recovery.blocks_read metric.
+type OracledbRecoveryBlocksReadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbRecoveryBlocksReadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric.
 type OracledbRecycleBinLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1159,6 +1267,46 @@ type OracledbSharedPoolUtilizationMetricConfig struct {
 }
 
 func (ms *OracledbSharedPoolUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSmonInstanceRecoveryPostsMetricConfig provides config for the oracledb.smon.instance_recovery.posts metric.
+type OracledbSmonInstanceRecoveryPostsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSmonInstanceRecoveryPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSmonTxnRecoveryPostsMetricConfig provides config for the oracledb.smon.txn_recovery.posts metric.
+type OracledbSmonTxnRecoveryPostsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSmonTxnRecoveryPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1425,6 +1573,26 @@ func (ms *OracledbTablespaceSizeUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric.
+type OracledbTransactionRollbacksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbTransactionRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric.
 type OracledbTransactionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1526,9 +1694,12 @@ type MetricsConfig struct {
 	OracledbExchangeDeadlocks                     OracledbExchangeDeadlocksMetricConfig                     `mapstructure:"oracledb.exchange_deadlocks"`
 	OracledbExecutionUtilization                  OracledbExecutionUtilizationMetricConfig                  `mapstructure:"oracledb.execution.utilization"`
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
+	OracledbGcCurrentBlockReceiveTime             OracledbGcCurrentBlockReceiveTimeMetricConfig             `mapstructure:"oracledb.gc.current_block.receive.time"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
+	OracledbLockTime                              OracledbLockTimeMetricConfig                              `mapstructure:"oracledb.lock.time"`
+	OracledbLockWaitTime                          OracledbLockWaitTimeMetricConfig                          `mapstructure:"oracledb.lock.wait.time"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
@@ -1553,11 +1724,14 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
+	OracledbRecoveryBlocksRead                    OracledbRecoveryBlocksReadMetricConfig                    `mapstructure:"oracledb.recovery.blocks_read"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
+	OracledbSmonInstanceRecoveryPosts             OracledbSmonInstanceRecoveryPostsMetricConfig             `mapstructure:"oracledb.smon.instance_recovery.posts"`
+	OracledbSmonTxnRecoveryPosts                  OracledbSmonTxnRecoveryPostsMetricConfig                  `mapstructure:"oracledb.smon.txn_recovery.posts"`
 	OracledbSortRatio                             OracledbSortRatioMetricConfig                             `mapstructure:"oracledb.sort.ratio"`
 	OracledbSQLServiceResponseDuration            OracledbSQLServiceResponseDurationMetricConfig            `mapstructure:"oracledb.sql_service.response.duration"`
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
@@ -1565,6 +1739,7 @@ type MetricsConfig struct {
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionRollbacks                  OracledbTransactionRollbacksMetricConfig                  `mapstructure:"oracledb.transaction.rollbacks"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
 	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
 	OracledbUserCommits                           OracledbUserCommitsMetricConfig                           `mapstructure:"oracledb.user_commits"`
@@ -1632,6 +1807,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbExecutions: OracledbExecutionsMetricConfig{
 			Enabled: true,
 		},
+		OracledbGcCurrentBlockReceiveTime: OracledbGcCurrentBlockReceiveTimeMetricConfig{
+			Enabled: false,
+		},
 		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,
 		},
@@ -1639,6 +1817,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbLockTime: OracledbLockTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockKind},
+		},
+		OracledbLockWaitTime: OracledbLockWaitTimeMetricConfig{
 			Enabled: false,
 		},
 		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
@@ -1719,6 +1905,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
+		OracledbRecoveryBlocksRead: OracledbRecoveryBlocksReadMetricConfig{
+			Enabled: false,
+		},
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
@@ -1734,6 +1923,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbSmonInstanceRecoveryPosts: OracledbSmonInstanceRecoveryPostsMetricConfig{
+			Enabled: false,
+		},
+		OracledbSmonTxnRecoveryPosts: OracledbSmonTxnRecoveryPostsMetricConfig{
 			Enabled: false,
 		},
 		OracledbSortRatio: OracledbSortRatioMetricConfig{
@@ -1764,6 +1959,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
+		},
+		OracledbTransactionRollbacks: OracledbTransactionRollbacksMetricConfig{
+			Enabled: false,
 		},
 		OracledbTransactionsLimit: OracledbTransactionsLimitMetricConfig{
 			Enabled: true,

@@ -96,6 +96,16 @@ const (
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
+	// PR5a: Transactions, Locks & Recovery v$sysstat names
+	transactionRollbacks          = "transaction rollbacks"
+	transactionLockBackgroundTime = "transaction lock background get time"
+	transactionLockForegroundTime = "transaction lock foreground wait time"
+	totalLockTime                 = "Total Lock Time"
+	recoveryBlocksRead            = "recovery blocks read"
+	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
+	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
+	gcCurrentBlockReceiveTime     = "gc current block receive time"
+
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = `
@@ -308,7 +318,14 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoCacheWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLockWaitTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocksRead.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonTxnRecoveryPosts.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -513,6 +530,55 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			case sqlnetBytesSentToDBLink:
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
+				}
+			// PR5a: Transactions, Locks & Recovery
+			case transactionRollbacks:
+				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case transactionLockBackgroundTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockKindBackground)
+				}
+			case transactionLockForegroundTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockKindForeground)
+				}
+			case totalLockTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", totalLockTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbLockWaitTimeDataPoint(now, value/100)
+				}
+			case recoveryBlocksRead:
+				if err := s.mb.RecordOracledbRecoveryBlocksReadDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonInstanceRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonInstanceRecoveryPostsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonTxnRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonTxnRecoveryPostsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case gcCurrentBlockReceiveTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbGcCurrentBlockReceiveTimeDataPoint(now, value/100)
 				}
 			}
 		}

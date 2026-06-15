@@ -109,6 +109,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.gc.current_block.receive.time:
+        description: "OracledbGcCurrentBlockReceiveTimeMetricConfig provides config for the oracledb.gc.current_block.receive.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.hard_parses:
         description: "OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric."
         type: object
@@ -116,6 +123,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.lock.time:
+        description: "OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.lock.wait.time:
+        description: "OracledbLockWaitTimeMetricConfig provides config for the oracledb.lock.wait.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -306,6 +327,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recovery.blocks_read:
+        description: "OracledbRecoveryBlocksReadMetricConfig provides config for the oracledb.recovery.blocks_read metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -345,6 +373,20 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.smon.instance_recovery.posts:
+        description: "OracledbSmonInstanceRecoveryPostsMetricConfig provides config for the oracledb.smon.instance_recovery.posts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.smon.txn_recovery.posts:
+        description: "OracledbSmonTxnRecoveryPostsMetricConfig provides config for the oracledb.smon.txn_recovery.posts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sqlnet.io.transferred:
         description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
         type: object
@@ -430,6 +472,13 @@ $defs:
                 - "tablespace_name"
             default:
               - "tablespace_name"
+      oracledb.transaction.rollbacks:
+        description: "OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.transactions.limit:
         description: "OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric."
         type: object

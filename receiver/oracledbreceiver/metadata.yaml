@@ -167,6 +167,10 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
+  oracledb.lock.kind:
+    description: Whether the lock timing is accumulated by background (get) or foreground (wait) sessions.
+    type: string
+    enum: [background, foreground]
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
@@ -545,6 +549,15 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.gc.current_block.receive.time:
+    description: Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.hard_parses:
     description: Number of hard parses
     enabled: true
@@ -569,6 +582,26 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.lock.time:
+    attributes:
+      - oracledb.lock.kind
+    description: Cumulative time spent on transaction lock activity, in seconds (converted from centiseconds). Sourced from v$sysstat names transaction lock background get time (oracledb.lock.kind=background) and transaction lock foreground wait time (oracledb.lock.kind=foreground).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+  oracledb.lock.wait.time:
+    description: Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
@@ -803,6 +836,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recovery.blocks_read:
+    description: Number of blocks read during instance or media recovery. Sourced from v$sysstat name recovery blocks read.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{blocks}"
   oracledb.recycle_bin.limit:
     description: Total size of the recycle bin.
     enabled: false
@@ -843,6 +886,26 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.smon.instance_recovery.posts:
+    description: Number of times SMON was posted to perform instance recovery. Sourced from v$sysstat name SMON posted for instance recovery.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{posts}"
+  oracledb.smon.txn_recovery.posts:
+    description: Number of times SMON was posted to perform transaction recovery for other instances. Sourced from v$sysstat name SMON posted for txn recovery for other instances.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{posts}"
   oracledb.sort.ratio:
     attributes:
       - oracledb.sort.type
@@ -902,6 +965,16 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  oracledb.transaction.rollbacks:
+    description: Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{rollbacks}"
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true
