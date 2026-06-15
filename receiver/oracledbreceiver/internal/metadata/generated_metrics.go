@@ -196,6 +196,40 @@ var MapAttributeOracledbParseType = map[string]AttributeOracledbParseType{
 	"soft": AttributeOracledbParseTypeSoft,
 }
 
+// AttributeOracledbRedoKind specifies the value oracledb.redo.kind attribute.
+type AttributeOracledbRedoKind int
+
+const (
+	_ AttributeOracledbRedoKind = iota
+	AttributeOracledbRedoKindWrite
+	AttributeOracledbRedoKindLatching
+	AttributeOracledbRedoKindLogSpaceWait
+	AttributeOracledbRedoKindSynch
+)
+
+// String returns the string representation of the AttributeOracledbRedoKind.
+func (av AttributeOracledbRedoKind) String() string {
+	switch av {
+	case AttributeOracledbRedoKindWrite:
+		return "write"
+	case AttributeOracledbRedoKindLatching:
+		return "latching"
+	case AttributeOracledbRedoKindLogSpaceWait:
+		return "log_space_wait"
+	case AttributeOracledbRedoKindSynch:
+		return "synch"
+	}
+	return ""
+}
+
+// MapAttributeOracledbRedoKind is a helper map of string to AttributeOracledbRedoKind attribute value.
+var MapAttributeOracledbRedoKind = map[string]AttributeOracledbRedoKind{
+	"write":          AttributeOracledbRedoKindWrite,
+	"latching":       AttributeOracledbRedoKindLatching,
+	"log_space_wait": AttributeOracledbRedoKindLogSpaceWait,
+	"synch":          AttributeOracledbRedoKindSynch,
+}
+
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
 type AttributeOracledbSortType int
 
@@ -364,6 +398,27 @@ var MetricsInfo = metricsInfo{
 	OracledbRecycleBinLimit: metricInfo{
 		Name: "oracledb.recycle_bin.limit",
 	},
+	OracledbRedoBlocksWritten: metricInfo{
+		Name: "oracledb.redo.blocks_written",
+	},
+	OracledbRedoBufferAllocationRetries: metricInfo{
+		Name: "oracledb.redo.buffer_allocation.retries",
+	},
+	OracledbRedoLogSpaceRequests: metricInfo{
+		Name: "oracledb.redo.log_space.requests",
+	},
+	OracledbRedoLogSwitchInterrupts: metricInfo{
+		Name: "oracledb.redo.log_switch.interrupts",
+	},
+	OracledbRedoSize: metricInfo{
+		Name: "oracledb.redo.size",
+	},
+	OracledbRedoTime: metricInfo{
+		Name: "oracledb.redo.time",
+	},
+	OracledbRedoWrites: metricInfo{
+		Name: "oracledb.redo.writes",
+	},
 	OracledbRedoAllocationUtilization: metricInfo{
 		Name: "oracledb.redo_allocation.utilization",
 	},
@@ -464,6 +519,13 @@ type metricsInfo struct {
 	OracledbProcessesUsage                        metricInfo
 	OracledbQueriesParallelized                   metricInfo
 	OracledbRecycleBinLimit                       metricInfo
+	OracledbRedoBlocksWritten                     metricInfo
+	OracledbRedoBufferAllocationRetries           metricInfo
+	OracledbRedoLogSpaceRequests                  metricInfo
+	OracledbRedoLogSwitchInterrupts               metricInfo
+	OracledbRedoSize                              metricInfo
+	OracledbRedoTime                              metricInfo
+	OracledbRedoWrites                            metricInfo
 	OracledbRedoAllocationUtilization             metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
@@ -3056,6 +3118,409 @@ func newMetricOracledbRecycleBinLimit(cfg OracledbRecycleBinLimitMetricConfig) m
 	return m
 }
 
+type metricOracledbRedoBlocksWritten struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbRedoBlocksWrittenMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.blocks_written metric with initial data.
+func (m *metricOracledbRedoBlocksWritten) init() {
+	m.data.SetName("oracledb.redo.blocks_written")
+	m.data.SetDescription("Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').")
+	m.data.SetUnit("{blocks}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoBlocksWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoBlocksWritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoBlocksWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoBlocksWritten(cfg OracledbRedoBlocksWrittenMetricConfig) metricOracledbRedoBlocksWritten {
+	m := metricOracledbRedoBlocksWritten{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoBufferAllocationRetries struct {
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   OracledbRedoBufferAllocationRetriesMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.buffer_allocation.retries metric with initial data.
+func (m *metricOracledbRedoBufferAllocationRetries) init() {
+	m.data.SetName("oracledb.redo.buffer_allocation.retries")
+	m.data.SetDescription("Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.")
+	m.data.SetUnit("{retries}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoBufferAllocationRetries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoBufferAllocationRetries) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoBufferAllocationRetries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoBufferAllocationRetries(cfg OracledbRedoBufferAllocationRetriesMetricConfig) metricOracledbRedoBufferAllocationRetries {
+	m := metricOracledbRedoBufferAllocationRetries{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoLogSpaceRequests struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   OracledbRedoLogSpaceRequestsMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.log_space.requests metric with initial data.
+func (m *metricOracledbRedoLogSpaceRequests) init() {
+	m.data.SetName("oracledb.redo.log_space.requests")
+	m.data.SetDescription("Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').")
+	m.data.SetUnit("{requests}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoLogSpaceRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoLogSpaceRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoLogSpaceRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoLogSpaceRequests(cfg OracledbRedoLogSpaceRequestsMetricConfig) metricOracledbRedoLogSpaceRequests {
+	m := metricOracledbRedoLogSpaceRequests{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoLogSwitchInterrupts struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   OracledbRedoLogSwitchInterruptsMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.log_switch.interrupts metric with initial data.
+func (m *metricOracledbRedoLogSwitchInterrupts) init() {
+	m.data.SetName("oracledb.redo.log_switch.interrupts")
+	m.data.SetDescription("Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').")
+	m.data.SetUnit("{interrupts}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoLogSwitchInterrupts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoLogSwitchInterrupts) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoLogSwitchInterrupts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoLogSwitchInterrupts(cfg OracledbRedoLogSwitchInterruptsMetricConfig) metricOracledbRedoLogSwitchInterrupts {
+	m := metricOracledbRedoLogSwitchInterrupts{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoSize struct {
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   OracledbRedoSizeMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.size metric with initial data.
+func (m *metricOracledbRedoSize) init() {
+	m.data.SetName("oracledb.redo.size")
+	m.data.SetDescription("Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoSize(cfg OracledbRedoSizeMetricConfig) metricOracledbRedoSize {
+	m := metricOracledbRedoSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoTime struct {
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        OracledbRedoTimeMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.redo.time metric with initial data.
+func (m *metricOracledbRedoTime) init() {
+	m.data.SetName("oracledb.redo.time")
+	m.data.SetDescription("Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbRedoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbRedoKindAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbRedoTimeMetricAttributeKeyOracledbRedoKind) {
+		dp.Attributes().PutStr("oracledb.redo.kind", oracledbRedoKindAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoTime(cfg OracledbRedoTimeMetricConfig) metricOracledbRedoTime {
+	m := metricOracledbRedoTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbRedoWrites struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   OracledbRedoWritesMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.redo.writes metric with initial data.
+func (m *metricOracledbRedoWrites) init() {
+	m.data.SetName("oracledb.redo.writes")
+	m.data.SetDescription("Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').")
+	m.data.SetUnit("{writes}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbRedoWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRedoWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRedoWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRedoWrites(cfg OracledbRedoWritesMetricConfig) metricOracledbRedoWrites {
+	m := metricOracledbRedoWrites{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbRedoAllocationUtilization struct {
 	data     pmetric.Metric                                // data buffer for generated metric.
 	config   OracledbRedoAllocationUtilizationMetricConfig // metric config provided by user.
@@ -4070,6 +4535,13 @@ type MetricsBuilder struct {
 	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
 	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
 	metricOracledbRecycleBinLimit                       metricOracledbRecycleBinLimit
+	metricOracledbRedoBlocksWritten                     metricOracledbRedoBlocksWritten
+	metricOracledbRedoBufferAllocationRetries           metricOracledbRedoBufferAllocationRetries
+	metricOracledbRedoLogSpaceRequests                  metricOracledbRedoLogSpaceRequests
+	metricOracledbRedoLogSwitchInterrupts               metricOracledbRedoLogSwitchInterrupts
+	metricOracledbRedoSize                              metricOracledbRedoSize
+	metricOracledbRedoTime                              metricOracledbRedoTime
+	metricOracledbRedoWrites                            metricOracledbRedoWrites
 	metricOracledbRedoAllocationUtilization             metricOracledbRedoAllocationUtilization
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
@@ -4157,6 +4629,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
 		metricOracledbRecycleBinLimit:                       newMetricOracledbRecycleBinLimit(mbc.Metrics.OracledbRecycleBinLimit),
+		metricOracledbRedoBlocksWritten:                     newMetricOracledbRedoBlocksWritten(mbc.Metrics.OracledbRedoBlocksWritten),
+		metricOracledbRedoBufferAllocationRetries:           newMetricOracledbRedoBufferAllocationRetries(mbc.Metrics.OracledbRedoBufferAllocationRetries),
+		metricOracledbRedoLogSpaceRequests:                  newMetricOracledbRedoLogSpaceRequests(mbc.Metrics.OracledbRedoLogSpaceRequests),
+		metricOracledbRedoLogSwitchInterrupts:               newMetricOracledbRedoLogSwitchInterrupts(mbc.Metrics.OracledbRedoLogSwitchInterrupts),
+		metricOracledbRedoSize:                              newMetricOracledbRedoSize(mbc.Metrics.OracledbRedoSize),
+		metricOracledbRedoTime:                              newMetricOracledbRedoTime(mbc.Metrics.OracledbRedoTime),
+		metricOracledbRedoWrites:                            newMetricOracledbRedoWrites(mbc.Metrics.OracledbRedoWrites),
 		metricOracledbRedoAllocationUtilization:             newMetricOracledbRedoAllocationUtilization(mbc.Metrics.OracledbRedoAllocationUtilization),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
@@ -4339,6 +4818,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
 	mb.metricOracledbRecycleBinLimit.emit(ils.Metrics())
+	mb.metricOracledbRedoBlocksWritten.emit(ils.Metrics())
+	mb.metricOracledbRedoBufferAllocationRetries.emit(ils.Metrics())
+	mb.metricOracledbRedoLogSpaceRequests.emit(ils.Metrics())
+	mb.metricOracledbRedoLogSwitchInterrupts.emit(ils.Metrics())
+	mb.metricOracledbRedoSize.emit(ils.Metrics())
+	mb.metricOracledbRedoTime.emit(ils.Metrics())
+	mb.metricOracledbRedoWrites.emit(ils.Metrics())
 	mb.metricOracledbRedoAllocationUtilization.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
@@ -4798,6 +5284,71 @@ func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.
 // RecordOracledbRecycleBinLimitDataPoint adds a data point to oracledb.recycle_bin.limit metric.
 func (mb *MetricsBuilder) RecordOracledbRecycleBinLimitDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbRecycleBinLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbRedoBlocksWrittenDataPoint adds a data point to oracledb.redo.blocks_written metric.
+func (mb *MetricsBuilder) RecordOracledbRedoBlocksWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoBlocksWritten, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoBlocksWritten.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbRedoBufferAllocationRetriesDataPoint adds a data point to oracledb.redo.buffer_allocation.retries metric.
+func (mb *MetricsBuilder) RecordOracledbRedoBufferAllocationRetriesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoBufferAllocationRetries, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoBufferAllocationRetries.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbRedoLogSpaceRequestsDataPoint adds a data point to oracledb.redo.log_space.requests metric.
+func (mb *MetricsBuilder) RecordOracledbRedoLogSpaceRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoLogSpaceRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoLogSpaceRequests.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbRedoLogSwitchInterruptsDataPoint adds a data point to oracledb.redo.log_switch.interrupts metric.
+func (mb *MetricsBuilder) RecordOracledbRedoLogSwitchInterruptsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoLogSwitchInterrupts, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoLogSwitchInterrupts.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbRedoSizeDataPoint adds a data point to oracledb.redo.size metric.
+func (mb *MetricsBuilder) RecordOracledbRedoSizeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoSize, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoSize.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbRedoTimeDataPoint adds a data point to oracledb.redo.time metric.
+func (mb *MetricsBuilder) RecordOracledbRedoTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbRedoKindAttributeValue AttributeOracledbRedoKind) {
+	mb.metricOracledbRedoTime.recordDataPoint(mb.startTime, ts, val, oracledbRedoKindAttributeValue.String())
+}
+
+// RecordOracledbRedoWritesDataPoint adds a data point to oracledb.redo.writes metric.
+func (mb *MetricsBuilder) RecordOracledbRedoWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbRedoWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbRedoWrites.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbRedoAllocationUtilizationDataPoint adds a data point to oracledb.redo_allocation.utilization metric.

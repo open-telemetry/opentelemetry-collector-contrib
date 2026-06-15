@@ -99,6 +99,21 @@ all_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo.blocks_written:
+      enabled: true
+    oracledb.redo.buffer_allocation.retries:
+      enabled: true
+    oracledb.redo.log_space.requests:
+      enabled: true
+    oracledb.redo.log_switch.interrupts:
+      enabled: true
+    oracledb.redo.size:
+      enabled: true
+    oracledb.redo.time:
+      enabled: true
+      attributes: ["oracledb.redo.kind"]
+    oracledb.redo.writes:
+      enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
     oracledb.sessions.limit:
@@ -258,6 +273,21 @@ reaggregate_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo.blocks_written:
+      enabled: true
+    oracledb.redo.buffer_allocation.retries:
+      enabled: true
+    oracledb.redo.log_space.requests:
+      enabled: true
+    oracledb.redo.log_switch.interrupts:
+      enabled: true
+    oracledb.redo.size:
+      enabled: true
+    oracledb.redo.time:
+      enabled: true
+      attributes: []
+    oracledb.redo.writes:
+      enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
     oracledb.sessions.limit:
@@ -416,6 +446,21 @@ none_set:
     oracledb.queries_parallelized:
       enabled: false
     oracledb.recycle_bin.limit:
+      enabled: false
+    oracledb.redo.blocks_written:
+      enabled: false
+    oracledb.redo.buffer_allocation.retries:
+      enabled: false
+    oracledb.redo.log_space.requests:
+      enabled: false
+    oracledb.redo.log_switch.interrupts:
+      enabled: false
+    oracledb.redo.size:
+      enabled: false
+    oracledb.redo.time:
+      enabled: false
+      attributes: ["oracledb.redo.kind"]
+    oracledb.redo.writes:
       enabled: false
     oracledb.redo_allocation.utilization:
       enabled: false

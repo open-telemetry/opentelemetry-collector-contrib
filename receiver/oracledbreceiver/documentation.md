@@ -507,6 +507,68 @@ Total size of the recycle bin.
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
 
+### oracledb.redo.blocks_written
+
+Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {blocks} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.buffer_allocation.retries
+
+Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {retries} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.log_space.requests
+
+Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.log_switch.interrupts
+
+Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {interrupts} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.size
+
+Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.time
+
+Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.kind | The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, latching = redo allocation/copy latch waits, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit). | Str: ``write``, ``latching``, ``log_space_wait``, ``synch`` | Recommended | - |
+
+### oracledb.redo.writes
+
+Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.redo_allocation.utilization
 
 Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).

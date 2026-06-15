@@ -74,6 +74,17 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// PR4a: redo log v$sysstat rows (redo time values are in centiseconds)
+		{"NAME": redoWriteTime, "VALUE": "1500"},
+		{"NAME": redoWriterLatchingTime, "VALUE": "300"},
+		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
+		{"NAME": redoSynchTime, "VALUE": "900"},
+		{"NAME": redoSize, "VALUE": "104857600"},
+		{"NAME": redoWrites, "VALUE": "45000"},
+		{"NAME": redoBlocksWritten, "VALUE": "210000"},
+		{"NAME": redoBufferAllocRetries, "VALUE": "12"},
+		{"NAME": redoLogSpaceRequests, "VALUE": "34"},
+		{"NAME": redoLogSwitchInterrupts, "VALUE": "5"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -396,6 +407,79 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
 	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
+func TestScraper_ScrapeRedoMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbRedoTime.Enabled = true
+	cfg.Metrics.OracledbRedoSize.Enabled = true
+	cfg.Metrics.OracledbRedoWrites.Enabled = true
+	cfg.Metrics.OracledbRedoBlocksWritten.Enabled = true
+	cfg.Metrics.OracledbRedoBufferAllocationRetries.Enabled = true
+	cfg.Metrics.OracledbRedoLogSpaceRequests.Enabled = true
+	cfg.Metrics.OracledbRedoLogSwitchInterrupts.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// metricName -> attrSignature -> data point (int and double accessors)
+	intVals := map[string]map[string]int64{}
+	doubleVals := map[string]map[string]float64{}
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			var keys []string
+			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+				keys = append(keys, k+"="+v.AsString())
+				return true
+			})
+			sort.Strings(keys)
+			sig := strings.Join(keys, ",")
+			if _, ok := intVals[me.Name()]; !ok {
+				intVals[me.Name()] = map[string]int64{}
+				doubleVals[me.Name()] = map[string]float64{}
+			}
+			intVals[me.Name()][sig] = dp.IntValue()
+			doubleVals[me.Name()][sig] = dp.DoubleValue()
+		}
+	}
+
+	// oracledb.redo.time: centiseconds converted to seconds (value / 100), one data point per redo.kind.
+	assert.InDelta(t, 15.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=write"], floatDelta)
+	assert.InDelta(t, 3.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=latching"], floatDelta)
+	assert.InDelta(t, 2.5, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=log_space_wait"], floatDelta)
+	assert.InDelta(t, 9.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=synch"], floatDelta)
+
+	// Standalone redo counters pass v$sysstat VALUE straight through.
+	assert.Equal(t, int64(104857600), intVals["oracledb.redo.size"][""])
+	assert.Equal(t, int64(45000), intVals["oracledb.redo.writes"][""])
+	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks_written"][""])
+	assert.Equal(t, int64(12), intVals["oracledb.redo.buffer_allocation.retries"][""])
+	assert.Equal(t, int64(34), intVals["oracledb.redo.log_space.requests"][""])
+	assert.Equal(t, int64(5), intVals["oracledb.redo.log_switch.interrupts"][""])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

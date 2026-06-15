@@ -235,6 +235,10 @@ attributes:
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+  oracledb.redo.kind:
+    description: The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, latching = redo allocation/copy latch waits, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit).
+    type: string
+    enum: [write, latching, log_space_wait, synch]
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
@@ -821,6 +825,76 @@ metrics:
     gauge:
       value_type: double
     unit: By
+  oracledb.redo.blocks_written:
+    description: Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{blocks}"
+  oracledb.redo.buffer_allocation.retries:
+    description: Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{retries}"
+  oracledb.redo.log_space.requests:
+    description: Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+  oracledb.redo.log_switch.interrupts:
+    description: Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{interrupts}"
+  oracledb.redo.size:
+    description: Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.redo.time:
+    description: Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+    attributes: [oracledb.redo.kind]
+  oracledb.redo.writes:
+    description: Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{writes}"
   oracledb.redo_allocation.utilization:
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false

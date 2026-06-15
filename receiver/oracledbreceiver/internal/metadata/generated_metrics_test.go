@@ -71,6 +71,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
+			aggMap["oracledb.redo.time"] = mb.metricOracledbRedoTime.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
 			aggMap["oracledb.sort.ratio"] = mb.metricOracledbSortRatio.config.AggregationStrategy
 			aggMap["oracledb.sqlnet.io.transferred"] = mb.metricOracledbSqlnetIoTransferred.config.AggregationStrategy
@@ -239,6 +240,30 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordOracledbRedoBlocksWrittenDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbRedoBufferAllocationRetriesDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbRedoLogSpaceRequestsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbRedoLogSwitchInterruptsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbRedoSizeDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbRedoTimeDataPoint(ts, 1, AttributeOracledbRedoKindWrite)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbRedoTimeDataPoint(ts, 3, AttributeOracledbRedoKindLatching)
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbRedoWritesDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
@@ -314,6 +339,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbRedoTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSortRatio.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSqlnetIoTransferred.aggDataPoints)
@@ -1094,6 +1120,134 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.redo.blocks_written":
+					assert.False(t, validatedMetrics["oracledb.redo.blocks_written"], "Found a duplicate in the metrics slice: oracledb.redo.blocks_written")
+					validatedMetrics["oracledb.redo.blocks_written"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').", mi.Description())
+					assert.Equal(t, "{blocks}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.redo.buffer_allocation.retries":
+					assert.False(t, validatedMetrics["oracledb.redo.buffer_allocation.retries"], "Found a duplicate in the metrics slice: oracledb.redo.buffer_allocation.retries")
+					validatedMetrics["oracledb.redo.buffer_allocation.retries"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.", mi.Description())
+					assert.Equal(t, "{retries}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.redo.log_space.requests":
+					assert.False(t, validatedMetrics["oracledb.redo.log_space.requests"], "Found a duplicate in the metrics slice: oracledb.redo.log_space.requests")
+					validatedMetrics["oracledb.redo.log_space.requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').", mi.Description())
+					assert.Equal(t, "{requests}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.redo.log_switch.interrupts":
+					assert.False(t, validatedMetrics["oracledb.redo.log_switch.interrupts"], "Found a duplicate in the metrics slice: oracledb.redo.log_switch.interrupts")
+					validatedMetrics["oracledb.redo.log_switch.interrupts"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').", mi.Description())
+					assert.Equal(t, "{interrupts}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.redo.size":
+					assert.False(t, validatedMetrics["oracledb.redo.size"], "Found a duplicate in the metrics slice: oracledb.redo.size")
+					validatedMetrics["oracledb.redo.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.redo.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.redo.time"], "Found a duplicate in the metrics slice: oracledb.redo.time")
+						validatedMetrics["oracledb.redo.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						oracledbRedoKindAttrVal, ok := dp.Attributes().Get("oracledb.redo.kind")
+						assert.True(t, ok)
+						assert.Equal(t, "write", oracledbRedoKindAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.redo.time"], "Found a duplicate in the metrics slice: oracledb.redo.time")
+						validatedMetrics["oracledb.redo.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["oracledb.redo.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("oracledb.redo.kind")
+						assert.False(t, ok)
+					}
+				case "oracledb.redo.writes":
+					assert.False(t, validatedMetrics["oracledb.redo.writes"], "Found a duplicate in the metrics slice: oracledb.redo.writes")
+					validatedMetrics["oracledb.redo.writes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of writes by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').", mi.Description())
+					assert.Equal(t, "{writes}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.redo_allocation.utilization":
 					assert.False(t, validatedMetrics["oracledb.redo_allocation.utilization"], "Found a duplicate in the metrics slice: oracledb.redo_allocation.utilization")
 					validatedMetrics["oracledb.redo_allocation.utilization"] = true

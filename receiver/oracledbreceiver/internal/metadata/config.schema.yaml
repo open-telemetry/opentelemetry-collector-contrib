@@ -313,6 +313,55 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.redo.blocks_written:
+        description: "OracledbRedoBlocksWrittenMetricConfig provides config for the oracledb.redo.blocks_written metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.buffer_allocation.retries:
+        description: "OracledbRedoBufferAllocationRetriesMetricConfig provides config for the oracledb.redo.buffer_allocation.retries metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.log_space.requests:
+        description: "OracledbRedoLogSpaceRequestsMetricConfig provides config for the oracledb.redo.log_space.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.log_switch.interrupts:
+        description: "OracledbRedoLogSwitchInterruptsMetricConfig provides config for the oracledb.redo.log_switch.interrupts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.size:
+        description: "OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.time:
+        description: "OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.writes:
+        description: "OracledbRedoWritesMetricConfig provides config for the oracledb.redo.writes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
