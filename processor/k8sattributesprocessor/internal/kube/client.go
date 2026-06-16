@@ -1614,14 +1614,17 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(newPod)
 	var staleContainerIDRequests []deleteRequest
+	hasContainerIDAssociation := c.hasContainerIDAssociation()
 
 	c.m.Lock()
-	if newPod.PodUID != "" {
+	if hasContainerIDAssociation && newPod.PodUID != "" {
 		if oldPod, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && oldPod.PodUID == newPod.PodUID {
-			// Only container.id-based identifiers are handled here.
-			// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
-			// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
-			staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+			if !pod.Status.StartTime.Before(oldPod.StartTime) {
+				// Only container.id-based identifiers are handled here.
+				// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
+				// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
+				staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+			}
 		}
 	}
 	for i := range identifiers {
@@ -1717,6 +1720,17 @@ func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struc
 		attr := id[i]
 		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
 			if _, ok := containerIDs[attr.Value]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (c *WatchClient) hasContainerIDAssociation() bool {
+	for _, assoc := range c.Associations {
+		for _, source := range assoc.Sources {
+			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
 				return true
 			}
 		}
