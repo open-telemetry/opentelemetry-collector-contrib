@@ -27,5 +27,5 @@ var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Allow OTTL functions to take lambda arguments. When disabled, lambda arguments are rejected."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48227"),
-	featuregate.WithRegisterFromVersion("v0.154.0"),
+	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
