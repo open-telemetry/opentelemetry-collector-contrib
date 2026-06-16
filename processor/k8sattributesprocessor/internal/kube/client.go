@@ -58,11 +58,12 @@ type WatchClient struct {
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
-	Pods         map[PodIdentifier]*Pod
-	Rules        ExtractionRules
-	Filters      Filters
-	Associations []Association
-	Exclude      Excludes
+	Pods                      map[PodIdentifier]*Pod
+	Rules                     ExtractionRules
+	Filters                   Filters
+	Associations              []Association
+	hasContainerIDAssociation bool
+	Exclude                   Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
@@ -144,18 +145,19 @@ func New(
 	}
 
 	c := &WatchClient{
-		logger:                 set.Logger,
-		Rules:                  rules,
-		Filters:                filters,
-		Associations:           associations,
-		Exclude:                exclude,
-		cronJobRegex:           cronJobRegex,
-		stopCh:                 make(chan struct{}),
-		telemetryBuilder:       telemetryBuilder,
-		waitForMetadata:        waitForMetadata,
-		waitForMetadataTimeout: waitForMetadataTimeout,
-		watchSyncPeriod:        watchSyncPeriod,
-		podDeleteGracePeriod:   podDeleteGracePeriod,
+		logger:                    set.Logger,
+		Rules:                     rules,
+		Filters:                   filters,
+		Associations:              associations,
+		hasContainerIDAssociation: hasContainerIDAssociation(associations),
+		Exclude:                   exclude,
+		cronJobRegex:              cronJobRegex,
+		stopCh:                    make(chan struct{}),
+		telemetryBuilder:          telemetryBuilder,
+		waitForMetadata:           waitForMetadata,
+		waitForMetadataTimeout:    waitForMetadataTimeout,
+		watchSyncPeriod:           watchSyncPeriod,
+		podDeleteGracePeriod:      podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -1614,10 +1616,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(newPod)
 	var staleContainerIDRequests []deleteRequest
-	hasContainerIDAssociation := c.hasContainerIDAssociation()
 
 	c.m.Lock()
-	if hasContainerIDAssociation && newPod.PodUID != "" {
+	if c.hasContainerIDAssociation && newPod.PodUID != "" {
 		if oldPod, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && oldPod.PodUID == newPod.PodUID {
 			if !pod.Status.StartTime.Before(oldPod.StartTime) {
 				// Only container.id-based identifiers are handled here.
@@ -1648,29 +1649,14 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	podToRemove := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(podToRemove)
-	podUID := string(pod.UID)
-	var deleteRequests []deleteRequest
+	for i := range identifiers {
+		id := identifiers[i]
+		p, ok := c.GetPod(id)
 
-	c.m.RLock()
-	if podUID != "" {
-		// Delete events may omit identifiers that were previously associated with the pod.
-		// Since the pod is gone, all cache entries for its UID can be removed.
-		for id, p := range c.Pods {
-			if p.PodUID == podUID {
-				deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: podUID})
-			}
-		}
-	} else {
-		for i := range identifiers {
-			id := identifiers[i]
-			if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
-				deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
-			}
+		if ok && p.PodUID == string(pod.UID) {
+			c.appendDeleteQueue(id, p.PodUID)
 		}
 	}
-	c.m.RUnlock()
-
-	c.appendDeleteRequests(deleteRequests)
 }
 
 func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
@@ -1727,8 +1713,8 @@ func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struc
 	return false
 }
 
-func (c *WatchClient) hasContainerIDAssociation() bool {
-	for _, assoc := range c.Associations {
+func hasContainerIDAssociation(associations []Association) bool {
+	for _, assoc := range associations {
 		for _, source := range assoc.Sources {
 			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
 				return true

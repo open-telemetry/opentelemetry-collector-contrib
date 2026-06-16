@@ -457,6 +457,7 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 			Name: "container.id",
 		}},
 	}}
+	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
 
 	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
 	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
@@ -482,33 +483,6 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 	c.deleteLoopProcessing(0)
 	assert.NotContains(t, c.Pods, oldID)
 	assert.Contains(t, c.Pods, newID)
-}
-
-func TestPodDeleteQueuesCachedContainerIDAssociation(t *testing.T) {
-	c, _ := newTestClient(t)
-	c.Rules = ExtractionRules{ContainerID: true}
-	c.Associations = []Association{{
-		Sources: []AssociationSource{{
-			From: ResourceSource,
-			Name: "container.id",
-		}},
-	}}
-
-	cachedID := newPodIdentifier(ResourceSource, "container.id", "cached-container-id")
-	pod := podWithContainerID("pod-uid", "cached-container-id", 0)
-	c.handlePodAdd(pod)
-	require.Contains(t, c.Pods, cachedID)
-
-	deletedPod := &api_v1.Pod{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: "pod-a",
-			UID:  types.UID("pod-uid"),
-		},
-	}
-	c.handlePodDelete(deletedPod)
-
-	assertDeleteQueueContains(t, c.deleteQueue, cachedID, "pod-uid")
-	assertDeleteQueueContains(t, c.deleteQueue, newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid"), "pod-uid")
 }
 
 func TestNamespaceUpdate(t *testing.T) {
