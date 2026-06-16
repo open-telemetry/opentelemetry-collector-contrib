@@ -263,7 +263,7 @@ Total count of session cursor cache hits, where an existing cached cursor is reu
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {hits} | Sum | Int | Cumulative | true | Development |
+| {hit} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.cursor.cache.size
 
@@ -271,7 +271,7 @@ Total number of cursors currently held in the session cursor cache.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cursors} | Gauge | Int | Development |
+| {cursor} | Gauge | Int | Development |
 
 ### oracledb.cursor.open
 
@@ -279,7 +279,7 @@ Number of currently open cursors in the Oracle instance.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cursors} | Gauge | Int | Development |
+| {cursor} | Gauge | Int | Development |
 
 ### oracledb.data_dictionary.hit_ratio
 
@@ -343,7 +343,7 @@ Total count of enqueue (lock) operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -387,7 +387,7 @@ Total count of LOB (large object) I/O operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -451,6 +451,22 @@ Number of times parallel execution was executed at the requested degree of paral
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.parse.cpu.time
+
+Total CPU time spent on SQL parsing.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### oracledb.parse.elapsed.time
+
+Total wall-clock time spent on SQL parsing.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.parse.rate
 
 Rate of parse operations per second broken down by result, as computed by Oracle V$SYSMETRIC (e.g., Parse Failure Count Per Sec).
@@ -464,20 +480,6 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.result | Result of a parse operation (e.g., failure). | Str: ``failure`` | Recommended | - |
-
-### oracledb.parse.time
-
-Total SQL parse time.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.parse.kind | Kind of SQL parse-time measurement (CPU time spent parsing vs. total elapsed parse time). | Str: ``cpu``, ``elapsed`` | Recommended | - |
 
 ### oracledb.parse.utilization
 
@@ -579,7 +581,7 @@ Total count of recursive calls generated at both the user and system level. Recu
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {calls} | Sum | Int | Cumulative | true | Development |
+| {call} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.recursive_call.cpu.time
 
@@ -611,7 +613,7 @@ Total count of index fast full scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -625,7 +627,7 @@ Total count of full-table scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -639,15 +641,15 @@ Total number of rows returned by full-table scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {rows} | Sum | Int | Cumulative | true | Development |
+| {row} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.session.active
+### oracledb.session.count
 
-Current number of active sessions.
+Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Development |
 
 ### oracledb.shared_pool.utilization
 
@@ -663,7 +665,7 @@ Total count of sort operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -691,7 +693,7 @@ Total number of rows sorted across all sort operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {rows} | Sum | Int | Cumulative | true | Development |
+| {row} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.sql_service.response.duration
 
@@ -738,7 +740,7 @@ Total count of user calls (logins, parses, fetches, executes) issued to the data
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {calls} | Sum | Int | Cumulative | true | Development |
+| {call} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

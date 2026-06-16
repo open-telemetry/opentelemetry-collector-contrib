@@ -177,10 +177,6 @@ attributes:
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
-  oracledb.parse.kind:
-    description: Kind of SQL parse-time measurement (CPU time spent parsing vs. total elapsed parse time).
-    type: string
-    enum: [cpu, elapsed]
   oracledb.parse.result:
     description: Result of a parse operation (e.g., failure).
     type: string
@@ -428,7 +424,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{hits}"
+    unit: "{hit}"
   oracledb.cursor.cache.size:
     description: Total number of cursors currently held in the session cursor cache.
     enabled: false
@@ -436,7 +432,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{cursors}"
+    unit: "{cursor}"
   oracledb.cursor.open:
     description: Number of currently open cursors in the Oracle instance.
     enabled: false
@@ -444,7 +440,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{cursors}"
+    unit: "{cursor}"
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -530,7 +526,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [oracledb.enqueue.kind]
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
@@ -636,7 +632,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [disk.io.direction]
   oracledb.logical_reads:
     description: Number of logical reads
@@ -718,6 +714,24 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.parse.cpu.time:
+    description: Total CPU time spent on SQL parsing.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+  oracledb.parse.elapsed.time:
+    description: Total wall-clock time spent on SQL parsing.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.parse.rate:
     attributes:
       - oracledb.parse.result
@@ -727,16 +741,6 @@ metrics:
     gauge:
       value_type: double
     unit: "{parses}/s"
-  oracledb.parse.time:
-    description: Total SQL parse time.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
-    attributes: [oracledb.parse.kind]
   oracledb.parse.utilization:
     description: Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
     enabled: false
@@ -891,7 +895,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{calls}"
+    unit: "{call}"
   oracledb.recursive_call.cpu.time:
     description: Total CPU time spent on recursive (internal) calls.
     enabled: false
@@ -924,7 +928,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [oracledb.scan.type]
   oracledb.scan.table.operations:
     description: Total count of full-table scans.
@@ -935,7 +939,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [oracledb.scan.type]
   oracledb.scan.table.rows:
     description: Total number of rows returned by full-table scans.
@@ -946,15 +950,15 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{rows}"
-  oracledb.session.active:
-    description: Current number of active sessions.
+    unit: "{row}"
+  oracledb.session.count:
+    description: Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.
     enabled: false
     stability: development
     gauge:
       value_type: int
       input_type: string
-    unit: "{sessions}"
+    unit: "{session}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -990,7 +994,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [oracledb.sort.type]
   oracledb.sort.ratio:
     attributes:
@@ -1010,7 +1014,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{rows}"
+    unit: "{row}"
   oracledb.sql_service.response.duration:
     description: Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).
     enabled: false
@@ -1086,7 +1090,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{calls}"
+    unit: "{call}"
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true

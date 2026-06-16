@@ -76,12 +76,13 @@ all_set:
       enabled: true
     oracledb.parallel_operations_not_downgraded:
       enabled: true
+    oracledb.parse.cpu.time:
+      enabled: true
+    oracledb.parse.elapsed.time:
+      enabled: true
     oracledb.parse.rate:
       enabled: true
       attributes: ["oracledb.parse.result"]
-    oracledb.parse.time:
-      enabled: true
-      attributes: ["oracledb.parse.kind"]
     oracledb.parse.utilization:
       enabled: true
     oracledb.parse_calls:
@@ -130,7 +131,7 @@ all_set:
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.active:
+    oracledb.session.count:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -273,10 +274,11 @@ reaggregate_set:
       enabled: true
     oracledb.parallel_operations_not_downgraded:
       enabled: true
-    oracledb.parse.rate:
+    oracledb.parse.cpu.time:
       enabled: true
-      attributes: []
-    oracledb.parse.time:
+    oracledb.parse.elapsed.time:
+      enabled: true
+    oracledb.parse.rate:
       enabled: true
       attributes: []
     oracledb.parse.utilization:
@@ -327,7 +329,7 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.active:
+    oracledb.session.count:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -470,12 +472,13 @@ none_set:
       enabled: false
     oracledb.parallel_operations_not_downgraded:
       enabled: false
+    oracledb.parse.cpu.time:
+      enabled: false
+    oracledb.parse.elapsed.time:
+      enabled: false
     oracledb.parse.rate:
       enabled: false
       attributes: ["oracledb.parse.result"]
-    oracledb.parse.time:
-      enabled: false
-      attributes: ["oracledb.parse.kind"]
     oracledb.parse.utilization:
       enabled: false
     oracledb.parse_calls:
@@ -524,7 +527,7 @@ none_set:
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: false
-    oracledb.session.active:
+    oracledb.session.count:
       enabled: false
     oracledb.sessions.limit:
       enabled: false

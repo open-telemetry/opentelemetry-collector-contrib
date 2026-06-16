@@ -427,22 +427,23 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 
 func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbRecursiveCallCount.Enabled = true
-	cfg.Metrics.OracledbRecursiveCallCPUTime.Enabled = true
-	cfg.Metrics.OracledbUserCallCount.Enabled = true
 	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
 	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
 	cfg.Metrics.OracledbCursorOpen.Enabled = true
 	cfg.Metrics.OracledbDbTime.Enabled = true
 	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
 	cfg.Metrics.OracledbLobOperations.Enabled = true
-	cfg.Metrics.OracledbParseTime.Enabled = true
+	cfg.Metrics.OracledbParseCPUTime.Enabled = true
+	cfg.Metrics.OracledbParseElapsedTime.Enabled = true
+	cfg.Metrics.OracledbRecursiveCallCount.Enabled = true
+	cfg.Metrics.OracledbRecursiveCallCPUTime.Enabled = true
 	cfg.Metrics.OracledbScanIndexFastFull.Enabled = true
 	cfg.Metrics.OracledbScanTableOperations.Enabled = true
 	cfg.Metrics.OracledbScanTableRows.Enabled = true
-	cfg.Metrics.OracledbSessionActive.Enabled = true
+	cfg.Metrics.OracledbSessionCount.Enabled = true
 	cfg.Metrics.OracledbSortOperations.Enabled = true
 	cfg.Metrics.OracledbSortRows.Enabled = true
+	cfg.Metrics.OracledbUserCallCount.Enabled = true
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
@@ -462,8 +463,111 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	gotInt := map[string]map[string]int64{}
-	gotFloat := map[string]map[string]float64{}
+	type valueKind int
+	const (
+		kindInt valueKind = iota
+		kindFloat
+	)
+
+	tests := []struct {
+		metric    string
+		attrs     map[string]string
+		kind      valueKind
+		wantInt   int64
+		wantFloat float64
+	}{
+		// Cursor family (no attributes)
+		{metric: "oracledb.cursor.cache.hits", kind: kindInt, wantInt: 65535},
+		{metric: "oracledb.cursor.cache.size", kind: kindInt, wantInt: 1024},
+		{metric: "oracledb.cursor.open", kind: kindInt, wantInt: 128},
+		// DB time (gauge of accumulated wall-clock; centiseconds -> seconds)
+		{metric: "oracledb.db.time", kind: kindFloat, wantFloat: 600.0},
+		// Enqueue operations (oracledb.enqueue.kind partitions countable events)
+		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "conversions"}, kind: kindInt, wantInt: 11},
+		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "releases"}, kind: kindInt, wantInt: 22},
+		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "requests"}, kind: kindInt, wantInt: 33},
+		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "timeouts"}, kind: kindInt, wantInt: 44},
+		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "waits"}, kind: kindInt, wantInt: 55},
+		// LOB operations
+		{metric: "oracledb.lob.operations", attrs: map[string]string{"disk.io.direction": "read"}, kind: kindInt, wantInt: 120},
+		{metric: "oracledb.lob.operations", attrs: map[string]string{"disk.io.direction": "write"}, kind: kindInt, wantInt: 240},
+		// Parse time (split into cpu + elapsed; raw centiseconds -> seconds)
+		{metric: "oracledb.parse.cpu.time", kind: kindFloat, wantFloat: 15.0},
+		{metric: "oracledb.parse.elapsed.time", kind: kindFloat, wantFloat: 30.0},
+		// Recursive call family
+		{metric: "oracledb.recursive_call.count", kind: kindInt, wantInt: 123456},
+		{metric: "oracledb.recursive_call.cpu.time", kind: kindFloat, wantFloat: 50.0},
+		// Scan family (oracledb.scan.type attribute)
+		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "direct_read"}, kind: kindInt, wantInt: 10},
+		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "full"}, kind: kindInt, wantInt: 20},
+		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "rowid_ranges"}, kind: kindInt, wantInt: 5},
+		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "direct_read"}, kind: kindInt, wantInt: 100},
+		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "long_tables"}, kind: kindInt, wantInt: 200},
+		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "rowid_ranges"}, kind: kindInt, wantInt: 50},
+		{metric: "oracledb.scan.table.rows", kind: kindInt, wantInt: 999999},
+		// Session count (gauge, sourced from v$sysstat 'logons current')
+		{metric: "oracledb.session.count", kind: kindInt, wantInt: 42},
+		// Sort family (oracledb.sort.type attribute)
+		{metric: "oracledb.sort.operations", attrs: map[string]string{"oracledb.sort.type": "disk"}, kind: kindInt, wantInt: 7},
+		{metric: "oracledb.sort.operations", attrs: map[string]string{"oracledb.sort.type": "memory"}, kind: kindInt, wantInt: 777},
+		{metric: "oracledb.sort.rows", kind: kindInt, wantInt: 888888},
+		// Call family
+		{metric: "oracledb.user_call.count", kind: kindInt, wantInt: 987654},
+	}
+
+	found := indexWorkloadDataPoints(m)
+	const delta = 0.01
+	for _, tt := range tests {
+		name := tt.metric
+		if len(tt.attrs) > 0 {
+			parts := make([]string, 0, len(tt.attrs))
+			for k, v := range tt.attrs {
+				parts = append(parts, k+"="+v)
+			}
+			sort.Strings(parts)
+			name += "/" + strings.Join(parts, ",")
+		}
+		t.Run(name, func(t *testing.T) {
+			dp, ok := found.get(tt.metric, tt.attrs)
+			require.True(t, ok, "data point not found for %s", name)
+			switch tt.kind {
+			case kindInt:
+				assert.Equal(t, tt.wantInt, dp.intVal)
+			case kindFloat:
+				assert.InDelta(t, tt.wantFloat, dp.floatVal, delta)
+			}
+		})
+	}
+}
+
+// indexedDataPoint is a single observed metric data point captured during
+// TestScraper_ScrapeWorkloadAnalysisMetrics. Only one of intVal/floatVal is
+// populated; the kind is determined by the metric type in the assertion.
+type indexedDataPoint struct {
+	intVal   int64
+	floatVal float64
+}
+
+// workloadDataPointIndex maps (metric name, attribute signature) to a single
+// observed data point. The signature is the sorted "k=v,k=v,..." encoding.
+type workloadDataPointIndex map[string]map[string]indexedDataPoint
+
+func (w workloadDataPointIndex) get(metric string, attrs map[string]string) (indexedDataPoint, bool) {
+	byAttrs, ok := w[metric]
+	if !ok {
+		return indexedDataPoint{}, false
+	}
+	keys := make([]string, 0, len(attrs))
+	for k, v := range attrs {
+		keys = append(keys, k+"="+v)
+	}
+	sort.Strings(keys)
+	dp, ok := byAttrs[strings.Join(keys, ",")]
+	return dp, ok
+}
+
+func indexWorkloadDataPoints(m pmetric.Metrics) workloadDataPointIndex {
+	index := workloadDataPointIndex{}
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
@@ -472,87 +576,45 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 			dps := me.Sum().DataPoints()
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				var keys []string
-				dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-					keys = append(keys, k+"="+v.AsString())
-					return true
-				})
-				sort.Strings(keys)
-				sig := strings.Join(keys, ",")
+				sig := attrSig(dp.Attributes())
+				if _, ok := index[me.Name()]; !ok {
+					index[me.Name()] = map[string]indexedDataPoint{}
+				}
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeInt:
-					if _, ok := gotInt[me.Name()]; !ok {
-						gotInt[me.Name()] = map[string]int64{}
-					}
-					gotInt[me.Name()][sig] = dp.IntValue()
+					index[me.Name()][sig] = indexedDataPoint{intVal: dp.IntValue()}
 				case pmetric.NumberDataPointValueTypeDouble:
-					if _, ok := gotFloat[me.Name()]; !ok {
-						gotFloat[me.Name()] = map[string]float64{}
-					}
-					gotFloat[me.Name()][sig] = dp.DoubleValue()
+					index[me.Name()][sig] = indexedDataPoint{floatVal: dp.DoubleValue()}
 				}
 			}
 		case pmetric.MetricTypeGauge:
 			dps := me.Gauge().DataPoints()
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				if _, ok := gotInt[me.Name()]; !ok {
-					gotInt[me.Name()] = map[string]int64{}
+				sig := attrSig(dp.Attributes())
+				if _, ok := index[me.Name()]; !ok {
+					index[me.Name()] = map[string]indexedDataPoint{}
 				}
-				gotInt[me.Name()][""] = dp.IntValue()
+				switch dp.ValueType() {
+				case pmetric.NumberDataPointValueTypeInt:
+					index[me.Name()][sig] = indexedDataPoint{intVal: dp.IntValue()}
+				case pmetric.NumberDataPointValueTypeDouble:
+					index[me.Name()][sig] = indexedDataPoint{floatVal: dp.DoubleValue()}
+				}
 			}
 		}
 	}
+	return index
+}
 
-	// Table-scan family (oracledb.scan.type attribute)
-	assert.Equal(t, int64(100), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=direct_read"])
-	assert.Equal(t, int64(200), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=long_tables"])
-	assert.Equal(t, int64(50), gotInt["oracledb.scan.table.operations"]["oracledb.scan.type=rowid_ranges"])
-	assert.Equal(t, int64(999999), gotInt["oracledb.scan.table.rows"][""])
-
-	// Index fast full scans (oracledb.scan.type attribute)
-	assert.Equal(t, int64(10), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=direct_read"])
-	assert.Equal(t, int64(20), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=full"])
-	assert.Equal(t, int64(5), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=rowid_ranges"])
-
-	// Enqueue operations (oracledb.enqueue.kind attribute)
-	assert.Equal(t, int64(11), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=conversions"])
-	assert.Equal(t, int64(22), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=releases"])
-	assert.Equal(t, int64(33), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=requests"])
-	assert.Equal(t, int64(44), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=timeouts"])
-	assert.Equal(t, int64(55), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=waits"])
-
-	// LOB operations (reused disk.io.direction attribute from PR #48335)
-	assert.Equal(t, int64(120), gotInt["oracledb.lob.operations"]["disk.io.direction=read"])
-	assert.Equal(t, int64(240), gotInt["oracledb.lob.operations"]["disk.io.direction=write"])
-
-	// Sort operations (oracledb.sort.type attribute)
-	assert.Equal(t, int64(7), gotInt["oracledb.sort.operations"]["oracledb.sort.type=disk"])
-	assert.Equal(t, int64(777), gotInt["oracledb.sort.operations"]["oracledb.sort.type=memory"])
-	assert.Equal(t, int64(888888), gotInt["oracledb.sort.rows"][""])
-
-	// Cursor family
-	assert.Equal(t, int64(65535), gotInt["oracledb.cursor.cache.hits"][""])
-	assert.Equal(t, int64(1024), gotInt["oracledb.cursor.cache.size"][""])
-	assert.Equal(t, int64(128), gotInt["oracledb.cursor.open"][""])
-
-	// Call family
-	assert.Equal(t, int64(987654), gotInt["oracledb.user_call.count"][""])
-	assert.Equal(t, int64(123456), gotInt["oracledb.recursive_call.count"][""])
-
-	// Session active (gauge)
-	assert.Equal(t, int64(42), gotInt["oracledb.session.active"][""])
-
-	// Time metrics: raw v$sysstat values are centiseconds; scraper converts to seconds (/100).
-	// parse time cpu     raw 1500 cs  -> 15 s
-	// parse time elapsed raw 3000 cs  -> 30 s
-	// recursive cpu      raw 5000 cs  -> 50 s
-	// DB time            raw 60000 cs -> 600 s
-	const delta = 0.01
-	assert.InDelta(t, 15.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=cpu"], delta)
-	assert.InDelta(t, 30.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=elapsed"], delta)
-	assert.InDelta(t, 50.0, gotFloat["oracledb.recursive_call.cpu.time"][""], delta)
-	assert.InDelta(t, 600.0, gotFloat["oracledb.db.time"][""], delta)
+func attrSig(attrs pcommon.Map) string {
+	keys := make([]string, 0, attrs.Len())
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		keys = append(keys, k+"="+v.AsString())
+		return true
+	})
+	sort.Strings(keys)
+	return strings.Join(keys, ",")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
