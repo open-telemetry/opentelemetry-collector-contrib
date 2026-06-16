@@ -31,12 +31,12 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"date":    "12-Jan-1996 00:00:00",
-				"fields":  []any{"time", "cs-method", "cs-uri"},
-				"entries": []any{
-					map[string]any{"time": "00:34:23", "cs-method": "GET", "cs-uri": "/foo/bar.html"},
-					map[string]any{"time": "12:21:16", "cs-method": "GET", "cs-uri": "/baz/index.html"},
+				"elf.version": "1.0",
+				"elf.date":    "12-Jan-1996 00:00:00",
+				"elf.fields":  []any{"time", "cs-method", "cs-uri"},
+				"elf.entries": []any{
+					map[string]any{"elf.time": "00:34:23", "elf.cs-method": "GET", "elf.cs-uri": "/foo/bar.html"},
+					map[string]any{"elf.time": "12:21:16", "elf.cs-method": "GET", "elf.cs-uri": "/baz/index.html"},
 				},
 			},
 		},
@@ -48,21 +48,21 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":  "1.0",
-				"software": "Microsoft Internet Information Services 6.0",
-				"date":     "2002-05-24 20:18:01",
-				"fields":   []any{"date", "time", "c-ip", "cs-username", "s-ip", "cs-method", "cs-uri-stem", "cs-uri-query", "sc-status"},
-				"entries": []any{
+				"elf.version":  "1.0",
+				"elf.software": "Microsoft Internet Information Services 6.0",
+				"elf.date":     "2002-05-24 20:18:01",
+				"elf.fields":   []any{"date", "time", "c-ip", "cs-username", "s-ip", "cs-method", "cs-uri-stem", "cs-uri-query", "sc-status"},
+				"elf.entries": []any{
 					map[string]any{
-						"date":          "2002-05-24",
-						"time":          "20:18:01",
-						"c-ip":          "172.224.24.114",
-						"cs-username":   "-",
-						"s-ip":          "206.73.118.24",
-						"cs-method":     "GET",
-						"cs-uri-stem":   "/Default.htm",
-						"cs-uri-query":  "-",
-						"sc-status":     "200",
+						"elf.date":         "2002-05-24",
+						"elf.time":         "20:18:01",
+						"elf.c-ip":         "172.224.24.114",
+						"elf.cs-username":  "-",
+						"elf.s-ip":         "206.73.118.24",
+						"elf.cs-method":    "GET",
+						"elf.cs-uri-stem":  "/Default.htm",
+						"elf.cs-uri-query": "-",
+						"elf.sc-status":    "200",
 					},
 				},
 			},
@@ -75,10 +75,10 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"a", "b", "c", "d"},
-				"entries": []any{
-					map[string]any{"a": "val1", "b": "val2", "c": "-", "d": "-"},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"a", "b", "c", "d"},
+				"elf.entries": []any{
+					map[string]any{"elf.a": "val1", "elf.b": "val2", "elf.c": "-", "elf.d": "-"},
 				},
 			},
 		},
@@ -90,13 +90,13 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"cs-method", "cs-uri", "cs(User-Agent)"},
-				"entries": []any{
+				"elf.version": "1.0",
+				"elf.fields":  []any{"cs-method", "cs-uri", "cs(User-Agent)"},
+				"elf.entries": []any{
 					map[string]any{
-						"cs-method":      "GET",
-						"cs-uri":         "/page.html",
-						"cs(User-Agent)": "Mozilla/5.0 (Windows NT 10.0)",
+						"elf.cs-method":      "GET",
+						"elf.cs-uri":         "/page.html",
+						"elf.cs(User-Agent)": "Mozilla/5.0 (Windows NT 10.0)",
 					},
 				},
 			},
@@ -109,11 +109,11 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"time", "sc-status"}, // last #Fields
-				"entries": []any{
-					map[string]any{"time": "10:00:00", "cs-method": "GET"},
-					map[string]any{"time": "10:01:00", "sc-status": "200"},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"time", "sc-status"}, // last #Fields
+				"elf.entries": []any{
+					map[string]any{"elf.time": "10:00:00", "elf.cs-method": "GET"},
+					map[string]any{"elf.time": "10:01:00", "elf.sc-status": "200"},
 				},
 			},
 		},
@@ -125,11 +125,11 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":    "1.0",
-				"start_date": "2024-01-01 00:00:00",
-				"end_date":   "2024-01-01 23:59:59",
-				"fields":     []any{"time"},
-				"entries":    []any{map[string]any{"time": "12:00:00"}},
+				"elf.version":    "1.0",
+				"elf.start_date": "2024-01-01 00:00:00",
+				"elf.end_date":   "2024-01-01 23:59:59",
+				"elf.fields":     []any{"time"},
+				"elf.entries":    []any{map[string]any{"elf.time": "12:00:00"}},
 			},
 		},
 		{
@@ -140,10 +140,10 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"remark":  "test log file",
-				"fields":  []any{"time"},
-				"entries": []any{map[string]any{"time": "00:00:01"}},
+				"elf.version": "1.0",
+				"elf.remark":  "test log file",
+				"elf.fields":  []any{"time"},
+				"elf.entries": []any{map[string]any{"elf.time": "00:00:01"}},
 			},
 		},
 		{
@@ -154,9 +154,9 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"time"},
-				"entries": []any{map[string]any{"time": "00:00:01"}},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"time"},
+				"elf.entries": []any{map[string]any{"elf.time": "00:00:01"}},
 			},
 		},
 		{
@@ -167,9 +167,9 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"time", "cs-method"},
-				"entries": []any{},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"time", "cs-method"},
+				"elf.entries": []any{},
 			},
 		},
 		{
@@ -236,10 +236,10 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"time", "cs-method", "cs-uri"},
-				"entries": []any{
-					map[string]any{"time": "00:34:23", "cs-method": "GET", "cs-uri": "/foo/bar.html"},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"time", "cs-method", "cs-uri"},
+				"elf.entries": []any{
+					map[string]any{"elf.time": "00:34:23", "elf.cs-method": "GET", "elf.cs-uri": "/foo/bar.html"},
 				},
 			},
 		},
@@ -251,10 +251,10 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.1",
-				"fields":  []any{"time"},
-				"entries": []any{
-					map[string]any{"time": "12:00:00"},
+				"elf.version": "1.1",
+				"elf.fields":  []any{"time"},
+				"elf.entries": []any{
+					map[string]any{"elf.time": "12:00:00"},
 				},
 			},
 		},
@@ -266,10 +266,10 @@ func Test_parseELF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version": "1.0",
-				"fields":  []any{"a", "b"},
-				"entries": []any{
-					map[string]any{"a": "val1", "b": "val2"},
+				"elf.version": "1.0",
+				"elf.fields":  []any{"a", "b"},
+				"elf.entries": []any{
+					map[string]any{"elf.a": "val1", "elf.b": "val2"},
 				},
 			},
 		},

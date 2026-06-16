@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
@@ -21,7 +20,6 @@ type parseELFArguments struct {
 	Target ottl.StringGetter[*ottllog.TransformContext]
 }
 
-// NewParseELFFactory returns an OTTL factory for the parse_elf function.
 func NewParseELFFactory() ottl.Factory[*ottllog.TransformContext] {
 	return ottl.NewFactory("ParseELF", &parseELFArguments{}, createParseELFFunction)
 }
@@ -47,79 +45,90 @@ func parseELF(target ottl.StringGetter[*ottllog.TransformContext], logger *zap.L
 	}
 }
 
-// elfMeta holds the directive-level metadata from ELF header lines.
-type elfMeta struct {
-	version   string
-	software  string
-	date      string
-	startDate string
-	endDate   string
-	remark    string
-}
-
-// elfDataEntry holds one parsed data row together with the field names that were
-// active when the row was encountered (multiple #Fields directives are allowed).
-type elfDataEntry struct {
-	fields []string
-	values []string
+// nextLine returns the next non-empty trimmed line from s starting at offset,
+// along with the new offset after that line's ending. Returns ok=false when
+// the end of s is reached. Handles \r\n, \r, and \n line endings without
+// allocating a new string.
+func nextLine(s string, offset int) (line string, next int, ok bool) {
+	n := len(s)
+	for offset < n {
+		end := offset
+		for end < n && s[end] != '\n' && s[end] != '\r' {
+			end++
+		}
+		raw := strings.TrimSpace(s[offset:end])
+		if end < n && s[end] == '\r' {
+			end++
+		}
+		if end < n && s[end] == '\n' {
+			end++
+		}
+		offset = end
+		if raw != "" {
+			return raw, offset, true
+		}
+	}
+	return "", offset, false
 }
 
 // parseELFMessage parses a W3C Extended Log Format (ELF) text block and returns a
-// pcommon.Map with the following keys:
+// pcommon.Map with the following keys (all prefixed with "elf."):
 //
-//   - version    – value of #Version (required; returns error if absent)
-//   - software   – value of #Software (omitted if not present)
-//   - date       – value of #Date (omitted if not present)
-//   - start_date – value of #Start-Date (omitted if not present)
-//   - end_date   – value of #End-Date (omitted if not present)
-//   - remark     – value of #Remark (omitted if not present)
-//   - fields     – string slice from the last #Fields directive seen
-//   - entries    – slice of maps, one per data line, keyed by field name
+//   - elf.version    – value of #Version (required; returns error if absent)
+//   - elf.software   – value of #Software (omitted if not present)
+//   - elf.date       – value of #Date (omitted if not present)
+//   - elf.start_date – value of #Start-Date (omitted if not present)
+//   - elf.end_date   – value of #End-Date (omitted if not present)
+//   - elf.remark     – value of #Remark (omitted if not present)
+//   - elf.fields     – string slice from the last #Fields directive seen
+//   - elf.entries    – slice of maps, one per data line, keyed by "elf.<field>"
 //
 // Multiple #Fields directives are supported; each applies to subsequent data lines.
 func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
-	input = strings.ReplaceAll(input, "\r\n", "\n")
-	input = strings.ReplaceAll(input, "\r", "\n")
-	lines := strings.Split(input, "\n")
+	result := pcommon.NewMap()
+	entriesSlice := result.PutEmptySlice("elf.entries")
 
-	meta := elfMeta{}
+	var hasVersion bool
 	var currentFields []string
 	var lastFields []string
-	var entries []elfDataEntry
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
+	offset := 0
+	for {
+		line, next, ok := nextLine(input, offset)
+		if !ok {
+			break
 		}
+		offset = next
 
 		if strings.HasPrefix(line, "#") {
 			key, value, err := parseELFDirective(line)
 			if err != nil {
 				// A malformed #Fields directive would silently poison subsequent data
 				// lines, so treat it as a hard error.
-				if strings.HasPrefix(strings.ToLower(strings.TrimSpace(line[1:])), "fields") {
+				trimmed := strings.TrimSpace(line[1:])
+				if len(trimmed) >= 6 && strings.EqualFold(trimmed[:6], "fields") {
 					return pcommon.Map{}, fmt.Errorf("invalid ELF: malformed #Fields directive %q: %w", line, err)
 				}
 				// Other unrecognised directives (e.g. bare #Remark) are skipped.
 				continue
 			}
-			switch strings.ToLower(key) {
-			case "version":
-				meta.version = value
-			case "fields":
+			switch {
+			case strings.EqualFold(key, "version"):
+				hasVersion = true
+				result.PutStr("elf.version", value)
+			case strings.EqualFold(key, "fields"):
 				currentFields = strings.Fields(value)
 				lastFields = currentFields
-			case "software":
-				meta.software = value
-			case "date":
-				meta.date = value
-			case "start-date":
-				meta.startDate = value
-			case "end-date":
-				meta.endDate = value
-			case "remark":
-				meta.remark = value
+			case strings.EqualFold(key, "software"):
+				result.PutStr("elf.software", value)
+			case strings.EqualFold(key, "date"):
+				result.PutStr("elf.date", value)
+			case strings.EqualFold(key, "start-date"):
+				result.PutStr("elf.start_date", value)
+			case strings.EqualFold(key, "end-date"):
+				result.PutStr("elf.end_date", value)
+			case strings.EqualFold(key, "remark"):
+				result.PutStr("elf.remark", value)
 			}
 			continue
 		}
@@ -132,17 +141,31 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 		if err != nil {
 			return pcommon.Map{}, fmt.Errorf("invalid ELF: %w", err)
 		}
-		entries = append(entries, elfDataEntry{
-			fields: currentFields,
-			values: values,
-		})
+		m := entriesSlice.AppendEmpty().SetEmptyMap()
+		for i, field := range currentFields {
+			if i < len(values) {
+				m.PutStr("elf."+field, values[i])
+			} else {
+				logger.Warn("ELF data line has fewer values than fields; substituting '-'",
+					zap.String("field", field),
+					zap.Int("field_count", len(currentFields)),
+					zap.Int("value_count", len(values)),
+				)
+				m.PutStr("elf."+field, "-")
+			}
+		}
 	}
 
-	if meta.version == "" {
+	if !hasVersion {
 		return pcommon.Map{}, errors.New("invalid ELF: missing #Version directive")
 	}
 
-	return buildELFResult(meta, lastFields, entries, logger), nil
+	fieldsSlice := result.PutEmptySlice("elf.fields")
+	for _, f := range lastFields {
+		fieldsSlice.AppendEmpty().SetStr(f)
+	}
+
+	return result, nil
 }
 
 // parseELFDirective parses a directive line of the form "#Key: value" and returns
@@ -162,26 +185,25 @@ func parseELFDirective(line string) (string, string, error) {
 // string are represented by "" per the W3C ELF spec §2.
 // Returns an error for unterminated quoted values.
 func parseELFDataLine(line string) ([]string, error) {
-	runes := []rune(line)
 	var values []string
-	i, n := 0, len(runes)
+	i, n := 0, len(line)
 	for i < n {
-		// skip leading whitespace
-		for i < n && unicode.IsSpace(runes[i]) {
+		// skip leading whitespace (space or tab)
+		for i < n && (line[i] == ' ' || line[i] == '\t') {
 			i++
 		}
 		if i >= n {
 			break
 		}
-		if runes[i] == '"' {
+		if line[i] == '"' {
 			i++ // skip opening '"'
 			var sb strings.Builder
 			closed := false
 			for i < n {
-				if runes[i] == '"' {
-					if i+1 < n && runes[i+1] == '"' {
+				if line[i] == '"' {
+					if i+1 < n && line[i+1] == '"' {
 						// escaped double-quote: "" → "
-						sb.WriteRune('"')
+						sb.WriteByte('"')
 						i += 2
 					} else {
 						i++ // skip closing '"'
@@ -189,7 +211,7 @@ func parseELFDataLine(line string) ([]string, error) {
 						break
 					}
 				} else {
-					sb.WriteRune(runes[i])
+					sb.WriteByte(line[i])
 					i++
 				}
 			}
@@ -199,56 +221,11 @@ func parseELFDataLine(line string) ([]string, error) {
 			values = append(values, sb.String())
 		} else {
 			start := i
-			for i < n && !unicode.IsSpace(runes[i]) {
+			for i < n && line[i] != ' ' && line[i] != '\t' {
 				i++
 			}
-			values = append(values, string(runes[start:i]))
+			values = append(values, line[start:i])
 		}
 	}
 	return values, nil
-}
-
-func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry, logger *zap.Logger) pcommon.Map {
-	result := pcommon.NewMap()
-
-	result.PutStr("version", meta.version)
-	if meta.software != "" {
-		result.PutStr("software", meta.software)
-	}
-	if meta.date != "" {
-		result.PutStr("date", meta.date)
-	}
-	if meta.startDate != "" {
-		result.PutStr("start_date", meta.startDate)
-	}
-	if meta.endDate != "" {
-		result.PutStr("end_date", meta.endDate)
-	}
-	if meta.remark != "" {
-		result.PutStr("remark", meta.remark)
-	}
-
-	fieldsSlice := result.PutEmptySlice("fields")
-	for _, f := range lastFields {
-		fieldsSlice.AppendEmpty().SetStr(f)
-	}
-
-	entriesSlice := result.PutEmptySlice("entries")
-	for _, e := range entries {
-		m := entriesSlice.AppendEmpty().SetEmptyMap()
-		for i, field := range e.fields {
-			if i < len(e.values) {
-				m.PutStr(field, e.values[i])
-			} else {
-				logger.Warn("ELF data line has fewer values than fields; substituting '-'",
-					zap.String("field", field),
-					zap.Int("field_count", len(e.fields)),
-					zap.Int("value_count", len(e.values)),
-				)
-				m.PutStr(field, "-")
-			}
-		}
-	}
-
-	return result
 }
