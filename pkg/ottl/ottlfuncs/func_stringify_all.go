@@ -26,10 +26,10 @@ func createStringifyAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 		return nil, errors.New("StringifyAllFactory args must be of type *StringifyAllArguments[K]")
 	}
 
-	return StringifyAll(args.Target)
+	return stringifyAll(args.Target)
 }
 
-func StringifyAll[K any](target ottl.PMapGetSetter[K]) (ottl.ExprFunc[K], error) {
+func stringifyAll[K any](target ottl.PMapGetSetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

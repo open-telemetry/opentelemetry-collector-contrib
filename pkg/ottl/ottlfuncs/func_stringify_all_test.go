@@ -67,7 +67,7 @@ func Test_stringifyAll(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := StringifyAll(target)
+			exprFunc, err := stringifyAll(target)
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -98,7 +98,7 @@ func Test_stringifyAll_emptyMap(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := StringifyAll(target)
+	exprFunc, err := stringifyAll(target)
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, scenarioMap)
@@ -114,7 +114,7 @@ func Test_stringifyAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := StringifyAll[any](target)
+	exprFunc, err := stringifyAll[any](target)
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
