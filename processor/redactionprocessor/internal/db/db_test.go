@@ -159,7 +159,6 @@ func TestNewObfuscator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := NewObfuscator(tt.config, zaptest.NewLogger(t))
-			assert.Len(t, o.obfuscators, tt.expectedObfuscatorCount)
 			assert.Equal(t, tt.expectedProcessSpecific, o.HasSpecificAttributes())
 			assert.Equal(t, tt.expectedObfuscatorCount > 0, o.HasObfuscators())
 		})

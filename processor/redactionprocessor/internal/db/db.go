@@ -13,9 +13,9 @@ import (
 )
 
 type Obfuscator struct {
-	obfuscators []databaseObfuscator
 	// Datadog obfuscators keep mutable parser state, so each pooled set is used by only one call at a time.
 	obfuscatorsPool            sync.Pool
+	hasObfuscators             bool
 	processAttributesEnabled   bool
 	logger                     *zap.Logger
 	allowFallbackWithoutSystem bool
@@ -64,13 +64,13 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 	obfuscators := newObfuscators()
 
 	return &Obfuscator{
-		obfuscators: obfuscators,
 		obfuscatorsPool: sync.Pool{
 			New: func() any {
 				obfuscators := newObfuscators()
 				return &obfuscators
 			},
 		},
+		hasObfuscators:             len(obfuscators) > 0,
 		processAttributesEnabled:   hasDBSanitizerAttributes(cfg),
 		logger:                     logger,
 		allowFallbackWithoutSystem: cfg.AllowFallbackWithoutSystem,
@@ -176,7 +176,7 @@ func (o *Obfuscator) Obfuscate(s string) (string, error) {
 	obfuscators := o.getObfuscators()
 	defer o.putObfuscators(obfuscators)
 
-	for _, obfuscator := range obfuscators {
+	for _, obfuscator := range *obfuscators {
 		obfuscatedValue, err := obfuscator.Obfuscate(s)
 		if err != nil {
 			return s, err
@@ -196,13 +196,13 @@ func (o *Obfuscator) ObfuscateAttribute(attributeValue, attributeKey, dbSystem s
 
 	if dbSystem == "" {
 		if o.allowFallbackWithoutSystem {
-			return obfuscateSequentially(obfuscators, attributeValue, attributeKey)
+			return obfuscateSequentially(*obfuscators, attributeValue, attributeKey)
 		}
 		return attributeValue, nil
 	}
 
 	dbSystem = strings.ToLower(dbSystem)
-	for _, obfuscator := range obfuscators {
+	for _, obfuscator := range *obfuscators {
 		if !obfuscator.SupportsSystem(dbSystem) {
 			continue
 		}
@@ -235,7 +235,7 @@ func (o *Obfuscator) HasSpecificAttributes() bool {
 }
 
 func (o *Obfuscator) HasObfuscators() bool {
-	return len(o.obfuscators) > 0
+	return o.hasObfuscators
 }
 
 func (o *Obfuscator) ObfuscateWithSystem(val, dbSystem string) (string, error) {
@@ -250,7 +250,7 @@ func (o *Obfuscator) ObfuscateWithSystem(val, dbSystem string) (string, error) {
 	defer o.putObfuscators(obfuscators)
 
 	lower := strings.ToLower(dbSystem)
-	for _, obfuscator := range obfuscators {
+	for _, obfuscator := range *obfuscators {
 		if !obfuscator.SupportsSystem(lower) {
 			continue
 		}
@@ -259,12 +259,12 @@ func (o *Obfuscator) ObfuscateWithSystem(val, dbSystem string) (string, error) {
 	return val, nil
 }
 
-func (o *Obfuscator) getObfuscators() []databaseObfuscator {
-	return *o.obfuscatorsPool.Get().(*[]databaseObfuscator)
+func (o *Obfuscator) getObfuscators() *[]databaseObfuscator {
+	return o.obfuscatorsPool.Get().(*[]databaseObfuscator)
 }
 
-func (o *Obfuscator) putObfuscators(obfuscators []databaseObfuscator) {
-	o.obfuscatorsPool.Put(&obfuscators)
+func (o *Obfuscator) putObfuscators(obfuscators *[]databaseObfuscator) {
+	o.obfuscatorsPool.Put(obfuscators)
 }
 
 func createSystems(systems []string) map[string]bool {
