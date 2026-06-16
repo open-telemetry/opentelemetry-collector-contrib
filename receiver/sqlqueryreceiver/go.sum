@@ -34,8 +34,6 @@ github.com/ClickHouse/clickhouse-go/v2 v2.46.0 h1:s3eRy+hYmu5uzotB6ZhDofgHu8kDgG
 github.com/ClickHouse/clickhouse-go/v2 v2.46.0/go.mod h1:giJfUVlMkcfUEPVfRpt51zZaGEx9i17gCos8gBl392c=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/SAP/go-hdb v1.16.11 h1:z/ObY2e3eAbpA1eOURqRVIYsaw+TjyfZfFKI8IWGCUU=
-github.com/SAP/go-hdb v1.16.11/go.mod h1:XPhGTXCXxHcikQZeHoyZn17wJT2S93IQ/h+Ezm2KGKo=
 github.com/SAP/go-hdb v1.16.12 h1:uHhrUCvnYPY67w6NUs8BYRwylXdAiv+hFRApS4qkA5Q=
 github.com/SAP/go-hdb v1.16.12/go.mod h1:16M+ygtB0N/sZosiXf+aeepMvNYSw+/yGbZdGQLVAAE=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
