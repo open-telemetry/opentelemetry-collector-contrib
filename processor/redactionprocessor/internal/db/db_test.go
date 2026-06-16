@@ -503,8 +503,7 @@ func TestObfuscateAttribute(t *testing.T) {
 				cfg.AllowFallbackWithoutSystem = true
 			}
 			o := NewObfuscator(cfg, zaptest.NewLogger(t))
-			o.DBSystem = tt.dbSystem
-			result, err := o.ObfuscateAttribute(tt.value, tt.key)
+			result, err := o.ObfuscateAttribute(tt.value, tt.key, tt.dbSystem)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -513,4 +512,11 @@ func TestObfuscateAttribute(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestZeroValueObfuscatorObfuscate(t *testing.T) {
+	var o Obfuscator
+	result, err := o.Obfuscate("SELECT * FROM users WHERE id = 123")
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT * FROM users WHERE id = 123", result)
 }

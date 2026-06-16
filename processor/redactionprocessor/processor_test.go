@@ -5,8 +5,10 @@ package redactionprocessor
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1907,6 +1909,76 @@ func TestDBObfuscationUsesDBSystemNameForAttributes(t *testing.T) {
 	stmt, ok := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("db.statement")
 	require.True(t, ok)
 	assert.Equal(t, "SELECT email FROM users WHERE email = ?", stmt.Str())
+}
+
+func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys: true,
+		DBSanitizer: db.DBSanitizerConfig{
+			SQLConfig: db.SQLConfig{
+				Enabled:    true,
+				Attributes: []string{"db.statement"},
+			},
+			RedisConfig: db.RedisConfig{
+				Enabled:    true,
+				Attributes: []string{"db.statement"},
+			},
+		},
+	}
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	const workers = 16
+	var wg sync.WaitGroup
+	errCh := make(chan error, workers)
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func(i int) {
+			defer wg.Done()
+
+			for j := 0; j < 100; j++ {
+				inBatch := ptrace.NewTraces()
+				span := inBatch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetKind(ptrace.SpanKindClient)
+				span.Attributes().PutStr("db.statement", "SELECT id FROM accounts WHERE id = 42")
+				if i%2 == 0 {
+					span.Attributes().PutStr("db.system", "mysql")
+				} else {
+					span.Attributes().PutStr("db.system", "redis")
+				}
+
+				outTraces, err := processor.processTraces(t.Context(), inBatch)
+				if err != nil {
+					errCh <- err
+					return
+				}
+
+				stmt, ok := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("db.statement")
+				if !ok {
+					errCh <- fmt.Errorf("missing db.statement")
+					return
+				}
+				if i%2 == 0 {
+					if stmt.Str() != "SELECT id FROM accounts WHERE id = ?" {
+						errCh <- fmt.Errorf("mysql statement = %q", stmt.Str())
+						return
+					}
+				} else {
+					if stmt.Str() != "SELECT id FROM accounts WHERE id = 42" {
+						errCh <- fmt.Errorf("redis statement = %q", stmt.Str())
+						return
+					}
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		require.NoError(t, err)
+	}
 }
 
 func TestDBObfuscationAttributesWithoutDBSystemDoesNothing(t *testing.T) {
