@@ -37,6 +37,9 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
 	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaFlowControlTime.Enabled = enabled
+	cfg.Metrics.SqlserverLogDataIoRate.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaQueueSize.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
@@ -219,6 +222,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroup")
 				}
 				expectedFile += fileSuffix
 
@@ -456,6 +461,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("waitStatsQueryData.txt")
 	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
+	case getSQLServerAvailabilityGroupQuery(mc.instanceName):
+		queryResults, err = readFile("availabilityGroupQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():

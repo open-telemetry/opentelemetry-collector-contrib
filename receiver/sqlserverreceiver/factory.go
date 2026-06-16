@@ -86,6 +86,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
 	}
 
+	if isAvailabilityGroupQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -339,4 +343,14 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverIndexPageUtilization.Enabled ||
 		metrics.SqlserverIndexRecordCount.Enabled ||
 		metrics.SqlserverIndexSize.Enabled
+}
+
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverReplicaFlowControlTime.Enabled ||
+		metrics.SqlserverLogDataIoRate.Enabled ||
+		metrics.SqlserverReplicaQueueSize.Enabled
 }
