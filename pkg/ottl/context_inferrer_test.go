@@ -138,6 +138,16 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			candidates: map[string]*priorityContextInferrerCandidate{},
 			err:        `inferred context "unknown" is not a valid candidate`,
 		},
+		{
+			name:       "infer from converter key",
+			priority:   []string{"foo", "bar"},
+			statements: []string{`set(bar.name, "foo") where IsFoo()[foo.name] == true`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
 	}
 
 	for _, tt := range tests {
@@ -259,6 +269,16 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 			candidates: map[string]*priorityContextInferrerCandidate{},
 			expected:   "",
 		},
+		{
+			name:       "infer from converter key",
+			priority:   []string{"foo", "bar"},
+			conditions: []string{`IsFoo()[foo.name] == true`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
 	}
 
 	for _, tt := range tests {
@@ -269,6 +289,132 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 				withContextInferrerPriorities(tt.priority),
 			)
 			inferredContext, err := inferrer.inferFromConditions(tt.conditions)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, inferredContext)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_InferValueExpressions(t *testing.T) {
+	tests := []struct {
+		name        string
+		priority    []string
+		candidates  map[string]*priorityContextInferrerCandidate
+		expressions []string
+		expected    string
+	}{
+		{
+			name:     "with priority and expression context",
+			priority: []string{"spanevent", "span", "resource"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"spanevent.bar"},
+			expected:    "spanevent",
+		},
+		{
+			name:     "with multiple expressions and contexts",
+			priority: []string{"spanevent", "span", "resource"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{
+				"span.bar",
+				"spanevent.bar",
+			},
+			expected: "spanevent",
+		},
+		{
+			name:        "with no expression context",
+			priority:    []string{"log", "resource"},
+			candidates:  map[string]*priorityContextInferrerCandidate{},
+			expressions: []string{"bar"},
+			expected:    "",
+		},
+		{
+			name: "with empty priority list",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"[foo.name, bar.name]"},
+			expected:    "foo",
+		},
+		{
+			name:     "with non-prioritized expression context",
+			priority: []string{"foo", "bar"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"span": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"span.bar"},
+			expected:    "span",
+		},
+		{
+			name:        "inferred path context with missing function",
+			priority:    []string{"foo", "datapoint", "metric"},
+			expressions: []string{`HasFoo(metric.name) + HasBar(metric.foo)`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":    newDummyPriorityContextInferrerCandidate(false, true, []string{"foo", "datapoint"}),
+				"foo":       newDummyPriorityContextInferrerCandidate(false, true, []string{}),
+				"datapoint": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "datapoint",
+		},
+		{
+			name:        "inferred path context with missing function and no qualified lower context",
+			priority:    []string{"datapoint", "metric"},
+			expressions: []string{`DummyFunc("foo")`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":    newDummyPriorityContextInferrerCandidate(false, false, []string{"datapoint"}),
+				"datapoint": newDummyPriorityContextInferrerCandidate(false, false, []string{}),
+			},
+			expected: "",
+		},
+		{
+			name:        "inferred path context with missing function and no lower context",
+			priority:    []string{"datapoint", "metric"},
+			expressions: []string{`is_name`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric": newDummyPriorityContextInferrerCandidate(false, true, []string{}),
+			},
+			expected: "",
+		},
+		{
+			name:        "inferred path context with missing enum",
+			priority:    []string{"foo", "bar"},
+			expressions: []string{`[foo.name, FOO]`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "bar",
+		},
+		{
+			name:        "unknown context candidate inferred from paths",
+			priority:    []string{"unknown"},
+			expressions: []string{`count`},
+			candidates:  map[string]*priorityContextInferrerCandidate{},
+			expected:    "",
+		},
+		{
+			name:        "infer from converter key",
+			priority:    []string{"foo", "bar"},
+			expressions: []string{`Concat([IsFoo()[foo.name], bar.name], "-")`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
+				tt.candidates,
+				withContextInferrerPriorities(tt.priority),
+			)
+			inferredContext, err := inferrer.inferFromValueExpressions(tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
