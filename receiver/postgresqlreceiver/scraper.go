@@ -450,38 +450,93 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-// anyEnabled reports whether any of the given metric-enabled flags is true. It is
-// used to skip a query entirely when none of the metrics it feeds are enabled.
-func anyEnabled(flags ...bool) bool {
-	for _, f := range flags {
-		if f {
-			return true
-		}
-	}
-	return false
+// Each query has one guard reporting whether any metric it produces is enabled, so
+// a query can be skipped when all of its metrics are disabled. TestEnabledMetricIsEmitted
+// fails if a metric is wired into a query but missing from its guard.
+
+func backendsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBackends.Enabled
+}
+
+func bgWriterStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBgwriterBuffersAllocated.Enabled ||
+		m.PostgresqlBgwriterBuffersWrites.Enabled ||
+		m.PostgresqlBgwriterCheckpointCount.Enabled ||
+		m.PostgresqlBgwriterDuration.Enabled ||
+		m.PostgresqlBgwriterMaxwritten.Enabled
+}
+
+func blocksReadEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBlocksRead.Enabled
+}
+
+func databaseLocksEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlDatabaseLocks.Enabled
+}
+
+func databaseSizeEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlDbSize.Enabled
+}
+
+func databaseStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBlksHit.Enabled ||
+		m.PostgresqlBlksRead.Enabled ||
+		m.PostgresqlCommits.Enabled ||
+		m.PostgresqlDeadlocks.Enabled ||
+		m.PostgresqlRollbacks.Enabled ||
+		m.PostgresqlTempFiles.Enabled ||
+		m.PostgresqlTempIo.Enabled ||
+		m.PostgresqlTupDeleted.Enabled ||
+		m.PostgresqlTupFetched.Enabled ||
+		m.PostgresqlTupInserted.Enabled ||
+		m.PostgresqlTupReturned.Enabled ||
+		m.PostgresqlTupUpdated.Enabled
+}
+
+func functionStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlFunctionCalls.Enabled
+}
+
+func indexStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlIndexScans.Enabled ||
+		m.PostgresqlIndexSize.Enabled
+}
+
+func maxConnectionsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlConnectionMax.Enabled
+}
+
+func perTableStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlOperations.Enabled ||
+		m.PostgresqlRows.Enabled ||
+		m.PostgresqlSequentialScans.Enabled ||
+		m.PostgresqlTableSize.Enabled ||
+		m.PostgresqlTableVacuumCount.Enabled
+}
+
+func replicationStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlReplicationDataDelay.Enabled ||
+		m.PostgresqlWalDelay.Enabled ||
+		m.PostgresqlWalLag.Enabled
+}
+
+func tableCountEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlTableCount.Enabled
+}
+
+func walAgeEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlWalAge.Enabled
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
-	m := p.config.Metrics
+	m := &p.config.Metrics
 
-	// The per-table stats query (getDatabaseTableMetrics) is also where block-read
-	// metrics are emitted, since those are recorded inside the loop keyed off its
-	// results. So it is required whenever any per-table stat OR blocks_read is wanted.
-	perTableStatsEnabled := m.PostgresqlRows.Enabled ||
-		m.PostgresqlOperations.Enabled ||
-		m.PostgresqlTableSize.Enabled ||
-		m.PostgresqlTableVacuumCount.Enabled ||
-		m.PostgresqlSequentialScans.Enabled
-	blocksReadEnabled := m.PostgresqlBlocksRead.Enabled
-	needTableMetrics := perTableStatsEnabled || blocksReadEnabled
-
-	if !needTableMetrics {
-		// None of the per-table metrics are needed. If only the table count is
-		// wanted, satisfy it with a cheap COUNT(*) instead of the full per-table
-		// query, which computes a relation size for every table.
-		if !m.PostgresqlTableCount.Enabled {
+	if !perTableStatsEnabled(m) && !blocksReadEnabled(m) {
+		if !tableCountEnabled(m) {
 			return 0
 		}
+		// Only the table count is wanted, so use a cheap COUNT(*) instead of the
+		// full per-table query, which computes a relation size for every table.
 		count, err := dbClient.getTableCount(ctx)
 		if err != nil {
 			errs.addPartial(err)
@@ -491,7 +546,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	var blockReads map[tableIdentifier]tableIOStats
-	if blocksReadEnabled {
+	if blocksReadEnabled(m) {
 		var err error
 		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
 		if err != nil {
@@ -549,7 +604,7 @@ func (p *postgreSQLScraper) collectIndexes(
 	database string,
 	errs *errsMux,
 ) {
-	if !p.config.Metrics.PostgresqlIndexScans.Enabled && !p.config.Metrics.PostgresqlIndexSize.Enabled {
+	if !indexStatsEnabled(&p.config.Metrics) {
 		return
 	}
 	idxStats, err := client.getIndexStats(ctx, database)
@@ -579,7 +634,7 @@ func (p *postgreSQLScraper) collectFunctions(
 	database string,
 	errs *errsMux,
 ) {
-	if !p.config.Metrics.PostgresqlFunctionCalls.Enabled {
+	if !functionStatsEnabled(&p.config.Metrics) {
 		return
 	}
 	funcStats, err := client.getFunctionStats(ctx, database)
@@ -607,13 +662,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	client client,
 	errs *errsMux,
 ) {
-	m := p.config.Metrics
-	if !anyEnabled(
-		m.PostgresqlBgwriterBuffersAllocated.Enabled,
-		m.PostgresqlBgwriterBuffersWrites.Enabled,
-		m.PostgresqlBgwriterCheckpointCount.Enabled,
-		m.PostgresqlBgwriterDuration.Enabled,
-		m.PostgresqlBgwriterMaxwritten.Enabled) {
+	if !bgWriterStatsEnabled(&p.config.Metrics) {
 		return
 	}
 	bgStats, err := client.getBGWriterStats(ctx)
@@ -648,7 +697,7 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	client client,
 	errs *errsMux,
 ) {
-	if !p.config.Metrics.PostgresqlDatabaseLocks.Enabled {
+	if !databaseLocksEnabled(&p.config.Metrics) {
 		return
 	}
 	dbLocks, err := client.getDatabaseLocks(ctx)
@@ -668,7 +717,7 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	client client,
 	errs *errsMux,
 ) {
-	if !p.config.Metrics.PostgresqlConnectionMax.Enabled {
+	if !maxConnectionsEnabled(&p.config.Metrics) {
 		return
 	}
 	mc, err := client.getMaxConnections(ctx)
@@ -685,11 +734,7 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	client client,
 	errs *errsMux,
 ) {
-	m := p.config.Metrics
-	if !anyEnabled(
-		m.PostgresqlReplicationDataDelay.Enabled,
-		m.PostgresqlWalDelay.Enabled,
-		m.PostgresqlWalLag.Enabled) {
+	if !replicationStatsEnabled(&p.config.Metrics) {
 		return
 	}
 	rss, err := client.getReplicationStats(ctx)
@@ -731,7 +776,7 @@ func (p *postgreSQLScraper) collectWalAge(
 	client client,
 	errs *errsMux,
 ) {
-	if !p.config.Metrics.PostgresqlWalAge.Enabled {
+	if !walAgeEnabled(&p.config.Metrics) {
 		return
 	}
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
@@ -755,20 +800,7 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	m := p.config.Metrics
-	if !anyEnabled(
-		m.PostgresqlCommits.Enabled,
-		m.PostgresqlRollbacks.Enabled,
-		m.PostgresqlDeadlocks.Enabled,
-		m.PostgresqlTempFiles.Enabled,
-		m.PostgresqlTempIo.Enabled,
-		m.PostgresqlTupUpdated.Enabled,
-		m.PostgresqlTupReturned.Enabled,
-		m.PostgresqlTupFetched.Enabled,
-		m.PostgresqlTupInserted.Enabled,
-		m.PostgresqlTupDeleted.Enabled,
-		m.PostgresqlBlksHit.Enabled,
-		m.PostgresqlBlksRead.Enabled) {
+	if !databaseStatsEnabled(&p.config.Metrics) {
 		return
 	}
 	dbStats, err := client.getDatabaseStats(ctx, databases)
@@ -791,7 +823,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	if !p.config.Metrics.PostgresqlDbSize.Enabled {
+	if !databaseSizeEnabled(&p.config.Metrics) {
 		return
 	}
 	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
@@ -814,7 +846,7 @@ func (p *postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	if !p.config.Metrics.PostgresqlBackends.Enabled {
+	if !backendsEnabled(&p.config.Metrics) {
 		return
 	}
 	activityByDB, err := client.getBackends(ctx, databases)

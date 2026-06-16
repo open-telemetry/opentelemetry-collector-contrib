@@ -593,86 +593,57 @@ var infraMethods = map[string]bool{
 	"getQuerySamples": true, "getTopQuery": true, "explainQuery": true,
 }
 
-// newQueryMockClient returns a mock client that serves valid data for every query
-// so that any enabled metric is emitted. If errMethod is non-empty, that one query
-// instead returns empty data and an error — mirroring how the real client returns
-// nil on failure — which lets a test probe whether a query is actually required to
-// produce a given metric.
-func newQueryMockClient(errMethod string) *mockClient {
-	// probe returns (val, nil) normally, or the zero value and an error when method
-	// is the one being failed, matching the real client's nil-on-error behavior.
-	probe := func(method string, val any) (any, error) {
-		if method == errMethod {
-			switch val.(type) {
-			case map[databaseName]int64:
-				return map[databaseName]int64(nil), errQueryProbe
-			case map[databaseName]databaseStats:
-				return map[databaseName]databaseStats(nil), errQueryProbe
-			case *bgStat:
-				return (*bgStat)(nil), errQueryProbe
-			case int64:
-				return int64(0), errQueryProbe
-			case []replicationStats:
-				return []replicationStats(nil), errQueryProbe
-			case []databaseLocks:
-				return []databaseLocks(nil), errQueryProbe
-			case map[tableIdentifier]tableStats:
-				return map[tableIdentifier]tableStats(nil), errQueryProbe
-			case map[tableIdentifier]tableIOStats:
-				return map[tableIdentifier]tableIOStats(nil), errQueryProbe
-			case map[indexIdentifer]indexStat:
-				return map[indexIdentifer]indexStat(nil), errQueryProbe
-			case map[functionIdentifer]functionStat:
-				return map[functionIdentifer]functionStat(nil), errQueryProbe
-			}
-		}
-		return val, nil
+// onQuery registers a query method on the mock. Normally the method returns data
+// and no error; when method is the one being probed (failMethod), it instead
+// returns a typed zero value and errQueryProbe, mirroring how the real client
+// returns nil on failure. args are the call's argument matchers.
+func onQuery[T any](c *mockClient, failMethod, method string, data T, args ...any) {
+	if method == failMethod {
+		var zero T
+		c.On(method, args...).Return(zero, errQueryProbe)
+		return
 	}
+	c.On(method, args...).Return(data, nil)
+}
 
+// newQueryMockClient returns a mock client that serves data for every query, so
+// that any enabled metric is emitted. The data only needs the keys/entries that
+// drive emission (e.g. one table row); the scrape records a data point regardless
+// of value, so the struct fields are left zero. If failMethod is non-empty, that
+// one query returns an error instead, which lets a test probe whether a query is
+// actually required to produce a given metric.
+func newQueryMockClient(failMethod string) *mockClient {
 	const db, schema = "otel", "public"
+	// getDatabaseTableMetrics and getBlocksReadByTable must use the same key: the
+	// blocks_read metric is recorded while iterating the table metrics, so it is
+	// only emitted for tables present in both results.
+	table := tableKey(db, schema, "t1")
+
 	c := new(mockClient)
 	c.On("Close").Return(nil)
 	c.On("listDatabases").Return([]string{db}, nil)
 	c.On("getVersion").Return("16.0", nil)
-	c.On("getBackends", mock.Anything).Return(probe("getBackends", map[databaseName]int64{databaseName(db): 1}))
-	c.On("getDatabaseSize", mock.Anything).Return(probe("getDatabaseSize", map[databaseName]int64{databaseName(db): 1}))
-	c.On("getDatabaseStats", mock.Anything).Return(probe("getDatabaseStats", map[databaseName]databaseStats{databaseName(db): {
-		transactionCommitted: 1, transactionRollback: 1, deadlocks: 1, tempFiles: 1, tempIo: 1,
-		tupUpdated: 1, tupReturned: 1, tupFetched: 1, tupInserted: 1, tupDeleted: 1, blksHit: 1, blksRead: 1,
-	}}))
-	c.On("getBGWriterStats", mock.Anything).Return(probe("getBGWriterStats", &bgStat{
-		checkpointsReq: 1, checkpointsScheduled: 1, checkpointWriteTime: 1, checkpointSyncTime: 1,
-		bgWrites: 1, bufferBackendWrites: 1, bufferFsyncWrites: 1, bufferCheckpoints: 1, buffersAllocated: 1, maxWritten: 1,
-	}))
-	c.On("getMaxConnections", mock.Anything).Return(probe("getMaxConnections", int64(100)))
-	c.On("getLatestWalAgeSeconds", mock.Anything).Return(probe("getLatestWalAgeSeconds", int64(3600)))
-	c.On("getReplicationStats", mock.Anything).Return(probe("getReplicationStats", []replicationStats{{
-		clientAddr: "addr", pendingBytes: 1,
-		flushLagInt: 1, replayLagInt: 1, writeLagInt: 1, flushLag: 1, replayLag: 1, writeLag: 1,
-	}}))
-	c.On("getDatabaseLocks", mock.Anything).Return(probe("getDatabaseLocks", []databaseLocks{
-		{relation: "pg_class", mode: "AccessShareLock", lockType: "relation", locks: 1},
-	}))
-	c.On("getDatabaseTableMetrics", mock.Anything, mock.Anything).Return(probe("getDatabaseTableMetrics", map[tableIdentifier]tableStats{
-		tableKey(db, schema, "t1"): {database: db, schema: schema, table: "t1", live: 1, dead: 1, inserts: 1, upd: 1, del: 1, hotUpd: 1, size: 1, vacuumCount: 1, seqScans: 1},
-	}))
-	c.On("getTableCount", mock.Anything).Return(probe("getTableCount", int64(1)))
-	c.On("getBlocksReadByTable", mock.Anything, mock.Anything).Return(probe("getBlocksReadByTable", map[tableIdentifier]tableIOStats{
-		tableKey(db, schema, "t1"): {database: db, schema: schema, table: "t1", heapRead: 1, heapHit: 1, idxRead: 1, idxHit: 1, toastRead: 1, toastHit: 1, tidxRead: 1, tidxHit: 1},
-	}))
-	c.On("getIndexStats", mock.Anything, mock.Anything).Return(probe("getIndexStats", map[indexIdentifer]indexStat{
-		indexKey(db, schema, "t1", "i1"): {database: db, schema: schema, table: "t1", index: "i1", scans: 1, size: 1},
-	}))
-	c.On("getFunctionStats", mock.Anything, mock.Anything).Return(probe("getFunctionStats", map[functionIdentifer]functionStat{
-		functionKey(db, schema, "f1"): {database: db, schema: schema, function: "f1", calls: 1},
-	}))
+
+	onQuery(c, failMethod, "getBackends", map[databaseName]int64{db: 0}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseSize", map[databaseName]int64{db: 0}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseStats", map[databaseName]databaseStats{db: {}}, mock.Anything)
+	onQuery(c, failMethod, "getBGWriterStats", &bgStat{}, mock.Anything)
+	onQuery(c, failMethod, "getMaxConnections", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getLatestWalAgeSeconds", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getReplicationStats", []replicationStats{{clientAddr: "addr"}}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseLocks", []databaseLocks{{}}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseTableMetrics", map[tableIdentifier]tableStats{table: {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getTableCount", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getBlocksReadByTable", map[tableIdentifier]tableIOStats{table: {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getIndexStats", map[indexIdentifer]indexStat{indexKey(db, schema, "t1", "i1"): {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getFunctionStats", map[functionIdentifer]functionStat{functionKey(db, schema, "f1"): {}}, mock.Anything, mock.Anything)
 	return c
 }
 
 // scrapeProbe enables only the named metric, runs a scrape against a mock where
-// errMethod (if set) fails, and reports which queries ran and whether the metric
+// failMethod (if set) fails, and reports which queries ran and whether the metric
 // was emitted.
-func scrapeProbe(t *testing.T, metric, errMethod string) (ranQueries map[string]bool, emitted bool) {
+func scrapeProbe(t *testing.T, metric, failMethod string) (ranQueries map[string]bool, emitted bool) {
 	t.Helper()
 	if metric == "postgresql.wal.lag" {
 		// wal.lag is the legacy counterpart of wal.delay and only emits when the
@@ -680,7 +651,7 @@ func scrapeProbe(t *testing.T, metric, errMethod string) (ranQueries map[string]
 		defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
 	}
 
-	client := newQueryMockClient(errMethod)
+	client := newQueryMockClient(failMethod)
 	factory := new(mockClientFactory)
 	factory.On("getClient", mock.Anything).Return(client, nil)
 
