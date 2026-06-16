@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: receiver/purefa
+component: receiver/pure_fa
 note: Fix the receiver failing to start due to an invalid internal Prometheus scrape configuration.
 issues: [48847]
 subtext: |

@@ -210,7 +210,7 @@ components:
         - prometheus_remote_write
         - prometheus_simple
         - pulsar
-        - purefa
+        - pure_fa
         - purefb
         - rabbitmq
         - receiver_creator
