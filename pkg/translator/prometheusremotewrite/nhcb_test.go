@@ -17,15 +17,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+// testHistTimestamp is the fixed timestamp shared by the explicit-histogram fixtures.
+const testHistTimestamp pcommon.Timestamp = 1_700_000_000_000_000_000
+
 // newTestExplicitHistogram builds a single cumulative explicit-bucket histogram
 // metric with bounds [1,2,3] and per-bucket counts [1,2,3,4] (cumulative
 // 1,3,6,10), Count=10, Sum=42.5.
-func newTestExplicitHistogram(ts pcommon.Timestamp) pmetric.Metric {
+func newTestExplicitHistogram() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("test_hist")
 	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	pt := metric.Histogram().DataPoints().AppendEmpty()
-	pt.SetTimestamp(ts)
+	pt.SetTimestamp(testHistTimestamp)
 	pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
 	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 	pt.SetCount(10)
@@ -60,8 +63,7 @@ func findSeriesTS(c *prometheusConverter, name string) *prompb.TimeSeries {
 }
 
 func TestExplicitToNHCBHistogram(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	pt := newTestExplicitHistogram(ts).Histogram().DataPoints().At(0)
+	pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
 
 	h, err := explicitToNHCBHistogram(pt)
 	require.NoError(t, err)
@@ -70,7 +72,7 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 	assert.Equal(t, []float64{1, 2, 3}, h.CustomValues, "explicit bounds carried as custom values")
 	assert.Equal(t, uint64(10), h.GetCountInt(), "count preserved")
 	assert.InDelta(t, 42.5, h.Sum, 1e-9, "sum preserved")
-	assert.Equal(t, convertTimeStamp(ts), h.Timestamp)
+	assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
 }
 
 // TestExplicitToNHCBHistogram_BucketCountsRoundTrip decodes the produced wire
@@ -78,8 +80,7 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 // matches the original OTLP histogram. This is the core correctness property:
 // the bucket payload — not just count/sum — must survive conversion.
 func TestExplicitToNHCBHistogram_BucketCountsRoundTrip(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	pt := newTestExplicitHistogram(ts).Histogram().DataPoints().At(0)
+	pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
 
 	h, err := explicitToNHCBHistogram(pt)
 	require.NoError(t, err)
@@ -179,8 +180,7 @@ func TestExplicitToNHCBHistogram_NoBounds(t *testing.T) {
 }
 
 func TestExplicitToNHCBHistogram_StaleMarker(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	pt := metric.Histogram().DataPoints().At(0)
 	pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
 
@@ -192,8 +192,7 @@ func TestExplicitToNHCBHistogram_StaleMarker(t *testing.T) {
 }
 
 func TestAddHistogramDataPoints_NHCBOnly(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	c := runHistogram(t, metric, Settings{ConvertHistogramsToNHCB: true})
 
 	// Exactly one series, named test_hist, carrying a native histogram.
@@ -207,8 +206,7 @@ func TestAddHistogramDataPoints_NHCBOnly(t *testing.T) {
 }
 
 func TestAddHistogramDataPoints_KeepClassic(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	c := runHistogram(t, metric, Settings{ConvertHistogramsToNHCB: true, KeepClassicHistograms: true})
 
 	var nativeSeries, classicSamples int
@@ -227,10 +225,9 @@ func TestAddHistogramDataPoints_KeepClassic(t *testing.T) {
 }
 
 func TestAddHistogramDataPoints_NHCBExemplars(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	ex := metric.Histogram().DataPoints().At(0).Exemplars().AppendEmpty()
-	ex.SetTimestamp(ts)
+	ex.SetTimestamp(testHistTimestamp)
 	ex.SetDoubleValue(7)
 
 	c := runHistogram(t, metric, Settings{ConvertHistogramsToNHCB: true})
@@ -242,8 +239,7 @@ func TestAddHistogramDataPoints_NHCBExemplars(t *testing.T) {
 }
 
 func TestAddHistogramDataPoints_ClassicDefault(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	c := runHistogram(t, metric, Settings{})
 
 	for _, series := range c.unique {
@@ -259,8 +255,7 @@ func TestAddHistogramDataPoints_ClassicDefault(t *testing.T) {
 // no empty native series may be created, and (with keep_classic) the classic
 // series must still be emitted.
 func TestAddHistogramDataPoints_ConversionErrorKeepsClassic(t *testing.T) {
-	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
-	metric := newTestExplicitHistogram(ts)
+	metric := newTestExplicitHistogram()
 	metric.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{1, math.NaN(), 3})
 
 	converter := newPrometheusConverter(Settings{ConvertHistogramsToNHCB: true, KeepClassicHistograms: true})
