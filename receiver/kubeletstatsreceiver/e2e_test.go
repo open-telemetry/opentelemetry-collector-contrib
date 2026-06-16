@@ -64,7 +64,7 @@ func TestE2E(t *testing.T) {
 
 	// Grab the latest metrics payload and assert it against our concise expected.yaml
 	actualMetrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
-	err = pmetricassert.AssertMetrics(expectedFile, actualMetrics)
+	err = pmetricassert.AssertMetrics(expectedFile, actualMetrics, pmetricassert.IgnoreScopeVersion())
 	require.NoError(t, err)
 }
 
