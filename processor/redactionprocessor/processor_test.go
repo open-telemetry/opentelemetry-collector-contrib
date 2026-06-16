@@ -5,6 +5,7 @@ package redactionprocessor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -1933,11 +1934,11 @@ func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
 	var wg sync.WaitGroup
 	errCh := make(chan error, workers)
 	wg.Add(workers)
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		go func(i int) {
 			defer wg.Done()
 
-			for j := 0; j < 100; j++ {
+			for range 100 {
 				inBatch := ptrace.NewTraces()
 				span := inBatch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				span.SetKind(ptrace.SpanKindClient)
@@ -1956,7 +1957,7 @@ func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
 
 				stmt, ok := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("db.statement")
 				if !ok {
-					errCh <- fmt.Errorf("missing db.statement")
+					errCh <- errors.New("missing db.statement")
 					return
 				}
 				if i%2 == 0 {

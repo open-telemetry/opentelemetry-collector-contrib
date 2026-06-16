@@ -68,7 +68,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 		obfuscatorsPool: sync.Pool{
 			New: func() any {
 				obfuscators, _ := newObfuscators()
-				return obfuscators
+				return &obfuscators
 			},
 		},
 		processAttributesEnabled:   processAttributesEnabled,
@@ -258,11 +258,11 @@ func (o *Obfuscator) ObfuscateWithSystem(val, dbSystem string) (string, error) {
 }
 
 func (o *Obfuscator) getObfuscators() []databaseObfuscator {
-	return o.obfuscatorsPool.Get().([]databaseObfuscator)
+	return *o.obfuscatorsPool.Get().(*[]databaseObfuscator)
 }
 
 func (o *Obfuscator) putObfuscators(obfuscators []databaseObfuscator) {
-	o.obfuscatorsPool.Put(obfuscators)
+	o.obfuscatorsPool.Put(&obfuscators)
 }
 
 func createSystems(systems []string) map[string]bool {
