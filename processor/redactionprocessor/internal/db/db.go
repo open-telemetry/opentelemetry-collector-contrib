@@ -57,29 +57,28 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 		ES:         obfuscate.JSONConfig{Enabled: cfg.ESConfig.Enabled},
 	}
 
-	newObfuscators := func() ([]databaseObfuscator, bool) {
+	newObfuscators := func() []databaseObfuscator {
 		return newDatabaseObfuscators(cfg, logger, obfuscate.NewObfuscator(obfuscateConfig))
 	}
 
-	obfuscators, processAttributesEnabled := newObfuscators()
+	obfuscators := newObfuscators()
 
 	return &Obfuscator{
 		obfuscators: obfuscators,
 		obfuscatorsPool: sync.Pool{
 			New: func() any {
-				obfuscators, _ := newObfuscators()
+				obfuscators := newObfuscators()
 				return &obfuscators
 			},
 		},
-		processAttributesEnabled:   processAttributesEnabled,
+		processAttributesEnabled:   hasDBSanitizerAttributes(cfg),
 		logger:                     logger,
 		allowFallbackWithoutSystem: cfg.AllowFallbackWithoutSystem,
 	}
 }
 
-func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfuscate.Obfuscator) ([]databaseObfuscator, bool) {
+func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfuscate.Obfuscator) []databaseObfuscator {
 	var obfuscators []databaseObfuscator
-	processAttributesEnabled := false
 
 	if cfg.SQLConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.SQLConfig.Attributes, []string{
@@ -89,7 +88,6 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 			semconv138.DBSystemNameMariaDB.Value.AsString(),
 			semconv138.DBSystemNameSQLite.Value.AsString(),
 		})
-		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &sqlObfuscator{
 			dbAttributes: dbAttrs,
 			obfuscator:   o,
@@ -100,7 +98,6 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 		dbAttrs := newDBAttributes(cfg.RedisConfig.Attributes, []string{
 			semconv138.DBSystemNameRedis.Value.AsString(),
 		})
-		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &redisObfuscator{
 			dbAttributes: dbAttrs,
 			obfuscator:   o,
@@ -111,7 +108,6 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 		dbAttrs := newDBAttributes(cfg.ValkeyConfig.Attributes, []string{
 			"valkey", // Not part of semantic conventions
 		})
-		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &redisObfuscator{
 			dbAttributes: dbAttrs,
 			obfuscator:   o,
@@ -122,7 +118,6 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 		dbAttrs := newDBAttributes(cfg.MemcachedConfig.Attributes, []string{
 			semconv138.DBSystemNameMemcached.Value.AsString(),
 		})
-		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &memcachedObfuscator{
 			dbAttributes: dbAttrs,
 			obfuscator:   o,
@@ -133,7 +128,6 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 		dbAttrs := newDBAttributes(cfg.MongoConfig.Attributes, []string{
 			semconv138.DBSystemNameMongoDB.Value.AsString(),
 		})
-		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &mongoObfuscator{
 			dbAttributes: dbAttrs,
 			obfuscator:   o,
@@ -163,7 +157,15 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 		})
 	}
 
-	return obfuscators, processAttributesEnabled
+	return obfuscators
+}
+
+func hasDBSanitizerAttributes(cfg DBSanitizerConfig) bool {
+	return len(cfg.SQLConfig.Attributes) > 0 ||
+		len(cfg.RedisConfig.Attributes) > 0 ||
+		len(cfg.ValkeyConfig.Attributes) > 0 ||
+		len(cfg.MemcachedConfig.Attributes) > 0 ||
+		len(cfg.MongoConfig.Attributes) > 0
 }
 
 func (o *Obfuscator) Obfuscate(s string) (string, error) {
