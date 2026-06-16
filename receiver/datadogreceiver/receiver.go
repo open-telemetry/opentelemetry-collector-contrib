@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/klauspost/compress/zstd"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -753,7 +754,9 @@ func (ddr *datadogReceiver) runIdleSeriesCleanup() {
 }
 
 // createDecompressingReader creates a reader that handles decompression based on the content encoding.
-// Supported encodings: gzip. Returns the original reader if encoding is empty or unsupported.
+// Supported encodings: gzip, zstd. The Datadog Agent gzips by default on older versions and uses
+// zstd for HTTP logs on newer ones (7.59+). Returns the original reader if encoding is empty or
+// unsupported.
 func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
 	switch contentEncoding {
 	case "gzip":
@@ -761,7 +764,15 @@ func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.R
 		if err != nil {
 			return nil, fmt.Errorf("error creating gzip reader: %w", err)
 		}
+
 		return gzReader, nil
+	case "zstd":
+		zReader, err := zstd.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating zstd reader: %w", err)
+		}
+
+		return zReader.IOReadCloser(), nil
 	default:
 		return body, nil
 	}
