@@ -66,19 +66,19 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 
 func TestDefaultErrorModeWithFeatureGate(t *testing.T) {
 	tests := []struct {
-		name              string
+		name               string
 		featureGateEnabled bool
-		expectedErrorMode ottl.ErrorMode
+		expectedErrorMode  ottl.ErrorMode
 	}{
 		{
-			name:              "feature gate disabled",
+			name:               "feature gate disabled",
 			featureGateEnabled: false,
-			expectedErrorMode: ottl.PropagateError,
+			expectedErrorMode:  ottl.PropagateError,
 		},
 		{
-			name:              "feature gate enabled",
+			name:               "feature gate enabled",
 			featureGateEnabled: true,
-			expectedErrorMode: ottl.IgnoreError,
+			expectedErrorMode:  ottl.IgnoreError,
 		},
 	}
 
