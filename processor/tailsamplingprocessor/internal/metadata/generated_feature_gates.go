@@ -6,23 +6,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorTailsamplingprocessorDefaultOTTLErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.tailsamplingprocessor.defaultOTTLErrorModeIgnore",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Changes the default error_mode of the ottl_condition policy from propagate to ignore"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420"),
-	featuregate.WithRegisterFromVersion("v0.153.0"),
-)
-
-var ProcessorTailsamplingprocessorDisableinvertdecisionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.tailsamplingprocessor.disableinvertdecisions",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833"),
-	featuregate.WithRegisterFromVersion("v0.126.0"),
-	featuregate.WithRegisterToVersion("v0.152.0"),
-)
-
 var ProcessorTailsamplingprocessorMetricstatcountbytessampledFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.tailsamplingprocessor.metricstatcountbytessampled",
 	featuregate.StageAlpha,
