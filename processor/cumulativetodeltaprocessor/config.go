@@ -24,7 +24,11 @@ var validMetricTypes = map[string]bool{
 	strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()): true,
 }
 
-var validMetricTypeList = slices.Collect(maps.Keys(validMetricTypes))
+var validMetricTypeList = func() []string {
+	list := slices.Collect(maps.Keys(validMetricTypes))
+	slices.Sort(list)
+	return list
+}()
 
 // Config defines the configuration for the processor.
 type Config struct {
