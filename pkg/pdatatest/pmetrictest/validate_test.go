@@ -435,7 +435,125 @@ func TestValidateMetrics(t *testing.T) {
 		assert.NoError(t, ValidateMetrics(md))
 	})
 
-	// TODO (PR 4): Add tests for multiple ScopeMetrics with equal scope under the same resource
+	t.Run("duplicate-scope-same-name-and-version", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		sm1.Scope().SetName("my.scope")
+		sm1.Scope().SetVersion("1.0")
+
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		sm2.Scope().SetName("my.scope")
+		sm2.Scope().SetVersion("1.0")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `scope "my.scope" (version "1.0") at index 1 is a duplicate of scope at index 0`)
+	})
+
+	t.Run("no-duplicate-scope-different-names", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		sm1.Scope().SetName("scope.a")
+
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		sm2.Scope().SetName("scope.b")
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("no-duplicate-scope-same-name-different-version", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		sm1.Scope().SetName("my.scope")
+		sm1.Scope().SetVersion("1.0")
+
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		sm2.Scope().SetName("my.scope")
+		sm2.Scope().SetVersion("2.0")
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("duplicate-scope-multiple-duplicates", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		for range 3 {
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.Scope().SetName("my.scope")
+		}
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at index 1 is a duplicate of scope at index 0")
+		assert.Contains(t, err.Error(), "at index 2 is a duplicate of scope at index 0")
+	})
+
+	t.Run("duplicate-scope-multiple-pairs", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		sm1.Scope().SetName("scope.a")
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		sm2.Scope().SetName("scope.a")
+
+		sm3 := rm.ScopeMetrics().AppendEmpty()
+		sm3.Scope().SetName("scope.b")
+		sm4 := rm.ScopeMetrics().AppendEmpty()
+		sm4.Scope().SetName("scope.b")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `"scope.a"`)
+		assert.Contains(t, err.Error(), `"scope.b"`)
+	})
+
+	t.Run("duplicate-scope-empty-names", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		// Two ScopeMetrics with empty scope name and version (they are duplicates)
+		rm.ScopeMetrics().AppendEmpty()
+		rm.ScopeMetrics().AppendEmpty()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at index 1 is a duplicate of scope at index 0")
+	})
+
+	t.Run("single-scope-no-duplicate", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("my.scope")
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("duplicate-scope-includes-resource-context", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		sm1 := rm.ScopeMetrics().AppendEmpty()
+		sm1.Scope().SetName("my.scope")
+
+		sm2 := rm.ScopeMetrics().AppendEmpty()
+		sm2.Scope().SetName("my.scope")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `resource "map[host.name:worker-42]"`)
+		assert.Contains(t, err.Error(), `scope "my.scope"`)
+	})
 
 	t.Run("duplicate-resource-attributes", func(t *testing.T) {
 		md := pmetric.NewMetrics()
