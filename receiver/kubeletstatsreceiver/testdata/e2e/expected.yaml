@@ -6,10 +6,6 @@ resources/include:
     scopes/include:
       - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
         metrics/include:
-          - name: k8s.node.cpu.time
-            type: sum
-            unit: s
-            temporality: cumulative
           - name: k8s.node.memory.usage
             type: gauge
             unit: By
