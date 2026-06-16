@@ -5,7 +5,6 @@ resources/include:
       k8s.node.name: kind-control-plane
     scopes/include:
       - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
-        version: latest
         metrics/include:
           - name: k8s.node.cpu.time
             type: Sum
