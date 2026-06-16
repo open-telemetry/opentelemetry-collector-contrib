@@ -67,10 +67,9 @@ func Test_stringifyAll(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := stringifyAll(target)
-			require.NoError(t, err)
+			exprFunc := stringifyAll(target)
 
-			_, err = exprFunc(nil, scenarioMap)
+			_, err := exprFunc(nil, scenarioMap)
 			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
@@ -98,10 +97,9 @@ func Test_stringifyAll_emptyMap(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := stringifyAll(target)
-	require.NoError(t, err)
+	exprFunc := stringifyAll(target)
 
-	_, err = exprFunc(nil, scenarioMap)
+	_, err := exprFunc(nil, scenarioMap)
 	require.NoError(t, err)
 
 	assert.Equal(t, pcommon.NewMap(), scenarioMap)
@@ -114,9 +112,8 @@ func Test_stringifyAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := stringifyAll[any](target)
-	require.NoError(t, err)
+	exprFunc := stringifyAll[any](target)
 
-	_, err = exprFunc(nil, nil)
+	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }
