@@ -161,11 +161,11 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 }
 
 func hasDBSanitizerAttributes(cfg DBSanitizerConfig) bool {
-	return len(cfg.SQLConfig.Attributes) > 0 ||
-		len(cfg.RedisConfig.Attributes) > 0 ||
-		len(cfg.ValkeyConfig.Attributes) > 0 ||
-		len(cfg.MemcachedConfig.Attributes) > 0 ||
-		len(cfg.MongoConfig.Attributes) > 0
+	return cfg.SQLConfig.Enabled && len(cfg.SQLConfig.Attributes) > 0 ||
+		cfg.RedisConfig.Enabled && len(cfg.RedisConfig.Attributes) > 0 ||
+		cfg.ValkeyConfig.Enabled && len(cfg.ValkeyConfig.Attributes) > 0 ||
+		cfg.MemcachedConfig.Enabled && len(cfg.MemcachedConfig.Attributes) > 0 ||
+		cfg.MongoConfig.Enabled && len(cfg.MongoConfig.Attributes) > 0
 }
 
 func (o *Obfuscator) Obfuscate(s string) (string, error) {
