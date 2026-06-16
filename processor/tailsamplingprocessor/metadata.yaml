@@ -18,6 +18,7 @@ feature_gates:
     stage: alpha
     from_version: v0.153.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420
+    skip_strict_validation: true
 
   - id: "processor.tailsamplingprocessor.metricstatcountbytessampled"
     description: "When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces."
