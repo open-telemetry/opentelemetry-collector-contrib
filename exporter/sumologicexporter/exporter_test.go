@@ -73,9 +73,10 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 		testServer.Close()
 
 		// Ensure we got all required requests
-		assert.Eventuallyf(t, func() bool {
-			return int(atomic.LoadInt32(&reqCounter)) == len(cb)
-		}, 2*time.Second, 100*time.Millisecond,
+		assert.Eventuallyf(
+			t, func() bool {
+				return int(atomic.LoadInt32(&reqCounter)) == len(cb)
+			}, 2*time.Second, 100*time.Millisecond,
 			"HTTP server didn't receive all the expected requests; got: %d, expected: %d",
 			atomic.LoadInt32(&reqCounter), len(cb),
 		)
@@ -250,7 +251,8 @@ func TestInvalidHTTPClient(t *testing.T) {
 	}, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
-	assert.EqualError(t,
+	assert.EqualError(
+		t,
 		exp.start(t.Context(), componenttest.NewNopHost()),
 		"failed to create HTTP Client: failed to load TLS config: invalid TLS min_version: unsupported TLS version: \"invalid\"",
 	)

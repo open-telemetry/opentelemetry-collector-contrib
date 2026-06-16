@@ -252,7 +252,8 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 			e.config.Auth.TenantID,
 			e.config.Auth.ClientID,
 			e.config.Auth.ClientSecret,
-			nil)
+			nil,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to create service principal credential: %w", err)
 		}

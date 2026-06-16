@@ -78,7 +78,8 @@ func createLogsExporter(ctx context.Context,
 
 	s3Exporter := newS3Exporter(cfg, "logs", params)
 
-	logsExporter, err := exporterhelper.NewLogs(ctx, params,
+	logsExporter, err := exporterhelper.NewLogs(
+		ctx, params,
 		config,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
@@ -116,7 +117,8 @@ func createMetricsExporter(ctx context.Context,
 		return nil, errors.New("metrics are not supported by sumo_ic output format")
 	}
 
-	metricsExporter, err := exporterhelper.NewMetrics(ctx, params,
+	metricsExporter, err := exporterhelper.NewMetrics(
+		ctx, params,
 		config,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
@@ -154,7 +156,8 @@ func createTracesExporter(ctx context.Context,
 		return nil, errors.New("traces are not supported by sumo_ic output format")
 	}
 
-	tracesExporter, err := exporterhelper.NewTraces(ctx,
+	tracesExporter, err := exporterhelper.NewTraces(
+		ctx,
 		params,
 		config,
 		s3Exporter.ConsumeTraces,

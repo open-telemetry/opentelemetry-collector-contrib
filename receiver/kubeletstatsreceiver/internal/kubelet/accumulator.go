@@ -119,7 +119,8 @@ func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.Co
 			"failed to fetch container metrics",
 			zap.String("pod", sPod.PodRef.Name),
 			zap.String("container", s.Name),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		return
 	}
 
@@ -151,7 +152,8 @@ func (a *metricDataAccumulator) volumeStats(sPod *stats.PodStats, s *stats.Volum
 			"Failed to gather additional volume metadata. Skipping metric collection.",
 			zap.String("pod", sPod.PodRef.Name),
 			zap.String("volume", s.Name),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		return
 	}
 

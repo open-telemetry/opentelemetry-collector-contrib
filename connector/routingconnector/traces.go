@@ -43,7 +43,8 @@ func newTracesConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		tr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		case "", "resource":
 			switch route.action {
 			case Copy:
-				ptraceutil.CopyResourcesIf(td, matched,
+				ptraceutil.CopyResourcesIf(
+					td, matched,
 					func(rs ptrace.ResourceSpans) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
 						defer rtx.Close()
@@ -93,7 +95,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 					},
 				)
 			default:
-				ptraceutil.MoveResourcesIf(td, matched,
+				ptraceutil.MoveResourcesIf(
+					td, matched,
 					func(rs ptrace.ResourceSpans) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
 						defer rtx.Close()
@@ -110,7 +113,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		case "span":
 			switch route.action {
 			case Copy:
-				ptraceutil.CopySpansWithContextIf(td, matched,
+				ptraceutil.CopySpansWithContextIf(
+					td, matched,
 					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
 						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
 						defer mtx.Close()
@@ -124,7 +128,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 					},
 				)
 			default:
-				ptraceutil.MoveSpansWithContextIf(td, matched,
+				ptraceutil.MoveSpansWithContextIf(
+					td, matched,
 					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
 						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
 						defer mtx.Close()

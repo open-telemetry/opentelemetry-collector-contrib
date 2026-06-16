@@ -1595,7 +1595,8 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 			&parserWithPathCtx,
 			ottl.WithStatementConverter(func(_ *ottl.ParserCollection[*ottl.Statement[*ottlprofile.TransformContext]], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottlprofile.TransformContext]) (*ottl.Statement[*ottlprofile.TransformContext], error) {
 				return parsedStatements[0], nil
-			})))
+			}),
+		))
 	if err != nil {
 		return nil, err
 	}

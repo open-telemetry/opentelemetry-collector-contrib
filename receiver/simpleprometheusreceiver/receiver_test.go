@@ -42,7 +42,7 @@ func TestReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := (f.CreateDefaultConfig()).(*Config)
+			cfg := f.CreateDefaultConfig().(*Config)
 			cfg.UseServiceAccount = tt.useServiceAccount
 
 			r, err := f.CreateMetrics(

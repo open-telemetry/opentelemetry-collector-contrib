@@ -191,7 +191,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 		s.addStickySessionCookie(req)
 	}
 
-	s.logger.Debug("Sending data",
+	s.logger.Debug(
+		"Sending data",
 		zap.String("pipeline", string(pipeline)),
 		zap.Any("headers", req.Header),
 	)
@@ -280,7 +281,8 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 			)
 
 			if err := json.NewDecoder(tr).Decode(&rResponse); err != nil {
-				return fmt.Errorf("failed to decode API response (status: %s): %s",
+				return fmt.Errorf(
+					"failed to decode API response (status: %s): %s",
 					resp.Status, b.String(),
 				)
 			}

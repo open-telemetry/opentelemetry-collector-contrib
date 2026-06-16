@@ -40,7 +40,8 @@ type ec2ifaceBuilder interface {
 type ec2ClientBuilder struct{}
 
 func (*ec2ClientBuilder) buildClient(ctx context.Context, region string, client *http.Client) (ec2.DescribeTagsAPIClient, error) {
-	cfg, err := config.LoadDefaultConfig(ctx,
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
 		config.WithRegion(region),
 		config.WithHTTPClient(client),
 	)

@@ -353,7 +353,8 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	assert.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 	traces := sink1.AllTraces()
-	require.Len(t, traces, 1,
+	require.Len(
+		t, traces, 1,
 		"trace should be routed to non default pipeline",
 	)
 	require.Equal(t, 1, traces[0].ResourceSpans().Len())
@@ -363,7 +364,8 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
 	assert.Equal(t, "acme", v.Str())
-	require.Empty(t, sink0.AllTraces(),
+	require.Empty(
+		t, sink0.AllTraces(),
 		"trace should not be routed to default pipeline",
 	)
 }
@@ -766,18 +768,23 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSink0: ptraceutiltest.NewTraces("B", "D", "EF", "GH"),
 			expectSink1: ptrace.Traces{},
 			expectSinkD: ptraceutiltest.NewTracesFromOpts(
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),

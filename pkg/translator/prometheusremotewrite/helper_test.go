@@ -53,7 +53,8 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 		{
 			name: "cumulative histogram",
 			metric: getHistogramMetric(
-				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{}),
+				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{},
+			),
 			want: true,
 		},
 		{
@@ -84,7 +85,8 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 		{
 			name: "delta histogram",
 			metric: getHistogramMetric(
-				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{}),
+				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{},
+			),
 			want: false,
 		},
 		{

@@ -406,7 +406,8 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.Str())
-	require.Empty(t, sink0.AllMetrics(),
+	require.Empty(
+		t, sink0.AllMetrics(),
 		"metrics should not be routed to default pipeline",
 	)
 }
@@ -813,18 +814,23 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			expectSink0: pmetricutiltest.NewGauges("B", "D", "EF", "GH"),
 			expectSink1: pmetric.Metrics{},
 			expectSinkD: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),

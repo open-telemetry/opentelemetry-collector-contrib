@@ -109,7 +109,8 @@ func NewFactory() processor.Factory {
 		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
-		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability),
+	)
 }
 
 // Type gets the type of the Option config created by this factory.

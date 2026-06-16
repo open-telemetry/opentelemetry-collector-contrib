@@ -118,7 +118,8 @@ func TestMetricsIntegration_Summary(t *testing.T) {
 	}
 	expected, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, md,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, md,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 	))
@@ -164,7 +165,8 @@ func TestMetricsIntegration_Gauge(t *testing.T) {
 	}
 	expected, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, md,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, md,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 	))

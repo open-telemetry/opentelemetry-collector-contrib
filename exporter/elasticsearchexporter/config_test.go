@@ -92,16 +92,17 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
-					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns
-					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = configopaque.MapList{
-						{Name: "myheader", Value: "test"},
-					}
-					cfg.Compression = defaultCompression
-					cfg.CompressionParams.Level = gzip.BestSpeed
-				},
+				ClientConfig: withDefaultHTTPClientConfig(
+					func(cfg *confighttp.ClientConfig) {
+						cfg.Timeout = 2 * time.Minute
+						cfg.MaxIdleConns = defaultMaxIdleConns
+						cfg.IdleConnTimeout = defaultIdleConnTimeout
+						cfg.Headers = configopaque.MapList{
+							{Name: "myheader", Value: "test"},
+						}
+						cfg.Compression = defaultCompression
+						cfg.CompressionParams.Level = gzip.BestSpeed
+					},
 				),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",

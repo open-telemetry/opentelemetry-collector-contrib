@@ -133,7 +133,8 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 	gtr.logger.Info(
 		"Health check now listening at",
-		zap.String("health_path",
+		zap.String(
+			"health_path",
 			fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.HealthPath),
 		),
 	)

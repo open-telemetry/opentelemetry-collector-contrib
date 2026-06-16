@@ -328,7 +328,8 @@ func TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf(t *testing.T
 	temp := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp, fileContent)
 
-	f, sink := testFactory(t,
+	f, sink := testFactory(
+		t,
 		withFingerprintSize(fingerPrintSize),
 		withMaxLogSize(defaultMaxLogSize),
 		withSinkChanSize(1000),

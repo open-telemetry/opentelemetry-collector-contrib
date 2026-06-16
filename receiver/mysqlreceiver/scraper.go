@@ -89,18 +89,21 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 // capability flags and an end-of-life warning for MySQL <8.
 func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 	if dbVer.version == nil {
-		m.logger.Warn("database version could not be detected at startup; receiver will use MySQL <8/MariaDB fallback behavior for its entire lifetime",
+		m.logger.Warn(
+			"database version could not be detected at startup; receiver will use MySQL <8/MariaDB fallback behavior for its entire lifetime",
 			zap.Bool("supports_query_sample_text", false),
 		)
 		return
 	}
-	m.logger.Info("detected database version",
+	m.logger.Info(
+		"detected database version",
 		zap.String("product", dbVer.productString()),
 		zap.String("version", dbVer.version.String()),
 		zap.Bool("supports_query_sample_text", dbVer.supportsQuerySampleText()),
 	)
 	if dbVer.product == dbProductMySQL && dbVer.version.Segments()[0] < 8 {
-		m.logger.Warn("detected MySQL version is past end-of-life and may not be supported by this receiver in a future release",
+		m.logger.Warn(
+			"detected MySQL version is past end-of-life and may not be supported by this receiver in a future release",
 			zap.String("version", dbVer.version.String()),
 		)
 	}

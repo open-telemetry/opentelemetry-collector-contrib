@@ -377,7 +377,8 @@ func TestTLSConfig(t *testing.T) {
 					Protocol: "rfc5424",
 					TLS:      testInstance.tlsSettings,
 				},
-				createExporterCreateSettings())
+				createExporterCreateSettings(),
+			)
 
 			assert.NoError(t, err)
 			if testInstance.tlsConfig != nil {

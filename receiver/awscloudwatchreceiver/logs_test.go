@@ -366,7 +366,8 @@ func TestAutodiscoverPattern(t *testing.T) {
 				},
 			},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 
 	mc.On(
 		"DescribeLogGroups",
@@ -384,7 +385,8 @@ func TestAutodiscoverPattern(t *testing.T) {
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: []types.LogGroup{},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
@@ -433,13 +435,15 @@ func TestAutodiscoverLimit(t *testing.T) {
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: logGroups[:50],
 			NextToken: &token,
-		}, nil).Once()
+		}, nil,
+	).Once()
 
 	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: logGroups[50:],
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 
 	numGroups := 100
 
@@ -489,14 +493,16 @@ func TestAutodiscoverAccountIdentifiers(t *testing.T) {
 				},
 			},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 
 	// Otherwise, return no groups
 	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: []types.LogGroup{},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
@@ -985,7 +991,8 @@ func defaultMockClient() client {
 				},
 			},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.FilterLogEventsOutput{
 			Events: []types.FilteredLogEvent{
@@ -1019,7 +1026,8 @@ func defaultMockClient() client {
 				},
 			},
 			NextToken: nil,
-		}, nil)
+		}, nil,
+	)
 	return mc
 }
 

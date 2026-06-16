@@ -13,7 +13,8 @@ import (
 
 func (s *redfishScraper) recordComputerSystem(compSys *redfish.ComputerSystem) {
 	now := pcommon.NewTimestampFromTime(time.Now())
-	s.mb.RecordSystemPowerstateDataPoint(now,
+	s.mb.RecordSystemPowerstateDataPoint(
+		now,
 		redfish.PowerStateToMetric(compSys.PowerState),
 		compSys.ID,
 		compSys.AssetTag,

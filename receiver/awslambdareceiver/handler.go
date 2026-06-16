@@ -104,7 +104,8 @@ func newS3LogsHandler(
 		if err != nil {
 			return fmt.Errorf("failed to route S3 object: %w", err)
 		}
-		logger.Debug("Matched encoding for S3 object",
+		logger.Debug(
+			"Matched encoding for S3 object",
 			zap.String("File", event.S3.Object.URLDecodedKey),
 			zap.String("Encoding", encodingName),
 		)
@@ -194,7 +195,8 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 		return fmt.Errorf("failed to parse the event: %w", err)
 	}
 
-	s.logger.Debug("Processing S3 event notification.",
+	s.logger.Debug(
+		"Processing S3 event notification.",
 		zap.String("File", parsedEvent.S3.Object.URLDecodedKey),
 		zap.String("S3Bucket", parsedEvent.S3.Bucket.Arn),
 	)

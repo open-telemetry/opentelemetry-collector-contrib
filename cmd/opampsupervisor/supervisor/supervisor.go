@@ -308,7 +308,8 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
 				c,
-				otelzap.NewCore("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor",
+				otelzap.NewCore(
+					"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor",
 					otelzap.WithLoggerProvider(lp),
 				),
 			), zap.NewAtomicLevelAt(cfg.Logs.Level))

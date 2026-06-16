@@ -197,18 +197,23 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 			from: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			to:   ptrace.NewTraces(),
 			expectFrom: ptraceutiltest.NewTracesFromOpts(
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("D",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
@@ -235,21 +240,27 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 			from: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			to:   ptrace.NewTraces(),
 			expectFrom: ptraceutiltest.NewTracesFromOpts(
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
@@ -276,21 +287,27 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 			from: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			to:   ptrace.NewTraces(),
 			expectFrom: ptraceutiltest.NewTracesFromOpts(
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("C",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"C",
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
-					ptraceutiltest.Scope("D",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
@@ -307,14 +324,18 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 			expectFrom: ptraceutiltest.NewTraces("AB", "C", "EF", "GH"),
 			expectTo: ptraceutiltest.NewTracesFromOpts(
 				ptraceutiltest.Resource("1", ptraceutiltest.Scope("2", ptraceutiltest.Span("3", ptraceutiltest.SpanEvent("4")))),
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("D",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("D",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
@@ -435,14 +456,18 @@ func TestCopySpansWithContextIf(t *testing.T) {
 			expectFrom: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectTo: ptraceutiltest.NewTracesFromOpts(
 				ptraceutiltest.Resource("1", ptraceutiltest.Scope("2", ptraceutiltest.Span("3", ptraceutiltest.SpanEvent("4")))),
-				ptraceutiltest.Resource("A",
-					ptraceutiltest.Scope("D",
+				ptraceutiltest.Resource(
+					"A",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),
 				),
-				ptraceutiltest.Resource("B",
-					ptraceutiltest.Scope("D",
+				ptraceutiltest.Resource(
+					"B",
+					ptraceutiltest.Scope(
+						"D",
 						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
 					),

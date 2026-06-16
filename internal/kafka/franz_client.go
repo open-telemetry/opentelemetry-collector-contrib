@@ -146,7 +146,8 @@ func NewFranzConsumerGroup(
 	}
 	// Configure auto-commit to use marks, this simplifies the committing
 	// logic and makes it more consistent with the Sarama client.
-	opts = append(opts, kgo.AutoCommitMarks(),
+	opts = append(
+		opts, kgo.AutoCommitMarks(),
 		kgo.AutoCommitInterval(interval),
 	)
 
@@ -296,7 +297,8 @@ func commonOpts(
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {
-	opts = append(opts,
+	opts = append(
+		opts,
 		kgo.WithLogger(kzap.New(logger.Named("franz"))),
 		kgo.SeedBrokers(clientCfg.Brokers...),
 		// Disable client metrics, since some brokers may falsely indicate

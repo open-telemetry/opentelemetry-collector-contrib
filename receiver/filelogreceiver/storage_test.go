@@ -51,7 +51,8 @@ func TestStorage(t *testing.T) {
 	logger.log(fmt.Sprintf(baseLog, 1))
 
 	// Expect them now, since the receiver is running
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		expectLogs(sink, logger.recall()),
 		5*time.Second,
 		10*time.Millisecond,
@@ -79,7 +80,8 @@ func TestStorage(t *testing.T) {
 	sink.Reset()
 
 	// Expect only the new 3
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
@@ -94,7 +96,8 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Expect the new 100
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
@@ -124,7 +127,8 @@ func TestStorage(t *testing.T) {
 	sink.Reset()
 
 	// Expect only the new 5
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,

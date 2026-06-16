@@ -43,7 +43,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createFaroReceiverTraces, metadata.TracesStability),
-		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability))
+		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability),
+	)
 }
 
 func newFaroReceiverFactory(fCfg *Config, set *receiver.Settings, err *error) func() component.Component {

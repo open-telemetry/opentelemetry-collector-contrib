@@ -137,7 +137,8 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 					}
 					config.PortBindings = ports
 				},
-			}),
+			},
+		),
 		scraperinttest.AllowHardcodedHostPort(),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
@@ -162,7 +163,8 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 						Timeout: time.Second,
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", version, "expected.yaml")),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreScopeMetricsOrder(),

@@ -85,7 +85,8 @@ func TestHandleConsume(t *testing.T) {
 	stanzaReceiver.consumeEntries(t.Context(), []*entry.Entry{entry.New()})
 
 	// Eventually because of asynchronuous nature of the receiver.
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		func() bool {
 			return mockConsumer.LogRecordCount() == 1
 		},
@@ -110,7 +111,8 @@ func TestHandleConsumeRetry(t *testing.T) {
 
 	stanzaReceiver.consumeEntries(t.Context(), []*entry.Entry{entry.New()})
 
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		func() bool {
 			return mockConsumer.LogRecordCount() == 1
 		},
@@ -152,7 +154,8 @@ func TestShutdownFlush(t *testing.T) {
 	close(closeCh)
 
 	// Eventually because of asynchronuous nature of the receiver.
-	require.EventuallyWithT(t,
+	require.EventuallyWithT(
+		t,
 		func(t *assert.CollectT) {
 			assert.Equal(t, consumedLogCount.Load(), int32(mockConsumer.LogRecordCount()))
 		},

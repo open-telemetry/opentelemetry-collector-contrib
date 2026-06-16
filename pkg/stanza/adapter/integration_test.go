@@ -85,7 +85,8 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 			}
 		}()
 
-		require.Eventually(b,
+		require.Eventually(
+			b,
 			func() bool {
 				return cl.LogRecordCount() == entryCount
 			},
@@ -120,7 +121,8 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 			}
 		}()
 
-		require.Eventually(b,
+		require.Eventually(
+			b,
 			func() bool {
 				return cl.LogRecordCount() == entryCount
 			},
@@ -155,7 +157,8 @@ func TestEmitterToConsumer(t *testing.T) {
 		}
 	}()
 
-	require.Eventually(t,
+	require.Eventually(
+		t,
 		func() bool {
 			return cl.LogRecordCount() == entryCount
 		},

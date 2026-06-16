@@ -81,17 +81,19 @@ func TestE2EEnvDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -129,22 +131,24 @@ func TestE2ESystemDetector(t *testing.T) {
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		// For system detector, we need to ignore some values that are host-specific
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
-			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("host.arch", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("os.version", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("os.description", replaceWithStar),
-		),
+				pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
+				pmetrictest.ChangeResourceAttributeValue("host.arch", replaceWithStar),
+				pmetrictest.ChangeResourceAttributeValue("os.version", replaceWithStar),
+				pmetrictest.ChangeResourceAttributeValue("os.description", replaceWithStar),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -197,20 +201,22 @@ func TestE2EDockerDetector(t *testing.T) {
 	require.Truef(t, found, "resource with container.name=%s not found in new metric batches", containerName)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, actual,
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, actual,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
-			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("container.image.name", replaceWithStar),
-		),
+				pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
+				pmetrictest.ChangeResourceAttributeValue("container.image.name", replaceWithStar),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -243,17 +249,19 @@ func TestE2EEKSDetector(t *testing.T) {
 	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -287,17 +295,19 @@ func TestE2EGCPDetector(t *testing.T) {
 	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -334,17 +344,19 @@ func TestE2EHerokuDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -381,17 +393,19 @@ func TestE2ELambdaDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -445,20 +459,22 @@ func TestE2EConsulDetector(t *testing.T) {
 		require.True(tt, found, "host.id attribute should be present")
 		require.NotEmpty(tt, hostID.Str(), "host.id should not be empty")
 
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metrics,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
-			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("host.id", replaceWithStar),
-		),
+				pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
+				pmetrictest.ChangeResourceAttributeValue("host.id", replaceWithStar),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -496,17 +512,19 @@ func TestE2EOpenstackNovaDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -544,17 +562,19 @@ func TestE2EUpcloudDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -592,17 +612,19 @@ func TestE2EVultrDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -639,17 +661,19 @@ func TestE2EEC2Detector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -686,17 +710,19 @@ func TestE2EAlibabaECSDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -733,17 +759,19 @@ func TestE2ETencentCVMDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -781,17 +809,19 @@ func TestE2EScalewayDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -829,17 +859,19 @@ func TestE2EDigitalOceanDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -877,17 +909,19 @@ func TestE2EAzureDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -953,21 +987,23 @@ func TestE2EK8sAPIDetector(t *testing.T) {
 				require.True(tt, found, "k8s.cluster.uid attribute should be present")
 				require.NotEmpty(tt, clusterUID.Str(), "k8s.cluster.uid should not be empty")
 
-				assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
-					pmetrictest.IgnoreTimestamp(),
-					pmetrictest.IgnoreStartTimestamp(),
-					pmetrictest.IgnoreScopeVersion(),
-					pmetrictest.IgnoreResourceMetricsOrder(),
-					pmetrictest.IgnoreMetricsOrder(),
-					pmetrictest.IgnoreScopeMetricsOrder(),
-					pmetrictest.IgnoreMetricDataPointsOrder(),
-					pmetrictest.IgnoreMetricValues(),
-					pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+				assert.NoError(
+					tt, pmetrictest.CompareMetrics(
+						expected, metrics,
+						pmetrictest.IgnoreTimestamp(),
+						pmetrictest.IgnoreStartTimestamp(),
+						pmetrictest.IgnoreScopeVersion(),
+						pmetrictest.IgnoreResourceMetricsOrder(),
+						pmetrictest.IgnoreMetricsOrder(),
+						pmetrictest.IgnoreScopeMetricsOrder(),
+						pmetrictest.IgnoreMetricDataPointsOrder(),
+						pmetrictest.IgnoreMetricValues(),
+						pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
-					pmetrictest.ChangeResourceAttributeValue("k8s.node.name", replaceWithStar),
-					pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
-					pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
-				),
+						pmetrictest.ChangeResourceAttributeValue("k8s.node.name", replaceWithStar),
+						pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+						pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
+					),
 				)
 			}, 3*time.Minute, 1*time.Second)
 		})
@@ -1008,17 +1044,19 @@ func TestE2EAKSDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1056,17 +1094,19 @@ func TestE2EOpenShiftDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1104,17 +1144,19 @@ func TestE2EDynatraceDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1152,17 +1194,19 @@ func TestE2EAkamaiDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1200,17 +1244,19 @@ func TestE2EElasticBeanstalkDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1248,17 +1294,19 @@ func TestE2EHetznerDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1301,7 +1349,8 @@ func TestE2EIBMCloudVPCDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected,
+		assert.NoError(tt, pmetrictest.CompareMetrics(
+			expected,
 			metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
@@ -1355,7 +1404,8 @@ func TestE2EIBMCloudClassicDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected,
+		assert.NoError(tt, pmetrictest.CompareMetrics(
+			expected,
 			metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
@@ -1403,17 +1453,19 @@ func TestE2EECSDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1465,19 +1517,21 @@ func TestE2EKubeadmDetector(t *testing.T) {
 		require.True(tt, found, "k8s.cluster.uid attribute should be present")
 		require.NotEmpty(tt, clusterUID.Str(), "k8s.cluster.uid should not be empty")
 
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metrics,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
-			pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
-		),
+				pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1515,17 +1569,19 @@ func TestE2EOracleCloudDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
+		assert.NoError(
+			tt, pmetrictest.CompareMetrics(
+				expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreScopeVersion(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			),
 		)
 	}, 3*time.Minute, 1*time.Second)
 }
@@ -1571,7 +1627,8 @@ func runCollectorInDocker(t *testing.T, containerName string) {
 		"--add-host", "host.docker.internal:host-gateway",
 	}
 	args = append(args, groupArgs...)
-	args = append(args,
+	args = append(
+		args,
 		"-v", fmt.Sprintf("%s:/conf:ro", absConfDir),
 		"-v", "/var/run/docker.sock:/var/run/docker.sock",
 		"otelcontribcol:latest",

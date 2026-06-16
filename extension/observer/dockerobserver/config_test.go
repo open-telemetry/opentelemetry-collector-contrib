@@ -101,7 +101,8 @@ func TestApiVersionCustomError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := sub.Unmarshal(cfg)
-	assert.ErrorContains(t, err,
+	assert.ErrorContains(
+		t, err,
 		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.45")`,
 	)
 

@@ -89,7 +89,8 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 			}
 			processor.modelForests[modelConfig.Name] = forest
 
-			logger.Info("Initialized model",
+			logger.Info(
+				"Initialized model",
 				zap.String("model_name", modelConfig.Name),
 				zap.Int("forest_size", modelConfig.ForestSize),
 				zap.Int("subsample_size", modelConfig.SubsampleSize),
@@ -114,7 +115,8 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 			)
 		}
 
-		logger.Info("Initialized default model",
+		logger.Info(
+			"Initialized default model",
 			zap.Int("forest_size", config.ForestSize),
 			zap.Int("subsample_size", config.SubsampleSize),
 			zap.Bool("adaptive_window_enabled", config.IsAdaptiveWindowEnabled()),
@@ -191,7 +193,8 @@ func (p *isolationForestProcessor) performModelUpdate() {
 			zap.Float64("current_threshold", stats.CurrentThreshold),
 		}
 		if stats.AdaptiveEnabled {
-			logFields = append(logFields,
+			logFields = append(
+				logFields,
 				zap.Int("current_window_size", stats.CurrentWindowSize),
 				zap.Float64("velocity_samples_per_sec", stats.VelocitySamples),
 				zap.Float64("memory_usage_mb", stats.MemoryUsageMB),
@@ -209,7 +212,8 @@ func (p *isolationForestProcessor) performModelUpdate() {
 			zap.Float64("anomaly_rate", stats.AnomalyRate),
 		}
 		if stats.AdaptiveEnabled {
-			logFields = append(logFields,
+			logFields = append(
+				logFields,
 				zap.Int("current_window_size", stats.CurrentWindowSize),
 				zap.Float64("velocity_samples_per_sec", stats.VelocitySamples),
 				zap.Float64("memory_usage_mb", stats.MemoryUsageMB),

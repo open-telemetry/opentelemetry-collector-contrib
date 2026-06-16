@@ -86,7 +86,8 @@ func TestNewLogsUnmarshaler(t *testing.T) {
 			input:    []byte("hello world"),
 			check: func(t *testing.T, actual plog.Logs) {
 				require.Equal(t, 1, actual.LogRecordCount())
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					[]byte("hello world"),
 					actual.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsRaw(),
 				)
@@ -97,7 +98,8 @@ func TestNewLogsUnmarshaler(t *testing.T) {
 			input:    []byte(`{"x": "y"}`),
 			check: func(t *testing.T, actual plog.Logs) {
 				require.Equal(t, 1, actual.LogRecordCount())
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					map[string]any{"x": "y"},
 					actual.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw(),
 				)
@@ -310,7 +312,8 @@ func TestNewTracesUnmarshaler(t *testing.T) {
 			}(),
 			check: func(t *testing.T, actual ptrace.Traces) {
 				require.Equal(t, 1, actual.SpanCount())
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					"do_thing",
 					actual.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name(),
 				)
@@ -324,7 +327,8 @@ func TestNewTracesUnmarshaler(t *testing.T) {
 			}(),
 			check: func(t *testing.T, actual ptrace.Traces) {
 				require.Equal(t, 1, actual.SpanCount())
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					"do_thing",
 					actual.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name(),
 				)
@@ -364,7 +368,8 @@ func TestNewTracesUnmarshaler(t *testing.T) {
 			}(),
 			check: func(t *testing.T, actual ptrace.Traces) {
 				require.Equal(t, 1, actual.SpanCount())
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					"do_thing",
 					actual.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name(),
 				)

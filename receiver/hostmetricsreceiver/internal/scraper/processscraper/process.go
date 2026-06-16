@@ -108,7 +108,7 @@ func (p *gopsProcessHandles) Pid(index int) int32 {
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {
-	return &(p.handles[index])
+	return &p.handles[index]
 }
 
 func (p *gopsProcessHandles) Len() int {

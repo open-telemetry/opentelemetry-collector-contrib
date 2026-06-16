@@ -82,7 +82,8 @@ func (z *zookeeperMetricsScraper) ScrapeMetrics(ctx context.Context) (pmetric.Me
 func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
 	conn, err := z.config.Dial(context.Background())
 	if err != nil {
-		z.logger.Error("failed to establish connection",
+		z.logger.Error(
+			"failed to establish connection",
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
@@ -103,7 +104,8 @@ func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string
 
 	scanner, err := z.sendCmd(conn, command)
 	if err != nil {
-		z.logger.Error("failed to send command",
+		z.logger.Error(
+			"failed to send command",
 			zap.Error(err),
 			zap.String("command", command),
 		)
@@ -123,7 +125,8 @@ func (z *zookeeperMetricsScraper) processMntr(response []string) {
 	for _, line := range response {
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
 		if len(parts) != 3 {
-			z.logger.Warn("unexpected line in response",
+			z.logger.Warn(
+				"unexpected line in response",
 				zap.String("command", mntrCommand),
 				zap.String("line", line),
 			)
@@ -176,7 +179,8 @@ func (z *zookeeperMetricsScraper) processRuok(response []string) {
 
 	if len(response) > 0 {
 		if response[0] != "imok" {
-			z.logger.Error("invalid response from ruok",
+			z.logger.Error(
+				"invalid response from ruok",
 				zap.String("command", ruokCommand),
 			)
 			return

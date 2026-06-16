@@ -80,7 +80,8 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
-			return processMessage(ctx, record, config, set.Logger, telBldr,
+			return processMessage(
+				ctx, record, config, set.Logger, telBldr,
 				&logsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -107,7 +108,8 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
-			return processMessage(ctx, record, config, set.Logger, telBldr,
+			return processMessage(
+				ctx, record, config, set.Logger, telBldr,
 				&metricsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -134,7 +136,8 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
-			return processMessage(ctx, record, config, set.Logger, telBldr,
+			return processMessage(
+				ctx, record, config, set.Logger, telBldr,
 				&tracesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -161,7 +164,8 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
-			return processMessage(ctx, record, config, set.Logger, telBldr,
+			return processMessage(
+				ctx, record, config, set.Logger, telBldr,
 				&profilesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -352,7 +356,8 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	headerAttrKeys map[string]string,
 ) error {
 	if logger.Core().Enabled(zap.DebugLevel) {
-		logger.Debug("kafka message received",
+		logger.Debug(
+			"kafka message received",
 			zap.String("value", string(record.Value)),
 			zap.Time("timestamp", record.Timestamp),
 			zap.String("topic", record.Topic),

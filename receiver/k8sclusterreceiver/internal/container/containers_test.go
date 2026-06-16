@@ -147,7 +147,8 @@ func TestRecordSpecMetrics(t *testing.T) {
 			// golden.WriteMetrics(t, expectedFile, m)
 			expected, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+			require.NoError(t, pmetrictest.CompareMetrics(
+				expected, m,
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),

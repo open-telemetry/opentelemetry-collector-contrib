@@ -61,7 +61,8 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			b.Reset()
 		}
 
-		rt.logger.Debug("retrying GitHub API request",
+		rt.logger.Debug(
+			"retrying GitHub API request",
 			zap.String("url", req.URL.String()),
 			zap.Int("status", resp.StatusCode),
 			zap.Int("attempt", attempt+1),

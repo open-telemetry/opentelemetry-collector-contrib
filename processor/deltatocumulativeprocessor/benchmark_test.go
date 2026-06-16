@@ -101,7 +101,8 @@ func BenchmarkProcessor(gb *testing.B) {
 			ex.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			for i := range streams {
 				dp := ex.DataPoints().AppendEmpty()
-				o := expotest.Observe(expo.Scale(2),
+				o := expotest.Observe(
+					expo.Scale(2),
 					float64(rand.IntN(31)+1),
 					float64(rand.IntN(31)+1),
 					float64(rand.IntN(31)+1),

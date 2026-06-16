@@ -567,7 +567,8 @@ func (cfg *Config) validateInferredContextConfig() error {
 }
 
 func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*condition.TraceParserCollection, error) {
-	return condition.NewTraceParserCollection(telemetrySettings,
+	return condition.NewTraceParserCollection(
+		telemetrySettings,
 		condition.WithSpanParser(cfg.spanFunctions),
 		condition.WithSpanEventParser(cfg.spanEventFunctions),
 		condition.WithTraceErrorMode(cfg.ErrorMode),
@@ -576,7 +577,8 @@ func (cfg *Config) newTraceParserCollection(telemetrySettings component.Telemetr
 }
 
 func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*condition.MetricParserCollection, error) {
-	return condition.NewMetricParserCollection(telemetrySettings,
+	return condition.NewMetricParserCollection(
+		telemetrySettings,
 		condition.WithMetricParser(cfg.metricFunctions),
 		condition.WithDataPointParser(cfg.dataPointFunctions),
 		condition.WithMetricErrorMode(cfg.ErrorMode),
@@ -585,7 +587,8 @@ func (cfg *Config) newMetricParserCollection(telemetrySettings component.Telemet
 }
 
 func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*condition.LogParserCollection, error) {
-	return condition.NewLogParserCollection(telemetrySettings,
+	return condition.NewLogParserCollection(
+		telemetrySettings,
 		condition.WithLogParser(cfg.logFunctions),
 		condition.WithLogErrorMode(cfg.ErrorMode),
 		condition.WithLogCommonParsers(cfg.resourceFunctions),
@@ -593,7 +596,8 @@ func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetryS
 }
 
 func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*condition.ProfileParserCollection, error) {
-	return condition.NewProfileParserCollection(telemetrySettings,
+	return condition.NewProfileParserCollection(
+		telemetrySettings,
 		condition.WithProfileParser(cfg.profileFunctions),
 		condition.WithProfileErrorMode(cfg.ErrorMode),
 		condition.WithProfileCommonParsers(cfg.resourceFunctions),

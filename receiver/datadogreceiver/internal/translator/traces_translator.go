@@ -162,13 +162,13 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 
 	method := ""
 	service := ""
-	if rpcMethod, ok := span.Meta[("rpc.method")]; ok {
+	if rpcMethod, ok := span.Meta["rpc.method"]; ok {
 		// "rpc.method" is used by dd-trace-rb, check dd-trace-php
 		method = rpcMethod
-		if rpcService, ok := span.Meta[("rpc.service")]; ok {
+		if rpcService, ok := span.Meta["rpc.service"]; ok {
 			service = rpcService
 		}
-	} else if grpcFullMethod, ok := span.Meta[("rpc.grpc.full_method")]; ok {
+	} else if grpcFullMethod, ok := span.Meta["rpc.grpc.full_method"]; ok {
 		// "rpc.grpc.full_method" is used by dd-trace-go & dd-trace-rb, they also set span.Resource to the full method name
 		// format: /$package.$service/$method
 		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
@@ -176,7 +176,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 			method = grpcFullMethodElements[1]
 			service = grpcFullMethodElements[0]
 		}
-	} else if grpcMethod, ok := span.Meta[("grpc.method.name")]; ok {
+	} else if grpcMethod, ok := span.Meta["grpc.method.name"]; ok {
 		// format: /$package.$service/$method
 		// "grpc.method.name" is used by dd-trace-dotnet dd-trace-python & dd-trace-go
 		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
@@ -214,8 +214,8 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
 	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), "aws-api")
-	if service, ok := span.Meta[("aws.service")]; ok {
-		if operation, ok := span.Meta[("aws.operation")]; ok {
+	if service, ok := span.Meta["aws.service"]; ok {
+		if operation, ok := span.Meta["aws.operation"]; ok {
 			newSpan.SetName(service + "/" + operation)
 		} else {
 			newSpan.SetName(service)

@@ -27,7 +27,8 @@ import (
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
+	rm := CustomMetrics(
+		receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -53,13 +54,15 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-	),
+	require.NoError(
+		t, pmetrictest.CompareMetrics(
+			expected, m,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+		),
 	)
 }
 
@@ -73,7 +76,8 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rac.OsDescription.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
-	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
+	rm := CustomMetrics(
+		receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{},
 		[]string{
 			"cpu",
@@ -87,13 +91,15 @@ func TestNodeOptionalMetrics(t *testing.T) {
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_optional.yaml"))
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-	),
+	require.NoError(
+		t, pmetrictest.CompareMetrics(
+			expected, m,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+		),
 	)
 }
 
@@ -176,14 +182,16 @@ func TestNodeMetrics(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "expected_mdatagen.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	),
+	require.NoError(
+		t, pmetrictest.CompareMetrics(
+			expected, m,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+		),
 	)
 }
 

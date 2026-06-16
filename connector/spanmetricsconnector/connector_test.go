@@ -138,7 +138,8 @@ func verifyBadMetricsOkay(testing.TB, pmetric.Metrics) bool {
 }
 
 func verifyOtelStatusCode(tb testing.TB, input pmetric.Metrics) bool {
-	require.Equal(tb, 8, input.DataPointCount(),
+	require.Equal(
+		tb, 8, input.DataPointCount(),
 		"Should be 4 for each of call count and latency split into three resource scopes defined by: "+
 			"service-a: service-a (server kind) -> service-a (client kind), "+
 			"service-b: service-b (server kind), and"+
@@ -221,7 +222,8 @@ func verifyMultipleCumulativeConsumptions() func(tb testing.TB, input pmetric.Me
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this connector.
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
-	require.Equal(tb, 6, input.DataPointCount(),
+	require.Equal(
+		tb, 6, input.DataPointCount(),
 		"Should be 3 for each of call count and latency split into two resource scopes defined by: "+
 			"service-a: service-a (server kind) -> service-a (client kind) and "+
 			"service-b: service-b (service kind)",
@@ -268,7 +270,8 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 			if expectedTemporality == pmetric.AggregationTemporalityCumulative && numCumulativeConsumptions == 1 {
 				expectIntValue = 0
 			}
-			assert.Equal(tb,
+			assert.Equal(
+				tb,
 				int64(expectIntValue),
 				dp.IntValue(),
 				"There should only be one metric per Service/name/kind combination",
@@ -305,7 +308,8 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 			tb,
 			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
+		)
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -344,7 +348,8 @@ func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.Exponential
 			tb,
 			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
+		)
 		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
 		assert.Equal(tb, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
@@ -404,7 +409,8 @@ func buildBadSampleTrace() ptrace.Traces {
 	// Flipping timestamp for a bad duration
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetStartTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)),
+	)
 	return badTrace
 }
 
@@ -435,7 +441,8 @@ func buildSampleTrace() ptrace.Traces {
 					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -448,7 +455,8 @@ func buildSampleTrace() ptrace.Traces {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
@@ -469,7 +477,8 @@ func appendTraceWithUnsetStatusCode(traces ptrace.Traces) ptrace.Traces {
 					spanID:     [8]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	return traces
 }
 
@@ -493,7 +502,8 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)),
+	)
 
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
@@ -1672,7 +1682,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -1683,7 +1694,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-c",
@@ -1694,7 +1706,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 
 	// This trace does not have service-a, and may not result in an attempt to publish metrics for
 	// service-a because service-a may be removed from the metricsKeyCache's evicted list.
@@ -1710,7 +1723,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-c",
@@ -1721,7 +1735,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 
 	mcon := &consumertest.MetricsSink{}
 
@@ -1793,7 +1808,8 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -1804,7 +1820,8 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 
 	traces1 := ptrace.NewTraces()
 
@@ -1818,7 +1835,8 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 
 	mcon := &consumertest.MetricsSink{}
 
@@ -2118,7 +2136,8 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, traces.ResourceSpans().AppendEmpty())
+				}, traces.ResourceSpans().AppendEmpty(),
+			)
 
 			// Test
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
@@ -2146,7 +2165,8 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, traces.ResourceSpans().AppendEmpty())
+				}, traces.ResourceSpans().AppendEmpty(),
+			)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -2262,7 +2282,8 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, unrelatedTraces.ResourceSpans().AppendEmpty())
+				}, unrelatedTraces.ResourceSpans().AppendEmpty(),
+			)
 			err = p.ConsumeTraces(ctx, unrelatedTraces)
 			require.NoError(t, err)
 			p.exportMetrics(ctx)
@@ -2349,7 +2370,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceATrace1.ResourceSpans().AppendEmpty())
+		}, serviceATrace1.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceATrace1)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -2368,7 +2390,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceBTrace1.ResourceSpans().AppendEmpty())
+		}, serviceBTrace1.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceBTrace1)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -2387,7 +2410,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceATrace2.ResourceSpans().AppendEmpty())
+		}, serviceATrace2.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceATrace2)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -3501,7 +3525,8 @@ func buildSampleTraceWithMixedTracestate() ptrace.Traces {
 					tracestate: "invalid-state",
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	return traces
 }
 
@@ -3531,7 +3556,8 @@ func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
 					tracestate: tracestate,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -3545,7 +3571,8 @@ func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
 					tracestate: tracestate,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
@@ -3573,7 +3600,8 @@ func buildLargeSampleTraceWithTracestate(numSpans int, tracestate string) ptrace
 		serviceSpans{
 			serviceName: "service-a",
 			spans:       spans,
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	return traces
 }
@@ -3749,7 +3777,8 @@ func buildTraceWithDifferentTracestates() ptrace.Traces {
 					tracestate: "ot=th:8;rv:abcd02", // Different rv value
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	// Service B: 1 span with yet another different tracestate
 	initServiceSpans(
@@ -3765,7 +3794,8 @@ func buildTraceWithDifferentTracestates() ptrace.Traces {
 					tracestate: "ot=th:8;rv:abcd03", // Different rv value
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces

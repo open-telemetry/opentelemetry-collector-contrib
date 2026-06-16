@@ -182,7 +182,8 @@ func TestStoreCredentials(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -317,7 +318,8 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -348,7 +350,8 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 
 	hashKey := createHashKey(cfg)
 
-	require.NoError(t,
+	require.NoError(
+		t,
 		store.Store(hashKey, credentials.CollectorCredentials{
 			CollectorName: "collector_name",
 			Credentials: api.OpenRegisterResponsePayload{
@@ -393,7 +396,8 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -424,7 +428,8 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 
 	hashKey := createHashKey(cfg)
 
-	require.NoError(t,
+	require.NoError(
+		t,
 		store.Store(hashKey, credentials.CollectorCredentials{
 			CollectorName: "collector_name",
 			Credentials: api.OpenRegisterResponsePayload{
@@ -506,7 +511,8 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-			}))
+			},
+		))
 	}
 
 	getConfig := func(url string) *Config {
@@ -561,7 +567,8 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 	require.NoError(t, se2.Start(t.Context(), componenttest.NewNopHost()))
 	require.FileExists(t, credsPath2)
 
-	require.NotEqual(t, credsPath1, credsPath2,
+	require.NotEqual(
+		t, credsPath1, credsPath2,
 		"credentials files should be different for configs with different apiBaseURLs",
 	)
 }
@@ -1082,13 +1089,15 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-			if !assert.Eventually(t,
+			if !assert.Eventually(
+				t,
 				func() bool {
 					return atomic.LoadInt32(reqCount) == tc.expectedReqCount
 				},
 				5*time.Second, 100*time.Millisecond,
 			) {
-				t.Logf("the expected number of requests (%d) wasn't reached, only got %d",
+				t.Logf(
+					"the expected number of requests (%d) wasn't reached, only got %d",
 					tc.expectedReqCount, atomic.LoadInt32(reqCount),
 				)
 			}
@@ -1275,7 +1284,8 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// should not produce any more requests
 			default:
-				assert.Fail(t,
+				assert.Fail(
+					t,
 					"extension should not make more than 5 requests to the destination server",
 				)
 			}
@@ -1294,7 +1304,8 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// should not produce any more requests
 			default:
-				assert.Fail(t,
+				assert.Fail(
+					t,
 					"extension should not make more than 1 request to the original server",
 				)
 			}
@@ -1320,11 +1331,13 @@ func TestRegistrationRedirect(t *testing.T) {
 		se, err := newSumologicExtension(configFn(), logger, component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
-		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
+		assert.Eventually(
+			t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should only make 1 request to the original server before redirect",
 		)
-		assert.Eventually(t, func() bool { return destReqCount.Load() == 3 },
+		assert.Eventually(
+			t, func() bool { return destReqCount.Load() == 3 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 3 requests (registration + metadata + heartbeat) to the destination server",
 		)
@@ -1336,12 +1349,14 @@ func TestRegistrationRedirect(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
+		assert.Eventually(
+			t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"after restarting with locally stored credentials extension shouldn't call the original server",
 		)
 
-		assert.Eventually(t, func() bool { return destReqCount.Load() == 6 },
+		assert.Eventually(
+			t, func() bool { return destReqCount.Load() == 6 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 6 requests (registration + metadata + heartbeat, after restart "+
 				"heartbeat to validate credentials, metadata update, and then the first heartbeat on "+
@@ -1432,13 +1447,15 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
 	const expectedReqCount = 10
-	if !assert.Eventually(t,
+	if !assert.Eventually(
+		t,
 		func() bool {
 			return reqCount.Load() == expectedReqCount
 		},
 		5*time.Second, 50*time.Millisecond,
 	) {
-		t.Logf("the expected number of requests (%d) wasn't reached, got %d",
+		t.Logf(
+			"the expected number of requests (%d) wasn't reached, got %d",
 			expectedReqCount, reqCount.Load(),
 		)
 	}
@@ -1467,7 +1484,8 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				assert.Equal(t, hostname, reqPayload.Hostname)
 				assert.Equal(t, "my description", reqPayload.Description)
 				assert.Equal(t, "my category/", reqPayload.Category)
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					map[string]any{
 						"field1": "value1",
 						"field2": "value2",
@@ -1734,7 +1752,8 @@ func TestUpdateMetadataAsyncRetriesUntilSuccess(t *testing.T) {
 
 	// The async goroutine should eventually succeed, meaning the total metadata
 	// request count must exceed failUntilReq.
-	assert.Eventually(t,
+	assert.Eventually(
+		t,
 		func() bool { return metadataReqCount.Load() > failUntilReq },
 		5*time.Second, 10*time.Millisecond,
 		"async metadata retry goroutine should have retried and succeeded",

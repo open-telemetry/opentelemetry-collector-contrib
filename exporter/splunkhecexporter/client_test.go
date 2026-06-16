@@ -1334,7 +1334,8 @@ func TestErrorReceived(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
-	errMsg := fmt.Sprintf("HTTP \"/services/collector\" %d %q",
+	errMsg := fmt.Sprintf(
+		"HTTP \"/services/collector\" %d %q",
 		http.StatusInternalServerError,
 		http.StatusText(http.StatusInternalServerError),
 	)
@@ -1386,7 +1387,8 @@ func TestErrorReceivedForbidden(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
-	errMsg := fmt.Sprintf("Permanent error: HTTP \"/services/collector\" %d %q",
+	errMsg := fmt.Sprintf(
+		"Permanent error: HTTP \"/services/collector\" %d %q",
 		http.StatusForbidden,
 		http.StatusText(http.StatusForbidden),
 	)
@@ -1467,9 +1469,11 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.EqualError(t,
+	assert.EqualError(
+		t,
 		exporter.Start(t.Context(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: Permanent error: HTTP \"/services/collector\" 403 \"Forbidden\"",
+		fmt.Sprintf(
+			"%s: heartbeat on startup failed: Permanent error: HTTP \"/services/collector\" 403 \"Forbidden\"",
 			params.ID.String(),
 		),
 	)

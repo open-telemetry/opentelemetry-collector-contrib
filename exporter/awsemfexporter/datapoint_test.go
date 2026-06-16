@@ -2125,7 +2125,8 @@ func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 		generateTestHistogramMetric("histogram"),
 		generateTestExponentialHistogramMetric("exponential-histogram"),
 		generateTestExponentialHistogramMetricWithSpecifiedNumberOfBuckets(
-			"exponential-histogram-buckets-"+strconv.Itoa(bucketLength), bucketLength),
+			"exponential-histogram-buckets-"+strconv.Itoa(bucketLength), bucketLength,
+		),
 		generateTestSumMetric("int-sum", intValueType),
 		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),

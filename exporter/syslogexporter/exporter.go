@@ -42,7 +42,8 @@ func initExporter(cfg *Config, createSettings exporter.Settings) (*syslogexporte
 		formatter: createFormatter(cfg.Protocol, cfg.EnableOctetCounting),
 	}
 
-	s.logger.Info("Syslog Exporter configured",
+	s.logger.Info(
+		"Syslog Exporter configured",
 		zap.String("endpoint", cfg.Endpoint),
 		zap.String("protocol", cfg.Protocol),
 		zap.String("network", cfg.Network),

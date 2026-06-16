@@ -105,7 +105,8 @@ func Test_GetXML(t *testing.T) {
 						},
 					},
 					XPath: tt.xPath,
-				})
+				},
+			)
 			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
@@ -128,7 +129,8 @@ func TestCreateGetXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &GetXMLArguments[any]{
 			XPath: "!",
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
@@ -137,7 +139,8 @@ func TestCreateGetXMLFunc(t *testing.T) {
 		fCtx, &GetXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)

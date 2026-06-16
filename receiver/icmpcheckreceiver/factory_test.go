@@ -57,7 +57,8 @@ func TestCreateMetricReturnsErrorOnInvalidConfig(t *testing.T) {
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&struct{}{},
-		consumertest.NewNop())
+		consumertest.NewNop(),
+	)
 	assert.Error(t, err)
 }
 

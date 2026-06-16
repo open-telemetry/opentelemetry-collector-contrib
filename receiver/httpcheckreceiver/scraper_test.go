@@ -505,7 +505,8 @@ func TestScraperMultipleTargets(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricAttributeValue("http.url"),
 		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 		pmetrictest.IgnoreMetricDataPointsOrder(),

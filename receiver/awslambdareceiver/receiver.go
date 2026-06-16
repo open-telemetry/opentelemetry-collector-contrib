@@ -292,7 +292,8 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve encoding for S3 entry %q: %w", enc.Name, err)
 		}
-		logger.Info("Registered decoder for S3 encoding entry",
+		logger.Info(
+			"Registered decoder for S3 encoding entry",
 			zap.String("name", enc.Name),
 			zap.String("encoding", enc.Encoding),
 			zap.String("pattern", enc.resolvePathPattern()),

@@ -24,7 +24,8 @@ import (
 func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify bool,
 	proxyAddress string,
 ) (*http.Client, error) {
-	logger.Debug("Using proxy address: ",
+	logger.Debug(
+		"Using proxy address: ",
 		zap.String("proxyAddr", proxyAddress),
 	)
 	tls := &tls.Config{

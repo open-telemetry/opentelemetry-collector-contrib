@@ -286,7 +286,8 @@ func TestClientReboundCompaction(t *testing.T) {
 				}
 			}
 
-			require.Eventually(t,
+			require.Eventually(
+				t,
 				func() bool {
 					totalSize, _, dbErr := client.getDbSize()
 					require.NoError(t, dbErr)
@@ -308,7 +309,8 @@ func TestClientReboundCompaction(t *testing.T) {
 			}
 
 			if testCase.shouldTriggerCompaction {
-				require.Eventually(t,
+				require.Eventually(
+					t,
 					func() bool {
 						// The check is performed while the database might be compacted, hence we're reusing the mutex here
 						// (getDbSize is not called from outside the compaction loop otherwise)

@@ -32,7 +32,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.

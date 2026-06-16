@@ -82,7 +82,8 @@ func (o regexSortOption) apply(items []*item) ([]*item, error) {
 }
 
 func SortNumeric(regexKey string, ascending bool) (Option, error) {
-	return newRegexSortOption(regexKey,
+	return newRegexSortOption(
+		regexKey,
 		func(s string) (any, error) {
 			return strconv.Atoi(s)
 		},
@@ -96,7 +97,8 @@ func SortNumeric(regexKey string, ascending bool) (Option, error) {
 }
 
 func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
-	return newRegexSortOption(regexKey,
+	return newRegexSortOption(
+		regexKey,
 		func(s string) (any, error) {
 			return s, nil
 		},
@@ -124,7 +126,8 @@ func SortTemporal(regexKey string, ascending bool, layout, location string) (Opt
 	if err != nil {
 		return nil, fmt.Errorf("load location %s: %w", loc, err)
 	}
-	return newRegexSortOption(regexKey,
+	return newRegexSortOption(
+		regexKey,
 		func(s string) (any, error) {
 			return parser.Parse(s, loc)
 		},

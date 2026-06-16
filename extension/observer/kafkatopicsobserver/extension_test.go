@@ -37,7 +37,8 @@ func TestStartShutdown(t *testing.T) {
 }
 
 func TestObserveTopics(t *testing.T) {
-	cluster, clientCfg := kafkatest.NewCluster(t,
+	cluster, clientCfg := kafkatest.NewCluster(
+		t,
 		kfake.SeedTopics(1, "topic1", "topic2", "topics"),
 	)
 

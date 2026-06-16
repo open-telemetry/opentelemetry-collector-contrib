@@ -48,7 +48,8 @@ func createTraces(ctx context.Context, set exporter.Settings, cfg component.Conf
 	}
 	oCfg := cfg.(*Config)
 
-	return exporterhelper.NewTraces(ctx, set, cfg,
+	return exporterhelper.NewTraces(
+		ctx, set, cfg,
 		oce.ConsumeTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(oce.Capabilities()),
@@ -65,7 +66,8 @@ func createLogs(ctx context.Context, set exporter.Settings, cfg component.Config
 	}
 	oCfg := cfg.(*Config)
 
-	return exporterhelper.NewLogs(ctx, set, cfg,
+	return exporterhelper.NewLogs(
+		ctx, set, cfg,
 		oce.ConsumeLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(oce.Capabilities()),

@@ -219,7 +219,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	if !podFound {
 		status = "error"
 	}
-	kp.telemetry.K8sPodAssociation.Add(ctx, 1,
+	kp.telemetry.K8sPodAssociation.Add(
+		ctx, 1,
 		metric.WithAttributes(
 			attribute.String("status", status),
 			attribute.String("pod_identifier", buildPodIdentifierString(podIdentifierValue)),

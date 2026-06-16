@@ -220,7 +220,8 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with dedot", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.JSONEq(t,
+			assert.JSONEq(
+				t,
 				`{"attr":{"key":"value"},"@timestamp":"1970-01-01T00:00:00.000000000Z"}`,
 				string(docs[0].Document),
 			)
@@ -270,7 +271,8 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with headers", func(t *testing.T) {
 		done := make(chan struct{}, 1)
 		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t,
+			assert.Equal(
+				t,
 				fmt.Sprintf("OpenTelemetry Collector/latest (%s/%s)", runtime.GOOS, runtime.GOARCH),
 				r.UserAgent(),
 			)
@@ -1821,7 +1823,8 @@ func TestExporterMetrics(t *testing.T) {
 		require.True(t, ok)
 		_, hasDynamicTemplates := create["dynamic_templates"]
 		assert.False(t, hasDynamicTemplates, "action should omit dynamic_templates when no metrics are valid")
-		assert.JSONEq(t,
+		assert.JSONEq(
+			t,
 			`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"}}`,
 			string(docs[0].Document),
 		)
@@ -3140,12 +3143,14 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 			cfg.QueueBatchConfig.Get().WaitForResult = true
 		})
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
-		assert.EqualError(t, err,
+		assert.EqualError(
+			t, err,
 			`Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
 		)
 
 		err = exporter.ConsumeProfiles(multipleModesContext, pprofile.NewProfiles())
-		assert.EqualError(t, err,
+		assert.EqualError(
+			t, err,
 			`Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 		)
 	})

@@ -33,7 +33,8 @@ func createMetricsScraper(
 	cfg := config.(*Config)
 	s := newCPUScraper(ctx, settings, cfg)
 
-	return scraper.NewMetrics(s.scrape,
+	return scraper.NewMetrics(
+		s.scrape,
 		scraper.WithStart(s.start),
 	)
 }

@@ -380,7 +380,8 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	}
 
 	// processing another batch for the same trace takes a slightly different code path
-	err = p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]},
+	err = p.onTraceReceived(
+		tracesWithID{id: traceID, td: batch[0]},
 		p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)],
 	)
 

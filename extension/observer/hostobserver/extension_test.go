@@ -99,7 +99,8 @@ func TestHostObserver(t *testing.T) {
 				host = getExpectedHost(host, isIPv6)
 				expectedID := observer.EndpointID(
 					fmt.Sprintf(
-						"(host_observer/1)%s-%s-%s-%d", host, port, tt.protocol, selfPid),
+						"(host_observer/1)%s-%s-%s-%d", host, port, tt.protocol, selfPid,
+					),
 				)
 
 				actualEndpoint := notifier.endpointsMap[expectedID]

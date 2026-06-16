@@ -152,7 +152,8 @@ func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
 }
 
 func Test_WithParserCollectionContext_contextInferrerCandidates(t *testing.T) {
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(),
+	pc, err := NewParserCollection[any](
+		componenttest.NewNopTelemetrySettings(),
 		WithParserCollectionContext("foo", mockParser(t, WithPathContextNames[any]([]string{"foo", "bar"})), WithStatementConverter(newNopParsedStatementsConverter[any]())),
 		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithStatementConverter(newNopParsedStatementsConverter[any]())),
 	)
@@ -335,7 +336,8 @@ func Test_ParseStatements_ContextInferenceError(t *testing.T) {
 }
 
 func Test_ParseStatements_UnknownContextError(t *testing.T) {
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(),
+	pc, err := NewParserCollection[any](
+		componenttest.NewNopTelemetrySettings(),
 		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithStatementConverter(newNopParsedStatementsConverter[any]())),
 		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithStatementConverter(newNopParsedStatementsConverter[any]())),
 	)
@@ -560,7 +562,8 @@ func Test_ParseConditions_ContextInferenceError(t *testing.T) {
 }
 
 func Test_ParseConditions_UnknownContextError(t *testing.T) {
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(),
+	pc, err := NewParserCollection[any](
+		componenttest.NewNopTelemetrySettings(),
 		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithConditionConverter(newNopParsedConditionsConverter[any]())),
 		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithConditionConverter(newNopParsedConditionsConverter[any]())),
 	)
@@ -755,7 +758,8 @@ func Test_ParseValueExpressions_ContextInferenceError(t *testing.T) {
 }
 
 func Test_ParseValueExpressions_UnknownContextError(t *testing.T) {
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(),
+	pc, err := NewParserCollection[any](
+		componenttest.NewNopTelemetrySettings(),
 		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
 		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
 	)

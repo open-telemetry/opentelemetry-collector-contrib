@@ -234,7 +234,8 @@ func (receiver *pubsubReceiver) handleTrace(ctx context.Context, message *pubsub
 	otlpData, err := receiver.tracesUnmarshaler.UnmarshalTraces(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "traces")
-		receiver.settings.Logger.Debug("failed to decode pubsub message for traces",
+		receiver.settings.Logger.Debug(
+			"failed to decode pubsub message for traces",
 			zap.String("message_id", message.Message.MessageId),
 			zap.Any("attributes", message.Message.Attributes),
 			zap.Error(err),
@@ -259,7 +260,8 @@ func (receiver *pubsubReceiver) handleMetric(ctx context.Context, message *pubsu
 	otlpData, err := receiver.metricsUnmarshaler.UnmarshalMetrics(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "metrics")
-		receiver.settings.Logger.Debug("failed to decode pubsub message for metrics",
+		receiver.settings.Logger.Debug(
+			"failed to decode pubsub message for metrics",
 			zap.String("message_id", message.Message.MessageId),
 			zap.Any("attributes", message.Message.Attributes),
 			zap.Error(err),
@@ -284,7 +286,8 @@ func (receiver *pubsubReceiver) handleLog(ctx context.Context, message *pubsubpb
 	otlpData, err := receiver.logsUnmarshaler.UnmarshalLogs(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "logs")
-		receiver.settings.Logger.Debug("failed to decode pubsub message for logs",
+		receiver.settings.Logger.Debug(
+			"failed to decode pubsub message for logs",
 			zap.String("message_id", message.Message.MessageId),
 			zap.Any("attributes", message.Message.Attributes),
 			zap.Error(err),
@@ -392,7 +395,8 @@ func (receiver *pubsubReceiver) createMultiplexingReceiverHandler(ctx context.Co
 				return errors.New("unknown encoding")
 			}
 			return nil
-		})
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -431,7 +435,8 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 		receiver.config.ClientID,
 		receiver.config.Subscription,
 		receiver.config.FlowControlConfig.getInternalConfig(),
-		handlerFn)
+		handlerFn,
+	)
 	if err != nil {
 		return err
 	}

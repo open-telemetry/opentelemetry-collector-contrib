@@ -17,7 +17,8 @@ import (
 
 // NewFactory creates a factory for the named_pipe receiver.
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(&ReceiverType{}, metadata.LogsStability,
+	return adapter.NewFactory(
+		&ReceiverType{}, metadata.LogsStability,
 		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }

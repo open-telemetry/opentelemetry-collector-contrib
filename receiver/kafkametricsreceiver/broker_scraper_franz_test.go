@@ -117,7 +117,8 @@ func TestBrokerScraperFranz_Start(t *testing.T) {
 func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	const numBrokers = 3
 	const logRetentionHoursValue = 168
-	_, clientCfg := kafkatest.NewCluster(t,
+	_, clientCfg := kafkatest.NewCluster(
+		t,
 		kfake.SeedTopics(1, "meta-topic"),
 		kfake.NumBrokers(numBrokers),
 		kfake.BrokerConfigs(map[string]string{
@@ -171,7 +172,8 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 
 func TestBrokerScraperFranz_ScrapePartialError_UnparseableRetention(t *testing.T) {
 	const numBrokers = 2
-	_, clientCfg := kafkatest.NewCluster(t,
+	_, clientCfg := kafkatest.NewCluster(
+		t,
 		kfake.SeedTopics(1, "meta-topic"),
 		kfake.NumBrokers(numBrokers),
 		kfake.BrokerConfigs(map[string]string{

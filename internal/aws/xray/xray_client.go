@@ -58,7 +58,8 @@ func NewXRayClient(_ *zap.Logger, cfg aws.Config, buildInfo component.BuildInfo)
 
 	osInformation := runtime.GOOS + "-" + runtime.GOARCH
 
-	return xray.NewFromConfig(cfg,
+	return xray.NewFromConfig(
+		cfg,
 		AddToUserAgentHeader("tracing.XRayVersionUserAgentHandler", agentPrefix+getModVersion()+execEnvPrefix+execEnv+osPrefix+osInformation, middleware.After),
 		AddToUserAgentHeader("otel.collector.UserAgentHandler", fmt.Sprintf("%s/%s", buildInfo.Command, buildInfo.Version), middleware.Before),
 		WithTimestampRequestHeader(middleware.Before),

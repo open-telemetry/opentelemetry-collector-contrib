@@ -66,7 +66,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
 
 		d.rb.SetCloudPlatform("gcp_bare_metal_solution")
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.BareMetalSolutionInstanceID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.BareMetalSolutionCloudRegion),
 		)
@@ -83,7 +84,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	switch d.detector.CloudPlatform() {
 	case gcp.GKE:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPKubernetesEngine.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion),
 			d.rb.SetFromCallable(d.rb.SetK8sClusterName, d.detector.GKEClusterName),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GKEHostID),
@@ -97,7 +99,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	case gcp.CloudRun, gcp.CloudRunWorkerPool:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
@@ -105,7 +108,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 	case gcp.CloudRunJob:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
@@ -114,7 +118,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudFunctions.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
@@ -122,7 +127,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 	case gcp.AppEngineFlex:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
@@ -130,7 +136,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 	case gcp.AppEngineStandard:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
@@ -139,7 +146,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		)
 	case gcp.GCE:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPComputeEngine.Value.AsString())
-		errs = multierr.Combine(errs,
+		errs = multierr.Combine(
+			errs,
 			d.rb.SetZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion),
 			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),

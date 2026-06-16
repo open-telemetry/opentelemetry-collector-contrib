@@ -63,7 +63,8 @@ func createTracesToTraces(
 	// Explicitly disable exporterhelper's default 5s timeout: this wrapper exists only to provide
 	// the sending_queue, and any context deadline it imposes would silently cap downstream
 	// exporters' configured timeouts. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48567.
-	wrapped, err := exporterhelper.NewTraces(ctx, expSettings, cfg,
+	wrapped, err := exporterhelper.NewTraces(
+		ctx, expSettings, cfg,
 		t.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
@@ -101,7 +102,8 @@ func createMetricsToMetrics(
 	}
 
 	// If queue is enabled, wrap with exporterhelper. See WithTimeout note in createTracesToTraces.
-	wrapped, err := exporterhelper.NewMetrics(ctx, expSettings, cfg,
+	wrapped, err := exporterhelper.NewMetrics(
+		ctx, expSettings, cfg,
 		t.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
@@ -139,7 +141,8 @@ func createLogsToLogs(
 	}
 
 	// If queue is enabled, wrap with exporterhelper. See WithTimeout note in createTracesToTraces.
-	wrapped, err := exporterhelper.NewLogs(ctx, expSettings, cfg,
+	wrapped, err := exporterhelper.NewLogs(
+		ctx, expSettings, cfg,
 		t.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),

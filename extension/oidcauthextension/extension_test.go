@@ -698,7 +698,8 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 			}
 
 			if tc.addExtraProvider {
-				cfg.Providers = append(cfg.Providers,
+				cfg.Providers = append(
+					cfg.Providers,
 					ProviderCfg{
 						IssuerURL:      "unimportant-url",
 						Audience:       "unit-test",

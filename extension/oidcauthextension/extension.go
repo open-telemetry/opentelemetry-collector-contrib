@@ -170,7 +170,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		}
 	}
 	if len(authHeaders) == 0 {
-		e.logger.Warn("Authentication failed: missing or empty header",
+		e.logger.Warn(
+			"Authentication failed: missing or empty header",
 			zap.String("client_ip", clientIP),
 			zap.Error(errNotAuthenticated),
 		)
@@ -180,7 +181,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	// we only use the first header, if multiple values exist
 	parts := strings.Split(authHeaders[0], " ")
 	if len(parts) != 2 {
-		e.logger.Warn("Authentication failed: invalid header format",
+		e.logger.Warn(
+			"Authentication failed: invalid header format",
 			zap.String("client_ip", clientIP),
 			zap.Error(errInvalidAuthenticationHeaderFormat),
 		)
@@ -190,7 +192,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	raw := parts[1]
 	unverifiedIssuer, err := getIssuerFromUnverifiedJWT(raw)
 	if err != nil {
-		e.logger.Warn("Authentication failed: could not parse issuer from token",
+		e.logger.Warn(
+			"Authentication failed: could not parse issuer from token",
 			zap.String("client_ip", clientIP),
 			zap.Error(err),
 		)
@@ -198,7 +201,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	}
 	pc, err := e.resolveProvider(unverifiedIssuer)
 	if err != nil {
-		e.logger.Warn("Authentication failed: could not resolve provider",
+		e.logger.Warn(
+			"Authentication failed: could not resolve provider",
 			zap.String("client_ip", clientIP),
 			zap.String("issuer", unverifiedIssuer),
 			zap.Error(err),
@@ -208,7 +212,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 
 	idToken, err := pc.Verify(ctx, raw)
 	if err != nil {
-		e.logger.Warn("Authentication failed: token verification failed",
+		e.logger.Warn(
+			"Authentication failed: token verification failed",
 			zap.String("client_ip", clientIP),
 			zap.String("issuer", unverifiedIssuer),
 			zap.Error(err),
@@ -224,7 +229,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		// to read the claims. It could fail if we were using a custom struct. Instead of
 		// swallowing the error, it's better to make this future-proof, in case the underlying
 		// code changes
-		e.logger.Warn("Authentication failed: could not obtain claims",
+		e.logger.Warn(
+			"Authentication failed: could not obtain claims",
 			zap.String("client_ip", clientIP),
 			zap.Error(err),
 		)
@@ -233,7 +239,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 
 	subject, err := getSubjectFromClaims(claims, pc.providerCfg.UsernameClaim, idToken.Subject)
 	if err != nil {
-		e.logger.Warn("Authentication failed: could not get subject from claims",
+		e.logger.Warn(
+			"Authentication failed: could not get subject from claims",
 			zap.String("client_ip", clientIP),
 			zap.Error(err),
 		)
@@ -241,7 +248,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	}
 	membership, err := getGroupsFromClaims(claims, pc.providerCfg.GroupsClaim)
 	if err != nil {
-		e.logger.Warn("Authentication failed: could not get groups from claims",
+		e.logger.Warn(
+			"Authentication failed: could not get groups from claims",
 			zap.String("client_ip", clientIP),
 			zap.String("subject", subject),
 			zap.Error(err),

@@ -119,7 +119,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	if _, err := url.Parse(cfg.Endpoint); err != nil {
-		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
+		return fmt.Errorf(
+			"failed parsing endpoint URL: %s; err: %w",
 			cfg.Endpoint, err,
 		)
 	}

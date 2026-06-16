@@ -760,7 +760,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		span.SetStatus(codes.Error, fmt.Sprintf("%d policy evaluation errors", metrics.evaluateErrorCount))
 	}
 
-	tsp.logger.Debug("Sampling policy evaluation completed",
+	tsp.logger.Debug(
+		"Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
 		zap.Int64("sampled", metrics.decisionSampled),
 		zap.Int64("notSampled", metrics.decisionNotSampled),
@@ -1110,7 +1111,8 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
-			zap.Error(err))
+			zap.Error(err),
+		)
 	}
 }
 

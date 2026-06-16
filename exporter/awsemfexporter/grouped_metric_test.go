@@ -280,7 +280,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs)
 		assert.NoError(t, err)
 
-		metricMetadata2 := generateTestMetricMetadata(namespace,
+		metricMetadata2 := generateTestMetricMetadata(
+			namespace,
 			timestamp,
 			"log-group-2",
 			logStreamName,
@@ -340,7 +341,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 		testCfg.logger = zap.New(obs)
 
 		for i := 0; i < metrics.Len(); i++ {
-			err := addToGroupedMetric(metrics.At(i),
+			err := addToGroupedMetric(
+				metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
@@ -382,7 +384,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		obs, logs := observer.New(zap.WarnLevel)
 		testCfg.logger = zap.New(obs)
-		err := addToGroupedMetric(metric,
+		err := addToGroupedMetric(
+			metric,
 			groupedMetrics,
 			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty, 0),
 			true,
@@ -423,7 +426,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, metrics.Len())
 
 		for i := 0; i < metrics.Len(); i++ {
-			err := addToGroupedMetric(metrics.At(i),
+			err := addToGroupedMetric(
+				metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,

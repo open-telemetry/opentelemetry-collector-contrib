@@ -44,7 +44,8 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 	expectedTopicFromAttribute := "topic_from_traces_attr_kgo"
 	config.TopicFromAttribute = attributeKey
 
-	exp, fakeCluster := newKgoMockTracesExporter(t, *config,
+	exp, fakeCluster := newKgoMockTracesExporter(
+		t, *config,
 		componenttest.NewNopHost(), expectedTopicFromAttribute,
 	)
 
@@ -54,7 +55,8 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 	err := exp.exportData(t.Context(), traces)
 	require.NoError(t, err)
 
-	records := fetchKgoRecords(t,
+	records := fetchKgoRecords(
+		t,
 		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
@@ -72,7 +74,8 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
-		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
+		exp, fakeCluster := newKgoMockTracesExporter(
+			t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
 		)
 
@@ -82,7 +85,8 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, traces)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -94,7 +98,8 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
-		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
+		exp, fakeCluster := newKgoMockTracesExporter(
+			t, *config,
 			componenttest.NewNopHost(), config.Traces.Topic,
 		)
 
@@ -111,7 +116,8 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, traces)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -302,7 +308,8 @@ func TestMetricsPusher_marshal_error(t *testing.T) {
 func TestMetricsDataPusher_Kgo(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 
-	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
+	exp, fakeCluster := newKgoMockMetricsExporter(
+		t, *config,
 		componenttest.NewNopHost(), config.Metrics.Topic,
 	)
 
@@ -312,7 +319,8 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 
 	expectedTopic := config.Metrics.Topic
 
-	records := fetchKgoRecords(t,
+	records := fetchKgoRecords(
+		t,
 		fakeCluster.ListenAddrs(), expectedTopic, 1,
 	)
 	fakeCluster.Close()
@@ -335,7 +343,8 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 	// For metrics specifically, it would be config.Metrics.TopicFromAttribute if that existed,
 	// but TopicFromAttribute is a top-level config in the current Config struct for this exporter.
 
-	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
+	exp, fakeCluster := newKgoMockMetricsExporter(
+		t, *config,
 		componenttest.NewNopHost(), expectedTopicFromAttribute,
 	)
 
@@ -347,7 +356,8 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 	require.NoError(t, err)
 
 	consumerSeedBrokers := fakeCluster.ListenAddrs()
-	records := fetchKgoRecords(t,
+	records := fetchKgoRecords(
+		t,
 		consumerSeedBrokers, expectedTopicFromAttribute, 1,
 	)
 
@@ -364,7 +374,8 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_metrics_topic_from_ctx"
-		exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
+		exp, fakeCluster := newKgoMockMetricsExporter(
+			t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
 		)
 
@@ -375,7 +386,8 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			consumerSeedBrokers, expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -387,7 +399,8 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.IncludeMetadataKeys = []string{"x-metrics-tenant-id", "x-metrics-req-id"}
-		exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
+		exp, fakeCluster := newKgoMockMetricsExporter(
+			t, *config,
 			componenttest.NewNopHost(), config.Metrics.Topic,
 		)
 
@@ -404,7 +417,8 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			consumerSeedBrokers, config.Metrics.Topic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -427,7 +441,8 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 	expectedTopicFromAttribute := "topic_from_logs_attr_kgo"
 	config.TopicFromAttribute = attributeKey
 
-	exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+	exp, fakeCluster := newKgoMockLogsExporter(
+		t, *config,
 		componenttest.NewNopHost(), expectedTopicFromAttribute,
 	)
 
@@ -437,7 +452,8 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 	err := exp.exportData(t.Context(), logs)
 	require.NoError(t, err)
 
-	records := fetchKgoRecords(t,
+	records := fetchKgoRecords(
+		t,
 		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
@@ -455,7 +471,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_logs_topic_from_ctx"
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+		exp, fakeCluster := newKgoMockLogsExporter(
+			t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
 		)
 
@@ -465,7 +482,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, logs)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -477,7 +495,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+		exp, fakeCluster := newKgoMockLogsExporter(
+			t, *config,
 			componenttest.NewNopHost(), config.Logs.Topic,
 		)
 
@@ -494,7 +513,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, logs)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -513,7 +533,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithNonRetriableError", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.Producer.MaxMessageBytes = 512
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+		exp, fakeCluster := newKgoMockLogsExporter(
+			t, *config,
 			componenttest.NewNopHost(), config.Logs.Topic,
 		)
 		defer fakeCluster.Close()
@@ -529,7 +550,8 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 	// Produce message to an unknown topic to trigger a retriable error.
 	t.Run("WithRetriableError", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+		exp, fakeCluster := newKgoMockLogsExporter(
+			t, *config,
 			componenttest.NewNopHost(), "non_existing_topic",
 		)
 		defer fakeCluster.Close()
@@ -581,7 +603,8 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 	expectedTopicFromAttribute := "topic_from_profiles_attr_kgo"
 	config.TopicFromAttribute = attributeKey
 
-	exp, fakeCluster := newKgoMockProfilesExporter(t, *config,
+	exp, fakeCluster := newKgoMockProfilesExporter(
+		t, *config,
 		componenttest.NewNopHost(), expectedTopicFromAttribute,
 	)
 
@@ -591,7 +614,8 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 	err := exp.exportData(t.Context(), profiles)
 	require.NoError(t, err)
 
-	records := fetchKgoRecords(t,
+	records := fetchKgoRecords(
+		t,
 		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
@@ -609,7 +633,8 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
-		exp, fakeCluster := newKgoMockProfilesExporter(t, *config,
+		exp, fakeCluster := newKgoMockProfilesExporter(
+			t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
 		)
 
@@ -619,7 +644,8 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, profiles)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -631,7 +657,8 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
-		exp, fakeCluster := newKgoMockProfilesExporter(t, *config,
+		exp, fakeCluster := newKgoMockProfilesExporter(
+			t, *config,
 			componenttest.NewNopHost(), config.Profiles.Topic,
 		)
 
@@ -648,7 +675,8 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 		err := exp.exportData(ctx, profiles)
 		require.NoError(t, err)
 
-		records := fetchKgoRecords(t,
+		records := fetchKgoRecords(
+			t,
 			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
@@ -787,7 +815,8 @@ func Test_GetTopic(t *testing.T) {
 				Topic:                "defaultTopic",
 				TopicFromMetadataKey: "metrics_topic_metadata",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"metrics_topic_metadata": {"my_metrics_topic"},
 				})},
@@ -801,7 +830,8 @@ func Test_GetTopic(t *testing.T) {
 				Topic:                "defaultTopic",
 				TopicFromMetadataKey: "logs_topic_metadata",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"logs_topic_metadata": {"my_logs_topic"},
 				})},
@@ -815,7 +845,8 @@ func Test_GetTopic(t *testing.T) {
 				Topic:                "defaultTopic",
 				TopicFromMetadataKey: "traces_topic_metadata",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"traces_topic_metadata": {"my_traces_topic"},
 				})},
@@ -829,7 +860,8 @@ func Test_GetTopic(t *testing.T) {
 				Topic:                "defaultTopic",
 				TopicFromMetadataKey: "key not found",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"traces_topic_metadata": {"my_traces_topic"},
 				})},
@@ -873,7 +905,8 @@ func TestGetMessageKey(t *testing.T) {
 			signalCfg: SignalConfig{
 				MessageKeyFromMetadataKey: "my_partition_key",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"my_partition_key": {"tenant-123"},
 				})},
@@ -885,7 +918,8 @@ func TestGetMessageKey(t *testing.T) {
 			signalCfg: SignalConfig{
 				MessageKeyFromMetadataKey: "my_partition_key",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"other_key": {"tenant-123"},
 				})},
@@ -897,7 +931,8 @@ func TestGetMessageKey(t *testing.T) {
 			signalCfg: SignalConfig{
 				MessageKeyFromMetadataKey: "my_partition_key",
 			},
-			ctx: client.NewContext(t.Context(),
+			ctx: client.NewContext(
+				t.Context(),
 				client.Info{Metadata: client.NewMetadata(map[string][]string{
 					"my_partition_key": {""},
 				})},
@@ -917,7 +952,8 @@ func TestMessageKeyFromMetadataKey(t *testing.T) {
 	const metadataKey = "kafka_message_key"
 	const keyValue = "my-partition-key"
 
-	metaCtx := client.NewContext(t.Context(),
+	metaCtx := client.NewContext(
+		t.Context(),
 		client.Info{Metadata: client.NewMetadata(map[string][]string{
 			metadataKey: {keyValue},
 		})},

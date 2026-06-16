@@ -118,7 +118,8 @@ func TestFactoryCreateLogs(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(),
+	)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -126,7 +127,8 @@ func TestFactoryCreateLogs(t *testing.T) {
 		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(),
+	)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }

@@ -283,7 +283,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		var pathErr *os.PathError
 		if errors.As(moveErr, &pathErr) {
 			if pathErr.Op == "remove" {
-				c.logger.Warn("failed to remove temporary db after compaction",
+				c.logger.Warn(
+					"failed to remove temporary db after compaction",
 					zap.String(directoryKey, c.db.Path()),
 					zap.String(tempDirectoryKey, file.Name()),
 					zap.Error(moveErr),

@@ -235,7 +235,8 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 		default:
 			mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point: Unsupported bucket option type",
 				zap.String("name", ts.Metric.Type),
-				zap.String("bucket option type)",
+				zap.String(
+					"bucket option type)",
 					reflect.TypeOf(bucketOptions.Options).String(),
 				))
 			continue
@@ -303,7 +304,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointExplicitBuckets(
 ) {
 	bounds := buckets.GetBounds()
 	if len(bounds) == 0 && numberOfSourceBucketCounts > 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point with explicit bucket, 0 buckets and > 0 counts",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point with explicit bucket, 0 buckets and > 0 counts",
 			zap.String("name", metricType),
 		)
 		return
@@ -319,7 +321,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
 ) {
 	numFiniteBuckets := buckets.GetNumFiniteBuckets()
 	if numFiniteBuckets < 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, number of finite buckets not within allowed range (must by >= 0)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, number of finite buckets not within allowed range (must by >= 0)",
 			zap.String("name", metricType),
 			zap.Int32("number of finite buckets", numFiniteBuckets),
 		)
@@ -327,7 +330,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
 	}
 	offset := buckets.GetOffset()
 	if offset < 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, offset is not within allowed range (must >= 0)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, offset is not within allowed range (must >= 0)",
 			zap.String("name", metricType),
 			zap.Float64("offset", offset),
 		)
@@ -335,7 +339,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
 	}
 	width := buckets.GetWidth()
 	if width <= 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, scale is not within allowed range (must be > 0)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, scale is not within allowed range (must be > 0)",
 			zap.String("name", metricType),
 			zap.Float64("width", width),
 		)
@@ -371,7 +376,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
 	// size for precision (that is, we avoid loss of precision/information by accepting a larger payload size).
 	numFiniteBuckets := buckets.GetNumFiniteBuckets()
 	if numFiniteBuckets < 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, number of finite buckets not within allowed range (must by >= 0)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, number of finite buckets not within allowed range (must by >= 0)",
 			zap.String("name", metricType),
 			zap.Int32("number of finite buckets", numFiniteBuckets),
 		)
@@ -379,7 +385,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
 	}
 	growthFactor := buckets.GetGrowthFactor()
 	if growthFactor <= 1.0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, growth factor is not within allowed range (must by > 1)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, growth factor is not within allowed range (must by > 1)",
 			zap.String("name", metricType),
 			zap.Float64("growth factor", growthFactor),
 		)
@@ -387,7 +394,8 @@ func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
 	}
 	scale := buckets.GetScale()
 	if scale <= 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point, scale is not within allowed range (must be > 0)",
+		mb.logger.Debug(
+			"Cannot transform Google Cloud Monitoring distribution data point, scale is not within allowed range (must be > 0)",
 			zap.String("name", metricType),
 			zap.Float64("scale", scale),
 		)

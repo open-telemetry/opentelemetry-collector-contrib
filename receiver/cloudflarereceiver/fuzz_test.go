@@ -26,17 +26,18 @@ func FuzzHandleReq(f *testing.F) {
 		}
 		consumer := &consumertest.LogsSink{}
 
-		r := newReceiver(t, &Config{
-			Logs: LogsConfig{
-				Endpoint:       "localhost:0",
-				Secret:         "abc123",
-				TimestampField: "MyTimestamp",
-				Attributes: map[string]string{
-					"ClientIP": "http_request.client_ip",
+		r := newReceiver(
+			t, &Config{
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					Secret:         "abc123",
+					TimestampField: "MyTimestamp",
+					Attributes: map[string]string{
+						"ClientIP": "http_request.client_ip",
+					},
+					TLS: &configtls.ServerConfig{},
 				},
-				TLS: &configtls.ServerConfig{},
 			},
-		},
 			consumer,
 		)
 		rec := httptest.NewRecorder()

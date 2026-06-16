@@ -183,7 +183,8 @@ func calculateHistogramPercentile(dp pmetric.HistogramDataPoint, percentile floa
 			return linearInterpolation(lowerBound, upperBound, ratio)
 		}
 	}
-	return 0, fmt.Errorf("calculating histogram percentile: malformed data: cumulative count doesn't reach target count corresponding to percentile. targetCount=%d, total count=%d",
+	return 0, fmt.Errorf(
+		"calculating histogram percentile: malformed data: cumulative count doesn't reach target count corresponding to percentile. targetCount=%d, total count=%d",
 		targetCount,
 		cumulativeCount,
 	)
@@ -277,7 +278,8 @@ func calculateFromPositiveBuckets(buckets pmetric.ExponentialHistogramDataPointB
 		}
 	}
 
-	return 0, fmt.Errorf("calculating exponential histogram percentile: malformed data: cumulative count doesn't reach target count corresponding to percentile. targetCount=%d, total count=%d",
+	return 0, fmt.Errorf(
+		"calculating exponential histogram percentile: malformed data: cumulative count doesn't reach target count corresponding to percentile. targetCount=%d, total count=%d",
 		targetCount,
 		cumulativeCount,
 	)

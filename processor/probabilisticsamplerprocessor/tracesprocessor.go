@@ -117,7 +117,8 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config
 		cfg,
 		nextConsumer,
 		tp.processTraces,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {

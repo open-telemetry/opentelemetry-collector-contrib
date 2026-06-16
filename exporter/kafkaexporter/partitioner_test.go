@@ -233,7 +233,8 @@ func TestRecordPartitioner_RoundRobin(t *testing.T) {
 	const numPartitions = 3
 	const topic = "rr-topic"
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{RoundRobin: &struct{}{}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
@@ -253,7 +254,8 @@ func TestRecordPartitioner_SaramaCompatible_SameKeyConsistency(t *testing.T) {
 	const topic = "sarama-key-topic"
 	const numRecords = 6
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{
 			StickyKey: &StickyKeyPartitionerConfig{
 				Hasher: HasherSaramaCompat,
@@ -280,7 +282,8 @@ func TestRecordPartitioner_SaramaCompatible_Murmur2(t *testing.T) {
 	const topic = "sarama-key-topic"
 	const numRecords = 6
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{
 			StickyKey: &StickyKeyPartitionerConfig{
 				Hasher: HasherMurmur2,
@@ -306,7 +309,8 @@ func TestRecordPartitioner_SaramaCompatible_DifferentKeys(t *testing.T) {
 	const numPartitions = 8
 	const topic = "sarama-diff-keys-topic"
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{StickyKey: &StickyKeyPartitionerConfig{
 			Hasher: HasherSaramaCompat,
 		}},
@@ -338,7 +342,8 @@ func TestRecordPartitioner_LeastBackup(t *testing.T) {
 	// that's why we use large number of records.
 	const numRecords = 50
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{LeastBackup: &struct{}{}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
@@ -368,7 +373,8 @@ func TestRecordPartitioner_Extension_CustomRouting(t *testing.T) {
 		},
 	}
 
-	client, brokers := newPartitioningProducer(t,
+	client, brokers := newPartitioningProducer(
+		t,
 		RecordPartitionerConfig{Extension: &extID},
 		host, numPartitions, topic,
 	)

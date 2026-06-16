@@ -100,7 +100,8 @@ func TestExponentialHistogramSketchPoolSafety(t *testing.T) {
 	set.Logger = zap.NewNop()
 	attrTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
-	tr, err := otlpmetrics.NewDefaultTranslator(set, attrTranslator,
+	tr, err := otlpmetrics.NewDefaultTranslator(
+		set, attrTranslator,
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),
 		otlpmetrics.WithFallbackSourceProvider(testProvider("fallbackHost")),
 	)

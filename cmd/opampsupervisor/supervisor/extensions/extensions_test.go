@@ -78,7 +78,8 @@ func TestNew_UnknownFactoryType(t *testing.T) {
 }
 
 func TestNew_MultipleExtensionsDeterministicOrder(t *testing.T) {
-	cfg := nopConfig(t,
+	cfg := nopConfig(
+		t,
 		component.MustNewIDWithName(extensiontest.NopType.String(), "c"),
 		component.MustNewIDWithName(extensiontest.NopType.String(), "a"),
 		component.MustNewIDWithName(extensiontest.NopType.String(), "b"),

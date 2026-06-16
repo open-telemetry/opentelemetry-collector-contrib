@@ -144,7 +144,8 @@ func (p *Provider) instanceTags(ctx context.Context) (*ec2.DescribeTagsOutput, e
 	// Similar to:
 	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/39dbc1ac8/processor/resourcedetectionprocessor/internal/aws/ec2/ec2.go#L118-L151
 	// - https://github.com/DataDog/datadog-agent/blob/1b4afdd6a03e8fabcc169b924931b2bb8935dab9/pkg/util/ec2/ec2_tags.go#L104-L134
-	cfg, err := config.LoadDefaultConfig(ctx,
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
 		config.WithRegion(meta.Region),
 	)
 	if err != nil {

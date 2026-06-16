@@ -84,7 +84,8 @@ func TestProbabilisticSampling(t *testing.T) {
 			}
 
 			effectiveSamplingPercentage := float32(sampled) / float32(traceCount) * 100
-			assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
+			assert.InDelta(
+				t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
 				"Effective sampling percentage is %f, expected %f", effectiveSamplingPercentage, tt.expectedSamplingPercentage,
 			)
 		})

@@ -28,13 +28,15 @@ func TestCronJobMetrics(t *testing.T) {
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-	),
+	require.NoError(
+		t, pmetrictest.CompareMetrics(
+			expected, m,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+		),
 	)
 }
 
@@ -46,7 +48,8 @@ func TestCronJobMetadata(t *testing.T) {
 	require.Len(t, actualMetadata, 1)
 
 	// Assert metadata from Pod.
-	require.Equal(t,
+	require.Equal(
+		t,
 		metadata.KubernetesMetadata{
 			EntityType:    "k8s.cronjob",
 			ResourceIDKey: "k8s.cronjob.uid",

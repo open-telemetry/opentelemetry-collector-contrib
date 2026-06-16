@@ -98,7 +98,8 @@ func TestConnectorConsume(t *testing.T) {
 				expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
 				assert.NoError(t, err)
 
-				err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				err = pmetrictest.CompareMetrics(
+					expectedMetrics, actualMetrics,
 					pmetrictest.IgnoreMetricsOrder(),
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
@@ -663,7 +664,8 @@ func TestExtraDimensionsLabels(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics("testdata/extra-dimensions-queue-db-expected-metrics.yaml")
 	assert.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+	err = pmetrictest.CompareMetrics(
+		expectedMetrics, metrics[0],
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 	)
@@ -709,7 +711,8 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+	err = pmetrictest.CompareMetrics(
+		expectedMetrics, metrics[0],
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
@@ -758,7 +761,8 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+	err = pmetrictest.CompareMetrics(
+		expectedMetrics, metrics[0],
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 	)

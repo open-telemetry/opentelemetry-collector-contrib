@@ -47,7 +47,8 @@ func TestProcessor(t *testing.T) {
 		}
 
 		read := func(file string, into *Stage) error {
-			return testar.ReadFile(file, into,
+			return testar.ReadFile(
+				file, into,
 				testar.Parser("pmetric", unmarshalMetrics),
 				testar.Parser("sdk", sdktest.Unmarshal),
 			)

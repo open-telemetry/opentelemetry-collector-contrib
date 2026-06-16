@@ -102,11 +102,13 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		if resp.StatusCode == http.StatusOK {
 			// Success
 			componentstatus.ReportStatus(
-				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK),
+			)
 		} else if httpRecoverableErrorStatus(resp.StatusCode) {
 			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
 			componentstatus.ReportStatus(
-				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err),
+			)
 		}
 
 	case clientErr != nil:
@@ -117,7 +119,8 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		zl.Debug("Request failed.", fields...)
 		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
 		componentstatus.ReportStatus(
-			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err),
+		)
 	}
 
 	return nil

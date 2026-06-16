@@ -107,7 +107,8 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		// NOTE: containerName can be empty for pause container on containerd
 		// https://github.com/containerd/cri/issues/922#issuecomment-423729537
 		if namespace == "" || podName == "" {
-			logger.Debug("Container labels are missing",
+			logger.Debug(
+				"Container labels are missing",
 				zap.String("containerName", containerName),
 				zap.String("namespace", namespace),
 				zap.String("podName", podName),

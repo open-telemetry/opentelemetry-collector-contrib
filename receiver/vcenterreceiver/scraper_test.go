@@ -89,7 +89,8 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
+	err = pmetrictest.CompareMetrics(
+		expectedMetrics, metrics,
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),

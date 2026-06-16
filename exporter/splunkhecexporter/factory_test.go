@@ -64,7 +64,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(
 		t.Context(), params,
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -73,7 +74,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetrics(
 		t.Context(), params,
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 

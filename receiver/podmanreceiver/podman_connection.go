@@ -145,7 +145,8 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 		}
 	}
 
-	bastion, err := ssh.Dial("tcp",
+	bastion, err := ssh.Dial(
+		"tcp",
 		net.JoinHostPort(_url.Hostname(), port),
 		&ssh.ClientConfig{
 			User:            _url.User.Username(),

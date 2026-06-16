@@ -254,7 +254,8 @@ func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Setti
 	err = builder.RegisterProcessorCardinalityTopOffendersCallback(func(_ context.Context, o metric.Int64Observer) error {
 		p.topOffendersMu.RLock()
 		for _, entry := range p.topOffenders {
-			o.Observe(int64(entry.delta),
+			o.Observe(
+				int64(entry.delta),
 				metric.WithAttributes(
 					attribute.String("metric_name", entry.metricName),
 					attribute.String("label_key", entry.labelKey),

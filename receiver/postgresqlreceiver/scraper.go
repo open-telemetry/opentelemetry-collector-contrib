@@ -238,7 +238,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 				logCtx = ctx
 			}
 		}
-		p.lb.RecordDbServerQuerySampleEvent(logCtx,
+		p.lb.RecordDbServerQuerySampleEvent(
+			logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			atts[string(semconv.DBNamespaceKey)].(string),

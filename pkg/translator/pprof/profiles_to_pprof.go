@@ -58,7 +58,8 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			// Skip the zero-value mapping at index 0.
 			continue
 		}
-		populateMapping(dst, mappingMap,
+		populateMapping(
+			dst, mappingMap,
 			m.MemoryStart(),
 			m.MemoryLimit(),
 			m.FileOffset(),
@@ -105,7 +106,8 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 			if mi := loc.MappingIndex(); mi != 0 {
 				m := src.Dictionary().MappingTable().At(int(mi))
-				locMapping = populateMapping(dst, mappingMap,
+				locMapping = populateMapping(
+					dst, mappingMap,
 					m.MemoryStart(),
 					m.MemoryLimit(),
 					m.FileOffset(),

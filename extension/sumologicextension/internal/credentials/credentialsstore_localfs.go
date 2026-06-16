@@ -126,7 +126,8 @@ func (cr LocalFsStore) Get(key string) (CollectorCredentials, error) {
 			return CollectorCredentials{}, err
 		}
 
-		cr.logger.Info("Collector registration credentials retrieved from local fs",
+		cr.logger.Info(
+			"Collector registration credentials retrieved from local fs",
 			zap.String("path", path),
 		)
 
@@ -171,12 +172,14 @@ func (cr LocalFsStore) Store(key string, creds CollectorCredentials) error {
 		}
 
 		if err = os.WriteFile(path, encryptedCreds, 0o600); err != nil {
-			return fmt.Errorf("failed to save credentials file '%s': %w",
+			return fmt.Errorf(
+				"failed to save credentials file '%s': %w",
 				path, err,
 			)
 		}
 
-		cr.logger.Info("Collector registration credentials stored locally",
+		cr.logger.Info(
+			"Collector registration credentials stored locally",
 			zap.String("path", path),
 		)
 
@@ -204,12 +207,14 @@ func (cr LocalFsStore) Delete(key string) error {
 			return nil
 		}
 		if err := os.Remove(path); err != nil {
-			return fmt.Errorf("failed to remove credentials file '%s': %w",
+			return fmt.Errorf(
+				"failed to remove credentials file '%s': %w",
 				path, err,
 			)
 		}
 
-		cr.logger.Debug("Collector registration credentials removed",
+		cr.logger.Debug(
+			"Collector registration credentials removed",
 			zap.String("path", path),
 		)
 

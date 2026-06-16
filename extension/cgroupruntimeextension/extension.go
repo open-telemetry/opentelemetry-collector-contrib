@@ -50,7 +50,8 @@ func (c *cgroupRuntimeExtension) Start(ctx context.Context, _ component.Host) er
 			return err
 		}
 
-		c.logger.Info("GOMAXPROCS has been set",
+		c.logger.Info(
+			"GOMAXPROCS has been set",
 			zap.Int("GOMAXPROCS", runtime.GOMAXPROCS(-1)),
 		)
 	}
@@ -61,7 +62,8 @@ func (c *cgroupRuntimeExtension) Start(ctx context.Context, _ component.Host) er
 			return err
 		}
 
-		c.logger.Info("GOMEMLIMIT has been set",
+		c.logger.Info(
+			"GOMEMLIMIT has been set",
 			zap.Int64("GOMEMLIMIT", debug.SetMemoryLimit(-1)),
 		)
 

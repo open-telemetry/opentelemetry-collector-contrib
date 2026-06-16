@@ -82,7 +82,8 @@ func (t *tcpServer) ListenAndServe(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),
 				netErr.Timeout(),
-				netErr)
+				netErr,
+			)
 			if netErr.Timeout() {
 				continue
 			}
@@ -95,7 +96,8 @@ func (t *tcpServer) ListenAndServe(
 	t.reporter.OnDebugf(
 		"TCP Transport (%s) exiting Accept loop error: %v",
 		t.ln.Addr().String(),
-		err)
+		err,
+	)
 
 	// Close any lingering connection
 	connMapMtx.Lock()
@@ -127,7 +129,8 @@ func (t *tcpServer) handleConnection(
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - conn.SetDeadLine error: %v",
 				t.ln.Addr(),
-				err)
+				err,
+			)
 			return
 		}
 
@@ -187,7 +190,8 @@ func (t *tcpServer) handleConnection(
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - error: %v",
 				t.ln.Addr(),
-				err)
+				err,
+			)
 
 			if reporterActive {
 				t.reporter.OnMetricsProcessed(ctx, 0, err)

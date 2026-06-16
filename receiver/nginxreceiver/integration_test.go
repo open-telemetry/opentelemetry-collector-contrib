@@ -32,13 +32,15 @@ func TestIntegration(t *testing.T) {
 				},
 				ExposedPorts: []string{nginxPort},
 				WaitingFor:   wait.ForListeningPort(nginxPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/status", ci.Host(t), ci.MappedPort(t, nginxPort))
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),

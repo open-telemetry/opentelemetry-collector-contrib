@@ -260,7 +260,8 @@ func validateBatchPartitionerKeys(c *Config) error {
 		}
 		for _, includeKey := range c.IncludeMetadataKeys {
 			if _, ok := partitionMetadataKeySet[includeKey]; !ok {
-				return fmt.Errorf("%w: missing %q from sending_queue::batch::partition::metadata_keys=%v",
+				return fmt.Errorf(
+					"%w: missing %q from sending_queue::batch::partition::metadata_keys=%v",
 					errIncludeMetadataKeysNotPartitioned,
 					includeKey,
 					partitionMetadataKeys,
@@ -313,7 +314,8 @@ func validateTopicFromMetadataKey(topicFromMetadataKey string, partitionKeysSet 
 		return nil
 	}
 	if _, ok := partitionKeysSet[topicFromMetadataKey]; !ok {
-		return fmt.Errorf("%w: %q not found in partition keys=%v",
+		return fmt.Errorf(
+			"%w: %q not found in partition keys=%v",
 			errTopicMetadataKeyNotIncluded,
 			topicFromMetadataKey,
 			slices.Collect(maps.Keys(partitionKeysSet)),
@@ -327,7 +329,8 @@ func validateMessageKeyFromMetadataKey(messageKeyFromMetadataKey string, partiti
 		return nil
 	}
 	if _, ok := partitionKeysSet[messageKeyFromMetadataKey]; !ok {
-		return fmt.Errorf("%w: %q not found in partition keys=%v",
+		return fmt.Errorf(
+			"%w: %q not found in partition keys=%v",
 			errMessageKeyMetadataKeyNotIncluded,
 			messageKeyFromMetadataKey,
 			slices.Collect(maps.Keys(partitionKeysSet)),

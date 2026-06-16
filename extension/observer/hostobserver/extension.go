@@ -139,7 +139,8 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 
 		pd, err := e.collectProcessDetails(proc)
 		if err != nil {
-			e.logger.Error("Failed collecting process details (skipping)",
+			e.logger.Error(
+				"Failed collecting process details (skipping)",
 				zap.Int32("pid", pid), zap.Error(err),
 			)
 			continue

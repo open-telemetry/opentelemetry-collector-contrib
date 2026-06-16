@@ -56,9 +56,9 @@ type lockedLRUSet struct {
 }
 
 func (l lockedLRUSet) CheckAndAdd(entry string) (excluded bool) {
-	if _, exclude := (l.lru).Get(entry); exclude {
+	if _, exclude := l.lru.Get(entry); exclude {
 		return true
 	}
-	(l.lru).Add(entry, void{})
+	l.lru.Add(entry, void{})
 	return false
 }

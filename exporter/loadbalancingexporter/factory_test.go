@@ -132,7 +132,8 @@ func TestBuildExporterSettings(t *testing.T) {
 
 		allLogs := observedLogs.All()
 		require.Equal(t, 1, observedLogs.Len())
-		assert.Contains(t,
+		assert.Contains(
+			t,
 			allLogs[0].Context,
 			zap.String(zapEndpointKey, testEndpoint),
 		)
@@ -166,7 +167,8 @@ func TestBuildExporterSettings(t *testing.T) {
 
 		allLogs := observedLogs.All()
 		require.Equal(t, 1, observedLogs.Len())
-		assert.Contains(t,
+		assert.Contains(
+			t,
 			allLogs[0].Context,
 			zap.String(zapEndpointKey, testEndpoint),
 		)

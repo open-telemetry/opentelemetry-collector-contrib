@@ -28,15 +28,16 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.Equal(t, &Config{
-		Topic:                 "otel-pulsar",
-		Endpoint:              "pulsar://localhost:6500",
-		ConsumerName:          "otel-collector",
-		Subscription:          "otel-collector",
-		Encoding:              defaultEncoding,
-		TLSTrustCertsFilePath: "ca.pem",
-		Authentication:        Authentication{TLS: configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"})},
-	},
+	assert.Equal(
+		t, &Config{
+			Topic:                 "otel-pulsar",
+			Endpoint:              "pulsar://localhost:6500",
+			ConsumerName:          "otel-collector",
+			Subscription:          "otel-collector",
+			Encoding:              defaultEncoding,
+			TLSTrustCertsFilePath: "ca.pem",
+			Authentication:        Authentication{TLS: configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"})},
+		},
 		cfg,
 	)
 }

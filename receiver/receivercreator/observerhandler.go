@@ -207,7 +207,8 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
-	obs.params.Logger.Info("starting receiver",
+	obs.params.Logger.Info(
+		"starting receiver",
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
 		zap.String("endpoint_id", string(e.ID)),

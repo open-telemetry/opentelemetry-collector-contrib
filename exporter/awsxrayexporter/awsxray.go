@@ -45,7 +45,8 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 		opts = append(opts, telemetry.WithLogger(set.Logger))
 		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
-	return exporterhelper.NewTraces(context.Background(), set, cfg,
+	return exporterhelper.NewTraces(
+		context.Background(), set, cfg,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
@@ -99,7 +100,8 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 					config.(*Config).IndexedAttributes,
 					config.(*Config).IndexAllAttributes,
 					config.(*Config).LogGroupNames,
-					config.(*Config).skipTimestampValidation)
+					config.(*Config).skipTimestampValidation,
+				)
 
 				if localErr != nil {
 					logger.Debug("Error translating span.", zap.Error(localErr))

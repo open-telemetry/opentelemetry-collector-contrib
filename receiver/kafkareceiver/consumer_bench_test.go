@@ -86,7 +86,8 @@ func newBenchConfigClient(b *testing.B, topic string, partitions int32,
 func runBenchmark(b *testing.B, topic string, data []byte,
 	rcv component.Component, client *kgo.Client,
 ) {
-	require.NoError(b,
+	require.NoError(
+		b,
 		rcv.Start(b.Context(), componenttest.NewNopHost()),
 	)
 	defer func() { require.NoError(b, rcv.Shutdown(b.Context())) }()
@@ -121,7 +122,8 @@ func BenchmarkTracesReceiver(b *testing.B) {
 					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
 					b.Run(name, func(b *testing.B) {
 						defer sink.Reset()
-						cfg, client := newBenchConfigClient(b, topic, p,
+						cfg, client := newBenchConfigClient(
+							b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
 						rcv, err := newTracesReceiver(cfg, set, &sink)
@@ -152,7 +154,8 @@ func BenchmarkLogsReceiver(b *testing.B) {
 					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
 					b.Run(name, func(b *testing.B) {
 						defer sink.Reset()
-						cfg, client := newBenchConfigClient(b, topic, p,
+						cfg, client := newBenchConfigClient(
+							b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
 						rcv, err := newLogsReceiver(cfg, set, &sink)
@@ -183,7 +186,8 @@ func BenchmarkMetricsReceiver(b *testing.B) {
 					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
 					b.Run(name, func(b *testing.B) {
 						defer sink.Reset()
-						cfg, client := newBenchConfigClient(b, topic, p,
+						cfg, client := newBenchConfigClient(
+							b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
 						rcv, err := newMetricsReceiver(cfg, set, &sink)

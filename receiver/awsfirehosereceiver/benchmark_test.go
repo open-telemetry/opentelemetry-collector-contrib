@@ -139,7 +139,8 @@ func makeCloudWatchLogRecord(rng *rand.Rand, numLogs, numLogGroups int) []byte {
 	w := gzip.NewWriter(&buf)
 	for i := range numLogs {
 		group := rng.IntN(numLogGroups)
-		fmt.Fprintf(w,
+		fmt.Fprintf(
+			w,
 			`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"group_%d","logStream":"stream","logEvents":[{"id":"the_id","timestamp":1725594035523,"message":"message %d"}]}`,
 			group, i,
 		)
@@ -155,7 +156,8 @@ func makeCloudWatchMetricRecord(rng *rand.Rand, numMetrics, numStreams int) []by
 	var buf bytes.Buffer
 	for i := range numMetrics {
 		stream := rng.IntN(numStreams)
-		fmt.Fprintf(&buf,
+		fmt.Fprintf(
+			&buf,
 			`{"metric_stream_name":"stream_%d","account_id":"1234567890","region":"us-east-1","namespace":"AWS/NATGateway","metric_name":"metric_%d","dimensions":{"NatGatewayId":"nat-01a4160dfb995b990"},"timestamp":1643916720000,"value":{"max":0.0,"min":0.0,"sum":0.0,"count":2.0},"unit":"Count"}`,
 			stream, i,
 		)

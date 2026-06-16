@@ -33,7 +33,8 @@ func Test_Integration(t *testing.T) {
 				rCfg.CollectionInterval = time.Second
 				rCfg.Include = filepath.Join(tempDir, "foo*")
 				rCfg.ResourceAttributes.FilePath.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.ChangeResourceAttributeValue("file.path", func(s string) string {

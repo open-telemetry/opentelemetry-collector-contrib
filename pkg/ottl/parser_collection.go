@@ -635,10 +635,12 @@ func (pc *ParserCollection[R]) logModifications(originalStatements, modifiedStat
 	for i, original := range originalStatements {
 		if modifiedStatements[i] != original {
 			statementKey := fmt.Sprintf("[%v]", i)
-			fields = append(fields, zap.Dict(
-				statementKey,
-				zap.String("original", original),
-				zap.String("modified", modifiedStatements[i])),
+			fields = append(
+				fields, zap.Dict(
+					statementKey,
+					zap.String("original", original),
+					zap.String("modified", modifiedStatements[i]),
+				),
 			)
 		}
 	}

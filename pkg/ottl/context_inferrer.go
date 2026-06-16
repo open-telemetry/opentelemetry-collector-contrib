@@ -124,7 +124,8 @@ func (s *priorityContextInferrer) infer(statements, conditions, valueExprs []str
 		}
 	}
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-		s.telemetrySettings.Logger.Debug("Inferring OTTL context",
+		s.telemetrySettings.Logger.Debug(
+			"Inferring OTTL context",
 			zap.Strings("candidates", slices.Collect(maps.Keys(s.contextCandidate))),
 			zap.Any("priority", s.contextPriority),
 			zap.Strings("statements", statements),

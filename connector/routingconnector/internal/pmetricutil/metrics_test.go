@@ -197,18 +197,23 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -235,21 +240,27 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -276,21 +287,27 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
@@ -306,14 +323,17 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 			to:         pmetricutiltest.NewGauges("1", "2", "3", "4"),
 			expectFrom: pmetricutiltest.NewGauges("AB", "C", "EF", "GH"),
 			expectTo: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("1", pmetricutiltest.Scope("2",
+				pmetricutiltest.Resource("1", pmetricutiltest.Scope(
+					"2",
 					pmetricutiltest.Gauge("3", pmetricutiltest.NumberDataPoint("4")),
 				)),
-				pmetricutiltest.Resource("A", pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource("A", pmetricutiltest.Scope(
+					"D",
 					pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 				)),
-				pmetricutiltest.Resource("B", pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource("B", pmetricutiltest.Scope(
+					"D",
 					pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 				)),
@@ -432,14 +452,17 @@ func TestCopyMetricsWithContextIf(t *testing.T) {
 			to:         pmetricutiltest.NewGauges("1", "2", "3", "4"),
 			expectFrom: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectTo: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("1", pmetricutiltest.Scope("2",
+				pmetricutiltest.Resource("1", pmetricutiltest.Scope(
+					"2",
 					pmetricutiltest.Gauge("3", pmetricutiltest.NumberDataPoint("4")),
 				)),
-				pmetricutiltest.Resource("A", pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource("A", pmetricutiltest.Scope(
+					"D",
 					pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 				)),
-				pmetricutiltest.Resource("B", pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource("B", pmetricutiltest.Scope(
+					"D",
 					pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 				)),
@@ -506,18 +529,23 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -565,22 +593,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -597,22 +631,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -629,22 +669,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -672,21 +718,27 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("E", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Gauge("F", pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
@@ -761,18 +813,23 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -820,22 +877,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -852,22 +915,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -884,22 +953,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
@@ -927,21 +1002,27 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
@@ -1016,18 +1097,23 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
@@ -1075,22 +1161,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
@@ -1107,22 +1199,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
@@ -1139,22 +1237,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
@@ -1182,21 +1286,27 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
@@ -1271,18 +1381,23 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
@@ -1330,22 +1445,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
@@ -1362,22 +1483,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
@@ -1394,22 +1521,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
@@ -1437,21 +1570,27 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
@@ -1516,18 +1655,23 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("D",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
@@ -1575,22 +1719,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
@@ -1607,22 +1757,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
@@ -1639,22 +1795,28 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
@@ -1682,21 +1844,27 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			from: pmetricutiltest.NewSummaries("AB", "CD", "EF", "GH"),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"A",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("E", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
+				pmetricutiltest.Resource(
+					"B",
+					pmetricutiltest.Scope(
+						"C",
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
-					pmetricutiltest.Scope("D",
+					pmetricutiltest.Scope(
+						"D",
 						pmetricutiltest.Summary("F", pmetricutiltest.SummaryDataPoint("G"), pmetricutiltest.SummaryDataPoint("H")),
 					),
 				),

@@ -39,13 +39,15 @@ func integrationTest(version, name string) func(*testing.T) {
 					"ES_JAVA_OPTS":   "-Xms512m -Xmx512m",
 				},
 				WaitingFor: wait.ForListeningPort(elasticPort).WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 2 * time.Second
 				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", ci.Host(t), ci.MappedPort(t, elasticPort))
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),

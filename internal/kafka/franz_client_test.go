@@ -37,7 +37,8 @@ import (
 )
 
 func TestNewFranzSyncProducer_SASL(t *testing.T) {
-	_, clientConfig := kafkatest.NewCluster(t, kfake.EnableSASL(),
+	_, clientConfig := kafkatest.NewCluster(
+		t, kfake.EnableSASL(),
 		kfake.Superuser(PLAIN, "plain_user", "plain_password"),
 		kfake.Superuser(SCRAMSHA256, "scramsha256_user", "scramsha256_password"),
 		kfake.Superuser(SCRAMSHA512, "scramsha512_user", "scramsha512_password"),
@@ -184,7 +185,8 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 		t.Run(compressionAlgo, func(t *testing.T) {
 			t.Parallel()
 			validTopic := fmt.Sprintf("test-topic-%s", compressionAlgo)
-			cluster, clientConfig := kafkatest.NewCluster(t,
+			cluster, clientConfig := kafkatest.NewCluster(
+				t,
 				kfake.SeedTopics(1, validTopic),
 			)
 			prodCfg := configkafka.NewDefaultProducerConfig()
@@ -198,7 +200,8 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 			require.NoError(t, err)
 			defer client.Close()
 
-			ctx, cancel := context.WithTimeoutCause(t.Context(), time.Second,
+			ctx, cancel := context.WithTimeoutCause(
+				t.Context(), time.Second,
 				errors.New("Failed to connect to Kafka cluster"),
 			)
 			defer cancel()
@@ -268,7 +271,8 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 			require.NoError(t, err)
 			defer client.Close()
 
-			ctx, cancel := context.WithTimeoutCause(t.Context(), time.Second,
+			ctx, cancel := context.WithTimeoutCause(
+				t.Context(), time.Second,
 				errors.New("Failed to connect to Kafka cluster"),
 			)
 			defer cancel()
@@ -356,7 +360,8 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 			consumeConfig.InitialOffset = initial
 			fetchIssued := make(chan struct{})
 			var once2 sync.Once
-			client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{topic},
+			client := mustNewFranzConsumerGroup(
+				t, clientConfig, consumeConfig, []string{topic},
 				kgo.WithHooks(onBrokerWrite(func(_ kgo.BrokerMetadata, key int16, _ int, _, _ time.Duration, _ error) {
 					if key == kmsg.Fetch.Int16() {
 						once2.Do(func() { close(fetchIssued) })

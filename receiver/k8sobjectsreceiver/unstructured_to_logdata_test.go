@@ -177,7 +177,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		watchEventResourceAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).Resource().Attributes()
 		k8sNamespace, ok := watchEventResourceAttrs.Get("k8s.namespace.name")
 		assert.True(t, ok)
-		assert.Equal(t,
+		assert.Equal(
+			t,
 			"my-namespace",
 			k8sNamespace.Str(),
 		)

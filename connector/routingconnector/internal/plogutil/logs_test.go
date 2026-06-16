@@ -64,10 +64,12 @@ func TestMoveResourcesIf(t *testing.T) {
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("A", "CD", "EF"),
 			expectTo: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("1",
+				plogutiltest.Resource(
+					"1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
@@ -134,10 +136,12 @@ func TestCopyResourcesIf(t *testing.T) {
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectTo: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("1",
+				plogutiltest.Resource(
+					"1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
@@ -203,11 +207,13 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
 			expectFrom: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
 			),
@@ -232,11 +238,13 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
 			expectFrom: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
@@ -262,11 +270,13 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
 			expectFrom: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("F")),
 				),
@@ -282,13 +292,16 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("AB", "C", "EF"),
 			expectTo: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("1",
+				plogutiltest.Resource(
+					"1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
 			),
@@ -406,13 +419,16 @@ func TestCopyRecordsWithContextIf(t *testing.T) {
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectTo: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("1",
+				plogutiltest.Resource(
+					"1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
 			),

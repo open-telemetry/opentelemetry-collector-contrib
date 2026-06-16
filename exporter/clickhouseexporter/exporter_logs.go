@@ -147,7 +147,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				}
 
 				columnValues = columnValues[:0]
-				columnValues = append(columnValues,
+				columnValues = append(
+					columnValues,
 					timestamp.AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),

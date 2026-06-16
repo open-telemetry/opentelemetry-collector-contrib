@@ -40,7 +40,8 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 
 	// disable feature gate
 	_ = featuregate.GlobalRegistry().Set(
-		"receiver.hostmetricsreceiver.UseLinuxMemAvailable", false)
+		"receiver.hostmetricsreceiver.UseLinuxMemAvailable", false,
+	)
 	t.Cleanup(func() {
 		_ = featuregate.GlobalRegistry().Set("receiver.hostmetricsreceiver.UseLinuxMemAvailable", true)
 	})

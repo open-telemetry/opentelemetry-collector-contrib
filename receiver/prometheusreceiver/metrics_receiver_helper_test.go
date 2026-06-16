@@ -877,7 +877,8 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	defer func() {
 		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
 		// will check that there are no running targets after shutdown.
-		assert.Lenf(t,
+		assert.Lenf(
+			t,
 			flattenTargets(receiver.scrapeManager.TargetsAll()),
 			len(targets), "expected %v targets to be running", len(targets),
 		)

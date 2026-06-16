@@ -272,7 +272,8 @@ func TestCreateParseSimplifiedXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &ParseSimplifiedXMLArguments[any]{
 			Target: invalidXMLGetter(),
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)

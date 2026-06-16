@@ -107,7 +107,8 @@ func TestLogsReceiver_Start(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			assert.IsType(t,
+			assert.IsType(
+				t,
 				testCase.wantUnmarshalerType,
 				got.(*firehoseReceiver).consumer.(*logsConsumer).unmarshaler,
 			)

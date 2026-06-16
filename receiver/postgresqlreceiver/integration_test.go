@@ -83,7 +83,8 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -106,7 +107,8 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
@@ -187,7 +189,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					AsRegexp().
 					WithOccurrence(1),
 			},
-		})
+		},
+	)
 	assert.NoError(t, err)
 
 	err = ci.Start(t.Context())

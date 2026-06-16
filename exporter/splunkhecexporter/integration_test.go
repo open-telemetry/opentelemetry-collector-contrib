@@ -354,7 +354,8 @@ func TestSplunkHecExporter(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			logger := zaptest.NewLogger(t)
-			logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
+			logger.Info(
+				"Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
 				zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
 				zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
 				zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),

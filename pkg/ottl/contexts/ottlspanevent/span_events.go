@@ -236,7 +236,8 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 			ctxspan.Name:        ctxspan.PathGetSetter[*TransformContext],
 			ctxspanevent.Name:   spanEventGetSetterWithIndex,
 			ctxotelcol.Name:     ctxotelcol.PathGetSetter[*TransformContext],
-		})
+		},
+	)
 }
 
 func spanEventGetSetterWithIndex(path ottl.Path[*TransformContext]) (ottl.GetSetter[*TransformContext], error) {

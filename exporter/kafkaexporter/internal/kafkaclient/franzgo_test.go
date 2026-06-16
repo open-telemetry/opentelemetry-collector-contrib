@@ -206,7 +206,8 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 		"shared-key":       {"dynamic-value-wins"},
 	})})
 
-	producer := NewFranzSyncProducer(kgoClient,
+	producer := NewFranzSyncProducer(
+		kgoClient,
 		[]string{"dynamic-key-ONLY", "shared-key"},
 		[]RecordHeader{
 			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},

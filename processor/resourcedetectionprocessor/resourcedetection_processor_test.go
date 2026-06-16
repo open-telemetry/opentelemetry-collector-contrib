@@ -159,7 +159,8 @@ func TestResourceProcessor(t *testing.T) {
 			factory.resourceProviderFactory = internal.NewProviderFactory(
 				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
 					return md1, nil
-				}})
+				}},
+			)
 
 			if tt.detectorKeys == nil {
 				tt.detectorKeys = []string{"mock"}

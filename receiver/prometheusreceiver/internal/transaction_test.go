@@ -53,7 +53,8 @@ var (
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
-		testMetadataStore(testMetadata))
+		testMetadataStore(testMetadata),
+	)
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
@@ -385,7 +386,8 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 
 	ctx := scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(t.Context(), scrapeTarget),
-		testMetadataStore(testMetadata))
+		testMetadataStore(testMetadata),
+	)
 
 	tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
@@ -760,7 +762,8 @@ func TestMetricBuilderCounters(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
-							"foo", "bar"),
+							"foo", "bar",
+						),
 					},
 				},
 			},
@@ -991,7 +994,8 @@ func TestMetricBuilderGauges(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
-							"foo", "bar"),
+							"foo", "bar",
+						),
 					},
 				},
 				{
@@ -1316,7 +1320,8 @@ func TestMetricBuilderHistogram(t *testing.T) {
 									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}}...),
 								},
 							},
-							"foo", "bar", "le", "10"),
+							"foo", "bar", "le", "10",
+						),
 						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
 						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
 						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),

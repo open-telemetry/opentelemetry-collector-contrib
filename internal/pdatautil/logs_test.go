@@ -28,12 +28,14 @@ func TestFlattenResourceLogs(t *testing.T) {
 		{
 			name: "single",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 111),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 111),
 				),
 			},
@@ -41,7 +43,8 @@ func TestFlattenResourceLogs(t *testing.T) {
 		{
 			name: "flatten_single_scope_in_single_resource",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
 			},
@@ -54,7 +57,8 @@ func TestFlattenResourceLogs(t *testing.T) {
 		{
 			name: "flatten_multiple_scopes_in_single_resource",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
@@ -71,10 +75,12 @@ func TestFlattenResourceLogs(t *testing.T) {
 		{
 			name: "flatten_single_scope_in_multiple_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 104, 105, 106),
 				),
 			},
@@ -90,11 +96,13 @@ func TestFlattenResourceLogs(t *testing.T) {
 		{
 			name: "flatten_multiple_scopes_in_multiple_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 104, 105, 106),
 					newScopeLogs(22, 204, 205, 206),
 				),
@@ -143,12 +151,14 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "single",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
 			},
@@ -156,21 +166,25 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "distinct",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(44, 401, 402, 403),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(44, 401, 402, 403),
 				),
@@ -179,20 +193,24 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "simple_merge_scopes",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(11, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(22, 204, 205, 206),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(22, 201, 202, 203, 204, 205, 206),
 				),
 			},
@@ -200,28 +218,34 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_scopes_on_some_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(11, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(33, 301, 302, 303),
 				),
-				newResourceLogs(3,
+				newResourceLogs(
+					3,
 					newScopeLogs(44, 401, 402, 403),
 					newScopeLogs(44, 404, 405, 406),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(33, 301, 302, 303),
 				),
-				newResourceLogs(3,
+				newResourceLogs(
+					3,
 					newScopeLogs(44, 401, 402, 403, 404, 405, 406),
 				),
 			},
@@ -229,18 +253,22 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "leave_same_scopes_on_distinct_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 101, 102, 103),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 101, 102, 103),
 				),
 			},
@@ -248,20 +276,24 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_scopes_within_distinct_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(11, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(11, 104, 105, 106),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 				),
 			},
@@ -269,17 +301,20 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_resources_preserve_distinct_scopes",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(44, 401, 402, 403),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(33, 301, 302, 303),
@@ -290,7 +325,8 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_interleaved_scopes_within_resource",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(11, 104, 105, 106),
@@ -298,7 +334,8 @@ func TestGroupByResourceLogs(t *testing.T) {
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 					newScopeLogs(22, 201, 202, 203, 204, 205, 206),
 				),
@@ -307,17 +344,20 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_interleaved_scopes_across_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 104, 105, 106),
 					newScopeLogs(22, 204, 205, 206),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 					newScopeLogs(22, 201, 202, 203, 204, 205, 206),
 				),
@@ -326,29 +366,35 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_interleaved_scopes_across_interleaved_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(44, 401, 402, 403),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 104, 105, 106),
 					newScopeLogs(22, 204, 205, 206),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 304, 305, 306),
 					newScopeLogs(44, 404, 405, 406),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 					newScopeLogs(22, 201, 202, 203, 204, 205, 206),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303, 304, 305, 306),
 					newScopeLogs(44, 401, 402, 403, 404, 405, 406),
 				),
@@ -357,30 +403,36 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_some_scopes_across_some_resources",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103),
 					newScopeLogs(22, 201, 202, 203),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(11, 104, 105, 106),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(33, 301, 302, 303),
 					newScopeLogs(11, 104, 105, 106),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 304, 305, 306),
 					newScopeLogs(44, 404, 405, 406),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106),
 					newScopeLogs(22, 201, 202, 203),
 					newScopeLogs(33, 301, 302, 303),
 				),
-				newResourceLogs(2,
+				newResourceLogs(
+					2,
 					newScopeLogs(33, 301, 302, 303, 304, 305, 306),
 					newScopeLogs(11, 104, 105, 106),
 					newScopeLogs(44, 404, 405, 406),
@@ -390,21 +442,25 @@ func TestGroupByResourceLogs(t *testing.T) {
 		{
 			name: "merge_all_resources_and_scopes",
 			input: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102),
 					newScopeLogs(11, 103, 104),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 105, 106),
 					newScopeLogs(11, 107, 108),
 				),
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 109, 110),
 					newScopeLogs(11, 111, 112),
 				),
 			},
 			expected: []resourceLogs{
-				newResourceLogs(1,
+				newResourceLogs(
+					1,
 					newScopeLogs(11, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112),
 				),
 			},

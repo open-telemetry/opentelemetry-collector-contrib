@@ -430,7 +430,8 @@ func TestPassthroughIPDetectionFromContext(t *testing.T) {
 			generateProfiles(),
 			func(err error) {
 				assert.NoError(t, err)
-			})
+			},
+		)
 
 		m.assertBatchesLen(1)
 		m.assertResourceObjectLen(0)
@@ -451,7 +452,8 @@ func TestNilBatch(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 }
@@ -486,7 +488,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -516,7 +519,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(2)
 	m.assertResourceObjectLen(1)
@@ -534,7 +538,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(3)
 	m.assertResourceObjectLen(2)
@@ -811,7 +816,8 @@ func TestAddPodLabels(t *testing.T) {
 			generateProfiles(),
 			func(err error) {
 				assert.NoError(t, err)
-			})
+			},
+		)
 
 		m.assertBatchesLen(i + 1)
 		m.assertResourceObjectLen(i)
@@ -888,7 +894,8 @@ func TestAddNamespaceLabels(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -953,7 +960,8 @@ func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1026,7 +1034,8 @@ func TestAddNodeLabels(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1091,7 +1100,8 @@ func TestAddNodeUID(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1495,7 +1505,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				),
 			)
 			m.kubernetesProcessorOperation(tt.op)
-			m.testConsume(t.Context(),
+			m.testConsume(
+				t.Context(),
 				generateTraces(tt.resourceGens...),
 				generateMetrics(tt.resourceGens...),
 				generateLogs(tt.resourceGens...),
@@ -1542,11 +1553,13 @@ func TestProcessorAddContainerAttributesV1Gates(t *testing.T) {
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 		}()
 
-		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil,
+		m := newMultiTest(
+			t, NewFactory().CreateDefaultConfig(), nil,
 			withExtractMetadata("container.image.tags"),
 		)
 		m.kubernetesProcessorOperation(setupPod)
-		m.testConsume(t.Context(),
+		m.testConsume(
+			t.Context(),
 			generateTraces(withPodUID(podUID), withContainerName("app")),
 			generateMetrics(withPodUID(podUID), withContainerName("app")),
 			generateLogs(withPodUID(podUID), withContainerName("app")),
@@ -1568,11 +1581,13 @@ func TestProcessorAddContainerAttributesV1Gates(t *testing.T) {
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
 		}()
 
-		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil,
+		m := newMultiTest(
+			t, NewFactory().CreateDefaultConfig(), nil,
 			withExtractMetadata("container.image.tags"),
 		)
 		m.kubernetesProcessorOperation(setupPod)
-		m.testConsume(t.Context(),
+		m.testConsume(
+			t.Context(),
 			generateTraces(withPodUID(podUID), withContainerName("app"), withContainerImageTags([]string{"preexisting"})),
 			generateMetrics(withPodUID(podUID), withContainerName("app"), withContainerImageTags([]string{"preexisting"})),
 			generateLogs(withPodUID(podUID), withContainerName("app"), withContainerImageTags([]string{"preexisting"})),
@@ -1622,7 +1637,8 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 		generateProfiles(withPassthroughIP("2.2.2.2")),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)

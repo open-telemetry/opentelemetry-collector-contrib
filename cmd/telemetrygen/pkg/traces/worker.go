@@ -111,10 +111,11 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		// Generate span links for the parent span
 		parentLinks := w.generateSpanLinks()
 
-		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			conventions.NetworkPeerAddress(fakeIP),
-			conventions.ServicePeerName("telemetrygen-server"),
-		),
+		ctx, sp := tracer.Start(
+			context.Background(), "lets-go", trace.WithAttributes(
+				conventions.NetworkPeerAddress(fakeIP),
+				conventions.ServicePeerName("telemetrygen-server"),
+			),
 			trace.WithSpanKind(trace.SpanKindClient),
 			trace.WithTimestamp(spanStart),
 			trace.WithLinks(parentLinks...),
@@ -146,10 +147,11 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			// Generate span links for child spans
 			childLinks := w.generateSpanLinks()
 
-			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
-				conventions.NetworkPeerAddress(fakeIP),
-				conventions.ServicePeerName("telemetrygen-client"),
-			),
+			_, child := tracer.Start(
+				childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
+					conventions.NetworkPeerAddress(fakeIP),
+					conventions.ServicePeerName("telemetrygen-client"),
+				),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithTimestamp(spanStart),
 				trace.WithLinks(childLinks...),

@@ -358,7 +358,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 			// Time is out. Kill the process.
 			c.logger.Debug(
 				"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-				zap.Int("pid", pid))
+				zap.Int("pid", pid),
+			)
 			if innerErr = cmd.Process.Signal(os.Kill); innerErr != nil {
 				return
 			}
@@ -428,7 +429,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		// Time is out. Kill the process.
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-			zap.Int("pid", pid))
+			zap.Int("pid", pid),
+		)
 		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}

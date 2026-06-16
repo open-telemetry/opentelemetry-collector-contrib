@@ -390,7 +390,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": server.addr, "storage_dir": storageDir}
 			if mode.UseHUPConfigReload {
@@ -740,7 +741,8 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 				}
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	// create input and output log files for checking the config passed via config_files param
 	inputFile, err := os.CreateTemp(storageDir, "input.log")
@@ -905,7 +907,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": server.addr}
 			if mode.UseHUPConfigReload {
@@ -994,7 +997,8 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
@@ -1120,7 +1124,8 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
@@ -1206,7 +1211,8 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 
 				return response
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
 
@@ -1269,7 +1275,8 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 
@@ -1380,7 +1387,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
 
@@ -1431,7 +1439,8 @@ func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
 
@@ -1672,7 +1681,8 @@ func TestSupervisorRestartCommand(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			storageDir := t.TempDir()
 			extraConfigData := map[string]string{
@@ -1761,7 +1771,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	initialServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		types.ConnectionCallbacks{})
+		types.ConnectionCallbacks{},
+	)
 
 	s, _ := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
 
@@ -1780,7 +1791,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
 		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
@@ -1813,7 +1825,8 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 			OnConnected: func(ctx context.Context, conn types.Connection) {
 				connected.Store(true)
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
 
@@ -1850,7 +1863,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{"url": initialServer.addr, "storage_dir": tempDir}
 			if mode.UseHUPConfigReload {
@@ -1902,7 +1916,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 						}
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 			defer newServer.shutdown()
 
 			extraConfigData["url"] = newServer.addr
@@ -1951,7 +1966,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
@@ -2036,7 +2052,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
@@ -2146,7 +2163,8 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 				}
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	s, _ := newSupervisor(t, "healthcheck_port", map[string]string{
 		"url": server.addr,
@@ -2347,7 +2365,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			outputPath := filepath.Join(t.TempDir(), "output.txt")
 			backend := testbed.NewOTLPHTTPDataReceiver(4318)
@@ -2510,7 +2529,8 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	supervisorOpAmpServerPort, err := findRandomPort()
 	require.NoError(t, err)
@@ -2697,7 +2717,8 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
@@ -2706,7 +2727,8 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	defer mockBackend.Stop()
 	require.NoError(t, mockBackend.Start())
 
-	s, _ := newSupervisor(t,
+	s, _ := newSupervisor(
+		t,
 		"emit_telemetry",
 		map[string]string{
 			"url":          server.addr,
@@ -3030,7 +3052,8 @@ func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 
 						return &protobufs.ServerToAgent{}
 					},
-				})
+				},
+			)
 
 			extraConfigData := map[string]string{
 				"url":             server.addr,
@@ -3136,7 +3159,8 @@ func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
 		enableExtensionsFeatureGate(t)
 
 		// Create supervisor with configuration that has nop extension
-		s, _ := newSupervisor(t,
+		s, _ := newSupervisor(
+			t,
 			"extensions",
 			map[string]string{
 				"url": server.addr,
@@ -3438,7 +3462,8 @@ func TestSupervisorBinarySize(t *testing.T) {
 	}
 	binPath := filepath.Join(t.TempDir(), "opampsupervisor")
 
-	cmd := exec.CommandContext(t.Context(), "go", "build",
+	cmd := exec.CommandContext(
+		t.Context(), "go", "build",
 		"-trimpath",
 		"-ldflags=-s -w -X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal.version=v1.0.0",
 		"-tags=",

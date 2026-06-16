@@ -354,7 +354,8 @@ func flushBulkIndexer(
 			code := bulkFailedErr.StatusCode()
 			outcome := statusToOutcome(code)
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append(defaultMetaAttrs,
+				append(
+					defaultMetaAttrs,
 					conventions.HTTPResponseStatusCode(code),
 					withOutcome(outcome),
 				)...,
@@ -364,7 +365,8 @@ func flushBulkIndexer(
 			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append(defaultMetaAttrs,
+				append(
+					defaultMetaAttrs,
 					withOutcome("internal_server_error"),
 					conventions.HTTPResponseStatusCode(http.StatusInternalServerError),
 				)...,
@@ -376,7 +378,8 @@ func flushBulkIndexer(
 	} else {
 		// Record a successful completed bulk request
 		successAttrSet := metric.WithAttributeSet(attribute.NewSet(
-			append(defaultMetaAttrs,
+			append(
+				defaultMetaAttrs,
 				withOutcome("success"),
 				conventions.HTTPResponseStatusCode(http.StatusOK),
 			)...,
@@ -392,7 +395,8 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			int64(1),
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+			metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs,
 				withOutcome(outcome),
 				conventions.HTTPResponseStatusCode(resp.Status),
 				attribute.String("error.type", resp.Error.Type),
@@ -410,7 +414,8 @@ func flushBulkIndexer(
 		}
 
 		// Log failed docs
-		fields = append(fields,
+		fields = append(
+			fields,
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
@@ -433,7 +438,8 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.Indexed,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+			metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs,
 				withOutcome("success"),
 				conventions.HTTPResponseStatusCode(http.StatusOK),
 			)...)),
@@ -443,9 +449,11 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Used,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+			metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs,
 				withOutcome("failure_store"),
-				attribute.String("failure_store",
+				attribute.String(
+					"failure_store",
 					string(docappender.FailureStoreStatusUsed),
 				),
 			)...)),
@@ -455,7 +463,8 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Failed,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+			metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs,
 				withOutcome("failure_store"),
 				attribute.String("failure_store", string(
 					docappender.FailureStoreStatusFailed,
@@ -467,7 +476,8 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.NotEnabled,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+			metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs,
 				withOutcome("failure_store"),
 				attribute.String("failure_store", string(
 					docappender.FailureStoreStatusNotEnabled,
@@ -476,7 +486,8 @@ func flushBulkIndexer(
 		)
 	}
 	if stat.RetriedDocs > 0 {
-		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs,
+		tb.ElasticsearchDocsRetried.Add(
+			ctx, stat.RetriedDocs,
 			metric.WithAttributeSet(defaultAttrsSet),
 		)
 	}

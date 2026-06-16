@@ -164,7 +164,8 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 }
 
 func createHashKey(conf *Config) string {
-	return fmt.Sprintf("%s%s%s",
+	return fmt.Sprintf(
+		"%s%s%s",
 		conf.CollectorName,
 		conf.Credentials.InstallationToken,
 		strings.TrimSuffix(conf.APIBaseURL, "/"),
@@ -172,7 +173,8 @@ func createHashKey(conf *Config) string {
 }
 
 func createHashKeyV2(conf *Config) string {
-	return fmt.Sprintf("%s%s",
+	return fmt.Sprintf(
+		"%s%s",
 		conf.Credentials.InstallationToken,
 		strings.TrimSuffix(conf.APIBaseURL, "/"),
 	)
@@ -246,7 +248,8 @@ func (se *SumologicExtension) validateCredentials(
 	ctx context.Context,
 	colCreds credentials.CollectorCredentials,
 ) error {
-	se.logger.Info("Validating collector credentials...",
+	se.logger.Info(
+		"Validating collector credentials...",
 		zap.String(collectorCredentialIDField, colCreds.Credentials.CollectorCredentialID),
 		zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 	)
@@ -350,7 +353,8 @@ func (se *SumologicExtension) getCredentials(ctx context.Context) (credentials.C
 			errV := se.validateCredentials(ctx, colCreds)
 
 			if errV == nil {
-				se.logger.Info("Found stored credentials, skipping registration",
+				se.logger.Info(
+					"Found stored credentials, skipping registration",
 					zap.String(collectorNameField, colCreds.Credentials.CollectorName),
 				)
 				return colCreds, nil
@@ -371,7 +375,8 @@ func (se *SumologicExtension) getCredentials(ctx context.Context) (credentials.C
 				)
 			}
 
-			se.logger.Info("Locally stored credentials invalid. Trying to re-register...",
+			se.logger.Info(
+				"Locally stored credentials invalid. Trying to re-register...",
 				zap.String(collectorNameField, colCreds.Credentials.CollectorName),
 				zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 				zap.Error(errV),
@@ -414,7 +419,8 @@ func (se *SumologicExtension) getLocalCredentials(_ context.Context) (credential
 	colCreds, err := se.credentialsStore.Get(se.hashKey)
 	if err != nil {
 		return credentials.CollectorCredentials{},
-			fmt.Errorf("problem finding local collector credentials (hash key: %s): %w",
+			fmt.Errorf(
+				"problem finding local collector credentials (hash key: %s): %w",
 				se.hashKey, err,
 			)
 	}
@@ -461,7 +467,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		return credentials.CollectorCredentials{}, err
 	}
 
-	addClientCredentials(req,
+	addClientCredentials(
+		req,
 		se.conf.Credentials,
 	)
 	addJSONHeaders(req)
@@ -486,7 +493,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		// Use the URL from Location header for subsequent requests.
 		u := strings.TrimSuffix(res.Header.Get("Location"), "/")
 		se.SetBaseURL(u)
-		se.logger.Info("Redirected to a different deployment",
+		se.logger.Info(
+			"Redirected to a different deployment",
 			zap.String("url", u),
 		)
 		return se.registerCollector(ctx, collectorName)
@@ -526,7 +534,8 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 		)
 	}
 
-	se.logger.Warn("Collector registration failed",
+	se.logger.Warn(
+		"Collector registration failed",
 		zap.Int("status_code", res.StatusCode),
 		zap.String("error_id", errResponse.ID),
 		zap.Any("errors", errResponse.Errors),
@@ -685,7 +694,8 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 			)
 		}
 
-		return fmt.Errorf("collector heartbeat request failed: %w",
+		return fmt.Errorf(
+			"collector heartbeat request failed: %w",
 			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
@@ -818,7 +828,8 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			zap.Int("status", res.StatusCode),
 			zap.String("body", buff.String()))
 
-		return fmt.Errorf("collector metadata request failed: %w",
+		return fmt.Errorf(
+			"collector metadata request failed: %w",
 			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),

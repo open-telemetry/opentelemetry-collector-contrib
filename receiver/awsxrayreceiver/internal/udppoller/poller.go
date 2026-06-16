@@ -195,7 +195,8 @@ func (p *poller) poll() {
 			}
 
 			if len(body) == 0 {
-				p.logger.Warn("Missing body",
+				p.logger.Warn(
+					"Missing body",
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)

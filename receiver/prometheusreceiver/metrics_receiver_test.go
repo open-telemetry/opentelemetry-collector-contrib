@@ -1644,7 +1644,8 @@ func newTestReceiverSettingsConsumer(t *testing.T, cfg *Config, set receiver.Set
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	require.NoError(t, receiver.start(ctx, componenttest.NewNopHost(),
+	require.NoError(t, receiver.start(
+		ctx, componenttest.NewNopHost(),
 		prometheusComponentTestOptions{
 			discovery: prometheusDiscoveryTestOptions{updatert: 50 * time.Millisecond},
 			scrape:    prometheusScrapeTestOptions{discoveryReloadInterval: 50 * time.Millisecond},
