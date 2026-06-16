@@ -15,12 +15,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadatatest"
 )
 
 type mockDetector struct {
@@ -131,7 +136,7 @@ func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md2 := &mockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := newTestResourceProvider(time.Second, md1, md2)
 
 	var cancel context.CancelFunc
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
@@ -144,10 +149,65 @@ func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 }
 
 func TestDetectResource_NoDetectors(t *testing.T) {
-	p := NewResourceProvider(zap.NewNop(), time.Second)
+	p := newTestResourceProvider(time.Second)
 
 	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
 	require.EqualError(t, err, "resource detection failed: no detectors succeeded")
+}
+
+func TestDetectResource_RecordsTelemetry(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+
+	md := &mockDetector{}
+	res := pcommon.NewResource()
+	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
+	md.On("Detect").Return(res, "", nil)
+
+	f := NewProviderFactory(map[DetectorType]DetectorFactory{
+		"ec2": func(processor.Settings, DetectorConfig) (Detector, error) { return md, nil },
+	})
+	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, &mockDetectorConfig{}, "ec2")
+	require.NoError(t, err)
+
+	require.NoError(t, p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second}))
+
+	successAttrs := attribute.NewSet(attribute.String("detector", "ec2"), attribute.String("outcome", "success"))
+	metadatatest.AssertEqualResourcedetectionDetectorResults(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: successAttrs, Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualResourcedetectionDetectorDuration(t, tt,
+		[]metricdata.HistogramDataPoint[float64]{{Attributes: successAttrs}},
+		metricdatatest.IgnoreValue(), metricdatatest.IgnoreTimestamp())
+	// Gauge observes the count of attributes in the detected resource (2).
+	metadatatest.AssertEqualResourcedetectionAttributesDetected(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestDetectResource_RecordsFailureTelemetry(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+
+	md := &mockDetector{}
+	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("boom"))
+
+	f := NewProviderFactory(map[DetectorType]DetectorFactory{
+		"ec2": func(processor.Settings, DetectorConfig) (Detector, error) { return md, nil },
+	})
+	p, err := f.CreateResourceProvider(metadatatest.NewSettings(tt), time.Second, &mockDetectorConfig{}, "ec2")
+	require.NoError(t, err)
+
+	// Short timeout cuts the inter-retry backoff short via context cancellation.
+	require.Error(t, p.Refresh(t.Context(), &http.Client{Timeout: 50 * time.Millisecond}))
+
+	// Retries aggregate into a single {detector, outcome=failure} datapoint, so the
+	// exact count is timing-dependent; assert the datapoint and that it is non-zero.
+	got, err := tt.GetMetric("otelcol.resourcedetection.detector.results")
+	require.NoError(t, err)
+	sum := got.Data.(metricdata.Sum[int64])
+	require.Len(t, sum.DataPoints, 1)
+	failureAttrs := attribute.NewSet(attribute.String("detector", "ec2"), attribute.String("outcome", "failure"))
+	assert.Equal(t, failureAttrs, sum.DataPoints[0].Attributes)
+	assert.GreaterOrEqual(t, sum.DataPoints[0].Value, int64(1))
 }
 
 func TestMergeResource(t *testing.T) {
@@ -233,7 +293,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := newTestResourceProvider(time.Second, md1, md2)
 
 	// Perform initial detection
 	go func() {
@@ -288,7 +348,7 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := newTestResourceProvider(time.Second, md1, md2)
 
 	err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
@@ -313,7 +373,7 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 	md.On("Detect").Return(res1, "", nil).Once()
 	md.On("Detect").Return(res2, "", nil).Once()
 
-	p := NewResourceProvider(zap.NewNop(), 1*time.Second, md)
+	p := newTestResourceProvider(1*time.Second, md)
 
 	// Initial detection
 	err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -408,7 +468,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		md.On("Detect").Return(res1, "", nil).Once()
 		md.On("Detect").Return(res2, "", nil)
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := newTestResourceProvider(time.Second, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -442,7 +502,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := newTestResourceProvider(time.Second, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -467,7 +527,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := newTestResourceProvider(time.Second, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -482,7 +542,7 @@ func TestStartStopRefreshing(t *testing.T) {
 }
 
 func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
-	provider := NewResourceProvider(zap.NewNop(), 5*time.Second)
+	provider := newTestResourceProvider(5 * time.Second)
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Call StartRefreshing multiple times (simulating traces, metrics, logs processors)
@@ -510,4 +570,15 @@ func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("StopRefreshing deadlocked: leaked goroutines from multiple StartRefreshing calls")
 	}
+}
+
+// newTestResourceProvider builds a provider with a nop telemetry builder, assigning
+// each detector a synthetic type.
+func newTestResourceProvider(timeout time.Duration, detectors ...Detector) *ResourceProvider {
+	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	entries := make([]detectorEntry, len(detectors))
+	for i, d := range detectors {
+		entries[i] = detectorEntry{detectorType: DetectorType(fmt.Sprintf("mock%d", i)), detector: d}
+	}
+	return NewResourceProvider(zap.NewNop(), tb, timeout, entries...)
 }
