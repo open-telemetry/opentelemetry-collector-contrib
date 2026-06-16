@@ -7,9 +7,9 @@ resources/include:
       - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
         metrics/include:
           - name: k8s.node.cpu.time
-            type: Sum
+            type: sum
             unit: s
-            monotonic: true
+            temporality: cumulative
           - name: k8s.node.memory.usage
-            type: Gauge
+            type: gauge
             unit: By
