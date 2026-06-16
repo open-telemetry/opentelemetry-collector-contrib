@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: true,
@@ -40,12 +40,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
 					},
 					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -57,7 +57,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: false,
@@ -68,12 +68,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
 					},
 					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -93,7 +93,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

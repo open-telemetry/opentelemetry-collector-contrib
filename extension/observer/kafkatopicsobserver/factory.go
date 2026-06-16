@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -25,7 +24,7 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 
@@ -36,11 +35,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(
-	_ context.Context,
-	settings extension.Settings,
-	cfg component.Config,
-) (extension.Extension, error) {
-	config := cfg.(*Config)
-	return newObserver(settings.Logger, config, kafka.NewSaramaClusterAdminClient)
+func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
+	settings.Logger.Warn("kafkatopicsobserver is deprecated; use kafkareceiver with topic regex support instead")
+	return newObserver(settings.Logger, cfg.(*Config))
 }

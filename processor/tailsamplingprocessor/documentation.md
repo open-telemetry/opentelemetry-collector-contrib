@@ -6,6 +6,22 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_tail_sampling_count_bytes_sampled
+
+Count of bytes that were sampled or not per sampling policy
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
+
 ### otelcol_processor_tail_sampling_count_spans_sampled
 
 Count of spans that were sampled or not per sampling policy
@@ -165,7 +181,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.tailsamplingprocessor.disableinvertdecisions` | beta | When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED. | v0.126.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833) |
+| `processor.tailsamplingprocessor.metricstatcountbytessampled` | alpha | When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces. | v0.152.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48348) |
 | `processor.tailsamplingprocessor.metricstatcountspanssampled` | alpha | When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces. | v0.95.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30482) |
 | `processor.tailsamplingprocessor.recordpolicy` | alpha | When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes. | v0.120.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35180) |
 | `processor.tailsamplingprocessor.tailstorageextension` | alpha | When enabled, allows configuring tail_storage to use a tail storage extension implementation. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331) |

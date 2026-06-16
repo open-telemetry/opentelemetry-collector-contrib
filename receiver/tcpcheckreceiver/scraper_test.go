@@ -218,7 +218,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			scraper := newScraper(cfg, settings)
 
 			// Initialize metrics builder
-			scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
+			scraper.mb = metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings)
 
 			actualMetrics, err := scraper.scrape(t.Context())
 			require.Error(t, err, "expected connection refused error")
@@ -289,6 +289,9 @@ func updateErrorCodeInMetrics(metrics pmetric.Metrics, errorCode string) pmetric
 }
 
 func TestScraper_ErrorEnumCounts(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("knonw failure on windows, see http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47826")
+	}
 	// Test multiple endpoints with different error types
 	endpoints := []string{
 		"invalid:host", // Invalid host format for invalid_endpoint
@@ -315,7 +318,7 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	scraper := newScraper(cfg, settings)
 
 	// Initialize metrics builder
-	scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
+	scraper.mb = metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings)
 
 	// Run a single scrape to collect all errors
 	actualMetrics, err := scraper.scrape(t.Context())

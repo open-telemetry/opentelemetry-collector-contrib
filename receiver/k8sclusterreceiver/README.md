@@ -5,7 +5,6 @@ The Kubernetes Cluster receiver collects cluster-level metrics and entity events
 API server. It uses the K8s API to listen for updates. A single instance of this
 receiver should be used to monitor a cluster.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -242,6 +241,8 @@ rules:
   - namespaces/status
   - nodes
   - nodes/spec
+  - persistentvolumes
+  - persistentvolumeclaims
   - pods
   - pods/status
   - replicationcontrollers
@@ -323,10 +324,11 @@ EOF
 As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a list of
 particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
 instead of granting the collector cluster-wide read access to resources.
-Note however, that in this case the following resources will not be observed by the `k8sclusterreceiver`:
+Note however, that in this case the following cluster-scoped resources will not be observed by the `k8sclusterreceiver`:
 
 - `Nodes`
 - `Namespaces`
+- `PersistentVolumes`
 - `ClusterResourceQuotas`
 
 To use this approach, use the commands below to create the required `Role` and `RoleBinding` for each of the namespaces the collector should observe:
@@ -345,6 +347,7 @@ rules:
       - ""
     resources:
       - events
+      - persistentvolumeclaims
       - pods
       - pods/status
       - replicationcontrollers

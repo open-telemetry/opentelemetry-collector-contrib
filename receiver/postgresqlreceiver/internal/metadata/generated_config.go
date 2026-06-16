@@ -1320,11 +1320,16 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for postgresql logs builder.

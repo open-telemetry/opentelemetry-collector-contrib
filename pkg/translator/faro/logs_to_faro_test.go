@@ -237,6 +237,28 @@ func Test_extractK6FromKeyVal(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "k6_testRunId is populated when present",
+			kv: map[string]string{
+				"k6_isK6Browser": "true",
+				"k6_testRunId":   "run-abc",
+			},
+			want: faroTypes.K6{
+				IsK6Browser: true,
+				TestRunID:   "run-abc",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "k6_testRunId alone is populated",
+			kv: map[string]string{
+				"k6_testRunId": "run-only",
+			},
+			want: faroTypes.K6{
+				TestRunID: "run-only",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -245,6 +267,59 @@ func Test_extractK6FromKeyVal(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "extractK6FromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_k6ToKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		k6   faroTypes.K6
+		want map[string]string
+	}{
+		{
+			name: "zero value emits no keys",
+			k6:   faroTypes.K6{},
+			want: map[string]string{},
+		},
+		{
+			name: "IsK6Browser=true alone emits only k6_isK6Browser",
+			k6:   faroTypes.K6{IsK6Browser: true},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+			},
+		},
+		{
+			name: "TestRunID alone emits only k6_testRunId",
+			k6:   faroTypes.K6{TestRunID: "run-xyz"},
+			want: map[string]string{
+				"k6_testRunId": "run-xyz",
+			},
+		},
+		{
+			name: "both fields set emits both keys",
+			k6:   faroTypes.K6{IsK6Browser: true, TestRunID: "run-xyz"},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+				"k6_testRunId":   "run-xyz",
+			},
+		},
+		{
+			name: "empty TestRunID with IsK6Browser=true omits k6_testRunId",
+			k6:   faroTypes.K6{IsK6Browser: true, TestRunID: ""},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			kv := k6ToKeyVal(tt.k6)
+			got := make(map[string]string, kv.Len())
+			for el := kv.Oldest(); el != nil; el = el.Next() {
+				got[el.Key] = el.Value.(string)
+			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

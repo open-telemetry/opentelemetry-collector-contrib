@@ -30,6 +30,7 @@ type ListObjectsAPI interface {
 
 type SingleObjectAPI interface {
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	GetObjectTagging(ctx context.Context, params *s3.GetObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error)
 	PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error)
 }
 
@@ -100,4 +101,24 @@ func tagS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string
 	}
 	_, err := client.PutObjectTagging(ctx, &params)
 	return err
+}
+
+// hasIngestedTag checks if an S3 object has the ingested tag set
+func hasIngestedTag(ctx context.Context, client SingleObjectAPI, bucket, key string) (bool, error) {
+	params := s3.GetObjectTaggingInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}
+	output, err := client.GetObjectTagging(ctx, &params)
+	if err != nil {
+		return false, err
+	}
+
+	for _, tag := range output.TagSet {
+		if tag.Key != nil && *tag.Key == ingestedTag &&
+			tag.Value != nil && *tag.Value == ingestedStatus {
+			return true, nil
+		}
+	}
+	return false, nil
 }

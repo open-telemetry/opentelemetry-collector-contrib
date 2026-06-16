@@ -325,6 +325,7 @@ func k6ToKeyVal(k faroTypes.K6) *keyVal {
 	if k.IsK6Browser {
 		keyValAdd(kv, faroIsK6Browser, strconv.FormatBool(k.IsK6Browser))
 	}
+	keyValAdd(kv, faroK6TestRunID, k.TestRunID)
 	return kv
 }
 

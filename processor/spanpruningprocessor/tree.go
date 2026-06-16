@@ -12,13 +12,15 @@ import (
 // spanNode models a span in the trace tree with cached relationships and
 // aggregation bookkeeping.
 type spanNode struct {
-	span             ptrace.Span
-	scopeSpans       ptrace.ScopeSpans
-	parent           *spanNode
-	children         []*spanNode
-	groupKey         string // cached group key for leaf spans
-	isLeaf           bool   // true if node has no children
-	markedForRemoval bool   // true if node will be aggregated
+	span               ptrace.Span
+	scopeSpans         ptrace.ScopeSpans
+	parent             *spanNode
+	children           []*spanNode
+	groupKey           string         // cached group key for leaf spans
+	replacementSpanID  pcommon.SpanID // summary span ID that replaced this node's group
+	isLeaf             bool           // true if node has no children
+	markedForRemoval   bool           // true if node will be aggregated
+	isPreservedOutlier bool           // true if preserved as outlier (not aggregated)
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -144,7 +146,7 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 }
 
 // isEligibleForParentAggregation verifies that a node meets the criteria for
-// parent aggregation (not root, all children marked, not already marked).
+// parent aggregation (not root, all children marked or preserved, not already marked).
 func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
@@ -161,9 +163,9 @@ func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool
 		return false
 	}
 
-	// All children must be marked for removal
+	// All children must be either marked for removal OR preserved as outliers
 	for _, child := range node.children {
-		if !child.markedForRemoval {
+		if !child.markedForRemoval && !child.isPreservedOutlier {
 			return false
 		}
 	}

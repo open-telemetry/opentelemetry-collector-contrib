@@ -63,10 +63,9 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.BatchingLogEmitter
-	asyncConsumerStarted    bool
-	criConsumerStartOnce    sync.Once
-	criConsumers            *sync.WaitGroup
+	criLogEmitter           helper.LogEmitter
+	recombineStarted        bool
+	recombineStartOnce      sync.Once
 	timeLayout              string
 }
 
@@ -103,7 +102,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		case dockerFormat:
 			p.timeLayout = goTimeLayout
 			if err = p.ParseWith(ctx, ent, p.parseDocker, write); err != nil {
-				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+				if !errors.Is(err, helper.ErrEntryHandled) {
 					errs = append(errs, fmt.Errorf("failed to process the docker log: %w", err))
 				}
 				continue
@@ -115,7 +114,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			_ = write(ctx, ent)
 
 		case containerdFormat, crioFormat:
-			p.criConsumerStartOnce.Do(func() {
+			p.recombineStartOnce.Do(func() {
 				err = p.criLogEmitter.Start(nil)
 				if err != nil {
 					p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
@@ -126,13 +125,13 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 					return
 				}
-				p.asyncConsumerStarted = true
+				p.recombineStarted = true
 			})
 
 			if format == containerdFormat {
 				err = p.ParseWith(ctx, ent, p.parseContainerd, write)
 				if err != nil {
-					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
 					}
 					continue
@@ -141,7 +140,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			} else {
 				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
 				if err != nil {
-					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
 					}
 					continue
@@ -202,7 +201,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to process the docker log: %w", err)
 		}
 	case containerdFormat, crioFormat:
-		p.criConsumerStartOnce.Do(func() {
+		p.recombineStartOnce.Do(func() {
 			err = p.criLogEmitter.Start(nil)
 			if err != nil {
 				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
@@ -213,13 +212,16 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			p.asyncConsumerStarted = true
+			p.recombineStarted = true
 		})
 
 		if format == containerdFormat {
 			// parse the message
 			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
 			if err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
@@ -227,6 +229,9 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			// parse the message
 			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
 			if err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
 			p.timeLayout = crioTimeLayout
@@ -234,26 +239,42 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		err = p.handleTimeAndAttributeMappings(entry)
 		if err != nil {
-			return fmt.Errorf("failed to handle attribute mappings: %w", err)
+			err = fmt.Errorf("failed to handle attribute mappings: %w", err)
+
+			switch p.OnError {
+			case helper.DropOnErrorQuiet:
+				return nil
+			case helper.SendOnErrorQuiet:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return nil
+			case helper.SendOnError:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return err
+			default:
+				return err
+			}
 		}
 
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
-			return fmt.Errorf("failed to recombine the crio log: %w", err)
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to recombine the crio log: %w", err))
 		}
 	default:
-		return errors.New("failed to detect a valid container log format")
+		return p.HandleEntryError(ctx, entry, errors.New("failed to detect a valid container log format"))
 	}
 
 	return nil
 }
 
-// Stop ensures that the internal recombineParser, the internal criLogEmitter and
-// the crioConsumer are stopped in the proper order without being affected by
-// any possible race conditions
+// Stop ensures that the internal recombineParser and criLogEmitter are stopped
+// in the proper order without being affected by any possible race conditions.
 func (p *Parser) Stop() error {
-	if !p.asyncConsumerStarted {
+	if !p.recombineStarted {
 		// nothing is started return
 		return nil
 	}
@@ -261,14 +282,9 @@ func (p *Parser) Stop() error {
 	if err := p.recombineParser.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
-	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
-	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
-	// the entries synchronously it is safe to call its Stop.
-	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
 	if err := p.criLogEmitter.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
-	p.criConsumers.Wait()
 	return errs
 }
 

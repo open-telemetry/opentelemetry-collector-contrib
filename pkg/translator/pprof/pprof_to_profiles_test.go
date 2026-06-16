@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/pprof/profile"
@@ -46,7 +47,7 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			default:
 				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
 			}
-			roundTrip, err := convertPprofileToPprof(pprofile)
+			roundTrip, err := ConvertPprofileToPprof(pprofile)
 			require.NoError(t, err)
 			if diff := cmp.Diff(p.String(), roundTrip.String()); diff != "" {
 				t.Fatalf("round-trip profile mismatch (-want +got):\n%s", diff)
@@ -636,6 +637,7 @@ func TestGetAttributeStringWithPrefix(t *testing.T) {
 }
 
 func TestConvertMultipleSampleTypes(t *testing.T) {
+	currentTS := time.Now()
 	// Create a pprof profile with multiple sample types
 	prof := &profile.Profile{
 		SampleType: []*profile.ValueType{
@@ -644,7 +646,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"},
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     currentTS.UnixNano(),
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -759,13 +761,13 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		}
 
 		// Verify profile metadata
-		require.Equal(t, int64(1000000000), p.Time().AsTime().UnixNano())
+		require.Equal(t, currentTS.UnixNano(), p.Time().AsTime().UnixNano())
 		require.Equal(t, uint64(5000000000), p.DurationNano())
 		require.Equal(t, int64(524288), p.Period())
 	}
 
 	// Verify round-trip conversion
-	roundTrip, err := convertPprofileToPprof(pprofiles)
+	roundTrip, err := ConvertPprofileToPprof(pprofiles)
 	require.NoError(t, err)
 	require.NotNil(t, roundTrip)
 
@@ -783,10 +785,12 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j])
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 
 func TestDefaultSampleTypeConvention(t *testing.T) {
+	currentTS := time.Now()
 	// Create a pprof profile with multiple sample types.
 	// By convention, the last sample type (inuse_space) is the default in pprof.
 	prof := &profile.Profile{
@@ -796,7 +800,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"}, // default (last)
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     currentTS.UnixNano(),
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -858,7 +862,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 	require.Equal(t, int64(300), thirdProfile.Samples().At(0).Values().At(0))
 
 	// Verify round-trip conversion preserves order
-	roundTrip, err := convertPprofileToPprof(pprofiles)
+	roundTrip, err := ConvertPprofileToPprof(pprofiles)
 	require.NoError(t, err)
 	require.NotNil(t, roundTrip)
 
@@ -876,6 +880,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j], "Round-trip should preserve original sample values order")
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 

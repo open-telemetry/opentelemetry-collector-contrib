@@ -4,6 +4,7 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -11,4 +12,10 @@ import (
 func mergeTraces(t1, t2 ptrace.Traces) ptrace.Traces {
 	t2.ResourceSpans().MoveAndAppendTo(t1.ResourceSpans())
 	return t1
+}
+
+// mergeLogs concatenates two plog.Logs into a single plog.Logs.
+func mergeLogs(l1, l2 plog.Logs) plog.Logs {
+	l2.ResourceLogs().MoveAndAppendTo(l1.ResourceLogs())
+	return l1
 }

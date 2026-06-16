@@ -1,4 +1,4 @@
-INSERT INTO %q.%q (
+INSERT INTO {{ident .Database}}.{{ident .TableName}} (
     Timestamp,
     TraceId,
     SpanId,
@@ -14,7 +14,7 @@ INSERT INTO %q.%q (
     ScopeVersion,
     ScopeAttributes,
     LogAttributes
-    %s
+    {{.FeatureColumnNames}}
 ) VALUES (
     ?,
     ?,
@@ -31,5 +31,5 @@ INSERT INTO %q.%q (
     ?,
     ?,
     ?
-    %s
+    {{.FeatureColumnPositions}}
 )

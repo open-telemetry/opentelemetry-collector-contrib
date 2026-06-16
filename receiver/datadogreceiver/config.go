@@ -9,17 +9,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/featuregate"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-)
-
-var FullTraceIDFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.datadogreceiver.Enable128BitTraceID",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, adds support for 128bits TraceIDs for spans coming from Datadog instrumented services."),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36926"),
 )
 
 const (
@@ -38,6 +29,13 @@ type Config struct {
 	TraceIDCacheSize int `mapstructure:"trace_id_cache_size"`
 	// Intake controls the `/intake` endpoint behavior
 	Intake IntakeConfig `mapstructure:"intake"`
+	// IdleSeriesTimeout is the duration after which a series is considered stale
+	// and removed from memory if no new data points are received.
+	// The default value is 0, which disables this feature.
+	IdleSeriesTimeout time.Duration `mapstructure:"idle_series_timeout"`
+	// IdleSeriesCleanupInterval defines how frequently the receiver checks for
+	// and removes idle series. Defaults to 5 minutes.
+	IdleSeriesCleanupInterval time.Duration `mapstructure:"idle_series_cleanup_interval"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

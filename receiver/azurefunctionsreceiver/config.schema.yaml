@@ -1,12 +1,33 @@
 $defs:
-  encoding_config:
-    description: EncodingConfig holds the encoding extension configuration for a signal type.
+  event_hub_trigger_config:
+    description: EventHubTriggerConfig holds configuration for the Event Hub trigger.
+    type: object
+    properties:
+      include_metadata:
+        description: IncludeMetadata, when true, adds Azure Functions invoke metadata to resource attributes.
+        type: boolean
+      logs:
+        description: Logs is the list of log bindings (e.g. name "logs" maps to path /logs). Each binding has its own encoding.
+        type: array
+        items:
+          $ref: logs_encoding_config
+  logs_encoding_config:
+    description: LogsEncodingConfig holds the binding name and encoding for a signal (e.g. one log binding). Name is the Azure Functions binding name and typically corresponds to the request path (e.g. /logs, /raw_logs).
     type: object
     properties:
       encoding:
-        description: Encoding identifies the encoding of log records that triggered azure functions.
         type: string
         x-customType: go.opentelemetry.io/collector/component.ID
+      name:
+        type: string
+  triggers_config:
+    description: TriggersConfig groups all supported trigger types for this receiver.
+    type: object
+    properties:
+      event_hub:
+        description: 'EventHub configures the Event Hub trigger: log bindings and their encodings.'
+        x-pointer: true
+        $ref: event_hub_trigger_config
 type: object
 properties:
   auth:
@@ -17,9 +38,7 @@ properties:
     description: HTTP defines the HTTP server settings for the Azure Functions invoke endpoints.
     x-pointer: true
     $ref: go.opentelemetry.io/collector/config/confighttp.server_config
-  include_invoke_metadata:
-    description: IncludeInvokeMetadata, when true, adds Azure Functions invoke metadata to resource attributes.
-    type: boolean
-  logs:
-    description: Logs defines configuration for log records received from Azure Functions.
-    $ref: encoding_config
+  triggers:
+    description: Triggers holds configuration for Azure Functions triggers (e.g. Event Hub)
+    x-pointer: true
+    $ref: triggers_config
