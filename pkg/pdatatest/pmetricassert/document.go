@@ -24,18 +24,18 @@ const documentVersion = 1
 type document struct {
 	Version   int                `yaml:"version"`
 	Signal    string             `yaml:"signal"`
-	Resources ResourcesAssertion `yaml:"resources"`
+	Resources ResourcesAssertion `yaml:",inline"`
 }
 
 type resourceAssertion struct {
 	Attributes map[string]any  `yaml:"attributes,omitempty"`
-	Scopes     ScopesAssertion `yaml:"scopes"`
+	Scopes     ScopesAssertion `yaml:",inline"`
 }
 
 type scopeAssertion struct {
 	Name    string           `yaml:"name,omitempty"`
 	Version string           `yaml:"version,omitempty"`
-	Metrics MetricsAssertion `yaml:"metrics"`
+	Metrics MetricsAssertion `yaml:",inline"`
 }
 
 type metricAssertion struct {
@@ -44,7 +44,7 @@ type metricAssertion struct {
 	Unit        string              `yaml:"unit,omitempty"`
 	Temporality string              `yaml:"temporality,omitempty"`
 	Monotonic   *bool               `yaml:"monotonic,omitempty"`
-	Datapoints  DatapointsAssertion `yaml:"datapoints,omitempty"`
+	Datapoints  DatapointsAssertion `yaml:",inline"`
 }
 
 type datapointAssertion struct {
@@ -56,140 +56,6 @@ type datapointAssertion struct {
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
-}
-
-// --- UnmarshalYAML Methods ---
-
-func (d *document) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("document must be a map, got YAML kind %d", value.Kind)
-	}
-	for i := 0; i < len(value.Content); i += 2 {
-		key := value.Content[i].Value
-		val := value.Content[i+1]
-		switch key {
-		case "version":
-			if err := val.Decode(&d.Version); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "signal":
-			if err := val.Decode(&d.Signal); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "resources", "resources/exact":
-			if err := val.Decode(&d.Resources.Exact); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "resources/include":
-			if err := val.Decode(&d.Resources.Include); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		default:
-			return fmt.Errorf("unsupported document key %q", key)
-		}
-	}
-	return nil
-}
-
-func (r *resourceAssertion) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("resource assertion must be a map, got YAML kind %d", value.Kind)
-	}
-	for i := 0; i < len(value.Content); i += 2 {
-		key := value.Content[i].Value
-		val := value.Content[i+1]
-		switch key {
-		case "attributes":
-			if err := val.Decode(&r.Attributes); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "scopes", "scopes/exact":
-			if err := val.Decode(&r.Scopes.Exact); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "scopes/include":
-			if err := val.Decode(&r.Scopes.Include); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		default:
-			return fmt.Errorf("unsupported resource assertion key %q", key)
-		}
-	}
-	return nil
-}
-
-func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("scope assertion must be a map, got YAML kind %d", value.Kind)
-	}
-	for i := 0; i < len(value.Content); i += 2 {
-		key := value.Content[i].Value
-		val := value.Content[i+1]
-		switch key {
-		case "name":
-			if err := val.Decode(&s.Name); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "version":
-			if err := val.Decode(&s.Version); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "metrics", "metrics/exact":
-			if err := val.Decode(&s.Metrics.Exact); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "metrics/include":
-			if err := val.Decode(&s.Metrics.Include); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		default:
-			return fmt.Errorf("unsupported scope assertion key %q", key)
-		}
-	}
-	return nil
-}
-
-func (m *metricAssertion) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("metric assertion must be a map, got YAML kind %d", value.Kind)
-	}
-	for i := 0; i < len(value.Content); i += 2 {
-		key := value.Content[i].Value
-		val := value.Content[i+1]
-		switch key {
-		case "name":
-			if err := val.Decode(&m.Name); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "type":
-			if err := val.Decode(&m.Type); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "unit":
-			if err := val.Decode(&m.Unit); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "temporality":
-			if err := val.Decode(&m.Temporality); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "monotonic":
-			if err := val.Decode(&m.Monotonic); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "datapoints", "datapoints/exact":
-			if err := val.Decode(&m.Datapoints.Exact); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		case "datapoints/include":
-			if err := val.Decode(&m.Datapoints.Include); err != nil {
-				return fmt.Errorf("decode %q: %w", key, err)
-			}
-		default:
-			return fmt.Errorf("unsupported metric assertion key %q", key)
-		}
-	}
-	return nil
 }
 
 // --- MarshalYAML Methods ---

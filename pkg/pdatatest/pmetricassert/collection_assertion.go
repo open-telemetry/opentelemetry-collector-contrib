@@ -23,27 +23,24 @@ type (
 )
 
 // MetricsAssertion supports exact/include collection operators.
-type MetricsAssertion struct {
-	Exact   []MetricAssertion `yaml:"-"`
-	Include []MetricAssertion `yaml:"-"`
-}
-
-// ResourcesAssertion supports exact/include collection operators.
 type ResourcesAssertion struct {
-	Exact   []ResourceAssertion `yaml:"-"`
-	Include []ResourceAssertion `yaml:"-"`
+	Exact   []resourceAssertion `yaml:"resources,omitempty"`
+	Include []resourceAssertion `yaml:"resources/include,omitempty"`
 }
 
-// ScopesAssertion supports exact/include collection operators.
 type ScopesAssertion struct {
-	Exact   []ScopeAssertion `yaml:"-"`
-	Include []ScopeAssertion `yaml:"-"`
+	Exact   []scopeAssertion `yaml:"scopes,omitempty"`
+	Include []scopeAssertion `yaml:"scopes/include,omitempty"`
 }
 
-// DatapointsAssertion supports exact/include collection operators.
+type MetricsAssertion struct {
+	Exact   []metricAssertion `yaml:"metrics,omitempty"`
+	Include []metricAssertion `yaml:"metrics/include,omitempty"`
+}
+
 type DatapointsAssertion struct {
-	Exact   []DatapointAssertion `yaml:"-"`
-	Include []DatapointAssertion `yaml:"-"`
+	Exact   []datapointAssertion `yaml:"datapoints,omitempty"`
+	Include []datapointAssertion `yaml:"datapoints/include,omitempty"`
 }
 
 // Validate checks actual metrics against exact/include operators.
