@@ -66,8 +66,8 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 	return &Obfuscator{
 		obfuscatorsPool: sync.Pool{
 			New: func() any {
-				obfuscators := newObfuscators()
-				return &obfuscators
+				pooledObfuscators := newObfuscators()
+				return &pooledObfuscators
 			},
 		},
 		hasObfuscators:             len(obfuscators) > 0,
