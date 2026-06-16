@@ -82,6 +82,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if isAvailabilityGroupQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -316,4 +320,14 @@ func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverOsWaitDuration.Enabled
+}
+
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverReplicaFlowControlTime.Enabled ||
+		metrics.SqlserverLogDataIoRate.Enabled ||
+		metrics.SqlserverReplicaQueueSize.Enabled
 }

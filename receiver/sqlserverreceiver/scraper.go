@@ -124,6 +124,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabaseStatusMetrics(ctx)
 	case getSQLServerWaitStatsQuery(s.config.InstanceName):
 		err = s.recordDatabaseWaitMetrics(ctx)
+	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+		err = s.recordAvailabilityGroupMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -549,7 +551,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeReplicaDirectionReceive)
+				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeSqlserverReplicaDirectionReceive)
 			}
 		case bytesSentForReplicaPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -557,7 +559,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeReplicaDirectionTransmit)
+				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeSqlserverReplicaDirectionTransmit)
 			}
 		case diskReadIOSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1201,6 +1203,74 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
+	const (
+		availabilityGroupKey   = "availability_group"
+		logSendQueueSizeKey    = "log_send_queue_size"
+		logSendRateKey         = "log_send_rate"
+		redoQueueSizeKey       = "redo_queue_size"
+		replicaNameKey         = "replica_name"
+		secondaryLagSecondsKey = "secondary_lag_seconds"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Debug("no availability group data found; Always On may not be configured on this instance")
+		return nil
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), rows[0])
+	var val any
+
+	for _, row := range rows {
+		agName := row[availabilityGroupKey]
+		dbName := row[databaseNameKey]
+		replicaName := row[replicaNameKey]
+
+		if row[secondaryLagSecondsKey] != "" {
+			val, err = retrieveFloat(row, secondaryLagSecondsKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("availability_group=%q database=%q replica=%q: %w", agName, dbName, replicaName, err))
+			} else {
+				s.mb.RecordSqlserverReplicaFlowControlTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+			}
+		}
+
+		val, err = retrieveFloat(row, logSendRateKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("availability_group=%q database=%q replica=%q: %w", agName, dbName, replicaName, err))
+		} else {
+			s.mb.RecordSqlserverLogDataIoRateDataPoint(now, val.(float64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverReplicaDirectionReceive)
+		}
+
+		val, err = retrieveInt(row, logSendQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("availability_group=%q database=%q replica=%q: %w", agName, dbName, replicaName, err))
+		} else {
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverReplicaQueueTypeSend)
+		}
+
+		val, err = retrieveInt(row, redoQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("availability_group=%q database=%q replica=%q: %w", agName, dbName, replicaName, err))
+		} else {
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverReplicaQueueTypeRedo)
+		}
+	}
+
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	return errors.Join(errs...)
 }
 

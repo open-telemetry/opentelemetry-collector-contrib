@@ -65,6 +65,9 @@ all_set:
       enabled: true
     sqlserver.lock.wait_time.avg:
       enabled: true
+    sqlserver.log_data.io.rate:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name","sqlserver.replica.direction"]
     sqlserver.login.rate:
       enabled: true
     sqlserver.logout.rate:
@@ -121,7 +124,13 @@ all_set:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
-      attributes: ["replica.direction"]
+      attributes: ["sqlserver.replica.direction"]
+    sqlserver.replica.flow_control.time:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
+    sqlserver.replica.queue.size:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name","sqlserver.replica.queue.type"]
     sqlserver.resource_pool.disk.operations:
       enabled: true
       attributes: ["direction"]
@@ -248,6 +257,9 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.wait_time.avg:
       enabled: true
+    sqlserver.log_data.io.rate:
+      enabled: true
+      attributes: []
     sqlserver.login.rate:
       enabled: true
     sqlserver.logout.rate:
@@ -303,6 +315,12 @@ reaggregate_set:
     sqlserver.recompilation.ratio:
       enabled: true
     sqlserver.replica.data.rate:
+      enabled: true
+      attributes: []
+    sqlserver.replica.flow_control.time:
+      enabled: true
+      attributes: []
+    sqlserver.replica.queue.size:
       enabled: true
       attributes: []
     sqlserver.resource_pool.disk.operations:
@@ -431,6 +449,9 @@ none_set:
       enabled: false
     sqlserver.lock.wait_time.avg:
       enabled: false
+    sqlserver.log_data.io.rate:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name","sqlserver.replica.direction"]
     sqlserver.login.rate:
       enabled: false
     sqlserver.logout.rate:
@@ -487,7 +508,13 @@ none_set:
       enabled: false
     sqlserver.replica.data.rate:
       enabled: false
-      attributes: ["replica.direction"]
+      attributes: ["sqlserver.replica.direction"]
+    sqlserver.replica.flow_control.time:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
+    sqlserver.replica.queue.size:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name","sqlserver.replica.queue.type"]
     sqlserver.resource_pool.disk.operations:
       enabled: false
       attributes: ["direction"]

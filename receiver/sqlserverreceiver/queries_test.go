@@ -67,6 +67,18 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerWaitStatsQuery,
 			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test availability group query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {

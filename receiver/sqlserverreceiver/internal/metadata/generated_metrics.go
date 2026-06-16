@@ -372,6 +372,7 @@ var MapAttributeSqlserverPageCompressionType = map[string]AttributeSqlserverPage
 	"succeeded": AttributeSqlserverPageCompressionTypeSucceeded,
 }
 
+
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
 type AttributeSqlserverParameterizationResult int
 
@@ -434,6 +435,58 @@ func (av AttributeSqlserverPlanGuidanceResult) String() string {
 var MapAttributeSqlserverPlanGuidanceResult = map[string]AttributeSqlserverPlanGuidanceResult{
 	"guided":    AttributeSqlserverPlanGuidanceResultGuided,
 	"misguided": AttributeSqlserverPlanGuidanceResultMisguided,
+}
+
+// AttributeSqlserverReplicaDirection specifies the value sqlserver.replica.direction attribute.
+type AttributeSqlserverReplicaDirection int
+
+const (
+	_ AttributeSqlserverReplicaDirection = iota
+	AttributeSqlserverReplicaDirectionTransmit
+	AttributeSqlserverReplicaDirectionReceive
+)
+
+// String returns the string representation of the AttributeSqlserverReplicaDirection.
+func (av AttributeSqlserverReplicaDirection) String() string {
+	switch av {
+	case AttributeSqlserverReplicaDirectionTransmit:
+		return "transmit"
+	case AttributeSqlserverReplicaDirectionReceive:
+		return "receive"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverReplicaDirection is a helper map of string to AttributeSqlserverReplicaDirection attribute value.
+var MapAttributeSqlserverReplicaDirection = map[string]AttributeSqlserverReplicaDirection{
+	"transmit": AttributeSqlserverReplicaDirectionTransmit,
+	"receive":  AttributeSqlserverReplicaDirectionReceive,
+}
+
+// AttributeSqlserverReplicaQueueType specifies the value sqlserver.replica.queue.type attribute.
+type AttributeSqlserverReplicaQueueType int
+
+const (
+	_ AttributeSqlserverReplicaQueueType = iota
+	AttributeSqlserverReplicaQueueTypeSend
+	AttributeSqlserverReplicaQueueTypeRedo
+)
+
+// String returns the string representation of the AttributeSqlserverReplicaQueueType.
+func (av AttributeSqlserverReplicaQueueType) String() string {
+	switch av {
+	case AttributeSqlserverReplicaQueueTypeSend:
+		return "send"
+	case AttributeSqlserverReplicaQueueTypeRedo:
+		return "redo"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverReplicaQueueType is a helper map of string to AttributeSqlserverReplicaQueueType attribute value.
+var MapAttributeSqlserverReplicaQueueType = map[string]AttributeSqlserverReplicaQueueType{
+	"send": AttributeSqlserverReplicaQueueTypeSend,
+	"redo": AttributeSqlserverReplicaQueueTypeRedo,
 }
 
 // AttributeTableState specifies the value table.state attribute.
@@ -636,6 +689,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverLockWaitTimeAvg: metricInfo{
 		Name: "sqlserver.lock.wait_time.avg",
 	},
+	SqlserverLogDataIoRate: metricInfo{
+		Name: "sqlserver.log_data.io.rate",
+	},
 	SqlserverLoginRate: metricInfo{
 		Name: "sqlserver.login.rate",
 	},
@@ -718,6 +774,12 @@ var MetricsInfo = metricsInfo{
 	SqlserverReplicaDataRate: metricInfo{
 		Name:       "sqlserver.replica.data.rate",
 		Attributes: []string{"replica.direction"},
+	},
+	SqlserverReplicaFlowControlTime: metricInfo{
+		Name: "sqlserver.replica.flow_control.time",
+	},
+	SqlserverReplicaQueueSize: metricInfo{
+		Name: "sqlserver.replica.queue.size",
 	},
 	SqlserverResourcePoolDiskOperations: metricInfo{
 		Name:       "sqlserver.resource_pool.disk.operations",
@@ -804,6 +866,7 @@ type metricsInfo struct {
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
 	SqlserverLockWaitTimeAvg                    metricInfo
+	SqlserverLogDataIoRate                      metricInfo
 	SqlserverLoginRate                          metricInfo
 	SqlserverLogoutRate                         metricInfo
 	SqlserverMemoryArea                         metricInfo
@@ -828,6 +891,8 @@ type metricsInfo struct {
 	SqlserverProcessesBlocked                   metricInfo
 	SqlserverRecompilationRatio                 metricInfo
 	SqlserverReplicaDataRate                    metricInfo
+	SqlserverReplicaFlowControlTime             metricInfo
+	SqlserverReplicaQueueSize                   metricInfo
 	SqlserverResourcePoolDiskOperations         metricInfo
 	SqlserverResourcePoolDiskThrottledReadRate  metricInfo
 	SqlserverResourcePoolDiskThrottledWriteRate metricInfo
@@ -2579,6 +2644,104 @@ func newMetricSqlserverLockWaitTimeAvg(cfg SqlserverLockWaitTimeAvgMetricConfig)
 	return m
 }
 
+type metricSqlserverLogDataIoRate struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SqlserverLogDataIoRateMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.log_data.io.rate metric with initial data.
+func (m *metricSqlserverLogDataIoRate) init() {
+	m.data.SetName("sqlserver.log_data.io.rate")
+	m.data.SetDescription("Rate of log data flow between availability group replicas.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverLogDataIoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaDirectionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaDirection) {
+		dp.Attributes().PutStr("sqlserver.replica.direction", sqlserverReplicaDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLogDataIoRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLogDataIoRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLogDataIoRate(cfg SqlserverLogDataIoRateMetricConfig) metricSqlserverLogDataIoRate {
+	m := metricSqlserverLogDataIoRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverLoginRate struct {
 	data     pmetric.Metric                 // data buffer for generated metric.
 	config   SqlserverLoginRateMetricConfig // metric config provided by user.
@@ -4071,7 +4234,7 @@ func (m *metricSqlserverReplicaDataRate) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverReplicaDataRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, replicaDirectionAttributeValue string) {
+func (m *metricSqlserverReplicaDataRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverReplicaDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4079,8 +4242,8 @@ func (m *metricSqlserverReplicaDataRate) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaDataRateMetricAttributeKeyReplicaDirection) {
-		dp.Attributes().PutStr("replica.direction", replicaDirectionAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaDataRateMetricAttributeKeySqlserverReplicaDirection) {
+		dp.Attributes().PutStr("sqlserver.replica.direction", sqlserverReplicaDirectionAttributeValue)
 	}
 
 	var s string
@@ -4135,6 +4298,199 @@ func (m *metricSqlserverReplicaDataRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverReplicaDataRate(cfg SqlserverReplicaDataRateMetricConfig) metricSqlserverReplicaDataRate {
 	m := metricSqlserverReplicaDataRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverReplicaFlowControlTime struct {
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SqlserverReplicaFlowControlTimeMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []float64                                   // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.replica.flow_control.time metric with initial data.
+func (m *metricSqlserverReplicaFlowControlTime) init() {
+	m.data.SetName("sqlserver.replica.flow_control.time")
+	m.data.SetDescription("Current flow control lag on the secondary replica, derived from secondary_lag_seconds.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverReplicaFlowControlTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverReplicaFlowControlTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverReplicaFlowControlTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverReplicaFlowControlTime(cfg SqlserverReplicaFlowControlTimeMetricConfig) metricSqlserverReplicaFlowControlTime {
+	m := metricSqlserverReplicaFlowControlTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverReplicaQueueSize struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SqlserverReplicaQueueSizeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.replica.queue.size metric with initial data.
+func (m *metricSqlserverReplicaQueueSize) init() {
+	m.data.SetName("sqlserver.replica.queue.size")
+	m.data.SetDescription("Amount of log data queued in the availability group replica pipeline.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverReplicaQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType) {
+		dp.Attributes().PutStr("sqlserver.replica.queue.type", sqlserverReplicaQueueTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverReplicaQueueSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverReplicaQueueSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverReplicaQueueSize(cfg SqlserverReplicaQueueSizeMetricConfig) metricSqlserverReplicaQueueSize {
+	m := metricSqlserverReplicaQueueSize{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5121,6 +5477,7 @@ type MetricsBuilder struct {
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
 	metricSqlserverLockWaitTimeAvg                    metricSqlserverLockWaitTimeAvg
+	metricSqlserverLogDataIoRate                      metricSqlserverLogDataIoRate
 	metricSqlserverLoginRate                          metricSqlserverLoginRate
 	metricSqlserverLogoutRate                         metricSqlserverLogoutRate
 	metricSqlserverMemoryArea                         metricSqlserverMemoryArea
@@ -5145,6 +5502,8 @@ type MetricsBuilder struct {
 	metricSqlserverProcessesBlocked                   metricSqlserverProcessesBlocked
 	metricSqlserverRecompilationRatio                 metricSqlserverRecompilationRatio
 	metricSqlserverReplicaDataRate                    metricSqlserverReplicaDataRate
+	metricSqlserverReplicaFlowControlTime             metricSqlserverReplicaFlowControlTime
+	metricSqlserverReplicaQueueSize                   metricSqlserverReplicaQueueSize
 	metricSqlserverResourcePoolDiskOperations         metricSqlserverResourcePoolDiskOperations
 	metricSqlserverResourcePoolDiskThrottledReadRate  metricSqlserverResourcePoolDiskThrottledReadRate
 	metricSqlserverResourcePoolDiskThrottledWriteRate metricSqlserverResourcePoolDiskThrottledWriteRate
@@ -5216,6 +5575,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
 		metricSqlserverLockWaitTimeAvg:                    newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
+		metricSqlserverLogDataIoRate:                      newMetricSqlserverLogDataIoRate(mbc.Metrics.SqlserverLogDataIoRate),
 		metricSqlserverLoginRate:                          newMetricSqlserverLoginRate(mbc.Metrics.SqlserverLoginRate),
 		metricSqlserverLogoutRate:                         newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
 		metricSqlserverMemoryArea:                         newMetricSqlserverMemoryArea(mbc.Metrics.SqlserverMemoryArea),
@@ -5240,6 +5600,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverProcessesBlocked:                   newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
 		metricSqlserverRecompilationRatio:                 newMetricSqlserverRecompilationRatio(mbc.Metrics.SqlserverRecompilationRatio),
 		metricSqlserverReplicaDataRate:                    newMetricSqlserverReplicaDataRate(mbc.Metrics.SqlserverReplicaDataRate),
+		metricSqlserverReplicaFlowControlTime:             newMetricSqlserverReplicaFlowControlTime(mbc.Metrics.SqlserverReplicaFlowControlTime),
+		metricSqlserverReplicaQueueSize:                   newMetricSqlserverReplicaQueueSize(mbc.Metrics.SqlserverReplicaQueueSize),
 		metricSqlserverResourcePoolDiskOperations:         newMetricSqlserverResourcePoolDiskOperations(mbc.Metrics.SqlserverResourcePoolDiskOperations),
 		metricSqlserverResourcePoolDiskThrottledReadRate:  newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
 		metricSqlserverResourcePoolDiskThrottledWriteRate: newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
@@ -5412,6 +5774,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
+	mb.metricSqlserverLogDataIoRate.emit(ils.Metrics())
 	mb.metricSqlserverLoginRate.emit(ils.Metrics())
 	mb.metricSqlserverLogoutRate.emit(ils.Metrics())
 	mb.metricSqlserverMemoryArea.emit(ils.Metrics())
@@ -5436,6 +5799,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverProcessesBlocked.emit(ils.Metrics())
 	mb.metricSqlserverRecompilationRatio.emit(ils.Metrics())
 	mb.metricSqlserverReplicaDataRate.emit(ils.Metrics())
+	mb.metricSqlserverReplicaFlowControlTime.emit(ils.Metrics())
+	mb.metricSqlserverReplicaQueueSize.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskOperations.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledReadRate.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledWriteRate.emit(ils.Metrics())
@@ -5654,6 +6019,11 @@ func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Tim
 	mb.metricSqlserverLockWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverLogDataIoRateDataPoint adds a data point to sqlserver.log_data.io.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLogDataIoRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaDirectionAttributeValue AttributeSqlserverReplicaDirection) {
+	mb.metricSqlserverLogDataIoRate.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue, sqlserverReplicaDirectionAttributeValue.String())
+}
+
 // RecordSqlserverLoginRateDataPoint adds a data point to sqlserver.login.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverLoginRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverLoginRate.recordDataPoint(mb.startTime, ts, val)
@@ -5775,8 +6145,18 @@ func (mb *MetricsBuilder) RecordSqlserverRecompilationRatioDataPoint(ts pcommon.
 }
 
 // RecordSqlserverReplicaDataRateDataPoint adds a data point to sqlserver.replica.data.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverReplicaDataRateDataPoint(ts pcommon.Timestamp, val float64, replicaDirectionAttributeValue AttributeReplicaDirection) {
-	mb.metricSqlserverReplicaDataRate.recordDataPoint(mb.startTime, ts, val, replicaDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverReplicaDataRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverReplicaDirectionAttributeValue AttributeSqlserverReplicaDirection) {
+	mb.metricSqlserverReplicaDataRate.recordDataPoint(mb.startTime, ts, val, sqlserverReplicaDirectionAttributeValue.String())
+}
+
+// RecordSqlserverReplicaFlowControlTimeDataPoint adds a data point to sqlserver.replica.flow_control.time metric.
+func (mb *MetricsBuilder) RecordSqlserverReplicaFlowControlTimeDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverReplicaFlowControlTime.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
+}
+
+// RecordSqlserverReplicaQueueSizeDataPoint adds a data point to sqlserver.replica.queue.size metric.
+func (mb *MetricsBuilder) RecordSqlserverReplicaQueueSizeDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue AttributeSqlserverReplicaQueueType) {
+	mb.metricSqlserverReplicaQueueSize.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue, sqlserverReplicaQueueTypeAttributeValue.String())
 }
 
 // RecordSqlserverResourcePoolDiskOperationsDataPoint adds a data point to sqlserver.resource_pool.disk.operations metric.

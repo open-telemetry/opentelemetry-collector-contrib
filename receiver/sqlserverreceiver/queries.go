@@ -463,6 +463,61 @@ func formatSQLServerSessionIDsParam(sessionIDs map[int64]struct{}) string {
 	return strings.Join(filterParts, ",")
 }
 
+const sqlServerAvailabilityGroupQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,8) BEGIN /*NOT IN Standard, Enterprise/Developer, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise/Developer, or Azure SQL Managed Instance. Always On Availability Groups require one of these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+IF SERVERPROPERTY('IsHadrEnabled') != 1
+	RETURN
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int)*100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
+	,@Columns AS nvarchar(max) = ''
+
+IF @MajorMinorVersion >= 1300
+	SET @Columns = N'
+	,drs.[secondary_lag_seconds] AS [secondary_lag_seconds]'
+ELSE
+	SET @Columns = N'
+	,NULL AS [secondary_lag_seconds]'
+
+SET @SqlStatement = N'
+SELECT
+	 ''sqlserver_availability_group_replica_states'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,ag.[name] AS [availability_group]
+	,DB_NAME(drs.[database_id]) AS [database_name]
+	,ar.[replica_server_name] AS [replica_name]
+	,ISNULL(drs.[log_send_queue_size], 0) AS [log_send_queue_size]
+	,ISNULL(drs.[log_send_rate], 0) AS [log_send_rate]
+	,ISNULL(drs.[redo_queue_size], 0) AS [redo_queue_size]
+	,ISNULL(drs.[redo_rate], 0) AS [redo_rate]'
++ @Columns + N'
+FROM sys.[dm_hadr_database_replica_states] AS drs WITH (NOLOCK)
+INNER JOIN sys.[availability_replicas] AS ar WITH (NOLOCK)
+	ON drs.[replica_id] = ar.[replica_id]
+INNER JOIN sys.[availability_groups] AS ag WITH (NOLOCK)
+	ON ar.[group_id] = ag.[group_id]
+%s
+OPTION(RECOMPILE)'
+
+EXEC sp_executesql @SqlStatement
+`
+
+func getSQLServerAvailabilityGroupQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = ''%s''", instanceName)
+		return fmt.Sprintf(sqlServerAvailabilityGroupQuery, whereClause)
+	}
+	return fmt.Sprintf(sqlServerAvailabilityGroupQuery, "")
+}
+
 // Conditional check based on Azure SQL DB v/s the rest aka (Azure SQL Managed instance OR On-prem SQL Server)
 // EngineEdition=5 is Azure SQL DB
 const sqlServerWaitStatsQuery string = `
