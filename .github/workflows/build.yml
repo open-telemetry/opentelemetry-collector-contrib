@@ -1,0 +1,148 @@
+name: build
+on:
+  push:
+env:
+  DOCKER_IMAGE_NAME: multiplayer-opentelemetry-collector-contrib
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  SERVICE_NAME: opentelemetry-collector
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  attestations: write
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        shell: bash
+        run: |
+          chmod +x ./.github/workflows/scripts/free-disk-space.sh
+          ./.github/workflows/scripts/free-disk-space.sh
+
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            name=app
+          tags: |
+            type=sha,prefix={{branch}}-
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_ORGANIZATION }}
+          password: ${{ secrets.DOCKERHUB_OAT }}
+
+      - name: Set env variables
+        run: |
+          SERVICE_VERSION=${BRANCH_NAME//\//-}-${GITHUB_SHA::7}
+          echo "SERVICE_VERSION=${SERVICE_VERSION}" >> $GITHUB_ENV
+
+          DOCKER_IMAGE=${{ vars.DOCKERHUB_ORGANIZATION }}/${{ env.DOCKER_IMAGE_NAME }}
+          echo "DOCKER_IMAGE=${DOCKER_IMAGE}" >> $GITHUB_ENV
+
+          DOCKER_TAGS="${DOCKER_IMAGE}:${SERVICE_VERSION}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            DOCKER_TAGS="$DOCKER_TAGS,${DOCKER_IMAGE}:latest"
+          fi
+          echo "DOCKER_TAGS=$DOCKER_TAGS" >> $GITHUB_ENV
+
+      - name: Setup Go (tools)
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: "internal/tools/go.mod"
+
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go/build
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+
+      - name: Generate otelcontribcol sources
+        run: make genotelcontribcol
+
+      - name: Setup Go oldstable (avoids Go 1.25 linker bug with generics)
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version: "oldstable"
+          cache: false
+
+      - name: Build Docker Image
+        run: |
+          # Patch the generated go.mod to match the installed oldstable Go version.
+          # The upstream uses oldstable (Go 1.24) to avoid a Go 1.25.0 linker bug
+          # where generic function instantiations across module boundaries are lost.
+          GO_VER=$(go version | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' | sed 's/go//')
+          sed -i "s/^go 1\.25\.0$/go ${GO_VER}/" cmd/otelcontribcol/go.mod
+
+          # Build binary (mirrors the otelcontribcol Makefile target, without re-running genotelcontribcol)
+          cd cmd/otelcontribcol && GOOS=linux GOARCH=amd64 GO111MODULE=on CGO_ENABLED=0 \
+            go build -trimpath -o ../../bin/otelcontribcol_linux_amd64 -tags "" .
+          cd ../..
+
+          # Build Docker image (mirrors docker-component Makefile target)
+          cp bin/otelcontribcol_linux_amd64 cmd/otelcontribcol/otelcontribcol
+          docker build --platform linux/amd64 -t otelcontribcol ./cmd/otelcontribcol/
+          rm cmd/otelcontribcol/otelcontribcol
+
+          # Tag with all required tags
+          IFS=',' read -ra TAGS <<< "$DOCKER_TAGS"
+          for TAG in "${TAGS[@]}"; do
+            docker tag otelcontribcol:latest "$TAG"
+          done
+
+      - name: Validate Docker Image
+        run: |
+          docker run $DOCKER_IMAGE:$SERVICE_VERSION --version
+
+      - name: Push Docker Image
+        run: |
+          IFS=',' read -ra TAGS <<< "$DOCKER_TAGS"
+          for TAG in "${TAGS[@]}"; do
+            docker push "$TAG"
+          done
+
+      # - name: Login to Octopus Deploy
+      #   uses: OctopusDeploy/login@v1
+      #   with:
+      #     server: ${{ secrets.OCTOPUS_HOST }}
+      #     service_account_id: ${{ secrets.OCTOPUS_SERVICE_ACCOUNT_ID }}
+
+      # - name: Install OctopusCLI
+      #   uses: OctopusDeploy/install-octopus-cli-action@v3
+      #   with:
+      #     version: 1.2.0
+
+      # - name: Create a release in Octopus Deploy
+      #   uses: OctopusDeploy/create-release-action@v3
+      #   with:
+      #     project: ${{ env.SERVICE_NAME }}
+      #     server: ${{ secrets.OCTOPUS_HOST }}
+      #     space: ${{ secrets.OCTOPUS_SPACE }}
+      #     release_number: ${{ env.SERVICE_VERSION }}
+      #     release_notes: "[GitHub commit: ${{
+      #       steps.commit.outputs.sha_short}}](https://github.com/${{
+      #       github.event.repository.full_name }}/commit/${{
+      #       steps.commit.outputs.sha_short}}) / [GitHub branch: ${{
+      #       env.BRANCH_NAME }}](https://github.com/${{
+      #       github.event.repository.full_name }}/compare/${{ env.BRANCH_NAME
+      #       }})"

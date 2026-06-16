@@ -1,0 +1,7 @@
+type: jwtauth
+
+status:
+  class: extension
+  type: extension
+  stability: beta
+  distributions: [contrib]

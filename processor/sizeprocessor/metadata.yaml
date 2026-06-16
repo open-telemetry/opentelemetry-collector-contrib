@@ -1,0 +1,15 @@
+type: size
+
+status:
+  class: processor
+  stability:
+    beta: [traces, logs]
+  distributions:
+  - core
+  - contrib
+  warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
+  codeowners:
+    active: [DmytryS]
+
+tests:
+  config:

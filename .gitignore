@@ -50,3 +50,5 @@ internal/tools/testresults/*
 go.work*
 
 /result
+
+otel-collector-config.yaml
