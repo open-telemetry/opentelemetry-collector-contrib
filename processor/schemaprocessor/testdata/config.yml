@@ -16,3 +16,9 @@ schema/with-all-options:
   targets:
     - https://opentelemetry.io/schemas/1.4.2
     - https://example.com/otel/schemas/1.2.0
+
+  # Migration preserves the original attribute alongside the renamed one
+  # during schema translation, giving operators a safe migration window.
+  migration:
+    - target: https://opentelemetry.io/schemas/1.4.2
+      from: https://opentelemetry.io/schemas/1.0.0

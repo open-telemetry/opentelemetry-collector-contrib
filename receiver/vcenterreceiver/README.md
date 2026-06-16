@@ -36,6 +36,7 @@ A “Read Only” user assigned to a vSphere with permissions to the vCenter ser
 | tls                 |         | TLSClientSetting | Not Required. Will use defaults for [configtls.ClientConfig](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). By default insecure settings are rejected and certificate verification is on. |
 | collection_interval | 2m      | Duration         | This receiver collects metrics on an interval. If the vCenter is fairly large, this value may need to be increased. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`                                                              |
 | initial_delay       | 1s      | Duration         | Defines how long this receiver waits before starting.                                                                                                                                                                                           |
+| max_query_metrics   | 256     | int              | Maximum number of metric IDs per `QueryPerf` API call. Should match or be lower than your vCenter's `vpxd.stats.maxQueryMetrics` setting (default 256). Set to `0` to disable batching. See [VMware KB 301449](https://knowledge.broadcom.com/external/article?articleNumber=301449). |
 
 ### Example Configuration
 
@@ -58,7 +59,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 ### Feature gates
 
-**ALPHA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
+**BETA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
 
 The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
 the `vcenter.resource_pool.memory.usage` metric.

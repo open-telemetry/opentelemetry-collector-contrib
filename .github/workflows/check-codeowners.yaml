@@ -34,29 +34,30 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         id: go-setup
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
+          cache: false
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
 
-      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
 
       - name: Gen CODEOWNERS
         run: |
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=./pr" make codeowners
-          cd pr && if ! git diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git diff && exit 1; fi
+          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr" make codeowners
+          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git -C pr diff && exit 1; fi
 
       - run: ./.github/workflows/scripts/check-disk-space.sh
