@@ -6,7 +6,10 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"slices"
 	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -22,40 +25,33 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc := normalize(actual)
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 
 func compareDocuments(expected, actual *document) error {
 	var errs []error
+	matched := make([]bool, len(actual.Resources))
 
-	expRes := indexResources(expected.Resources)
-	actRes := indexResources(actual.Resources)
-
-	for key, er := range expRes {
-		ar, ok := actRes[key]
-		if !ok {
+	for _, er := range expected.Resources {
+		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
+			return actual.Resources[i].Attributes
+		})
+		if idx < 0 {
 			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
 			continue
 		}
-		if err := compareResource(er, ar); err != nil {
+		matched[idx] = true
+		if err := compareResource(er, actual.Resources[idx]); err != nil {
 			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
 		}
 	}
-	for key, ar := range actRes {
-		if _, ok := expRes[key]; !ok {
+	for i, ar := range actual.Resources {
+		if !matched[i] {
 			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
 		}
 	}
 	return errors.Join(errs...)
-}
-
-func indexResources(rs []resourceAssertion) map[string]resourceAssertion {
-	out := make(map[string]resourceAssertion, len(rs))
-	for _, r := range rs {
-		out[canonKey(r.Attributes)] = r
-	}
-	return out
 }
 
 func compareResource(expected, actual resourceAssertion) error {
@@ -142,26 +138,42 @@ func compareMetric(expected, actual metricAssertion) error {
 }
 
 func compareDatapoints(expected, actual []datapointAssertion) error {
-	expIdx := indexDatapoints(expected)
-	actIdx := indexDatapoints(actual)
-
+	matched := make([]bool, len(actual))
 	var missing, unexpected []string
-	for k := range expIdx {
-		if _, ok := actIdx[k]; !ok {
-			missing = append(missing, k)
+	var valErrs []error
+
+	for _, edp := range expected {
+		idx := findMatchingAttributes(edp.Attributes, matched, len(actual), func(i int) map[string]any {
+			return actual[i].Attributes
+		})
+		if idx < 0 {
+			missing = append(missing, canonKey(edp.Attributes))
+			continue
+		}
+		matched[idx] = true
+
+		if edp.Value != nil {
+			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
+				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
+			}
+		}
+
+		if err := compareDatapointValues(edp, actual[idx]); err != nil {
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
-	for k := range actIdx {
-		if _, ok := expIdx[k]; !ok {
-			unexpected = append(unexpected, k)
+	for i, adp := range actual {
+		if !matched[i] {
+			unexpected = append(unexpected, canonKey(adp.Attributes))
 		}
 	}
-	if len(missing) == 0 && len(unexpected) == 0 {
+	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {
 		return nil
 	}
+	var errs []error
+	errs = append(errs, valErrs...)
 	sort.Strings(missing)
 	sort.Strings(unexpected)
-	var errs []error
 	for _, k := range missing {
 		errs = append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
 	}
@@ -171,12 +183,184 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
-func indexDatapoints(dps []datapointAssertion) map[string]datapointAssertion {
-	out := make(map[string]datapointAssertion, len(dps))
-	for _, dp := range dps {
-		out[canonKey(dp.Attributes)] = dp
+func compareDatapointValues(expected, actual datapointAssertion) error {
+	var errs []error
+	if expected.Count != nil {
+		if actual.Count == nil {
+			errs = append(errs, errors.New("missing expected count"))
+		} else if *expected.Count != *actual.Count {
+			errs = append(errs, fmt.Errorf("count mismatch: expected %v, got %v", *expected.Count, *actual.Count))
+		}
 	}
-	return out
+	if expected.Sum != nil {
+		if actual.Sum == nil {
+			errs = append(errs, errors.New("missing expected sum"))
+		} else if *expected.Sum != *actual.Sum {
+			errs = append(errs, fmt.Errorf("sum mismatch: expected %v, got %v", *expected.Sum, *actual.Sum))
+		}
+	}
+	if expected.Min != nil {
+		if actual.Min == nil {
+			errs = append(errs, errors.New("missing expected min"))
+		} else if *expected.Min != *actual.Min {
+			errs = append(errs, fmt.Errorf("min mismatch: expected %v, got %v", *expected.Min, *actual.Min))
+		}
+	}
+	if expected.Max != nil {
+		if actual.Max == nil {
+			errs = append(errs, errors.New("missing expected max"))
+		} else if *expected.Max != *actual.Max {
+			errs = append(errs, fmt.Errorf("max mismatch: expected %v, got %v", *expected.Max, *actual.Max))
+		}
+	}
+	if expected.ExplicitBounds != nil {
+		if actual.ExplicitBounds == nil {
+			errs = append(errs, errors.New("missing expected explicit_bounds"))
+		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		}
+	}
+	if expected.BucketCounts != nil {
+		if actual.BucketCounts == nil {
+			errs = append(errs, errors.New("missing expected bucket_counts"))
+		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
+			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func compareValue(expected, actual any) error {
+	if expected == actual {
+		return nil
+	}
+
+	expFloat, expIsFloat := toFloat64(expected)
+	actFloat, actIsFloat := toFloat64(actual)
+
+	expInt, expIsInt := toInt64(expected)
+	actInt, actIsInt := toInt64(actual)
+
+	if expIsInt && actIsInt && expInt == actInt {
+		return nil
+	}
+
+	if expIsFloat && actIsFloat && expFloat == actFloat {
+		return nil
+	}
+
+	return fmt.Errorf("value mismatch: expected %v, got %v", expected, actual)
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case float32:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	case uint64:
+		return float64(x), true
+	default:
+		return 0, false
+	}
+}
+
+func toInt64(v any) (int64, bool) {
+	switch x := v.(type) {
+	case int:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case float64:
+		if float64(int64(x)) == x {
+			return int64(x), true
+		}
+	}
+	return 0, false
+}
+
+// findMatchingAttributes returns the first unmatched index whose attributes
+// satisfy the expected attribute map, or -1 if none do.
+func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
+	for i := range n {
+		if matched[i] {
+			continue
+		}
+		if compareAttributes(expected, attrsAt(i)) == nil {
+			return i
+		}
+	}
+	return -1
+}
+
+func compareAttributes(expected, actual map[string]any) error {
+	var errs []error
+	seen := make(map[string]struct{}, len(expected))
+	for rawKey, expectedValue := range expected {
+		if key, ok := strings.CutSuffix(rawKey, "/exists"); ok {
+			seen[key] = struct{}{}
+			if expectedValue != true {
+				errs = append(errs, fmt.Errorf("attribute %q/exists must be true (the only supported value)", key))
+				continue
+			}
+			if _, exists := actual[key]; !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /exists", key))
+			}
+			continue
+		}
+		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
+				continue
+			}
+			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		seen[rawKey] = struct{}{}
+		actualValue, ok := actual[rawKey]
+		if !ok {
+			errs = append(errs, fmt.Errorf("missing attribute %q", rawKey))
+			continue
+		}
+		if canonKey(expectedValue) != canonKey(actualValue) {
+			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
+		}
+	}
+	for key := range actual {
+		if _, ok := seen[key]; !ok {
+			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func compareRegexAttribute(key string, expectedValue, actualValue any) error {
+	pattern, ok := expectedValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
+	}
+	actualStr, ok := actualValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
+	}
+	re, err := regexp.Compile("^(?:" + pattern + ")$")
+	if err != nil {
+		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
+	}
+	if !re.MatchString(actualStr) {
+		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
+	}
+	return nil
 }
 
 func boolPtrEqual(a, b *bool) bool {

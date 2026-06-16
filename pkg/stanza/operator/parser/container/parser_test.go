@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -42,6 +44,20 @@ func TestConfigBuildFailure(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
 	require.ErrorContains(t, err, "invalid `on_error` field")
+}
+
+func TestConfigBuildWithSyncLogEmitter(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaSynchronousLogEmitterFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaSynchronousLogEmitterFeatureGate.ID(), false))
+	})
+
+	config := NewConfigWithID("test")
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := config.Build(set)
+	require.NoError(t, err)
+	require.IsType(t, &Parser{}, op)
+	require.NoError(t, op.Stop())
 }
 
 func TestConfigBuildFormatError(t *testing.T) {
@@ -1299,4 +1315,229 @@ func TestUnlimitedBatchSize(t *testing.T) {
 		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split", "entry: %+v", e)
 	default:
 	}
+}
+
+func TestContainerQuietModeProcess(t *testing.T) {
+	// Quiet mode swallows the processing/parse error, but send_quiet still
+	// surfaces downstream write failures so the pipeline can react to delivery
+	// errors.
+	testCases := []struct {
+		name             string
+		onError          string
+		useFailingOutput bool
+		expectError      bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     "drop_quiet",
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     "send_quiet",
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     "drop",
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     "send",
+			expectError: true,
+		},
+		{
+			name:             "SendOnErrorQuiet_WriteFailure_PropagatesError",
+			onError:          "send_quiet",
+			useFailingOutput: true,
+			expectError:      true,
+		},
+		{
+			name:             "SendOnError_WriteFailure_PropagatesError",
+			onError:          "send",
+			useFailingOutput: true,
+			expectError:      true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := NewConfigWithID("test")
+			config.OnError = tc.onError
+			config.OutputIDs = []string{"fake"}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := config.Build(set)
+			require.NoError(t, err)
+
+			var fake operator.Operator
+			if tc.useFailingOutput {
+				fake = testutil.NewFakeOutputWithProcessError(t)
+			} else {
+				fake = testutil.NewFakeOutput(t)
+			}
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+			// Create entry with invalid container log format that will cause parse error
+			e := entry.New()
+			e.Body = "invalid container log format"
+			e.ObservedTimestamp = time.Now()
+
+			err = op.Process(t.Context(), e)
+			if tc.expectError {
+				require.Error(t, err, "expected error")
+			} else {
+				require.NoError(t, err, "expected no error when processing error is swallowed in quiet mode")
+			}
+		})
+	}
+}
+
+func TestContainerQuietModeProcessBatch(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     "drop_quiet",
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     "send_quiet",
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     "drop",
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     "send",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("CanProcess").Return(true)
+			output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+			config := NewConfigWithID("test")
+			config.OnError = tc.onError
+			config.OutputIDs = []string{"test-output"}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := config.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+			entries := []*entry.Entry{
+				func() *entry.Entry {
+					e := entry.New()
+					e.Body = "invalid container log format"
+					e.ObservedTimestamp = time.Now()
+					return e
+				}(),
+				func() *entry.Entry {
+					e := entry.New()
+					e.Body = "another invalid log"
+					e.ObservedTimestamp = time.Now()
+					return e
+				}(),
+			}
+
+			err = op.ProcessBatch(t.Context(), entries)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
+}
+
+// TestProcessDockerNoDoubleEntryOnError verifies that when ProcessWithCallback
+// returns an error in non-quiet mode, the entry is not sent twice. ProcessWithCallback
+// already handles error logging and entry sending internally.
+func TestProcessDockerNoDoubleEntryOnError(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.OnError = "send"
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+	// Entry with invalid JSON will cause parse error inside ProcessWithCallback
+	e := entry.New()
+	e.Body = `{"log":"missing time field","stream":"stdout"}`
+	e.ObservedTimestamp = time.Now()
+
+	err = op.Process(t.Context(), e)
+	require.Error(t, err)
+
+	// The entry should only be sent once (by HandleEntryError inside ProcessWithCallback/ParseWith),
+	// not twice. If HandleEntryError were called again by the caller, it would send the entry a second time.
+	output.AssertNumberOfCalls(t, "Process", 1)
+}
+
+// TestProcessBatchDockerQuietModeWithMixedEntries verifies that in quiet mode,
+// valid entries are still processed while invalid entries are silently dropped.
+func TestProcessBatchDockerQuietModeWithMixedEntries(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.OnError = "drop_quiet"
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+	ctx := t.Context()
+
+	validEntry := entry.New()
+	validEntry.Body = `{"log":"INFO: valid line","stream":"stdout","time":"2029-03-30T08:31:20.545Z"}`
+
+	invalidEntry := entry.New()
+	invalidEntry.Body = `not a valid docker log`
+
+	validEntry2 := entry.New()
+	validEntry2.Body = `{"log":"INFO: another valid line","stream":"stderr","time":"2029-03-30T08:31:21.545Z"}`
+
+	err = op.ProcessBatch(ctx, []*entry.Entry{validEntry, invalidEntry, validEntry2})
+	require.NoError(t, err, "quiet mode should not return errors")
+
+	// Only valid entries should be written to output
+	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
+		return len(entries) == 2
+	}))
 }

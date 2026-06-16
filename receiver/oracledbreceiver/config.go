@@ -33,9 +33,18 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+	AllowedCommentKeys  []string      `mapstructure:"allowed_comment_keys"`
 }
 
 type QuerySample struct {
+	MaxRowsPerQuery    uint64   `mapstructure:"max_rows_per_query"`
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type SessionWaitEvent struct {
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 
 	// prevent unkeyed literal initialization
@@ -54,6 +63,7 @@ type Config struct {
 
 	TopQueryCollection `mapstructure:"top_query_collection"`
 	QuerySample        `mapstructure:"query_sample_collection"`
+	SessionWaitEvent   `mapstructure:"session_wait_event_collection"`
 }
 
 func (c Config) Validate() error {

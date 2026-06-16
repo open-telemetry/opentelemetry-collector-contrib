@@ -63,7 +63,7 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.BatchingLogEmitter
+	criLogEmitter           helper.LogEmitter
 	recombineStarted        bool
 	recombineStartOnce      sync.Once
 	timeLayout              string
@@ -102,7 +102,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		case dockerFormat:
 			p.timeLayout = goTimeLayout
 			if err = p.ParseWith(ctx, ent, p.parseDocker, write); err != nil {
-				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+				if !errors.Is(err, helper.ErrEntryHandled) {
 					errs = append(errs, fmt.Errorf("failed to process the docker log: %w", err))
 				}
 				continue
@@ -131,7 +131,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			if format == containerdFormat {
 				err = p.ParseWith(ctx, ent, p.parseContainerd, write)
 				if err != nil {
-					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
 					}
 					continue
@@ -140,7 +140,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			} else {
 				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
 				if err != nil {
-					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
 					}
 					continue
@@ -219,6 +219,9 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			// parse the message
 			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
 			if err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
@@ -226,6 +229,9 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			// parse the message
 			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
 			if err != nil {
+				if errors.Is(err, helper.ErrEntryHandled) {
+					return nil
+				}
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
 			p.timeLayout = crioTimeLayout
@@ -233,16 +239,33 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		err = p.handleTimeAndAttributeMappings(entry)
 		if err != nil {
-			return fmt.Errorf("failed to handle attribute mappings: %w", err)
+			err = fmt.Errorf("failed to handle attribute mappings: %w", err)
+
+			switch p.OnError {
+			case helper.DropOnErrorQuiet:
+				return nil
+			case helper.SendOnErrorQuiet:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return nil
+			case helper.SendOnError:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return err
+			default:
+				return err
+			}
 		}
 
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
-			return fmt.Errorf("failed to recombine the crio log: %w", err)
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to recombine the crio log: %w", err))
 		}
 	default:
-		return errors.New("failed to detect a valid container log format")
+		return p.HandleEntryError(ctx, entry, errors.New("failed to detect a valid container log format"))
 	}
 
 	return nil

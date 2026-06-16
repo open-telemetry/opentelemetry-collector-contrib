@@ -49,6 +49,11 @@ kafka/rebalance_strategy:
   group_rebalance_strategy: sticky
   group_instance_id: test-instance
 
+kafka/rebalance_strategies:
+  group_rebalance_strategies:
+    - cooperative-sticky
+    - my_balancer
+
 kafka/message_marking:
   message_marking:
     after: true

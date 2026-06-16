@@ -35,6 +35,9 @@ The following are ignored:
 - batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
   entries with the same identity are normalized before comparison.
 
+`WriteAssertionFile` expects semantically valid metrics. It normalizes valid
+metrics into an assertion snapshot; it is not a validator for producer output.
+
 ## Typical usage
 
 ```go
@@ -77,6 +80,37 @@ resources:
                   method: POST
 ```
 
+### Attribute presence matcher
+
+Attribute keys can use the `/exists: true` suffix when the attribute must be
+present but its value is volatile:
+
+```yaml
+attributes:
+  service.name: svc
+  service.instance.id/exists: true
+```
+
+The attribute map remains exact: unexpected attributes still fail the
+assertion, so omitting a key is the way to assert that it must not appear.
+`/exists: true` is the only supported value; any other value is a schema
+error.
+
+### Attribute regex matcher
+
+Attribute keys can use the `/regex` suffix when the attribute value is a
+volatile string that must match a regular expression. The regular expression
+must match the full attribute value:
+
+```yaml
+attributes:
+  http.url/regex: 'http://127\.0\.0\.1:[0-9]+'
+```
+
+Regex matchers are supported for resource attributes and datapoint attributes.
+The attribute map remains exact: unexpected attributes still fail the
+assertion.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -105,7 +139,7 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions (`/include`, `/exclude`, `/all`, `/count`, `/regex`, `/exists`,
-`/approx`, `/gt|gte|lt|lte`) and opt-in fields (`IncludeValues()`,
-`IncludeTimestamps()`, `IncludeExemplars()`, type-specific histogram fields)
-are tracked as follow-ups under that issue.
+extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
+`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
+(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
+histogram fields) are tracked as follow-ups under that issue.
