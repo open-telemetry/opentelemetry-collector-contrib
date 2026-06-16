@@ -7,7 +7,7 @@ change_type: enhancement
 component: connector/routing
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `connector.routing.defaultErrorModeIgnore` feature gate to change default `error_mode` to `ignore`
+note: Add `connector.routing.defaultErrorModeIgnore` feature gate to change default `error_mode` from `propagate` to `ignore`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48418]
@@ -15,10 +15,7 @@ issues: [48418]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  When the feature gate is enabled, the connector defaults to `ignore` mode which preserves
-  valid data when an OTTL condition error occurs, improving resiliency. This is a breaking
-  change rolled out via feature gate to allow gradual adoption.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
