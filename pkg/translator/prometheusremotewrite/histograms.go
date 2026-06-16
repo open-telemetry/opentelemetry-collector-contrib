@@ -4,6 +4,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -76,7 +77,7 @@ func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, e
 	case fh != nil:
 		return prompb.FromFloatHistogram(timestamp, fh), nil
 	default:
-		return prompb.Histogram{}, fmt.Errorf("convertnhcb produced neither an integer nor a float histogram")
+		return prompb.Histogram{}, errors.New("convertnhcb produced neither an integer nor a float histogram")
 	}
 }
 
