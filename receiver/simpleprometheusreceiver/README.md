@@ -4,7 +4,6 @@
 This receiver provides a simple configuration interface to configure the
 prometheus receiver to scrape metrics from a single target.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [unmaintained]: metrics   |
