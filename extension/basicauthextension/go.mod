@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.154.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tg123/go-htpasswd v1.2.4
+	github.com/tg123/go-htpasswd v1.2.5
 	go.opentelemetry.io/collector/client v1.60.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/component v1.60.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/component/componenttest v0.154.1-0.20260612191519-af182d232650
