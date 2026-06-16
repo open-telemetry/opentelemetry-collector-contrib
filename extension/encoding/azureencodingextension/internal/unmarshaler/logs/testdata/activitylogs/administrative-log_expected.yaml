@@ -123,12 +123,24 @@ resourceLogs:
                               - key: code
                                 value:
                                   stringValue: ResourceOperationFailed
+                              - key: errorDetails
+                                value:
+                                  arrayValue:
+                                    values:
+                                      - kvlistValue:
+                                          values:
+                                            - key: code
+                                              value:
+                                                stringValue: "MaxUnhealthyUpgradedInstancePercentExceededInRollingUpgrade/ResourceNotFound"
+                                            - key: message
+                                              value:
+                                                stringValue: "Rolling Upgrade failed after exceeding the MaxUnhealthyUpgradedInstancePercent value defined in the RollingUpgradePolicy. 100% of instances are in an unhealthy state after being upgraded - more than the threshold of 20%. The most impactful error is: The Resource 'Microsoft.Compute/virtualMachines/<scale_set_name>_07971188' under resource group '<resource_group_name>' was not found. For more details please go to https://aka.ms/ARMResourceNotFoundFix. First failed instance ID is: <scale_set_name>_07971188."
                               - key: message
                                 value:
                                   stringValue: "The resource operation 'Failed'."
             body: {}
             severityNumber: 9
-            severityText: Informational
+            severityText: "Informational"
             timeUnixNano: "1744712192987344100"
         scope:
           attributes:
