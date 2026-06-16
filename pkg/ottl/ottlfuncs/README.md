@@ -475,11 +475,11 @@ The `stringify_all` function converts all non-string values in a `pcommon.Map` t
 `target` is a path expression to a `pcommon.Map` type field.
 
 The map will be mutated such that all values are of type string. Values already of type string are unchanged. Non-string values are converted using their standard string representation:
-- Int/Double: numeric string (e.g., `"42"`, `"3.14"`)
-- Bool: `"true"` or `"false"`
-- Bytes: base64-encoded string
-- Map: JSON-marshaled string
-- Slice: JSON-marshaled string
+- `int64`/`float64`: numeric string (e.g., `"42"`, `"3.14"`)
+- `bool`: `"true"` or `"false"`
+- `[]byte`: base64-encoded string
+- `pcommon.Map`: JSON-marshaled string
+- `pcommon.Slice`: JSON-marshaled string
 - Empty: `""`
 
 Examples:
