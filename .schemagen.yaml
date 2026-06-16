@@ -44,3 +44,20 @@ componentOverrides:
     configName: 'WindowsLogConfig'
   connector/signaltometrics:
     configName: 'config.Config'
+  receiver/host_metrics:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  receiver/cisco_os:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  processor/geoip:
+    factoryMaps:
+      - property: providers
+        factoriesVar: providerFactories
+        description: Map of GeoIP provider configurations, keyed by provider type.
+  receiver/prometheus:
+    overlayFile: receiver/prometheusreceiver/config.schema.overlay.yaml
