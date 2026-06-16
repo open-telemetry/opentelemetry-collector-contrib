@@ -251,7 +251,12 @@ func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
 
 func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerDatasource.Value.AsString())
-	attrMap.PutStr(string(conventionsv118.FaaSExecutionKey), "DB85AF51-5E13-473D-8454-1E2D59415EAB")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0FaaSConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv118.FaaSExecutionKey), "DB85AF51-5E13-473D-8454-1E2D59415EAB")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1FaaSConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.FaaSInvocationIDKey), "DB85AF51-5E13-473D-8454-1E2D59415EAB")
+	}
 	attrMap.PutStr(string(conventions.FaaSDocumentCollectionKey), "faa-flight-delay-information-incoming")
 	attrMap.PutStr(string(conventions.FaaSDocumentOperationKey), "insert")
 	attrMap.PutStr(string(conventions.FaaSDocumentTimeKey), "2020-05-09T19:50:06Z")
@@ -274,8 +279,14 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 	if includeStatus {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 	}
-	attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
-		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.UserAgentOriginalKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15")
+	}
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
@@ -289,7 +300,12 @@ func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
 
 func appendFaaSTimerAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerTimer.Value.AsString())
-	attrMap.PutStr(string(conventionsv118.FaaSExecutionKey), "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0FaaSConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv118.FaaSExecutionKey), "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1FaaSConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.FaaSInvocationIDKey), "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
+	}
 	attrMap.PutStr(string(conventions.FaaSTimeKey), "2020-05-09T20:00:08Z")
 	attrMap.PutStr(string(conventions.FaaSCronKey), "0/15 * * * *")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
@@ -328,8 +344,14 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 	if includeStatus {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 	}
-	attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
-		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.UserAgentOriginalKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	}
 	attrMap.PutStr(string(conventions.HTTPRouteKey), "/blog/posts")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2001:506:71f0:16e::1")
@@ -429,8 +451,14 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
 		attrMap.PutStr("http.status_text", "Created")
 	}
-	attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
-		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.UserAgentOriginalKey),
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	}
 	attrMap.PutStr(string(conventions.HTTPRouteKey), "/blog/posts")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
