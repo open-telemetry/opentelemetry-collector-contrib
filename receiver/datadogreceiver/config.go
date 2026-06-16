@@ -45,6 +45,23 @@ type Config struct {
 	// IdleSeriesCleanupInterval defines how frequently the receiver checks for
 	// and removes idle series. Defaults to 5 minutes.
 	IdleSeriesCleanupInterval time.Duration `mapstructure:"idle_series_cleanup_interval"`
+	// Logs controls log-specific receiver behavior.
+	Logs LogsConfig `mapstructure:"logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// LogsConfig controls log-specific receiver behavior.
+type LogsConfig struct {
+	// DecodeJSONMessage, when true, parses log records whose message is itself a JSON object and lifts
+	// the inner fields into the OTel log record — mirroring Datadog's server-side "Preprocessing for
+	// JSON logs". The inner reserved attributes (message, status/level, timestamp, host, service, and
+	// dd.trace_id/dd.span_id for trace correlation) take precedence over the agent envelope, and the
+	// remaining inner keys become attributes. This is useful because the Datadog Agent forwards
+	// application JSON logs as an opaque message string; Datadog's backend normally does this parsing.
+	// Enabled by default. set to false to keep the raw JSON message as the log body.
+	DecodeJSONMessage bool `mapstructure:"decode_json_message"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
