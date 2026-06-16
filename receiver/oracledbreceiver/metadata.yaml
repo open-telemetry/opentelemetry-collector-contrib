@@ -403,6 +403,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
+  oracledb.cpu.usage.rate:
+    description: Oracle database CPU consumption rate, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.database.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'CPU Usage Per Sec', converted from centiseconds per second).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds
     enabled: true
@@ -412,6 +419,13 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.cursor_cache.utilization:
+    description: Fraction of cursor executions that reused a usable cursor in the session cursor cache, as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'Cursor Cache Hit Ratio').
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -560,6 +574,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.host.cpu.usage.rate:
+    description: Host CPU consumption rate across all cores, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.host.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Host CPU Usage Per Sec', converted from centiseconds per second).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.host.cpu.utilization:
     description: Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
     enabled: false
@@ -567,6 +588,13 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.io.single_block_read.latency:
+    description: Average latency of a synchronous single-block read. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Synchronous Single-Block Read Latency', converted from milliseconds to seconds).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: s
   oracledb.library_cache.utilization:
     description: Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
     enabled: false
@@ -680,6 +708,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.pga_cache.utilization:
+    description: Fraction of PGA work-area memory requests satisfied optimally (without spilling to temporary disk), as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'PGA Cache Hit %').
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.pga_memory:
     description: Session PGA (Program Global Area) memory
     enabled: true
@@ -822,6 +857,20 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.session.active.average:
+    description: Average Active Sessions (AAS), the mean number of sessions actively running or waiting over the metric interval; a standard Oracle database load indicator. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Active Sessions').
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+  oracledb.session.count:
+    description: Point-in-time total number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type. Oracle-reported value read from V$SYSMETRIC (group_id=2, ~60s; 'Session Count').
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{sessions}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -907,6 +956,13 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  oracledb.transaction.response.time:
+    description: Average response time per transaction. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Response Time Per Txn', converted from centiseconds to seconds).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: s
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true

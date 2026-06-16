@@ -257,6 +257,22 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.cpu.usage.rate
+
+Oracle database CPU consumption rate, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.database.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'CPU Usage Per Sec', converted from centiseconds per second).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+### oracledb.cursor_cache.utilization
+
+Fraction of cursor executions that reused a usable cursor in the session cursor cache, as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'Cursor Cache Hit Ratio').
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.data_dictionary.hit_ratio
 
 Data dictionary cache hit ratio from v$rowcache.
@@ -319,6 +335,14 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.host.cpu.usage.rate
+
+Host CPU consumption rate across all cores, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.host.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Host CPU Usage Per Sec', converted from centiseconds per second).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### oracledb.host.cpu.utilization
 
 Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
@@ -326,6 +350,14 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.io.single_block_read.latency
+
+Average latency of a synchronous single-block read. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Synchronous Single-Block Read Latency', converted from milliseconds to seconds).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ### oracledb.library_cache.utilization
 
@@ -408,6 +440,14 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 ### oracledb.parse.utilization
 
 Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
+### oracledb.pga_cache.utilization
+
+Fraction of PGA work-area memory requests satisfied optimally (without spilling to temporary disk), as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'PGA Cache Hit %').
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -515,6 +555,22 @@ Fraction of redo allocations that succeeded without space contention, as compute
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.session.active.average
+
+Average Active Sessions (AAS), the mean number of sessions actively running or waiting over the metric interval; a standard Oracle database load indicator. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Active Sessions').
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {sessions} | Gauge | Double | Development |
+
+### oracledb.session.count
+
+Point-in-time total number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type. Oracle-reported value read from V$SYSMETRIC (group_id=2, ~60s; 'Session Count').
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {sessions} | Gauge | Int | Development |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
@@ -575,6 +631,14 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### oracledb.transaction.response.time
+
+Average response time per transaction. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Response Time Per Txn', converted from centiseconds to seconds).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ## Default Events
 
