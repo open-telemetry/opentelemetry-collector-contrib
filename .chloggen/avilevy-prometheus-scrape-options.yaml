@@ -6,5 +6,4 @@ subtext: |
   - `scrape_on_shutdown` (default: false): Enables a final scrape before the receiver closes.
   - `discovery_reload_on_startup` (default: false): Enables discovering targets immediately on startup.
   - `initial_scrape_offset` (default: 0s): Adds a fixed delay before the initial scrape of targets.
-  - Fixed test-only reflection code accessing `skipJitterOffsetting` (previously `skipOffsetting`) to align with upstream Prometheus updates.
 change_logs: [user]
