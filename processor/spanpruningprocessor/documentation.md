@@ -22,6 +22,30 @@ Total aggregation summary spans created
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Development |
 
+### otelcol_processor_spanpruning_outliers_correlations_detected
+
+Groups where outliers had correlated attributes
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {groups} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_outliers_detected
+
+Spans identified as outliers by analysis
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_outliers_preserved
+
+Outlier spans kept (excluded from aggregation)
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
 ### otelcol_processor_spanpruning_processing_duration
 
 Time to process each batch of traces

@@ -105,6 +105,7 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes, calculated before compression.
+  - `max_broker_write_bytes` (default = 104857600) the maximum bytes the producer will write to a broker in a single request. Must be greater than or equal to `max_message_bytes`. Increase this when raising `max_message_bytes` above 100 MiB.
   - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
