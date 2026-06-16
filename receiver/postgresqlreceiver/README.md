@@ -232,8 +232,8 @@ scrape; *per table* and *per index* queries additionally inspect every table or 
 >
 > `postgresql.table.count` is normally derived from the per-table query — its value is simply the number of
 > tables that query returns. As a special case, when `postgresql.table.count` is the *only* enabled table
-> metric, the receiver instead issues a lightweight `COUNT(*)` over `pg_class` (filtered to the same relations
-> as `pg_stat_user_tables`), avoiding the per-table relation-size computation entirely.
+> metric, the receiver instead issues a lightweight `COUNT(*)` over `pg_stat_user_tables`, avoiding the
+> per-table relation-size computation that the full query performs for every table.
 
 ## Metrics
 

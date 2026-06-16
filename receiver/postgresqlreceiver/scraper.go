@@ -450,6 +450,17 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+// anyEnabled reports whether any of the given metric-enabled flags is true. It is
+// used to skip a query entirely when none of the metrics it feeds are enabled.
+func anyEnabled(flags ...bool) bool {
+	for _, f := range flags {
+		if f {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
 	m := p.config.Metrics
 
@@ -597,10 +608,11 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	errs *errsMux,
 ) {
 	m := p.config.Metrics
-	if !(m.PostgresqlBgwriterBuffersAllocated.Enabled ||
-		m.PostgresqlBgwriterBuffersWrites.Enabled ||
-		m.PostgresqlBgwriterCheckpointCount.Enabled ||
-		m.PostgresqlBgwriterDuration.Enabled ||
+	if !anyEnabled(
+		m.PostgresqlBgwriterBuffersAllocated.Enabled,
+		m.PostgresqlBgwriterBuffersWrites.Enabled,
+		m.PostgresqlBgwriterCheckpointCount.Enabled,
+		m.PostgresqlBgwriterDuration.Enabled,
 		m.PostgresqlBgwriterMaxwritten.Enabled) {
 		return
 	}
@@ -674,8 +686,9 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	errs *errsMux,
 ) {
 	m := p.config.Metrics
-	if !(m.PostgresqlReplicationDataDelay.Enabled ||
-		m.PostgresqlWalDelay.Enabled ||
+	if !anyEnabled(
+		m.PostgresqlReplicationDataDelay.Enabled,
+		m.PostgresqlWalDelay.Enabled,
 		m.PostgresqlWalLag.Enabled) {
 		return
 	}
@@ -743,17 +756,18 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 ) {
 	defer wg.Done()
 	m := p.config.Metrics
-	if !(m.PostgresqlCommits.Enabled ||
-		m.PostgresqlRollbacks.Enabled ||
-		m.PostgresqlDeadlocks.Enabled ||
-		m.PostgresqlTempFiles.Enabled ||
-		m.PostgresqlTempIo.Enabled ||
-		m.PostgresqlTupUpdated.Enabled ||
-		m.PostgresqlTupReturned.Enabled ||
-		m.PostgresqlTupFetched.Enabled ||
-		m.PostgresqlTupInserted.Enabled ||
-		m.PostgresqlTupDeleted.Enabled ||
-		m.PostgresqlBlksHit.Enabled ||
+	if !anyEnabled(
+		m.PostgresqlCommits.Enabled,
+		m.PostgresqlRollbacks.Enabled,
+		m.PostgresqlDeadlocks.Enabled,
+		m.PostgresqlTempFiles.Enabled,
+		m.PostgresqlTempIo.Enabled,
+		m.PostgresqlTupUpdated.Enabled,
+		m.PostgresqlTupReturned.Enabled,
+		m.PostgresqlTupFetched.Enabled,
+		m.PostgresqlTupInserted.Enabled,
+		m.PostgresqlTupDeleted.Enabled,
+		m.PostgresqlBlksHit.Enabled,
 		m.PostgresqlBlksRead.Enabled) {
 		return
 	}

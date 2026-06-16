@@ -206,19 +206,20 @@ func tableCountEquivalenceTest(pgVersion string) func(*testing.T) {
 		cfg.Insecure = true
 
 		factory := newDefaultClientFactory(cfg)
-		client, err := factory.getClient("otel")
+		dbClient, err := factory.getClient("otel")
 		require.NoError(t, err)
-		defer client.Close()
+		defer dbClient.Close()
 
-		tableMetrics, err := client.getDatabaseTableMetrics(t.Context(), "otel")
+		tableMetrics, err := dbClient.getDatabaseTableMetrics(t.Context(), "otel")
 		require.NoError(t, err)
-		count, err := client.getTableCount(t.Context())
+		count, err := dbClient.getTableCount(t.Context())
 		require.NoError(t, err)
 
-		// The fixture has 2 ordinary tables + 1 partitioned parent + 2 partitions +
-		// 1 materialized view = 6 relations in pg_stat_user_tables. Asserting more
-		// than 2 ensures the partitioned table and materialized view are actually
-		// present, so a relkind='r'-only count would fail this test.
+		// The fixture has 2 ordinary tables + 2 partitions + 1 materialized view, plus
+		// the partitioned parent on PostgreSQL 14+ (which adds partitioned tables to
+		// pg_stat_user_tables): 5 relations on PG 13, 6 on PG 17. Asserting more than 2
+		// ensures the partitions and materialized view are actually present, so a
+		// relkind='r'-only count would fail this test.
 		assert.Greater(t, len(tableMetrics), 2,
 			"fixture should include partitioned tables and materialized views, not just ordinary tables")
 		assert.Equal(t, int64(len(tableMetrics)), count,

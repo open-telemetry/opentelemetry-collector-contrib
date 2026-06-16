@@ -457,19 +457,43 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 // metrics (getDatabaseTableMetrics) are not needed.
 //
 // The result must equal len(getDatabaseTableMetrics), which counts the rows of
-// pg_stat_user_tables. That view is pg_stat_all_tables (relkind in r/t/m/p)
-// restricted to user schemas, so this query reproduces the same relation set by
-// filtering pg_class directly. Counting pg_class is significantly cheaper because
-// it avoids the per-table pg_relation_size() computation the full query performs.
-// Note relkind 't' (TOAST) is always in pg_toast and is therefore excluded by the
+// pg_stat_user_tables. Rather than counting that view (which evaluates the
+// per-table statistics functions for every row), this counts pg_class directly,
+// which is significantly cheaper and avoids the per-table pg_relation_size()
+// computation the full query performs.
+//
+// pg_stat_user_tables is pg_stat_all_tables restricted to user schemas, and
+// pg_stat_all_tables exposes relations whose relkind the view filters on. That
+// set is reproduced here: ordinary tables ('r') and materialized views ('m'),
+// plus partitioned parents ('p') which were added to pg_stat_all_tables in
+// PostgreSQL 14. relkind 't' (TOAST) lives in pg_toast and is excluded by the
 // schema filter, matching the view.
 func (c *postgreSQLClient) getTableCount(ctx context.Context) (int64, error) {
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return 0, err
+	}
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return 0, err
+	}
+
+	// Ordinary tables ('r') and materialized views ('m') are always counted.
+	// Partitioned parents ('p') appear in pg_stat_all_tables only from PG 14 on.
 	query := `SELECT count(*) FROM pg_class
-	WHERE relkind IN ('r', 't', 'm', 'p')
+	WHERE relkind IN ('r', 'm')
 	AND relnamespace NOT IN (
 		SELECT oid FROM pg_namespace
 		WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
 	);`
+	if major >= 14 {
+		query = `SELECT count(*) FROM pg_class
+	WHERE relkind IN ('r', 'm', 'p')
+	AND relnamespace NOT IN (
+		SELECT oid FROM pg_namespace
+		WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+	);`
+	}
 
 	row := c.client.QueryRowContext(ctx, query)
 	var count int64

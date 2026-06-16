@@ -407,9 +407,9 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
-// setAllMetricsEnabled toggles the Enabled flag on every metric in the config.
-// It uses reflection so the test stays correct as metrics are added or removed.
-func setAllMetricsEnabled(mc *metadata.MetricsConfig, enabled bool) {
+// disableAllMetrics clears the Enabled flag on every metric in the config. It uses
+// reflection so the test stays correct as metrics are added or removed.
+func disableAllMetrics(mc *metadata.MetricsConfig) {
 	v := reflect.ValueOf(mc).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
@@ -418,7 +418,7 @@ func setAllMetricsEnabled(mc *metadata.MetricsConfig, enabled bool) {
 		}
 		enabledField := field.FieldByName("Enabled")
 		if enabledField.IsValid() && enabledField.CanSet() {
-			enabledField.SetBool(enabled)
+			enabledField.SetBool(false)
 		}
 	}
 }
@@ -430,7 +430,7 @@ func setAllMetricsEnabled(mc *metadata.MetricsConfig, enabled bool) {
 func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"} // set explicitly so listDatabases is not called
-	setAllMetricsEnabled(&cfg.Metrics, false)
+	disableAllMetrics(&cfg.Metrics)
 
 	dbClient := new(mockClient)
 	dbClient.On("Close").Return(nil)
@@ -466,7 +466,7 @@ func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 func TestScraperTableCountUsesCheapQuery(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
-	setAllMetricsEnabled(&cfg.Metrics, false)
+	disableAllMetrics(&cfg.Metrics)
 	cfg.Metrics.PostgresqlTableCount.Enabled = true
 
 	dbClient := new(mockClient)
@@ -493,7 +493,7 @@ func TestScraperTableCountUsesCheapQuery(t *testing.T) {
 func TestScraperTableCountWithPerTableStats(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
-	setAllMetricsEnabled(&cfg.Metrics, false)
+	disableAllMetrics(&cfg.Metrics)
 	cfg.Metrics.PostgresqlTableCount.Enabled = true
 	cfg.Metrics.PostgresqlRows.Enabled = true
 
@@ -567,7 +567,7 @@ func TestEnabledMetricIsEmitted(t *testing.T) {
 			factory.initMocks([]string{"otel"})
 
 			cfg := createDefaultConfig().(*Config)
-			setAllMetricsEnabled(&cfg.Metrics, false)
+			disableAllMetrics(&cfg.Metrics)
 			enableMetricByName(t, &cfg.Metrics, name)
 
 			scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
@@ -686,7 +686,7 @@ func scrapeProbe(t *testing.T, metric, errMethod string) (ranQueries map[string]
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"} // set explicitly so listDatabases is not called
-	setAllMetricsEnabled(&cfg.Metrics, false)
+	disableAllMetrics(&cfg.Metrics)
 	enableMetricByName(t, &cfg.Metrics, metric)
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
@@ -696,9 +696,10 @@ func scrapeProbe(t *testing.T, metric, errMethod string) (ranQueries map[string]
 	md, _ := scraper.scrape(t.Context())
 
 	ranQueries = map[string]bool{}
-	for _, call := range client.Calls {
-		if !infraMethods[call.Method] {
-			ranQueries[call.Method] = true
+	for i := range client.Calls {
+		method := client.Calls[i].Method
+		if !infraMethods[method] {
+			ranQueries[method] = true
 		}
 	}
 	_, emitted = emittedMetricNames(md)[metric]
