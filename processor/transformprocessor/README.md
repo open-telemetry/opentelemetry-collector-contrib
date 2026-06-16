@@ -273,6 +273,10 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
+**Logs only functions**
+
+- [ParseLEEF](#parseleef)
+
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
@@ -705,6 +709,36 @@ Examples:
 # bounds: [0.2, 1.0, 5.0, 30.0]
 # counts: [84, 126, 5, 50, 1]
 ```
+
+### ParseLEEF
+
+`ParseLEEF(target)`
+
+The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as LEEF, an error will be returned.
+
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token; parsing begins at the first occurrence of `LEEF:` in the input, so a literal `LEEF:` appearing in a syslog header ahead of the real header would be misinterpreted.
+
+The returned map has the following top-level fields:
+
+* `leef.version` — the LEEF version (`"1.0"` or `"2.0"`).
+* `leef.vendor`, `leef.product.name`, `leef.product.version`, `leef.event.id` — the LEEF header fields.
+* `leef.attributes` — a map of the parsed key/value attribute pairs.
+
+For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter is taken from the header and must be either a single character or a `0x`-prefixed hex value decoding to a single byte (e.g. `0x09` for tab). An empty delimiter field defaults to tab. The delimiter field is also optional: if the position normally occupied by the delimiter looks like the start of an attribute (i.e. contains `=`), it is treated as the first attribute and the delimiter defaults to tab.
+
+Attribute parsing is lenient: pairs without an `=` separator or with an empty key are silently skipped, and when the same key appears more than once the last occurrence wins. Whitespace within keys and values is preserved verbatim, since the LEEF spec defines a value as everything up to the delimiter.
+
+All attribute values are returned as strings. LEEF defines a set of [predefined event attributes](https://www.ibm.com/docs/en/dsm?topic=overview-predefined-leef-event-attributes) (e.g. `src`, `dst`, `srcPort`, `usrName`, `devTime`) with expected types such as Integer, IPv4/IPv6, and Time.
+
+Examples:
+
+- `ParseLEEF(body)`
+
+- `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
+
+- `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
 
 ### set_semconv_span_name
 
