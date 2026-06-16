@@ -31,6 +31,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
@@ -142,6 +143,7 @@ const (
 	commandTypeAttr = "COMMAND_TYPE"
 
 	// Plan metadata columns
+	firstLoadTimeAttr = "FIRST_LOAD_TIME"
 	lastLoadTimeAttr  = "LAST_LOAD_TIME"
 	planHashValueAttr = "PLAN_HASH_VALUE"
 )
@@ -824,11 +826,13 @@ type queryMetricCacheHit struct {
 	childNumber   string
 	childAddress  string
 	queryText     string
+	queryComments string
 	metrics       map[string]int64
 	objectID      int64
 	objectName    string
 	objectType    string
 	commandType   int64
+	firstLoadTime string
 	lastLoadTime  string
 	planHashValue string
 }
@@ -911,9 +915,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				commandType, _ = strconv.ParseInt(row[commandTypeAttr], 10, 64)
 			}
 
+			// Extract and filter comments from original SQL before obfuscation
+			queryComments := sqlcomments.ExtractAndFilterComments(row[sqlTextAttr], s.topQueryCollectCfg.AllowedCommentKeys)
+
 			hit := queryMetricCacheHit{
 				sqlID:         row[sqlIDAttr],
 				queryText:     row[sqlTextAttr],
+				queryComments: queryComments,
 				childNumber:   row[childNumberAttr],
 				childAddress:  row[childAddressAttr],
 				metrics:       make(map[string]int64, len(metricNames)),
@@ -921,6 +929,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectName:    row[objectNameAttr],
 				objectType:    row[objectTypeAttr],
 				commandType:   commandType,
+				firstLoadTime: row[firstLoadTimeAttr],
 				lastLoadTime:  row[lastLoadTimeAttr],
 				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
 			}
@@ -1009,7 +1018,9 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.objectID,
 			hit.objectName,
 			hit.objectType,
+			hit.queryComments,
 			hit.planHashValue,
+			hit.firstLoadTime,
 			hit.lastLoadTime)
 	}
 
@@ -1129,10 +1140,13 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			"traceparent": row[action],
 		})
 
+		// Extract and filter query comments from original SQL (before obfuscation)
+		queryComments := sqlcomments.ExtractAndFilterComments(row[sqlText], s.querySampleCfg.AllowedCommentKeys)
+
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
-			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec,
+			row[osUser], queryDuration, queryComments, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
 	}
