@@ -69,3 +69,13 @@ func TestNewLogger_DefaultEncodingJSON(t *testing.T) {
 	require.Contains(t, logLine, `"level":"info"`)
 	require.True(t, strings.HasPrefix(logLine, "{"))
 }
+
+func TestNewLogger_InvalidEncoding(t *testing.T) {
+	logger, err := NewLogger(config.Logs{
+		Level:    zapcore.InfoLevel,
+		Encoding: "random-string",
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, `unsupported log encoding "random-string"`)
+	require.Nil(t, logger)
+}
