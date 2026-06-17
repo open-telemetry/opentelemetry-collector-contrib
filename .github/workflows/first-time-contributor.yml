@@ -52,7 +52,6 @@ jobs:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
           permission-pull-requests: write
-          permission-contents: write
 
       # Allow up to two non-draft PRs so that the author can change which PR they mark as ready for review.
       - name: Convert to draft if author has two previous non-draft PRs open
