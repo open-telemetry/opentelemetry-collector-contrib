@@ -79,6 +79,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 		return nil
 	}); err != nil {
+		telemetryBuilder.Shutdown()
 		return nil, err
 	}
 
