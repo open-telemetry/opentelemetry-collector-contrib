@@ -9,10 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -67,6 +69,19 @@ func TestEnabledAttributes(t *testing.T) {
 		"container.image.tags",
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
+}
+
+func TestEnabledAttributesV0Gates(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+	}()
+
+	attrs := enabledAttributes()
+	assert.Contains(t, attrs, containerImageTag, "container.image.tag should be present when DontEmitV0K8sConventions is disabled")
+	assert.NotContains(t, attrs, "container.image.tags", "container.image.tags should not be present when EmitV1K8sConventions is disabled")
 }
 
 func TestWithExtractAnnotations(t *testing.T) {
