@@ -62,34 +62,34 @@ package, so the file bytes can be sent as-is with `Content-Encoding: gzip`:
 package main
 
 import (
-	"log"
-	"net/http"
-	"os"
+ "log"
+ "net/http"
+ "os"
 )
 
 func main() {
-	f, err := os.Open("cpu.pprof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
+ f, err := os.Open("cpu.pprof")
+ if err != nil {
+  log.Fatal(err)
+ }
+ defer f.Close()
 
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:4040/v1/pprof", f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("Content-Encoding", "gzip")
+ req, err := http.NewRequest(http.MethodPost, "http://localhost:4040/v1/pprof", f)
+ if err != nil {
+  log.Fatal(err)
+ }
+ req.Header.Set("Content-Type", "application/octet-stream")
+ req.Header.Set("Content-Encoding", "gzip")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
+ resp, err := http.DefaultClient.Do(req)
+ if err != nil {
+  log.Fatal(err)
+ }
+ defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusNoContent {
-		log.Fatalf("unexpected status: %s", resp.Status)
-	}
+ if resp.StatusCode != http.StatusNoContent {
+  log.Fatalf("unexpected status: %s", resp.Status)
+ }
 }
 ```
 

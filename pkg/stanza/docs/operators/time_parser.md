@@ -16,7 +16,6 @@ The `time_parser` operator sets the timestamp on an entry by parsing a value fro
 | `if`                   |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `on_error`             | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 
-
 ### Example Configurations
 
 Several detailed examples are available [here](../types/timestamp.md).

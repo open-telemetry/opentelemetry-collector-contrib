@@ -181,7 +181,6 @@ receivers:
 - `max_size` / `min_size`: Response body size limits
 - `regex`: Regular expression matching
 
-
 ### Example Configuration
 
 ```yaml

@@ -18,7 +18,6 @@ AWS ECS Container Metrics Receiver (`awsecscontainermetrics`) reads task metadat
 
 This receiver works only for [ECS Task Metadata Endpoint V4](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html). Amazon ECS tasks on Fargate that use platform version 1.4.0 or later and Amazon ECS tasks on Amazon EC2 that are running at least version 1.39.0 of the Amazon ECS container agent can utilize this receiver. For more information, see [Amazon ECS Container Agent Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-versions.html).
 
-
 ## Configuration
 
 Example:
@@ -34,7 +33,6 @@ receivers:
 This receiver collects task metadata and container stats at a fixed interval and emits metrics to the next consumer of OpenTelemetry pipeline. `collection_interval` will determine the frequency at which metrics are collected and emitted by this receiver.
 
 default: `20s`
-
 
 ## Enabling the AWS ECS Container Metrics Receiver
 
@@ -131,21 +129,20 @@ ecs.task.cpu.cores | container.cpu.cores | Count
 ecs.task.cpu.onlines | container.cpu.onlines | Count
 ecs.task.cpu.reserved | container.cpu.reserved | vCPU
 ecs.task.cpu.utilized | container.cpu.utilized | Percent
-ecs.task.network.rate.rx	| container.network.rate.rx	| Bytes/Second
-ecs.task.network.rate.tx	| container.network.rate.tx	| Bytes/Second
-ecs.task.network.io.usage.rx_bytes	| container.network.io.usage.rx_bytes	| Bytes
-ecs.task.network.io.usage.rx_packets	| container.network.io.usage.rx_packets	| Count
-ecs.task.network.io.usage.rx_errors |	container.network.io.usage.rx_errors	| Count
-ecs.task.network.io.usage.rx_dropped |	container.network.io.usage.rx_dropped	| Count
-ecs.task.network.io.usage.tx_bytes | container.network.io.usage.tx_bytes	| Bytes
-ecs.task.network.io.usage.tx_packets	| container.network.io.usage.tx_packets	| Count
-ecs.task.network.io.usage.tx_errors	| container.network.io.usage.tx_errors	| Count
-ecs.task.network.io.usage.tx_dropped	| container.network.io.usage.tx_dropped	| Count
+ecs.task.network.rate.rx | container.network.rate.rx | Bytes/Second
+ecs.task.network.rate.tx | container.network.rate.tx | Bytes/Second
+ecs.task.network.io.usage.rx_bytes | container.network.io.usage.rx_bytes | Bytes
+ecs.task.network.io.usage.rx_packets | container.network.io.usage.rx_packets | Count
+ecs.task.network.io.usage.rx_errors | container.network.io.usage.rx_errors | Count
+ecs.task.network.io.usage.rx_dropped | container.network.io.usage.rx_dropped | Count
+ecs.task.network.io.usage.tx_bytes | container.network.io.usage.tx_bytes | Bytes
+ecs.task.network.io.usage.tx_packets | container.network.io.usage.tx_packets | Count
+ecs.task.network.io.usage.tx_errors | container.network.io.usage.tx_errors | Count
+ecs.task.network.io.usage.tx_dropped | container.network.io.usage.tx_dropped | Count
 ecs.task.storage.read_bytes | container.storage.read_bytes| Bytes
 ecs.task.storage.write_bytes | container.storage.write_bytes | Bytes
 ecs.task.ephemeral_storage.utilized | | MiB
 ecs.task.ephemeral_storage.reserved | | MiB
-
 
 ## Resource Attributes and Metrics Labels
 Metrics emitted by this receiver comes with a set of resource attributes. These resource attributes can be converted to metrics labels using appropriate processors/exporters (See `Full Configuration Examples` section below). Finally, these metrics labels can be set as metrics dimensions while exporting to desired destinations. Check the following table to see available resource attributes for Task and Container level metrics. Container level metrics have three additional attributes than task level metrics.
@@ -266,7 +263,6 @@ service:
       exporters: [ awsemf ]
 ```
 
-
 ### 2. Full configuration for task- and container-level metrics
 
 The following example shows a full configuration to get most useful task- and container-level metrics. It uses `awsecscontainermetrics` receiver to collect all the resource usage metrics from ECS task metadata endpoint. It applies `filter` processor to select only 8 task- and container-level metrics and update metric names using `metricstransform` processor. It also renames the resource attributes using `resource` processor which will be used as metric dimensions in the Amazon CloudWatch `awsemf` exporter. Finally, it sends the metrics to CloudWatch using `awsemf` exporter under the /`aws/ecs/containerinsights/{ClusterName}/performance` namespace where the `{ClusterName}` placeholder will be replaced with actual cluster name. Check the [AWS EMF Exporter](https://aws-otel.github.io/docs/getting-started/cloudwatch-metrics) documentation to see and explore the metrics in Amazon CloudWatch.
@@ -375,4 +371,3 @@ service:
 ## Reference
 1. [Setup OpenTelemetry Collector on Amazon ECS](https://aws-otel.github.io/docs/setup/ecs)
 2. [Getting Started with ECS Container Metrics Receiver in the OpenTelemetry Collector](https://aws-otel.github.io/docs/components/ecs-metrics-receiver)
-

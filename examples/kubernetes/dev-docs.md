@@ -3,7 +3,6 @@
 Developing Collector's features that target to run on a Kubernetes environment require some special handling
 for building and running the patches locally.
 
-
 In order to build the Collector from source and deploy it on a local kind cluster
 (a kind cluster is required to be installed already) use the following Makefile targets:
 

@@ -2,7 +2,6 @@
 
 ByteSizes are a type that allows specifying a number of bytes in a human-readable format. See the examples for details.
 
-
 ## Examples
 
 ### Various ways to specify 5000 bytes

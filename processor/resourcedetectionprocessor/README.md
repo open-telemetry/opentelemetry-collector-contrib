@@ -41,10 +41,8 @@ processors:
     override: false
 ```
 
-
 > [!NOTE]
 > The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
-
 
 ### System metadata
 

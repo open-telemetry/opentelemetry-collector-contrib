@@ -169,7 +169,6 @@ To report metrics in the desired output format, define a metric and reference it
 | sum         | representation of a sum metric.          | Sum Config   |              |
 | gauge       | representation of a gauge metric.        | Gauge Config |              |
 
-
 #### Sum Config
 
 | Field Name   | Description                                           | Value                           | Default |

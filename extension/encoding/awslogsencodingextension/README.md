@@ -29,7 +29,6 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
  - [AWS Network Firewall logs](https://docs.aws.amazon.com/network-firewall/latest/developerguide/firewall-logging-contents.html).
  - (More to be added later.)
 
-
 Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
 extensions:
@@ -389,7 +388,6 @@ The table below summarizes streaming support details for each log type, along wi
 
 [S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
 
-
 | AWS field           | OpenTelemetry Field                                                                                                                                                                                                                                                                                     |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Bucket owner        | `aws.s3.owner`                                                                                                                                                                                                                                                                                          |
@@ -421,8 +419,6 @@ The table below summarizes streaming support details for each log type, along wi
 ### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
-
-
 
 | Original log field            | OpenTelemetry field                                                                              |
 |-------------------------------|--------------------------------------------------------------------------------------------------|
@@ -551,7 +547,6 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
-
 | **AWS Field**             | **OpenTelemetry Field(s)**                                    |
 |---------------------------|---------------------------------------------------------------|
 | type                      | `network.protocol.name`                                       |
@@ -587,7 +582,6 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | transformed_host          | `aws.elb.transformed_host`                                    |
 | transformed_uri           | `aws.elb.transformed_uri`                                     |
 | request_transform_status  | `aws.elb.request_transform_status`                            |
-
 
 #### Network Load Balancer (NLB)
 

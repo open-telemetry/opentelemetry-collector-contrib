@@ -4,7 +4,6 @@ ScraperControllerSettings defines common settings for a scraper controller
 configuration. Scraper controller receivers can embed this struct
 and extend it with more fields if needed.
 
-
 ### redisreceiver-Config
 
 | Name | Field Info | Default | Docs |

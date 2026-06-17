@@ -211,7 +211,6 @@ receivers:
             - targets: ['localhost:8080']
 ```
 
-
 This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
