@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: azure_encoding
+component: extension/azure_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Map `schemaVersion` and `resourceType` fields of Azure Storage Blob logs to `azure.storage.schema_version` and `azure.resource.type`.
