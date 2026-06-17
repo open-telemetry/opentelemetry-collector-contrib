@@ -201,10 +201,23 @@ the accumulation path and are handled consistently with the original decision:
 - **Not-sampled cache** (`decision_cache.non_sampled_cache_size`): late spans are
   silently dropped.
 
-Setting either size to `0` disables that side of the cache; if both are disabled,
-late spans fall through to the normal pending-trace path and may produce a
-second (possibly inconsistent) decision. Operators tune the cache sizes against
+Setting a cache size to `0` disables that side of the cache. Late spans for a
+decision class whose cache is disabled fall through to the normal pending-trace
+path and may produce a second (possibly inconsistent) decision; with both caches
+disabled, every late span falls through. Operators tune the cache sizes against
 observed late-span volume.
+
+### Buffer overflow vs decision cache
+
+The in-memory accumulation buffer is sized by `num_traces`. If the buffer is full
+when a span for a brand-new trace arrives, the processor evicts an existing
+pending trace to make room; the evicted trace is dropped without a sampling
+decision and without `ot=th` annotations, and is counted on
+`processor_dynamic_sampling_traces_evicted`. The decision cache
+(`decision_cache.*`) is a separate structure that records the outcome of
+*completed* decisions for late-arriving spans, it does not protect pending traces
+from eviction. Operators sizing the processor should watch `traces_evicted` and
+increase `num_traces` if it is non-zero in steady state.
 
 ## Deployment considerations
 
@@ -274,3 +287,4 @@ The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consi
 
 - OTTL-based conditions
 - Shared-storage backed scaling for single-tier deployments
+- Rule and sampler hot-reload
