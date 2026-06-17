@@ -5,6 +5,7 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand/v2"
@@ -1069,4 +1070,66 @@ func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces
 		return e.consumeErr
 	}
 	return e.ConsumeTracesFn(ctx, td)
+}
+
+// traceIDForEndpoint brute-forces a trace ID that the ring routes to wantEndpoint.
+func traceIDForEndpoint(t *testing.T, ring *hashRing, wantEndpoint string) pcommon.TraceID {
+	t.Helper()
+	for i := range uint64(1_000_000) {
+		var tid [16]byte
+		binary.BigEndian.PutUint64(tid[8:], i)
+		if ring.endpointFor(tid[:]) == wantEndpoint {
+			return pcommon.TraceID(tid)
+		}
+	}
+	t.Fatalf("no trace id routed to %q", wantEndpoint)
+	return pcommon.TraceID{}
+}
+
+// waitGroupReturns reports whether wg.Wait() completes within the timeout.
+func waitGroupReturns(wg *sync.WaitGroup, timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
+
+// Regression test for a consumeWG leak: when exporterAndEndpoint errors partway
+// through a batch, backends already counted with consumeWG.Add(1) must still get
+// Done(), otherwise wrappedExporter.Shutdown -> consumeWG.Wait() hangs forever.
+func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// The ring knows two endpoints, but only "good" has a resolved exporter, so a
+	// trace ID routed to "missing" makes exporterAndEndpoint return an error.
+	good := newWrappedExporter(newNopMockTracesExporter(), endpointWithPort("good"))
+	lb := &loadBalancer{
+		ring:      newHashRing([]string{"good", "missing"}),
+		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
+	}
+	e := &traceExporterImp{
+		loadBalancer: lb,
+		routingKey:   traceIDRouting,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	tGood := traceIDForEndpoint(t, lb.ring, "good")
+	tMissing := traceIDForEndpoint(t, lb.ring, "missing")
+
+	td := ptrace.NewTraces()
+	spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+	spans.AppendEmpty().SetTraceID(tGood)    // routes to "good": consumeWG.Add(1)
+	spans.AppendEmpty().SetTraceID(tMissing) // resolve error returns mid-batch
+
+	require.Error(t, e.consumeTracesByID(t.Context(), td))
+	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
+		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
 }

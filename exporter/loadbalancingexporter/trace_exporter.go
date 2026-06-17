@@ -113,12 +113,22 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	for _, batch := range batches {
 		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey, e.routingAttrs)
 		if err != nil {
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range exporterSegregatedTraces {
+				exp.consumeWG.Done()
+			}
 			return err
 		}
 
 		for rid := range routingID {
 			exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
 			if err != nil {
+				// Release the consumeWG counts already added for backends collected so far;
+				// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+				for exp := range exporterSegregatedTraces {
+					exp.consumeWG.Done()
+				}
 				return err
 			}
 
@@ -172,6 +182,12 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 					var err error
 					exp, _, err = e.loadBalancer.exporterAndEndpoint(tid[:])
 					if err != nil {
+						// Release the consumeWG counts already added for backends collected so
+						// far; otherwise Shutdown's consumeWG.Wait() would hang on the skipped
+						// Done() calls.
+						for exp := range dests {
+							exp.consumeWG.Done()
+						}
 						return err
 					}
 					expByTID[tid] = exp
