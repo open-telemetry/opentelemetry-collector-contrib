@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -231,7 +232,12 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if ld.ResourceLogs().Len() > 0 {
+		attributePartition = s.attributePartition(ld.ResourceLogs().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload logs: %w", err)
 	}
 	return nil
@@ -243,16 +249,39 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		return fmt.Errorf("failed to marshal traces: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if td.ResourceSpans().Len() > 0 {
+		attributePartition = s.attributePartition(td.ResourceSpans().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload traces: %w", err)
 	}
 	return nil
 }
 
+// attributePartition returns the partition path segment derived from a resource attribute
+// as configured in resource_attrs_to_gcs. It returns an empty string when the mapping is
+// not configured or the attribute is absent, in which case no extra segment is added.
+func (s *storageExporter) attributePartition(res pcommon.Resource) string {
+	if key := s.cfg.ResourceAttrsToGCS.Prefix; key != "" {
+		if value, ok := res.Attributes().Get(key); ok {
+			return value.AsString()
+		}
+	}
+	return ""
+}
+
 // generateFilename returns the name of the file to be uploaded.
-// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+// It starts from a unique ID, and prepends the partitionFormat, the attribute partition
+// and the prefix to it. The resulting layout is:
+//
+//	<partitionPrefix>/<attributePartition>/<partitionFormat>/<filePrefix>_<uniqueID>[.ext]
+//
+// attributePartition is the segment derived from a resource attribute (resource_attrs_to_gcs),
+// inserted between the configured prefix and the time-based format. Empty segments are skipped.
 func generateFilename(
-	uniqueID, filePrefix, partitionPrefix string,
+	uniqueID, filePrefix, partitionPrefix, attributePartition string,
 	compression configcompression.Type,
 	partitionFormat *strftime.Strftime,
 	now time.Time,
@@ -274,6 +303,13 @@ func generateFilename(
 		filename = partition + filename
 	}
 
+	if attributePartition != "" {
+		if !strings.HasSuffix(attributePartition, "/") {
+			attributePartition += "/"
+		}
+		filename = attributePartition + filename
+	}
+
 	if partitionPrefix != "" {
 		if !strings.HasSuffix(partitionPrefix, "/") {
 			partitionPrefix += "/"
@@ -292,7 +328,7 @@ func generateFilename(
 	return filename
 }
 
-func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
+func (s *storageExporter) uploadFile(ctx context.Context, content []byte, attributePartition string) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
 		return nil
@@ -311,6 +347,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		uniqueID,
 		s.cfg.Bucket.FilePrefix,
 		s.cfg.Bucket.Partition.Prefix,
+		attributePartition,
 		s.cfg.Bucket.Compression,
 		s.partitionFormat,
 		time.Now().UTC(),

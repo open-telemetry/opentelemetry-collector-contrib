@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -254,14 +255,14 @@ func TestUploadFile(t *testing.T) {
 	})
 
 	t.Run("empty content", func(t *testing.T) {
-		err := gcsExporter.uploadFile(t.Context(), []byte{})
+		err := gcsExporter.uploadFile(t.Context(), []byte{}, "")
 		require.NoError(t, err)
 	})
 
 	t.Run("upload content", func(t *testing.T) {
 		errStart := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, errStart)
-		err := gcsExporter.uploadFile(t.Context(), []byte("test content"))
+		err := gcsExporter.uploadFile(t.Context(), []byte("test content"), "")
 		require.NoError(t, err)
 	})
 }
@@ -271,13 +272,14 @@ func TestGenerateFilename(t *testing.T) {
 	fixedTime := time.Date(2023, 10, 25, 14, 30, 0, 0, time.UTC)
 
 	tests := []struct {
-		name             string
-		partitionFormat  string
-		partitionPrefix  string
-		filePrefix       string
-		uniqueID         string
-		compression      configcompression.Type
-		expectedFilename string
+		name               string
+		partitionFormat    string
+		partitionPrefix    string
+		attributePartition string
+		filePrefix         string
+		uniqueID           string
+		compression        configcompression.Type
+		expectedFilename   string
 	}{
 		{
 			name:             "empty partition format and prefix",
@@ -358,6 +360,39 @@ func TestGenerateFilename(t *testing.T) {
 			compression:      configcompression.TypeGzip,
 			expectedFilename: "archive/year=2023/logs_uuid.gz",
 		},
+		{
+			name:               "attribute partition set",
+			attributePartition: "serviceA",
+			uniqueID:           "uuid",
+			compression:        "",
+			expectedFilename:   "serviceA/uuid",
+		},
+		{
+			name:               "attribute partition with trailing slash",
+			attributePartition: "serviceA/",
+			uniqueID:           "uuid",
+			compression:        "",
+			expectedFilename:   "serviceA/uuid",
+		},
+		{
+			name:               "prefix, attribute partition and format combined",
+			partitionPrefix:    "storage",
+			attributePartition: "serviceA",
+			partitionFormat:    "%Y-%m-%d/%H",
+			filePrefix:         "logs",
+			uniqueID:           "uuid",
+			compression:        "",
+			expectedFilename:   "storage/serviceA/2023-10-25/14/logs_uuid",
+		},
+		{
+			name:               "attribute partition inserted between prefix and format without file prefix",
+			partitionPrefix:    "storage",
+			attributePartition: "serviceA",
+			partitionFormat:    "%Y-%m-%d/%H",
+			uniqueID:           "uuid",
+			compression:        "",
+			expectedFilename:   "storage/serviceA/2023-10-25/14/uuid",
+		},
 	}
 
 	for _, tt := range tests {
@@ -370,8 +405,51 @@ func TestGenerateFilename(t *testing.T) {
 				partitionFormat, err = strftime.New(tt.partitionFormat)
 				require.NoError(t, err)
 			}
-			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, tt.compression, partitionFormat, fixedTime)
+			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, tt.attributePartition, tt.compression, partitionFormat, fixedTime)
 			require.Equal(t, tt.expectedFilename, got)
+		})
+	}
+}
+
+func TestAttributePartition(t *testing.T) {
+	tests := []struct {
+		name     string
+		attrKey  string
+		setAttr  func(pcommon.Resource)
+		expected string
+	}{
+		{
+			name:     "mapping unset",
+			attrKey:  "",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "serviceA") },
+			expected: "",
+		},
+		{
+			name:     "attribute present",
+			attrKey:  "service.name",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "serviceA") },
+			expected: "serviceA",
+		},
+		{
+			name:     "attribute absent",
+			attrKey:  "service.name",
+			setAttr:  func(pcommon.Resource) {},
+			expected: "",
+		},
+		{
+			name:     "non-string attribute",
+			attrKey:  "host.id",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutInt("host.id", 42) },
+			expected: "42",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &storageExporter{cfg: &Config{ResourceAttrsToGCS: ResourceAttrsToGCS{Prefix: tt.attrKey}}}
+			res := pcommon.NewResource()
+			tt.setAttr(res)
+			require.Equal(t, tt.expected, s.attributePartition(res))
 		})
 	}
 }
@@ -556,7 +634,7 @@ func TestCompression(t *testing.T) {
 			}
 
 			// Test filename generation includes correct extension
-			filename := generateFilename("test-id", "test-prefix", "", tt.compression, nil, time.Now())
+			filename := generateFilename("test-id", "test-prefix", "", "", tt.compression, nil, time.Now())
 			assert.True(t, strings.HasSuffix(filename, tt.expectExtension),
 				"Generated filename should end with %q, got %q", tt.expectExtension, filename)
 		})

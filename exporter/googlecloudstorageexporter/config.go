@@ -29,6 +29,27 @@ type Config struct {
 
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
+
+	// ResourceAttrsToGCS defines the mapping of GCS uploading configuration values
+	// to resource attribute values.
+	ResourceAttrsToGCS ResourceAttrsToGCS `mapstructure:"resource_attrs_to_gcs"`
+}
+
+// ResourceAttrsToGCS defines the mapping of GCS uploading configuration values to
+// resource attribute values.
+type ResourceAttrsToGCS struct {
+	// Prefix indicates the resource attribute whose value is inserted as a partition
+	// path segment between bucket.partition.prefix and the time-based partition format.
+	// When set and the attribute is present on the resource, its value is appended after
+	// the configured prefix; otherwise the segment is omitted. The value is read from the
+	// first resource of each batch.
+	// Example:
+	// 		bucket.partition.prefix: "storage"
+	// 		resource_attrs_to_gcs.prefix: "service.name" (value "serviceA")
+	// 		Result: "storage/serviceA/<time>/..."
+	Prefix string `mapstructure:"prefix"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type bucketConfig struct {
