@@ -31,6 +31,11 @@ Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
 4. Lint your changes:
 
+  - Markdown lint for entrie project.
+  ```shell
+  make markdownlint
+  ```
+
  - For the entire project:
   ```shell
   make golint

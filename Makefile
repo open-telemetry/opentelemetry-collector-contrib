@@ -30,6 +30,13 @@ EX_INTERNAL=-not -path "./internal/*"
 EX_PKG=-not -path "./pkg/*"
 EX_CMD=-not -path "./cmd/*"
 
+# All source code and documents. Used in spell check.
+ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
+                                -type f | sort)
+
+# All Markdown files. Used in markdownlint.
+ALL_MD := $(shell find . -name "*.md" -type f | sort)
+
 # This includes a final slash
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -613,6 +620,16 @@ build-examples:
 	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
+
+# Runs lint for all markdown files
+.PHONY: markdownlint
+markdownlint:
+	npx -y markdownlint-cli@0.48.0 -c .markdownlint.yaml --ignore-path .markdownlintignore -- $(ALL_MD)
+
+# Fixes some of the markdown lint
+.PHONY: markdownlintfix
+markdownlintfix:
+	npx -y markdownlint-cli@0.48.0 -c .markdownlint.yaml --ignore-path .markdownlintignore --fix -- $(ALL_MD)
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
