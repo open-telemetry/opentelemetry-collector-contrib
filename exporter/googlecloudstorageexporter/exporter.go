@@ -17,6 +17,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"google.golang.org/api/option"
 	"github.com/klauspost/compress/zstd"
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
@@ -180,7 +181,11 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// TODO Add option for authenticator
-	client, err := storage.NewClient(ctx)
+	var clientOpts []option.ClientOption
+	if s.cfg.UniverseDomain != "" {
+		clientOpts = append(clientOpts, option.WithUniverseDomain(s.cfg.UniverseDomain))
+	}
+	client, err := storage.NewClient(ctx, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}

@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: exporter/googlecloudpubsub, exporter/googlecloudstorage, receiver/googlecloudmonitoring, receiver/googlecloudpubsub
+
+note: Add `universe_domain` config option to support Sovereign Google Cloud regions (e.g. S3NS, T-Systems MMS). Setting this field passes `option.WithUniverseDomain` to the underlying Google API client.
+
+issues: [48924]
+
+subtext: |
+  The `exporter/googlecloud` component already supported `universe_domain` via the upstream
+  `opentelemetry-operations-go` library. This change brings the same capability to the four
+  components that manage their own client option assembly.
+
+change_logs: [user]
