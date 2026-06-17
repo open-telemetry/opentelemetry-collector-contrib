@@ -235,8 +235,7 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	if err != nil {
 		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
-	expandedProf := expanded.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), expandedProf)
+	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), prof)
 
 	var buf bytes.Buffer
 	// The Write method encodes the profile to a gzipped protobuf
@@ -261,8 +260,9 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	return lr, nil
 }
 
-// prepareProfilesForPprofConversion normalizes a single OTel pprofile.Profile into a pprofile.Profiles
-// holding exactly one Profile with a single sample type, ready for conversion to pprof.
+// prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
+// holding exactly one ResourceProfiles / ScopeProfiles / Profile, as required by ConvertPprofileToPprof.
+// Samples are copied as-is; shape validation and per-observation expansion are handled by the converter.
 func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (pprofile.Profiles, error) {
 	profiles := pprofile.NewProfiles()
 	pp.Dictionary().CopyTo(profiles.Dictionary())
@@ -277,39 +277,6 @@ func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.Resourc
 
 	dstProfile := dstScope.Profiles().AppendEmpty()
 	prof.CopyTo(dstProfile)
-	// Drop the copied samples; they are rebuilt below, one pprof sample per observation.
-	dstProfile.Samples().RemoveIf(func(pprofile.Sample) bool { return true })
-
-	for _, sample := range prof.Samples().All() {
-		numValues := sample.Values().Len()
-		numTimestamps := sample.TimestampsUnixNano().Len()
-
-		if numValues == 0 && numTimestamps == 0 {
-			return profiles, errors.New("profile sample holds neither values nor timestamps")
-		}
-		if numValues != 0 && numTimestamps != 0 && numValues != numTimestamps {
-			return profiles, errors.New("profile sample holds mismatched number of values and timestamps")
-		}
-
-		numObservations := max(numValues, numTimestamps)
-		for i := range numObservations {
-			dstSample := dstProfile.Samples().AppendEmpty()
-			sample.CopyTo(dstSample)
-
-			// A timestamps-only sample implies a value of 1 per observation.
-			value := int64(1)
-			if numValues != 0 {
-				value = sample.Values().At(i)
-			}
-			dstSample.Values().FromRaw([]int64{value})
-
-			if numTimestamps != 0 {
-				dstSample.TimestampsUnixNano().FromRaw([]uint64{sample.TimestampsUnixNano().At(i)})
-			} else {
-				dstSample.TimestampsUnixNano().FromRaw(nil)
-			}
-		}
-	}
 
 	return profiles, nil
 }

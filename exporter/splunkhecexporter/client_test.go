@@ -1907,6 +1907,42 @@ func TestProfileDataMultiValueSamples(t *testing.T) {
 	require.Equal(t, []int64{t1.UnixMilli()}, pprofProfile.Sample[1].NumLabel["source.event.time"])
 }
 
+// TestProfileDataTimestampsOnlySample covers shape 1 of the OTel Profiles spec: a sample that
+// carries timestamps_unix_nano but no values (e.g. eBPF wall-clock profiling).
+// ConvertPprofileToPprof aggregates all N timestamps into a single pprof sample with value=N.
+// source.event.time is set to the first timestamp, which is the accepted behaviour for this exporter.
+func TestProfileDataTimestampsOnlySample(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("wall")
+	dict.StringTable().Append("nanoseconds")
+
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
+	t0 := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+	t1 := t0.Add(10 * time.Millisecond)
+	sample := p.Samples().AppendEmpty()
+	sample.TimestampsUnixNano().Append(uint64(t0.UnixNano()))
+	sample.TimestampsUnixNano().Append(uint64(t1.UnixNano()))
+	// No values set: this is shape 1 (timestamps only).
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	// Shape 1 aggregates into one pprof sample; value == number of timestamps.
+	require.Len(t, pprofProfile.Sample, 1)
+	require.Equal(t, []int64{2}, pprofProfile.Sample[0].Value)
+	// source.event.time uses the first timestamp (only one event time survives aggregation).
+	require.Equal(t, []int64{t0.UnixMilli()}, pprofProfile.Sample[0].NumLabel["source.event.time"])
+}
+
 func decodePprofLogRecord(t *testing.T, lr plog.LogRecord) *profile.Profile {
 	t.Helper()
 	decoded, err := base64.StdEncoding.DecodeString(lr.Body().AsString())

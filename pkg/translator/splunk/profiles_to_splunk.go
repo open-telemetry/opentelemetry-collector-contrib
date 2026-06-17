@@ -24,10 +24,6 @@ const (
 )
 
 // AddProfilingPprofSampleLabels adds Splunk AlwaysOn Profiling labels to pprof samples.
-//
-// prof is expected to be normalized so that each pprof sample maps 1:1 to a pprofile.Sample carrying at most one entry
-// in timestamps_unix_nano. source.event.time is taken from that per-observation timestamp when present,
-// falling back to the Profile time.
 func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDictionary, scope pcommon.InstrumentationScope, prof pprofile.Profile) {
 	profileTime := prof.Time().AsTime()
 	if profileTime.UnixNano() == 0 {
@@ -35,35 +31,55 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 	}
 
 	sampleType := dict.StringTable().At(int(prof.SampleType().TypeStrindex()))
-	for sampleIdx, sample := range p.Sample {
-		if sample.Label == nil {
-			sample.Label = map[string][]string{}
+	emittedIdx := 0
+	for srcIdx := range prof.Samples().Len() {
+		if emittedIdx >= len(p.Sample) {
+			return
 		}
-		if sample.NumLabel == nil {
-			sample.NumLabel = map[string][]int64{}
+		src := prof.Samples().At(srcIdx)
+		nValues := src.Values().Len()
+		nTimestamps := src.TimestampsUnixNano().Len()
+
+		obsCount := 1
+		if nValues > 0 && nValues == nTimestamps {
+			obsCount = nValues // shape 3: per-observation
 		}
 
-		eventTime := profileTime
-		if sampleIdx < prof.Samples().Len() {
-			if ts := prof.Samples().At(sampleIdx).TimestampsUnixNano(); ts.Len() > 0 {
-				eventTime = time.Unix(0, int64(ts.At(0)))
+		for obs := range obsCount {
+			if emittedIdx >= len(p.Sample) {
+				return
 			}
-		}
+			sample := p.Sample[emittedIdx]
+			if sample.Label == nil {
+				sample.Label = map[string][]string{}
+			}
+			if sample.NumLabel == nil {
+				sample.NumLabel = map[string][]int64{}
+			}
 
-		sample.Label[sourceEventNameLabel] = []string{scope.Name()}
-		// source.event.time MUST be the unix time in milliseconds; the backend rejects other units.
-		sample.NumLabel[sourceEventTimeLabel] = []int64{eventTime.UnixMilli()}
-		if sampleType == "cpu" {
-			sample.Label[sourceEventPeriodLabel] = []string{strconv.Itoa(int(prof.Period()))}
-		}
+			eventTime := profileTime
+			if nTimestamps > 0 {
+				tsIdx := 0
+				if obsCount == nTimestamps {
+					tsIdx = obs // shape 3
+				}
+				eventTime = time.Unix(0, int64(src.TimestampsUnixNano().At(tsIdx)))
+			}
 
-		if sampleIdx >= prof.Samples().Len() {
-			continue
-		}
-		if li := prof.Samples().At(sampleIdx).LinkIndex(); li > 0 && int(li) < dict.LinkTable().Len() {
-			link := dict.LinkTable().At(int(li))
-			sample.Label[spanIDFieldKey] = []string{link.SpanID().String()}
-			sample.Label[traceIDFieldKey] = []string{link.TraceID().String()}
+			sample.Label[sourceEventNameLabel] = []string{scope.Name()}
+			// source.event.time MUST be the unix time in milliseconds; the backend rejects other units.
+			sample.NumLabel[sourceEventTimeLabel] = []int64{eventTime.UnixMilli()}
+			if sampleType == "cpu" {
+				sample.Label[sourceEventPeriodLabel] = []string{strconv.Itoa(int(prof.Period()))}
+			}
+
+			if li := src.LinkIndex(); li > 0 && int(li) < dict.LinkTable().Len() {
+				link := dict.LinkTable().At(int(li))
+				sample.Label[spanIDFieldKey] = []string{link.SpanID().String()}
+				sample.Label[traceIDFieldKey] = []string{link.TraceID().String()}
+			}
+
+			emittedIdx++
 		}
 	}
 }
