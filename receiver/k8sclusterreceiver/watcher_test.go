@@ -387,41 +387,44 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	// Event 1 should contain the initial state of the pod.
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
-		"otel.entity.event.type": "entity_state",
-		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
-		"otel.entity.type":       "k8s.pod",
-		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
-		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", "k8s.node.name": "test-node"},
+		"entity.report.interval": int64(7200), // 2h in seconds
+		"entity.type":            "k8s.pod",
+		"entity.id":              map[string]any{"k8s.pod.uid": "pod0"},
+		"entity.description":     map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", "k8s.node.name": "test-node"},
 	}
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
 	// Event 2 should contain the updated state of the pod.
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	attrs := expected["otel.entity.attributes"].(map[string]any)
+	attrs := expected["entity.description"].(map[string]any)
 	attrs["k8s.pod.label.key"] = "value"
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 
 	// Event 3 should be identical to the previous one since pod state didn't change.
 	lr = logsConsumer.AllLogs()[2].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step3, step4)
 
 	// Event 4 should contain the reverted state of the pod.
 	lr = logsConsumer.AllLogs()[3].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	attrs = expected["otel.entity.attributes"].(map[string]any)
+	attrs = expected["entity.description"].(map[string]any)
 	delete(attrs, "k8s.pod.label.key")
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
 
 	// Event 5 should indicate pod deletion.
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
-		"otel.entity.event.type": "entity_delete",
-		"otel.entity.type":       "k8s.pod",
-		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
+		"entity.type": "k8s.pod",
+		"entity.id":   map[string]any{"k8s.pod.uid": "pod0"},
 	}
+	assert.Equal(t, "entity.delete", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }
@@ -449,27 +452,27 @@ func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
 	// Event 1: entity_state for the PV creation
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
-		"otel.entity.event.type": "entity_state",
-		"otel.entity.interval":   int64(7200000),
-		"otel.entity.type":       "k8s.persistentvolume",
-		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
-		"otel.entity.attributes": map[string]any{
+		"entity.report.interval": int64(7200),
+		"entity.type":            "k8s.persistentvolume",
+		"entity.id":              map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
+		"entity.description": map[string]any{
 			"k8s.persistentvolume.name":               "test-pv-1",
 			"k8s.persistentvolume.label.foo":          "bar",
 			"k8s.persistentvolume.label.foo1":         "",
 			"k8s.persistentvolume.creation_timestamp": "0001-01-01T00:00:00Z",
 		},
 	}
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
 	// Event 2: entity_delete for the PV
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
-		"otel.entity.event.type": "entity_delete",
-		"otel.entity.type":       "k8s.persistentvolume",
-		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
+		"entity.type": "k8s.persistentvolume",
+		"entity.id":   map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
 	}
+	assert.Equal(t, "entity.delete", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
@@ -497,11 +500,10 @@ func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
 	// Event 1: entity_state for the PVC creation
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
-		"otel.entity.event.type": "entity_state",
-		"otel.entity.interval":   int64(7200000),
-		"otel.entity.type":       "k8s.persistentvolumeclaim",
-		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
-		"otel.entity.attributes": map[string]any{
+		"entity.report.interval": int64(7200),
+		"entity.type":            "k8s.persistentvolumeclaim",
+		"entity.id":              map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
+		"entity.description": map[string]any{
 			"k8s.persistentvolumeclaim.name":               "test-pvc-1",
 			"k8s.namespace.name":                           "test-namespace",
 			"k8s.persistentvolume.name":                    "test-pv-1",
@@ -510,16 +512,17 @@ func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
 			"k8s.persistentvolumeclaim.creation_timestamp": "0001-01-01T00:00:00Z",
 		},
 	}
+	assert.Equal(t, "entity.state", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
 	// Event 2: entity_delete for the PVC
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
-		"otel.entity.event.type": "entity_delete",
-		"otel.entity.type":       "k8s.persistentvolumeclaim",
-		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
+		"entity.type": "k8s.persistentvolumeclaim",
+		"entity.id":   map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
 	}
+	assert.Equal(t, "entity.delete", lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }

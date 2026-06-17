@@ -1,6 +1,16 @@
+type: experimentalmetricmetadata
+
 status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
     active: [dmitryax]
     emeritus: [rmfitzpatrick]
+
+feature_gates:
+  - id: pkg.experimentalmetricmetadata.useEntityEventsSpecification
+    description: When enabled, emit entity events using the OpenTelemetry entity events specification log record format.
+    stage: beta
+    from_version: v0.155.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4836
+    skip_strict_validation: true
