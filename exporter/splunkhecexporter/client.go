@@ -225,10 +225,7 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 // profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
 // Returns a permanent error if translation or encoding fails; on error the returned record is unset.
 func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
-	expanded, err := prepareProfilesForPprofConversion(pp, rp, scope, prof)
-	if err != nil {
-		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
-	}
+	expanded := prepareProfilesForPprofConversion(pp, rp, scope, prof)
 	p, err := pprof.ConvertPprofileToPprof(&expanded)
 	if err != nil {
 		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
@@ -265,7 +262,7 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 // prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
 // holding exactly one ResourceProfiles / ScopeProfiles / Profile, as required by ConvertPprofileToPprof.
 // Samples are copied as-is; shape validation and per-observation expansion are handled by the converter.
-func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (pprofile.Profiles, error) {
+func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) pprofile.Profiles {
 	profiles := pprofile.NewProfiles()
 	pp.Dictionary().CopyTo(profiles.Dictionary())
 
@@ -280,7 +277,7 @@ func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.Resourc
 	dstProfile := dstScope.Profiles().AppendEmpty()
 	prof.CopyTo(dstProfile)
 
-	return profiles, nil
+	return profiles
 }
 
 // A guesstimated value > length of bytes of a single event.
