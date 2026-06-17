@@ -71,6 +71,11 @@ It accepts a nested map where
     In this case, the scraper will fetch **all supported aggregations** for that metric, which is also the case if no
     `metrics` configuration is provided.
 > - **Case Insensitive**: The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+> - **Custom metric namespaces**: Metrics published by the [Azure Monitor Agent (AMA)](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview)
+    or MetricsExtension (e.g. guest OS metrics under `azure.vm.linux.guestmetrics`) belong to a custom namespace that
+    the MetricDefinitions API only returns when queried with an explicit `metricnamespace` filter. To collect these
+    metrics, add the custom namespace as a top-level key under `metrics`; the receiver will issue the necessary
+    namespace-filtered discovery call automatically.
 
 > [!WARNING]  
 > If you started providing a `metrics` configuration for a namespace, you have to specify all the metrics and their 
@@ -91,6 +96,19 @@ receivers:
         IncomingMessages: [total]     # metric IncomingMessages with aggregation "Total"
         NamespaceCpuUsage: [*]        # metric NamespaceCpuUsage with all known aggregations
         ActiveConnections: []         # metric ActiveConnections with all known aggregations (same effect than [*])
+```
+
+Scraping guest OS metrics from a custom namespace (e.g. published by Azure Monitor Agent):
+
+```yaml
+receivers:
+  azure_monitor:
+    services:
+      - Microsoft.Compute/virtualMachines
+    metrics:
+      "azure.vm.linux.guestmetrics":
+        "disk/free_percent": [Average]
+        "memory/available_percent": [Average]
 ```
 
 ### Use Batch API (experimental)
@@ -248,6 +266,8 @@ conditions: always
 cardinality:
   - if use_batch_api is false, once per res id and *page of metrics def
   - if use_batch_api is true, once per res type and *page of metrics def
+  - one additional call per custom namespace configured under `metrics` that
+    was not returned by the default call (e.g. azure.vm.linux.guestmetrics)
 ```
 
 ### [Metrics - List](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP)
