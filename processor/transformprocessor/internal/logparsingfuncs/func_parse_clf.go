@@ -149,18 +149,18 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 	}
 
 	result := pcommon.NewMap()
-	result.PutStr("remote_host", matches[1])
-	result.PutStr("rfc931", matches[2])
-	result.PutStr("authuser", matches[3])
-	result.PutStr("timestamp", matches[4])
+	result.PutStr("clf.remote_host", matches[1])
+	result.PutStr("clf.rfc931", matches[2])
+	result.PutStr("clf.authuser", matches[3])
+	result.PutStr("clf.timestamp", matches[4])
 
 	request := unescapeCLF(matches[5])
-	result.PutStr("request", request)
+	result.PutStr("clf.request", request)
 
 	if requestParts := strings.SplitN(request, " ", 3); len(requestParts) == 3 {
-		result.PutStr("method", requestParts[0])
-		result.PutStr("request_uri", requestParts[1])
-		result.PutStr("protocol", requestParts[2])
+		result.PutStr("clf.method", requestParts[0])
+		result.PutStr("clf.request_uri", requestParts[1])
+		result.PutStr("clf.protocol", requestParts[2])
 	}
 
 	status := matches[6]
@@ -168,7 +168,7 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 	if err != nil {
 		return pcommon.NewMap(), fmt.Errorf("invalid status code %q: %w", status, err)
 	}
-	result.PutInt("status", statusInt)
+	result.PutInt("clf.status", statusInt)
 
 	bytesStr := matches[7]
 	if bytesStr != "-" {
@@ -176,12 +176,12 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 		if err != nil {
 			return pcommon.NewMap(), fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
 		}
-		result.PutInt("bytes", bytesInt)
+		result.PutInt("clf.bytes", bytesInt)
 	}
 
 	if format == clfFormatCombined {
-		result.PutStr("referer", unescapeCLF(matches[8]))
-		result.PutStr("user_agent", unescapeCLF(matches[9]))
+		result.PutStr("clf.referer", unescapeCLF(matches[8]))
+		result.PutStr("clf.user_agent", unescapeCLF(matches[9]))
 	}
 
 	return result, nil

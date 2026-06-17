@@ -17,10 +17,11 @@ issues: [48349]
 # Use pipe (|) for multiline entries.
 subtext: |
   `ParseCLF` is available in log statements and returns a map with the parsed
-  `remote_host`, `rfc931`, `authuser`, `timestamp`, `request`, `method`,
-  `request_uri`, `protocol`, `status`, and `bytes` fields. An optional `format`
-  parameter selects between the strict `"clf"` format (default) and the NCSA
-  `"combined"` format, which additionally parses `referer` and `user_agent`.
+  `clf.remote_host`, `clf.rfc931`, `clf.authuser`, `clf.timestamp`, `clf.request`,
+  `clf.method`, `clf.request_uri`, `clf.protocol`, `clf.status`, and `clf.bytes`
+  fields. An optional `format` parameter selects between the strict `"clf"` format
+  (default) and the NCSA `"combined"` format, which additionally parses
+  `clf.referer` and `clf.user_agent`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

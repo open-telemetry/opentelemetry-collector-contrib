@@ -325,7 +325,7 @@ func Test_parseCLF(t *testing.T) {
 
 			assertCLFMap(t, resultMap, tt.expected)
 			for _, k := range tt.absent {
-				_, ok := resultMap.Get(k)
+				_, ok := resultMap.Get("clf." + k)
 				assert.False(t, ok, "key %q should be absent", k)
 			}
 		})
@@ -489,10 +489,10 @@ func Test_createParseCLFFunction_combinedFormat(t *testing.T) {
 
 	resultMap, ok := result.(pcommon.Map)
 	require.True(t, ok, "result should be pcommon.Map")
-	referer, ok := resultMap.Get("referer")
+	referer, ok := resultMap.Get("clf.referer")
 	require.True(t, ok)
 	assert.Equal(t, "http://www.example.com/", referer.Str())
-	userAgent, ok := resultMap.Get("user_agent")
+	userAgent, ok := resultMap.Get("clf.user_agent")
 	require.True(t, ok)
 	assert.Equal(t, "curl/8.0", userAgent.Str())
 }
@@ -528,7 +528,7 @@ func assertCLFMap(t *testing.T, m pcommon.Map, expected map[string]any) {
 	assert.Equal(t, len(expected), m.Len(), "field count mismatch; got map %v", m.AsRaw())
 
 	for k, v := range expected {
-		val, ok := m.Get(k)
+		val, ok := m.Get("clf." + k)
 		require.True(t, ok, "key %q should exist", k)
 		switch want := v.(type) {
 		case string:
