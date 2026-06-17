@@ -54,6 +54,10 @@ example, one folder per host or service). The resulting layout is
 `<partition.prefix>/<attribute value>/<partition.format>/...`, so the existing
 `bucket.partition.prefix` is preserved and the attribute segment is appended after it.
 
+The attribute value is stringified, so non-string attributes are converted to their string
+form (for example, the int `42` becomes `42` and a bool becomes `true`); complex types such
+as maps or slices render as their textual representation and are not recommended.
+
 Because resource attribute values are arbitrary and may be untrusted, the value is
 normalized with the standard library `path.Clean` before being used as an object-name
 segment: duplicate slashes are collapsed and empty, `.` and `..` segments are removed
