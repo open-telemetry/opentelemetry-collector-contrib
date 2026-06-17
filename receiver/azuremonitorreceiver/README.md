@@ -107,8 +107,8 @@ receivers:
       - Microsoft.Compute/virtualMachines
     metrics:
       "azure.vm.linux.guestmetrics":
-        "disk/free_percent": [Average]
-        "memory/available_percent": [Average]
+        "filesystem % free space": [Average]
+        "memory % available": [Average]
 ```
 
 ### Use Batch API (experimental)
