@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -26,6 +28,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
@@ -42,7 +45,36 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 }
 
 var queryResponses = map[string][]metricRow{
-	statsSQL:        {{"NAME": enqueueDeadlocks, "VALUE": "18"}, {"NAME": exchangeDeadlocks, "VALUE": "88898"}, {"NAME": executeCount, "VALUE": "178878"}, {"NAME": parseCountTotal, "VALUE": "1999"}, {"NAME": parseCountHard, "VALUE": "1"}, {"NAME": userCommits, "VALUE": "187778888"}, {"NAME": userRollbacks, "VALUE": "1898979879789"}, {"NAME": physicalReads, "VALUE": "1887777"}, {"NAME": physicalReadsDirect, "VALUE": "31337"}, {"NAME": sessionLogicalReads, "VALUE": "189"}, {"NAME": cpuTime, "VALUE": "1887"}, {"NAME": pgaMemory, "VALUE": "1999887"}, {"NAME": dbBlockGets, "VALUE": "42"}, {"NAME": consistentGets, "VALUE": "78944"}},
+	statsSQL: {
+		{"NAME": enqueueDeadlocks, "VALUE": "18"},
+		{"NAME": exchangeDeadlocks, "VALUE": "88898"},
+		{"NAME": executeCount, "VALUE": "178878"},
+		{"NAME": parseCountTotal, "VALUE": "1999"},
+		{"NAME": parseCountHard, "VALUE": "1"},
+		{"NAME": userCommits, "VALUE": "187778888"},
+		{"NAME": userRollbacks, "VALUE": "1898979879789"},
+		{"NAME": physicalReads, "VALUE": "1887777"},
+		{"NAME": physicalReadsDirect, "VALUE": "31337"},
+		{"NAME": sessionLogicalReads, "VALUE": "189"},
+		{"NAME": cpuTime, "VALUE": "1887"},
+		{"NAME": pgaMemory, "VALUE": "1999887"},
+		{"NAME": dbBlockGets, "VALUE": "42"},
+		{"NAME": consistentGets, "VALUE": "78944"},
+		// PR2: I/O performance v$sysstat rows
+		{"NAME": physicalReadBytesStat, "VALUE": "1024000"},
+		{"NAME": physicalWriteBytesStat, "VALUE": "512000"},
+		{"NAME": physicalReadTotalBytesStat, "VALUE": "2048000"},
+		{"NAME": physicalWriteTotalBytesStat, "VALUE": "1024000"},
+		{"NAME": physicalReadTotalIORequestsStat, "VALUE": "5000"},
+		{"NAME": physicalWriteTotalIORequestsStat, "VALUE": "2500"},
+		{"NAME": physicalReadMultiBlockReqStat, "VALUE": "1500"},
+		{"NAME": physicalWriteMultiBlockReqStat, "VALUE": "750"},
+		{"NAME": physicalWritesFromCacheStat, "VALUE": "1800"},
+		{"NAME": sqlnetBytesRecvFromClient, "VALUE": "300000"},
+		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
+		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
+		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
@@ -52,6 +84,20 @@ var queryResponses = map[string][]metricRow{
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
 	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
 	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	sysmetricSQL: {
+		{"METRIC_NAME": "Buffer Cache Hit Ratio", "VALUE": "98.75"},
+		{"METRIC_NAME": "Host CPU Utilization (%)", "VALUE": "12.34"},
+		{"METRIC_NAME": "Database CPU Time Ratio", "VALUE": "55.66"},
+		{"METRIC_NAME": "Library Cache Hit Ratio", "VALUE": "99.10"},
+		{"METRIC_NAME": "Shared Pool Free %", "VALUE": "30.20"},
+		{"METRIC_NAME": "Database Wait Time Ratio", "VALUE": "44.55"},
+		{"METRIC_NAME": "Soft Parse Ratio", "VALUE": "88.90"},
+		{"METRIC_NAME": "SQL Service Response Time", "VALUE": "0.0042"},
+		{"METRIC_NAME": "Memory Sorts Ratio", "VALUE": "99.50"},
+		{"METRIC_NAME": "Redo Allocation Hit Ratio", "VALUE": "97.80"},
+		{"METRIC_NAME": "Parse Failure Count Per Sec", "VALUE": "0.25"},
+		{"METRIC_NAME": "Execute Without Parse Ratio", "VALUE": "75.30"},
+	},
 }
 
 var cacheValue = map[string]int64{
@@ -284,6 +330,74 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
+func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
+	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// metricName -> attrSignature -> int value
+	got := map[string]map[string]int64{}
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			var keys []string
+			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+				keys = append(keys, k+"="+v.AsString())
+				return true
+			})
+			sort.Strings(keys)
+			sig := strings.Join(keys, ",")
+			if _, ok := got[me.Name()]; !ok {
+				got[me.Name()] = map[string]int64{}
+			}
+			got[me.Name()][sig] = dp.IntValue()
+		}
+	}
+
+	assert.Equal(t, int64(1024000), got["oracledb.physical_io.transferred"]["disk.io.direction=read,disk.io.type=buffered"])
+	assert.Equal(t, int64(512000), got["oracledb.physical_io.transferred"]["disk.io.direction=write,disk.io.type=buffered"])
+	assert.Equal(t, int64(2048000), got["oracledb.physical_io.transferred"]["disk.io.direction=read,disk.io.type=total"])
+	assert.Equal(t, int64(1024000), got["oracledb.physical_io.transferred"]["disk.io.direction=write,disk.io.type=total"])
+
+	assert.Equal(t, int64(5000), got["oracledb.physical_io.requests"]["disk.io.block_size=all,disk.io.direction=read"])
+	assert.Equal(t, int64(2500), got["oracledb.physical_io.requests"]["disk.io.block_size=all,disk.io.direction=write"])
+	assert.Equal(t, int64(1500), got["oracledb.physical_io.requests"]["disk.io.block_size=multi,disk.io.direction=read"])
+	assert.Equal(t, int64(750), got["oracledb.physical_io.requests"]["disk.io.block_size=multi,disk.io.direction=write"])
+
+	assert.Equal(t, int64(1800), got["oracledb.physical_io.cache_writes"][""])
+
+	assert.Equal(t, int64(300000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=receive"])
+	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
+	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
+	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
 	var metricRowData []metricRow
 	var logRowData []metricRow
@@ -436,6 +550,31 @@ var samplesQueryResponses = map[string][]metricRow{
 	}},
 }
 
+var sessionEventQueryResponses = map[string][]metricRow{
+	sessionEventQuery: {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5",
+		},
+		{
+			"SID": "101", "SERIAL#": "12346", "EVENT": "log file sync", "WAIT_CLASS": "Commit",
+			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3",
+		},
+	},
+	"invalidSessionEventQuery": {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5",
+		},
+	},
+	"invalidTimeSessionEventQuery": {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid",
+		},
+	},
+}
+
 func TestSamplesQuery(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -544,6 +683,249 @@ func TestSamplesQuery(t *testing.T) {
 				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
 				assert.NoError(t, errs)
 			}
+		})
+	}
+}
+
+func TestScraperWithQueryComments(t *testing.T) {
+	sql := "/* application=test-123 */ SELECT * FROM test_table"
+
+	tests := []struct {
+		name        string
+		allowedKeys []string
+		want        string
+	}{
+		{
+			name:        "configured allowed keys are extracted",
+			allowedKeys: []string{"application"},
+			want:        "application=test-123",
+		},
+		{
+			name:        "empty allowlist extracts nothing",
+			allowedKeys: []string{},
+			want:        "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.QuerySample.AllowedCommentKeys = tt.allowedKeys
+
+			got := sqlcomments.ExtractAndFilterComments(sql, cfg.QuerySample.AllowedCommentKeys)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+	t.Run("query samples without allowed comments", func(t *testing.T) {
+		// Create a mock scraper with empty allowed comment keys
+		cfg := createDefaultConfig().(*Config)
+		cfg.QuerySample.AllowedCommentKeys = []string{}
+
+		sqlWithComment := "/* nr_service_guid=test-123 */ SELECT * FROM test_table"
+		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+
+		if result != "" {
+			t.Errorf("Expected empty string but got %q", result)
+		}
+	})
+
+	t.Run("query samples with non-matching comments", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QuerySample.AllowedCommentKeys = []string{"nr_service_guid"}
+
+		// SQL has comments but none match the allowlist
+		sqlWithComment := "/* other_key=value */ SELECT * FROM test_table"
+		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+
+		if result != "" {
+			t.Errorf("Expected empty string but got %q", result)
+		}
+	})
+}
+
+func TestSessionWaitEventsQuery(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						sessionEventQueryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad wait.count data",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					sessionEventQueryResponses["invalidSessionEventQuery"],
+				}}
+			},
+			errWanted: `failed to parse int64 for oracledb.wait.count, value was invalid: strconv.ParseInt: parsing "invalid": invalid syntax`,
+		},
+		{
+			name: "bad wait.duration data",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					sessionEventQueryResponses["invalidTimeSessionEventQuery"],
+				}}
+			},
+			errWanted: `failed to parse float64 for oracledb.wait.duration, value was invalid: strconv.ParseFloat: parsing "invalid": invalid syntax`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logsCfg := metadata.DefaultLogsBuilderConfig()
+			logsCfg.ResourceAttributes.OracledbInstanceName.Enabled = true
+			logsCfg.ResourceAttributes.HostName.Enabled = true
+			logsCfg.Events.DbServerTopQuery.Enabled = false
+			logsCfg.Events.DbServerQuerySample.Enabled = false
+			logsCfg.Events.DbServerSessionWaitSample.Enabled = true
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:  test.dbclientFn,
+				id:                  component.ID{},
+				lb:                  metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+				logsBuilderConfig:   logsCfg,
+				obfuscator:          newObfuscator(),
+				instanceName:        "oraclehost:1521/ORCL",
+				serviceInstanceID:   getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				sessionWaitEventCfg: SessionWaitEvent{MaxRowsPerQuery: 200},
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			logs, err := scrpr.scrapeLogs(t.Context())
+			expectedSessionEventsFile := filepath.Join("testdata", "expectedSessionEventsFile.yaml")
+
+			if test.errWanted != "" {
+				require.EqualError(t, err, test.errWanted)
+			} else {
+				// Uncomment line below to re-generate expected logs.
+				// golden.WriteLogs(t, expectedSessionEventsFile, logs)
+				require.NoError(t, err)
+				expectedLogs, _ := golden.ReadLogs(expectedSessionEventsFile)
+				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
+				assert.Equal(t, "db.server.session.wait_sample", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+				assert.NoError(t, errs)
+			}
+		})
+	}
+}
+
+func TestScraper_ScrapeSysMetrics(t *testing.T) {
+	const floatDelta = 0.001
+
+	tests := []struct {
+		name      string
+		clientFn  func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted string
+	}{
+		{
+			name: "valid sysmetric data",
+			clientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{queryResponses[s]},
+				}
+			},
+		},
+		{
+			name: "bad sysmetric value",
+			clientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == sysmetricSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"METRIC_NAME": "Buffer Cache Hit Ratio", "VALUE": "not_a_number"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `sysmetric "Buffer Cache Hit Ratio": failed to parse float64`,
+		},
+		{
+			name: "sysmetric query error",
+			clientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == sysmetricSQL {
+					return &fakeDbClient{Err: errors.New("db connection lost")}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: "error executing SELECT metric_name",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbBufferCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbHostCPUUtilization.Enabled = true
+			cfg.Metrics.OracledbDatabaseCPUUtilization.Enabled = true
+			cfg.Metrics.OracledbLibraryCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbSharedPoolUtilization.Enabled = true
+			cfg.Metrics.OracledbDatabaseWaitUtilization.Enabled = true
+			cfg.Metrics.OracledbParseUtilization.Enabled = true
+			cfg.Metrics.OracledbSQLServiceResponseDuration.Enabled = true
+			cfg.Metrics.OracledbSortRatio.Enabled = true
+			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
+			cfg.Metrics.OracledbParseRate.Enabled = true
+			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.clientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+
+			m, err := scrpr.scrape(t.Context())
+
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+				return
+			}
+
+			require.NoError(t, err)
+
+			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			metricMap := make(map[string]float64)
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+				}
+			}
+
+			assert.InDelta(t, 98.75, metricMap["oracledb.buffer_cache.utilization"], floatDelta)
+			assert.InDelta(t, 12.34, metricMap["oracledb.host.cpu.utilization"], floatDelta)
+			assert.InDelta(t, 55.66, metricMap["oracledb.database.cpu.utilization"], floatDelta)
+			assert.InDelta(t, 99.10, metricMap["oracledb.library_cache.utilization"], floatDelta)
+			assert.InDelta(t, 30.20, metricMap["oracledb.shared_pool.utilization"], floatDelta)
+			assert.InDelta(t, 44.55, metricMap["oracledb.database.wait.utilization"], floatDelta)
+			assert.InDelta(t, 88.90, metricMap["oracledb.parse.utilization"], floatDelta)
+			assert.InDelta(t, 0.000042, metricMap["oracledb.sql_service.response.duration"], floatDelta)
+			assert.InDelta(t, 99.50, metricMap["oracledb.sort.ratio"], floatDelta)
+			assert.InDelta(t, 97.80, metricMap["oracledb.redo_allocation.utilization"], floatDelta)
+			assert.InDelta(t, 0.25, metricMap["oracledb.parse.rate"], floatDelta)
+			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
 		})
 	}
 }
@@ -834,13 +1216,11 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	}
 }
 
-// TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning verifies that when a SQL
-// query text fails to obfuscate (e.g. due to a truncated string literal from
-// Oracle's CLOB display limit), the affected entry is skipped with a Warn log
-// and the remaining entries are still emitted. The whole scrape must not abort.
-func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
-	// Build two metric rows: one with valid SQL and one with a truncated
-	// string literal that the obfuscator cannot parse.
+// TestObfuscateCacheHitsHandlesTruncatedSQL verifies that the obfuscator
+// successfully handles SQL with truncated string literals that may occur
+// when Oracle's CLOB display limit is reached.
+func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
+	// Build two metric rows with different SQL queries to verify obfuscation.
 	metricsData := []metricRow{
 		{
 			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "4000000", "CHILD_ADDRESS": "ADDR1",
@@ -854,7 +1234,7 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 			"COMMAND_TYPE": "3",
 		},
 		{
-			// Truncated mid-string-literal — obfuscator will return an error.
+			// SQL with truncated string literal.
 			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "5000000", "CHILD_ADDRESS": "ADDR2",
 			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
 			"CPU_TIME": "50000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
@@ -924,18 +1304,16 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 	require.NoError(t, err)
 
 	logs, err := scrpr.scrapeLogs(t.Context())
-	// The scrape must succeed even though one entry failed to obfuscate.
 	require.NoError(t, err)
 
-	// Exactly one valid log record (for "valid001") should be emitted.
+	// Both log records should be emitted.
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	require.Equal(t, 1, records.Len(), "Only the valid entry should be emitted; the truncated-SQL entry should be skipped")
+	require.Equal(t, 2, records.Len(), "Expected both entries to be emitted")
 
-	// A Warn log must have been emitted for the skipped entry.
+	// Verify no obfuscation errors were logged.
 	warnLogs := observedLogs.FilterMessage("oracleScraper failed to obfuscate SQL query, skipping entry")
-	assert.Equal(t, 1, warnLogs.Len(), "Expected exactly one Warn log for the failed obfuscation")
-	assert.Equal(t, "trunc01", warnLogs.All()[0].ContextMap()["sql_id"], "Warn log should identify the failing sql_id")
+	assert.Equal(t, 0, warnLogs.Len(), "Expected no obfuscation failures")
 }
 
 func TestCalculateLookbackSeconds(t *testing.T) {

@@ -65,7 +65,6 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
-cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -122,7 +121,6 @@ exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
-exporter/googlesecopsexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 pkg/kafka/configkafka
@@ -216,6 +214,7 @@ pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/pprof
 processor/attributesprocessor
+processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -243,6 +242,7 @@ processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
+receiver/activedirectoryinvreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
