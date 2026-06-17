@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 
@@ -22,7 +23,7 @@ func TestInitTelemetrySettingsWithDeclarativeResourceConfig(t *testing.T) {
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		},
-		Resource: config.ResourceConfig{
+		Resource: otelconftelemetry.ResourceConfig{
 			Resource: otelconf.Resource{
 				SchemaUrl: &schemaURL,
 				Attributes: []otelconf.AttributeNameValue{
@@ -54,7 +55,7 @@ func TestInitTelemetrySettingsWithLegacyNilResourceOverride(t *testing.T) {
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		},
-		Resource: config.ResourceConfig{
+		Resource: otelconftelemetry.ResourceConfig{
 			LegacyAttributes: map[string]any{
 				"service.name": nil,
 			},
