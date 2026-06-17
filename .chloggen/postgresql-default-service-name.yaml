@@ -18,7 +18,9 @@ issues: [47087]
 subtext: |
   Both attributes default to enabled: false. When enabled, service.name
   defaults to unknown_service:postgresql and service.namespace defaults
-  to an empty string.
+  to an empty string. Additionally, override_value is enabled for all
+  resource attributes, allowing users to set custom values via
+  override_value in the collector configuration.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
