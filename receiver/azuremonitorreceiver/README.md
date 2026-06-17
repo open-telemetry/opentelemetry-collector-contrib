@@ -107,8 +107,7 @@ receivers:
       - Microsoft.Compute/virtualMachines
     metrics:
       "azure.vm.linux.guestmetrics":
-        "filesystem % free space": [Average]
-        "memory % available": [Average]
+        "filesystem % free space": [Average]  # metric names depend on agent config; check MetricDefinitions API for your namespace
 ```
 
 ### Use Batch API (experimental)
