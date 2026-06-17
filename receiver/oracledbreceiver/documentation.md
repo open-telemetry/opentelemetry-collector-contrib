@@ -257,7 +257,7 @@ Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state
 
 ### oracledb.buffer.requests
 
-Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -267,7 +267,7 @@ Number of buffer-management requests handled by the Database Writer (DBWR), grou
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.buffer.request_type | The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free). | Str: ``make_free`` | Recommended | - |
+| oracledb.buffer.request.type | The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free). | Str: ``make_free`` | Recommended | - |
 
 ### oracledb.buffer.scanned
 

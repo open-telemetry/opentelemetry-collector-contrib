@@ -468,7 +468,7 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 
 	// Attributed counters carry a single data point keyed by the buffer state / request type.
 	assert.Equal(t, int64(48000), got["oracledb.buffer.count"]["oracledb.buffer.state=free"])
-	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"]["oracledb.buffer.request_type=make_free"])
+	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"]["oracledb.buffer.request.type=make_free"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

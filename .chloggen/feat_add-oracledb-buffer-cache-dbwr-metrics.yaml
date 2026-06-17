@@ -20,7 +20,7 @@ subtext: |
   `oracledb.buffer_cache.block.gets`, `oracledb.buffer.scanned`,
   `oracledb.checkpoint.buffers`, `oracledb.checkpoint.completed`,
   `oracledb.buffer.count` (attribute `oracledb.buffer.state`), and `oracledb.buffer.requests`
-  (attribute `oracledb.buffer.request_type`). Note that
+  (attribute `oracledb.buffer.request.type`). Note that
   `oracledb.buffer_cache.block.gets` (v$sysstat 'db block gets from cache') is distinct from the
   existing `oracledb.db_block_gets` (v$sysstat 'db block gets'). These are read from the existing
   `SELECT * FROM v$sysstat` query, so no additional database round-trips are introduced.

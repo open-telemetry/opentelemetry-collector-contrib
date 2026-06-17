@@ -61,7 +61,7 @@ func (ms *OracledbBufferCountMetricConfig) Validate() error {
 type OracledbBufferRequestsMetricAttributeKey string
 
 const (
-	OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType OracledbBufferRequestsMetricAttributeKey = "oracledb.buffer.request_type"
+	OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType OracledbBufferRequestsMetricAttributeKey = "oracledb.buffer.request.type"
 )
 
 // OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric.
@@ -92,7 +92,7 @@ func (ms *OracledbBufferRequestsMetricConfig) Validate() error {
 		switch val {
 		case OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType:
 		default:
-			return fmt.Errorf("metric oracledb.buffer.requests doesn't have an attribute %v, valid attributes: [oracledb.buffer.request_type]", val)
+			return fmt.Errorf("metric oracledb.buffer.requests doesn't have an attribute %v, valid attributes: [oracledb.buffer.request.type]", val)
 		}
 	}
 

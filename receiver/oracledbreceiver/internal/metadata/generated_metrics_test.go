@@ -427,7 +427,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.buffer.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
+						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -436,7 +436,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbBufferRequestTypeAttrVal, ok := dp.Attributes().Get("oracledb.buffer.request_type")
+						oracledbBufferRequestTypeAttrVal, ok := dp.Attributes().Get("oracledb.buffer.request.type")
 						assert.True(t, ok)
 						assert.Equal(t, "make_free", oracledbBufferRequestTypeAttrVal.Str())
 					} else {
@@ -444,7 +444,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.buffer.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
+						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -462,7 +462,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.buffer.request_type")
+						_, ok := dp.Attributes().Get("oracledb.buffer.request.type")
 						assert.False(t, ok)
 					}
 				case "oracledb.buffer.scanned":

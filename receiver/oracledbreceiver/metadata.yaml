@@ -130,7 +130,7 @@ attributes:
   oracledb.blocking.wait_duration:
     description: The number of seconds this session has been waiting for the current wait event.
     type: int
-  oracledb.buffer.request_type:
+  oracledb.buffer.request.type:
     description: The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free).
     type: string
     enum: [make_free]
@@ -412,7 +412,7 @@ metrics:
     unit: "{buffers}"
     attributes: [oracledb.buffer.state]
   oracledb.buffer.requests:
-    description: Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+    description: Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
     enabled: false
     stability: development
     sum:
@@ -421,7 +421,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{requests}"
-    attributes: [oracledb.buffer.request_type]
+    attributes: [oracledb.buffer.request.type]
   oracledb.buffer.scanned:
     description: Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
     enabled: false

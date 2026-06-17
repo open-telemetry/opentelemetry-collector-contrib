@@ -152,7 +152,7 @@ var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
 	"transmit": AttributeNetworkIoDirectionTransmit,
 }
 
-// AttributeOracledbBufferRequestType specifies the value oracledb.buffer.request_type attribute.
+// AttributeOracledbBufferRequestType specifies the value oracledb.buffer.request.type attribute.
 type AttributeOracledbBufferRequestType int
 
 const (
@@ -659,7 +659,7 @@ type metricOracledbBufferRequests struct {
 // init fills oracledb.buffer.requests metric with initial data.
 func (m *metricOracledbBufferRequests) init() {
 	m.data.SetName("oracledb.buffer.requests")
-	m.data.SetDescription("Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.")
+	m.data.SetDescription("Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.")
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -677,7 +677,7 @@ func (m *metricOracledbBufferRequests) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType) {
-		dp.Attributes().PutStr("oracledb.buffer.request_type", oracledbBufferRequestTypeAttributeValue)
+		dp.Attributes().PutStr("oracledb.buffer.request.type", oracledbBufferRequestTypeAttributeValue)
 	}
 
 	var s string

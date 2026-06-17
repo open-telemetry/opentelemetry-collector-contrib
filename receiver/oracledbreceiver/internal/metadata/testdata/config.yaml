@@ -6,7 +6,7 @@ all_set:
       attributes: ["oracledb.buffer.state"]
     oracledb.buffer.requests:
       enabled: true
-      attributes: ["oracledb.buffer.request_type"]
+      attributes: ["oracledb.buffer.request.type"]
     oracledb.buffer.scanned:
       enabled: true
     oracledb.buffer_cache.block.changes:
@@ -356,7 +356,7 @@ none_set:
       attributes: ["oracledb.buffer.state"]
     oracledb.buffer.requests:
       enabled: false
-      attributes: ["oracledb.buffer.request_type"]
+      attributes: ["oracledb.buffer.request.type"]
     oracledb.buffer.scanned:
       enabled: false
     oracledb.buffer_cache.block.changes:
