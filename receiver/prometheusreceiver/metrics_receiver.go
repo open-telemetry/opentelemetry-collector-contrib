@@ -229,6 +229,9 @@ func (r *pReceiver) initScrapeOptions(o prometheusScrapeTestOptions) *scrape.Opt
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableStartTimestampZeroIngestion: metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(),
+		ScrapeOnShutdown:                  r.cfg.ScrapeOnShutdown,
+		DiscoveryReloadOnStartup:          r.cfg.DiscoveryReloadOnStartup,
+		InitialScrapeOffset:               r.cfg.InitialScrapeOffset,
 	}
 
 	return opts
