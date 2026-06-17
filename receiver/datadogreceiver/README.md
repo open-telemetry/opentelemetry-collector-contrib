@@ -23,10 +23,10 @@ Configuration wise is very simple, just need to specify where the Datadog receiv
 
 Then, the receiver must be configured in the pipeline where it will be used.
 
-The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to
-reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is
-initiated with a 128-bit trace id by a service that then calls a datadog instrumented one. Without this, spans from the
-datadog instrumented service will not correlate with the other spans.
+The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (enabled by default) makes the receiver reconstruct
+full 128-bit trace ids from spans coming from a datadog instrumented service, so they correlate with OpenTelemetry
+spans. Datadog splits a 128-bit trace id into a lower 64-bit part (`TraceID`) and an upper 64-bit part (`_dd.p.tid`);
+the receiver concatenates them. Disable the gate to fall back to 64-bit (zero-padded) trace ids.
 
 ```yaml
 receivers:
