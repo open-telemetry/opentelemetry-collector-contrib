@@ -1,0 +1,13 @@
+change_type: bug_fix
+component: receiver/azure_monitor
+note: Fix discovery and collection of custom metric namespace definitions (e.g. `azure.vm.linux.guestmetrics` published by Azure Monitor Agent / MetricsExtension)
+issues: [40989]
+subtext: >
+  The MetricDefinitions API only returns custom namespace metrics when the
+  `metricnamespace` query parameter is explicitly set. Previously, metrics
+  configured under `receiver::metrics` for a custom namespace were silently
+  dropped because the API call used no filter and only returned the
+  resource's default namespace. The receiver now makes an additional
+  namespace-filtered call for each custom namespace in the `metrics` config
+  that was not returned by the default call.
+change_logs: [user]
