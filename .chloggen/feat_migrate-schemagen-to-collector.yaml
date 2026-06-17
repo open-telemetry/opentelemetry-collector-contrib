@@ -1,26 +1,27 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: cmd/schemagen
+component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `overlayFile` support to deep-merge hand-curated schema fragments into generated schemas.
+note: Move `cmd/schemagen` to opentelemetry-collector as `go.opentelemetry.io/collector/cmd/schemagen`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [48917]
+issues: [14543]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Components can now declare an `overlayFile` in `.schemagen.yaml` pointing to a YAML file
-  whose keys are recursively merged into the auto-generated schema after generation.
-  This allows injecting descriptions, constraints, or additional properties that cannot be
-  derived from Go types. The Prometheus receiver is the first consumer, gaining rich field
-  descriptions via `receiver/prometheusreceiver/config.schema.overlay.yaml`.
+  The `schemagen` CLI now lives in the opentelemetry-collector repository. Existing `make schemagen` and
+  `make generate-schemas` targets continue to work — they now invoke the tool via
+  `go run go.opentelemetry.io/collector/cmd/schemagen@latest`. Override the new `SCHEMAGEN_PKG` variable
+  to pin a specific release. Downstream users that previously imported
+  `github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen` must update their import path
+  to `go.opentelemetry.io/collector/cmd/schemagen`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
