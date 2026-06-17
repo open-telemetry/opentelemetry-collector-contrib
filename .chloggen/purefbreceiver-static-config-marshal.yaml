@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: receiver/purefb
+note: Fix the receiver failing to start due to an invalid internal Prometheus scrape configuration.
+issues: [48851]
+subtext: |
+  The receiver used a `*discovery.StaticConfig` pointer when building the Prometheus scrape
+  configs. Only the value type `discovery.StaticConfig` is registered for YAML marshaling, so
+  the prometheus receiver failed on startup with "cannot marshal unregistered Config type:
+  *discovery.StaticConfig". The config now uses the value type.
+change_logs: [user]

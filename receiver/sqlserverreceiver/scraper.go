@@ -408,6 +408,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const valueKey = "value"
 	// Constants are the columns for metrics from query
 	const activeTempTables = "Active Temp Tables"
+	const autoParamAttemptsPerSec = "Auto-Param Attempts/sec"
 	const backupRestoreThroughputPerSec = "Backup/Restore Throughput/sec"
 	const batchRequestRate = "Batch Requests/sec"
 	const bufferCacheHitRatio = "Buffer cache hit ratio"
@@ -418,24 +419,31 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const diskWriteIOSec = "Disk Write IO/sec"
 	const diskWriteIOThrottled = "Disk Write IO Throttled/sec"
 	const executionErrors = "Execution Errors"
+	const failedAutoParamsPerSec = "Failed Auto-Params/sec"
+	const forcedParameterizationsPerSec = "Forced Parameterizations/sec"
 	const freeListStalls = "Free list stalls/sec"
 	const freeSpaceInTempdb = "Free Space in tempdb (KB)"
 	const fullScansPerSec = "Full Scans/sec"
+	const guidedPlanExecutionsPerSec = "Guided plan executions/sec"
 	const indexSearchesPerSec = "Index Searches/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
 	const lockWaitCount = "Lock Wait Count"
 	const lockWaits = "Lock Waits/sec"
 	const loginsPerSec = "Logins/sec"
 	const logoutPerSec = "Logouts/sec"
+	const misguidedPlanExecutionsPerSec = "Misguided plan executions/sec"
 	const numberOfDeadlocksPerSec = "Number of Deadlocks/sec"
 	const mirrorWritesTransactionPerSec = "Mirrored Write Transactions/sec"
 	const memoryGrantsPending = "Memory Grants Pending"
 	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
 	const processesBlocked = "Processes blocked"
+	const safeAutoParamsPerSec = "Safe Auto-Params/sec"
+	const sqlAttentionRate = "SQL Attention rate"
 	const sqlCompilationRate = "SQL Compilations/sec"
 	const sqlReCompilationsRate = "SQL Re-Compilations/sec"
 	const transactionDelay = "Transaction Delay"
+	const unsafeAutoParamsPerSec = "Unsafe Auto-Params/sec"
 	const userConnCount = "User Connections"
 	const usedMemory = "Used memory (KB)"
 	const versionStoreSize = "Version Store Size (KB)"
@@ -472,6 +480,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
+
+	// Track SQL compilation and recompilation rates so the derived
+	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
+	var (
+		compRate, recompRate float64
+		compSeen, recompSeen bool
+		recompRatioRow       sqlquery.StringMap
+	)
 
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
@@ -674,6 +690,9 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchSQLCompilationRateDataPoint(now, val.(float64))
+				compRate = val.(float64)
+				compSeen = true
+				recompRatioRow = row
 			}
 		case sqlReCompilationsRate:
 			val, err := retrieveFloat(row, valueKey)
@@ -682,6 +701,75 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(now, val.(float64))
+				recompRate = val.(float64)
+				recompSeen = true
+				if recompRatioRow == nil {
+					recompRatioRow = row
+				}
+			}
+		case sqlAttentionRate:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, sqlAttentionRate)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverAttentionRateDataPoint(now, val.(float64))
+			}
+		case autoParamAttemptsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, autoParamAttemptsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultAutoAttempted)
+			}
+		case safeAutoParamsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, safeAutoParamsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultSafe)
+			}
+		case unsafeAutoParamsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, unsafeAutoParamsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultUnsafe)
+			}
+		case failedAutoParamsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, failedAutoParamsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultFailed)
+			}
+		case forcedParameterizationsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, forcedParameterizationsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultForced)
+			}
+		case guidedPlanExecutionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, guidedPlanExecutionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPlanExecutionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPlanGuidanceResultGuided)
+			}
+		case misguidedPlanExecutionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, misguidedPlanExecutionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPlanExecutionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPlanGuidanceResultMisguided)
 			}
 		case transactionDelay:
 			val, err := retrieveFloat(row, valueKey)
@@ -896,6 +984,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
+	// Emit derived sqlserver.recompilation.ratio metric (recomp / comp * 100)
+	// once both source counters have been observed in this scrape cycle.
+	if compSeen && recompSeen && compRate > 0 {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), recompRatioRow)
+		s.mb.RecordSqlserverRecompilationRatioDataPoint(now, recompRate/compRate*100)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -983,6 +1079,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		databaseName      = "database_name"
 		executionCount    = "execution_count"
 		lastExecutionTime = "last_execution_time"
+		planCreationTime  = "plan_creation_time"
 		logicalReads      = "total_logical_reads"
 		logicalWrites     = "total_logical_writes"
 		physicalReads     = "total_physical_reads"
@@ -1125,6 +1222,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		}
 
 		lastExecutionTimeVal := row[lastExecutionTime]
+		planCreationTimeVal := row[planCreationTime]
 
 		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
@@ -1160,6 +1258,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureID],
 			row[storedProcedureName],
 			lastExecutionTimeVal,
+			planCreationTimeVal,
 		)
 	}
 	return resources, errors.Join(errs...)
@@ -1280,6 +1379,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const blockingSessionID = "blocking_session_id"
 	const blockingStartTime = "blocking_start_time"
 	const clientAddress = "client_address"
+	const clientAppName = "client_app_name"
 	const clientPort = "client_port"
 	const command = "command"
 	const contextInfo = "context_info"
@@ -1298,7 +1398,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const reads = "reads"
 	const requestStatus = "request_status"
 	const rowCount = "row_count"
+	const sessionDurationMillisecond = "session_duration"
 	const sessionID = "session_id"
+	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
@@ -1425,6 +1527,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
+		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
 		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
@@ -1436,6 +1541,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := row[blockingStartTime]
+		clientAppNameVal := row[clientAppName]
+		sessionStartTimeVal := row[sessionStartTime]
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
@@ -1468,14 +1575,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			timestamp, clientAddressVal, clientPortVal,
 			dbNamespaceVal, queryTextVal, dbSystemNameVal,
 			networkPeerAddressVal, networkPeerPortVal,
-			blockSessionIDVal, blockingStartTimeVal, contextInfoVal,
+			blockSessionIDVal, blockingStartTimeVal, clientAppNameVal, contextInfoVal,
 			commandVal, cpuTimeSecondVal,
 			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
 			lockTimeoutSecondVal, logicalReadsVal,
 			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
 			queryStartVal, readsVal,
 			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
-			sessionIDVal, sessionStatusVal,
+			sessionDurationSecondVal, sessionStartTimeVal, sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
