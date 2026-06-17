@@ -80,7 +80,6 @@ the operator.
 
 The Reader's offset is updated accordingly whenever a log is emitted.
 
-
 ### Persistence
 
 Readers are always instantiated with an open file handle. Eventually, the file handle is closed, but the Reader is
@@ -93,7 +92,6 @@ Readers are maintained for a fixed period of time, and then discarded.
 When the `file_input` operator makes use of a persistence mechanism to save and recall its state, it is simply
 Setting and Getting a slice of Readers. These Readers contain all the information necessary to pick up exactly
 where the operator left off.
-
 
 # Polling
 
@@ -182,8 +180,6 @@ Each poll cycle runs through a series of steps which are presented below.
 15. End Poll Cycle
     1. At this point, the operator sits idle until the poll timer fires again.
 
-
-
 # Additional Details
 
 ### Startup Logic
@@ -221,7 +217,6 @@ C) When a file it rotated out of pattern via move/create, we detect that
 
 D) When a file it rotated out of pattern via copy/truncate, we detect that
    our old handle is invalid and we do not attempt to read from it.
-
 
 #### Rotated files that end up within the matching pattern
 

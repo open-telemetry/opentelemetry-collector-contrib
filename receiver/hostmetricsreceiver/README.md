@@ -226,4 +226,3 @@ When a Collector is not linked to glibc, it can only resolve usernames and group
 
 This manifests most often as a failure to set the `process.owner` resource attribute in the `process` scraper. One concrete example is if a process is run as a systemd service using the `DynamicUser` feature. A Collector not linked to glibc will be incapable of resolving the username for the owner of that process because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time; a Go binary that uses the pure-Go `netgo` implementation is not NSS-aware and subsequently fails the user lookup.  
 See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
-

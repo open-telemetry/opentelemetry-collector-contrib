@@ -44,7 +44,6 @@ Default: `localhost:2000`
 
 See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
-
 ### proxy_address (Optional)
 Defines the proxy address that this extension forwards HTTP requests to the AWS backend through. If left unconfigured, requests will be sent directly.
 This will generally be set to a NAT gateway when the collector is running on a network without public internet.

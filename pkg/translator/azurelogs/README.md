@@ -33,7 +33,6 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `correlationId`       | `azure.correlation.id`     |
 | `identity`            | `azure.identity`           |
 
-
 ### Identity
 
 | Original Field (JSON)    | Log Record Attribute           |

@@ -74,4 +74,3 @@ Several helper files are leveraged to provide additional capabilities automatica
 ## Remote Sampling
 
 Since version [v0.61.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.61.0), remote sampling is no longer supported by the jaeger receiver. Since version [v0.59.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.59.0), the [jaegerremotesapmpling](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.61.0/extension/jaegerremotesampling/README.md) extension is available that can be used instead.
-

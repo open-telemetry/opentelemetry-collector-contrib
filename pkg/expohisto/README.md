@@ -23,11 +23,11 @@ greater difference between minimum and maximum bucket index:
 
 ```golang
 func bucketsNeeded(minValue, maxValue float64, scale int32) int32 {
-	return bucketIndex(maxValue, scale) - bucketIndex(minValue, scale) + 1
+ return bucketIndex(maxValue, scale) - bucketIndex(minValue, scale) + 1
 }
 
 func bucketIndex(value float64, scale int32) int32 {
-	return math.Log(value) * math.Ldexp(math.Log2E, scale)
+ return math.Log(value) * math.Ldexp(math.Log2E, scale)
 }
 ```
 
@@ -73,10 +73,10 @@ maximum size.  The structure of a single range of buckets is:
 
 ```golang
 type buckets struct {
-	backing    bucketsVarwidth[T]  // for T = uint8 | uint16 | uint32 | uint64
-	indexBase  int32
-	indexStart int32
-	indexEnd   int32
+ backing    bucketsVarwidth[T]  // for T = uint8 | uint16 | uint32 | uint64
+ indexBase  int32
+ indexStart int32
+ indexEnd   int32
 }
 ```
 
@@ -128,11 +128,11 @@ func newScale(minIndex, maxIndex, scale, maxSize int32) int32 {
 func changeScale(minIndex, maxIndex, scale, maxSize int32) int32 {
     var change int32
     for maxIndex - minIndex >= maxSize {
-	   maxIndex >>= 1
-	   minIndex >>= 1
-	   change++
+    maxIndex >>= 1
+    minIndex >>= 1
+    change++
     }
-	return change
+ return change
 }
 ```
 

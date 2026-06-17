@@ -684,7 +684,6 @@ events:
 Query sample collection enables monitoring of current running database statements.
 This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -714,7 +713,6 @@ This provides real-time visibility into active queries, helping users monitor da
 
 Top query collection enables monitoring of the queries that consumed the most CPU in the database.
 This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
-
 
 #### Attributes
 

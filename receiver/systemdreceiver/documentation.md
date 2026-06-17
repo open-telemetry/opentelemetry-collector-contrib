@@ -58,7 +58,6 @@ This exposes services' `NRestarts` property as a metric. This only tracks
 automatic service restarts (restarts when the process exits), and does
 not include manual restarts (e.g. from `systemctl restart`).
 
-
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true | Development |

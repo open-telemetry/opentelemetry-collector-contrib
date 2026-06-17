@@ -74,7 +74,6 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-
 ### Attributes
 
 Enabled attributes are exported in the order:
@@ -201,7 +200,6 @@ Then the event will look like:
       ```
 
 Field names can have `.` dots, `_` underscores, and `-` hyphens. You must escape slashes in Search and PowerQueries. For example, search the field name `app.kubernetes.io/component` as `app.kubernetes.io\/component`.
-
 
 ### Example
 

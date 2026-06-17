@@ -20,7 +20,6 @@ By default, two listeners are made available:
 
 See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
-
 Note that the port `14250` will clash with the Jaeger Receiver. When both are used, it's recommended to change this extension to use another port.
 
 Although this extension is derived from Jaeger, it can be used by any clients who can consume this standard, such as the [OpenTelemetry Java SDK](https://github.com/open-telemetry/opentelemetry-java/tree/v1.9.1/sdk-extensions/jaeger-remote-sampler).
@@ -95,4 +94,3 @@ A sampling strategy file could look like:
 }
 ```
 Source: https://www.jaegertracing.io/docs/1.28/sampling/#collector-sampling-configuration
-

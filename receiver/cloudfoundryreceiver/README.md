@@ -118,7 +118,6 @@ For metrics originating with `rep` origin name (specific to applications), the f
 * `process_type` - process type. Each application has exactly one process of type `web`, but many have any number of
   other processes
 
-
 ## Logs
 
 The receiver maps loggregator envelopes of these types to the following OpenTelemetry log severity text and severity number:

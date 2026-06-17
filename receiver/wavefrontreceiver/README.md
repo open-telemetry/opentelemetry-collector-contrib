@@ -29,7 +29,6 @@ it to the collector metric format. See
 [https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax.](https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax)
 Each line received represents a Wavefront metric in the following format:
 
-
 ```<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]```
 
 > :information_source: The `wavefront` receiver is based on Carbon and binds to the
@@ -66,4 +65,3 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-

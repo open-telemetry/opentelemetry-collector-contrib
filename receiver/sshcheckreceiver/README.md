@@ -235,6 +235,3 @@ The receiver adds the following resource attribute:
 ### Detailed Metric Documentation
 
 Complete details about the metrics produced by this receiver, including attributes, types, and units, can be found in [documentation.md](./documentation.md) and [metadata.yaml](./metadata.yaml).
-
-
-

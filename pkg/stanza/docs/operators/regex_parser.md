@@ -36,7 +36,6 @@ Setting the size to 0 will disable the cache. This is the default.
 
 ### Example Configurations
 
-
 #### Parse the field `message` with a regular expression
 
 Configuration:

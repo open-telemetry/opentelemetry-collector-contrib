@@ -20,7 +20,6 @@ This receiver can receive telemetry data in [Faro format](https://github.com/gra
 
 Faro follows the [confighttp] configuration, some examples are shown below
 
-
 ### Example Configuration
 
 ```yaml

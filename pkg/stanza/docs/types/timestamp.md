@@ -78,7 +78,6 @@ The `epoch` layout type uses can consume epoch-based timestamps. The following l
 <sub>[1] Interpretted as seconds. Equivalent to using `s` layout.</sub><br/>
 <sub>[2] Due to floating point precision limitations, loss of up to 100ns may be expected.</sub>
 
-
 ### How to specify timestamp parsing parameters
 
 ```yaml

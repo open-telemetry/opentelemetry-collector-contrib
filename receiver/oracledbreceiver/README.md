@@ -124,7 +124,6 @@ receivers:
 
 ## Enabling events.
 
-
 The following is a generic configuration that can be used for the default logs and metrics scraped
 by the Oracle DB receiver.
 

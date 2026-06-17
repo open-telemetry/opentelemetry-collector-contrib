@@ -96,7 +96,7 @@ Telemetry data is compressed according to the `compression` setting.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
-##  File Format 
+## File Format 
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 

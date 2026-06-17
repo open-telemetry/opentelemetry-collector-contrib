@@ -76,7 +76,6 @@ receivers:
     format: "ndjson"
 ```
 
-
 ### With Filtering
 
 ```yaml
@@ -95,7 +94,6 @@ receivers:
     max_poll_interval: 30s
     max_log_age: 24h
 ```
-
 
 ## Predicate Examples
 
@@ -178,4 +176,3 @@ service:
       receivers: [macosunifiedlogging]
       exporters: [file]
 ```
-

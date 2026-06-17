@@ -371,7 +371,6 @@ kubectl apply -f config.yaml
 |--------------------------------|-------|
 | service_number_of_running_pods | Count |
 
-
 <br/><br/> 
 | Resource Attribute |
 |--------------------|
@@ -383,7 +382,6 @@ kubectl apply -f config.yaml
 | Version            |
 | Sources            |
 | kubernete          |
-
 
 <br/><br/> 
 <br/><br/> 
@@ -619,7 +617,6 @@ kubectl apply -f config.yaml
 | pod_status           |
 <br/><br/> 
 <br/><br/> 
-
 
 ### Container
 | Metric                                  | Unit          |

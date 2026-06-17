@@ -377,7 +377,6 @@ coralogix:
 This configuration ensures proper authentication with the Coralogix backend.
 Prior versions (v0.126.0 and earlier) and subsequent versions (v0.128.0 and later) are not affected by this authentication issue.
 
-
 ### Need help?
 
 Our world-class customer success team is available 24/7 to walk you through the setup for this exporter and answer any questions that may come up.

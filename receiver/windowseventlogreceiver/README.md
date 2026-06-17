@@ -51,7 +51,6 @@ This receiver tails and parses logs from windows event log API using the
 | `resolve_sids.cache_ttl`            | `15m`        | Time-to-live for cached SID mappings. After this duration, SIDs will be re-resolved from the Windows LSA API.                                                                                                                  |
 | `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
 
-
 ### Feature Gates
 
 | Feature Gate                                          | Stage | Description                                                                                                                                                           |
@@ -175,7 +174,6 @@ If collection of the local event log is desired, a separate receiver needs to be
 
 - The remote computer must enable the "Remote Event Log Management" Windows Firewall exception. Otherwise, when you try to use the session handle, the call will error with `RPC_S_SERVER_UNAVAILABLE`.
 - The computer to which you are connecting must be running Windows Vista or later.
-
 
 Single server configuration:
 ```yaml

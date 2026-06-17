@@ -45,7 +45,6 @@ extensions:
 The full list of settings exposed for this exporter are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-
 ### Go Profiling with pprof basics
 
 The profiler can be used to improve a program.
@@ -100,4 +99,3 @@ The `list` command is also useful.
 Type `list <function name>` to see the source code of your function, annotated with the resource consumption (`flat` and `cum` columns like in the `topN` command).
 If you prefer to view it in your browser, use the `weblist <function name>` command instead.
 In this view, you can see which line exactly used the most resources and start to improve it.
-

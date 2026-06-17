@@ -140,4 +140,3 @@ attributes.ce-type = "org.opentelemetry.otlp.traces.v1"
 AND
 attributes.content-type = "application/protobuf"
 ```
-

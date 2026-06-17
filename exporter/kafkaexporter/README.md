@@ -180,7 +180,6 @@ The Kafka record key can be set in the following ways, in order of precedence:
 3. For Jaeger encodings (`jaeger_proto`, `jaeger_json`), the marshaler always keys records by the trace ID.
 4. Otherwise the record key is nil and the configured `record_partitioner` strategy determines which partition receives the record.
 
-
 ## Partitioning Kafka Records
 
 The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 

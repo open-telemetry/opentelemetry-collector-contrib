@@ -115,7 +115,6 @@ see the [Scraping README][ghsread].
 
 [ghsread]: internal/scraper/githubscraper/README.md#github-limitations
 
-
 ### GitHub Personal Access Token (PAT) Setup
 
 To create a GitHub Personal Access Token (PAT), please refer to the official [documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).

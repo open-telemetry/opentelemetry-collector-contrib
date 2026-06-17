@@ -27,12 +27,12 @@ The following settings are required:
 - `project_id`: The ID of the project in Huawei Cloud. This is used to identify which project's metrics are to be collected. See [Obtaining a Project ID](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-proid.html).
 
 - `period`: The aggregation granularity of metrics retrieved from CES in seconds. For details about the aggregation, see [What Is Rollup?](https://support.huaweicloud.com/intl/en-us/ces_faq/ces_faq_0009.html). Possible values are 1, 300, 1200, 3600, 14400, and 86400.
-	- 1: Cloud Eye performs no aggregation and displays raw data.
-	- 300: Cloud Eye aggregates data every 5 minutes.
-	- 1200: Cloud Eye aggregates data every 20 minutes.
-	- 3600: Cloud Eye aggregates data every hour.
-	- 14400: Cloud Eye aggregates data every 4 hours.
-	- 86400: Cloud Eye aggregates data every 24 hours.
+ - 1: Cloud Eye performs no aggregation and displays raw data.
+ - 300: Cloud Eye aggregates data every 5 minutes.
+ - 1200: Cloud Eye aggregates data every 20 minutes.
+ - 3600: Cloud Eye aggregates data every hour.
+ - 14400: Cloud Eye aggregates data every 4 hours.
+ - 86400: Cloud Eye aggregates data every 24 hours.
 - `filter`: The filter field determines the aggregation method used for the metrics. This aggregation is applied to the data points within the specified period. Valid values for filter include:
 
     - `average`: Calculates the average value over the period.
@@ -81,7 +81,6 @@ The full list of settings exposed for this receiver are documented in [config.go
 
 ### Huawei Cloud SDK Authentication Setup
 
-
 To ensure secure authentication, the Access Key (AK) and Secret Key (SK) used by the Huawei Cloud SDK must be stored in environment variables. See [Obtaining an AK/SK](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-aksk.html).
 
 Before running the application, you need to set the environment variables `HUAWEICLOUD_SDK_AK` and `HUAWEICLOUD_SDK_SK` in your local environment. Here’s how you can do it:
@@ -107,9 +106,7 @@ If you encounter any errors, please refer to:
 - [CES Error Codes](https://support.huaweicloud.com/intl/en-us/api-ces/ErrorCode.html)
 - [Quota management](https://support.huaweicloud.com/intl/en-us/usermanual-ces/en-us_topic_0154940152.html)
 
-
 ## Converting CES metric representation to OpenTelemetry metric representation
-
 
 | Source Field             | Target Field                                 | Description                                                                                           |
 |--------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------|

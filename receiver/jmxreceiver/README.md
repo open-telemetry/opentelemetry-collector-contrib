@@ -268,4 +268,3 @@ Corresponds to the `otel.resource.attributes` property.
 SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
 Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.
-

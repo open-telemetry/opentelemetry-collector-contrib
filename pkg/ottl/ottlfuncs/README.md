@@ -103,7 +103,6 @@ The key will be deleted from the map.
 
 Examples:
 
-
 - `delete_key(log.attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
@@ -119,7 +118,6 @@ The `delete_matching_keys` function removes all keys from a `pcommon.Map` that m
 All keys that match the pattern will be deleted from the map.
 
 Examples:
-
 
 - `delete_matching_keys(log.attributes, "(?i).*password.*")`
 
@@ -137,7 +135,6 @@ All keys that match the pattern will remain in the map, while non matching keys 
 
 Examples:
 
-
 - `keep_matching_keys(log.attributes, "(?i).*version.*")`
 
 - `keep_matching_keys(resource.attributes, "(?i).*version.*")`
@@ -149,7 +146,6 @@ Examples:
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
 `target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
-
 
 For example, the following map
 
@@ -262,15 +258,11 @@ Examples:
 
 - `flatten(resource.attributes)`
 
-
 - `flatten(metric.cache, "k8s", 4)`
-
 
 - `flatten(log.body, depth=2)`
 
-
 - `flatten(body, resolveConflicts=true)`
-
 
 ### keep_keys
 
@@ -285,7 +277,6 @@ The map will be changed to only contain the keys specified by the list of string
 Examples:
 
 - `keep_keys(log.attributes, ["http.method"])`
-
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
@@ -309,7 +300,6 @@ Examples:
 
 - `limit(log.attributes, 100, [])`
 
-
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ### merge_maps
@@ -332,9 +322,7 @@ Examples:
 
 - `merge_maps(log.attributes, ParseJSON(log.body), "upsert")`
 
-
 - `merge_maps(log.attributes, ParseJSON(log.attributes["kubernetes"]), "update")`
-
 
 - `merge_maps(log.attributes, resource.attributes, "insert")`
 
@@ -438,12 +426,9 @@ Examples:
 
 - `set(resource.attributes["http.path"], "/foo")`
 
-
 - `set(metric.name, resource.attributes["http.route"])`
 
-
 - `set(span.trace_state["svc"], "example")`
-
 
 - `set(span.attributes["source"], span.trace_state["source"])`
 
@@ -606,7 +591,6 @@ Examples:
 
 - `Base64Decode("aGVsbG8gd29ybGQ=")`
 
-
 - `Base64Decode(resource.attributes["encoded field"])`
 
 ### Base64Encode
@@ -622,12 +606,9 @@ Examples:
 
 - `Base64Encode("test string")`
 
-
 - `Base64Encode(resource.attributes["field"])`
 
-
 - `Base64Encode(body, "base64-url")`
-
 
 - `Base64Encode(attributes["data"], "base64-raw")`
 
@@ -655,9 +636,7 @@ Examples:
 
 - `Bool(log.attributes["truthy_attribute"])`
 
-
 - `Bool("true")`
-
 
 - `Bool("0")`
 
@@ -674,7 +653,6 @@ Examples:
 
 - `Decode("aGVsbG8gd29ybGQ=", "base64")`
 
-
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
 
 ### Coalesce
@@ -690,7 +668,6 @@ If all values are `nil`, the Converter returns `nil`.
 Examples:
 
 - `Coalesce([attributes["user.id"], attributes["enduser.id"], "unknown"])`
-
 
 - `Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])`
 
@@ -712,9 +689,7 @@ Examples:
 
 - `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
 
-
 - `CommunityID("192.168.1.1", 54321, "10.0.0.1", 90, "UDP", 2)`
-
 
 ### Concat
 
@@ -730,9 +705,7 @@ Examples:
 
 - `Concat([span.attributes["http.method"], span.attributes["http.path"]], ": ")`
 
-
 - `Concat([metric.name, 1], " ")`
-
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
@@ -866,7 +839,6 @@ Examples:
 
 - `Double(log.attributes["http.status_code"])`
 
-
 - `Double("2.0")`
 
 ### Duration
@@ -931,7 +903,6 @@ Supported types are `int`, `long`, `double`, `float` and boolean
 The [Elastic Go-Grok](https://github.com/elastic/go-grok) ships with numerous predefined grok patterns that simplify working with grok.
 In collector Complete set is included consisting of a default set and all additional sets adding product/tool specific capabilities (like [aws](https://github.com/elastic/go-grok/blob/main/patterns/aws.go) or [java](https://github.com/elastic/go-grok/blob/main/patterns/java.go) patterns).
 
-
 Default set consists of:
 
 | Name | Example |
@@ -991,7 +962,6 @@ Examples:
      - `user.name`: smith
      - `user.password`: pass123
 
-
 ### FNV
 
 `FNV(value)`
@@ -1007,7 +977,6 @@ If an error occurs during hashing it will be returned.
 Examples:
 
 - `FNV(resource.attributes["device.name"])`
-
 
 - `FNV("name")`
 
@@ -1145,7 +1114,6 @@ Examples:
 
 - `HasPrefix(resource.attributes["service.name"], "ingest_")`
 
-
 - `HasPrefix("ingest_service", "ingest_")`
 
 ### HasSuffix
@@ -1163,7 +1131,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `HasSuffix(resource.attributes["service.name"], "_service")`
-
 
 - `HasSuffix("ingest_service", "_service")`
 
@@ -1190,7 +1157,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `Hex(span.attributes["http.status_code"])`
-
 
 - `Hex(2.0)`
 
@@ -1292,7 +1258,6 @@ Examples:
 
 - `Int(log.attributes["http.status_code"])`
 
-
 - `Int("2.0")`
 
 ### IsBool
@@ -1312,12 +1277,9 @@ Examples:
 
 - `IsBool(false)`
 
-
 - `IsBool(pcommon.NewValueBool(false))`
 
-
 - `IsBool(42)`
-
 
 - `IsBool(resource.attributes["any key"])`
 
@@ -1398,7 +1360,6 @@ Examples:
 
 - `IsMap(log.body)`
 
-
 - `IsMap(log.attributes["maybe a map"])`
 
 ### IsMatch
@@ -1423,7 +1384,6 @@ If target is nil, false is always returned.
 Examples:
 
 - `IsMatch(span.attributes["http.path"], "foo")`
-
 
 - `IsMatch("string", ".*ring")`
 
@@ -1510,7 +1470,6 @@ If target is nil an error is returned.
 Examples:
 
 - `Log(span.attributes["duration_ms"])`
-
 
 - `Int(Log(span.attributes["duration_ms"])`
 
@@ -1711,12 +1670,9 @@ Examples:
 
 - `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
 
-
 - `ParseCSV(log.body, "phone|name|email", delimiter="|")`
 
-
 - `ParseCSV(log.attributes["csv_line"], log.attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
-
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
 
@@ -1775,12 +1731,9 @@ Examples:
 
 - `ParseJSON("{\"attr\":true}")`
 
-
 - `ParseJSON("[\"attr1\",\"attr2\"]")`
 
-
 - `ParseJSON(resource.attributes["kubernetes"])`
-
 
 - `ParseJSON(log.body)`
 
@@ -2155,7 +2108,6 @@ Examples:
 
 - `SHA1(resource.attributes["device.name"])`
 
-
 - `SHA1("name")`
 
 **Note:** [According to the National Institute of Standards and Technology (NIST)](https://csrc.nist.gov/projects/hash-functions), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (such as SHA-256 or SHA-512) whenever possible.
@@ -2356,7 +2308,6 @@ Examples:
 
 - `set(resource.attributes["service.name"], TrimPrefix(resource.attributes["service.name"], "ingest_"))`
 
-
 - `TrimPrefix("ingest_service", "ingest_")`
 
 ### TrimSuffix
@@ -2374,7 +2325,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `set(resource.attributes["service.name"], TrimSuffix(resource.attributes["service.name"], "_service"))`
-
 
 - `TrimSuffix("ingest_service", "_service")`
 
@@ -2602,7 +2552,6 @@ Examples:
 - `TraceID(0x00000000000000000000000000000000)`
 - `TraceID("a389023abaa839283293ed323892389d")`
 
-
 ### TruncateTime
 
 `TruncateTime(time, duration)`
@@ -2697,7 +2646,6 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 `value` is a string or a path to a string.  If `value` is not a string an error is returned.
 
 The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name`, and `os.version` as defined in semconv v1.34.0. `os.name` and `os.version` are omitted if empty.
-
 
 Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 

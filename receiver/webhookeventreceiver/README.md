@@ -100,4 +100,3 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)
-

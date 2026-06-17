@@ -1,6 +1,5 @@
 # Design of AWS Container Insights Receiver
 
-
 ## Container Insights Architecture for EKS
 ![architecture](images/eks-design.png)
 
@@ -23,7 +22,6 @@ The following two packages are used to decorate metrics:
 * `host`
   * get cpu and mem capacity of the host from `gopsutil`
   * retrieve info about ebs volume, autoscaling group and cluster name from ec2 metadata and ec2 apis
-
 
 * `stores`
   * pod store:

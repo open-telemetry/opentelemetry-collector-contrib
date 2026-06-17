@@ -167,7 +167,6 @@ None
 
 See `redis/2` in [examples](#examples).
 
-
 **receivers.&lt;receiver_type/id&gt;.resource_attributes**
 
 ```yaml
@@ -478,7 +477,6 @@ service:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-
 ## Generate receiver configurations from provided Hints
 
 Note: When hints feature is enabled if hints are present for an endpoint no receiver templates will be evaluated.
@@ -528,7 +526,6 @@ collecting metrics and logs signals from the target Pods/containers.
 
 `io.opentelemetry.discovery.metrics/scraper` (example: `"nginx"`)
 
-
 #### Define configuration
 
 `io.opentelemetry.discovery.metrics/config`
@@ -549,7 +546,6 @@ io.opentelemetry.discovery.metrics/config: |
   read_buffer_size: "10"
   xyz: "abc"
 ```
-
 
 #### Support multiple target containers
 
@@ -634,7 +630,6 @@ the Pod level hints are used as a fallback (see detailed example below).
 The current implementation relies on the implementation of `k8sobserver` extension and specifically
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
 The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#pod-container) that is emitted.
-
 
 ### Examples
 
