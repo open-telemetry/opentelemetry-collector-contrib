@@ -1183,6 +1183,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		databaseName      = "database_name"
 		executionCount    = "execution_count"
 		lastExecutionTime = "last_execution_time"
+		planCreationTime  = "plan_creation_time"
 		logicalReads      = "total_logical_reads"
 		logicalWrites     = "total_logical_writes"
 		physicalReads     = "total_physical_reads"
@@ -1325,6 +1326,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		}
 
 		lastExecutionTimeVal := row[lastExecutionTime]
+		planCreationTimeVal := row[planCreationTime]
 
 		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
@@ -1360,6 +1362,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureID],
 			row[storedProcedureName],
 			lastExecutionTimeVal,
+			planCreationTimeVal,
 		)
 	}
 	return resources, errors.Join(errs...)
