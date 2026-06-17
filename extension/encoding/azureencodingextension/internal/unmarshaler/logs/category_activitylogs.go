@@ -88,10 +88,11 @@ func (r *activityLogRecordBase) PutCommonAttributes(attrs pcommon.Map, body pcom
 
 // Non-SemConv attributes for Administrative activity logs
 const (
-	attributeAzureAdministrativeEntity        = "azure.administrative.entity"
-	attributeAzureAdministrativeMessage       = "azure.administrative.message"
-	attributeAzureAdministrativeHierarchy     = "azure.administrative.hierarchy"
-	attributeAzureAdministrativeStatusMessage = "azure.administrative.status_message"
+	attributeAzureAdministrativeEntity            = "azure.administrative.entity"
+	attributeAzureAdministrativeMessage           = "azure.administrative.message"
+	attributeAzureAdministrativeHierarchy         = "azure.administrative.hierarchy"
+	attributeAzureAdministrativeStatusMessage     = "azure.administrative.status_message"
+	attributeAzureAdministrativeStatusMessageText = "azure.administrative.status_message.text"
 )
 
 // Generic Azure attributes carried by PIM events but not PIM-specific.
@@ -176,7 +177,7 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 			m := attrs.PutEmptyMap(attributeAzureAdministrativeStatusMessage)
 			_ = m.FromRaw(statusMsg)
 		} else {
-			unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeStatusMessage, r.Properties.StatusMessage)
+			unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeStatusMessageText, r.Properties.StatusMessage)
 		}
 	}
 
