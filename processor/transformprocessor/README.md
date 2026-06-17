@@ -671,7 +671,7 @@ The `merge_histogram_buckets` function merges explicit histogram buckets. The `m
 
 `target_value` is interpreted according to `method`:
 - `remove_explicit_bound`: `target_value` is the explicit boundary to remove. The function merges the bucket ending at this boundary with the next bucket. This method uses floating-point tolerance (epsilon = 1e-12) when matching the boundary.
-- `limit_buckets`: `target_value` is the maximum number of buckets to keep. It must be a positive integer. The function reduces resolution in uniform compaction passes until the histogram has no more than `target_value` buckets. In each pass, it merges adjacent bucket pairs from lower to higher bucket order, combines their counts, and keeps an unpaired final bucket unchanged. Bucket count values and boundary widths do not affect which buckets are merged. Because each pass roughly halves the number of buckets, the resulting histogram may have fewer than `target_value` buckets.
+- `limit_buckets`: `target_value` is the maximum number of buckets to keep. It must be a positive integer. The function reduces resolution with a single uniform compaction pass. It chooses the smallest divisor that keeps the resulting bucket count at or below `target_value`, merges adjacent buckets in groups of that size from lower to higher bucket order, combines their counts, and keeps any partial final group. Bucket count values and boundary widths do not affect which buckets are merged. The resulting histogram may have fewer than `target_value` buckets when no smaller uniform divisor can stay within the limit.
 
 The function:
 - Preserves the total count and sum of the histogram.
