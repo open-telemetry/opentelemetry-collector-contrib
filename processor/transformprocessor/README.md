@@ -724,13 +724,13 @@ The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing th
 - `"clf"` (default) — the strict Common Log Format:
 
   ```
-  remotehost rfc931 authuser [date] "request" status bytes
+  remotehost rfc931 auth_user [date] "request" status bytes
   ```
 
 - `"combined"` — the NCSA Combined Log Format used by default in many Apache and nginx configurations, which is CLF with the quoted referer and user-agent appended:
 
   ```
-  remotehost rfc931 authuser [date] "request" status bytes "referer" "user-agent"
+  remotehost rfc931 auth_user [date] "request" status bytes "referer" "user-agent"
   ```
 
 Quoted fields (`request`, `referer`, `user-agent`) may contain backslash escape sequences as produced by Apache (`\"`, `\\`, `\xhh`, and C-style control escapes such as `\n` and `\t` — see the [mod_log_config format notes](https://httpd.apache.org/docs/current/mod/mod_log_config.html#format-notes)) and nginx (`\xhh`). These sequences are unescaped in the returned values.
@@ -739,7 +739,7 @@ The returned map has the following fields:
 
 - `clf.remote_host` — the client's DNS name or IP address.
 - `clf.rfc931` — the remote logname of the user (CLF uses `-` when unknown).
-- `clf.authuser` — the authenticated user (CLF uses `-` when unknown).
+- `clf.auth_user` — the authenticated user (CLF uses `-` when unknown).
 - `clf.timestamp` — the contents of the bracketed date field, preserved as a string.
 - `clf.request` — the raw request line as sent by the client.
 - `clf.method`, `clf.request_uri`, `clf.protocol` — the parsed components of the request line, only set when the request line is well-formed.

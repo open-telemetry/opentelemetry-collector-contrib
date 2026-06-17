@@ -38,10 +38,7 @@ func createParseCLFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.
 		return nil, errors.New("parseCLFFactory args must be of type *parseCLFArguments")
 	}
 
-	format := clfFormatCLF
-	if !args.Format.IsEmpty() {
-		format = args.Format.Get()
-	}
+	format := args.Format.GetOr(clfFormatCLF)
 	switch format {
 	case clfFormatCLF, clfFormatCombined:
 	default:
@@ -74,7 +71,7 @@ const clfQuotedField = `"((?:[^"\\]|\\.)*)"`
 
 // clfRegex matches the Common Log Format:
 //
-//	remotehost rfc931 authuser [date] "request" status bytes
+//	remotehost rfc931 auth_user [date] "request" status bytes
 //
 // See https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
 var clfRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] ` + clfQuotedField + ` (\S+) (\S+)$`)
@@ -82,7 +79,7 @@ var clfRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] ` + clfQuoted
 // combinedRegex matches the NCSA Combined Log Format, which is CLF with the
 // quoted referer and user-agent appended:
 //
-//	remotehost rfc931 authuser [date] "request" status bytes "referer" "user-agent"
+//	remotehost rfc931 auth_user [date] "request" status bytes "referer" "user-agent"
 var combinedRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] ` + clfQuotedField + ` (\S+) (\S+) ` + clfQuotedField + ` ` + clfQuotedField + `$`)
 
 // unescapeCLF reverses the escaping Apache's mod_log_config applies to quoted
@@ -151,7 +148,7 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 	result := pcommon.NewMap()
 	result.PutStr("clf.remote_host", matches[1])
 	result.PutStr("clf.rfc931", matches[2])
-	result.PutStr("clf.authuser", matches[3])
+	result.PutStr("clf.auth_user", matches[3])
 	result.PutStr("clf.timestamp", matches[4])
 
 	request := unescapeCLF(matches[5])
@@ -166,7 +163,7 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 	status := matches[6]
 	statusInt, err := strconv.ParseInt(status, 10, 64)
 	if err != nil {
-		return pcommon.NewMap(), fmt.Errorf("invalid status code %q: %w", status, err)
+		return pcommon.Map{}, fmt.Errorf("invalid status code %q: %w", status, err)
 	}
 	result.PutInt("clf.status", statusInt)
 
@@ -174,7 +171,7 @@ func parseCLFMessage(message, format string) (pcommon.Map, error) {
 	if bytesStr != "-" {
 		bytesInt, err := strconv.ParseInt(bytesStr, 10, 64)
 		if err != nil {
-			return pcommon.NewMap(), fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
+			return pcommon.Map{}, fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
 		}
 		result.PutInt("clf.bytes", bytesInt)
 	}

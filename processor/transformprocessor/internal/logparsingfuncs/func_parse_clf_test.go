@@ -29,7 +29,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "frank",
+				"auth_user":   "frank",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET /apache_pb.gif HTTP/1.0",
 				"method":      "GET",
@@ -45,7 +45,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "-",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET / HTTP/1.1",
 				"method":      "GET",
@@ -61,7 +61,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "192.168.1.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET /redirect HTTP/1.1",
 				"method":      "GET",
@@ -77,7 +77,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "2001:db8::1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "POST /api/v1/users HTTP/1.1",
 				"method":      "POST",
@@ -93,7 +93,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "client.example.com",
 				"rfc931":      "bob",
-				"authuser":    "alice",
+				"auth_user":   "alice",
 				"timestamp":   "25/Dec/2023:00:00:00 +0000",
 				"request":     "DELETE /resource HTTP/2.0",
 				"method":      "DELETE",
@@ -109,7 +109,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "10.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET /search?q=hello+world&page=2 HTTP/1.1",
 				"method":      "GET",
@@ -125,7 +125,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET / HTTP/1.1",
 				"method":      "GET",
@@ -141,7 +141,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "MALFORMED",
 				"status":      int64(400),
@@ -155,7 +155,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "",
 				"status":      int64(408),
@@ -169,7 +169,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET /download HTTP/1.1",
 				"method":      "GET",
@@ -186,7 +186,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "frank",
+				"auth_user":   "frank",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET /apache_pb.gif HTTP/1.0",
 				"method":      "GET",
@@ -204,7 +204,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     `GET /search?q="foo" HTTP/1.1`,
 				"method":      "GET",
@@ -220,7 +220,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     `GET /path\to"file" HTTP/1.1`,
 				"method":      "GET",
@@ -237,7 +237,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "203.0.113.7",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "12/Jun/2026:09:15:02 +0000",
 				"request":     `GET /products?id=1" OR "1"="1 HTTP/1.1`,
 				"method":      "GET",
@@ -256,7 +256,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET / HTTP/1.1",
 				"method":      "GET",
@@ -274,7 +274,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "127.0.0.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     `GET /a\q/b\xZZ HTTP/1.1`,
 				"method":      "GET",
@@ -291,7 +291,7 @@ func Test_parseCLF(t *testing.T) {
 			expected: map[string]any{
 				"remote_host": "192.168.1.1",
 				"rfc931":      "-",
-				"authuser":    "-",
+				"auth_user":   "-",
 				"timestamp":   "10/Oct/2000:13:55:36 -0700",
 				"request":     "GET / HTTP/1.1",
 				"method":      "GET",

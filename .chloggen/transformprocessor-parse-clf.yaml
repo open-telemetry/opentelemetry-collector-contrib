@@ -17,7 +17,7 @@ issues: [48349]
 # Use pipe (|) for multiline entries.
 subtext: |
   `ParseCLF` is available in log statements and returns a map with the parsed
-  `clf.remote_host`, `clf.rfc931`, `clf.authuser`, `clf.timestamp`, `clf.request`,
+  `clf.remote_host`, `clf.rfc931`, `clf.auth_user`, `clf.timestamp`, `clf.request`,
   `clf.method`, `clf.request_uri`, `clf.protocol`, `clf.status`, and `clf.bytes`
   fields. An optional `format` parameter selects between the strict `"clf"` format
   (default) and the NCSA `"combined"` format, which additionally parses
