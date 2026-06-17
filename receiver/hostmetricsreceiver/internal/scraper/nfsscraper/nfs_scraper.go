@@ -80,8 +80,8 @@ func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsStats.nfsNetStats != nil {
-		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount), metadata.AttributeNetworkTransportUdp)
-		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount), metadata.AttributeNetworkTransportTcp)
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
 		s.mb.RecordNfsClientNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpConnectionCount))
 	}
 
@@ -135,8 +135,8 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdNetStats != nil {
-		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount), metadata.AttributeNetworkTransportUdp)
-		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount), metadata.AttributeNetworkTransportTcp)
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
 		s.mb.RecordNfsServerNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpConnectionCount))
 	}
 
