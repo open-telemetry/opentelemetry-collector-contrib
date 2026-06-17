@@ -146,7 +146,12 @@ func TestInput(t *testing.T) {
 	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}, cfg))
 	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
-	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
+	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1", "message2"}, cfg))
+
+	oneLogPerPacketCfg := NewConfigWithID("test_input")
+	oneLogPerPacketCfg.ListenAddress = ":0"
+	oneLogPerPacketCfg.OneLogPerPacket = true
+	t.Run("OneLogPerPacket", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, oneLogPerPacketCfg))
 
 	cfg.AsyncConfig = &AsyncConfig{
 		Readers:        2,
@@ -160,7 +165,7 @@ func TestInputAttributes(t *testing.T) {
 	t.Run("Simple", udpInputAttributesTest([]byte("message1"), []string{"message1"}))
 	t.Run("TrailingNewlines", udpInputAttributesTest([]byte("message1\n"), []string{"message1"}))
 	t.Run("TrailingCRNewlines", udpInputAttributesTest([]byte("message1\r\n"), []string{"message1"}))
-	t.Run("NewlineInMessage", udpInputAttributesTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
+	t.Run("NewlineInMessage", udpInputAttributesTest([]byte("message1\nmessage2\n"), []string{"message1", "message2"}))
 }
 
 func TestFailToBind(t *testing.T) {

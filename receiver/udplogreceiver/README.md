@@ -47,7 +47,7 @@ Many parsers operators can be configured to embed certain followup operations su
 
 If set, the `multiline` configuration block instructs the `udp_log` receiver to split log entries on a pattern other than newlines.
 
-**note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as log.
+**note** If `multiline` is not set at all, log entries are split on newlines unless `one_log_per_packet` is set to `true`.
 **note** `multiline` detection works per UDP packet due to protocol limitations.
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
