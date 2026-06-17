@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -265,26 +266,31 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 	return nil
 }
 
-// attributePartition returns the partition path segment derived from a resource attribute
-// as configured in resource_attrs_to_gcs. It returns an empty string when the mapping is
-// not configured or the attribute is absent, in which case no extra segment is added.
+// attributePartition returns the sanitized resource_attrs_to_gcs partition segment for the
+// resource, or "" when the mapping is unset, the attribute is absent, or it sanitizes empty.
 func (s *storageExporter) attributePartition(res pcommon.Resource) string {
 	if key := s.cfg.ResourceAttrsToGCS.Prefix; key != "" {
 		if value, ok := res.Attributes().Get(key); ok {
-			return value.AsString()
+			return sanitizePartitionSegment(value.AsString())
 		}
 	}
 	return ""
 }
 
-// generateFilename returns the name of the file to be uploaded.
-// It starts from a unique ID, and prepends the partitionFormat, the attribute partition
-// and the prefix to it. The resulting layout is:
+// sanitizePartitionSegment normalizes an untrusted attribute value for use in an object
+// name via path.Clean (collapses "//", drops "."/".."/empty segments). The leading "/"
+// prevents traversal above the root and is then trimmed.
+func sanitizePartitionSegment(value string) string {
+	return strings.TrimPrefix(path.Clean("/"+value), "/")
+}
+
+// generateFilename builds the object name with the layout (each segment optional, skipped
+// when empty):
 //
 //	<partitionPrefix>/<attributePartition>/<partitionFormat>/<filePrefix>_<uniqueID>[.ext]
 //
-// attributePartition is the segment derived from a resource attribute (resource_attrs_to_gcs),
-// inserted between the configured prefix and the time-based format. Empty segments are skipped.
+// filePrefix joins uniqueID with "_" (or "/" when it ends in "/"); attributePartition comes
+// from resource_attrs_to_gcs; the .gz/.zst extension is appended when compression is set.
 func generateFilename(
 	uniqueID, filePrefix, partitionPrefix, attributePartition string,
 	compression configcompression.Type,

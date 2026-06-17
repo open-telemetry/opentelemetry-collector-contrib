@@ -1,3 +1,11 @@
+$defs:
+  resource_attrs_to_gcs:
+    description: ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+    type: object
+    properties:
+      prefix:
+        description: Prefix names the resource attribute whose value (from the first resource of each batch) is inserted as a partition segment between bucket.partition.prefix and the time format, e.g. prefix "storage" + attribute "serviceA" -> "storage/serviceA/<time>/...".
+        type: string
 type: object
 properties:
   bucket:
@@ -31,16 +39,13 @@ properties:
       reuse_if_exists:
         description: 'ReuseIfExists controls whether to reuse an existing bucket or create a new one. When set to true: - The exporter checks if the bucket exists (requires storage.buckets.get on the bucket) - If the bucket exists, it will be used - If the bucket does not exist, an error is returned When set to false: - The exporter attempts to create the bucket (requires storage.buckets.create at project level) - If the bucket already exists, an error is returned Set to true when the service account lacks project-level bucket creation permissions but has bucket-level permissions.'
         type: boolean
-  resource_attrs_to_gcs:
-    type: object
-    properties:
-      prefix:
-        description: 'Prefix indicates the resource attribute whose value is inserted as a partition path segment between bucket.partition.prefix and the time-based partition format. When set and the attribute is present on the resource, its value is appended after the configured prefix; otherwise the segment is omitted. The value is read from the first resource of each batch.'
-        type: string
   encoding:
     x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
+  resource_attrs_to_gcs:
+    description: ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+    $ref: resource_attrs_to_gcs
   retry_on_failure:
     $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:

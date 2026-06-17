@@ -442,6 +442,30 @@ func TestAttributePartition(t *testing.T) {
 			setAttr:  func(r pcommon.Resource) { r.Attributes().PutInt("host.id", 42) },
 			expected: "42",
 		},
+		{
+			name:     "value with leading and trailing slashes is trimmed",
+			attrKey:  "service.name",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "/serviceA/") },
+			expected: "serviceA",
+		},
+		{
+			name:     "duplicate internal slashes are collapsed and internal slashes preserved",
+			attrKey:  "service.name",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "serviceA//logs") },
+			expected: "serviceA/logs",
+		},
+		{
+			name:     "path traversal is resolved and cannot escape the root",
+			attrKey:  "service.name",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "../../serviceA") },
+			expected: "serviceA",
+		},
+		{
+			name:     "value sanitizes to empty",
+			attrKey:  "service.name",
+			setAttr:  func(r pcommon.Resource) { r.Attributes().PutStr("service.name", "/../") },
+			expected: "",
+		},
 	}
 
 	for _, tt := range tests {

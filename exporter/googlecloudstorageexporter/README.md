@@ -54,6 +54,15 @@ example, one folder per host or service). The resulting layout is
 `<partition.prefix>/<attribute value>/<partition.format>/...`, so the existing
 `bucket.partition.prefix` is preserved and the attribute segment is appended after it.
 
+Because resource attribute values are arbitrary and may be untrusted, the value is
+normalized with the standard library `path.Clean` before being used as an object-name
+segment: duplicate slashes are collapsed and empty, `.` and `..` segments are removed
+(so the value cannot traverse above its segment root). Leading and trailing `/` are
+trimmed, while internal `/` are preserved so a value can span multiple folder levels
+(e.g. `service-a/logs`). If the value normalizes to an empty string, no extra segment is
+added. Note that high-cardinality attribute values produce a correspondingly large number
+of object key prefixes.
+
 > Note: the attribute value is read from the **first** resource of each exported batch. If a batch can contain
 > multiple distinct attribute values and you need strict per-value routing, separate the
 > data upstream first using the [`routingconnector`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector)
