@@ -29,6 +29,10 @@ type Config struct {
 
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
+	// UniverseDomain is the universe domain for the Google Cloud Storage service.
+	// Defaults to "googleapis.com". Set to support Sovereign Cloud regions.
+	// See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+	UniverseDomain string `mapstructure:"universe_domain"`
 }
 
 type bucketConfig struct {

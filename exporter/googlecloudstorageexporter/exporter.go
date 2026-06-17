@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 )
 
 type poolItem interface {
@@ -180,7 +181,11 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// TODO Add option for authenticator
-	client, err := storage.NewClient(ctx)
+	var clientOpts []option.ClientOption
+	if s.cfg.UniverseDomain != "" {
+		clientOpts = append(clientOpts, option.WithUniverseDomain(s.cfg.UniverseDomain))
+	}
+	client, err := storage.NewClient(ctx, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}

@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: exporter/googlecloudpubsub
+
+note: Add `universe_domain` config option to support Sovereign Google Cloud regions. Setting this field passes `option.WithUniverseDomain` to the underlying Google API client.
+
+issues: [48924]
+
+change_logs: [user]

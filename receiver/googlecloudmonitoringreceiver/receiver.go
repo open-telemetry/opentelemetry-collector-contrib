@@ -155,6 +155,9 @@ func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 	}
 
 	opts := []option.ClientOption{option.WithCredentials(creds)}
+	if mr.config.UniverseDomain != "" {
+		opts = append(opts, option.WithUniverseDomain(mr.config.UniverseDomain))
+	}
 	if mr.config.Endpoint != "" {
 		opts = append(opts, option.WithEndpoint(mr.config.Endpoint))
 	}
