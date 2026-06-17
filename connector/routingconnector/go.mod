@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.154.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/consumer v1.60.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/consumer/consumertest v0.154.1-0.20260612191519-af182d232650
+	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/pdata v1.60.1-0.20260612191519-af182d232650
 	go.opentelemetry.io/collector/pipeline v1.60.1-0.20260612191519-af182d232650
 	go.uber.org/goleak v1.3.0
@@ -59,7 +60,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.154.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.154.1-0.20260612191519-af182d232650 // indirect
-	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.154.1-0.20260612191519-af182d232650 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260612191519-af182d232650 // indirect
