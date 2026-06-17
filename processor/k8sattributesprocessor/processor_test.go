@@ -1128,7 +1128,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 							"app": {
 								Name:              "app",
 								ImageName:         "test/app",
-								ImageTag:          "1.0.1",
+								ImageTags:         []string{"1.0.1"},
 								ServiceInstanceID: "instance-1",
 								ServiceVersion:    "1.0.1",
 							},
@@ -1144,7 +1144,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:      "1.0.1",
+				"container.image.tags": []string{"1.0.1"},
 				"service.instance.id":  "instance-1",
 				"service.version":      "1.0.1",
 			},
@@ -1168,7 +1168,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
 								Name:      "app",
 								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								ImageTags: []string{"1.0.1"},
 							},
 						},
 					},
@@ -1183,7 +1183,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:      "1.0.1",
+				"container.image.tags": []string{"1.0.1"},
 			},
 		},
 		{
@@ -1211,7 +1211,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
 								Name:              "app",
 								ImageName:         "test/app",
-								ImageTag:          "1.0.1",
+								ImageTags:         []string{"1.0.1"},
 								ServiceInstanceID: "instance-1",
 								ServiceVersion:    "version-1",
 							},
@@ -1228,7 +1228,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:      "1.0.1",
+				"container.image.tags": []string{"1.0.1"},
 				"service.instance.id":  "explicit-instance",
 				"service.version":      "explicit-version",
 				"service.name":         "explicit-name",
@@ -1253,7 +1253,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 						ByName: map[string]*kube.Container{
 							"app": {
 								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								ImageTags: []string{"1.0.1"},
 							},
 						},
 					},
@@ -1267,7 +1267,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:      "1.0.1",
+				"container.image.tags": []string{"1.0.1"},
 			},
 		},
 		{
@@ -1426,7 +1426,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 							"app": {
 								Name:      "app",
 								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								ImageTags: []string{"1.0.1"},
 							},
 						},
 					},
@@ -1439,7 +1439,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:      "1.0.1",
+				"container.image.tags": []string{"1.0.1"},
 			},
 		},
 		{

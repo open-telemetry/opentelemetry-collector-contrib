@@ -985,8 +985,8 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.labels.label1": "lv1",
-				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
 			},
 		},
 		{

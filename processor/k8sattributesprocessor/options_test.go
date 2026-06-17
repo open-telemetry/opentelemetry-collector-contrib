@@ -64,7 +64,7 @@ func TestEnabledAttributes(t *testing.T) {
 		"k8s.deployment.name",
 		"k8s.node.name",
 		"container.image.name",
-		containerImageTag,
+		"container.image.tags",
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }
