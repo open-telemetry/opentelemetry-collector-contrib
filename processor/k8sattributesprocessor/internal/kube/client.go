@@ -1618,14 +1618,10 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	var staleContainerIDRequests []deleteRequest
 
 	c.m.Lock()
-	if c.hasContainerIDAssociation && newPod.PodUID != "" {
-		if oldPod, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && oldPod.PodUID == newPod.PodUID {
-			if !pod.Status.StartTime.Before(oldPod.StartTime) {
-				// Only container.id-based identifiers are handled here.
-				// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
-				// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
-				staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
-			}
+	var oldPod *Pod
+	if newPod.PodUID != "" {
+		if op, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && op.PodUID == newPod.PodUID {
+			oldPod = op
 		}
 	}
 	for i := range identifiers {
@@ -1640,6 +1636,18 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 			}
 		}
 		c.Pods[id] = newPod
+	}
+	if c.hasContainerIDAssociation && oldPod != nil &&
+		c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
+		// Run stale container.id cleanup only when this watch actually replaced the pod under
+		// k8s.pod.uid. The loop skips c.Pods[uid]=newPod when pod.Status.StartTime is older than
+		// the StartTime already stored for that key, so a stale watch leaves the UID entry
+		// pointing at the previous *Pod.
+		//
+		// Only container.id-based identifiers are handled here.
+		// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
+		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
+		staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
 	}
 	c.m.Unlock()
 
@@ -1667,13 +1675,8 @@ func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) 
 
 	identifiers := c.getIdentifiersFromAssoc(oldPod)
 	requests := make([]deleteRequest, 0, len(staleContainerIDs))
-	seen := make(map[PodIdentifier]struct{}, len(identifiers))
 	for i := range identifiers {
 		id := identifiers[i]
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		seen[id] = struct{}{}
 		if !podIdentifierHasContainerID(id, staleContainerIDs) {
 			continue
 		}
