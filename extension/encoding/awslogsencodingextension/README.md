@@ -21,7 +21,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
    - Includes support for Transit Gateway (TGW) flow logs, which use the same VPC flow log format.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
-- ELB access logs:
+ - ELB access logs:
    - [Classic Load Balancer (CLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
    - [Application Load Balancer (ALB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html)
    - [Network Load Balancer (NLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html)

@@ -57,7 +57,7 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key        | Description
+| Key        | Description                                                      |
 | ---        | ---                                                              |
 | `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`    | UTF-8 encoding                                                   |

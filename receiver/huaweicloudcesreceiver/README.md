@@ -27,12 +27,12 @@ The following settings are required:
 - `project_id`: The ID of the project in Huawei Cloud. This is used to identify which project's metrics are to be collected. See [Obtaining a Project ID](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-proid.html).
 
 - `period`: The aggregation granularity of metrics retrieved from CES in seconds. For details about the aggregation, see [What Is Rollup?](https://support.huaweicloud.com/intl/en-us/ces_faq/ces_faq_0009.html). Possible values are 1, 300, 1200, 3600, 14400, and 86400.
- - 1: Cloud Eye performs no aggregation and displays raw data.
- - 300: Cloud Eye aggregates data every 5 minutes.
- - 1200: Cloud Eye aggregates data every 20 minutes.
- - 3600: Cloud Eye aggregates data every hour.
- - 14400: Cloud Eye aggregates data every 4 hours.
- - 86400: Cloud Eye aggregates data every 24 hours.
+  - 1: Cloud Eye performs no aggregation and displays raw data.
+  - 300: Cloud Eye aggregates data every 5 minutes.
+  - 1200: Cloud Eye aggregates data every 20 minutes.
+  - 3600: Cloud Eye aggregates data every hour.
+  - 14400: Cloud Eye aggregates data every 4 hours.
+  - 86400: Cloud Eye aggregates data every 24 hours.
 - `filter`: The filter field determines the aggregation method used for the metrics. This aggregation is applied to the data points within the specified period. Valid values for filter include:
 
     - `average`: Calculates the average value over the period.
@@ -122,7 +122,6 @@ If you encounter any errors, please refer to:
 | *N/A*                     | `resource.attributes["cloud.provider"]`      | Set to `"huawei_cloud"` as the cloud provider.                                                         |
 | *N/A*                     | `scoped_metric.scope.name`                                 | Set to `"huawei_cloud_ces"` as the scope name.                                                         |
 | *N/A*                     | `scoped_metric.scope.version`                              | Set to `"v1"` as the scope version.                                                                    |
-                                                                  |
 
 ### Notes
 

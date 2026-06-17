@@ -1430,7 +1430,7 @@ The `Keys` Converter returns a slice containing all the keys from the given map.
 The returned type is `pcommon.Slice`.
 
 Examples:
-- 
+
 - `Keys(resource.attributes)`
 - `Keys({"k1":"v1", "k2": "v2"})`
 

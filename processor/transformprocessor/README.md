@@ -503,24 +503,27 @@ This function requires 2 arguments:
 
   - **uniform** - This approach distributes the datapoints for each bucket uniformly across the intersecting **ExplicitBounds**. The algorithm works as follows:
 
-     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries. 
-   - Calculate the count to be allocated to each boundary.
-   - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
+    - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries.
+    - Calculate the count to be allocated to each boundary.
+    - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
 
     _For example Given:_
-      1. count = 10
-      2. Exponential Histogram Bounds: [10, 20]
-      3. Boundaries:                [5, 10, 15, 20, 25]
-      4. Intersecting Boundaries:       [10, 15, 20]                          
-      5. Number of Intersecting Boundaries: 3
-      6. Using the formula: $count/numOfIntersections=10/3=3r1$
-      
-      _Uniform Allocation:_
-      
-      7. Start with zeros:          [0, 0, 0, 0, 0]
-      8. Allocate 3 to each:        [0, 3, 3, 3, 0]
-      9. Distribute remainder $r$ 1:    [0, 4, 3, 3, 0]
-      10. Final Counts:              [0, 4, 3, 3, 0]
+
+    ```text
+    1. count = 10
+    2. Exponential Histogram Bounds: [10, 20]
+    3. Boundaries:                [5, 10, 15, 20, 25]
+    4. Intersecting Boundaries:       [10, 15, 20]
+    5. Number of Intersecting Boundaries: 3
+    6. Using the formula: count/numOfIntersections=10/3=3r1
+
+    Uniform Allocation:
+
+    7. Start with zeros:          [0, 0, 0, 0, 0]
+    8. Allocate 3 to each:        [0, 3, 3, 3, 0]
+    9. Distribute remainder r=1:  [0, 4, 3, 3, 0]
+    10. Final Counts:             [0, 4, 3, 3, 0]
+    ```
 
   - **random** - This approach distributes the datapoints for each bucket randomly across the intersecting **ExplicitBounds**. This approach works in a similar manner to the uniform distribution algorithm with the main difference being that points are distributed randomly instead of uniformly. This works as follows:
       - If there are valid intersecting boundaries, calculate the proportion of the count that should be allocated to each boundary based on the overlap of the boundary with the provided range (lower to upper).
