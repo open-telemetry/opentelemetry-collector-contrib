@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -53,6 +54,10 @@ func createDefaultConfig() component.Config {
 		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ShutdownTimeout:     1 * time.Second,
 		CustomEventsEnabled: false,
+		TagMappings: TagMappingsConfig{
+			CloudRoleInstance:  []string{string(conventions.ServiceInstanceIDKey)},
+			ApplicationVersion: []string{string(conventions.ServiceVersionKey)},
+		},
 	}
 }
 
@@ -131,7 +136,7 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 		return &azureMonitorExporter{
 			config:   conf,
 			logger:   set.Logger,
-			packer:   newMetricPacker(set.Logger),
+			packer:   newMetricPacker(set.Logger, conf),
 			settings: set.TelemetrySettings,
 		}
 	})

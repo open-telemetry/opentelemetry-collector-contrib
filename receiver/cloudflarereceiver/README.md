@@ -4,7 +4,6 @@
 The Cloudflare Receiver allows Cloudflare's [LogPush Jobs](https://developers.cloudflare.com/logs/logpush/) to send
 logs over HTTPS from the Cloudflare logs aggregation system to an OpenTelemetry collector.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

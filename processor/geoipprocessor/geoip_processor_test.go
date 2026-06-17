@@ -20,7 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	conventions "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
@@ -155,17 +155,14 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		inputMetrics, err := golden.ReadMetrics(filepath.Join(dir, "input-metrics.yaml"))
 		require.NoError(t, err)
 
-		expectedMetrics, err := golden.ReadMetrics(filepath.Join(dir, "output-metrics.yaml"))
-		require.NoError(t, err)
-
 		err = metricsProcessor.ConsumeMetrics(t.Context(), inputMetrics)
 		require.NoError(t, err)
 		require.NoError(t, metricsProcessor.Shutdown(t.Context()))
 
 		actualMetrics := nextMetrics.AllMetrics()
 		require.Len(t, actualMetrics, 1)
-		// golden.WriteMetrics(t, filepath.Join(dir, "output-metrics.yaml"), actualMetrics[0])
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics[0]))
+
+		require.NoError(t, pmetricassert.AssertMetrics(filepath.Join(dir, "output-metrics.assert.yaml"), actualMetrics[0]))
 
 		// compare traces
 		nextTraces := new(consumertest.TracesSink)

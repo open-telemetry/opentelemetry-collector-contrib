@@ -48,9 +48,15 @@ type metricAssertion struct {
 }
 
 type datapointAssertion struct {
-	Attributes map[string]any `yaml:"attributes,omitempty"`
-	Value      any            `yaml:"value,omitempty"`
-	Rest       map[string]any `yaml:",inline"`
+	Attributes     map[string]any `yaml:"attributes,omitempty"`
+	Value          any            `yaml:"value,omitempty"`
+	Count          *uint64        `yaml:"count,omitempty"`
+	Sum            *float64       `yaml:"sum,omitempty"`
+	ExplicitBounds []float64      `yaml:"explicit_bounds,omitempty"`
+	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
+	Min            *float64       `yaml:"min,omitempty"`
+	Max            *float64       `yaml:"max,omitempty"`
+	Rest           map[string]any `yaml:",inline"`
 }
 
 func readDocument(path string) (*document, error) {

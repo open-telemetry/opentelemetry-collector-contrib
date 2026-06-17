@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
@@ -53,7 +54,8 @@ type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
 	// Encoding of log blobs in this container (default = "otlp_json").
-	// Supported values: "otlp_json", "otlp_proto".
+	// Either one of the built-in values "otlp_json" or "otlp_proto", or the
+	// ID of an encoding extension that implements plog.Unmarshaler.
 	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -63,7 +65,8 @@ type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
 	// Encoding of trace blobs in this container (default = "otlp_json").
-	// Supported values: "otlp_json", "otlp_proto".
+	// Either one of the built-in values "otlp_json" or "otlp_proto", or the
+	// ID of an encoding extension that implements ptrace.Unmarshaler.
 	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -124,13 +127,30 @@ const (
 	EncodingOTLPProto = "otlp_proto"
 )
 
-// supportedEncodings is the set of encoding values supported by the
-// receiver. Keep this consistent with the encoding constants above and
-// the README. Issue #48238 will extend this to also accept encoding
-// extension IDs resolved at component construction.
-var supportedEncodings = map[string]struct{}{
-	EncodingOTLPJSON:  {},
-	EncodingOTLPProto: {},
+// isBuiltinEncoding reports whether enc is one of the encodings the receiver
+// can unmarshal without an encoding extension.
+func isBuiltinEncoding(enc string) bool {
+	switch enc {
+	case EncodingOTLPJSON, EncodingOTLPProto:
+		return true
+	default:
+		return false
+	}
+}
+
+// validateEncoding accepts either a built-in encoding or a syntactically valid
+// encoding extension ID. The existence of the referenced extension cannot be
+// checked here as the host's extensions are only available once the component
+// starts; it is verified in blobReceiver.Start.
+func validateEncoding(enc string) error {
+	if isBuiltinEncoding(enc) {
+		return nil
+	}
+	var id component.ID
+	if err := id.UnmarshalText([]byte(enc)); err != nil {
+		return fmt.Errorf("encoding %q is not a supported built-in encoding (%q, %q) or a valid encoding extension ID: %w", enc, EncodingOTLPJSON, EncodingOTLPProto, err)
+	}
+	return nil
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
@@ -158,11 +178,11 @@ func (c Config) Validate() (err error) {
 		}
 	}
 
-	if _, ok := supportedEncodings[c.Logs.Encoding]; !ok {
-		err = multierr.Append(err, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v]", c.Logs.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
+	if encErr := validateEncoding(c.Logs.Encoding); encErr != nil {
+		err = multierr.Append(err, fmt.Errorf("logs.%w", encErr))
 	}
-	if _, ok := supportedEncodings[c.Traces.Encoding]; !ok {
-		err = multierr.Append(err, fmt.Errorf("traces.encoding %q is not supported; supported values: [%v, %v]", c.Traces.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
+	if encErr := validateEncoding(c.Traces.Encoding); encErr != nil {
+		err = multierr.Append(err, fmt.Errorf("traces.%w", encErr))
 	}
 
 	return err

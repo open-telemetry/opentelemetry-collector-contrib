@@ -4,7 +4,6 @@
 This extension provides Sigv4 authentication for making requests to AWS services. You can read about the
 [Sigv4 process](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |
@@ -52,7 +51,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -63,7 +62,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Notes
@@ -94,7 +93,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -105,7 +104,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Assume Role with External ID

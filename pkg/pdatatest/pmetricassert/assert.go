@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -24,10 +25,7 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc, err := normalize(actual, writeOptions{includeValues: true})
-	if err != nil {
-		return err
-	}
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 
@@ -161,12 +159,18 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 			}
 		}
 		for k, v := range edp.Rest {
-			if op, ok := strings.CutPrefix(k, "value/"); ok {
+			key, op := parseKeyAndOperator(k)
+			if key == "value" && (op == "gt" || op == "gte" || op == "lt" || op == "lte") {
 				if err := compareNumericOp("value", op, v, actual[idx].Value); err != nil {
 					dpValErrs = append(dpValErrs, err)
 				}
 			}
 		}
+
+		if err := compareDatapointValues(edp, actual[idx]); err != nil {
+			dpValErrs = append(dpValErrs, err)
+		}
+
 		if len(dpValErrs) > 0 {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), errors.Join(dpValErrs...)))
 		}
@@ -188,6 +192,53 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	}
 	for _, k := range unexpected {
 		errs = append(errs, fmt.Errorf("unexpected datapoint with attributes %s", k))
+	}
+	return errors.Join(errs...)
+}
+
+func compareDatapointValues(expected, actual datapointAssertion) error {
+	var errs []error
+	if expected.Count != nil {
+		if actual.Count == nil {
+			errs = append(errs, errors.New("missing expected count"))
+		} else if *expected.Count != *actual.Count {
+			errs = append(errs, fmt.Errorf("count mismatch: expected %v, got %v", *expected.Count, *actual.Count))
+		}
+	}
+	if expected.Sum != nil {
+		if actual.Sum == nil {
+			errs = append(errs, errors.New("missing expected sum"))
+		} else if *expected.Sum != *actual.Sum {
+			errs = append(errs, fmt.Errorf("sum mismatch: expected %v, got %v", *expected.Sum, *actual.Sum))
+		}
+	}
+	if expected.Min != nil {
+		if actual.Min == nil {
+			errs = append(errs, errors.New("missing expected min"))
+		} else if *expected.Min != *actual.Min {
+			errs = append(errs, fmt.Errorf("min mismatch: expected %v, got %v", *expected.Min, *actual.Min))
+		}
+	}
+	if expected.Max != nil {
+		if actual.Max == nil {
+			errs = append(errs, errors.New("missing expected max"))
+		} else if *expected.Max != *actual.Max {
+			errs = append(errs, fmt.Errorf("max mismatch: expected %v, got %v", *expected.Max, *actual.Max))
+		}
+	}
+	if expected.ExplicitBounds != nil {
+		if actual.ExplicitBounds == nil {
+			errs = append(errs, errors.New("missing expected explicit_bounds"))
+		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		}
+	}
+	if expected.BucketCounts != nil {
+		if actual.BucketCounts == nil {
+			errs = append(errs, errors.New("missing expected bucket_counts"))
+		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
+			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
 	}
 	return errors.Join(errs...)
 }
@@ -322,6 +373,20 @@ func opToSymbol(op string) string {
 	return op
 }
 
+func parseKeyAndOperator(rawKey string) (string, string) {
+	idx := strings.LastIndexByte(rawKey, '/')
+	if idx < 0 {
+		return rawKey, "exact"
+	}
+	op := rawKey[idx+1:]
+	switch op {
+	case "exists", "regex", "gt", "gte", "lt", "lte":
+		return rawKey[:idx], op
+	default:
+		return rawKey, "exact"
+	}
+}
+
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
 func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
@@ -340,8 +405,11 @@ func compareAttributes(expected, actual map[string]any) error {
 	var errs []error
 	seen := make(map[string]struct{}, len(expected))
 	for rawKey, expectedValue := range expected {
-		if key, ok := strings.CutSuffix(rawKey, "/exists"); ok {
-			seen[key] = struct{}{}
+		key, op := parseKeyAndOperator(rawKey)
+		seen[key] = struct{}{}
+
+		switch op {
+		case "exists":
 			if expectedValue != true {
 				errs = append(errs, fmt.Errorf("attribute %q/exists must be true (the only supported value)", key))
 				continue
@@ -349,10 +417,7 @@ func compareAttributes(expected, actual map[string]any) error {
 			if _, exists := actual[key]; !exists {
 				errs = append(errs, fmt.Errorf("missing attribute %q required by /exists", key))
 			}
-			continue
-		}
-		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
-			seen[key] = struct{}{}
+		case "regex":
 			actualValue, exists := actual[key]
 			if !exists {
 				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
@@ -361,37 +426,22 @@ func compareAttributes(expected, actual map[string]any) error {
 			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
 				errs = append(errs, err)
 			}
-			continue
-		}
-
-		handledNumeric := false
-		for _, op := range []string{"gt", "gte", "lt", "lte"} {
-			key, ok := strings.CutSuffix(rawKey, "/"+op)
-			if !ok {
-				continue
-			}
-			seen[key] = struct{}{}
+		case "gt", "gte", "lt", "lte":
 			actualValue, exists := actual[key]
 			if !exists {
 				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
 			} else if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
 				errs = append(errs, err)
 			}
-			handledNumeric = true
-			break
-		}
-		if handledNumeric {
-			continue
-		}
-
-		seen[rawKey] = struct{}{}
-		actualValue, ok := actual[rawKey]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing attribute %q", rawKey))
-			continue
-		}
-		if canonKey(expectedValue) != canonKey(actualValue) {
-			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
+		case "exact":
+			actualValue, ok := actual[key]
+			if !ok {
+				errs = append(errs, fmt.Errorf("missing attribute %q", rawKey))
+				continue
+			}
+			if canonKey(expectedValue) != canonKey(actualValue) {
+				errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
+			}
 		}
 	}
 	for key := range actual {
