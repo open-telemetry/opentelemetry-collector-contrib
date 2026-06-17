@@ -33,7 +33,9 @@ func TestObfuscateCommand(t *testing.T) {
 	require.NotContains(t, obfuscated, "comment")
 	require.NotContains(t, obfuscated, "lsid")
 	require.NotContains(t, obfuscated, "$clusterTime")
-	require.NotContains(t, obfuscated, "users")
+	// "users" is the value of the "find" key, which is in KeepValues — preserved intentionally.
+	require.Contains(t, obfuscated, "users")
+	// Filter values are still obfuscated.
 	require.NotContains(t, obfuscated, "test")
 	require.NotContains(t, obfuscated, "30")
 	require.NotContains(t, obfuscated, "session-1")

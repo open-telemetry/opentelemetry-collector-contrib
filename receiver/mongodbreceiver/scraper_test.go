@@ -828,7 +828,8 @@ func TestScrapeLogs(t *testing.T) {
 				originatingCommand, ok := logAttrs.Get("mongodb.cursor.originating_command")
 				require.True(t, ok)
 				require.Contains(t, originatingCommand.Str(), "aggregate")
-				require.NotContains(t, originatingCommand.Str(), "mycol")
+				// "mycol" is the value of the "aggregate" key, which is in KeepValues — preserved intentionally.
+				require.Contains(t, originatingCommand.Str(), "mycol")
 				require.NotContains(t, originatingCommand.Str(), "sensitive-value")
 				require.NotContains(t, originatingCommand.Str(), "cursor comment")
 
