@@ -46,5 +46,8 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  universe_domain:
+    description: UniverseDomain is the universe domain for the Google Cloud Storage service. Defaults to "googleapis.com". Set to support Sovereign Cloud regions. See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+    type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
