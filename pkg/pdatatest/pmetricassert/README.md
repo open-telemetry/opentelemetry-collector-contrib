@@ -35,6 +35,9 @@ The following are ignored:
 - batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
   entries with the same identity are normalized before comparison.
 
+`WriteAssertionFile` expects semantically valid metrics. It normalizes valid
+metrics into an assertion snapshot; it is not a validator for producer output.
+
 ## Typical usage
 
 ```go

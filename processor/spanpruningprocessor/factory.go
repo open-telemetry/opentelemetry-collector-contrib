@@ -43,6 +43,20 @@ func createDefaultConfig() component.Config {
 			5 * time.Second,
 			10 * time.Second,
 		},
+		EnableOutlierAnalysis: false,
+		OutlierAnalysis: OutlierAnalysisConfig{
+			Method:                         OutlierMethodIQR,
+			IQRMultiplier:                  1.5,
+			MADMultiplier:                  3.0,
+			MinGroupSize:                   7,
+			CorrelationMinOccurrence:       0.75,
+			CorrelationMaxNormalOccurrence: 0.25,
+			MaxCorrelatedAttributes:        5,
+			PreserveOutliers:               false,
+			MaxPreservedOutliers:           2,
+			PreserveOnlyWithCorrelation:    false,
+			MinOutlierThresholdPercent:     0.1,
+		},
 	}
 }
 
