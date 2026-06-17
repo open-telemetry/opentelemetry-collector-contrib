@@ -1777,7 +1777,8 @@ func TestProfileData(t *testing.T) {
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
-	done := make(chan bool)
+	done := make(chan struct{})
+	var closeOnce sync.Once
 
 	httpClient, headers := newTestClientWithBodyReader(func(bChan []byte) {
 		var hecEvent translator.Event
@@ -1793,7 +1794,7 @@ func TestProfileData(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, []int64{42}, pprofProfile.Sample[0].Value)
-		close(done)
+		closeOnce.Do(func() { close(done) })
 	})
 
 	profiles := pprofile.NewProfiles()

@@ -189,10 +189,8 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 
 	ld, permanentErrors := buildProfilesLogs(pp)
 
-	if err := c.pushLogDataInBatches(ctx, ld, localHeaders); err != nil {
-		return err
-	}
-	return multierr.Combine(permanentErrors...)
+	sendErr := c.pushLogDataInBatches(ctx, ld, localHeaders)
+	return multierr.Combine(append(permanentErrors, sendErr)...)
 }
 
 // buildProfilesLogs converts pprofile.Profiles into a plog.Logs payload for the Splunk HEC profiling endpoint.
@@ -247,8 +245,12 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
 	lr.SetTimestamp(prof.Time())
 	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
-	sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
-	lr.Attributes().PutStr(profilingDataTypeKey, sampleType)
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	stringTable := pp.Dictionary().StringTable()
+	if typeIdx < 0 || typeIdx >= stringTable.Len() {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
+	}
+	lr.Attributes().PutStr(profilingDataTypeKey, stringTable.At(typeIdx))
 	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
 	var totalFrameCount int64
 	for _, s := range prof.Samples().All() {

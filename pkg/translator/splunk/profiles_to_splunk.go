@@ -30,7 +30,11 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 		profileTime = time.Now()
 	}
 
-	sampleType := dict.StringTable().At(int(prof.SampleType().TypeStrindex()))
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	var sampleType string
+	if typeIdx >= 0 && typeIdx < dict.StringTable().Len() {
+		sampleType = dict.StringTable().At(typeIdx)
+	}
 	emittedIdx := 0
 	for srcIdx := range prof.Samples().Len() {
 		if emittedIdx >= len(p.Sample) {
