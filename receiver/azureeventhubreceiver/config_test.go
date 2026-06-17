@@ -23,6 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	authID := component.MustNewID("azureauth")
+	encodingID := component.MustNewID("azure_encoding")
 
 	tests := []struct {
 		id                  component.ID
@@ -120,6 +121,17 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_with_storage"),
 			expectedErrContains: "blob_checkpoint_store is mutually exclusive with storage",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "encoding"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				Encoding:   &encodingID,
+			},
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "format_and_encoding"),
+			expectedErrContains: "format and encoding are mutually exclusive",
 		},
 	}
 
