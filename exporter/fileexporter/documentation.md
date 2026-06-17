@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `exporter.file.nativeCompression` | alpha | Use native file-level compression (zstd) instead of message-level compression. Creates standard .zst files compatible with standard decompression tools | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44077) |
+| `exporter.file.nativeCompression` | alpha | Use native file-level compression (zstd) instead of message-level compression. Creates standard .zst files compatible with standard decompression tools | v0.154.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44077) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

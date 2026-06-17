@@ -24,5 +24,5 @@ feature_gates:
       Use native file-level compression (zstd) instead of
       message-level compression. Creates standard .zst files compatible
       with standard decompression tools
-    from_version: v0.153.0
+    from_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44077
