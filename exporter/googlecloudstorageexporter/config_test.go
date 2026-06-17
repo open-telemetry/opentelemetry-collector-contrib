@@ -128,6 +128,21 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "unsupported_compression"),
 			expectedErr: errUnknownCompression,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_universe_domain"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.UniverseDomain = "apis.example.com"
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {

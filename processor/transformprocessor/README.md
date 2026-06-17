@@ -273,6 +273,10 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
+**Logs only functions**
+
+- [ParseLEEF](#parseleef)
+
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
@@ -661,20 +665,24 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 
 ### merge_histogram_buckets
 
-`merge_histogram_buckets(bound)`
+`merge_histogram_buckets(target_value, method)`
 
-The `merge_histogram_buckets` function merges a specific bucket of a histogram with the next bucket by removing the specified boundary. This effectively combines the counts of the bucket ending at the specified bound with the counts of the next bucket.
+The `merge_histogram_buckets` function merges explicit histogram buckets. The `method` argument is optional and defaults to `remove_explicit_bound`.
 
-`bound` is a float64 value that specifies which bucket boundary to remove. The function will merge the bucket that ends at this boundary with the next bucket.
+`target_value` is interpreted according to `method`:
+- `remove_explicit_bound`: `target_value` is the explicit boundary to remove. The function merges the bucket ending at this boundary with the next bucket. This method uses floating-point tolerance (epsilon = 1e-12) when matching the boundary.
+- `limit_buckets`: `target_value` is the maximum number of buckets to keep. It must be a positive integer. The function reduces resolution with a single uniform compaction pass. It chooses the smallest divisor that keeps the resulting bucket count at or below `target_value`, merges adjacent buckets in groups of that size from lower to higher bucket order, combines their counts, and keeps any partial final group. Bucket count values and boundary widths do not affect which buckets are merged. The resulting histogram may have fewer than `target_value` buckets when no smaller uniform divisor can stay within the limit.
 
 The function:
-- Preserves the total count and sum of the histogram.  
-- Only works on histogram metrics (no-op for other metric types).  
-- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.  
-- Makes no changes if:  
-  - The bound is not found.  
-  - The histogram is empty.  
-  - The histogram structure is invalid (mismatched bounds and counts).
+- Preserves the total count and sum of the histogram.
+- Only works on histogram metrics (no-op for other metric types).
+- Makes no changes if:
+  - The explicit boundary is not found when using `remove_explicit_bound`.
+  - The histogram is already at or below the requested bucket limit when using `limit_buckets`.
+  - The histogram is empty.
+  - The histogram structure is invalid (mismatched bounds and counts, or unordered bounds when using `limit_buckets`).
+
+**NOTE:** The `limit_buckets` method reduces histogram resolution and may affect percentile or quantile accuracy. Use only when you are confident that reducing bucket detail is acceptable for downstream consumers.
 
 Examples:
 
@@ -689,7 +697,48 @@ Examples:
 # After merging at 0.5:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
+
+# Limit histograms to at most 5 buckets
+- merge_histogram_buckets(5, method="limit_buckets") where metric.name == "http_request_duration"
+
+# Given a histogram with:
+# bounds: [0.1, 0.2, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
+# counts: [80, 4, 6, 120, 3, 2, 40, 10, 1]
+#
+# After limiting to 5 buckets, one compaction pass merges bucket pairs:
+# bounds: [0.2, 1.0, 5.0, 30.0]
+# counts: [84, 126, 5, 50, 1]
 ```
+
+### ParseLEEF
+
+`ParseLEEF(target)`
+
+The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as LEEF, an error will be returned.
+
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token; parsing begins at the first occurrence of `LEEF:` in the input, so a literal `LEEF:` appearing in a syslog header ahead of the real header would be misinterpreted.
+
+The returned map has the following top-level fields:
+
+* `leef.version` — the LEEF version (`"1.0"` or `"2.0"`).
+* `leef.vendor`, `leef.product.name`, `leef.product.version`, `leef.event.id` — the LEEF header fields.
+* `leef.attributes` — a map of the parsed key/value attribute pairs.
+
+For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter is taken from the header and must be either a single character or a `0x`-prefixed hex value decoding to a single byte (e.g. `0x09` for tab). An empty delimiter field defaults to tab. The delimiter field is also optional: if the position normally occupied by the delimiter looks like the start of an attribute (i.e. contains `=`), it is treated as the first attribute and the delimiter defaults to tab.
+
+Attribute parsing is lenient: pairs without an `=` separator or with an empty key are silently skipped, and when the same key appears more than once the last occurrence wins. Whitespace within keys and values is preserved verbatim, since the LEEF spec defines a value as everything up to the delimiter.
+
+All attribute values are returned as strings. LEEF defines a set of [predefined event attributes](https://www.ibm.com/docs/en/dsm?topic=overview-predefined-leef-event-attributes) (e.g. `src`, `dst`, `srcPort`, `usrName`, `devTime`) with expected types such as Integer, IPv4/IPv6, and Time.
+
+Examples:
+
+- `ParseLEEF(body)`
+
+- `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
+
+- `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
 
 ### set_semconv_span_name
 
