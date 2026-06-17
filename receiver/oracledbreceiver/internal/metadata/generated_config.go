@@ -9,10 +9,20 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
+// OracledbBufferCountMetricAttributeKey specifies the key of an attribute for the oracledb.buffer.count metric.
+type OracledbBufferCountMetricAttributeKey string
+
+const (
+	OracledbBufferCountMetricAttributeKeyOracledbBufferState OracledbBufferCountMetricAttributeKey = "oracledb.buffer.state"
+)
+
 // OracledbBufferCountMetricConfig provides config for the oracledb.buffer.count metric.
 type OracledbBufferCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbBufferCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbBufferCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -29,10 +39,38 @@ func (ms *OracledbBufferCountMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+func (ms *OracledbBufferCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbBufferCountMetricAttributeKeyOracledbBufferState:
+		default:
+			return fmt.Errorf("metric oracledb.buffer.count doesn't have an attribute %v, valid attributes: [oracledb.buffer.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbBufferRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.buffer.requests metric.
+type OracledbBufferRequestsMetricAttributeKey string
+
+const (
+	OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType OracledbBufferRequestsMetricAttributeKey = "oracledb.buffer.request_type"
+)
+
 // OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric.
 type OracledbBufferRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbBufferRequestsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbBufferRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -46,6 +84,24 @@ func (ms *OracledbBufferRequestsMetricConfig) Unmarshal(parser *confmap.Conf) er
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbBufferRequestsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType:
+		default:
+			return fmt.Errorf("metric oracledb.buffer.requests doesn't have an attribute %v, valid attributes: [oracledb.buffer.request_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1721,10 +1777,14 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		OracledbBufferCount: OracledbBufferCountMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbBufferCountMetricAttributeKey{OracledbBufferCountMetricAttributeKeyOracledbBufferState},
 		},
 		OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbBufferRequestsMetricAttributeKey{OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType},
 		},
 		OracledbBufferScanned: OracledbBufferScannedMetricConfig{
 			Enabled: false,

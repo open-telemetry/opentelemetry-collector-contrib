@@ -555,11 +555,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrFreeBuffersFound:
-				if err := s.mb.RecordOracledbBufferCountDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferCountDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbwrMakeFreeRequests:
-				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferRequestTypeMakeFree); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

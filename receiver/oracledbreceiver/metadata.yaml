@@ -130,6 +130,14 @@ attributes:
   oracledb.blocking.wait_duration:
     description: The number of seconds this session has been waiting for the current wait event.
     type: int
+  oracledb.buffer.request_type:
+    description: The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free).
+    type: string
+    enum: [make_free]
+  oracledb.buffer.state:
+    description: The state of the buffers being counted in the buffer cache (e.g. free).
+    type: string
+    enum: [free]
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
@@ -393,7 +401,7 @@ events:
       - oracledb.plan.last_load
 metrics:
   oracledb.buffer.count:
-    description: Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
+    description: Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state. state=free counts the free buffers DBWR found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
     enabled: false
     stability: development
     sum:
@@ -402,8 +410,9 @@ metrics:
       value_type: int
       input_type: string
     unit: "{buffers}"
+    attributes: [oracledb.buffer.state]
   oracledb.buffer.requests:
-    description: Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+    description: Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
     enabled: false
     stability: development
     sum:
@@ -412,6 +421,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{requests}"
+    attributes: [oracledb.buffer.request_type]
   oracledb.buffer.scanned:
     description: Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
     enabled: false

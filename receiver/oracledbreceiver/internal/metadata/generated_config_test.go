@@ -27,10 +27,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					OracledbBufferCount: OracledbBufferCountMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferCountMetricAttributeKey{OracledbBufferCountMetricAttributeKeyOracledbBufferState},
 					},
 					OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferRequestsMetricAttributeKey{OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType},
 					},
 					OracledbBufferScanned: OracledbBufferScannedMetricConfig{
 						Enabled: true,
@@ -269,10 +273,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					OracledbBufferCount: OracledbBufferCountMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferCountMetricAttributeKey{OracledbBufferCountMetricAttributeKeyOracledbBufferState},
 					},
 					OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbBufferRequestsMetricAttributeKey{OracledbBufferRequestsMetricAttributeKeyOracledbBufferRequestType},
 					},
 					OracledbBufferScanned: OracledbBufferScannedMetricConfig{
 						Enabled: false,

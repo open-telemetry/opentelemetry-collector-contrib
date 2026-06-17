@@ -434,8 +434,8 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	// metricName -> int value (none of these metrics carry attributes)
-	got := map[string]int64{}
+	// metricName -> attrSignature -> int value
+	got := map[string]map[string]int64{}
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
@@ -443,18 +443,32 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 			continue
 		}
 		dps := me.Sum().DataPoints()
-		if dps.Len() > 0 {
-			got[me.Name()] = dps.At(0).IntValue()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			var keys []string
+			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+				keys = append(keys, k+"="+v.AsString())
+				return true
+			})
+			sort.Strings(keys)
+			sig := strings.Join(keys, ",")
+			if _, ok := got[me.Name()]; !ok {
+				got[me.Name()] = map[string]int64{}
+			}
+			got[me.Name()][sig] = dp.IntValue()
 		}
 	}
 
-	assert.Equal(t, int64(8800000), got["oracledb.buffer_cache.block.changes"])
-	assert.Equal(t, int64(7700000), got["oracledb.buffer_cache.block.gets"])
-	assert.Equal(t, int64(55000), got["oracledb.buffer.scanned"])
-	assert.Equal(t, int64(12000), got["oracledb.checkpoint.buffers"])
-	assert.Equal(t, int64(320), got["oracledb.checkpoint.completed"])
-	assert.Equal(t, int64(48000), got["oracledb.buffer.count"])
-	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"])
+	// Standalone counters (no attributes).
+	assert.Equal(t, int64(8800000), got["oracledb.buffer_cache.block.changes"][""])
+	assert.Equal(t, int64(7700000), got["oracledb.buffer_cache.block.gets"][""])
+	assert.Equal(t, int64(55000), got["oracledb.buffer.scanned"][""])
+	assert.Equal(t, int64(12000), got["oracledb.checkpoint.buffers"][""])
+	assert.Equal(t, int64(320), got["oracledb.checkpoint.completed"][""])
+
+	// Attributed counters carry a single data point keyed by the buffer state / request type.
+	assert.Equal(t, int64(48000), got["oracledb.buffer.count"]["oracledb.buffer.state=free"])
+	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"]["oracledb.buffer.request_type=make_free"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

@@ -243,19 +243,31 @@ metrics:
 
 ### oracledb.buffer.count
 
-Number of free buffers the Database Writer (DBWR) found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
+Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state. state=free counts the free buffers DBWR found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {buffers} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.buffer.state | The state of the buffers being counted in the buffer cache (e.g. free). | Str: ``free`` | Recommended | - |
+
 ### oracledb.buffer.requests
 
-Number of requests to the Database Writer (DBWR) to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'). A rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request_type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {requests} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.buffer.request_type | The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free). | Str: ``make_free`` | Recommended | - |
 
 ### oracledb.buffer.scanned
 
