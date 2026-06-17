@@ -124,7 +124,7 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 
 ### Metrics
 
-| ADX Table column              | Description / OpenTelemetry attribute
+| ADX Table column              | Description / OpenTelemetry attribute |
 | ----------------------------- |---------------------------------------------------------------------------------------------------|
 | Timestamp                     | The timestamp of the datapoint                                                                    |
 | MetricName                    | The name of the datapoint                                                                         |

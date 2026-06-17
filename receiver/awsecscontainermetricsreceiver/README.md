@@ -113,62 +113,62 @@ service:
 ## Available Metrics
 Following is the full list of metrics emitted by this receiver.
 
-Task Level Metrics | Container Level Metrics | Unit 
------------- | ------------- | --------------------
-ecs.task.memory.usage | container.memory.usage | Bytes
-ecs.task.memory.usage.max | container.memory.usage.max | Bytes
-ecs.task.memory.usage.limit | container.memory.usage.limit | Bytes
-ecs.task.memory.reserved | container.memory.reserved | MiB
-ecs.task.memory.utilized | container.memory.utilized | MiB
-ecs.task.cpu.usage.total | container.cpu.usage.total | Nanoseconds
-ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | Nanoseconds
-ecs.task.cpu.usage.usermode | container.cpu.usage.usermode | Nanoseconds
-ecs.task.cpu.usage.system | container.cpu.usage.system | Nanoseconds
-ecs.task.cpu.usage.vcpu | container.cpu.usage.vcpu | vCPU
-ecs.task.cpu.cores | container.cpu.cores | Count
-ecs.task.cpu.onlines | container.cpu.onlines | Count
-ecs.task.cpu.reserved | container.cpu.reserved | vCPU
-ecs.task.cpu.utilized | container.cpu.utilized | Percent
-ecs.task.network.rate.rx | container.network.rate.rx | Bytes/Second
-ecs.task.network.rate.tx | container.network.rate.tx | Bytes/Second
-ecs.task.network.io.usage.rx_bytes | container.network.io.usage.rx_bytes | Bytes
-ecs.task.network.io.usage.rx_packets | container.network.io.usage.rx_packets | Count
-ecs.task.network.io.usage.rx_errors | container.network.io.usage.rx_errors | Count
-ecs.task.network.io.usage.rx_dropped | container.network.io.usage.rx_dropped | Count
-ecs.task.network.io.usage.tx_bytes | container.network.io.usage.tx_bytes | Bytes
-ecs.task.network.io.usage.tx_packets | container.network.io.usage.tx_packets | Count
-ecs.task.network.io.usage.tx_errors | container.network.io.usage.tx_errors | Count
-ecs.task.network.io.usage.tx_dropped | container.network.io.usage.tx_dropped | Count
-ecs.task.storage.read_bytes | container.storage.read_bytes| Bytes
-ecs.task.storage.write_bytes | container.storage.write_bytes | Bytes
-ecs.task.ephemeral_storage.utilized | | MiB
-ecs.task.ephemeral_storage.reserved | | MiB
+| Task Level Metrics | Container Level Metrics | Unit |
+| ------------ | ------------- | -------------------- |
+| ecs.task.memory.usage | container.memory.usage | Bytes |
+| ecs.task.memory.usage.max | container.memory.usage.max | Bytes |
+| ecs.task.memory.usage.limit | container.memory.usage.limit | Bytes |
+| ecs.task.memory.reserved | container.memory.reserved | MiB |
+| ecs.task.memory.utilized | container.memory.utilized | MiB |
+| ecs.task.cpu.usage.total | container.cpu.usage.total | Nanoseconds |
+| ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | Nanoseconds |
+| ecs.task.cpu.usage.usermode | container.cpu.usage.usermode | Nanoseconds |
+| ecs.task.cpu.usage.system | container.cpu.usage.system | Nanoseconds |
+| ecs.task.cpu.usage.vcpu | container.cpu.usage.vcpu | vCPU |
+| ecs.task.cpu.cores | container.cpu.cores | Count |
+| ecs.task.cpu.onlines | container.cpu.onlines | Count |
+| ecs.task.cpu.reserved | container.cpu.reserved | vCPU |
+| ecs.task.cpu.utilized | container.cpu.utilized | Percent |
+| ecs.task.network.rate.rx | container.network.rate.rx | Bytes/Second |
+| ecs.task.network.rate.tx | container.network.rate.tx | Bytes/Second |
+| ecs.task.network.io.usage.rx_bytes | container.network.io.usage.rx_bytes | Bytes |
+| ecs.task.network.io.usage.rx_packets | container.network.io.usage.rx_packets | Count |
+| ecs.task.network.io.usage.rx_errors | container.network.io.usage.rx_errors | Count |
+| ecs.task.network.io.usage.rx_dropped | container.network.io.usage.rx_dropped | Count |
+| ecs.task.network.io.usage.tx_bytes | container.network.io.usage.tx_bytes | Bytes |
+| ecs.task.network.io.usage.tx_packets | container.network.io.usage.tx_packets | Count |
+| ecs.task.network.io.usage.tx_errors | container.network.io.usage.tx_errors | Count |
+| ecs.task.network.io.usage.tx_dropped | container.network.io.usage.tx_dropped | Count |
+| ecs.task.storage.read_bytes | container.storage.read_bytes | Bytes |
+| ecs.task.storage.write_bytes | container.storage.write_bytes | Bytes |
+| ecs.task.ephemeral_storage.utilized | | MiB |
+| ecs.task.ephemeral_storage.reserved | | MiB |
 
 ## Resource Attributes and Metrics Labels
 Metrics emitted by this receiver comes with a set of resource attributes. These resource attributes can be converted to metrics labels using appropriate processors/exporters (See `Full Configuration Examples` section below). Finally, these metrics labels can be set as metrics dimensions while exporting to desired destinations. Check the following table to see available resource attributes for Task and Container level metrics. Container level metrics have three additional attributes than task level metrics.
 
-Resource Attributes for Task Level Metrics | Resource Attributes for Container Level Metrics
--------------------- | -----------------------------
-aws.ecs.cluster.name | aws.ecs.cluster.name
-aws.ecs.task.family  | aws.ecs.task.family
-aws.ecs.task.arn     | aws.ecs.task.arn
-aws.ecs.task.id      | aws.ecs.task.id
-aws.ecs.task.revision | aws.ecs.task.revision
-aws.ecs.service.name | aws.ecs.service.name
-cloud.availability_zone | cloud.availability_zone
-cloud.account.id | cloud.account.id
-cloud.region | cloud.region
-aws.ecs.task.pull_started_at | aws.ecs.container.started_at
-aws.ecs.task.pull_stopped_at | aws.ecs.container.finished_at
-aws.ecs.task.known_status | aws.ecs.container.know_status
-aws.ecs.launch_type | aws.ecs.launch_type
-&nbsp; | aws.ecs.container.created_at
-&nbsp; | container.name
-&nbsp; | container.id
-&nbsp; | aws.ecs.docker.name 
-&nbsp; | container.image.tag
-&nbsp; | aws.ecs.container.image.id
-&nbsp; | aws.ecs.container.exit_code
+| Resource Attributes for Task Level Metrics | Resource Attributes for Container Level Metrics |
+| -------------------- | ----------------------------- |
+| aws.ecs.cluster.name | aws.ecs.cluster.name |
+| aws.ecs.task.family  | aws.ecs.task.family |
+| aws.ecs.task.arn     | aws.ecs.task.arn |
+| aws.ecs.task.id      | aws.ecs.task.id |
+| aws.ecs.task.revision | aws.ecs.task.revision |
+| aws.ecs.service.name | aws.ecs.service.name |
+| cloud.availability_zone | cloud.availability_zone |
+| cloud.account.id | cloud.account.id |
+| cloud.region | cloud.region |
+| aws.ecs.task.pull_started_at | aws.ecs.container.started_at |
+| aws.ecs.task.pull_stopped_at | aws.ecs.container.finished_at |
+| aws.ecs.task.known_status | aws.ecs.container.know_status |
+| aws.ecs.launch_type | aws.ecs.launch_type |
+| &nbsp; | aws.ecs.container.created_at |
+| &nbsp; | container.name |
+| &nbsp; | container.id |
+| &nbsp; | aws.ecs.docker.name |
+| &nbsp; | container.image.tag |
+| &nbsp; | aws.ecs.container.image.id |
+| &nbsp; | aws.ecs.container.exit_code |
 
 ## Full Configuration Examples
 This receiver emits 54 unique metrics. Customer may not want to send all of them to destinations. Following sections will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 
