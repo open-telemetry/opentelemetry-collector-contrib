@@ -1,0 +1,7 @@
+tail_sampling:
+  policies:
+    - name: test-policy-ottl
+      type: ottl_condition
+      ottl_condition:
+        span:
+          - attributes["test_attr"] == "val"

@@ -282,3 +282,46 @@ func TestConfigValidateTailStorageFeatureGate(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadConfigErrorModeDefault(t *testing.T) {
+	tests := []struct {
+		name        string
+		gateEnabled bool
+		expected    ottl.ErrorMode
+	}{
+		{
+			name:        "feature gate disabled",
+			gateEnabled: false,
+			expected:    ottl.PropagateError,
+		},
+		{
+			name:        "feature gate enabled",
+			gateEnabled: true,
+			expected:    ottl.IgnoreError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prev := metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(), tt.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(), prev))
+			})
+
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "tail_sampling_config_errormode.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			tCfg := cfg.(*Config)
+			require.Len(t, tCfg.PolicyCfgs, 1)
+			assert.Equal(t, tt.expected, tCfg.PolicyCfgs[0].OTTLConditionCfg.ErrorMode)
+		})
+	}
+}

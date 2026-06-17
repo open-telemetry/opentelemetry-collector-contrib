@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 )
 
@@ -389,4 +391,66 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+var _ confmap.Unmarshaler = (*Config)(nil)
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	err := conf.Unmarshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	defaultErrorMode := ottl.PropagateError
+	if metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		defaultErrorMode = ottl.IgnoreError
+	}
+
+	for i := range cfg.PolicyCfgs {
+		cfg.PolicyCfgs[i].setDefaults(defaultErrorMode)
+	}
+
+	return nil
+}
+
+func (s *sharedPolicyCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	if s.Type == OTTLCondition && s.OTTLConditionCfg.ErrorMode == "" {
+		s.OTTLConditionCfg.ErrorMode = defaultErrorMode
+	}
+}
+
+func (p *PolicyCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	p.sharedPolicyCfg.setDefaults(defaultErrorMode)
+	p.AndCfg.setDefaults(defaultErrorMode)
+	p.NotCfg.setDefaults(defaultErrorMode)
+	p.DropCfg.setDefaults(defaultErrorMode)
+	p.CompositeCfg.setDefaults(defaultErrorMode)
+}
+
+func (a *AndCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	for i := range a.SubPolicyCfg {
+		a.SubPolicyCfg[i].sharedPolicyCfg.setDefaults(defaultErrorMode)
+		a.SubPolicyCfg[i].NotCfg.setDefaults(defaultErrorMode)
+	}
+}
+
+func (n *NotCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	n.SubPolicy.sharedPolicyCfg.setDefaults(defaultErrorMode)
+}
+
+func (d *DropCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	for i := range d.SubPolicyCfg {
+		d.SubPolicyCfg[i].sharedPolicyCfg.setDefaults(defaultErrorMode)
+		d.SubPolicyCfg[i].NotCfg.setDefaults(defaultErrorMode)
+	}
+}
+
+func (c *CompositeCfg) setDefaults(defaultErrorMode ottl.ErrorMode) {
+	for i := range c.SubPolicyCfg {
+		c.SubPolicyCfg[i].sharedPolicyCfg.setDefaults(defaultErrorMode)
+		c.SubPolicyCfg[i].AndCfg.setDefaults(defaultErrorMode)
+	}
 }

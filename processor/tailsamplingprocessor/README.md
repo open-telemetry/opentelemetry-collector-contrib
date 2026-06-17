@@ -37,7 +37,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
-- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future.
+- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future. The `error_mode` determines how the processor reacts to errors that occur while processing an OTTL condition (`ignore` or `propagate`). The default is `propagate` unless the `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate is enabled, in which case it defaults to `ignore`.
 - `and`: Sample based on multiple policies, creates an AND policy
 - `not`: Sample based on the opposite result a single policy, creates a NOT policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
@@ -682,6 +682,10 @@ By default, this feature gate is disabled. If `tail_storage` is set while the ga
 The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been deprecated, however, they are still available. To disable them before their complete removal, you can use the `processor.tailsamplingprocessor.disableinvertdecisions` feature gate. When this feature gate is set, sampling policy `invert_match` will result in a `Sampled` or `NotSampled` decision instead of `InvertSampled` or `InvertNotSampled`. This applies to the string, numeric, and boolean tag policy.
 
 If you disable invert decisions, you can make use of a `drop` policy to explicitly not sample select traces or a `not` policy to sample based on the opposite of a sampling decision.
+
+### Default error mode ignore
+
+The default `error_mode` of the `ottl_condition` policy is `propagate` (errors are propagated up the pipeline, which can result in valid data being dropped). To improve resiliency, you can change the default `error_mode` to `ignore` using the `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate. When this feature gate is enabled, OTTL conditions with unconfigured `error_mode` will default to `ignore`.
 
 ### Policy Evaluation Errors
 
