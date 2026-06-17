@@ -7,5 +7,5 @@ status:
   stability:
     alpha: [extension]
   codeowners:
-    active: [constanca-m]
+    active: [constanca-m, dyl10s]
   distributions: [contrib]
