@@ -189,7 +189,7 @@ attributes:
   sqlserver.lock.timeout.kind:
     description: The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum: [all, nonzero]
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
@@ -489,10 +489,11 @@ metrics:
     enabled: false
     description: Number of logical connections reset per second.
     stability: development
-    unit: "{connections}/s"
+    unit: "{connection}/s"
     gauge:
       value_type: double
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.cpu.count:
     enabled: false
     description: Number of CPUs.
@@ -598,12 +599,13 @@ metrics:
     attributes: []
   sqlserver.error.rate:
     enabled: false
-    description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+    description: Number of errors raised by SQL Server per second.
     stability: development
-    unit: "{errors}/s"
+    unit: "{error}/s"
     gauge:
       value_type: double
     attributes: [sqlserver.error.category]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -661,20 +663,22 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.block.count:
     enabled: false
-    description: Number of lock blocks tracked by the lock manager, broken down by block type.
+    description: Number of lock blocks tracked by the lock manager.
     stability: development
-    unit: "{blocks}"
+    unit: "{block}"
     gauge:
       value_type: int
     attributes: [sqlserver.block.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.escalation.rate:
     enabled: false
     description: Number of lock escalations per second (locks on a table escalated to a larger granularity).
     stability: development
-    unit: "{escalations}/s"
+    unit: "{escalation}/s"
     gauge:
       value_type: double
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.memory:
     enabled: false
     description: Total amount of memory the SQL Server is using for locks.
@@ -683,22 +687,25 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.request.rate:
     enabled: false
     description: Number of new locks and lock conversions per second requested from the lock manager.
     stability: development
-    unit: "{requests}/s"
+    unit: "{request}/s"
     gauge:
       value_type: double
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.timeout.rate:
     enabled: false
-    description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
+    description: Number of lock timeouts per second.
     stability: development
-    unit: "{timeouts}/s"
+    unit: "{timeout}/s"
     gauge:
       value_type: double
     attributes: [sqlserver.lock.timeout.kind]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.count:
     enabled: false
     description: Cumulative count of lock waits that occurred.
@@ -734,6 +741,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: double
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.login.rate:
     enabled: false
     description: Total number of logins.

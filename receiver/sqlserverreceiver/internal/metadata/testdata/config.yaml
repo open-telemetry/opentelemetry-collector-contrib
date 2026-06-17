@@ -67,7 +67,6 @@ all_set:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
-      attributes: ["sqlserver.lock.timeout.kind"]
     sqlserver.lock.wait.count:
       enabled: true
     sqlserver.lock.wait.rate:
@@ -247,7 +246,6 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
-      attributes: []
     sqlserver.lock.wait.count:
       enabled: true
     sqlserver.lock.wait.rate:
@@ -427,7 +425,6 @@ none_set:
       enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
-      attributes: ["sqlserver.lock.timeout.kind"]
     sqlserver.lock.wait.count:
       enabled: false
     sqlserver.lock.wait.rate:

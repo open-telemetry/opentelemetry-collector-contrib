@@ -1068,7 +1068,7 @@ type metricSqlserverConnectionResetRate struct {
 func (m *metricSqlserverConnectionResetRate) init() {
 	m.data.SetName("sqlserver.connection.reset.rate")
 	m.data.SetDescription("Number of logical connections reset per second.")
-	m.data.SetUnit("{connections}/s")
+	m.data.SetUnit("{connection}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -1898,8 +1898,8 @@ type metricSqlserverErrorRate struct {
 // init fills sqlserver.error.rate metric with initial data.
 func (m *metricSqlserverErrorRate) init() {
 	m.data.SetName("sqlserver.error.rate")
-	m.data.SetDescription("Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.")
-	m.data.SetUnit("{errors}/s")
+	m.data.SetDescription("Number of errors raised by SQL Server per second.")
+	m.data.SetUnit("{error}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2328,8 +2328,8 @@ type metricSqlserverLockBlockCount struct {
 // init fills sqlserver.lock.block.count metric with initial data.
 func (m *metricSqlserverLockBlockCount) init() {
 	m.data.SetName("sqlserver.lock.block.count")
-	m.data.SetDescription("Number of lock blocks tracked by the lock manager, broken down by block type.")
-	m.data.SetUnit("{blocks}")
+	m.data.SetDescription("Number of lock blocks tracked by the lock manager.")
+	m.data.SetUnit("{block}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2417,7 +2417,7 @@ type metricSqlserverLockEscalationRate struct {
 func (m *metricSqlserverLockEscalationRate) init() {
 	m.data.SetName("sqlserver.lock.escalation.rate")
 	m.data.SetDescription("Number of lock escalations per second (locks on a table escalated to a larger granularity).")
-	m.data.SetUnit("{escalations}/s")
+	m.data.SetUnit("{escalation}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -2517,7 +2517,7 @@ type metricSqlserverLockRequestRate struct {
 func (m *metricSqlserverLockRequestRate) init() {
 	m.data.SetName("sqlserver.lock.request.rate")
 	m.data.SetDescription("Number of new locks and lock conversions per second requested from the lock manager.")
-	m.data.SetUnit("{requests}/s")
+	m.data.SetUnit("{request}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -2558,61 +2558,29 @@ func newMetricSqlserverLockRequestRate(cfg SqlserverLockRequestRateMetricConfig)
 }
 
 type metricSqlserverLockTimeoutRate struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills sqlserver.lock.timeout.rate metric with initial data.
 func (m *metricSqlserverLockTimeoutRate) init() {
 	m.data.SetName("sqlserver.lock.timeout.rate")
-	m.data.SetDescription("Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).")
-	m.data.SetUnit("{timeouts}/s")
+	m.data.SetDescription("Number of lock timeouts per second.")
+	m.data.SetUnit("{timeout}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverLockTimeoutKindAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind) {
-		dp.Attributes().PutStr("sqlserver.lock.timeout.kind", sqlserverLockTimeoutKindAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("sqlserver.lock.timeout.kind", sqlserverLockTimeoutKindAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2625,11 +2593,6 @@ func (m *metricSqlserverLockTimeoutRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverLockTimeoutRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

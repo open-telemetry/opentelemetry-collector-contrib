@@ -127,9 +127,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLockTimeoutRateMetricAttributeKey{SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind},
+						Enabled: true,
 					},
 					SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 						Enabled: true,
@@ -390,9 +388,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLockTimeoutRateMetricAttributeKey{SqlserverLockTimeoutRateMetricAttributeKeySqlserverLockTimeoutKind},
+						Enabled: false,
 					},
 					SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 						Enabled: false,

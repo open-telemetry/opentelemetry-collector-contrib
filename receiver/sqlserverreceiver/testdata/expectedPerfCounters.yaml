@@ -85,7 +85,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.escalation.rate
-            unit: '{escalations}/s'
+            unit: '{escalation}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1081,7 +1081,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
+          - description: Number of lock timeouts per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1092,7 +1092,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
-            unit: '{timeouts}/s'
+            unit: '{timeout}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1115,7 +1115,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
+          - description: Number of lock timeouts per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1126,7 +1126,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
-            unit: '{timeouts}/s'
+            unit: '{timeout}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1626,7 +1626,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+          - description: Number of errors raised by SQL Server per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1637,7 +1637,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.error.rate
-            unit: '{errors}/s'
+            unit: '{error}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1660,7 +1660,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+          - description: Number of errors raised by SQL Server per second.
             gauge:
               dataPoints:
                 - asDouble: 313
@@ -1671,7 +1671,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.error.rate
-            unit: '{errors}/s'
+            unit: '{error}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1694,7 +1694,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+          - description: Number of errors raised by SQL Server per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1705,7 +1705,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.error.rate
-            unit: '{errors}/s'
+            unit: '{error}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1728,7 +1728,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+          - description: Number of errors raised by SQL Server per second.
             gauge:
               dataPoints:
                 - asDouble: 56
@@ -1739,7 +1739,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.error.rate
-            unit: '{errors}/s'
+            unit: '{error}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2430,7 +2430,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.connection.reset.rate
-            unit: '{connections}/s'
+            unit: '{connection}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2483,7 +2483,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock blocks tracked by the lock manager, broken down by block type.
+          - description: Number of lock blocks tracked by the lock manager.
             gauge:
               dataPoints:
                 - asInt: "0"
@@ -2494,7 +2494,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.block.count
-            unit: '{blocks}'
+            unit: '{block}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2517,7 +2517,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock blocks tracked by the lock manager, broken down by block type.
+          - description: Number of lock blocks tracked by the lock manager.
             gauge:
               dataPoints:
                 - asInt: "5000"
@@ -2528,7 +2528,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.block.count
-            unit: '{blocks}'
+            unit: '{block}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2551,7 +2551,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock blocks tracked by the lock manager, broken down by block type.
+          - description: Number of lock blocks tracked by the lock manager.
             gauge:
               dataPoints:
                 - asInt: "0"
@@ -2562,7 +2562,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.block.count
-            unit: '{blocks}'
+            unit: '{block}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2585,7 +2585,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of lock blocks tracked by the lock manager, broken down by block type.
+          - description: Number of lock blocks tracked by the lock manager.
             gauge:
               dataPoints:
                 - asInt: "5000"
@@ -2596,7 +2596,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.block.count
-            unit: '{blocks}'
+            unit: '{block}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -2626,7 +2626,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.request.rate
-            unit: '{requests}/s'
+            unit: '{request}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

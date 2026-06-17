@@ -240,9 +240,11 @@ Computer uptime.
 
 Number of logical connections reset per second.
 
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {connections}/s | Gauge | Double | Development |
+| {connection}/s | Gauge | Double | Development |
 
 ### sqlserver.cpu.count
 
@@ -381,11 +383,13 @@ Total number of deadlocks.
 
 ### sqlserver.error.rate
 
-Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.
+Number of errors raised by SQL Server per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {errors}/s | Gauge | Double | Development |
+| {error}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -459,11 +463,13 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.lock.block.count
 
-Number of lock blocks tracked by the lock manager, broken down by block type.
+Number of lock blocks tracked by the lock manager.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {blocks} | Gauge | Int | Development |
+| {block} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -475,13 +481,17 @@ Number of lock blocks tracked by the lock manager, broken down by block type.
 
 Number of lock escalations per second (locks on a table escalated to a larger granularity).
 
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {escalations}/s | Gauge | Double | Development |
+| {escalation}/s | Gauge | Double | Development |
 
 ### sqlserver.lock.memory
 
 Total amount of memory the SQL Server is using for locks.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -491,23 +501,27 @@ Total amount of memory the SQL Server is using for locks.
 
 Number of new locks and lock conversions per second requested from the lock manager.
 
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {requests}/s | Gauge | Double | Development |
+| {request}/s | Gauge | Double | Development |
 
 ### sqlserver.lock.timeout.rate
 
-Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).
+Number of lock timeouts per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {timeouts}/s | Gauge | Double | Development |
+| {timeout}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.lock.timeout.kind | The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them. | Str: ``all``, ``nonzero`` | Recommended | - |
+| sqlserver.lock.timeout.kind | The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them. | Str: ``all``, ``nonzero`` | Required | - |
 
 ### sqlserver.lock.wait.count
 
@@ -522,6 +536,8 @@ This metric is only available when the receiver is configured to directly connec
 ### sqlserver.lock.wait_time.total
 
 Total wait time in seconds for locks since the last server restart.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

@@ -75,7 +75,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.error.rate"] = mb.metricSqlserverErrorRate.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
 			aggMap["sqlserver.lock.block.count"] = mb.metricSqlserverLockBlockCount.config.AggregationStrategy
-			aggMap["sqlserver.lock.timeout.rate"] = mb.metricSqlserverLockTimeoutRate.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
@@ -209,9 +208,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1, AttributeSqlserverLockTimeoutKindAll)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 3, AttributeSqlserverLockTimeoutKindNonzero)
-			}
 
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1)
@@ -402,7 +398,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverErrorRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLockBlockCount.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverLockTimeoutRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
@@ -507,7 +502,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of logical connections reset per second.", mi.Description())
-					assert.Equal(t, "{connections}/s", mi.Unit())
+					assert.Equal(t, "{connection}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -852,8 +847,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.error.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.", mi.Description())
-						assert.Equal(t, "{errors}/s", mi.Unit())
+						assert.Equal(t, "Number of errors raised by SQL Server per second.", mi.Description())
+						assert.Equal(t, "{error}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -867,8 +862,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.error.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of errors raised by SQL Server per second, broken down by `sqlserver.error.category`.", mi.Description())
-						assert.Equal(t, "{errors}/s", mi.Unit())
+						assert.Equal(t, "Number of errors raised by SQL Server per second.", mi.Description())
+						assert.Equal(t, "{error}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -994,8 +989,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.lock.block.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock blocks tracked by the lock manager, broken down by block type.", mi.Description())
-						assert.Equal(t, "{blocks}", mi.Unit())
+						assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
+						assert.Equal(t, "{block}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1009,8 +1004,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.lock.block.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock blocks tracked by the lock manager, broken down by block type.", mi.Description())
-						assert.Equal(t, "{blocks}", mi.Unit())
+						assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
+						assert.Equal(t, "{block}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1034,7 +1029,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of lock escalations per second (locks on a table escalated to a larger granularity).", mi.Description())
-					assert.Equal(t, "{escalations}/s", mi.Unit())
+					assert.Equal(t, "{escalation}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1058,52 +1053,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of new locks and lock conversions per second requested from the lock manager.", mi.Description())
-					assert.Equal(t, "{requests}/s", mi.Unit())
+					assert.Equal(t, "{request}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.lock.timeout.rate":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
-						validatedMetrics["sqlserver.lock.timeout.rate"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).", mi.Description())
-						assert.Equal(t, "{timeouts}/s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						sqlserverLockTimeoutKindAttrVal, ok := dp.Attributes().Get("sqlserver.lock.timeout.kind")
-						assert.True(t, ok)
-						assert.Equal(t, "all", sqlserverLockTimeoutKindAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
-						validatedMetrics["sqlserver.lock.timeout.rate"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock timeouts per second, broken down by `sqlserver.lock.timeout.kind` (`all` includes immediate timeouts; `nonzero` excludes them).", mi.Description())
-						assert.Equal(t, "{timeouts}/s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.lock.timeout.rate"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("sqlserver.lock.timeout.kind")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
+					validatedMetrics["sqlserver.lock.timeout.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lock timeouts per second.", mi.Description())
+					assert.Equal(t, "{timeout}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverLockTimeoutKindAttrVal, ok := dp.Attributes().Get("sqlserver.lock.timeout.kind")
+					assert.True(t, ok)
+					assert.Equal(t, "all", sqlserverLockTimeoutKindAttrVal.Str())
 				case "sqlserver.lock.wait.count":
 					assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
 					validatedMetrics["sqlserver.lock.wait.count"] = true
