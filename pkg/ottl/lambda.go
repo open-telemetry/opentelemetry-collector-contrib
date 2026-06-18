@@ -57,7 +57,7 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 // [LambdaActivation.SetArg]. If the lambda's declared formal count differs from arity, an
 // error is returned.
 // Call [LambdaActivation.SetArg] for every index in (0...arity) before each [LambdaActivation.Eval],
-// and then [LambdaActivation.Close] on the returned activation when it is no longer nedded.
+// and then [LambdaActivation.Close] on the returned activation when it is no longer needed.
 func (l *LambdaExpression[K]) Activate(ctx context.Context, arity int) (*LambdaActivation[K], error) {
 	if len(l.formals) != arity {
 		return nil, fmt.Errorf("lambda expects exactly %d argument(s), got %d", arity, len(l.formals))

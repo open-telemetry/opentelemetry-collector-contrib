@@ -3401,6 +3401,6 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 	t.Run("disabled with lambda", func(t *testing.T) {
 		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
-		require.ErrorContains(t, err, "lambda expression arguments requires the `ottl.functions.enableLambda` feature gate to be enabled")
+		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
 	})
 }
