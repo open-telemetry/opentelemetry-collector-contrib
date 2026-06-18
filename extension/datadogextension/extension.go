@@ -12,7 +12,6 @@ import (
 	"time"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-
 	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
