@@ -123,8 +123,8 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams.Logger.Info("test")
 
 		assert.Equal(t, component.NewID(otlpType), exporterParams.ID)
-		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
-		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+		assert.NotNil(t, exporterParams.MeterProvider)
+		assert.NotNil(t, exporterParams.TracerProvider)
 
 		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
 		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)
@@ -157,8 +157,8 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams.Logger.Info("test")
 
 		assert.Equal(t, component.NewIDWithName(otlpType, "custom"), exporterParams.ID)
-		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
-		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+		assert.NotNil(t, exporterParams.MeterProvider)
+		assert.NotNil(t, exporterParams.TracerProvider)
 
 		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
 		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)
@@ -171,6 +171,15 @@ func TestBuildExporterSettings(t *testing.T) {
 			zap.String(zapEndpointKey, testEndpoint),
 		)
 	})
+}
+
+func TestBuildTopLevelExporterSettings(t *testing.T) {
+	creationParams := exportertest.NewNopSettings(metadata.Type)
+	helperParams := buildTopLevelExporterSettings(creationParams)
+
+	assert.IsType(t, metricnoop.NewMeterProvider(), helperParams.MeterProvider)
+	assert.IsType(t, tracenoop.NewTracerProvider(), helperParams.TracerProvider)
+	assert.Equal(t, creationParams.ID, helperParams.ID)
 }
 
 func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
@@ -230,5 +239,51 @@ func TestBuildExporterResilienceOptions(t *testing.T) {
 		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
 
 		assert.Len(t, buildExporterResilienceOptions(o, cfg), 3)
+	})
+}
+
+func TestBuildExporterQueueSettings(t *testing.T) {
+	t.Run("no queue settings", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		assert.False(t, queueSettings.HasValue())
+	})
+
+	t.Run("queue without retry keeps wait_for_result disabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.False(t, queueSettings.Get().WaitForResult)
+	})
+
+	t.Run("queue with retry enables wait_for_result", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.True(t, queueSettings.Get().WaitForResult)
+		assert.False(t, cfg.QueueSettings.Get().WaitForResult)
+	})
+
+	t.Run("persistent queue with retry does not force wait_for_result", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		queueCfg := exporterhelper.NewDefaultQueueConfig()
+		storageID := component.MustNewID("file_storage")
+		queueCfg.StorageID = &storageID
+		cfg.QueueSettings = configoptional.Some(queueCfg)
+		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.False(t, queueSettings.Get().WaitForResult)
 	})
 }

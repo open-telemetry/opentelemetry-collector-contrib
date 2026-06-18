@@ -67,20 +67,44 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 		params.ID = component.NewID(typ)
 	}
 	telemetry := params.TelemetrySettings
-	telemetry.MeterProvider = metricnoop.NewMeterProvider()
-	telemetry.TracerProvider = tracenoop.NewTracerProvider()
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
 	telemetry.Logger = params.Logger
 	params.TelemetrySettings = telemetry
 	return params
 }
 
+func buildTopLevelExporterSettings(params exporter.Settings) exporter.Settings {
+	noopMeterProvider := metricnoop.NewMeterProvider()
+	noopTracerProvider := tracenoop.NewTracerProvider()
+
+	telemetry := params.TelemetrySettings
+	telemetry.MeterProvider = noopMeterProvider
+	telemetry.TracerProvider = noopTracerProvider
+	params.TelemetrySettings = telemetry
+	params.MeterProvider = noopMeterProvider
+	params.TracerProvider = noopTracerProvider
+	return params
+}
+
+func buildExporterQueueSettings(cfg *Config) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	if !cfg.QueueSettings.HasValue() {
+		return configoptional.None[exporterhelper.QueueBatchConfig]()
+	}
+
+	queueSettings := *cfg.QueueSettings.Get()
+	if cfg.Enabled && queueSettings.StorageID == nil {
+		queueSettings.WaitForResult = true
+	}
+
+	return configoptional.Some(queueSettings)
+}
+
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.HasValue() {
-		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
+	if queueSettings := buildExporterQueueSettings(cfg); queueSettings.HasValue() {
+		options = append(options, exporterhelper.WithQueue(queueSettings))
 	}
 	if cfg.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
@@ -101,10 +125,11 @@ func createTracesExporter(ctx context.Context, params exporter.Settings, cfg com
 		exporterhelper.WithShutdown(exp.Shutdown),
 		exporterhelper.WithCapabilities(exp.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewTraces(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exp.ConsumeTraces,
 		buildExporterResilienceOptions(options, c)...,
@@ -123,10 +148,11 @@ func createLogsExporter(ctx context.Context, params exporter.Settings, cfg compo
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithCapabilities(exporter.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewLogs(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exporter.ConsumeLogs,
 		buildExporterResilienceOptions(options, c)...,
@@ -145,10 +171,11 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg co
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithCapabilities(exporter.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewMetrics(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exporter.ConsumeMetrics,
 		buildExporterResilienceOptions(options, c)...,

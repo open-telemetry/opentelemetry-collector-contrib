@@ -20,7 +20,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,9 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/attribute"
-	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -205,7 +205,7 @@ func TestConsumeLogs(t *testing.T) {
 	assert.NoError(t, res)
 }
 
-func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
+func TestConsumeLogsEmitsOnlySubExporterMetrics(t *testing.T) {
 	ctx := t.Context()
 	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
 	telemetry := componenttest.NewTelemetry()
@@ -233,7 +233,7 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	}
 	wrappedExporter, err := exporterhelper.NewLogs(
 		ctx,
-		parentParams,
+		buildTopLevelExporterSettings(parentParams),
 		cfg,
 		logsExporter.ConsumeLogs,
 		exporterhelper.WithStart(logsExporter.Start),
@@ -257,17 +257,24 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 
 	exporterKey := attribute.Key("exporter")
 	var loadbalancingTotal int64
+	var subExporterTotal int64
 	for _, dp := range sum.DataPoints {
 		attr, found := dp.Attributes.Value(exporterKey)
 		require.True(t, found, "exporter attribute must be present")
-		if attr.AsString() != parentParams.ID.String() {
-			assert.Failf(t, "unexpected exporter attribute", "got %s", attr.AsString())
-			continue
+		if attr.AsString() == parentParams.ID.String() {
+			loadbalancingTotal += dp.Value
+		} else {
+			// Sub-exporter metrics are now enabled to provide accurate metrics per endpoint
+			// This allows users to monitor each backend endpoint separately
+			subExporterTotal += dp.Value
 		}
-		loadbalancingTotal += dp.Value
 	}
 
-	assert.Equal(t, int64(logs.LogRecordCount()), loadbalancingTotal)
+	// Top-level exporterhelper metrics are disabled because partial failures are
+	// still counted incorrectly in collector-core. Users should rely on
+	// sub-exporter metrics plus loadbalancer backend metrics instead.
+	assert.Zero(t, loadbalancingTotal)
+	assert.Positive(t, subExporterTotal, "sub-exporter metrics should be present")
 
 	loadbalancerMetric, err := telemetry.GetMetric("otelcol_loadbalancer_backend_outcome")
 	require.NoError(t, err)
@@ -280,8 +287,10 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	assert.Equal(t, int64(1), totalBackendOutcome)
 
 	require.Len(t, childSettings, 1)
-	assert.IsType(t, metricnoop.NewMeterProvider(), childSettings[0].MeterProvider)
-	assert.IsType(t, tracenoop.NewTracerProvider(), childSettings[0].TracerProvider)
+	// Telemetry is now enabled for sub-exporters to provide accurate metrics per endpoint
+	// This allows users to get accurate metrics for each backend endpoint
+	assert.NotNil(t, childSettings[0].MeterProvider)
+	assert.NotNil(t, childSettings[0].TracerProvider)
 }
 
 func generateSingleLogRecord() plog.Logs {
@@ -2633,4 +2642,236 @@ func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) e
 
 func newNopMockLogsExporter() exporter.Logs {
 	return &mockLogsExporter{Component: mockComponent{}}
+}
+
+func TestRetryPartialFailuresLogs(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+
+	logs1 := plog.NewLogs()
+	rl1 := logs1.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("service.name", "service-fail")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+
+	logs2 := plog.NewLogs()
+	rl2 := logs2.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutStr("service.name", "service-success")
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID([16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2})
+
+	logs3 := plog.NewLogs()
+	rl3 := logs3.ResourceLogs().AppendEmpty()
+	rl3.Resource().Attributes().PutStr("service.name", "service-fail")
+	rl3.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID([16]byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3})
+
+	endpoint1Calls := atomic.Int32{}
+	endpoint2Calls := atomic.Int32{}
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		var exp exporter.Logs
+		switch endpoint {
+		case "endpoint-1:4317":
+			exp = newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+				endpoint1Calls.Add(1)
+				return errors.New("endpoint-1 failure")
+			})
+		case "endpoint-2:4317":
+			exp = newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+				endpoint2Calls.Add(1)
+				return nil
+			})
+		default:
+			return nil, fmt.Errorf("unexpected endpoint: %s", endpoint)
+		}
+		return exp, nil
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     50 * time.Millisecond,
+			MaxElapsedTime:  200 * time.Millisecond,
+		},
+	}
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = ts.TelemetrySettings
+
+	exp, err := newLogsExporter(parentParams, config)
+	require.NoError(t, err)
+
+	exp.loadBalancer.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2"}, nil
+		},
+	}
+
+	exp.loadBalancer.componentFactory = func(ctx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(config, endpoint)
+		childParams := buildExporterSettings(otlpexporter.NewFactory().Type(), parentParams, endpoint)
+		childExp, err2 := componentFactory(ctx, endpoint)
+		if err2 != nil {
+			return nil, err2
+		}
+		return exporterhelper.NewLogs(ctx, childParams, &childCfg, childExp.(exporter.Logs).ConsumeLogs)
+	}
+
+	wrappedExporter, err := exporterhelper.NewLogs(
+		t.Context(),
+		parentParams,
+		config,
+		exp.ConsumeLogs,
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+		exporterhelper.WithRetry(config.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	err = wrappedExporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, wrappedExporter.Shutdown(t.Context()))
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(exp.loadBalancer.exporters) == 2 && exp.loadBalancer.ring != nil
+	}, 1*time.Second, 10*time.Millisecond, "exporters and ring should be initialized")
+
+	err1 := wrappedExporter.ConsumeLogs(t.Context(), logs1)
+	err2 := wrappedExporter.ConsumeLogs(t.Context(), logs2)
+	err3 := wrappedExporter.ConsumeLogs(t.Context(), logs3)
+
+	endpoint1CallsCount := endpoint1Calls.Load()
+	endpoint2CallsCount := endpoint2Calls.Load()
+
+	hasFailure := err1 != nil || err3 != nil
+	hasSuccess := err2 == nil && endpoint2CallsCount > 0
+
+	if hasFailure && hasSuccess {
+		var logsErr consumererror.Logs
+		if err1 != nil {
+			require.ErrorAs(t, err1, &logsErr, "error should be wrapped as consumererror.Logs")
+		} else if err3 != nil {
+			require.ErrorAs(t, err3, &logsErr, "error should be wrapped as consumererror.Logs")
+		}
+
+		initialEndpoint2Calls := endpoint2CallsCount
+
+		require.Eventually(t, func() bool {
+			currentCalls := endpoint1Calls.Load()
+			return currentCalls > endpoint1CallsCount
+		}, 500*time.Millisecond, 10*time.Millisecond, "endpoint-1 should be retried")
+
+		finalEndpoint2Calls := endpoint2Calls.Load()
+		assert.Equal(t, initialEndpoint2Calls, finalEndpoint2Calls, "endpoint-2 should not be retried (successful data)")
+	}
+}
+
+func TestRetryPartialFailuresWithinBackendLogs(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "service-a")
+	sl := rl.ScopeLogs().AppendEmpty()
+	log1 := sl.LogRecords().AppendEmpty()
+	log1.Body().SetStr("log-success")
+	log1.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	log2 := sl.LogRecords().AppendEmpty()
+	log2.Body().SetStr("log-failed")
+	log2.SetTraceID(log1.TraceID())
+
+	endpointCalls := atomic.Int32{}
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint != "endpoint-1:4317" {
+			return nil, fmt.Errorf("unexpected endpoint: %s", endpoint)
+		}
+
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			switch endpointCalls.Add(1) {
+			case 1:
+				require.Equal(t, 2, ld.LogRecordCount())
+
+				failed := plog.NewLogs()
+				failedRL := failed.ResourceLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).Resource().CopyTo(failedRL.Resource())
+				failedSL := failedRL.ScopeLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().CopyTo(failedSL.Scope())
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).CopyTo(failedSL.LogRecords().AppendEmpty())
+
+				return consumererror.NewLogs(errors.New("partial failure"), failed)
+			case 2:
+				require.Equal(t, 1, ld.LogRecordCount())
+				require.Equal(t, "log-failed", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+				return nil
+			default:
+				t.Fatalf("unexpected retry count")
+				return nil
+			}
+		}), nil
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     20 * time.Millisecond,
+			MaxElapsedTime:  200 * time.Millisecond,
+		},
+	}
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = ts.TelemetrySettings
+
+	exp, err := newLogsExporter(parentParams, config)
+	require.NoError(t, err)
+
+	exp.loadBalancer.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+
+	exp.loadBalancer.componentFactory = func(ctx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(config, endpoint)
+		childParams := buildExporterSettings(otlpexporter.NewFactory().Type(), parentParams, endpoint)
+		childExp, err2 := componentFactory(ctx, endpoint)
+		if err2 != nil {
+			return nil, err2
+		}
+		return exporterhelper.NewLogs(ctx, childParams, &childCfg, childExp.(exporter.Logs).ConsumeLogs)
+	}
+
+	wrappedExporter, err := exporterhelper.NewLogs(
+		t.Context(),
+		parentParams,
+		config,
+		exp.ConsumeLogs,
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+		exporterhelper.WithRetry(config.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, wrappedExporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, wrappedExporter.Shutdown(t.Context()))
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(exp.loadBalancer.exporters) == 1 && exp.loadBalancer.ring != nil
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, wrappedExporter.ConsumeLogs(t.Context(), logs))
+	require.Equal(t, int32(2), endpointCalls.Load())
 }

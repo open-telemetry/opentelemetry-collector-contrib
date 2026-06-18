@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -121,10 +122,9 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	logsByExporter := make(map[*wrappedExporter]plog.Logs, len(batches))
-	exporterEndpoints := make(map[*wrappedExporter]string, len(batches))
 
 	for routingID, lds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
 			return err
 		}
@@ -133,27 +133,36 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		if !ok {
 			exp.consumeWG.Add(1)
 			logsByExporter[exp] = lds
-			exporterEndpoints[exp] = endpoint
 		} else {
 			mergeLogs(logsByExporter[exp], lds)
 		}
 	}
 
 	var errs error
+	var failedLogs *plog.Logs
 	for exp, lds := range logsByExporter {
 		start := time.Now()
 		err := exp.ConsumeLogs(ctx, lds)
 		duration := time.Since(start)
 
 		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 			e.logger.Debug("failed to export logs", zap.Error(err))
+			if failedLogs == nil {
+				logs := plog.NewLogs()
+				failedLogs = &logs
+			}
+			failedLogsFromError(err, lds).ResourceLogs().MoveAndAppendTo(failedLogs.ResourceLogs())
+			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if errs != nil && failedLogs != nil && failedLogs.LogRecordCount() > 0 {
+		return consumererror.NewLogs(errs, *failedLogs)
 	}
 
 	return errs
