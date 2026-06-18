@@ -509,11 +509,17 @@ Total size of the recycle bin.
 
 ### oracledb.redo.blocks
 
-Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
+Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {blocks} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
 ### oracledb.redo.buffer_allocation.retries
 
@@ -541,11 +547,17 @@ Number of times a redo log switch was interrupted (v$sysstat 'redo log switch in
 
 ### oracledb.redo.operations
 
-Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
 ### oracledb.redo.size
 

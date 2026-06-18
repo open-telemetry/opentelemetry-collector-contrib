@@ -826,7 +826,7 @@ metrics:
       value_type: double
     unit: By
   oracledb.redo.blocks:
-    description: Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').
+    description: Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').
     enabled: false
     stability: development
     sum:
@@ -835,6 +835,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{blocks}"
+    attributes: [disk.io.direction]
   oracledb.redo.buffer_allocation.retries:
     description: Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.
     enabled: false
@@ -866,7 +867,7 @@ metrics:
       input_type: string
     unit: "{interrupts}"
   oracledb.redo.operations:
-    description: Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+    description: Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
     enabled: false
     stability: development
     sum:
@@ -875,6 +876,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operations}"
+    attributes: [disk.io.direction]
   oracledb.redo.size:
     description: Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
     enabled: false

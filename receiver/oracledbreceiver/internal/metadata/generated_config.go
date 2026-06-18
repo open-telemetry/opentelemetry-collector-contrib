@@ -1063,10 +1063,20 @@ func (ms *OracledbRecycleBinLimitMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// OracledbRedoBlocksMetricAttributeKey specifies the key of an attribute for the oracledb.redo.blocks metric.
+type OracledbRedoBlocksMetricAttributeKey string
+
+const (
+	OracledbRedoBlocksMetricAttributeKeyDiskIoDirection OracledbRedoBlocksMetricAttributeKey = "disk.io.direction"
+)
+
 // OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric.
 type OracledbRedoBlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoBlocksMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbRedoBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1080,6 +1090,24 @@ func (ms *OracledbRedoBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoBlocksMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoBlocksMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.redo.blocks doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1143,10 +1171,20 @@ func (ms *OracledbRedoLogSwitchInterruptsMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
+// OracledbRedoOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.operations metric.
+type OracledbRedoOperationsMetricAttributeKey string
+
+const (
+	OracledbRedoOperationsMetricAttributeKeyDiskIoDirection OracledbRedoOperationsMetricAttributeKey = "disk.io.direction"
+)
+
 // OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric.
 type OracledbRedoOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoOperationsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbRedoOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1160,6 +1198,24 @@ func (ms *OracledbRedoOperationsMetricConfig) Unmarshal(parser *confmap.Conf) er
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoOperationsMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.redo.operations doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1898,7 +1954,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
 		},
 		OracledbRedoBufferAllocationRetries: OracledbRedoBufferAllocationRetriesMetricConfig{
 			Enabled: false,
@@ -1910,7 +1968,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
 		},
 		OracledbRedoSize: OracledbRedoSizeMetricConfig{
 			Enabled: false,

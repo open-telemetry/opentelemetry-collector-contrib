@@ -71,6 +71,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
+			aggMap["oracledb.redo.blocks"] = mb.metricOracledbRedoBlocks.config.AggregationStrategy
+			aggMap["oracledb.redo.operations"] = mb.metricOracledbRedoOperations.config.AggregationStrategy
 			aggMap["oracledb.redo.time"] = mb.metricOracledbRedoTime.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
 			aggMap["oracledb.sort.ratio"] = mb.metricOracledbSortRatio.config.AggregationStrategy
@@ -240,7 +242,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbRedoBlocksDataPoint(ts, "1")
+			mb.RecordOracledbRedoBlocksDataPoint(ts, "1", AttributeDiskIoDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbRedoBlocksDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoBufferAllocationRetriesDataPoint(ts, "1")
@@ -252,7 +257,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRedoLogSwitchInterruptsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbRedoOperationsDataPoint(ts, "1")
+			mb.RecordOracledbRedoOperationsDataPoint(ts, "1", AttributeDiskIoDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbRedoOperationsDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoSizeDataPoint(ts, "1")
@@ -339,6 +347,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbRedoBlocks.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbRedoOperations.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbRedoTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSortRatio.aggDataPoints)
@@ -1121,19 +1131,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.redo.blocks":
-					assert.False(t, validatedMetrics["oracledb.redo.blocks"], "Found a duplicate in the metrics slice: oracledb.redo.blocks")
-					validatedMetrics["oracledb.redo.blocks"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').", mi.Description())
-					assert.Equal(t, "{blocks}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.redo.blocks"], "Found a duplicate in the metrics slice: oracledb.redo.blocks")
+						validatedMetrics["oracledb.redo.blocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').", mi.Description())
+						assert.Equal(t, "{blocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.redo.blocks"], "Found a duplicate in the metrics slice: oracledb.redo.blocks")
+						validatedMetrics["oracledb.redo.blocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').", mi.Description())
+						assert.Equal(t, "{blocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.redo.blocks"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk.io.direction")
+						assert.False(t, ok)
+					}
 				case "oracledb.redo.buffer_allocation.retries":
 					assert.False(t, validatedMetrics["oracledb.redo.buffer_allocation.retries"], "Found a duplicate in the metrics slice: oracledb.redo.buffer_allocation.retries")
 					validatedMetrics["oracledb.redo.buffer_allocation.retries"] = true
@@ -1177,19 +1217,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.redo.operations":
-					assert.False(t, validatedMetrics["oracledb.redo.operations"], "Found a duplicate in the metrics slice: oracledb.redo.operations")
-					validatedMetrics["oracledb.redo.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').", mi.Description())
-					assert.Equal(t, "{operations}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.redo.operations"], "Found a duplicate in the metrics slice: oracledb.redo.operations")
+						validatedMetrics["oracledb.redo.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.redo.operations"], "Found a duplicate in the metrics slice: oracledb.redo.operations")
+						validatedMetrics["oracledb.redo.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.redo.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk.io.direction")
+						assert.False(t, ok)
+					}
 				case "oracledb.redo.size":
 					assert.False(t, validatedMetrics["oracledb.redo.size"], "Found a duplicate in the metrics slice: oracledb.redo.size")
 					validatedMetrics["oracledb.redo.size"] = true

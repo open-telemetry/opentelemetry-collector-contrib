@@ -18,7 +18,8 @@ issues: [49060]
 subtext: |
   Adds 7 new metrics under the `oracledb.redo.*` namespace, all disabled by default:
   `oracledb.redo.time` (with the new `oracledb.redo.kind` attribute: write/latching/log_space_wait/synch),
-  `oracledb.redo.size`, `oracledb.redo.operations`, `oracledb.redo.blocks`,
+  `oracledb.redo.size`, `oracledb.redo.operations` and `oracledb.redo.blocks` (both with the
+  reused `disk.io.direction` attribute, currently `write`),
   `oracledb.redo.buffer_allocation.retries`, `oracledb.redo.log_space.requests`, and
   `oracledb.redo.log_switch.interrupts`. These are read from the existing `SELECT * FROM v$sysstat`
   query, so no additional database round-trips are introduced.

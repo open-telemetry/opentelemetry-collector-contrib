@@ -558,11 +558,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoWrites:
-				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoBlocksWritten:
-				if err := s.mb.RecordOracledbRedoBlocksDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoBlocksDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoBufferAllocRetries:

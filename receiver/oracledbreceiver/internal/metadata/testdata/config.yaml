@@ -101,6 +101,7 @@ all_set:
       enabled: true
     oracledb.redo.blocks:
       enabled: true
+      attributes: ["disk.io.direction"]
     oracledb.redo.buffer_allocation.retries:
       enabled: true
     oracledb.redo.log_space.requests:
@@ -109,6 +110,7 @@ all_set:
       enabled: true
     oracledb.redo.operations:
       enabled: true
+      attributes: ["disk.io.direction"]
     oracledb.redo.size:
       enabled: true
     oracledb.redo.time:
@@ -275,6 +277,7 @@ reaggregate_set:
       enabled: true
     oracledb.redo.blocks:
       enabled: true
+      attributes: []
     oracledb.redo.buffer_allocation.retries:
       enabled: true
     oracledb.redo.log_space.requests:
@@ -283,6 +286,7 @@ reaggregate_set:
       enabled: true
     oracledb.redo.operations:
       enabled: true
+      attributes: []
     oracledb.redo.size:
       enabled: true
     oracledb.redo.time:
@@ -449,6 +453,7 @@ none_set:
       enabled: false
     oracledb.redo.blocks:
       enabled: false
+      attributes: ["disk.io.direction"]
     oracledb.redo.buffer_allocation.retries:
       enabled: false
     oracledb.redo.log_space.requests:
@@ -457,6 +462,7 @@ none_set:
       enabled: false
     oracledb.redo.operations:
       enabled: false
+      attributes: ["disk.io.direction"]
     oracledb.redo.size:
       enabled: false
     oracledb.redo.time:

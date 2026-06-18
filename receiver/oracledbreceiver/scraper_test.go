@@ -475,8 +475,9 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 
 	// Standalone redo counters pass v$sysstat VALUE straight through.
 	assert.Equal(t, int64(104857600), intVals["oracledb.redo.size"][""])
-	assert.Equal(t, int64(45000), intVals["oracledb.redo.operations"][""])
-	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks"][""])
+	// redo.operations and redo.blocks carry disk.io.direction=write.
+	assert.Equal(t, int64(45000), intVals["oracledb.redo.operations"]["disk.io.direction=write"])
+	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks"]["disk.io.direction=write"])
 	assert.Equal(t, int64(12), intVals["oracledb.redo.buffer_allocation.retries"][""])
 	assert.Equal(t, int64(34), intVals["oracledb.redo.log_space.requests"][""])
 	assert.Equal(t, int64(5), intVals["oracledb.redo.log_switch.interrupts"][""])

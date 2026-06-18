@@ -3119,29 +3119,63 @@ func newMetricOracledbRecycleBinLimit(cfg OracledbRecycleBinLimitMetricConfig) m
 }
 
 type metricOracledbRedoBlocks struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   OracledbRedoBlocksMetricConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        OracledbRedoBlocksMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.redo.blocks metric with initial data.
 func (m *metricOracledbRedoBlocks) init() {
 	m.data.SetName("oracledb.redo.blocks")
-	m.data.SetDescription("Number of redo blocks written to the redo log (v$sysstat 'redo blocks written').")
+	m.data.SetDescription("Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').")
 	m.data.SetUnit("{blocks}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbRedoBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbRedoBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbRedoBlocksMetricAttributeKeyDiskIoDirection) {
+		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3154,6 +3188,11 @@ func (m *metricOracledbRedoBlocks) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbRedoBlocks) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -3327,29 +3366,63 @@ func newMetricOracledbRedoLogSwitchInterrupts(cfg OracledbRedoLogSwitchInterrupt
 }
 
 type metricOracledbRedoOperations struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   OracledbRedoOperationsMetricConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        OracledbRedoOperationsMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.redo.operations metric with initial data.
 func (m *metricOracledbRedoOperations) init() {
 	m.data.SetName("oracledb.redo.operations")
-	m.data.SetDescription("Number of redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').")
+	m.data.SetDescription("Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbRedoOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbRedoOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbRedoOperationsMetricAttributeKeyDiskIoDirection) {
+		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3362,6 +3435,11 @@ func (m *metricOracledbRedoOperations) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbRedoOperations) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -5287,12 +5365,12 @@ func (mb *MetricsBuilder) RecordOracledbRecycleBinLimitDataPoint(ts pcommon.Time
 }
 
 // RecordOracledbRedoBlocksDataPoint adds a data point to oracledb.redo.blocks metric.
-func (mb *MetricsBuilder) RecordOracledbRedoBlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordOracledbRedoBlocksDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbRedoBlocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbRedoBlocks.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbRedoBlocks.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
 	return nil
 }
 
@@ -5327,12 +5405,12 @@ func (mb *MetricsBuilder) RecordOracledbRedoLogSwitchInterruptsDataPoint(ts pcom
 }
 
 // RecordOracledbRedoOperationsDataPoint adds a data point to oracledb.redo.operations metric.
-func (mb *MetricsBuilder) RecordOracledbRedoOperationsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordOracledbRedoOperationsDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbRedoOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbRedoOperations.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbRedoOperations.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
 	return nil
 }
 

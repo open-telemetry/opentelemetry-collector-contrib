@@ -176,7 +176,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
 					},
 					OracledbRedoBufferAllocationRetries: OracledbRedoBufferAllocationRetriesMetricConfig{
 						Enabled: true,
@@ -188,7 +190,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
 					},
 					OracledbRedoSize: OracledbRedoSizeMetricConfig{
 						Enabled: true,
@@ -420,7 +424,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
 					},
 					OracledbRedoBufferAllocationRetries: OracledbRedoBufferAllocationRetriesMetricConfig{
 						Enabled: false,
@@ -432,7 +438,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
 					},
 					OracledbRedoSize: OracledbRedoSizeMetricConfig{
 						Enabled: false,
