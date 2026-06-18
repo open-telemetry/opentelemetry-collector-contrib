@@ -31,7 +31,7 @@ Time taken by an individual detector to run, including backoff between retries.
 
 ### otelcol.resourcedetection.detector.results
 
-Number of resource detection attempts, by detector and outcome.
+Number of resource detection results, by detector and outcome.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
