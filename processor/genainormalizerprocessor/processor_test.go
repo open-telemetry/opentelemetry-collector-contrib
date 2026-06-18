@@ -4,7 +4,6 @@
 package genainormalizerprocessor
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
