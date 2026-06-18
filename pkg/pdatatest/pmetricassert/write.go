@@ -22,7 +22,9 @@ type includeValuesOption struct{}
 
 func (includeValuesOption) apply(o *writeOptions) { o.includeValues = true }
 
-// IncludeValues configures pmetricassert to record the values (the `int_value` and `double_value` fields) of the datapoints in the assertion file.
+// IncludeValues opts into asserting the exact values of number datapoints
+// (gauge and sum metrics). When enabled, generated snapshots will include
+// the 'value' field.
 func IncludeValues() WriteOption {
 	return includeValuesOption{}
 }
