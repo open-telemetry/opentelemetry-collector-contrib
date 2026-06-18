@@ -17,6 +17,7 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -1320,4 +1321,37 @@ func TestDatadogLogsV2_DecodeJSONMessage_EndToEnd(t *testing.T) {
 	assert.Equal(t, "warn", rec.SeverityText())
 	assert.False(t, rec.TraceID().IsEmpty())
 	assert.False(t, rec.SpanID().IsEmpty())
+}
+
+func TestCreateDecompressingReader(t *testing.T) {
+	payload := []byte("hello, datadog")
+
+	var gz bytes.Buffer
+	gw := gzip.NewWriter(&gz)
+	_, err := gw.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+
+	zw, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	zstdBytes := zw.EncodeAll(payload, nil)
+	require.NoError(t, zw.Close())
+
+	for _, tc := range []struct {
+		encoding string
+		body     []byte
+	}{
+		{"", payload},
+		{"gzip", gz.Bytes()},
+		{"zstd", zstdBytes},
+	} {
+		t.Run(tc.encoding, func(t *testing.T) {
+			r, err := createDecompressingReader(io.NopCloser(bytes.NewReader(tc.body)), tc.encoding)
+			require.NoError(t, err)
+			defer r.Close()
+			got, err := io.ReadAll(r)
+			require.NoError(t, err)
+			assert.Equal(t, payload, got)
+		})
+	}
 }
