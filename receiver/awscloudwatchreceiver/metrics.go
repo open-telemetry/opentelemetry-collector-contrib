@@ -351,14 +351,23 @@ func dimensionsFromMap(d map[string]string) []types.Dimension {
 // setResourceAttributes sets the resource-level attributes that identify the AWS source.
 // Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: cloud.provider,
 // cloud.account.id, and cloud.region are set on the resource; namespace and dimensions go
-// on data points. cloud.account.id is omitted when the account ID could not be resolved.
-func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource) {
+// on data points. cloud.account.id is omitted when accountID is empty.
+func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource, accountID string) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	if s.accountID != "" {
-		attrs.PutStr(string(conventions.CloudAccountIDKey), s.accountID)
+	if accountID != "" {
+		attrs.PutStr(string(conventions.CloudAccountIDKey), accountID)
 	}
 	attrs.PutStr(string(conventions.CloudRegionKey), s.cfg.Region)
+}
+
+// effectiveAccountID returns the account ID to attribute to a metric query: the query's
+// own AccountID when set (cross-account), otherwise the receiver's resolved account ID.
+func (s *cloudWatchMetricsScraper) effectiveAccountID(q MetricQuery) string {
+	if q.AccountID != "" {
+		return q.AccountID
+	}
+	return s.accountID
 }
 
 // parseQueryID parses a sub-query ID of the form "q{metricIdx}_{statIdx}".
@@ -417,10 +426,22 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	}
 
 	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	s.setResourceAttributes(rm.Resource())
-	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName(metadata.ScopeName)
+
+	// Group metrics into one ResourceMetrics per account ID so that cross-account
+	// metrics carry the correct cloud.account.id. In the single-account case all
+	// metrics share the receiver's resolved account ID and land in one resource.
+	scopeByAccount := make(map[string]pmetric.ScopeMetrics)
+	scopeForAccount := func(accountID string) pmetric.ScopeMetrics {
+		if sm, ok := scopeByAccount[accountID]; ok {
+			return sm
+		}
+		rm := md.ResourceMetrics().AppendEmpty()
+		s.setResourceAttributes(rm.Resource(), accountID)
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName(metadata.ScopeName)
+		scopeByAccount[accountID] = sm
+		return sm
+	}
 
 	periodNano := pcommon.Timestamp(s.period.Nanoseconds())
 
@@ -437,7 +458,7 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 			continue
 		}
 
-		metric := sm.Metrics().AppendEmpty()
+		metric := scopeForAccount(s.effectiveAccountID(q)).Metrics().AppendEmpty()
 		metric.SetName("amazonaws.com/" + q.Namespace + "/" + q.MetricName)
 
 		if len(q.Stats) == 0 {
@@ -504,10 +525,8 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 		}
 	}
 
-	// Drop the ResourceMetrics if no metric had any data.
-	if sm.Metrics().Len() == 0 {
-		return pmetric.NewMetrics()
-	}
+	// No ResourceMetrics are created unless a metric had data, so an empty result
+	// means nothing was emitted.
 	return md
 }
 

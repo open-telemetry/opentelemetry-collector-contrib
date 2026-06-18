@@ -293,6 +293,36 @@ func TestConvertGetMetricDataToPdata_MultipleMetrics(t *testing.T) {
 	require.ElementsMatch(t, []string{"amazonaws.com/AWS/EC2/CPUUtilization", "amazonaws.com/AWS/EC2/NetworkIn"}, names)
 }
 
+func TestConvertGetMetricDataToPdata_GroupsByAccount(t *testing.T) {
+	// Receiver's own account; one query overrides it with a source account.
+	scr := testScraper(&Config{Region: "us-east-1"})
+	scr.accountID = "111111111111"
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		{Id: aws.String("q1_1"), Values: []float64{2.0}, Timestamps: []time.Time{ts}},
+	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},                       // own account
+		{Namespace: "AWS/EC2", MetricName: "NetworkIn", AccountID: "222222222222"}, // source account
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, ts)
+	require.Equal(t, 2, md.ResourceMetrics().Len())
+
+	byAccount := map[string]string{} // account ID -> metric name
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		acct, ok := rm.Resource().Attributes().Get("cloud.account.id")
+		require.True(t, ok)
+		require.Equal(t, 1, rm.ScopeMetrics().At(0).Metrics().Len())
+		byAccount[acct.Str()] = rm.ScopeMetrics().At(0).Metrics().At(0).Name()
+	}
+	require.Equal(t, "amazonaws.com/AWS/EC2/CPUUtilization", byAccount["111111111111"])
+	require.Equal(t, "amazonaws.com/AWS/EC2/NetworkIn", byAccount["222222222222"])
+}
+
 // --- gauge mode tests ---
 
 func TestConvertGetMetricDataToPdata_GaugeMode_SingleStat(t *testing.T) {

@@ -79,6 +79,11 @@ type MetricQuery struct {
 	MetricName string            `mapstructure:"metric_name"`
 	Dimensions map[string]string `mapstructure:"dimensions"`
 	Stats      []string          `mapstructure:"stats"`
+	// AccountID optionally identifies the AWS account that owns this metric. In a
+	// cross-account monitoring setup it selects the source account to query via
+	// GetMetricData and is reported as the cloud.account.id resource attribute. When
+	// empty, the receiver's own resolved account ID is used.
+	AccountID string `mapstructure:"account_id"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
