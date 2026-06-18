@@ -182,6 +182,13 @@ func WithForwarderConfig() ConfigOption {
 	}
 }
 
+// WithCustomConfig sets an arbitrary key in the Datadog agent config.
+func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set(key, value, source)
+	}
+}
+
 // WithLoggingConfig sets logging_frequency to avoid a divide-by-zero panic in the agent logger.
 func WithLoggingConfig() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
