@@ -531,7 +531,10 @@ func walAgeEnabled(m *metadata.MetricsConfig) bool {
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
 	m := &p.config.Metrics
 
-	if !perTableStatsEnabled(m) && !blocksReadEnabled(m) {
+	perTableStats := perTableStatsEnabled(m)
+	blocksRead := blocksReadEnabled(m)
+
+	if !perTableStats && !blocksRead {
 		if !tableCountEnabled(m) {
 			return 0
 		}
@@ -546,12 +549,26 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	var blockReads map[tableIdentifier]tableIOStats
-	if blocksReadEnabled(m) {
+	if blocksRead {
 		var err error
 		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
 		if err != nil {
 			errs.addPartial(err)
 		}
+	}
+
+	// When no per-table metric is enabled, postgresql.blocks_read can be served
+	// entirely from pg_statio_user_tables, which (unlike pg_stat_user_tables)
+	// does not compute a relation size for every table. Emit directly from that
+	// result and skip the expensive getDatabaseTableMetrics query. The two views
+	// cover the same relations, so the row count also satisfies
+	// postgresql.table.count.
+	if !perTableStats {
+		for _, br := range blockReads {
+			p.recordBlocksRead(now, br)
+			p.emitTableResource(db, br.schema, br.table)
+		}
+		return int64(len(blockReads))
 	}
 
 	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
@@ -570,31 +587,43 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
 		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
 
-		br, ok := blockReads[tableKey]
-		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
+		if br, ok := blockReads[tableKey]; ok {
+			p.recordBlocksRead(now, br)
 		}
 
-		var schemaName string
-		var tableName string
-		if p.separateSchemaAttr {
-			schemaName = tm.schema
-			tableName = tm.table
-		} else {
-			tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
-		}
-
-		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		p.emitTableResource(db, tm.schema, tm.table)
 	}
 	return int64(len(tableMetrics))
+}
+
+// recordBlocksRead records every postgresql.blocks_read data point for a single
+// table from its pg_statio_user_tables row.
+func (p *postgreSQLScraper) recordBlocksRead(now pcommon.Timestamp, br tableIOStats) {
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
+}
+
+// emitTableResource emits the accumulated table-scoped data points under a
+// resource identifying the given table, honoring the separate-schema feature
+// gate.
+func (p *postgreSQLScraper) emitTableResource(db, schema, table string) {
+	var schemaName string
+	var tableName string
+	if p.separateSchemaAttr {
+		schemaName = schema
+		tableName = table
+	} else {
+		tableName = fmt.Sprintf("%s.%s", schema, table)
+	}
+
+	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
+	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (p *postgreSQLScraper) collectIndexes(

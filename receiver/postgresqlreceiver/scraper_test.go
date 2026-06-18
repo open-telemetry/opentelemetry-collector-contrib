@@ -515,6 +515,43 @@ func TestScraperTableCountWithPerTableStats(t *testing.T) {
 	dbClient.AssertNotCalled(t, "getTableCount", mock.Anything)
 }
 
+// TestScraperBlocksReadWithoutPerTableStats verifies that when postgresql.blocks_read
+// is enabled but no per-table metric is, blocks_read is served from the
+// pg_statio_user_tables query alone and the expensive per-table
+// getDatabaseTableMetrics query (which computes a relation size for every table) is
+// not run. This is the inverse coupling to TestScraperTableCountWithPerTableStats:
+// blocks_read must not drag in the per-table stats query.
+func TestScraperBlocksReadWithoutPerTableStats(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	disableAllMetrics(&cfg.Metrics)
+	cfg.Metrics.PostgresqlBlocksRead.Enabled = true
+
+	const db, schema = "otel", "public"
+	dbClient := new(mockClient)
+	dbClient.On("Close").Return(nil)
+	dbClient.On("getBlocksReadByTable", mock.Anything, mock.Anything).
+		Return(map[tableIdentifier]tableIOStats{
+			tableKey(db, schema, "t1"): {schema: schema, table: "t1"},
+		}, nil)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(dbClient, nil)
+	factory.On("getClient", "otel").Return(dbClient, nil)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dbClient.AssertCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getTableCount", mock.Anything)
+
+	_, ok := emittedMetricNames(md)["postgresql.blocks_read"]
+	assert.True(t, ok, "postgresql.blocks_read was enabled but not emitted")
+}
+
 // enableMetricByName enables the single metric whose mapstructure tag matches name.
 func enableMetricByName(t *testing.T, mc *metadata.MetricsConfig, name string) {
 	t.Helper()
@@ -614,9 +651,9 @@ func onQuery[T any](c *mockClient, failMethod, method string, data T, args ...an
 // actually required to produce a given metric.
 func newQueryMockClient(failMethod string) *mockClient {
 	const db, schema = "otel", "public"
-	// getDatabaseTableMetrics and getBlocksReadByTable must use the same key: the
-	// blocks_read metric is recorded while iterating the table metrics, so it is
-	// only emitted for tables present in both results.
+	// getDatabaseTableMetrics and getBlocksReadByTable must use the same key: when
+	// per-table stats are also enabled, blocks_read is recorded while iterating the
+	// table metrics, so it is only emitted for tables present in both results.
 	table := tableKey(db, schema, "t1")
 
 	c := new(mockClient)
