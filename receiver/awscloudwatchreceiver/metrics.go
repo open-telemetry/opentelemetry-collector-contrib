@@ -9,12 +9,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -48,11 +50,23 @@ type cloudWatchMetricsScraper struct {
 	metrics            []MetricQuery
 	discovery          *MetricsDiscoveryConfig
 	client             metricsClient
+	stsClient          stsClient
+	// accountID is the resolved AWS account ID reported as cloud.account.id.
+	// It is empty when resolution failed and no account_id override was configured.
+	accountID string
+	// accountIDOnce ensures the account ID is resolved at most once, lazily on the
+	// first scrape, so that start() performs no network calls.
+	accountIDOnce sync.Once
 }
 
 type metricsClient interface {
 	ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error)
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
+}
+
+// stsClient resolves the AWS account ID of the active credentials via GetCallerIdentity.
+type stsClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
@@ -89,11 +103,40 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 		return err
 	}
 	s.client = cloudwatch.NewFromConfig(cfg)
+	if s.stsClient == nil {
+		s.stsClient = sts.NewFromConfig(cfg)
+	}
 	return nil
+}
+
+// resolveAccountID resolves the AWS account ID of the active credentials via STS
+// GetCallerIdentity and stores it in s.accountID, to be reported as the cloud.account.id
+// resource attribute. If resolution fails (for example because STS is unavailable or not
+// permitted), it logs a warning and leaves s.accountID empty so that metric collection
+// proceeds without the attribute.
+//
+// It is invoked once, lazily, on the first scrape (via accountIDOnce) so that start()
+// performs no network calls.
+func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
+	s.accountIDOnce.Do(func() {
+		if s.stsClient == nil {
+			return
+		}
+		out, err := s.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			s.settings.Logger.Warn("unable to resolve AWS account ID via STS GetCallerIdentity; "+
+				"metrics will be emitted without the cloud.account.id resource attribute.", zap.Error(err))
+			return
+		}
+		s.accountID = aws.ToString(out.Account)
+	})
 }
 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
+
+	// Resolve the account ID lazily on the first scrape so that start() makes no network calls.
+	s.resolveAccountID(ctx)
 
 	var metricsToScrape []MetricQuery
 	if s.discovery != nil {
@@ -306,11 +349,15 @@ func dimensionsFromMap(d map[string]string) []types.Dimension {
 }
 
 // setResourceAttributes sets the resource-level attributes that identify the AWS source.
-// Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: only cloud.provider
-// and cloud.region are set on the resource; namespace and dimensions go on data points.
+// Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: cloud.provider,
+// cloud.account.id, and cloud.region are set on the resource; namespace and dimensions go
+// on data points. cloud.account.id is omitted when the account ID could not be resolved.
 func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	if s.accountID != "" {
+		attrs.PutStr(string(conventions.CloudAccountIDKey), s.accountID)
+	}
 	attrs.PutStr(string(conventions.CloudRegionKey), s.cfg.Region)
 }
 

@@ -115,7 +115,7 @@ Extended statistics (percentiles, trimmed means, etc.): `p99`, `p95`, `p50`, `tm
 All metrics follow the [CloudWatch Metric Streams OpenTelemetry 1.0.0 format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html):
 
 - **Metric name:** `amazonaws.com/{Namespace}/{MetricName}` (CloudWatch casing preserved)
-- **Resource attributes:** `cloud.provider = aws`, `cloud.region = <configured region>`
+- **Resource attributes:** `cloud.provider = aws`, `cloud.region = <configured region>`, and `cloud.account.id` (resolved via STS `GetCallerIdentity`; omitted when it cannot be resolved)
 - **Data point attributes:** `Namespace`, `MetricName`, and `Dimensions` (a nested key/value map, omitted when no dimensions are set)
 
 #### Examples

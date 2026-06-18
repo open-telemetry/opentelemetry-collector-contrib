@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/awscloudwatch
+note: Report the AWS account ID as the `cloud.account.id` resource attribute on collected metrics, resolved via STS `GetCallerIdentity`.
+issues: []
+change_logs: []

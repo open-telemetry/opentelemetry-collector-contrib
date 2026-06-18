@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +36,17 @@ func (m *mockMetricsClient) ListMetrics(ctx context.Context, params *cloudwatch.
 func (m *mockMetricsClient) GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	return args.Get(0).(*cloudwatch.GetMetricDataOutput), args.Error(1)
+}
+
+// mockSTSClient implements stsClient for testing.
+type mockSTSClient struct {
+	mock.Mock
+}
+
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	out, _ := args.Get(0).(*sts.GetCallerIdentityOutput)
+	return out, args.Error(1)
 }
 
 func testScraper(cfg *Config) *cloudWatchMetricsScraper {
@@ -647,4 +659,83 @@ func TestScrape_DiscoveryError(t *testing.T) {
 
 	_, err := scr.scrape(t.Context())
 	require.ErrorContains(t, err, "list metrics")
+}
+
+// --- account ID tests ---
+
+func TestResolveAccountID_ViaSTS(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
+	)
+	scr.stsClient = stsMock
+
+	scr.resolveAccountID(t.Context())
+	require.Equal(t, "210987654321", scr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestResolveAccountID_ResolvesOnlyOnce(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
+	).Once()
+	scr.stsClient = stsMock
+
+	scr.resolveAccountID(t.Context())
+	scr.resolveAccountID(t.Context())
+	require.Equal(t, "210987654321", scr.accountID)
+	// GetCallerIdentity must be called at most once across repeated scrapes.
+	stsMock.AssertExpectations(t)
+}
+
+func TestResolveAccountID_STSErrorDegradesGracefully(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		(*sts.GetCallerIdentityOutput)(nil), errors.New("access denied"),
+	)
+	scr.stsClient = stsMock
+
+	scr.resolveAccountID(t.Context())
+	require.Empty(t, scr.accountID)
+}
+
+func TestSetResourceAttributes_AccountID(t *testing.T) {
+	t.Run("present when resolved", func(t *testing.T) {
+		scr := testScraper(&Config{Region: "us-east-1"})
+		scr.accountID = "123456789012"
+
+		ts := time.Unix(1_700_000_000, 0).UTC()
+		results := []types.MetricDataResult{
+			{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		}
+		batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}}
+
+		md := scr.convertGetMetricDataToPdata(results, batch, ts)
+		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+		v, ok := attrs.Get("cloud.account.id")
+		require.True(t, ok)
+		require.Equal(t, "123456789012", v.Str())
+	})
+
+	t.Run("omitted when unresolved", func(t *testing.T) {
+		scr := testScraper(&Config{Region: "us-east-1"})
+
+		ts := time.Unix(1_700_000_000, 0).UTC()
+		results := []types.MetricDataResult{
+			{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		}
+		batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}}
+
+		md := scr.convertGetMetricDataToPdata(results, batch, ts)
+		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+		_, ok := attrs.Get("cloud.account.id")
+		require.False(t, ok)
+	})
 }
