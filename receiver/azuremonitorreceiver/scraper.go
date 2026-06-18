@@ -78,6 +78,7 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
+	namespace    string
 	dimensions   string // comma separated sorted dimensions
 	aggregations string // comma separated sorted aggregations
 	timeGrain    string
@@ -483,8 +484,46 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 		return
 	}
 
-	pager := clientMetricsDefinitions.NewListPager(resourceID, nil)
+	// discoveredNamespaces tracks namespaces returned by the default (no-filter) call
+	// so we can skip redundant namespace-filtered calls for those namespaces.
+	discoveredNamespaces := map[string]struct{}{}
 
+	s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, nil, discoveredNamespaces)
+
+	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
+	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
+	// when the metricnamespace query parameter is set explicitly. Make additional calls
+	// for each namespace configured in the metrics filter that was not already returned
+	// by the default call above.
+	for configNamespace := range s.cfg.Metrics {
+		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
+			continue
+		}
+		opts := &armmonitor.MetricDefinitionsClientListOptions{
+			Metricnamespace: to.Ptr(configNamespace),
+		}
+		s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, opts, nil)
+	}
+
+	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
+	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
+		zap.Int("metrics_definitions_count", len(s.resources[subscriptionID][resourceID].metricsByCompositeKey)),
+		zap.String("resource_id", resourceID),
+		zap.String("subscription_id", subscriptionID))
+}
+
+// collectMetricDefinitions pages through a MetricDefinitions pager and registers each
+// metric definition into the resource's metricsByCompositeKey map.
+// discoveredNamespaces, when non-nil, is populated with the lowercased namespaces seen in
+// the response so callers can skip redundant follow-up calls.
+func (s *azureScraper) collectMetricDefinitions(
+	ctx context.Context,
+	subscriptionID, resourceID string,
+	client *armmonitor.MetricDefinitionsClient,
+	opts *armmonitor.MetricDefinitionsClientListOptions,
+	discoveredNamespaces map[string]struct{},
+) {
+	pager := client.NewListPager(resourceID, opts)
 	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
@@ -505,7 +544,13 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
+			metricNamespace := *v.Namespace
+
+			if discoveredNamespaces != nil {
+				discoveredNamespaces[strings.ToLower(metricNamespace)] = struct{}{}
+			}
+
+			metricAggregations := getMetricAggregations(metricNamespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}
@@ -513,6 +558,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
 			compositeKey := metricsCompositeKey{
+				namespace:    metricNamespace,
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
@@ -520,12 +566,6 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 			s.loadMetricsDefinition(subscriptionID, resourceID, metricName, compositeKey)
 		}
 	}
-
-	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
-	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
-		zap.Int("metrics_definitions_count", len(s.resources[subscriptionID][resourceID].metricsByCompositeKey)),
-		zap.String("resource_id", resourceID),
-		zap.String("subscription_id", subscriptionID))
 }
 
 func (s *azureScraper) loadMetricsDefinition(subscriptionID, resourceID, metricName string, compositeKey metricsCompositeKey) {
@@ -577,6 +617,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 				compositeKey.dimensions,
 				compositeKey.timeGrain,
 				compositeKey.aggregations,
+				compositeKey.namespace,
 				start,
 				end,
 				s.cfg.MaximumNumberOfRecordsPerResource,
@@ -638,11 +679,12 @@ func newResourceMetricsValuesRequestOptions(
 	dimensionsStr string,
 	timeGrain string,
 	aggregationsStr string,
+	namespace string,
 	start int,
 	end int,
 	top int32,
 ) armmonitor.MetricsClientListOptions {
-	return armmonitor.MetricsClientListOptions{
+	opts := armmonitor.MetricsClientListOptions{
 		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
@@ -650,6 +692,10 @@ func newResourceMetricsValuesRequestOptions(
 		Top:         to.Ptr(top),
 		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
+	if namespace != "" {
+		opts.Metricnamespace = to.Ptr(namespace)
+	}
+	return opts
 }
 
 func (s *azureScraper) processTimeseriesData(
