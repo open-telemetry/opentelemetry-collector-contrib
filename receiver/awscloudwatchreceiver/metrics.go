@@ -366,9 +366,21 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 	}
 
 	withData := 0
+	warned := make(map[int]bool)
 	for _, r := range allResults {
 		if len(r.Values) > 0 {
 			withData++
+		}
+		// Surface non-complete statuses that would otherwise be dropped as empty data.
+		// Forbidden in particular signals the metric's account is not accessible (the
+		// receiver is not a monitoring account, or the source account is not linked),
+		// which is the common cross-account misconfiguration. Deduplicate per metric so
+		// a metric's sub-queries do not each emit an identical warning.
+		if r.StatusCode == types.StatusCodeForbidden || r.StatusCode == types.StatusCodeInternalError {
+			if mi, _, err := parseQueryID(aws.ToString(r.Id)); err == nil && mi >= 0 && mi < len(batch) && !warned[mi] {
+				warned[mi] = true
+				s.logResultStatus(batch[mi], r)
+			}
 		}
 	}
 	s.settings.Logger.Debug("GetMetricData response",
@@ -388,6 +400,25 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 		}
 	}
 	return md, nil
+}
+
+// logResultStatus emits a warning describing a non-complete GetMetricData result so that
+// silently-dropped metrics (e.g. a Forbidden cross-account query) are diagnosable.
+func (s *cloudWatchMetricsScraper) logResultStatus(q MetricQuery, r types.MetricDataResult) {
+	fields := []zap.Field{
+		zap.String("status", string(r.StatusCode)),
+		zap.String("namespace", q.Namespace),
+		zap.String("metric_name", q.MetricName),
+		zap.String("account_id", s.effectiveAccountID(q)),
+	}
+	for _, m := range r.Messages {
+		if m.Value != nil {
+			fields = append(fields, zap.String("message", aws.ToString(m.Value)))
+		}
+	}
+	s.settings.Logger.Warn("GetMetricData returned a non-complete status for a metric; "+
+		"a Forbidden status usually means the receiver is not running in a monitoring account "+
+		"or the source account is not linked", fields...)
 }
 
 func dimensionsFromMap(d map[string]string) []types.Dimension {

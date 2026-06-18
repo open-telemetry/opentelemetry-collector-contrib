@@ -87,7 +87,7 @@ List every metric you want to collect. Each entry supports:
 | `metric_name` | String          | yes      | CloudWatch metric name, e.g. `CPUUtilization`. |
 | `dimensions`  | Map             | no       | CloudWatch dimension key/value pairs. Required for metrics that are scoped to a specific resource (e.g. a single EC2 instance or DynamoDB table). Original casing is preserved. |
 | `stats`       | List of strings | no       | Which CloudWatch statistics to fetch. See [Statistics](#statistics) below. |
-| `account_id`  | String          | no       | Source account that owns this metric, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. Requires the receiver to run in a monitoring account. See [Cross-account monitoring](#cross-account-monitoring). |
+| `account_id`  | String          | no       | Source account the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. Requires the receiver to run in a monitoring account. See [Cross-account monitoring](#cross-account-monitoring). |
 
 #### Auto-discovery (`discovery`)
 

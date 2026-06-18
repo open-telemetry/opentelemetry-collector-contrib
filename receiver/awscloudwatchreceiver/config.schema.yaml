@@ -62,7 +62,7 @@ $defs:
         items:
           type: string
       account_id:
-        description: AccountID optionally identifies the AWS account that owns this metric. In a cross-account monitoring setup it selects the source account to query via GetMetricData and is reported as the cloud.account.id resource attribute. When empty, the receiver's own resolved account ID is used.
+        description: AccountID optionally identifies the AWS account the metric is located in (its source account). In a cross-account monitoring setup it selects which account to retrieve the metric from via GetMetricData and is reported as the cloud.account.id resource attribute. When empty, the receiver's own resolved account ID is used.
         type: string
   metrics_config:
     description: MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver. Either Metrics (explicit list) or Discovery (ListMetrics-based) may be set, not both. Collection interval and scraper behavior are controlled via the embedded ControllerConfig.

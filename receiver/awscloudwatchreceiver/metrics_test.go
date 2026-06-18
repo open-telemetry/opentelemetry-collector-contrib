@@ -703,6 +703,30 @@ func TestPollBatch_SetsAccountIDOnQueries(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
+func TestPollBatch_ForbiddenStatusProducesNoData(t *testing.T) {
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	mc := &mockMetricsClient{}
+	// A Forbidden cross-account result carries no values; conversion must drop it
+	// (no resource metrics) rather than fabricate empty data.
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{Id: aws.String("q0_0"), StatusCode: types.StatusCodeForbidden},
+			},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Period: 60 * time.Second}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Sum"}, AccountID: "222222222222"}}
+	md, err := scr.pollBatch(t.Context(), batch, ts.Add(-60*time.Second), ts)
+	require.NoError(t, err)
+	require.Equal(t, 0, md.ResourceMetrics().Len())
+	mc.AssertExpectations(t)
+}
+
 func TestPollBatch_Error(t *testing.T) {
 	ts := time.Unix(1_700_000_000, 0).UTC()
 	mc := &mockMetricsClient{}
