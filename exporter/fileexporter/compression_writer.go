@@ -11,36 +11,30 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// compressingWriter wraps an io.WriteCloser with streaming zstd compression.
+// defaultMaxFrameMegabytes mirrors timberjack's default MaxSize.
+const defaultMaxFrameMegabytes = 100
+
+// compressingWriter wraps an io.WriteCloser with zstd compression.
 //
-// Operating modes:
-//   - rotation enabled (rotation != nil): closes and resets the encoder after
-//     each Write() so every record produces a complete, independently
-//     decompressible zstd frame. This is required because timberjack can
-//     silently switch to a new file between writes, so each rotated file
-//     must contain only complete frames. The zstd decoder handles
-//     concatenated frames natively.
-//   - rotation disabled (rotation == nil): keeps a single zstd stream open
-//     across writes. The frame is finalized by the periodic flush() ticker
-//     and by Close() on shutdown. This avoids the per-record Close()+Reset()
-//     overhead and lets zstd share context across records for a better
-//     compression ratio.
+//   - rotation != nil: each Write() is compressed into one complete frame (via
+//     EncodeAll) and written atomically. timberjack rotates between Write calls
+//     but never splits one, so a streamed frame (header/blocks/CRC across several
+//     writes) could be split across files; writing whole frames keeps every
+//     rotated file a valid, zstd -d-decodable .zst.
+//   - rotation == nil: a single stream stays open, finalized by flush()/Close()
+//     for a better ratio.
 //
-// Note: zstd.Encoder.Flush() only performs a block-level flush within an
-// open frame, it does NOT write the "last block" marker or CRC that make
-// the frame independently decompressible. Only Close() finalizes a frame.
-//
-// Thread safety: this type is not independently thread-safe. All calls are
-// serialized by the fileWriter.mutex in the caller. Do not use this type
-// from multiple goroutines without external synchronization.
+// Not thread-safe; callers serialize via fileWriter.mutex.
 type compressingWriter struct {
-	base        io.WriteCloser // underlying writer (file or timberjack)
-	compression string
-	level       int
-	encoder     io.WriteCloser // zstd.Encoder
-	rotation    *Rotation      // when non-nil, finalize a frame per Write()
-	dirty       bool           // tracks whether encoder has received data since last flush/creation
-	err         error          // sticky error state
+	base          io.WriteCloser // underlying writer (file or timberjack)
+	compression   string
+	level         int
+	encoder       *zstd.Encoder
+	rotation      *Rotation // when non-nil, finalize a frame per Write()
+	maxFrameBytes int       // rotation mode: max bytes for a single frame
+	frame         []byte    // rotation mode: reusable EncodeAll output buffer
+	dirty         bool      // encoder has received data since last flush/creation
+	err           error     // sticky error state
 }
 
 func newCompressingWriter(base io.WriteCloser, compression string, level int, rotation *Rotation) (*compressingWriter, error) {
@@ -51,7 +45,19 @@ func newCompressingWriter(base io.WriteCloser, compression string, level int, ro
 		rotation:    rotation,
 	}
 
-	encoder, err := cw.newEncoder()
+	// Rotation mode uses EncodeAll only, so the encoder needs no streaming target.
+	var target io.Writer
+	if rotation == nil {
+		target = base
+	} else {
+		maxMB := rotation.MaxMegabytes
+		if maxMB <= 0 {
+			maxMB = defaultMaxFrameMegabytes
+		}
+		cw.maxFrameBytes = maxMB * 1024 * 1024
+	}
+
+	encoder, err := cw.newEncoder(target)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +66,10 @@ func newCompressingWriter(base io.WriteCloser, compression string, level int, ro
 	return cw, nil
 }
 
-func (c *compressingWriter) newEncoder() (io.WriteCloser, error) {
+func (c *compressingWriter) newEncoder(w io.Writer) (*zstd.Encoder, error) {
 	switch c.compression {
 	case compressionZSTD:
-		return zstd.NewWriter(c.base,
+		return zstd.NewWriter(w,
 			zstd.WithEncoderLevel(zstd.EncoderLevelFromZstd(c.level)),
 			zstd.WithEncoderConcurrency(1),
 		)
@@ -77,64 +83,81 @@ func (c *compressingWriter) Write(p []byte) (int, error) {
 		return 0, c.err
 	}
 
-	n, err := c.encoder.Write(p)
-	if err != nil {
-		c.err = err
-		return n, err
-	}
-
-	c.dirty = true
-
-	// When rotation is disabled, keep the zstd stream open across writes.
-	// flush() (called by the periodic flusher) and Close() (on shutdown)
-	// will finalize the frame.
+	// Non-rotation: stream directly; flush()/Close() finalize the frame.
 	if c.rotation == nil {
+		n, err := c.encoder.Write(p)
+		if err != nil {
+			c.err = err
+			return n, err
+		}
+		c.dirty = true
 		return n, nil
 	}
 
-	// Close the encoder to finalize the current zstd frame with the
-	// "last block" marker and CRC checksum. This makes the frame
-	// independently decompressible, which is required so that when
-	// timberjack rotates the underlying file, each file contains only
-	// complete frames.
-	if err := c.closeAndResetEncoder(); err != nil {
-		c.err = err
-		return n, err
-	}
-
-	return n, nil
+	return c.writeFrame(p)
 }
 
-// closeAndResetEncoder finalizes the current zstd frame by calling Close()
-// on the encoder, then resets it for the next write. Close() writes the
-// "last block" marker and CRC, producing a complete frame. Reset() reuses
-// the encoder's allocated buffers for efficiency.
+// writeFrame compresses p into one complete frame and writes it in a single
+// Write so a rotation cannot split it. A frame larger than the rotation limit
+// (which the writer would reject) is split into in-bounds chunks; the
+// decompressed frames concatenate back to p.
+func (c *compressingWriter) writeFrame(p []byte) (int, error) {
+	c.frame = c.encoder.EncodeAll(p, c.frame[:0])
+	if c.maxFrameBytes > 0 && len(c.frame) > c.maxFrameBytes {
+		return c.writeChunkedFrames(p)
+	}
+	if _, err := c.base.Write(c.frame); err != nil {
+		c.err = err
+		return 0, err
+	}
+	return len(p), nil
+}
+
+// writeChunkedFrames splits an oversized record into chunks that each compress
+// below maxFrameBytes (with headroom for zstd overhead so even incompressible
+// data fits) and writes each as its own frame.
+func (c *compressingWriter) writeChunkedFrames(p []byte) (int, error) {
+	chunkSize := c.maxFrameBytes - c.maxFrameBytes/100 - 4096
+	if chunkSize < 1 {
+		chunkSize = c.maxFrameBytes
+	}
+
+	written := 0
+	for len(p) > 0 {
+		n := min(chunkSize, len(p))
+		c.frame = c.encoder.EncodeAll(p[:n], c.frame[:0])
+		if _, err := c.base.Write(c.frame); err != nil {
+			c.err = err
+			return written, err
+		}
+		written += n
+		p = p[n:]
+	}
+	return written, nil
+}
+
+// closeAndResetEncoder finalizes the current frame and resets the encoder.
+// Non-rotation only.
 func (c *compressingWriter) closeAndResetEncoder() error {
 	if err := c.encoder.Close(); err != nil {
 		return err
 	}
-
-	// Reset the encoder so the next Write() starts a new frame.
-	if enc, ok := c.encoder.(*zstd.Encoder); ok {
-		enc.Reset(c.base)
-	}
+	c.encoder.Reset(c.base)
 	c.dirty = false
 	return nil
 }
 
 // Close finalizes the compression stream and closes the underlying writer.
 func (c *compressingWriter) Close() error {
-	// Close the encoder to finalize any in-progress frame and release resources.
-	// After closeAndResetEncoder in Write(), dirty is false and the encoder
-	// has been reset, but it still needs to be closed to release resources.
+	// Non-rotation: Close() finalizes the open frame into base. Rotation: the
+	// encoder has no stream (EncodeAll only), so this just releases resources.
 	encoderErr := c.encoder.Close()
 	baseErr := c.base.Close()
 	return errors.Join(encoderErr, baseErr)
 }
 
-// flush is called by the flusher goroutine in fileWriter.
-// It finalizes the current frame if dirty, ensuring data is fully written
-// to the underlying writer as complete zstd frames.
+// flush finalizes the current frame if dirty. In rotation mode dirty is never
+// set, so this is a no-op.
 func (c *compressingWriter) flush() error {
 	if !c.dirty {
 		return nil
