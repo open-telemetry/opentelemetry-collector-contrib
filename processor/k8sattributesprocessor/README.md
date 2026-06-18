@@ -1111,6 +1111,10 @@ through the following feature gates:
 - `processor.k8sattributes.DontEmitV0K8sConventions`
 - `processor.k8sattributes.EmitV1K8sConventions`
 
+The above feature gates will remain in `beta` for the whole period the component stays at `v1.x.x`,
+allowing users to which back to the old unstable schema if needed.
+They will be promoted to `stable` when the component move to `v2`.
+
 This follows the migration pattern described by the respective Collector [RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/semconv-feature-gates.md#proposed-mechanism).
 
 The breaking changes between the 2 schemas are the following:
