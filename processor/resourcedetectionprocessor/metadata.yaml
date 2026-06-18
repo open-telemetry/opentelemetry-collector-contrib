@@ -78,7 +78,7 @@ telemetry:
     resourcedetection.detector.results:
       prefix: otelcol.
       enabled: true
-      description: Number of resource detection attempts, by detector and outcome.
+      description: Number of resource detection results, by detector and outcome.
       stability: development
       unit: "{detection}"
       attributes: [detector, outcome]

@@ -17,7 +17,7 @@ issues: [44595]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds three metrics:
-  `otelcol.resourcedetection.detector.results` (count of detection attempts),
+  `otelcol.resourcedetection.detector.results` (count of detection results),
   `otelcol.resourcedetection.detector.duration` (per-detector latency), and
   `otelcol.resourcedetection.attributes.detected` (attributes in the detected resource).
 
