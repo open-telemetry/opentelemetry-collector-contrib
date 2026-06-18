@@ -199,11 +199,13 @@ Supported OpenInference message fields:
 
 - `llm.{input,output}_messages.N.message.role`
 - `llm.{input,output}_messages.N.message.content`
-- `llm.{input,output}_messages.N.message.name`
+- `llm.{input,output}_messages.N.message.name` — emitted as the `name` field on the message object when present
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.id`
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.name`
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.arguments`
 - `llm.{input,output}_messages.N.message.tool_call_id`
+
+**Not supported:** multimodal content arrays (`llm.{input,output}_messages.N.message.contents.M.message_content.*`). OpenInference's indexed content array format for images, audio, and other modalities is not reconstructed. Only the flat `message.content` string field is handled. Multimodal spans pass through with the original flattened attributes intact.
 
 #### Role inference
 
@@ -219,7 +221,9 @@ When `tool_call_id` is present and `role` is explicitly `"user"`, the processor 
 
 #### Output format
 
-Messages are serialized as a JSON array of objects with this structure:
+Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json).
+
+Example `gen_ai.input.messages`:
 
 ```json
 [
@@ -228,15 +232,38 @@ Messages are serialized as a JSON array of objects with this structure:
     "parts": [{"type": "text", "content": "Hello"}]
   },
   {
-    "role": "assistant",
-    "parts": [{"type": "tool_call", "id": "call_1", "name": "get_weather", "arguments": {"city": "Berlin"}}]
-  },
-  {
     "role": "tool",
-    "parts": [{"type": "tool_call_response", "id": "call_1", "result": "sunny, 22C"}]
+    "parts": [{"type": "tool_call_response", "id": "call_1", "response": "sunny, 22C"}]
   }
 ]
 ```
+
+Example `gen_ai.output.messages`:
+
+```json
+[
+  {
+    "role": "assistant",
+    "parts": [{"type": "tool_call", "id": "call_1", "name": "get_weather", "arguments": {"city": "Berlin"}}],
+    "finish_reason": ""
+  }
+]
+```
+
+The `name` field (participant name) is included on a message object only when the source carries `message.name`; otherwise it is omitted. Example:
+
+```json
+[
+  {
+    "role": "assistant",
+    "name": "my_agent",
+    "parts": [{"type": "text", "content": "Done"}],
+    "finish_reason": ""
+  }
+]
+```
+
+The `finish_reason` field is always present on output messages (required by the schema) and always set to `""` because OpenInference does not carry per-message finish reasons. Use `gen_ai.response.finish_reasons` (a span-level attribute) for the model's stop reason.
 
 Messages are ordered by their numeric index N. The `arguments` field is parsed as JSON if valid; otherwise kept as a raw string.
 

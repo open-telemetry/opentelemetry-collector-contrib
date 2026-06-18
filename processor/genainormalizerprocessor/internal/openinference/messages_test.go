@@ -75,7 +75,11 @@ func TestReconstructMessages_OutputMessages(t *testing.T) {
 
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	assert.Equal(t, "assistant", msgs[0].(map[string]interface{})["role"])
+	msg := msgs[0].(map[string]interface{})
+	assert.Equal(t, "assistant", msg["role"])
+	// finish_reason is required by the GenAI output-messages schema; emitted as ""
+	// because OpenInference does not carry per-message finish reasons.
+	assert.Equal(t, "", msg["finish_reason"])
 }
 
 func TestReconstructMessages_ToolCalls(t *testing.T) {
@@ -132,7 +136,7 @@ func TestReconstructMessages_ToolResponse(t *testing.T) {
 	part := parts[0].(map[string]interface{})
 	assert.Equal(t, "tool_call_response", part["type"])
 	assert.Equal(t, "call_abc", part["id"])
-	assert.Equal(t, "sunny, 22C", part["result"])
+	assert.Equal(t, "sunny, 22C", part["response"])
 }
 
 func TestReconstructMessages_ToolResponseExplicitRole(t *testing.T) {
@@ -214,10 +218,46 @@ func TestReconstructMessages_MessageName(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	assert.Equal(t, "assistant", msgs[0].(map[string]interface{})["role"])
+	msg := msgs[0].(map[string]interface{})
+	assert.Equal(t, "assistant", msg["role"])
+	assert.Equal(t, "helper_bot", msg["name"], "name field must appear in the JSON output")
 
 	_, exists := attrs.Get("llm.input_messages.0.message.name")
 	assert.False(t, exists, "name attr should be consumed")
+}
+
+func TestReconstructMessages_MessageNameOutput(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":    "assistant",
+		"llm.output_messages.0.message.name":    "my_agent",
+		"llm.output_messages.0.message.content": "Done",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	msg := msgs[0].(map[string]interface{})
+	assert.Equal(t, "my_agent", msg["name"])
+	assert.Equal(t, "", msg["finish_reason"])
+}
+
+func TestReconstructMessages_MessageNameOmittedWhenEmpty(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "Hi",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	_, hasName := msgs[0].(map[string]interface{})["name"]
+	assert.False(t, hasName, "name must be omitted when not present in source")
 }
 
 func TestReconstructMessages_NoOverwrite(t *testing.T) {
@@ -379,8 +419,15 @@ func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
 
 	inMsgs := parseJSON(t, inVal.AsString())
 	outMsgs := parseJSON(t, outVal.AsString())
-	assert.Len(t, inMsgs, 1)
-	assert.Len(t, outMsgs, 1)
+	require.Len(t, inMsgs, 1)
+	require.Len(t, outMsgs, 1)
+
+	inMsg := inMsgs[0].(map[string]interface{})
+	_, hasFinishReason := inMsg["finish_reason"]
+	assert.False(t, hasFinishReason, "input messages must not have finish_reason")
+
+	outMsg := outMsgs[0].(map[string]interface{})
+	assert.Equal(t, "", outMsg["finish_reason"], "output messages must have finish_reason (empty string)")
 }
 
 func TestMessageAggregator_Interface(t *testing.T) {

@@ -15,18 +15,30 @@ import (
 )
 
 type messagePrefix struct {
-	prefix string
-	target string
+	prefix   string
+	target   string
+	isOutput bool
 }
 
 var messagePrefixes = []messagePrefix{
-	{"llm.input_messages.", otelsemconv.GenAIInputMessages},
-	{"llm.output_messages.", otelsemconv.GenAIOutputMessages},
+	{"llm.input_messages.", otelsemconv.GenAIInputMessages, false},
+	{"llm.output_messages.", otelsemconv.GenAIOutputMessages, true},
 }
 
-type chatMessage struct {
+type inputChatMessage struct {
 	Role  string        `json:"role"`
+	Name  string        `json:"name,omitempty"`
 	Parts []interface{} `json:"parts"`
+}
+
+// outputChatMessage mirrors inputChatMessage but adds finish_reason, which is
+// required by the GenAI output-messages JSON schema. OpenInference does not
+// carry per-message finish reasons, so the field is always emitted as "".
+type outputChatMessage struct {
+	Role         string        `json:"role"`
+	Name         string        `json:"name,omitempty"`
+	Parts        []interface{} `json:"parts"`
+	FinishReason string        `json:"finish_reason"`
 }
 
 type textPart struct {
@@ -42,9 +54,9 @@ type toolCallRequestPart struct {
 }
 
 type toolCallResponsePart struct {
-	Type   string `json:"type"`
-	ID     string `json:"id,omitempty"`
-	Result string `json:"result"`
+	Type     string `json:"type"`
+	ID       string `json:"id,omitempty"`
+	Response string `json:"response"`
 }
 
 type toolCallFields struct {
@@ -66,14 +78,14 @@ type messageFields struct {
 func ReconstructMessages(attrs pcommon.Map, removeOriginals, overwrite bool) bool {
 	wrote := false
 	for _, mp := range messagePrefixes {
-		if reconstructPrefix(attrs, mp.prefix, mp.target, removeOriginals, overwrite) {
+		if reconstructPrefix(attrs, mp.prefix, mp.target, mp.isOutput, removeOriginals, overwrite) {
 			wrote = true
 		}
 	}
 	return wrote
 }
 
-func reconstructPrefix(attrs pcommon.Map, prefix, target string, removeOriginals, overwrite bool) bool {
+func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, removeOriginals, overwrite bool) bool {
 	messages := make(map[int]*messageFields)
 	var keysToRemove []string
 
@@ -106,7 +118,7 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, removeOriginals
 		return false
 	}
 
-	result := buildMessages(messages)
+	result := buildMessages(messages, isOutput)
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
 		return false
@@ -188,32 +200,39 @@ func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
 	}
 }
 
-func buildMessages(messages map[int]*messageFields) []chatMessage {
+func buildMessages(messages map[int]*messageFields, isOutput bool) []interface{} {
 	indices := make([]int, 0, len(messages))
 	for idx := range messages {
 		indices = append(indices, idx)
 	}
 	sort.Ints(indices)
 
-	result := make([]chatMessage, 0, len(indices))
+	result := make([]interface{}, 0, len(indices))
 	for _, idx := range indices {
-		result = append(result, buildSingleMessage(messages[idx]))
+		result = append(result, buildSingleMessage(messages[idx], isOutput))
 	}
 	return result
 }
 
-func buildSingleMessage(mf *messageFields) chatMessage {
-	msg := chatMessage{Role: inferRole(mf)}
+func buildSingleMessage(mf *messageFields, isOutput bool) interface{} {
+	role := inferRole(mf)
+	parts := buildParts(mf)
 
+	if isOutput {
+		return outputChatMessage{Role: role, Name: mf.name, Parts: parts, FinishReason: ""}
+	}
+	return inputChatMessage{Role: role, Name: mf.name, Parts: parts}
+}
+
+func buildParts(mf *messageFields) []interface{} {
 	if mf.toolCallID != "" {
-		msg.Parts = []interface{}{
+		return []interface{}{
 			toolCallResponsePart{
-				Type:   "tool_call_response",
-				ID:     mf.toolCallID,
-				Result: mf.content,
+				Type:     "tool_call_response",
+				ID:       mf.toolCallID,
+				Response: mf.content,
 			},
 		}
-		return msg
 	}
 
 	if len(mf.toolCalls) > 0 {
@@ -241,19 +260,13 @@ func buildSingleMessage(mf *messageFields) chatMessage {
 			}
 			parts = append(parts, part)
 		}
-		msg.Parts = parts
-		return msg
+		return parts
 	}
 
 	if mf.content != "" {
-		msg.Parts = []interface{}{
-			textPart{Type: "text", Content: mf.content},
-		}
-	} else {
-		msg.Parts = []interface{}{}
+		return []interface{}{textPart{Type: "text", Content: mf.content}}
 	}
-
-	return msg
+	return []interface{}{}
 }
 
 func inferRole(mf *messageFields) string {
