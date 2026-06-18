@@ -176,6 +176,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisNetOutput: RedisNetOutputMetricConfig{
 						Enabled: true,
 					},
+					RedisPubsubChannels: RedisPubsubChannelsMetricConfig{
+						Enabled: true,
+					},
+					RedisPubsubClients: RedisPubsubClientsMetricConfig{
+						Enabled: true,
+					},
+					RedisPubsubPatterns: RedisPubsubPatternsMetricConfig{
+						Enabled: true,
+					},
+					RedisPubsubShardChannels: RedisPubsubShardChannelsMetricConfig{
+						Enabled: true,
+					},
 					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 						Enabled: true,
 					},
@@ -382,6 +394,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisNetOutput: RedisNetOutputMetricConfig{
 						Enabled: false,
 					},
+					RedisPubsubChannels: RedisPubsubChannelsMetricConfig{
+						Enabled: false,
+					},
+					RedisPubsubClients: RedisPubsubClientsMetricConfig{
+						Enabled: false,
+					},
+					RedisPubsubPatterns: RedisPubsubPatternsMetricConfig{
+						Enabled: false,
+					},
+					RedisPubsubShardChannels: RedisPubsubShardChannelsMetricConfig{
+						Enabled: false,
+					},
 					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 						Enabled: false,
 					},
@@ -438,7 +462,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RedisClientsBlockedMetricConfig{}, RedisClientsConnectedMetricConfig{}, RedisClientsMaxInputBufferMetricConfig{}, RedisClientsMaxOutputBufferMetricConfig{}, RedisClusterClusterEnabledMetricConfig{}, RedisClusterKnownNodesMetricConfig{}, RedisClusterLinksBufferLimitExceededCountMetricConfig{}, RedisClusterNodeCountMetricConfig{}, RedisClusterNodeUptimeMetricConfig{}, RedisClusterSlotsAssignedMetricConfig{}, RedisClusterSlotsFailMetricConfig{}, RedisClusterSlotsOkMetricConfig{}, RedisClusterSlotsPfailMetricConfig{}, RedisClusterStateMetricConfig{}, RedisClusterStatsMessagesReceivedMetricConfig{}, RedisClusterStatsMessagesSentMetricConfig{}, RedisClusterUptimeMetricConfig{}, RedisCmdCallsMetricConfig{}, RedisCmdLatencyMetricConfig{}, RedisCmdUsecMetricConfig{}, RedisCommandsMetricConfig{}, RedisCommandsProcessedMetricConfig{}, RedisConnectionsReceivedMetricConfig{}, RedisConnectionsRejectedMetricConfig{}, RedisCPUTimeMetricConfig{}, RedisDbAvgTTLMetricConfig{}, RedisDbExpiresMetricConfig{}, RedisDbKeysMetricConfig{}, RedisKeysEvictedMetricConfig{}, RedisKeysExpiredMetricConfig{}, RedisKeyspaceHitsMetricConfig{}, RedisKeyspaceMissesMetricConfig{}, RedisLatestForkMetricConfig{}, RedisMaxmemoryMetricConfig{}, RedisMemoryFragmentationRatioMetricConfig{}, RedisMemoryLuaMetricConfig{}, RedisMemoryPeakMetricConfig{}, RedisMemoryRssMetricConfig{}, RedisMemoryUsedMetricConfig{}, RedisMemoryUsedMemoryOverheadMetricConfig{}, RedisMemoryUsedMemoryStartupMetricConfig{}, RedisModeMetricConfig{}, RedisNetInputMetricConfig{}, RedisNetOutputMetricConfig{}, RedisRdbChangesSinceLastSaveMetricConfig{}, RedisReplicationBacklogFirstByteOffsetMetricConfig{}, RedisReplicationOffsetMetricConfig{}, RedisReplicationReplicaOffsetMetricConfig{}, RedisRoleMetricConfig{}, RedisSentinelMastersMetricConfig{}, RedisSentinelRunningScriptsMetricConfig{}, RedisSentinelScriptsQueueLengthMetricConfig{}, RedisSentinelSimulateFailureFlagsMetricConfig{}, RedisSentinelTiltSinceSecondsMetricConfig{}, RedisSentinelTotalTiltMetricConfig{}, RedisSlavesConnectedMetricConfig{}, RedisTrackingTotalKeysMetricConfig{}, RedisUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RedisClientsBlockedMetricConfig{}, RedisClientsConnectedMetricConfig{}, RedisClientsMaxInputBufferMetricConfig{}, RedisClientsMaxOutputBufferMetricConfig{}, RedisClusterClusterEnabledMetricConfig{}, RedisClusterKnownNodesMetricConfig{}, RedisClusterLinksBufferLimitExceededCountMetricConfig{}, RedisClusterNodeCountMetricConfig{}, RedisClusterNodeUptimeMetricConfig{}, RedisClusterSlotsAssignedMetricConfig{}, RedisClusterSlotsFailMetricConfig{}, RedisClusterSlotsOkMetricConfig{}, RedisClusterSlotsPfailMetricConfig{}, RedisClusterStateMetricConfig{}, RedisClusterStatsMessagesReceivedMetricConfig{}, RedisClusterStatsMessagesSentMetricConfig{}, RedisClusterUptimeMetricConfig{}, RedisCmdCallsMetricConfig{}, RedisCmdLatencyMetricConfig{}, RedisCmdUsecMetricConfig{}, RedisCommandsMetricConfig{}, RedisCommandsProcessedMetricConfig{}, RedisConnectionsReceivedMetricConfig{}, RedisConnectionsRejectedMetricConfig{}, RedisCPUTimeMetricConfig{}, RedisDbAvgTTLMetricConfig{}, RedisDbExpiresMetricConfig{}, RedisDbKeysMetricConfig{}, RedisKeysEvictedMetricConfig{}, RedisKeysExpiredMetricConfig{}, RedisKeyspaceHitsMetricConfig{}, RedisKeyspaceMissesMetricConfig{}, RedisLatestForkMetricConfig{}, RedisMaxmemoryMetricConfig{}, RedisMemoryFragmentationRatioMetricConfig{}, RedisMemoryLuaMetricConfig{}, RedisMemoryPeakMetricConfig{}, RedisMemoryRssMetricConfig{}, RedisMemoryUsedMetricConfig{}, RedisMemoryUsedMemoryOverheadMetricConfig{}, RedisMemoryUsedMemoryStartupMetricConfig{}, RedisModeMetricConfig{}, RedisNetInputMetricConfig{}, RedisNetOutputMetricConfig{}, RedisPubsubChannelsMetricConfig{}, RedisPubsubClientsMetricConfig{}, RedisPubsubPatternsMetricConfig{}, RedisPubsubShardChannelsMetricConfig{}, RedisRdbChangesSinceLastSaveMetricConfig{}, RedisReplicationBacklogFirstByteOffsetMetricConfig{}, RedisReplicationOffsetMetricConfig{}, RedisReplicationReplicaOffsetMetricConfig{}, RedisRoleMetricConfig{}, RedisSentinelMastersMetricConfig{}, RedisSentinelRunningScriptsMetricConfig{}, RedisSentinelScriptsQueueLengthMetricConfig{}, RedisSentinelSimulateFailureFlagsMetricConfig{}, RedisSentinelTiltSinceSecondsMetricConfig{}, RedisSentinelTotalTiltMetricConfig{}, RedisSlavesConnectedMetricConfig{}, RedisTrackingTotalKeysMetricConfig{}, RedisUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

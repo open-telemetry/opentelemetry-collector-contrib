@@ -271,6 +271,20 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordRedisPubsubChannelsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisPubsubClientsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisPubsubPatternsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisPubsubShardChannelsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -1186,6 +1200,62 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The total number of bytes written to the network", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.channels":
+					assert.False(t, validatedMetrics["redis.pubsub.channels"], "Found a duplicate in the metrics slice: redis.pubsub.channels")
+					validatedMetrics["redis.pubsub.channels"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of active pub/sub channels", mi.Description())
+					assert.Equal(t, "{channel}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.clients":
+					assert.False(t, validatedMetrics["redis.pubsub.clients"], "Found a duplicate in the metrics slice: redis.pubsub.clients")
+					validatedMetrics["redis.pubsub.clients"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)", mi.Description())
+					assert.Equal(t, "{client}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.patterns":
+					assert.False(t, validatedMetrics["redis.pubsub.patterns"], "Found a duplicate in the metrics slice: redis.pubsub.patterns")
+					validatedMetrics["redis.pubsub.patterns"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of active pub/sub patterns", mi.Description())
+					assert.Equal(t, "{pattern}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.pubsub.shard_channels":
+					assert.False(t, validatedMetrics["redis.pubsub.shard_channels"], "Found a duplicate in the metrics slice: redis.pubsub.shard_channels")
+					validatedMetrics["redis.pubsub.shard_channels"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of active pub/sub shard channels (available in Redis 7.0+)", mi.Description())
+					assert.Equal(t, "{channel}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

@@ -228,6 +228,22 @@ The total number of bytes written to the network
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+### redis.pubsub.channels
+
+Number of active pub/sub channels
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {channel} | Sum | Int | Cumulative | false | Development |
+
+### redis.pubsub.patterns
+
+Number of active pub/sub patterns
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pattern} | Sum | Int | Cumulative | false | Development |
+
 ### redis.rdb.changes_since_last_save
 
 Number of changes since the last dump
@@ -468,6 +484,22 @@ Redis server mode
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended | - |
+
+### redis.pubsub.clients
+
+Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {client} | Sum | Int | Cumulative | false | Development |
+
+### redis.pubsub.shard_channels
+
+Number of active pub/sub shard channels (available in Redis 7.0+)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {channel} | Sum | Int | Cumulative | false | Development |
 
 ### redis.replication.replica_offset
 

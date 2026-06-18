@@ -491,6 +491,46 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
+  redis.pubsub.channels:
+    enabled: true
+    description: Number of active pub/sub channels
+    stability: development
+    unit: "{channel}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.pubsub.clients:
+    enabled: false
+    description: Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
+    stability: development
+    unit: "{client}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.pubsub.patterns:
+    enabled: true
+    description: Number of active pub/sub patterns
+    stability: development
+    unit: "{pattern}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.pubsub.shard_channels:
+    enabled: false
+    description: Number of active pub/sub shard channels (available in Redis 7.0+)
+    stability: development
+    unit: "{channel}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
   redis.rdb.changes_since_last_save:
     enabled: true
     description: Number of changes since the last dump
