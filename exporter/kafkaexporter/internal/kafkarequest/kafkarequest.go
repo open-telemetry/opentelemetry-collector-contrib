@@ -104,47 +104,34 @@ func recordSize(rec *kgo.Record) int {
 // Output is sorted by size descending so the last Request is the smallest,
 // per the interface contract.
 func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request {
-	var normal, oversized []*kgo.Record
-	for _, rec := range records {
-		if recordSize(rec) > maxSize {
-			oversized = append(oversized, rec)
-		} else {
-			normal = append(normal, rec)
+	var out []xexporterhelper.Request
+	var curSize int
+	start := 0
+	for i, rec := range records {
+		size := recordSize(rec)
+		if size > maxSize {
+			if i > start {
+				out = append(out, New(records[start:i]))
+			}
+			out = append(out, New(records[i:i+1]))
+			start = i + 1
+			curSize = 0
+			continue
 		}
+		if curSize+size > maxSize && i > start {
+			out = append(out, New(records[start:i]))
+			start = i
+			curSize = 0
+		}
+		curSize += size
 	}
-
-	bins := binPack(normal, maxSize)
-	out := make([]xexporterhelper.Request, 0, len(oversized)+len(bins))
-	for _, rec := range oversized {
-		out = append(out, New([]*kgo.Record{rec}))
-	}
-	for _, bin := range bins {
-		out = append(out, New(bin))
+	if start < len(records) {
+		out = append(out, New(records[start:]))
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		return out[i].(*Request).BytesSize() > out[j].(*Request).BytesSize()
 	})
 	return out
-}
-
-func binPack(records []*kgo.Record, maxSize int) [][]*kgo.Record {
-	var bins [][]*kgo.Record
-	var cur []*kgo.Record
-	var curSize int
-	for _, rec := range records {
-		size := recordSize(rec)
-		if curSize+size > maxSize && len(cur) > 0 {
-			bins = append(bins, cur)
-			cur = nil
-			curSize = 0
-		}
-		cur = append(cur, rec)
-		curSize += size
-	}
-	if len(cur) > 0 {
-		bins = append(bins, cur)
-	}
-	return bins
 }
 
 func splitByCount(records []*kgo.Record, maxCount int) []xexporterhelper.Request {
