@@ -47,11 +47,12 @@ host_metrics:
 The available scrapers are:
 
 | Scraper      | Supported OSs                | Description                                            |
-| ------------ | ---------------------------- | ------------------------------------------------------ |
+|--------------| ---------------------------- | ------------------------------------------------------ |
 | [cpu]        | All                          | CPU utilization metrics                                |
 | [disk]       | All                          | Disk I/O metrics                                       |
-| [load]       | All                          | CPU load metrics                                       |
 | [filesystem] | All                          | File System utilization metrics                        |
+| [hardware]   | Linux                        | Hardware sensor metrics (temperature, status)          |
+| [load]       | All                          | CPU load metrics                                       |
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [nfs]        | Linux                        | NFS server and client metrics                          |
@@ -63,6 +64,7 @@ The available scrapers are:
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
 [filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[hardware]: ./internal/scraper/hardwarescraper/documentation.md
 [load]: ./internal/scraper/loadscraper/documentation.md
 [memory]: ./internal/scraper/memoryscraper/documentation.md
 [network]: ./internal/scraper/networkscraper/documentation.md
@@ -142,6 +144,28 @@ The following settings are optional:
 - `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+
+### Hardware
+
+```yaml
+hardware:
+  hwmon_path: <string>
+  temperature:
+    <include|exclude>:
+      sensors: [ <sensor pattern>, ... ]
+      match_type: <strict|regexp>
+```
+
+The following settings are optional:
+- `hwmon_path` (default: "/sys/class/hwmon"): path to hwmon directory for reading hardware sensors (Linux only)
+- `temperature.include.sensors` (default: [".*"]): sensor to include
+
+The hardwarescraper currently supports the following sub-scrapers:
+- **Temperature** (Linux only): Collects temperature readings from hardware sensors
+  - `hw.temperature`: Current temperature readings in Celsius
+  - `hw.temperature.limit`: Temperature thresholds (max, critical, min, low_critical)
+
+**Note**: Hardware scraping is currently only supported on Linux systems that expose hardware sensors through the sysfs hwmon interface. Only temperature monitoring is implemented at this time.
 
 ## Advanced Configuration
 
