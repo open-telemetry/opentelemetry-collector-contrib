@@ -1090,14 +1090,16 @@ SELECT
 	 'sqlserver_worker_threads' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
-	,(SELECT max_workers_count FROM sys.dm_os_sys_info) AS [total_threads]
-	,SUM(active_workers_count) AS [active_threads]
-	,(SELECT max_workers_count FROM sys.dm_os_sys_info) - SUM(active_workers_count) AS [available_threads]
-	,SUM(runnable_tasks_count) AS [waiting_for_cpu_threads]
-	,SUM(work_queue_count) AS [requests_waiting_for_threads]
-FROM sys.dm_os_schedulers
-WHERE status = 'VISIBLE ONLINE'
+	,si.max_workers_count AS [total_threads]
+	,SUM(s.active_workers_count) AS [active_threads]
+	,si.max_workers_count - SUM(s.active_workers_count) AS [available_threads]
+	,SUM(s.runnable_tasks_count) AS [waiting_for_cpu_threads]
+	,SUM(s.work_queue_count) AS [requests_waiting_for_threads]
+FROM sys.dm_os_schedulers s
+CROSS JOIN sys.dm_os_sys_info si
+WHERE s.status = 'VISIBLE ONLINE'
 {filter_instance_name}
+GROUP BY si.max_workers_count
 OPTION(RECOMPILE)
 `
 

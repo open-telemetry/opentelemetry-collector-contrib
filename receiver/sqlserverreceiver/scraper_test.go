@@ -426,6 +426,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerWorkerThreadsQuery(mc.instanceName):
+		queryResults, err = readFile("workerThreadsQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -1214,6 +1216,74 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordWorkerThreadMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = true
+	cfg.Metrics.SqlserverWorkerRequestWaiting.Enabled = true
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+
+	var workerScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerWorkerThreadsQuery(cfg.InstanceName) {
+			workerScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, workerScraper, "worker threads scraper should be present")
+
+	err := workerScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, workerScraper.Shutdown(t.Context()))
+
+	workerScraper.client = mockClient{
+		instanceName: workerScraper.config.InstanceName,
+		SQL:          workerScraper.sqlQuery,
+	}
+
+	actualMetrics, err := workerScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// Verify all five data points: 4 worker.state variants + 1 worker.request.waiting
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case "sqlserver.worker.thread.count":
+					totalDP += m.Gauge().DataPoints().Len()
+				case "sqlserver.worker.request.waiting":
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 5, totalDP)
+}
+
+func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
+	assert.False(t, isWorkerThreadsQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isWorkerThreadsQueryEnabled(metrics))
+
+	metrics.SqlserverWorkerThreadCount.Enabled = true
+	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
+
+	metrics.SqlserverWorkerThreadCount.Enabled = false
+	metrics.SqlserverWorkerRequestWaiting.Enabled = true
+	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 
 func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) {
