@@ -70,9 +70,7 @@ For target keys with a typed primitive constructor in semconv (`gen_ai.usage.inp
 - int / double / bool -> string: converted to canonical string form.
 - structured source (map / slice) -> primitive target: dropped (would lose information).
 
-For target keys defined as `any` in the spec (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`, `gen_ai.operation.name` enum, etc.), the processor preserves whatever shape the source emitted.
-
-Backends that require a uniform type for these targets should pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based shape normalization.
+For target keys defined as `any` in the spec (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`, `gen_ai.operation.name` enum, etc.), the processor preserves whatever shape the source emitted. Backends that require a uniform type for these targets should pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based shape normalization.
 
 ## Examples
 
@@ -188,7 +186,6 @@ Attribute renames:
 | `openinference.span.kind` | `gen_ai.operation.name` (with value mapping, see below) |
 
 See [`internal/openinference/mappings.go`](./internal/openinference/mappings.go) for the canonical map.
-
 Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
 
 ### Message reconstruction

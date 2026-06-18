@@ -26,19 +26,19 @@ var messagePrefixes = []messagePrefix{
 }
 
 type inputChatMessage struct {
-	Role  string        `json:"role"`
-	Name  string        `json:"name,omitempty"`
-	Parts []interface{} `json:"parts"`
+	Role  string `json:"role"`
+	Name  string `json:"name,omitempty"`
+	Parts []any  `json:"parts"`
 }
 
 // outputChatMessage mirrors inputChatMessage but adds finish_reason, which is
 // required by the GenAI output-messages JSON schema. OpenInference does not
 // carry per-message finish reasons, so the field is always emitted as "".
 type outputChatMessage struct {
-	Role         string        `json:"role"`
-	Name         string        `json:"name,omitempty"`
-	Parts        []interface{} `json:"parts"`
-	FinishReason string        `json:"finish_reason"`
+	Role         string `json:"role"`
+	Name         string `json:"name,omitempty"`
+	Parts        []any  `json:"parts"`
+	FinishReason string `json:"finish_reason"`
 }
 
 type textPart struct {
@@ -47,10 +47,10 @@ type textPart struct {
 }
 
 type toolCallRequestPart struct {
-	Type      string      `json:"type"`
-	ID        string      `json:"id,omitempty"`
-	Name      string      `json:"name"`
-	Arguments interface{} `json:"arguments,omitempty"`
+	Type      string `json:"type"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name"`
+	Arguments any    `json:"arguments,omitempty"`
 }
 
 type toolCallResponsePart struct {
@@ -200,21 +200,21 @@ func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
 	}
 }
 
-func buildMessages(messages map[int]*messageFields, isOutput bool) []interface{} {
+func buildMessages(messages map[int]*messageFields, isOutput bool) []any {
 	indices := make([]int, 0, len(messages))
 	for idx := range messages {
 		indices = append(indices, idx)
 	}
 	sort.Ints(indices)
 
-	result := make([]interface{}, 0, len(indices))
+	result := make([]any, 0, len(indices))
 	for _, idx := range indices {
 		result = append(result, buildSingleMessage(messages[idx], isOutput))
 	}
 	return result
 }
 
-func buildSingleMessage(mf *messageFields, isOutput bool) interface{} {
+func buildSingleMessage(mf *messageFields, isOutput bool) any {
 	role := inferRole(mf)
 	parts := buildParts(mf)
 
@@ -224,9 +224,9 @@ func buildSingleMessage(mf *messageFields, isOutput bool) interface{} {
 	return inputChatMessage{Role: role, Name: mf.name, Parts: parts}
 }
 
-func buildParts(mf *messageFields) []interface{} {
+func buildParts(mf *messageFields) []any {
 	if mf.toolCallID != "" {
-		return []interface{}{
+		return []any{
 			toolCallResponsePart{
 				Type:     "tool_call_response",
 				ID:       mf.toolCallID,
@@ -242,7 +242,7 @@ func buildParts(mf *messageFields) []interface{} {
 		}
 		sort.Ints(tcIndices)
 
-		parts := make([]interface{}, 0, len(tcIndices))
+		parts := make([]any, 0, len(tcIndices))
 		for _, idx := range tcIndices {
 			tc := mf.toolCalls[idx]
 			part := toolCallRequestPart{
@@ -251,7 +251,7 @@ func buildParts(mf *messageFields) []interface{} {
 				Name: tc.name,
 			}
 			if tc.arguments != "" {
-				var parsed interface{}
+				var parsed any
 				if err := json.Unmarshal([]byte(tc.arguments), &parsed); err == nil {
 					part.Arguments = parsed
 				} else {
@@ -264,9 +264,9 @@ func buildParts(mf *messageFields) []interface{} {
 	}
 
 	if mf.content != "" {
-		return []interface{}{textPart{Type: "text", Content: mf.content}}
+		return []any{textPart{Type: "text", Content: mf.content}}
 	}
-	return []interface{}{}
+	return []any{}
 }
 
 func inferRole(mf *messageFields) string {

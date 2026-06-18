@@ -22,9 +22,9 @@ func newAttrs(kvs map[string]string) pcommon.Map {
 	return m
 }
 
-func parseJSON(t *testing.T, s string) []interface{} {
+func parseJSON(t *testing.T, s string) []any {
 	t.Helper()
-	var out []interface{}
+	var out []any
 	require.NoError(t, json.Unmarshal([]byte(s), &out))
 	return out
 }
@@ -46,15 +46,15 @@ func TestReconstructMessages_BasicInputMessages(t *testing.T) {
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 2)
 
-	msg0 := msgs[0].(map[string]interface{})
+	msg0 := msgs[0].(map[string]any)
 	assert.Equal(t, "system", msg0["role"])
-	parts0 := msg0["parts"].([]interface{})
+	parts0 := msg0["parts"].([]any)
 	require.Len(t, parts0, 1)
-	part0 := parts0[0].(map[string]interface{})
+	part0 := parts0[0].(map[string]any)
 	assert.Equal(t, "text", part0["type"])
 	assert.Equal(t, "You are helpful.", part0["content"])
 
-	msg1 := msgs[1].(map[string]interface{})
+	msg1 := msgs[1].(map[string]any)
 	assert.Equal(t, "user", msg1["role"])
 
 	_, exists := attrs.Get("llm.input_messages.0.message.role")
@@ -75,11 +75,11 @@ func TestReconstructMessages_OutputMessages(t *testing.T) {
 
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	msg := msgs[0].(map[string]interface{})
+	msg := msgs[0].(map[string]any)
 	assert.Equal(t, "assistant", msg["role"])
 	// finish_reason is required by the GenAI output-messages schema; emitted as ""
 	// because OpenInference does not carry per-message finish reasons.
-	assert.Equal(t, "", msg["finish_reason"])
+	assert.Empty(t, msg["finish_reason"])
 }
 
 func TestReconstructMessages_ToolCalls(t *testing.T) {
@@ -99,16 +99,16 @@ func TestReconstructMessages_ToolCalls(t *testing.T) {
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
 
-	msg := msgs[0].(map[string]interface{})
+	msg := msgs[0].(map[string]any)
 	assert.Equal(t, "assistant", msg["role"])
-	parts := msg["parts"].([]interface{})
+	parts := msg["parts"].([]any)
 	require.Len(t, parts, 1)
 
-	tc := parts[0].(map[string]interface{})
+	tc := parts[0].(map[string]any)
 	assert.Equal(t, "tool_call", tc["type"])
 	assert.Equal(t, "call_abc", tc["id"])
 	assert.Equal(t, "get_weather", tc["name"])
-	args := tc["arguments"].(map[string]interface{})
+	args := tc["arguments"].(map[string]any)
 	assert.Equal(t, "Berlin", args["city"])
 }
 
@@ -128,12 +128,12 @@ func TestReconstructMessages_ToolResponse(t *testing.T) {
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
 
-	msg := msgs[0].(map[string]interface{})
+	msg := msgs[0].(map[string]any)
 	assert.Equal(t, "tool", msg["role"], "role should be inferred as tool when tool_call_id present")
 
-	parts := msg["parts"].([]interface{})
+	parts := msg["parts"].([]any)
 	require.Len(t, parts, 1)
-	part := parts[0].(map[string]interface{})
+	part := parts[0].(map[string]any)
 	assert.Equal(t, "tool_call_response", part["type"])
 	assert.Equal(t, "call_abc", part["id"])
 	assert.Equal(t, "sunny, 22C", part["response"])
@@ -151,7 +151,7 @@ func TestReconstructMessages_ToolResponseExplicitRole(t *testing.T) {
 
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
-	assert.Equal(t, "tool", msgs[0].(map[string]interface{})["role"])
+	assert.Equal(t, "tool", msgs[0].(map[string]any)["role"])
 }
 
 func TestReconstructMessages_InferredRoles(t *testing.T) {
@@ -200,7 +200,7 @@ func TestReconstructMessages_InferredRoles(t *testing.T) {
 			val, _ := a.Get(target)
 			msgs := parseJSON(t, val.AsString())
 			require.Len(t, msgs, 1)
-			assert.Equal(t, tt.expectedRole, msgs[0].(map[string]interface{})["role"])
+			assert.Equal(t, tt.expectedRole, msgs[0].(map[string]any)["role"])
 		})
 	}
 }
@@ -218,7 +218,7 @@ func TestReconstructMessages_MessageName(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	msg := msgs[0].(map[string]interface{})
+	msg := msgs[0].(map[string]any)
 	assert.Equal(t, "assistant", msg["role"])
 	assert.Equal(t, "helper_bot", msg["name"], "name field must appear in the JSON output")
 
@@ -239,9 +239,9 @@ func TestReconstructMessages_MessageNameOutput(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	msg := msgs[0].(map[string]interface{})
+	msg := msgs[0].(map[string]any)
 	assert.Equal(t, "my_agent", msg["name"])
-	assert.Equal(t, "", msg["finish_reason"])
+	assert.Empty(t, msg["finish_reason"])
 }
 
 func TestReconstructMessages_MessageNameOmittedWhenEmpty(t *testing.T) {
@@ -256,7 +256,7 @@ func TestReconstructMessages_MessageNameOmittedWhenEmpty(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	_, hasName := msgs[0].(map[string]interface{})["name"]
+	_, hasName := msgs[0].(map[string]any)["name"]
 	assert.False(t, hasName, "name must be omitted when not present in source")
 }
 
@@ -330,9 +330,9 @@ func TestReconstructMessages_NonStringValue(t *testing.T) {
 	val, _ := m.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	parts := msgs[0].(map[string]interface{})["parts"].([]interface{})
+	parts := msgs[0].(map[string]any)["parts"].([]any)
 	require.Len(t, parts, 1)
-	assert.Equal(t, "42", parts[0].(map[string]interface{})["content"])
+	assert.Equal(t, "42", parts[0].(map[string]any)["content"])
 }
 
 func TestReconstructMessages_MultipleToolCalls(t *testing.T) {
@@ -353,14 +353,14 @@ func TestReconstructMessages_MultipleToolCalls(t *testing.T) {
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
 
-	parts := msgs[0].(map[string]interface{})["parts"].([]interface{})
+	parts := msgs[0].(map[string]any)["parts"].([]any)
 	require.Len(t, parts, 2)
 
-	tc0 := parts[0].(map[string]interface{})
+	tc0 := parts[0].(map[string]any)
 	assert.Equal(t, "fn1", tc0["name"])
-	assert.Equal(t, float64(1), tc0["arguments"].(map[string]interface{})["a"])
+	assert.Equal(t, float64(1), tc0["arguments"].(map[string]any)["a"])
 
-	tc1 := parts[1].(map[string]interface{})
+	tc1 := parts[1].(map[string]any)
 	assert.Equal(t, "fn2", tc1["name"])
 	assert.Equal(t, "invalid json", tc1["arguments"])
 }
@@ -381,9 +381,9 @@ func TestReconstructMessages_OrderingByIndex(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 3)
-	assert.Equal(t, "system", msgs[0].(map[string]interface{})["role"])
-	assert.Equal(t, "user", msgs[1].(map[string]interface{})["role"])
-	assert.Equal(t, "assistant", msgs[2].(map[string]interface{})["role"])
+	assert.Equal(t, "system", msgs[0].(map[string]any)["role"])
+	assert.Equal(t, "user", msgs[1].(map[string]any)["role"])
+	assert.Equal(t, "assistant", msgs[2].(map[string]any)["role"])
 }
 
 func TestReconstructMessages_EmptyContent(t *testing.T) {
@@ -397,8 +397,8 @@ func TestReconstructMessages_EmptyContent(t *testing.T) {
 	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
 	msgs := parseJSON(t, val.AsString())
 	require.Len(t, msgs, 1)
-	parts := msgs[0].(map[string]interface{})["parts"].([]interface{})
-	assert.Len(t, parts, 0)
+	parts := msgs[0].(map[string]any)["parts"].([]any)
+	assert.Empty(t, parts)
 }
 
 func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
@@ -422,12 +422,12 @@ func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
 	require.Len(t, inMsgs, 1)
 	require.Len(t, outMsgs, 1)
 
-	inMsg := inMsgs[0].(map[string]interface{})
+	inMsg := inMsgs[0].(map[string]any)
 	_, hasFinishReason := inMsg["finish_reason"]
 	assert.False(t, hasFinishReason, "input messages must not have finish_reason")
 
-	outMsg := outMsgs[0].(map[string]interface{})
-	assert.Equal(t, "", outMsg["finish_reason"], "output messages must have finish_reason (empty string)")
+	outMsg := outMsgs[0].(map[string]any)
+	assert.Empty(t, outMsg["finish_reason"], "output messages must have finish_reason (empty string)")
 }
 
 func TestMessageAggregator_Interface(t *testing.T) {

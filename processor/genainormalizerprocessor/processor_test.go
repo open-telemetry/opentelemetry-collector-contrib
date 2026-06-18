@@ -47,7 +47,9 @@ func TestNormalizeAttributes(t *testing.T) {
 			name:            "string rename, remove_originals=true",
 			lookup:          map[string]string{"src.model": "dst.model"},
 			removeOriginals: true,
-			setup:           func(attrs pcommon.Map) { attrs.PutStr("src.model", "m") },
+			setup: func(attrs pcommon.Map) {
+				attrs.PutStr("src.model", "m")
+			},
 			verify: func(t *testing.T, attrs pcommon.Map) {
 				v, ok := attrs.Get("dst.model")
 				require.True(t, ok)
@@ -59,7 +61,9 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:   "int rename",
 			lookup: map[string]string{"src.count": "dst.count"},
-			setup:  func(attrs pcommon.Map) { attrs.PutInt("src.count", 42) },
+			setup: func(attrs pcommon.Map) {
+				attrs.PutInt("src.count", 42)
+			},
 			verify: func(t *testing.T, attrs pcommon.Map) {
 				v, ok := attrs.Get("dst.count")
 				require.True(t, ok)
@@ -69,7 +73,9 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:   "double rename",
 			lookup: map[string]string{"src.ratio": "dst.ratio"},
-			setup:  func(attrs pcommon.Map) { attrs.PutDouble("src.ratio", 0.7) },
+			setup: func(attrs pcommon.Map) {
+				attrs.PutDouble("src.ratio", 0.7)
+			},
 			verify: func(t *testing.T, attrs pcommon.Map) {
 				v, ok := attrs.Get("dst.ratio")
 				require.True(t, ok)
@@ -79,7 +85,9 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:   "bool rename",
 			lookup: map[string]string{"src.flag": "dst.flag"},
-			setup:  func(attrs pcommon.Map) { attrs.PutBool("src.flag", true) },
+			setup: func(attrs pcommon.Map) {
+				attrs.PutBool("src.flag", true)
+			},
 			verify: func(t *testing.T, attrs pcommon.Map) {
 				v, ok := attrs.Get("dst.flag")
 				require.True(t, ok)
@@ -577,13 +585,8 @@ func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 
 	// Originals removed.
 	for _, k := range []string{
-		"llm.token_count.prompt",
-		"llm.token_count.completion",
-		"llm.model_name",
-		"llm.provider",
-		"openinference.span.kind",
-		"agent.name",
-		"session.id",
+		"llm.token_count.prompt", "llm.token_count.completion", "llm.model_name",
+		"llm.provider", "openinference.span.kind", "agent.name", "session.id",
 	} {
 		_, ok := out.Get(k)
 		assert.False(t, ok, "expected %s to be removed", k)
