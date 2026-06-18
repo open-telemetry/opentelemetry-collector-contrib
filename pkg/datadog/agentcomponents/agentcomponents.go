@@ -182,6 +182,13 @@ func WithForwarderConfig() ConfigOption {
 	}
 }
 
+// WithLoggingConfig sets logging_frequency to avoid a divide-by-zero panic in the agent logger.
+func WithLoggingConfig() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("logging_frequency", 1, pkgconfigmodel.SourceDefault)
+	}
+}
+
 // WithLogsEnabled enables logs for agent config
 func WithLogsEnabled() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
@@ -255,9 +262,6 @@ func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
 // WithCustomConfig allows setting arbitrary configuration values
 func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		// Register the key before setting it; nodetreemodel silently drops Set calls
-		// for keys not in its known-key registry.
-		pkgconfig.SetKnown(key)
 		pkgconfig.Set(key, value, source)
 	}
 }
@@ -293,9 +297,6 @@ func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	if cfg.TLS.InsecureSkipVerify {
 		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 	}
-	// apm_config.skip_ssl_validation is not registered by InitConfig, so register it first.
-	pkgconfig.SetKnown("apm_config.skip_ssl_validation")
-	pkgconfig.Set("apm_config.skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend
