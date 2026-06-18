@@ -160,8 +160,52 @@ receivers:
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
       top_query_count: 200                       # The maximum number of queries (N) for which the metrics would be reported
       collection_interval: 60s                   # collection interval for top query collection specifically
+      allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
     query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
       max_rows_per_query: 100                     # the maximum number of samples to bre reported.
+      allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
     session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
-      max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported
+      max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported                 
 ```
+
+## SQL Comment Extraction
+
+When the `db.server.query_sample` and/or `db.server.top_query` events are enabled, the receiver can
+extract key-value pairs from leading SQL block comments (`/* key=value */`) and emit them as the
+`db.query.comment_tags` attribute on the corresponding logs.
+
+This behavior is controlled by the `allowed_comment_keys` option, which can be set independently
+under `top_query_collection` and `query_sample_collection`:
+
+- `allowed_comment_keys` (default = `[]`): A list of comment keys to extract. For each enabled
+  collection, only keys present in this allowlist are extracted from the leading SQL comment and
+  included (as comma-separated `key=value` pairs) in the `db.query.comment_tags` attribute.
+
+Extraction is disabled unless explicitly configured:
+
+- When `allowed_comment_keys` is empty or unset, no comments are extracted.
+- Only keys included in the allowlist are emitted; all other comment keys are ignored.
+- Only leading block comments are parsed; comments elsewhere in the query are ignored.
+
+Example:
+
+```yaml
+receivers:
+  oracledb:
+    datasource: "oracle://otel:password@localhost:51521/XE"
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+    top_query_collection:
+      allowed_comment_keys: [application, team]
+    query_sample_collection:
+      allowed_comment_keys: [application, team]
+```
+
+Given a query such as `/* application=exampleApp,team=payments */ SELECT * FROM users`, the emitted
+log record will include `db.query.comment_tags` set to `application=exampleApp,team=payments`. When multiple
+keys are extracted, they are emitted as a comma-separated list of `key=value` pairs.
+
+See [documentation](./documentation.md) for details on the `db.query.comment_tags` attribute.

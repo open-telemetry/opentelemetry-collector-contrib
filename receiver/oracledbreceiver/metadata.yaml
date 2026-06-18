@@ -59,6 +59,9 @@ attributes:
   db.namespace:
     description: The database name.
     type: string
+  db.query.comment_tags:
+    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces.
+    type: string
   db.query.text:
     description: The text of the database query being executed.
     type: string
@@ -327,6 +330,7 @@ events:
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
+      - db.query.comment_tags
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
@@ -383,6 +387,7 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
+      - db.query.comment_tags
       - oracledb.plan_hash_value
       - oracledb.plan.first_load
       - oracledb.plan.last_load
