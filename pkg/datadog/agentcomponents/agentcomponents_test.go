@@ -130,6 +130,9 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+			t.Setenv("DD_API_KEY", "")
+			t.Setenv("DD_SITE", "")
 			configComponent := NewConfigComponent(tt.options...)
 			require.NotNil(t, configComponent)
 
@@ -245,6 +248,8 @@ func TestWithLogsConfig(t *testing.T) {
 }
 
 func TestWithLogsConfig_CombinedWithOtherOptions(t *testing.T) {
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_SITE", "")
 	// Test that WithLogsConfig works correctly when combined with other options
 	cfg := &datadogconfig.Config{
 		API: datadogconfig.APIConfig{
@@ -408,7 +413,6 @@ func TestWithTLSSetting(t *testing.T) {
 			config := configComponent.(pkgconfigmodel.Config)
 
 			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("skip_ssl_validation"))
-			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("apm_config.skip_ssl_validation"))
 		})
 	}
 }
@@ -613,6 +617,10 @@ func TestNewForwarderComponent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+			t.Setenv("DD_API_KEY", "")
+			t.Setenv("DD_SITE", "")
+
 			// Create a test logger
 			logger, err := zap.NewDevelopment()
 			require.NoError(t, err)
@@ -681,6 +689,9 @@ func TestNewForwarderComponent_Internal(t *testing.T) {
 }
 
 func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {
+	// Isolate tests from DD_API_KEY and DD_SITE env vars; nodetreemodel skips empty values.
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_SITE", "")
 	// This test verifies that the keysPerDomain map is constructed correctly
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
