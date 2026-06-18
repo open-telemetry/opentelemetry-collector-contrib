@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -591,7 +592,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newFunctionCall(tt.inv)
+			_, err := p.newParseContext().newFunctionCall(tt.inv)
 			t.Log(err)
 			assert.Error(t, err)
 		})
@@ -599,6 +600,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
 	tests := []struct {
 		name      string
 		inv       editor
@@ -1892,6 +1895,287 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name: "lambda arg",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"value"},
+								Body: lambdaBody{
+									Value: &value{
+										Literal: &mathExprLiteral{
+											Path: &path{Fields: []field{{Name: "value"}}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("hello lambda"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "hello lambda",
+		},
+		{
+			name: "lambda arg with slice indexing",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"value"},
+								Body: lambdaBody{
+									Value: &value{
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{{
+													Name: "value",
+													Keys: []key{
+														{
+															Int: ottltest.Intp(1),
+														},
+														{
+															Int: ottltest.Intp(0),
+														},
+													},
+												}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										List: &list{
+											Values: []value{
+												{
+													String: ottltest.Strp("first"),
+												},
+												{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("second"),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "second",
+		},
+		{
+			name: "lambda arg with map indexing",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"value"},
+								Body: lambdaBody{
+									Value: &value{
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{{
+													Name: "value",
+													Keys: []key{
+														{
+															String: ottltest.Strp("one"),
+														},
+														{
+															String: ottltest.Strp("two"),
+														},
+													},
+												}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										Map: &mapValue{
+											Values: []mapItem{
+												{
+													Key: ottltest.Strp("one"),
+													Value: &value{
+														Map: &mapValue{
+															Values: []mapItem{
+																{
+																	Key: ottltest.Strp("two"),
+																	Value: &value{
+																		Literal: &mathExprLiteral{
+																			Int: ottltest.Intp(2),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: int64(2),
+		},
+		{
+			name: "lambda arg with duplicate formals",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"value", "value"},
+								Body: lambdaBody{
+									Value: &value{
+										Literal: &mathExprLiteral{
+											Path: &path{Fields: []field{{Name: "value"}}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("hello lambda"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: `duplicate local identifier "value"`,
+		},
+		{
+			name: "lambda arg with duplicate blank formals",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"_", "_"},
+								Body: lambdaBody{
+									Value: &value{
+										String: ottltest.Strp("ok"),
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("skip"),
+									},
+									{
+										String: ottltest.Strp("ignore"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "ok",
+		},
+		{
+			name: "lambda arg with expression body",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"a", "b"},
+								Body: lambdaBody{
+									Expr: &booleanExpression{
+										Left: &term{
+											Left: &booleanValue{
+												Comparison: &comparison{
+													Left: value{
+														Literal: &mathExprLiteral{
+															Path: &path{Fields: []field{{Name: "a"}}},
+														},
+													},
+													Op: eq,
+													Right: value{
+														Literal: &mathExprLiteral{
+															Path: &path{Fields: []field{{Name: "b"}}},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("same value"),
+									},
+									{
+										String: ottltest.Strp("same value"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
 	}
 
 	p, _ := NewParser(
@@ -1909,14 +2193,18 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fn, err := p.newFunctionCall(tt.inv)
+			fn, err := p.newParseContext().newFunctionCall(tt.inv)
+			if tt.wantError != "" {
+				require.ErrorContains(t, err, tt.wantError)
+				return
+			}
 			require.NoError(t, err)
-
 			result, err := fn.Eval(t.Context(), nil)
 			if tt.want != nil {
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, result)
 			} else if tt.wantError != "" {
-				assert.ErrorContains(t, err, tt.wantError)
+				require.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -1996,12 +2284,13 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 		},
 	}
 
-	fn, err := p.newFunctionCall(invWithOptArg)
+	pc := p.newParseContext()
+	fn, err := pc.newFunctionCall(invWithOptArg)
 	require.NoError(t, err)
 	res, _ := fn.Eval(t.Context(), nil)
 	require.Equal(t, 4, res)
 
-	fn, err = p.newFunctionCall(invWithoutOptArg)
+	fn, err = pc.newFunctionCall(invWithoutOptArg)
 	require.NoError(t, err)
 	res, _ = fn.Eval(t.Context(), nil)
 	require.Equal(t, 2, res)
@@ -2239,6 +2528,32 @@ type functionGetterArguments struct {
 func functionWithFunctionGetter(FunctionGetter[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return "hashstring", nil
+	}, nil
+}
+
+type evalLambdaArguments[K any] struct {
+	Expr LambdaExpression[K]
+	Args []Getter[K]
+}
+
+//nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
+func evalLambdaFunction[K any](expr LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
+		lambda, err := expr.Activate(ctx, len(args))
+		if err != nil {
+			return nil, err
+		}
+		defer lambda.Close()
+		for i, getter := range args {
+			val, err := getter.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			if err := lambda.SetArg(i, val); err != nil {
+				return nil, err
+			}
+		}
+		return lambda.Eval(tCtx)
 	}, nil
 }
 
@@ -2683,6 +2998,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			&enumArguments{},
 			functionWithEnum,
 		),
+		createFactory[any](
+			"eval_lambda",
+			&evalLambdaArguments[any]{},
+			evalLambdaFunction[any],
+		),
 	)
 }
 
@@ -2845,7 +3165,7 @@ func Test_newPath(t *testing.T) {
 		},
 	}
 
-	np, err := ps.newPath(&path{Fields: fields})
+	np, err := ps.newParseContext().newPath(&path{Fields: fields})
 	require.NoError(t, err)
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
@@ -2924,7 +3244,7 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				},
 			}
 
-			np, err := ps.newPath(gp)
+			np, err := ps.newParseContext().newPath(gp)
 			if tt.expectedError != "" {
 				assert.Error(t, err, tt.expectedError)
 				return
@@ -3004,7 +3324,7 @@ func Test_newKey(t *testing.T) {
 			String: ottltest.Strp("bar"),
 		},
 	}
-	ks, _ := ps.newKeys(keys)
+	ks, _ := ps.newParseContext().newKeys(keys)
 
 	assert.Len(t, ks, 2)
 
@@ -3037,4 +3357,50 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
+	funcWithLambda := editor{
+		Function: "eval_lambda",
+		Arguments: []argument{
+			{
+				Value: value{
+					Lambda: &lambdaExpr{
+						Params: []localIdentifierDecl{"value"},
+						Body: lambdaBody{
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Path: &path{Fields: []field{{Name: "value"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Value: value{
+					List: &list{Values: []value{{String: ottltest.Strp("hello")}}},
+				},
+			},
+		},
+	}
+
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	t.Run("enabled with lambda", func(t *testing.T) {
+		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
+		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
+		require.NoError(t, err)
+	})
+
+	t.Run("disabled with lambda", func(t *testing.T) {
+		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
+		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
+		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
+	})
 }
