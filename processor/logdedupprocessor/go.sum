@@ -31,6 +31,8 @@ github.com/goccy/go-json v0.10.6/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PU
 github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUvekVysuuOpQKo3191zZyTpiI6se1N1ULghS0sw=
+github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
+github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
@@ -104,6 +106,8 @@ go.opentelemetry.io/collector/confmap v1.60.1-0.20260612191519-af182d232650 h1:8
 go.opentelemetry.io/collector/confmap v1.60.1-0.20260612191519-af182d232650/go.mod h1:Z693ETewV4n8JsOO2jp/iLe1PGGpFCIzuNsF1xLeiSY=
 go.opentelemetry.io/collector/consumer v1.60.1-0.20260612191519-af182d232650 h1:epsJmofRxNwNDeYAdm7F3DLKzETtw83SlmmVwHVESq4=
 go.opentelemetry.io/collector/consumer v1.60.1-0.20260612191519-af182d232650/go.mod h1:nkp1NBtKQzme7WFF7fkgRgDlQLs49VIMOn8rO0jfmYU=
+go.opentelemetry.io/collector/consumer/consumererror v0.154.1-0.20260612191519-af182d232650 h1:HZGn0sPm2rXE4Ww2QwYoUkHL+vbEnmH57/x+VSG+xCI=
+go.opentelemetry.io/collector/consumer/consumererror v0.154.1-0.20260612191519-af182d232650/go.mod h1:iuP58JACNa9kIkZXMUFuHNgfjCa7SGCk+6W7jXZGyys=
 go.opentelemetry.io/collector/consumer/consumertest v0.154.1-0.20260612191519-af182d232650 h1:h5DFRbLrRb337s2CMna5C3MI0hfBI9Z53T3uAnDWV4w=
 go.opentelemetry.io/collector/consumer/consumertest v0.154.1-0.20260612191519-af182d232650/go.mod h1:FRLGgy8gFYjm3A+yby1bctz5ZIAn6EUOpuV49KnKbFY=
 go.opentelemetry.io/collector/consumer/xconsumer v0.154.1-0.20260612191519-af182d232650 h1:tF+BRwLEWwXO6S7P0q5AfUgU4wBL1hMBl/zvrbiGTwI=
@@ -227,6 +231,8 @@ golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
 golang.org/x/tools v0.13.0/go.mod h1:HvlwmtVNQAhOuCjW7xxvovg8wbNq7LwfXh/k7wXUl58=
 golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d/go.mod h1:aiJjzUbINMkxbQROHiO6hDPo2LHcIPhhQsa9DLh0yGk=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 h1:ggcbiqK8WWh6l1dnltU4BgWGIGo+EVYxCaAPih/zQXQ=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
 google.golang.org/grpc v1.81.1 h1:VnnIIZ88UzOOKLukQi+ImGz8O1Wdp8nAGGnvOfEIWQQ=
 google.golang.org/grpc v1.81.1/go.mod h1:xGH9GfzOyMTGIOXBJmXt+BX/V0kcdQbdcuwQ/zNw42I=
 google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
