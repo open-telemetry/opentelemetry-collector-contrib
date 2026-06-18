@@ -31,9 +31,9 @@ type localActivation struct {
 }
 
 // resolve retrieves a local identifier value from the current or parent activation bindings.
-func (a *localActivation) resolve(biding string) (any, bool) {
+func (a *localActivation) resolve(binding string) (any, bool) {
 	for cur := a; cur != nil; cur = cur.parent {
-		if v, ok := cur.bindings[biding]; ok {
+		if v, ok := cur.bindings[binding]; ok {
 			return v, true
 		}
 	}
