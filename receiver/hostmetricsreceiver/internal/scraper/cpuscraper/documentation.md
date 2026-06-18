@@ -24,7 +24,7 @@ Total seconds each logical CPU spent on each mode.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
+| cpu | Logical CPU number starting at 0. | Any Str | Opt-In | - |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
 
 ## Optional Metrics
@@ -79,5 +79,5 @@ Difference in system.cpu.time since the last measurement per logical CPU, divide
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
+| cpu | Logical CPU number starting at 0. | Any Str | Opt-In | - |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
