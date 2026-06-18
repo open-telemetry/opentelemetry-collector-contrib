@@ -73,7 +73,7 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
-		// PR5a: Transactions, Locks & Recovery v$sysstat rows
+		// Transactions, Locks & Recovery v$sysstat rows
 		{"NAME": transactionRollbacks, "VALUE": "4521"},
 		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
 		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s

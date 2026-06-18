@@ -321,7 +321,7 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 
 ### oracledb.gc.current_block.receive.time
 
-Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.
+Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -359,7 +359,7 @@ Cumulative time spent on transaction lock activity, in seconds (converted from c
 
 ### oracledb.lock.wait.time
 
-Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.
+Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -632,7 +632,7 @@ Fraction of allocated database storage that is used.
 
 ### oracledb.transaction.rollbacks
 
-Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.
+Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

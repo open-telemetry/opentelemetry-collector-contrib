@@ -96,7 +96,7 @@ const (
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	// PR5a: Transactions, Locks & Recovery v$sysstat names
+	// Transactions, Locks & Recovery v$sysstat names
 	transactionRollbacks          = "transaction rollbacks"
 	transactionLockBackgroundTime = "transaction lock background get time"
 	transactionLockForegroundTime = "transaction lock foreground wait time"
@@ -531,7 +531,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			// PR5a: Transactions, Locks & Recovery
+			// Transactions, Locks & Recovery
 			case transactionRollbacks:
 				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)

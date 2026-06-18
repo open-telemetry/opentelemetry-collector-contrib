@@ -1544,7 +1544,7 @@ type metricOracledbGcCurrentBlockReceiveTime struct {
 // init fills oracledb.gc.current_block.receive.time metric with initial data.
 func (m *metricOracledbGcCurrentBlockReceiveTime) init() {
 	m.data.SetName("oracledb.gc.current_block.receive.time")
-	m.data.SetDescription("Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.")
+	m.data.SetDescription("Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1839,7 +1839,7 @@ type metricOracledbLockWaitTime struct {
 // init fills oracledb.lock.wait.time metric with initial data.
 func (m *metricOracledbLockWaitTime) init() {
 	m.data.SetName("oracledb.lock.wait.time")
-	m.data.SetDescription("Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.")
+	m.data.SetDescription("Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4213,7 +4213,7 @@ type metricOracledbTransactionRollbacks struct {
 // init fills oracledb.transaction.rollbacks metric with initial data.
 func (m *metricOracledbTransactionRollbacks) init() {
 	m.data.SetName("oracledb.transaction.rollbacks")
-	m.data.SetDescription("Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.")
+	m.data.SetDescription("Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.")
 	m.data.SetUnit("{rollbacks}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

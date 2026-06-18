@@ -550,7 +550,7 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.gc.current_block.receive.time:
-    description: Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.
+    description: Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.
     enabled: false
     stability: development
     sum:
@@ -594,7 +594,7 @@ metrics:
       value_type: double
     unit: s
   oracledb.lock.wait.time:
-    description: Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.
+    description: Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.
     enabled: false
     stability: development
     sum:
@@ -966,7 +966,7 @@ metrics:
       value_type: int
     unit: By
   oracledb.transaction.rollbacks:
-    description: Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.
+    description: Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.
     enabled: false
     stability: development
     sum:

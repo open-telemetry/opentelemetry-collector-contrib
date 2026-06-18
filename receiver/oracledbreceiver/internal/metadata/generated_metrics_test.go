@@ -674,7 +674,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.gc.current_block.receive.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds (converted from centiseconds). Sourced from v$sysstat name gc current block receive time.", mi.Description())
+					assert.Equal(t, "Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -770,7 +770,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.lock.wait.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time.", mi.Description())
+					assert.Equal(t, "Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1550,7 +1550,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.transaction.rollbacks"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks.", mi.Description())
+					assert.Equal(t, "Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.", mi.Description())
 					assert.Equal(t, "{rollbacks}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
