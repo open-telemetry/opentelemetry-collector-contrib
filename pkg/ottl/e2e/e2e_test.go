@@ -4,6 +4,8 @@
 package e2e
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -19,7 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
@@ -2125,6 +2129,331 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 	}
 }
 
+func Test_e2e_lambda_expression(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
+	wantValue := func(val any) func(tCtx *ottllog.TransformContext) any {
+		return func(*ottllog.TransformContext) any {
+			return val
+		}
+	}
+
+	tests := []struct {
+		name         string
+		statement    string
+		condition    string
+		expression   string
+		want         func(tCtx *ottllog.TransformContext) any
+		wantParseErr string
+		wantErr      string
+	}{
+		{
+			name:       "returns parameter as-is",
+			expression: `Eval((value) => value, ["hello lambda"])`,
+			want:       wantValue("hello lambda"),
+		},
+		{
+			name:       "body with true boolean literal",
+			expression: `Eval(() => true, [])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "body with false boolean literal",
+			expression: `Eval(() => false, [])`,
+			want:       wantValue(false),
+		},
+		{
+			name:       "body with nil literal",
+			expression: `Eval(() => nil, [])`,
+			want:       wantValue(nil),
+		},
+		{
+			name:       "indexes nested slice parameter",
+			expression: `Eval((value) => value[1][1], [["first", ["second", "third"]]])`,
+			want:       wantValue("third"),
+		},
+		{
+			name:       "indexes nested map parameter",
+			expression: `Eval((value) => value["one"]["two"], [{"one":{"two":2}}])`,
+			want:       wantValue(int64(2)),
+		},
+		{
+			name:       "indexes nested mixed nested parameter",
+			expression: `Eval((value) => value["one"]["two"][0], [{"one":{"two":[2]}}])`,
+			want:       wantValue(int64(2)),
+		},
+		{
+			name:       "indexed lambda param in comparison",
+			expression: `Eval((a) => a["key"] == "expected", [{"key":"expected"}])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "boolean expression body",
+			expression: `Eval((a, b) => a == b, ["same value", "same value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "boolean expression body starting with converter",
+			expression: `Eval((a, b) => IsString(a) and a == b, ["value", "value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "boolean expression body with OR operation",
+			expression: `Eval((a) => a != a or IsString(a), ["value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "value body with negation operator",
+			expression: `Eval((a, b) => -Len(a) + -b, ["value", 2])`,
+			want:       wantValue(int64(-7)),
+		},
+		{
+			name:       "converter with Add operation",
+			expression: `Eval((a) => Len(a) + 1, ["value"])`,
+			want:       wantValue(int64(6)),
+		},
+		{
+			name:       "converter with Sub operation",
+			expression: `Eval((a) => Len(a) - 1, ["value"])`,
+			want:       wantValue(int64(4)),
+		},
+		{
+			name:       "converter with Div operation",
+			expression: `Eval((a) => Len(a) / 2.0, ["value"])`,
+			want:       wantValue(2.5),
+		},
+		{
+			name:       "converter with Mult operation",
+			expression: `Eval((a) => Len(a) * 2, ["value"])`,
+			want:       wantValue(int64(10)),
+		},
+		{
+			name:       "math between converter in sub-expression",
+			expression: `Eval((a) => (Len(a) + 1) * 2, ["value"])`,
+			want:       wantValue(int64(12)),
+		},
+		{
+			name:       "math between two lambda params",
+			expression: `Eval((a, b) => a + b, [1, 2])`,
+			want:       wantValue(int64(3)),
+		},
+		{
+			name:       "converter with Comparison operation",
+			expression: `Eval((a) => Len(a) == 5, ["value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "math expression inside a comparison inside a lambda",
+			expression: `Eval((a) => Len(a) + 1 == 6, ["value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "converter with Not operation",
+			expression: `Eval((a) => not IsInt(a), ["value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "negated parenthesized sub-expression",
+			expression: `Eval((a, b) => not (a == b), ["a", "b"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "parenthesized boolean sub-expressions with and",
+			expression: `Eval((a) => (a == "x") and (a != "y"), ["x"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "standalone converter body",
+			expression: `Eval((a) => Len(a), ["value"])`,
+			want:       wantValue(int64(5)),
+		},
+		{
+			name:       "standalone boolean converter body",
+			expression: `Eval((a) => IsString(a), ["value"])`,
+			want:       wantValue(true),
+		},
+		{
+			name:       "nested lambdas sees outer bindings",
+			expression: `Eval((a, b, c) => Eval((d) => Concat([a, b, c, d], "-"), ["d"]), ["a", "b", "c"])`,
+			want:       wantValue("a-b-c-d"),
+		},
+		{
+			name:       "math in comparison with logical operations",
+			expression: `Eval((a) => Len(a) + 1 > 3 and IsString(a), ["d"])`,
+			want:       wantValue(false),
+		},
+		{
+			name:         "duplicate formals are rejected",
+			expression:   `Eval((value, value) => value, ["hello lambda"])`,
+			wantParseErr: `duplicate local identifier "value"`,
+		},
+		{
+			name:       "no parameters",
+			expression: `Eval(() => "result", [])`,
+			want:       wantValue("result"),
+		},
+		{
+			name:       "not enough arguments (0 args)",
+			expression: `Eval((a, b) => a, [])`,
+			wantErr:    "lambda expects exactly 0 argument(s), got 2",
+		},
+		{
+			name:       "not enough arguments (1 arg)",
+			expression: `Eval((a, b) => a, [1])`,
+			wantErr:    "lambda expects exactly 1 argument(s), got 2",
+		},
+		{
+			name:       "not enough arguments in nested lambda",
+			expression: `Eval((a) => Eval((b, c, d) => a + b + c + d, [2, 3]), [1])`,
+			wantErr:    "lambda expects exactly 2 argument(s), got 3",
+		},
+		{
+			name:         "lambdas can't return another lambda",
+			expression:   `Eval((a) => () => a, [])`,
+			wantParseErr: "lambda body cannot result into another lambda expression",
+		},
+		{
+			name:         "lambdas can't be used as indexing keys",
+			expression:   `attributes[(v) => v]`,
+			wantParseErr: "expression has invalid syntax",
+		},
+		{
+			name:       "argument shadowed",
+			expression: `Eval((a, b) => a == 1 and Eval((a) => a == 3, [3]), [1, 1])`,
+			want:       wantValue(true),
+		},
+		{
+			name:      "lambda in conditions",
+			condition: `Eval((a, b) => a == b, [1, 1]) == true`,
+			want:      wantValue(true),
+		},
+		{
+			name:      "lambda in editor parameter",
+			statement: `set(resource.attributes["test"], Eval((value) => ToUpperCase(value), ["pass"]))`,
+			want: func(tCtx *ottllog.TransformContext) any {
+				tCtx.GetResource().Attributes().PutStr("test", "PASS")
+				return tCtx
+			},
+		},
+		{
+			name:      "lambda in statement where condition",
+			statement: `set(resource.attributes["test"], "pass") where Eval((value) => ToUpperCase(value), ["pass"]) == "PASS"`,
+			want: func(tCtx *ottllog.TransformContext) any {
+				tCtx.GetResource().Attributes().PutStr("test", "pass")
+				return tCtx
+			},
+		},
+		{
+			name:       "lambda with left blank identifier",
+			expression: `Eval((_, value) => value, ["skip", "pass"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with multiple blank identifiers",
+			expression: `Eval((_, _, value) => value, ["skip", "skip too", "pass"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with all blank identifiers",
+			expression: `Eval((_,_,_) => "pass", ["skip", "ignore", "next"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with right blank identifiers",
+			expression: `Eval((_,_,v) => v, ["skip", "ignore", "next"])`,
+			want:       wantValue("next"),
+		},
+		{
+			name:       "lambda with right blank identifiers",
+			expression: `Eval((_,_,attributes) => attributes, ["skip", "ignore", "next"])`,
+			want:       wantValue("next"),
+		},
+		{
+			name:         "lambda can't use blank identifiers in the body",
+			expression:   `Eval((_) => _, ["blank"])`,
+			wantParseErr: "expression has invalid syntax",
+		},
+	}
+
+	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
+	lambdaEvalFunc := newLambdaEvalFactory[*ottllog.TransformContext]()
+	functions[lambdaEvalFunc.Name()] = lambdaEvalFunc
+
+	parser, err := ottllog.NewParser(
+		functions,
+		componenttest.NewNopTelemetrySettings(),
+	)
+
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if (tt.statement != "" && tt.expression != "") ||
+				(tt.statement != "" && tt.condition != "") ||
+				(tt.expression != "" && tt.condition != "") {
+				t.Fatalf("cannot specify more than one of statement, expression, and condition")
+			}
+
+			tCtx := constructLogTransformContextValueExpressions()
+			t.Cleanup(tCtx.Close)
+
+			requireParse := func(err error) bool {
+				t.Helper()
+				if tt.wantParseErr != "" {
+					require.ErrorContains(t, err, tt.wantParseErr)
+					return false
+				}
+				require.NoError(t, err)
+				return true
+			}
+			requireEval := func(err error) bool {
+				t.Helper()
+				if tt.wantErr != "" {
+					require.ErrorContains(t, err, tt.wantErr)
+					return false
+				}
+				require.NoError(t, err)
+				return true
+			}
+
+			var result any
+			switch {
+			case tt.statement != "":
+				st, err := parser.ParseStatement(tt.statement)
+				if !requireParse(err) {
+					return
+				}
+				evalCtx := constructLogTransformContextValueExpressions()
+				_, _, err = st.Execute(t.Context(), evalCtx)
+				if !requireEval(err) {
+					return
+				}
+				result = evalCtx
+			case tt.condition != "":
+				cd, err := parser.ParseCondition(tt.condition)
+				if !requireParse(err) {
+					return
+				}
+				result, err = cd.Eval(t.Context(), tCtx)
+				if !requireEval(err) {
+					return
+				}
+			case tt.expression != "":
+				ve, err := parser.ParseValueExpression(tt.expression)
+				if !requireParse(err) {
+					return
+				}
+				result, err = ve.Eval(t.Context(), tCtx)
+				if !requireEval(err) {
+					return
+				}
+			}
+
+			assert.Equal(t, tt.want(tCtx), result)
+		})
+	}
+}
+
 func Test_ProcessTraces_TraceContext(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -2507,4 +2836,39 @@ func Benchmark_XML_Functions(b *testing.B) {
 	exCtx := tCtxWithTestBody()
 	require.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(exCtx), newResourceLogs(actualCtx)))
 	exCtx.Close()
+}
+
+type lambdaEvalArguments[K any] struct {
+	Expr   ottl.LambdaExpression[K]
+	Params []ottl.Getter[K]
+}
+
+func newLambdaEvalFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Eval", &lambdaEvalArguments[K]{}, createLambdaEvalFunction[K])
+}
+
+func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*lambdaEvalArguments[K])
+	if !ok {
+		return nil, errors.New("lambdaEvalArguments args must be of type *lambdaEvalArguments[K]")
+	}
+
+	return func(ctx context.Context, tCtx K) (any, error) {
+		lambda, err := args.Expr.Activate(ctx, len(args.Params))
+		if err != nil {
+			return nil, err
+		}
+		defer lambda.Close()
+		for i, param := range args.Params {
+			val, err := param.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			err = lambda.SetArg(i, val)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return lambda.Eval(tCtx)
+	}, nil
 }
