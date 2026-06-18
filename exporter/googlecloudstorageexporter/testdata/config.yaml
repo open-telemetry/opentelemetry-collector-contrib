@@ -15,6 +15,18 @@ google_cloud_storage/with_partition:
       format: year=%Y
       prefix: my-logs
 
+google_cloud_storage/with_resource_attrs_to_gcs:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    partition:
+      format: "%Y-%m-%d/%H"
+      prefix: storage
+  resource_attrs_to_gcs:
+    prefix: service.name
+
 google_cloud_storage/with_resiliency:
   encoding: test
   timeout: 3s

@@ -1,3 +1,11 @@
+$defs:
+  resource_attrs_to_gcs:
+    description: ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+    type: object
+    properties:
+      prefix:
+        description: Prefix names the resource attribute whose value (from the first resource of each batch) is inserted as a partition segment between bucket.partition.prefix and the time format, e.g. prefix "storage" + attribute "serviceA" -> "storage/serviceA/<time>/...".
+        type: string
 type: object
 properties:
   bucket:
@@ -35,6 +43,9 @@ properties:
     x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
+  resource_attrs_to_gcs:
+    description: ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+    $ref: resource_attrs_to_gcs
   retry_on_failure:
     $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
