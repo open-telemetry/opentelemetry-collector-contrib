@@ -259,13 +259,6 @@ func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
-// WithCustomConfig allows setting arbitrary configuration values
-func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
-	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set(key, value, source)
-	}
-}
-
 func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	proxyConfig := httpproxy.FromEnvironment()
 	if proxyConfig.HTTPProxy != "" {
