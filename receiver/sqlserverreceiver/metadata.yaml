@@ -15,7 +15,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sincejune, crobert-1]
+    active: [sincejune, crobert-1, sv-splunk]
     emeritus: [StefanKurek]
     seeking_new: true
 
