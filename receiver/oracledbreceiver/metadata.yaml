@@ -951,14 +951,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{row}"
-  oracledb.session.count:
-    description: Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{session}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true

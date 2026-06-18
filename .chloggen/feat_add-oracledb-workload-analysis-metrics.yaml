@@ -16,7 +16,7 @@ issues: [48808]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds seventeen new opt-in metrics (disabled by default):
+  Adds sixteen new opt-in metrics (disabled by default):
     - oracledb.scan.table.operations, oracledb.scan.table.rows,
       oracledb.scan.index_fast_full
     - oracledb.enqueue.operations
@@ -26,7 +26,7 @@ subtext: |
     - oracledb.cursor.cache.hits, oracledb.cursor.cache.size, oracledb.cursor.open
     - oracledb.user_call.count, oracledb.recursive_call.count,
       oracledb.recursive_call.cpu.time
-    - oracledb.db.time, oracledb.session.count
+    - oracledb.db.time
   No new SQL queries are issued; the existing v$sysstat scrape already returns
   all required rows, so the receiver adds no additional load on the monitored
   Oracle instance.

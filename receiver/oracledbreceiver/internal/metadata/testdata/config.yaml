@@ -131,8 +131,6 @@ all_set:
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.count:
-      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -329,8 +327,6 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.count:
-      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -526,8 +522,6 @@ none_set:
       enabled: false
       attributes: ["oracledb.scan.type"]
     oracledb.scan.table.rows:
-      enabled: false
-    oracledb.session.count:
       enabled: false
     oracledb.sessions.limit:
       enabled: false

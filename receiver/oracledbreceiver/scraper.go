@@ -107,7 +107,6 @@ const (
 	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
 	lobReadsStat                 = "lob reads"
 	lobWritesStat                = "lob writes"
-	logonsCurrentStat            = "logons current"
 	openedCursorsCurrentStat     = "opened cursors current"
 	parseTimeCPUStat             = "parse time cpu"
 	parseTimeElapsedStat         = "parse time elapsed"
@@ -353,7 +352,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbScanIndexFastFull.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbUserCallCount.Enabled
@@ -680,10 +678,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				} else {
 					value /= 100
 					s.mb.RecordOracledbDbTimeDataPoint(now, value)
-				}
-			case logonsCurrentStat:
-				if err := s.mb.RecordOracledbSessionCountDataPoint(now, row[colValue]); err != nil {
-					scrapeErrors = append(scrapeErrors, err)
 				}
 			}
 		}

@@ -30,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
@@ -100,7 +101,6 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": recursiveCallsStat, "VALUE": "123456"},
 		{"NAME": recursiveCPUUsageStat, "VALUE": "5000"},
 		{"NAME": dbTimeStat, "VALUE": "60000"},
-		{"NAME": logonsCurrentStat, "VALUE": "42"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -440,7 +440,6 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg.Metrics.OracledbScanIndexFastFull.Enabled = true
 	cfg.Metrics.OracledbScanTableOperations.Enabled = true
 	cfg.Metrics.OracledbScanTableRows.Enabled = true
-	cfg.Metrics.OracledbSessionCount.Enabled = true
 	cfg.Metrics.OracledbSortOperations.Enabled = true
 	cfg.Metrics.OracledbSortRows.Enabled = true
 	cfg.Metrics.OracledbUserCallCount.Enabled = true
@@ -460,161 +459,66 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
 
+	actualMetrics, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedWorkloadAnalysisMetrics.yaml")
+	// Uncomment the line below to regenerate the expected golden file.
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, actualMetrics))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp()))
+}
+
+// TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled verifies that a
+// workload metric whose distinguishing attribute is turned off reaggregates its
+// data points by summing, which is the correct behavior for a cumulative
+// monotonic counter. With oracledb.enqueue.kind disabled, the five per-kind rows
+// (11+22+33+44+55) must collapse into a single attribute-less data point of 165.
+func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.EnabledAttributes = nil
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	type valueKind int
-	const (
-		kindInt valueKind = iota
-		kindFloat
-	)
-
-	tests := []struct {
-		metric    string
-		attrs     map[string]string
-		kind      valueKind
-		wantInt   int64
-		wantFloat float64
-	}{
-		// Cursor family (no attributes)
-		{metric: "oracledb.cursor.cache.hits", kind: kindInt, wantInt: 65535},
-		{metric: "oracledb.cursor.cache.size", kind: kindInt, wantInt: 1024},
-		{metric: "oracledb.cursor.open", kind: kindInt, wantInt: 128},
-		// DB time (gauge of accumulated wall-clock; centiseconds -> seconds)
-		{metric: "oracledb.db.time", kind: kindFloat, wantFloat: 600.0},
-		// Enqueue operations (oracledb.enqueue.kind partitions countable events)
-		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "conversions"}, kind: kindInt, wantInt: 11},
-		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "releases"}, kind: kindInt, wantInt: 22},
-		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "requests"}, kind: kindInt, wantInt: 33},
-		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "timeouts"}, kind: kindInt, wantInt: 44},
-		{metric: "oracledb.enqueue.operations", attrs: map[string]string{"oracledb.enqueue.kind": "waits"}, kind: kindInt, wantInt: 55},
-		// LOB operations
-		{metric: "oracledb.lob.operations", attrs: map[string]string{"disk.io.direction": "read"}, kind: kindInt, wantInt: 120},
-		{metric: "oracledb.lob.operations", attrs: map[string]string{"disk.io.direction": "write"}, kind: kindInt, wantInt: 240},
-		// Parse time (split into cpu + elapsed; raw centiseconds -> seconds)
-		{metric: "oracledb.parse.cpu.time", kind: kindFloat, wantFloat: 15.0},
-		{metric: "oracledb.parse.elapsed.time", kind: kindFloat, wantFloat: 30.0},
-		// Recursive call family
-		{metric: "oracledb.recursive_call.count", kind: kindInt, wantInt: 123456},
-		{metric: "oracledb.recursive_call.cpu.time", kind: kindFloat, wantFloat: 50.0},
-		// Scan family (oracledb.scan.type attribute)
-		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "direct_read"}, kind: kindInt, wantInt: 10},
-		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "full"}, kind: kindInt, wantInt: 20},
-		{metric: "oracledb.scan.index_fast_full", attrs: map[string]string{"oracledb.scan.type": "rowid_ranges"}, kind: kindInt, wantInt: 5},
-		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "direct_read"}, kind: kindInt, wantInt: 100},
-		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "long_tables"}, kind: kindInt, wantInt: 200},
-		{metric: "oracledb.scan.table.operations", attrs: map[string]string{"oracledb.scan.type": "rowid_ranges"}, kind: kindInt, wantInt: 50},
-		{metric: "oracledb.scan.table.rows", kind: kindInt, wantInt: 999999},
-		// Session count (gauge, sourced from v$sysstat 'logons current')
-		{metric: "oracledb.session.count", kind: kindInt, wantInt: 42},
-		// Sort family (oracledb.sort.type attribute)
-		{metric: "oracledb.sort.operations", attrs: map[string]string{"oracledb.sort.type": "disk"}, kind: kindInt, wantInt: 7},
-		{metric: "oracledb.sort.operations", attrs: map[string]string{"oracledb.sort.type": "memory"}, kind: kindInt, wantInt: 777},
-		{metric: "oracledb.sort.rows", kind: kindInt, wantInt: 888888},
-		// Call family
-		{metric: "oracledb.user_call.count", kind: kindInt, wantInt: 987654},
-	}
-
-	found := indexWorkloadDataPoints(m)
-	const delta = 0.01
-	for _, tt := range tests {
-		name := tt.metric
-		if len(tt.attrs) > 0 {
-			parts := make([]string, 0, len(tt.attrs))
-			for k, v := range tt.attrs {
-				parts = append(parts, k+"="+v)
-			}
-			sort.Strings(parts)
-			name += "/" + strings.Join(parts, ",")
-		}
-		t.Run(name, func(t *testing.T) {
-			dp, ok := found.get(tt.metric, tt.attrs)
-			require.True(t, ok, "data point not found for %s", name)
-			switch tt.kind {
-			case kindInt:
-				assert.Equal(t, tt.wantInt, dp.intVal)
-			case kindFloat:
-				assert.InDelta(t, tt.wantFloat, dp.floatVal, delta)
-			}
-		})
-	}
-}
-
-// indexedDataPoint is a single observed metric data point captured during
-// TestScraper_ScrapeWorkloadAnalysisMetrics. Only one of intVal/floatVal is
-// populated; the kind is determined by the metric type in the assertion.
-type indexedDataPoint struct {
-	intVal   int64
-	floatVal float64
-}
-
-// workloadDataPointIndex maps (metric name, attribute signature) to a single
-// observed data point. The signature is the sorted "k=v,k=v,..." encoding.
-type workloadDataPointIndex map[string]map[string]indexedDataPoint
-
-func (w workloadDataPointIndex) get(metric string, attrs map[string]string) (indexedDataPoint, bool) {
-	byAttrs, ok := w[metric]
-	if !ok {
-		return indexedDataPoint{}, false
-	}
-	keys := make([]string, 0, len(attrs))
-	for k, v := range attrs {
-		keys = append(keys, k+"="+v)
-	}
-	sort.Strings(keys)
-	dp, ok := byAttrs[strings.Join(keys, ",")]
-	return dp, ok
-}
-
-func indexWorkloadDataPoints(m pmetric.Metrics) workloadDataPointIndex {
-	index := workloadDataPointIndex{}
+	var found bool
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
-		switch me.Type() {
-		case pmetric.MetricTypeSum:
-			dps := me.Sum().DataPoints()
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-				sig := attrSig(dp.Attributes())
-				if _, ok := index[me.Name()]; !ok {
-					index[me.Name()] = map[string]indexedDataPoint{}
-				}
-				switch dp.ValueType() {
-				case pmetric.NumberDataPointValueTypeInt:
-					index[me.Name()][sig] = indexedDataPoint{intVal: dp.IntValue()}
-				case pmetric.NumberDataPointValueTypeDouble:
-					index[me.Name()][sig] = indexedDataPoint{floatVal: dp.DoubleValue()}
-				}
-			}
-		case pmetric.MetricTypeGauge:
-			dps := me.Gauge().DataPoints()
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-				sig := attrSig(dp.Attributes())
-				if _, ok := index[me.Name()]; !ok {
-					index[me.Name()] = map[string]indexedDataPoint{}
-				}
-				switch dp.ValueType() {
-				case pmetric.NumberDataPointValueTypeInt:
-					index[me.Name()][sig] = indexedDataPoint{intVal: dp.IntValue()}
-				case pmetric.NumberDataPointValueTypeDouble:
-					index[me.Name()][sig] = indexedDataPoint{floatVal: dp.DoubleValue()}
-				}
-			}
+		if me.Name() != "oracledb.enqueue.operations" {
+			continue
 		}
+		found = true
+		dps := me.Sum().DataPoints()
+		require.Equal(t, 1, dps.Len(), "disabling the attribute should collapse all kinds into one data point")
+		dp := dps.At(0)
+		assert.Equal(t, 0, dp.Attributes().Len(), "no attribute should be emitted when oracledb.enqueue.kind is disabled")
+		assert.Equal(t, int64(165), dp.IntValue(), "data points should reaggregate by sum (11+22+33+44+55)")
 	}
-	return index
-}
-
-func attrSig(attrs pcommon.Map) string {
-	keys := make([]string, 0, attrs.Len())
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		keys = append(keys, k+"="+v.AsString())
-		return true
-	})
-	sort.Strings(keys)
-	return strings.Join(keys, ",")
+	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

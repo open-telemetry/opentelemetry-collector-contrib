@@ -314,9 +314,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbScanTableRowsDataPoint(ts, "1")
 
-			allMetricsCount++
-			mb.RecordOracledbSessionCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
@@ -1501,18 +1498,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.session.count":
-					assert.False(t, validatedMetrics["oracledb.session.count"], "Found a duplicate in the metrics slice: oracledb.session.count")
-					validatedMetrics["oracledb.session.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.", mi.Description())
-					assert.Equal(t, "{session}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

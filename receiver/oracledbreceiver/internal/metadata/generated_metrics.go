@@ -478,9 +478,6 @@ var MetricsInfo = metricsInfo{
 	OracledbScanTableRows: metricInfo{
 		Name: "oracledb.scan.table.rows",
 	},
-	OracledbSessionCount: metricInfo{
-		Name: "oracledb.session.count",
-	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
@@ -596,7 +593,6 @@ type metricsInfo struct {
 	OracledbScanIndexFastFull                     metricInfo
 	OracledbScanTableOperations                   metricInfo
 	OracledbScanTableRows                         metricInfo
-	OracledbSessionCount                          metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
 	OracledbSharedPoolUtilization                 metricInfo
@@ -4068,56 +4064,6 @@ func newMetricOracledbScanTableRows(cfg OracledbScanTableRowsMetricConfig) metri
 	return m
 }
 
-type metricOracledbSessionCount struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   OracledbSessionCountMetricConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.session.count metric with initial data.
-func (m *metricOracledbSessionCount) init() {
-	m.data.SetName("oracledb.session.count")
-	m.data.SetDescription("Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.")
-	m.data.SetUnit("{session}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSessionCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSessionCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbSessionCount(cfg OracledbSessionCountMetricConfig) metricOracledbSessionCount {
-	m := metricOracledbSessionCount{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbSessionsLimit struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   OracledbSessionsLimitMetricConfig // metric config provided by user.
@@ -5291,7 +5237,6 @@ type MetricsBuilder struct {
 	metricOracledbScanIndexFastFull                     metricOracledbScanIndexFastFull
 	metricOracledbScanTableOperations                   metricOracledbScanTableOperations
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
-	metricOracledbSessionCount                          metricOracledbSessionCount
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
 	metricOracledbSharedPoolUtilization                 metricOracledbSharedPoolUtilization
@@ -5395,7 +5340,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbScanIndexFastFull:                     newMetricOracledbScanIndexFastFull(mbc.Metrics.OracledbScanIndexFastFull),
 		metricOracledbScanTableOperations:                   newMetricOracledbScanTableOperations(mbc.Metrics.OracledbScanTableOperations),
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
-		metricOracledbSessionCount:                          newMetricOracledbSessionCount(mbc.Metrics.OracledbSessionCount),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
 		metricOracledbSharedPoolUtilization:                 newMetricOracledbSharedPoolUtilization(mbc.Metrics.OracledbSharedPoolUtilization),
@@ -5594,7 +5538,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbScanIndexFastFull.emit(ils.Metrics())
 	mb.metricOracledbScanTableOperations.emit(ils.Metrics())
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
-	mb.metricOracledbSessionCount.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
 	mb.metricOracledbSharedPoolUtilization.emit(ils.Metrics())
@@ -6170,16 +6113,6 @@ func (mb *MetricsBuilder) RecordOracledbScanTableRowsDataPoint(ts pcommon.Timest
 		return fmt.Errorf("failed to parse int64 for OracledbScanTableRows, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbScanTableRows.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbSessionCountDataPoint adds a data point to oracledb.session.count metric.
-func (mb *MetricsBuilder) RecordOracledbSessionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbSessionCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbSessionCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

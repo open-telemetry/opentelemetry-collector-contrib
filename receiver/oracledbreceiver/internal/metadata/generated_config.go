@@ -1455,26 +1455,6 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbSessionCountMetricConfig provides config for the oracledb.session.count metric.
-type OracledbSessionCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbSessionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
 type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2048,7 +2028,6 @@ type MetricsConfig struct {
 	OracledbScanIndexFastFull                     OracledbScanIndexFastFullMetricConfig                     `mapstructure:"oracledb.scan.index_fast_full"`
 	OracledbScanTableOperations                   OracledbScanTableOperationsMetricConfig                   `mapstructure:"oracledb.scan.table.operations"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
-	OracledbSessionCount                          OracledbSessionCountMetricConfig                          `mapstructure:"oracledb.session.count"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
@@ -2267,9 +2246,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbScanTableOperationsMetricAttributeKey{OracledbScanTableOperationsMetricAttributeKeyOracledbScanType},
 		},
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
-			Enabled: false,
-		},
-		OracledbSessionCount: OracledbSessionCountMetricConfig{
 			Enabled: false,
 		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{

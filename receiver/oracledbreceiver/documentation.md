@@ -643,14 +643,6 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.session.count
-
-Number of sessions currently logged on, as reported by Oracle V$SYSSTAT `logons current`. Includes inactive/cached/sniped sessions.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {session} | Gauge | Int | Development |
-
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.

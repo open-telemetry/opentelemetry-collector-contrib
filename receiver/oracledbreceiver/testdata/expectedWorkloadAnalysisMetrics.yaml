@@ -1,0 +1,428 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: ""
+        - key: oracledb.instance.name
+          value:
+            stringValue: ""
+        - key: service.instance.id
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative CPU time, in seconds
+            name: oracledb.cpu_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 18.87
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
+            name: oracledb.cursor.cache.hits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "65535"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{hit}'
+          - description: Total number of cursors currently held in the session cursor cache.
+            gauge:
+              dataPoints:
+                - asInt: "1024"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.cursor.cache.size
+            unit: '{cursor}'
+          - description: Number of currently open cursors in the Oracle instance.
+            gauge:
+              dataPoints:
+                - asInt: "128"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.cursor.open
+            unit: '{cursor}'
+          - description: Total wall-clock time spent in database calls by foreground sessions.
+            name: oracledb.db.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 600
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: Total count of enqueue (lock) operations.
+            name: oracledb.enqueue.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "11"
+                  attributes:
+                    - key: oracledb.enqueue.kind
+                      value:
+                        stringValue: conversions
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "22"
+                  attributes:
+                    - key: oracledb.enqueue.kind
+                      value:
+                        stringValue: releases
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "33"
+                  attributes:
+                    - key: oracledb.enqueue.kind
+                      value:
+                        stringValue: requests
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "44"
+                  attributes:
+                    - key: oracledb.enqueue.kind
+                      value:
+                        stringValue: timeouts
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "55"
+                  attributes:
+                    - key: oracledb.enqueue.kind
+                      value:
+                        stringValue: waits
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
+          - description: Total number of deadlocks between table or row locks in different sessions.
+            name: oracledb.enqueue_deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "18"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{deadlocks}'
+          - description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
+            name: oracledb.exchange_deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "88898"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{deadlocks}'
+          - description: Total number of calls (user and recursive) that executed SQL statements
+            name: oracledb.executions
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "178878"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{executions}'
+          - description: Number of hard parses
+            name: oracledb.hard_parses
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{parses}'
+          - description: Total count of LOB (large object) I/O operations.
+            name: oracledb.lob.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "120"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "240"
+                  attributes:
+                    - key: disk.io.direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
+          - description: Number of logical reads
+            name: oracledb.logical_reads
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "189"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{reads}'
+          - description: Total CPU time spent on SQL parsing.
+            name: oracledb.parse.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 15
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: Total wall-clock time spent on SQL parsing.
+            name: oracledb.parse.elapsed.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 30
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: Total number of parse calls.
+            name: oracledb.parse_calls
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1999"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{parses}'
+          - description: Session PGA (Program Global Area) memory
+            name: oracledb.pga_memory
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1999887"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Number of physical reads
+            name: oracledb.physical_reads
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1887777"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{reads}'
+          - description: Maximum limit of active processes, -1 if unlimited.
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.processes.limit
+            unit: '{processes}'
+          - description: Current count of active processes.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.processes.usage
+            unit: '{processes}'
+          - description: Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
+            name: oracledb.recursive_call.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "123456"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{call}'
+          - description: Total CPU time spent on recursive (internal) calls.
+            name: oracledb.recursive_call.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 50
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: Total count of index fast full scans.
+            name: oracledb.scan.index_fast_full
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: direct_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "20"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: full
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: rowid_ranges
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
+          - description: Total count of full-table scans.
+            name: oracledb.scan.table.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: direct_read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "200"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: long_tables
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "50"
+                  attributes:
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: rowid_ranges
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
+          - description: Total number of rows returned by full-table scans.
+            name: oracledb.scan.table.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "999999"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{row}'
+          - description: Count of active sessions.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: session_status
+                      value:
+                        stringValue: ""
+                    - key: session_type
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.sessions.usage
+            unit: '{sessions}'
+          - description: Total count of sort operations.
+            name: oracledb.sort.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7"
+                  attributes:
+                    - key: oracledb.sort.type
+                      value:
+                        stringValue: disk
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "777"
+                  attributes:
+                    - key: oracledb.sort.type
+                      value:
+                        stringValue: memory
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operation}'
+          - description: Total number of rows sorted across all sort operations.
+            name: oracledb.sort.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "888888"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{row}'
+          - description: Maximum size of tablespace in bytes, -1 if unlimited.
+            gauge:
+              dataPoints:
+                - asInt: "28824264704"
+                  attributes:
+                    - key: tablespace_name
+                      value:
+                        stringValue: SYS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.tablespace_size.limit
+            unit: By
+          - description: Used tablespace in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "911671296"
+                  attributes:
+                    - key: tablespace_name
+                      value:
+                        stringValue: SYS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: oracledb.tablespace_size.usage
+            unit: By
+          - description: Total count of user calls (logins, parses, fetches, executes) issued to the database.
+            name: oracledb.user_call.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "987654"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{call}'
+          - description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
+            name: oracledb.user_commits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "187778888"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{commits}'
+          - description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
+            name: oracledb.user_rollbacks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1898979879789"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest
