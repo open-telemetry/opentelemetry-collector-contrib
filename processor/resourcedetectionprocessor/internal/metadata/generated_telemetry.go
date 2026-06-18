@@ -101,7 +101,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ResourcedetectionDetectorResults, err = builder.meter.Int64Counter(
 		"otelcol.resourcedetection.detector.results",
-		metric.WithDescription("Number of resource detection attempts, by detector and outcome. [Development]"),
+		metric.WithDescription("Number of resource detection results, by detector and outcome. [Development]"),
 		metric.WithUnit("{detection}"),
 	)
 	errs = errors.Join(errs, err)
