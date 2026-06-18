@@ -194,7 +194,38 @@ func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
+	// Build a spanID→probability map from W3C tracestate values so we can
+	// inject _sample_rate into DD spans for correct Concentrator weighting.
+	sampleProbs := samplingProbsFromTraces(traces, c.logger)
+
+	c.logger.Debug("sampling probs from tracestate", zap.Int("span_count", len(sampleProbs)))
+
 	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
+
+	// Inject _sample_rate onto the root DD span of each trace chunk.
+	// The Concentrator reads weight only from pt.Root, so child spans are irrelevant.
+	if len(sampleProbs) > 0 {
+		for i := range inputs {
+			for j := range inputs[i].Traces {
+				root := inputs[i].Traces[j].Root
+				if root == nil {
+					continue
+				}
+				prob, ok := sampleProbs[root.SpanID]
+				if !ok {
+					continue
+				}
+				if _, exists := root.Metrics[keySamplingRateGlobal]; exists {
+					continue // preserve an explicitly set value from upstream
+				}
+				if root.Metrics == nil {
+					root.Metrics = make(map[string]float64)
+				}
+				root.Metrics[keySamplingRateGlobal] = prob
+			}
+		}
+	}
+
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

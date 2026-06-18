@@ -30,6 +30,7 @@ require (
 	github.com/DataDog/datadog-go/v5 v5.8.3
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.155.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.0
@@ -284,6 +285,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 

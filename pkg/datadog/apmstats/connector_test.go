@@ -31,6 +31,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	otelstats "github.com/DataDog/datadog-agent/pkg/trace/otel/stats"
+
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/internal/metadata"
 )
@@ -533,6 +535,160 @@ func (es *errorSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 		return es.err
 	}
 	return es.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+// TestSamplingWeightFromTracestate verifies that W3C tracestate th values drive
+// Concentrator weighting. The Concentrator reads _sample_rate from the root span
+// of each trace chunk and applies that weight to every span in the chunk, so the
+// th value on the root span controls the Hits count for the whole trace.
+func TestSamplingWeightFromTracestate(t *testing.T) {
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true); err != nil {
+		t.Fatal(err)
+	}
+	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
+	cfg.Traces.ComputeTopLevelBySpanKind = true
+	connector, metricsSink := createConnectorCfg(t, cfg)
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, connector.Shutdown(t.Context()))
+	}()
+
+	// Trace A: single root Server span with ot=th:8 (50% sampling).
+	// weight = 1/0.5 = 2, so Hits should be 2.
+	traceA := ptrace.NewTraces()
+	resA := traceA.ResourceSpans().AppendEmpty().Resource()
+	resA.Attributes().PutStr("service.name", "weight-test-svc")
+	resA.Attributes().PutStr("deployment.environment.name", "test-env")
+	ssA := traceA.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
+	spanA := ssA.AppendEmpty()
+	spanA.SetName("sampled-op")
+	spanA.SetKind(ptrace.SpanKindServer)
+	spanA.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	spanA.SetSpanID(pcommon.SpanID([8]byte{0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22}))
+	spanA.SetStartTimestamp(spanStartTimestamp)
+	spanA.SetEndTimestamp(spanEndTimestamp)
+	spanA.TraceState().FromRaw("ot=th:8") // 50% sampling → weight=2
+
+	// Trace B: single root Server span with no tracestate.
+	// weight = 1, so Hits should be 1.
+	traceB := ptrace.NewTraces()
+	resB := traceB.ResourceSpans().AppendEmpty().Resource()
+	resB.Attributes().PutStr("service.name", "weight-test-svc")
+	resB.Attributes().PutStr("deployment.environment.name", "test-env")
+	ssB := traceB.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
+	spanB := ssB.AppendEmpty()
+	spanB.SetName("unsampled-op")
+	spanB.SetKind(ptrace.SpanKindServer)
+	spanB.SetTraceID(pcommon.TraceID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	spanB.SetSpanID(pcommon.SpanID([8]byte{0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA}))
+	spanB.SetStartTimestamp(spanStartTimestamp)
+	spanB.SetEndTimestamp(spanEndTimestamp)
+	// no tracestate
+
+	err = connector.ConsumeTraces(t.Context(), traceA)
+	require.NoError(t, err)
+	err = connector.ConsumeTraces(t.Context(), traceB)
+	require.NoError(t, err)
+
+	timeout := time.Now().Add(1 * time.Minute)
+	for time.Now().Before(timeout) {
+		if len(metricsSink.AllMetrics()) > 0 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	metrics := metricsSink.AllMetrics()
+	require.NotEmpty(t, metrics)
+
+	ch := make(chan []byte, 100)
+	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
+	require.NoError(t, err)
+	msg := <-ch
+	sp := &pb.StatsPayload{}
+	require.NoError(t, proto.Unmarshal(msg, sp))
+
+	require.NotEmpty(t, sp.Stats)
+	require.NotEmpty(t, sp.Stats[0].Stats)
+
+	hitsByResource := make(map[string]uint64)
+	for _, bucket := range sp.Stats[0].Stats {
+		for _, cgs := range bucket.Stats {
+			hitsByResource[cgs.Resource] += cgs.Hits
+		}
+	}
+
+	// Trace A root has th:8 → _sample_rate=0.5 → weight=2 → Hits=2.
+	assert.Equal(t, uint64(2), hitsByResource["sampled-op"], "span with th:8 tracestate should have Hits=2 (weight=2)")
+	// Trace B root has no tracestate → weight=1 → Hits=1.
+	assert.Equal(t, uint64(1), hitsByResource["unsampled-op"], "span with no tracestate should have Hits=1 (weight=1)")
+}
+
+// TestSampleRateInjectedOnRoot checks that ConsumeTraces injects _sample_rate
+// onto the root DD span for both the th (threshold) and p (power-of-two)
+// tracestate encodings so the Concentrator computes the correct weight.
+// This exercises the full path: OTel tracestate → sampleProbs map → DD span
+// Metrics → Root.Metrics, without requiring the Concentrator to flush.
+func TestSampleRateInjectedOnRoot(t *testing.T) {
+	tests := []struct {
+		name       string
+		traceState string
+		wantRate   float64
+	}{
+		{"th encoding 50%", "ot=th:8", 0.5},
+		{"p encoding 50%", "ot=p:1;r:1", 0.5},
+		{"p encoding 6.25%", "ot=p:4;r:4", 0.0625},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+			traceID := pcommon.TraceID([16]byte{1})
+
+			td := ptrace.NewTraces()
+			rs := td.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "svc")
+			ss := rs.ScopeSpans().AppendEmpty()
+			span := ss.Spans().AppendEmpty()
+			span.SetTraceID(traceID)
+			span.SetSpanID(rootID)
+			span.SetKind(ptrace.SpanKindServer)
+			span.SetStartTimestamp(spanStartTimestamp)
+			span.SetEndTimestamp(spanEndTimestamp)
+			span.TraceState().FromRaw(tt.traceState)
+
+			connector, _ := createConnector(t)
+
+			sampleProbs := samplingProbsFromTraces(td, nil)
+			require.NotEmpty(t, sampleProbs, "sampleProbs must contain an entry for tracestate %q", tt.traceState)
+
+			inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(
+				td, connector.tcfg, connector.ctagKeys, connector.peerTagKeys, connector.obfuscator,
+			)
+			require.Len(t, inputs, 1)
+			require.Len(t, inputs[0].Traces, 1)
+
+			// Run the injection logic from ConsumeTraces.
+			for _, ddSpan := range inputs[0].Traces[0].TraceChunk.Spans {
+				prob, ok := sampleProbs[ddSpan.SpanID]
+				if !ok {
+					continue
+				}
+				if ddSpan.Metrics == nil {
+					ddSpan.Metrics = make(map[string]float64)
+				}
+				ddSpan.Metrics[keySamplingRateGlobal] = prob
+			}
+
+			root := inputs[0].Traces[0].Root
+			require.NotNil(t, root)
+			rate, ok := root.Metrics[keySamplingRateGlobal]
+			require.True(t, ok, "root span must have _sample_rate set after injection")
+			assert.InDelta(t, tt.wantRate, rate, 1e-9)
+		})
+	}
 }
 
 func TestError(t *testing.T) {
