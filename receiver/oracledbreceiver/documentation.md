@@ -327,25 +327,25 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### oracledb.java.heap.committed
+### oracledb.jvm.memory.committed
 
-Total size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Parallels semconv jvm.memory.committed.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
-### oracledb.java.heap.live
-
-Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size.
+Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Mirrors semconv jvm.memory.committed for the embedded OJVM.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
-### oracledb.java.heap.used
+### oracledb.jvm.memory.live
 
-Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Parallels semconv jvm.memory.used.
+Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size. No semconv jvm.memory equivalent.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.jvm.memory.used
+
+Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Mirrors semconv jvm.memory.used for the embedded OJVM.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -366,20 +366,6 @@ Number of logon operations
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.os.cpu.time
-
-Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user).
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu.mode | The mode in which the CPU time was consumed, as accounted by Oracle. | Str: ``system``, ``user`` | Recommended | - |
 
 ### oracledb.os.swaps
 
@@ -537,6 +523,20 @@ Number of writes directly to disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.process.cpu.time
+
+Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | The mode in which the CPU time was consumed, as accounted by Oracle. | Str: ``system``, ``user`` | Recommended | - |
+
 ### oracledb.queries_parallelized
 
 Number of SELECT statements executed in parallel
@@ -577,6 +577,12 @@ Cumulative time sessions spent in non-idle waits, in seconds (converted from cen
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. Oracle's v$sysstat currently exposes only the non-idle aggregate. | Str: ``non_idle`` | Recommended | - |
+
 ### oracledb.session.waits
 
 Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.
@@ -584,6 +590,12 @@ Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {waits} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. Oracle's v$sysstat currently exposes only the non-idle aggregate. | Str: ``non_idle`` | Recommended | - |
 
 ### oracledb.shared_pool.utilization
 

@@ -44,11 +44,11 @@ all_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.java.heap.committed:
+    oracledb.jvm.memory.committed:
       enabled: true
-    oracledb.java.heap.live:
+    oracledb.jvm.memory.live:
       enabled: true
-    oracledb.java.heap.used:
+    oracledb.jvm.memory.used:
       enabled: true
     oracledb.library_cache.utilization:
       enabled: true
@@ -56,9 +56,6 @@ all_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.time:
-      enabled: true
-      attributes: ["cpu.mode"]
     oracledb.os.swaps:
       enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
@@ -102,6 +99,9 @@ all_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
+    oracledb.process.cpu.time:
+      enabled: true
+      attributes: ["cpu.mode"]
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -116,8 +116,10 @@ all_set:
       enabled: true
     oracledb.session.wait.time:
       enabled: true
+      attributes: ["oracledb.session.wait.state"]
     oracledb.session.waits:
       enabled: true
+      attributes: ["oracledb.session.wait.state"]
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -220,11 +222,11 @@ reaggregate_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.java.heap.committed:
+    oracledb.jvm.memory.committed:
       enabled: true
-    oracledb.java.heap.live:
+    oracledb.jvm.memory.live:
       enabled: true
-    oracledb.java.heap.used:
+    oracledb.jvm.memory.used:
       enabled: true
     oracledb.library_cache.utilization:
       enabled: true
@@ -232,9 +234,6 @@ reaggregate_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.time:
-      enabled: true
-      attributes: []
     oracledb.os.swaps:
       enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
@@ -278,6 +277,9 @@ reaggregate_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
+    oracledb.process.cpu.time:
+      enabled: true
+      attributes: []
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -292,8 +294,10 @@ reaggregate_set:
       enabled: true
     oracledb.session.wait.time:
       enabled: true
+      attributes: []
     oracledb.session.waits:
       enabled: true
+      attributes: []
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -396,11 +400,11 @@ none_set:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
-    oracledb.java.heap.committed:
+    oracledb.jvm.memory.committed:
       enabled: false
-    oracledb.java.heap.live:
+    oracledb.jvm.memory.live:
       enabled: false
-    oracledb.java.heap.used:
+    oracledb.jvm.memory.used:
       enabled: false
     oracledb.library_cache.utilization:
       enabled: false
@@ -408,9 +412,6 @@ none_set:
       enabled: false
     oracledb.logons:
       enabled: false
-    oracledb.os.cpu.time:
-      enabled: false
-      attributes: ["cpu.mode"]
     oracledb.os.swaps:
       enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
@@ -454,6 +455,9 @@ none_set:
       enabled: false
     oracledb.physical_writes_direct:
       enabled: false
+    oracledb.process.cpu.time:
+      enabled: false
+      attributes: ["cpu.mode"]
     oracledb.processes.limit:
       enabled: false
     oracledb.processes.usage:
@@ -468,8 +472,10 @@ none_set:
       enabled: false
     oracledb.session.wait.time:
       enabled: false
+      attributes: ["oracledb.session.wait.state"]
     oracledb.session.waits:
       enabled: false
+      attributes: ["oracledb.session.wait.state"]
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:

@@ -248,6 +248,10 @@ attributes:
   oracledb.session.started:
     description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
+  oracledb.session.wait.state:
+    description: Whether the session wait time/count is for idle or non-idle wait events. Oracle's v$sysstat currently exposes only the non-idle aggregate.
+    type: string
+    enum: [non_idle]
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
@@ -566,24 +570,24 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.java.heap.committed:
-    description: Total size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Parallels semconv jvm.memory.committed.
+  oracledb.jvm.memory.committed:
+    description: Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Mirrors semconv jvm.memory.committed for the embedded OJVM.
     enabled: false
     stability: development
     gauge:
       value_type: int
       input_type: string
     unit: By
-  oracledb.java.heap.live:
-    description: Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size.
+  oracledb.jvm.memory.live:
+    description: Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size. No semconv jvm.memory equivalent.
     enabled: false
     stability: development
     gauge:
       value_type: int
       input_type: string
     unit: By
-  oracledb.java.heap.used:
-    description: Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Parallels semconv jvm.memory.used.
+  oracledb.jvm.memory.used:
+    description: Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Mirrors semconv jvm.memory.used for the embedded OJVM.
     enabled: false
     stability: development
     gauge:
@@ -617,17 +621,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
-  oracledb.os.cpu.time:
-    attributes:
-      - cpu.mode
-    description: Cumulative OS CPU time consumed, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user).
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
   oracledb.os.swaps:
     description: Number of OS swap operations, as accounted by Oracle. Sourced from v$sysstat name OS Swaps.
     enabled: false
@@ -826,6 +819,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{writes}"
+  oracledb.process.cpu.time:
+    attributes:
+      - cpu.mode
+    description: Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
@@ -875,6 +879,8 @@ metrics:
       input_type: string
     unit: By
   oracledb.session.wait.time:
+    attributes:
+      - oracledb.session.wait.state
     description: Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.
     enabled: false
     stability: development
@@ -884,6 +890,8 @@ metrics:
       value_type: double
     unit: s
   oracledb.session.waits:
+    attributes:
+      - oracledb.session.wait.state
     description: Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.
     enabled: false
     stability: development

@@ -323,10 +323,10 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbSessionWaits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionWaitTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionStoredProcedureUsage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJavaHeapUsed.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJavaHeapCommitted.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbJavaHeapLive.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbOsCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbProcessCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
@@ -535,7 +535,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			// Session, JVM & OS resources
 			case sessionNonIdleWaitCount:
-				if err := s.mb.RecordOracledbSessionWaitsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbSessionWaitsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSessionWaitStateNonIdle); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sessionNonIdleWaitTime:
@@ -544,22 +544,22 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionNonIdleWaitTime, row["VALUE"], err))
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbSessionWaitTimeDataPoint(now, value/100)
+					s.mb.RecordOracledbSessionWaitTimeDataPoint(now, value/100, metadata.AttributeOracledbSessionWaitStateNonIdle)
 				}
 			case sessionStoredProcedureSpace:
 				if err := s.mb.RecordOracledbSessionStoredProcedureUsageDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case javaCallHeapLiveSize:
-				if err := s.mb.RecordOracledbJavaHeapLiveDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryLiveDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case javaCallHeapTotalSize:
-				if err := s.mb.RecordOracledbJavaHeapCommittedDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryCommittedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case javaCallHeapUsedSize:
-				if err := s.mb.RecordOracledbJavaHeapUsedDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbJvmMemoryUsedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case osSystemTimeUsed:
@@ -568,7 +568,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osSystemTimeUsed, row["VALUE"], err))
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbOsCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeSystem)
+					s.mb.RecordOracledbProcessCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeSystem)
 				}
 			case osUserTimeUsed:
 				value, err := strconv.ParseFloat(row["VALUE"], 64)
@@ -576,7 +576,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osUserTimeUsed, row["VALUE"], err))
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbOsCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeUser)
+					s.mb.RecordOracledbProcessCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeUser)
 				}
 			case osSwaps:
 				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row["VALUE"]); err != nil {

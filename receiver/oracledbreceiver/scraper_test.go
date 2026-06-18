@@ -412,10 +412,10 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg.Metrics.OracledbSessionWaits.Enabled = true
 	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
 	cfg.Metrics.OracledbSessionStoredProcedureUsage.Enabled = true
-	cfg.Metrics.OracledbJavaHeapUsed.Enabled = true
-	cfg.Metrics.OracledbJavaHeapCommitted.Enabled = true
-	cfg.Metrics.OracledbJavaHeapLive.Enabled = true
-	cfg.Metrics.OracledbOsCPUTime.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
+	cfg.Metrics.OracledbProcessCPUTime.Enabled = true
 	cfg.Metrics.OracledbOsSwaps.Enabled = true
 
 	scrpr := oracleScraper{
@@ -438,14 +438,14 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 
 	got := collectNumberDataPoints(m)
 
-	assert.InDelta(t, float64(98765), got["oracledb.session.waits"][""], 1e-9)
-	assert.InDelta(t, 45.0, got["oracledb.session.wait.time"][""], 1e-9)
+	assert.InDelta(t, float64(98765), got["oracledb.session.waits"]["oracledb.session.wait.state=non_idle"], 1e-9)
+	assert.InDelta(t, 45.0, got["oracledb.session.wait.time"]["oracledb.session.wait.state=non_idle"], 1e-9)
 	assert.InDelta(t, float64(262144), got["oracledb.session.stored_procedure.usage"][""], 1e-9)
-	assert.InDelta(t, float64(1048576), got["oracledb.java.heap.live"][""], 1e-9)
-	assert.InDelta(t, float64(4194304), got["oracledb.java.heap.committed"][""], 1e-9)
-	assert.InDelta(t, float64(2097152), got["oracledb.java.heap.used"][""], 1e-9)
-	assert.InDelta(t, 9.0, got["oracledb.os.cpu.time"]["cpu.mode=system"], 1e-9)
-	assert.InDelta(t, 33.0, got["oracledb.os.cpu.time"]["cpu.mode=user"], 1e-9)
+	assert.InDelta(t, float64(1048576), got["oracledb.jvm.memory.live"][""], 1e-9)
+	assert.InDelta(t, float64(4194304), got["oracledb.jvm.memory.committed"][""], 1e-9)
+	assert.InDelta(t, float64(2097152), got["oracledb.jvm.memory.used"][""], 1e-9)
+	assert.InDelta(t, 9.0, got["oracledb.process.cpu.time"]["cpu.mode=system"], 1e-9)
+	assert.InDelta(t, 33.0, got["oracledb.process.cpu.time"]["cpu.mode=user"], 1e-9)
 	assert.InDelta(t, float64(17), got["oracledb.os.swaps"][""], 1e-9)
 }
 

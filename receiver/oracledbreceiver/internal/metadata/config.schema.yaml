@@ -116,22 +116,22 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.java.heap.committed:
-        description: "OracledbJavaHeapCommittedMetricConfig provides config for the oracledb.java.heap.committed metric."
+      oracledb.jvm.memory.committed:
+        description: "OracledbJvmMemoryCommittedMetricConfig provides config for the oracledb.jvm.memory.committed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      oracledb.java.heap.live:
-        description: "OracledbJavaHeapLiveMetricConfig provides config for the oracledb.java.heap.live metric."
+      oracledb.jvm.memory.live:
+        description: "OracledbJvmMemoryLiveMetricConfig provides config for the oracledb.jvm.memory.live metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      oracledb.java.heap.used:
-        description: "OracledbJavaHeapUsedMetricConfig provides config for the oracledb.java.heap.used metric."
+      oracledb.jvm.memory.used:
+        description: "OracledbJvmMemoryUsedMetricConfig provides config for the oracledb.jvm.memory.used metric."
         type: object
         properties:
           enabled:
@@ -146,13 +146,6 @@ $defs:
             default: true
       oracledb.logons:
         description: "OracledbLogonsMetricConfig provides config for the oracledb.logons metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.os.cpu.time:
-        description: "OracledbOsCPUTimeMetricConfig provides config for the oracledb.os.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -315,6 +308,13 @@ $defs:
             default: false
       oracledb.physical_writes_direct:
         description: "OracledbPhysicalWritesDirectMetricConfig provides config for the oracledb.physical_writes_direct metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.process.cpu.time:
+        description: "OracledbProcessCPUTimeMetricConfig provides config for the oracledb.process.cpu.time metric."
         type: object
         properties:
           enabled:
