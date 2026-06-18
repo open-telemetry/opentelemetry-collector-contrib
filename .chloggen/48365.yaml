@@ -1,24 +1,21 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: cmd/schemagen
+component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `-p` flag to schemagen to allow specifying a custom Go package pattern"
+note: "Normalize merged `service.telemetry.resource` settings so mixed legacy inline attributes and declarative `attributes` entries do not produce invalid effective Collector configs"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [48966]
+issues: [48365]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Previously the parser always loaded the package from the current directory (`.`).
-  The new `-p` flag accepts any pattern accepted by `packages.Load`, including a fully-qualified
-  import path, so that schemagen can target a specific package without changing the working directory.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -27,4 +24,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: []
