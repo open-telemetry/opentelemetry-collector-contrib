@@ -37,8 +37,6 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	// defaultServiceName is the default logical service name used for
-	// the service.name resource attribute when it is enabled.
 	defaultServiceName = "unknown_service:microsoft.sql_server"
 )
 
