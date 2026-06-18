@@ -1,0 +1,53 @@
+type: hardware
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  unsupported_platforms: [darwin, windows, freebsd, netbsd, openbsd, dragonfly, zos]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+attributes:
+  id:
+    description: An identifier for the hardware component, unique within the monitored host.
+    type: string
+
+  limit_type:
+    description: Type of limit for hardware components.
+    type: string
+    enum: [high.critical, high.degraded, low.critical, low.degraded]
+
+  name:
+    description: An easily-recognizable name for the hardware component.
+    type: string
+
+  parent:
+    description: Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller).
+    type: string
+
+  sensor_location:
+    description: Location of the sensor.
+    type: string
+
+metrics:
+  hw.temperature:
+    enabled: true
+    description: Temperature in degrees Celsius.
+    unit: Cel
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [id, name, parent, sensor_location]
+
+  hw.temperature.limit:
+    enabled: false
+    description: Temperature limit in degrees Celsius.
+    unit: Cel
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [id, limit_type, name, parent, sensor_location]
