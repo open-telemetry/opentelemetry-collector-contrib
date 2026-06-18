@@ -109,7 +109,7 @@ func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request 
 	start := 0
 	for i, rec := range records {
 		size := recordSize(rec)
-		if size > maxSize {
+		if size >= maxSize {
 			if i > start {
 				out = append(out, New(records[start:i]))
 			}
