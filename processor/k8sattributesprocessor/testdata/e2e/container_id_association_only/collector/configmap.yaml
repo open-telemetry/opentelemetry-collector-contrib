@@ -32,7 +32,7 @@ data:
             tag_name: k8s.labels.app
           - from: namespace
             key: test-namespace
-            tag_name: k8s.namespace.labels.test-namespace
+            tag_name: k8s.namespace.label.test-namespace
         pod_association:
         - sources:
           - from: resource_attribute
