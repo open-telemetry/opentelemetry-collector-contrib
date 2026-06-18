@@ -87,7 +87,7 @@ List every metric you want to collect. Each entry supports:
 | `metric_name` | String          | yes      | CloudWatch metric name, e.g. `CPUUtilization`. |
 | `dimensions`  | Map             | no       | CloudWatch dimension key/value pairs. Required for metrics that are scoped to a specific resource (e.g. a single EC2 instance or DynamoDB table). Original casing is preserved. |
 | `stats`       | List of strings | no       | Which CloudWatch statistics to fetch. See [Statistics](#statistics) below. |
-| `account_id`  | String          | no       | Source account the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. Requires the receiver to run in a monitoring account. See [Cross-account monitoring](#cross-account-monitoring). |
+| `account_id`  | String          | no       | Source account the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. The receiver must run in a monitoring account with that source account linked; otherwise `GetMetricData` returns a `Forbidden` status and the metric is dropped (a warning is logged). See [Cross-account monitoring](#cross-account-monitoring). |
 
 #### Auto-discovery (`discovery`)
 
@@ -110,7 +110,9 @@ In a [CloudWatch cross-account observability](https://docs.aws.amazon.com/Amazon
 - **Auto-discovery:** set `discovery.include_linked_accounts: true` to discover metrics across all linked accounts, or add `discovery.account_identifiers: [<id>, ...]` to restrict to specific source accounts. Because `ListMetrics` filters one owning account at a time, each identifier is queried separately, so the `limit` applies per account.
 - **Explicit queries:** set `account_id` on a query to fetch that metric from a specific source account.
 
-Each metric is emitted under its owning account's `cloud.account.id` resource attribute. Without any cross-account configuration, the receiver collects only from its own account (the default).
+Each metric is emitted under its source account's `cloud.account.id` resource attribute. Without any cross-account configuration, the receiver collects only from its own account (the default).
+
+> **Prerequisite:** cross-account collection requires the credentials to belong to a CloudWatch **monitoring account** with the source accounts linked to it (via [Observability Access Manager](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Unified-Cross-Account-Setup.html)). The receiver cannot detect this from configuration alone. If a source account is not reachable, `GetMetricData` returns a `Forbidden` status for those metrics rather than an error, so they are simply absent from the output; the receiver logs a warning (`GetMetricData returned a non-complete status for a metric`) identifying the account so the misconfiguration is diagnosable.
 
 #### Statistics
 
