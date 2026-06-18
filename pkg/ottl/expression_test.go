@@ -877,7 +877,6 @@ func Test_newGetter(t *testing.T) {
 			val: value{
 				Lambda: &lambdaExpr{
 					Params: []localIdentifierDecl{"value"},
-					Arrow:  "=>",
 					Body: lambdaBody{
 						Value: &value{
 							Literal: &mathExprLiteral{

@@ -229,8 +229,7 @@ func (c *converter) accept(v grammarVisitor) {
 
 type lambdaExpr struct {
 	Params []localIdentifierDecl `parser:"'(' ( (@Lowercase | @Underscore) ( ',' (@Lowercase | @Underscore ) )* )? ')'"`
-	Arrow  string                `parser:"@LambdaArrow"`
-	Body   lambdaBody            `parser:"@@"`
+	Body   lambdaBody            `parser:"LambdaArrow @@"`
 }
 
 type lambdaBody struct {
