@@ -16,6 +16,7 @@ func LogFunctions() map[string]ottl.Factory[*ottllog.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
 
 	logFunctions := ottl.CreateFactoryMap(
+		logparsingfuncs.NewParseCLFFactory(),
 		logparsingfuncs.NewParseLEEFFactory(),
 	)
 
