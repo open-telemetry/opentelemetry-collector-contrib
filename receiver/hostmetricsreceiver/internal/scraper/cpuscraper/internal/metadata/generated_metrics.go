@@ -316,7 +316,7 @@ func (m *metricSystemCPUTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -324,8 +324,8 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCPULogicalNumber) {
-		dp.Attributes().PutStr("cpu", cpuLogicalNumberAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCPU) {
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
@@ -408,7 +408,7 @@ func (m *metricSystemCPUUtilization) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -416,8 +416,8 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCPULogicalNumber) {
-		dp.Attributes().PutStr("cpu", cpuLogicalNumberAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCPU) {
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
@@ -634,13 +634,13 @@ func (mb *MetricsBuilder) RecordSystemCPUPhysicalCountDataPoint(ts pcommon.Times
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

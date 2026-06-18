@@ -83,15 +83,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemCPUPhysicalCountDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu.logical_number-val", AttributeStateIdle)
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu.logical_number-val-2", AttributeStateInterrupt)
+				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
 			}
 
 			allMetricsCount++
-			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu.logical_number-val", AttributeStateIdle)
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu.logical_number-val-2", AttributeStateInterrupt)
+				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
 			}
 
 			res := pcommon.NewResource()
@@ -140,9 +140,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						cpuAttrVal, ok := dp.Attributes().Get("cpu")
-						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.frequency"], "Found a duplicate in the metrics slice: system.cpu.frequency")
 						validatedMetrics["system.cpu.frequency"] = true

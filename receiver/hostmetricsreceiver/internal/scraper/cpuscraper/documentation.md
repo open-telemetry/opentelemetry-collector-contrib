@@ -49,7 +49,7 @@ Current frequency of the CPU core in Hz.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
+| cpu | Logical CPU number starting at 0. | Any Str | Opt-In | - |
 
 ### system.cpu.logical.count
 

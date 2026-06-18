@@ -14,12 +14,6 @@ attributes:
   cpu:
     description: Logical CPU number starting at 0.
     type: string
-    requirement_level: recommended
-
-  cpu.logical_number:
-    name_override: cpu
-    description: Logical CPU number starting at 0.
-    type: string
     requirement_level: opt_in
 
   state:
@@ -67,7 +61,7 @@ metrics:
       value_type: double
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [cpu.logical_number, state]
+    attributes: [cpu, state]
 
   system.cpu.utilization:
     enabled: false
@@ -76,4 +70,4 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu.logical_number, state]
+    attributes: [cpu, state]

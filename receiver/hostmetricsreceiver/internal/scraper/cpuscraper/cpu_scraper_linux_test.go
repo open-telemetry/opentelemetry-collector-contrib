@@ -20,14 +20,24 @@ import (
 
 func TestScrape_CpuFrequency(t *testing.T) {
 	type testCase struct {
-		name             string
-		enabledFrequency bool
+		name              string
+		enabledFrequency  bool
+		enabledAttributes []metadata.SystemCPUFrequencyMetricAttributeKey
+		expectCPUAttr     bool
 	}
 
 	testCases := []testCase{
 		{
 			name:             "System CPU Frequency enabled",
 			enabledFrequency: true,
+		},
+		{
+			name:             "System CPU Frequency enabled with CPU attribute",
+			enabledFrequency: true,
+			enabledAttributes: []metadata.SystemCPUFrequencyMetricAttributeKey{
+				metadata.SystemCPUFrequencyMetricAttributeKeyCPU,
+			},
+			expectCPUAttr: true,
 		},
 		{
 			name:             "System CPU Frequency disabled",
@@ -42,6 +52,7 @@ func TestScrape_CpuFrequency(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.SystemCPUTime.Enabled = false
 			cfg.Metrics.SystemCPUFrequency.Enabled = test.enabledFrequency
+			cfg.Metrics.SystemCPUFrequency.EnabledAttributes = test.enabledAttributes
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 				&Config{MetricsBuilderConfig: cfg})
@@ -66,12 +77,12 @@ func TestScrape_CpuFrequency(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			metric := metrics.At(0)
-			assertCPUFrequencyMetricValid(t, metric)
+			assertCPUFrequencyMetricValid(t, metric, test.expectCPUAttr)
 		})
 	}
 }
 
-func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
+func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric, expectCPUAttr bool) {
 	expected := pmetric.NewMetric()
 	expected.SetName("system.cpu.frequency")
 	expected.SetDescription("Current frequency of the CPU core in Hz.")
@@ -80,15 +91,24 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 	internal.AssertDescriptorEqual(t, expected, metric)
 
 	numCPUs := runtime.NumCPU()
-	require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), numCPUs,
-		"Should have at least one frequency data point per CPU")
+	if expectCPUAttr {
+		require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), numCPUs,
+			"Should have at least one frequency data point per CPU")
+	} else {
+		require.Equal(t, 1, metric.Gauge().DataPoints().Len(),
+			"Should aggregate frequency data points across CPUs by default")
+	}
 
 	if metric.Gauge().DataPoints().Len() > 0 {
 		dp := metric.Gauge().DataPoints().At(0)
 
 		cpuAttr, exists := dp.Attributes().Get("cpu")
-		require.True(t, exists, "Data point should have 'cpu' attribute")
-		require.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
+		if expectCPUAttr {
+			require.True(t, exists, "Data point should have 'cpu' attribute")
+			require.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
+		} else {
+			require.False(t, exists, "Data point should not have 'cpu' attribute by default")
+		}
 
 		require.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
 	}

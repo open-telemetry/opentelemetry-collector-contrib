@@ -355,7 +355,7 @@ func TestScrape_CPUTimeAttributeConfiguration(t *testing.T) {
 			metricsConfig: func() metadata.MetricsBuilderConfig {
 				cfg := metadata.NewDefaultMetricsBuilderConfig()
 				cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeMetricAttributeKey{
-					metadata.SystemCPUTimeMetricAttributeKeyCPULogicalNumber,
+					metadata.SystemCPUTimeMetricAttributeKeyCPU,
 					metadata.SystemCPUTimeMetricAttributeKeyState,
 				}
 				return cfg
@@ -460,7 +460,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 				cfg.Metrics.SystemCPUUtilization.Enabled = true
 				cfg.Metrics.SystemCPUTime.Enabled = false
 				cfg.Metrics.SystemCPUUtilization.EnabledAttributes = []metadata.SystemCPUUtilizationMetricAttributeKey{
-					metadata.SystemCPUUtilizationMetricAttributeKeyCPULogicalNumber,
+					metadata.SystemCPUUtilizationMetricAttributeKeyCPU,
 					metadata.SystemCPUUtilizationMetricAttributeKeyState,
 				}
 				return cfg
