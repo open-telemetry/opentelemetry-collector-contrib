@@ -144,10 +144,18 @@ func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, 
 func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 	pkgconfig := pkgconfigcreate.NewConfig("DD", "")
 
+	// Register all standard agent config keys so that subsequent Set calls work
+	// correctly with the nodetreemodel config backend.
+	pkgconfigsetup.InitConfig(pkgconfig)
+
 	// Apply all configuration options
 	for _, opt := range options {
 		opt(pkgconfig)
 	}
+
+	// Mark the config as ready for use. Without this, nodetreemodel silently
+	// returns zero values for all Get* calls (reads are blocked before BuildSchema).
+	pkgconfig.BuildSchema()
 
 	return pkgconfig
 }
@@ -177,7 +185,7 @@ func WithForwarderConfig() ConfigOption {
 // WithLogsEnabled enables logs for agent config
 func WithLogsEnabled() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceAgentRuntime)
 	}
 }
 
@@ -247,6 +255,9 @@ func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
 // WithCustomConfig allows setting arbitrary configuration values
 func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
+		// Register the key before setting it; nodetreemodel silently drops Set calls
+		// for keys not in its known-key registry.
+		pkgconfig.SetKnown(key)
 		pkgconfig.Set(key, value, source)
 	}
 }
@@ -273,13 +284,17 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	for v := range strings.SplitSeq(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
-	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+	// Use SourceAgentRuntime because nodetreemodel's BuildSchema rebuilds the SourceEnvVar layer
+	// from actual DD_* env vars, which would erase a manually-set SourceEnvVar value.
+	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceAgentRuntime)
 }
 
 func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	if cfg.TLS.InsecureSkipVerify {
 		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 	}
+	// apm_config.skip_ssl_validation is not registered by InitConfig, so register it first.
+	pkgconfig.SetKnown("apm_config.skip_ssl_validation")
 	pkgconfig.Set("apm_config.skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 }
 

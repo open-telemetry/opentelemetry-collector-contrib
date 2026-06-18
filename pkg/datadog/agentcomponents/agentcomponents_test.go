@@ -356,7 +356,7 @@ func TestWithProxy(t *testing.T) {
 		proxyURL        string
 		expectedHTTP    string
 		expectedHTTPS   string
-		expectedNoProxy []any
+		expectedNoProxy []string
 	}{
 		{
 			name: "all proxy environment variables set",
@@ -367,7 +367,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxy.example.com:8080",
 			expectedHTTPS:   "https://secure-proxy.example.com:8443",
-			expectedNoProxy: []any{"localhost", "127.0.0.1", ".local"},
+			expectedNoProxy: []string{"localhost", "127.0.0.1", ".local"},
 			proxyURL:        "",
 		},
 		{
@@ -377,7 +377,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxy.example.com:3128",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "",
 		},
 		{
@@ -385,7 +385,7 @@ func TestWithProxy(t *testing.T) {
 			envVars:         map[string]string{},
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "",
 		},
 		{
@@ -395,7 +395,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
-			expectedNoProxy: []any{"internal.company.com"},
+			expectedNoProxy: []string{"internal.company.com"},
 			proxyURL:        "",
 		},
 		{
@@ -403,7 +403,7 @@ func TestWithProxy(t *testing.T) {
 			envVars:         map[string]string{},
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 		{
@@ -414,7 +414,7 @@ func TestWithProxy(t *testing.T) {
 			},
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
-			expectedNoProxy: []any{""},
+			expectedNoProxy: []string{""},
 			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 	}
@@ -442,8 +442,8 @@ func TestWithProxy(t *testing.T) {
 			assert.Equal(t, tt.expectedHTTP, config.GetString("proxy.http"))
 			assert.Equal(t, tt.expectedHTTPS, config.GetString("proxy.https"))
 
-			// Verify NO_PROXY setting
-			noProxySlice := config.Get("proxy.no_proxy")
+			// Verify NO_PROXY setting (nodetreemodel converts to []string based on registered default type)
+			noProxySlice := config.GetStringSlice("proxy.no_proxy")
 			assert.Equal(t, tt.expectedNoProxy, noProxySlice)
 		})
 	}
