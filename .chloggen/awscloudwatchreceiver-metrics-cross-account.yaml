@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/awscloudwatch
+note: Support cross-account metric collection. Discovery gains `include_linked_accounts` and `account_identifiers`, explicit queries gain `account_id`, and metrics are grouped into resources by their owning `cloud.account.id`.
+issues: []
+change_logs: []

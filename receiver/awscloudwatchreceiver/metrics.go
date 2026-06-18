@@ -196,8 +196,36 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 	return time.Unix(aligned, 0).UTC()
 }
 
-// listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
+// listMetrics discovers metrics via the ListMetrics API, respecting discovery config
+// (namespace, metric name, limit, and cross-account options).
+//
+// When account_identifiers is set, each source account is queried separately because
+// ListMetrics filters a single owning account at a time; the limit applies per account.
+// When include_linked_accounts is set without identifiers, a single monitoring-account
+// sweep discovers metrics across all linked accounts, again capped per account. Otherwise
+// the receiver's own account is discovered as before.
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
+	if len(s.discovery.AccountIdentifiers) > 0 {
+		var out []MetricQuery
+		for _, account := range s.discovery.AccountIdentifiers {
+			qs, err := s.discoverMetrics(ctx, account)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, qs...)
+		}
+		return out, nil
+	}
+	return s.discoverMetrics(ctx, "")
+}
+
+// discoverMetrics paginates ListMetrics for a single owning account (or, when
+// owningAccount is empty and include_linked_accounts is set, a sweep across all linked
+// accounts). The discovery limit is enforced per account. Each returned MetricQuery is
+// tagged with the account that owns it, or left empty for same-account discovery.
+func (s *cloudWatchMetricsScraper) discoverMetrics(ctx context.Context, owningAccount string) ([]MetricQuery, error) {
+	includeLinked := s.discovery.IncludeLinkedAccounts != nil && *s.discovery.IncludeLinkedAccounts
+
 	input := &cloudwatch.ListMetricsInput{}
 	if f := s.discovery.Filters.Get(); f != nil {
 		if f.Namespace != "" {
@@ -207,7 +235,19 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			input.MetricName = aws.String(f.MetricName)
 		}
 	}
+	if includeLinked {
+		input.IncludeLinkedAccounts = aws.Bool(true)
+	}
+	if owningAccount != "" {
+		input.OwningAccount = aws.String(owningAccount)
+	}
 
+	// singleAccount is true whenever every returned metric belongs to one account, so we
+	// can stop paginating once the limit is reached. The all-linked sweep must page fully
+	// because metrics for under-limit accounts may still appear on later pages.
+	singleAccount := owningAccount != "" || !includeLinked
+
+	perAccount := make(map[string]int)
 	var out []MetricQuery
 	var nextToken *string
 	for {
@@ -216,17 +256,25 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 		if err != nil {
 			return nil, err
 		}
-		for _, met := range resp.Metrics {
-			if len(out) >= s.discovery.Limit {
-				return out, nil
+		for i, met := range resp.Metrics {
+			account := owningAccount
+			if account == "" && i < len(resp.OwningAccounts) {
+				account = resp.OwningAccounts[i]
 			}
-			q := MetricQuery{
+			if perAccount[account] >= s.discovery.Limit {
+				if singleAccount {
+					return out, nil
+				}
+				continue
+			}
+			perAccount[account]++
+			out = append(out, MetricQuery{
 				Namespace:  aws.ToString(met.Namespace),
 				MetricName: aws.ToString(met.MetricName),
 				Dimensions: dimensionsToMap(met.Dimensions),
 				Stats:      s.discovery.Stats,
-			}
-			out = append(out, q)
+				AccountID:  account,
+			})
 		}
 		nextToken = resp.NextToken
 		if nextToken == nil {
@@ -278,7 +326,7 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 			stats = q.Stats
 		}
 		for si, stat := range stats {
-			queries = append(queries, types.MetricDataQuery{
+			mdq := types.MetricDataQuery{
 				Id: aws.String(fmt.Sprintf("q%d_%d", i, si)),
 				MetricStat: &types.MetricStat{
 					Metric: &types.Metric{
@@ -289,7 +337,12 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 					Period: aws.Int32(int32(s.period.Seconds())),
 					Stat:   aws.String(stat),
 				},
-			})
+			}
+			// In a cross-account setup, fetch the metric from its owning source account.
+			if q.AccountID != "" {
+				mdq.AccountId = aws.String(q.AccountID)
+			}
+			queries = append(queries, mdq)
 		}
 	}
 

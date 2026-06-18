@@ -54,10 +54,19 @@ type MetricsConfig struct {
 // Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
 type MetricsDiscoveryConfig struct {
 	Filters configoptional.Optional[MetricsDiscoveryFilters] `mapstructure:"filters"`
-	Limit   int                                              `mapstructure:"limit"` // max metrics to discover and scrape (default 100)
+	// Limit is the maximum number of metrics to discover and scrape per account (default 100).
+	// In a cross-account setup it applies independently to each source account.
+	Limit int `mapstructure:"limit"`
 	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
+	// IncludeLinkedAccounts, when true and run from a monitoring account, discovers
+	// metrics from linked source accounts in addition to (or filtered by) AccountIdentifiers.
+	IncludeLinkedAccounts *bool `mapstructure:"include_linked_accounts"`
+	// AccountIdentifiers optionally narrows cross-account discovery to specific source
+	// accounts. ListMetrics filters one owning account at a time, so each identifier is
+	// queried separately. Requires IncludeLinkedAccounts to be true.
+	AccountIdentifiers []string `mapstructure:"account_identifiers"`
 }
 
 // MetricsDiscoveryFilters optionally narrows which metrics are discovered.
@@ -131,6 +140,7 @@ var (
 	errMetricMissingName                = errors.New("metric must have metric_name")
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
+	errAccountIdentifiersWithoutLinked  = errors.New("metrics.discovery.account_identifiers requires include_linked_accounts to be true")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
@@ -190,6 +200,10 @@ func (c *Config) validateMetricsConfig() error {
 	if discovery := c.Metrics.Discovery; discovery != nil {
 		if discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
+		}
+		if len(discovery.AccountIdentifiers) > 0 &&
+			(discovery.IncludeLinkedAccounts == nil || !*discovery.IncludeLinkedAccounts) {
+			return errAccountIdentifiersWithoutLinked
 		}
 		for j, st := range discovery.Stats {
 			if st == "" {

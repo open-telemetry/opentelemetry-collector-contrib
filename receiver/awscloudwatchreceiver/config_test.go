@@ -515,6 +515,28 @@ func TestValidateMetricsConfig(t *testing.T) {
 			expectedErr: errInvalidDiscoveryLimit,
 		},
 		{
+			name: "account identifiers without linked accounts",
+			config: withMetrics(MetricsConfig{
+				Period: 300 * time.Second,
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:              100,
+					AccountIdentifiers: []string{"111111111111"},
+				},
+			}),
+			expectedErr: errAccountIdentifiersWithoutLinked,
+		},
+		{
+			name: "account identifiers with linked accounts valid",
+			config: withMetrics(MetricsConfig{
+				Period: 300 * time.Second,
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:                 100,
+					IncludeLinkedAccounts: aws.Bool(true),
+					AccountIdentifiers:    []string{"111111111111"},
+				},
+			}),
+		},
+		{
 			name: "collection interval too short",
 			config: withMetrics(MetricsConfig{
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 500 * time.Millisecond},
