@@ -381,6 +381,16 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `stringify_all(attributes)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("conflict", `{"conflict1":{"conflict2":"pass"}}`)
+				tCtx.GetLogRecord().Attributes().PutStr("conflict.conflict1", `{"conflict2":"nopass"}`)
+				tCtx.GetLogRecord().Attributes().PutStr("foo", `{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]}`)
+				tCtx.GetLogRecord().Attributes().PutStr("slice2", `["val","foo","bar","baz"]`)
+				tCtx.GetLogRecord().Attributes().PutStr("things", `[{"name":"foo","value":2},{"name":"bar","value":5}]`)
+			},
+		},
+		{
 			statement: `append(attributes["foo"]["slice"], "sample_value")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
@@ -1849,6 +1859,31 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "1:4KOPjy2bsV43uY/mf4HtwyZkwqM=")
 			},
 		},
+		{
+			statement: `set(attributes["test"], Split("fail|pass", "|")[Int("1")])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Split("pass|fail", "|")[attributes["int_value"]])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+
+		{
+			statement: `set(attributes["test"], SliceToMap(["fail", "pass"])[String("1")])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(["pass", "fail"])[attributes["int_value_str"]])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2232,6 +2267,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutStr("slice", "slice")
 	logRecord.Attributes().PutStr("val", "val2")
 	logRecord.Attributes().PutInt("int_value", 0)
+	logRecord.Attributes().PutStr("int_value_str", "0")
 	logRecord.Attributes().PutStr("nil_string", "nil")
 	logRecord.Attributes().PutStr("server.ip", "192.168.0.1")
 	arr := logRecord.Attributes().PutEmptySlice("array")

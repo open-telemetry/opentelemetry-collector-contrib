@@ -74,9 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTcp, "state-val")
+			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTCP, "state-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemNetworkConnectionsDataPoint(ts, 3, AttributeProtocolTcp, "state-val-2")
+				mb.RecordSystemNetworkConnectionsDataPoint(ts, 3, AttributeProtocolTCP, "state-val-2")
 			}
 
 			allMetricsCount++
