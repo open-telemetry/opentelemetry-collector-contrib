@@ -337,3 +337,44 @@ func TestToPlogGroupsByResource(t *testing.T) {
 	]`), receivedAt, false)
 	assert.Equal(t, 2, logs.ResourceLogs().Len())
 }
+
+// TestToPlogDecodeJSONMessageNoDuplicateReservedKeys guards against reserved keys being emitted both
+// as a typed field/resource attribute/severity AND as a duplicate log attribute when decoding a JSON
+// message. Every reserved key is present in the inner JSON, none may survive as an attribute.
+func TestToPlogDecodeJSONMessageNoDuplicateReservedKeys(t *testing.T) {
+	inner := `{"message":"real message","status":"warn","level":"error",` +
+		`"hostname":"h1","host":"h2","service":"svc","ddsource":"go","ddtags":"env:prod",` +
+		`"timestamp":1700000000000,"@timestamp":"2023-01-01T00:00:00Z","date":1,"_timestamp":2,` +
+		`"custom.field":"keep-me"}`
+
+	logs := ToPlog([]*DatadogLogPayload{{Message: inner}}, receivedAt, true)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	rl := logs.ResourceLogs().At(0)
+	rec := rl.ScopeLogs().At(0).LogRecords().At(0)
+	attrs := rec.Attributes()
+	res := rl.Resource().Attributes()
+
+	for _, k := range []string{
+		"message", "status", "level", "severity", "hostname", "host",
+		"service", "ddsource", "ddtags", "timestamp", "@timestamp", "date", "_timestamp",
+	} {
+		_, inAttrs := attrs.Get(k)
+		assert.Falsef(t, inAttrs, "reserved key %q leaked into log attributes", k)
+		_, inRes := res.Get(k)
+		assert.Falsef(t, inRes, "reserved key %q leaked into resource attributes", k)
+	}
+
+	// Reserved keys landed in their typed slots (with precedence: status>level, hostname>host).
+	assert.Equal(t, "real message", rec.Body().Str())
+	assert.Equal(t, "warn", rec.SeverityText())
+	assert.Equal(t, uint64(1700000000000000000), uint64(rec.Timestamp()))
+	v, _ := res.Get("host.name")
+	assert.Equal(t, "h1", v.AsString())
+	v, _ = res.Get("service.name")
+	assert.Equal(t, "svc", v.AsString())
+
+	// Non-reserved keys still pass through as attributes.
+	v, ok := attrs.Get("custom.field")
+	require.True(t, ok)
+	assert.Equal(t, "keep-me", v.AsString())
+}

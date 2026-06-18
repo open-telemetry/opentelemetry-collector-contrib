@@ -120,7 +120,6 @@ func ToPlog(incomingLogs []*DatadogLogPayload, receivedAt time.Time, decodeJSONM
 
 	observed := pcommon.NewTimestampFromTime(receivedAt)
 	pool := newStringPool()
-	// Group records sharing identical resource attributes into one ResourceLogs.
 	scopeByResource := make(map[string]plog.ScopeLogs)
 
 	for _, in := range incomingLogs {
@@ -131,9 +130,8 @@ func ToPlog(incomingLogs []*DatadogLogPayload, receivedAt time.Time, decodeJSONM
 			in = decodeJSONMessagePayload(in)
 		}
 
-		// Resolve resource and log-level attributes. ddtags reuses the metrics tag parser so logs get
-		// the same key:value parsing and known-key to resource-attribute promotion (env, version,
-		// container, cloud, k8s, etc.). hostname maps to host.name inside tagsToAttributes.
+		// Reuse the metrics tag parser: known ddtags become resource attributes, the rest log
+		// attributes, and hostname maps to host.name.
 		var tags []string
 		if in.Tags != "" {
 			tags = strings.Split(in.Tags, ",")
@@ -172,25 +170,20 @@ func ToPlog(incomingLogs []*DatadogLogPayload, receivedAt time.Time, decodeJSONM
 
 		setTraceContext(lr, in.Additional)
 
-		// Log-level attributes parsed out of ddtags.
 		attrs.dp.Range(func(k string, v pcommon.Value) bool {
 			v.CopyTo(lr.Attributes().PutEmpty(k))
 			return true
 		})
-
-		// Arbitrary structured attributes from the payload (excluding those already promoted above).
 		addAdditionalAttributes(lr.Attributes(), in.Additional)
 	}
 
 	return logs
 }
 
-// decodeJSONMessagePayload mirrors Datadog's server-side "Preprocessing for JSON logs". When the
-// agent forwards an application JSON log, the whole line arrives as an opaque message string. If that
-// string is a JSON object, we parse it and let its reserved attributes (message, status/level,
-// timestamp, host, service, ddsource, and dd.trace_id/dd.span_id for correlation) take precedence over
-// the agent envelope. Remaining inner keys become attributes. Non-JSON messages are returned
-// unchanged. The returned payload is a copy, the input is never mutated.
+// decodeJSONMessagePayload expands a JSON-object message: its reserved fields take precedence over the
+// agent envelope and the rest become attributes. The Datadog Agent forwards an application's JSON log
+// as an opaque message string (Datadog's backend normally parses it). Non-JSON messages are returned
+// unchanged; the input is never mutated.
 func decodeJSONMessagePayload(in *DatadogLogPayload) *DatadogLogPayload {
 	if !strings.HasPrefix(strings.TrimSpace(in.Message), "{") {
 		return in
@@ -208,59 +201,56 @@ func decodeJSONMessagePayload(in *DatadogLogPayload) *DatadogLogPayload {
 	out.Additional = make(map[string]any, len(in.Additional)+len(inner))
 	maps.Copy(out.Additional, in.Additional)
 
-	if s, ok := stringAttribute(inner["message"]); ok {
-		out.Message = s
+	// Consume reserved fields from inner (deleting them) so the leftovers can be copied as attributes
+	// with no separate skip-list to maintain.
+	for _, f := range reservedJSONFields {
+		set := false
+		for _, k := range f.keys {
+			v, ok := inner[k]
+			delete(inner, k)
+			if ok && !set && f.assign != nil {
+				f.assign(&out, v)
+				set = true // first present key wins
+			}
+		}
 	}
 
-	if s, ok := firstStringAttribute(inner, "status", "level", "severity"); ok {
-		out.Status = s
-	}
-
-	if s, ok := firstStringAttribute(inner, "hostname", "host"); ok {
-		out.Hostname = s
-	}
-
-	if s, ok := stringAttribute(inner["service"]); ok {
-		out.Service = s
-	}
-
-	if s, ok := stringAttribute(inner["ddsource"]); ok {
-		out.Source = s
-	}
-
-	// If the inner log carries its own timestamp, it reflects the application's emit time and should
-	// win over the agent's collection time. Clear the typed field and let resolveTimestamp parse the
-	// inner value (numeric epoch-ms or ISO8601) from Additional.
+	// Keep the timestamp in Additional for resolveTimestamp. Clear the typed field so the inner
+	// emit-time wins over the agent's envelope timestamp.
+	tsSet := false
 	for _, k := range ddTimestampKeys {
-		if v, ok := inner[k]; ok {
+		v, ok := inner[k]
+		delete(inner, k)
+		if ok && !tsSet {
 			out.Timestamp = 0
 			out.Additional[k] = v
-
-			break
+			tsSet = true
 		}
 	}
 
-	// Remaining (non-reserved) inner keys become attributes; the inner values win over the envelope.
-	for k, v := range inner {
-		switch strings.ToLower(k) {
-		case "message", "status", "level", "severity", "hostname", "host", "service", "ddsource", "ddtags", "timestamp", "@timestamp", "date", "_timestamp":
-			continue
-		}
-
-		out.Additional[k] = v
-	}
-
+	maps.Copy(out.Additional, inner) // remaining inner keys become attributes
 	return &out
 }
 
-func firstStringAttribute(m map[string]any, keys ...string) (string, bool) {
-	for _, k := range keys {
-		if s, ok := stringAttribute(m[k]); ok {
-			return s, true
-		}
-	}
+// reservedJSONFields is the single source of truth for which inner-JSON keys decodeJSONMessagePayload
+// consumes into typed fields, listed in precedence order. Anything not here becomes an attribute.
+// Timestamp keys are reserved too but handled separately.
+var reservedJSONFields = []struct {
+	keys   []string
+	assign func(out *DatadogLogPayload, v any) // nil: consumed but not re-emitted
+}{
+	{[]string{"message"}, func(o *DatadogLogPayload, v any) { setIfString(&o.Message, v) }},
+	{[]string{"status", "level", "severity"}, func(o *DatadogLogPayload, v any) { setIfString(&o.Status, v) }},
+	{[]string{"hostname", "host"}, func(o *DatadogLogPayload, v any) { setIfString(&o.Hostname, v) }},
+	{[]string{"service"}, func(o *DatadogLogPayload, v any) { setIfString(&o.Service, v) }},
+	{[]string{"ddsource"}, func(o *DatadogLogPayload, v any) { setIfString(&o.Source, v) }},
+	{[]string{"ddtags"}, nil},
+}
 
-	return "", false
+func setIfString(dst *string, v any) {
+	if s, ok := stringAttribute(v); ok {
+		*dst = s
+	}
 }
 
 // resolveTimestamp returns the log's timestamp as an OTel timestamp. Datadog log timestamps are Unix
@@ -285,7 +275,6 @@ func (p *DatadogLogPayload) resolveTimestamp() (pcommon.Timestamp, bool) {
 	return 0, false
 }
 
-// millisToTimestamp converts Unix epoch milliseconds to an OTel nanosecond timestamp.
 func millisToTimestamp(ms int64) pcommon.Timestamp {
 	return pcommon.Timestamp(ms * int64(time.Millisecond))
 }
