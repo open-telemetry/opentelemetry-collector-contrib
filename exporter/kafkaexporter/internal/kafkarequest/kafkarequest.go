@@ -9,7 +9,6 @@ package kafkarequest // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
-	"sort"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -101,36 +100,48 @@ func recordSize(rec *kgo.Record) int {
 // splitByBytes places records into bins of at most maxSize bytes. Records
 // that individually equal or exceed maxSize are emitted as their own single-record
 // Requests; the broker surfaces MessageTooLarge as a permanent failure.
-// Output is sorted by size descending so the last Request is the smallest,
-// per the interface contract.
+// The contract only requires the last Request to be the smallest, so we
+// track the running minimum and swap it to the end once, rather than
+// sorting the full output.
 func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request {
 	var out []xexporterhelper.Request
-	var curSize int
+	var curSize, minIdx, minSize int
+
+	emit := func(slice []*kgo.Record) {
+		req := New(slice)
+		out = append(out, req)
+		if size := req.BytesSize(); len(out) == 1 || size < minSize {
+			minIdx = len(out) - 1
+			minSize = size
+		}
+	}
+
 	start := 0
 	for i, rec := range records {
 		size := recordSize(rec)
 		if size >= maxSize {
 			if i > start {
-				out = append(out, New(records[start:i]))
+				emit(records[start:i])
 			}
-			out = append(out, New(records[i:i+1]))
+			emit(records[i : i+1])
 			start = i + 1
 			curSize = 0
 			continue
 		}
 		if curSize+size > maxSize && i > start {
-			out = append(out, New(records[start:i]))
+			emit(records[start:i])
 			start = i
 			curSize = 0
 		}
 		curSize += size
 	}
 	if start < len(records) {
-		out = append(out, New(records[start:]))
+		emit(records[start:])
 	}
-	sort.SliceStable(out, func(i, j int) bool {
-		return out[i].(*Request).BytesSize() > out[j].(*Request).BytesSize()
-	})
+
+	if len(out) > 1 && minIdx != len(out)-1 {
+		out[minIdx], out[len(out)-1] = out[len(out)-1], out[minIdx]
+	}
 	return out
 }
 
