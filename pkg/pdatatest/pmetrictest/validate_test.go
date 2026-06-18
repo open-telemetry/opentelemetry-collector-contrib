@@ -214,7 +214,7 @@ func TestValidateMetrics(t *testing.T) {
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("empty.metric")
 		m.SetEmptyGauge()
-		// No datapoints added -- should be invalid for a typed metric.
+		// No datapoints added — should be invalid for a typed metric.
 
 		err := ValidateMetrics(md)
 		require.Error(t, err)
