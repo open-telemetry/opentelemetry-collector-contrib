@@ -381,7 +381,13 @@ run-changed-tests:
 SRC ?= '$(CURDIR)'
 FLAGS ?= '-o=$(CURDIR)/'
 
+# SCHEMAGEN_PKG controls which build of go.opentelemetry.io/collector/cmd/schemagen
+# is invoked. Pinned to the post-migration commit on collector main; bump to a
+# released `@v0.x.y` once a collector release ships `cmd/schemagen`. Override on
+# the make command line for ad-hoc runs (e.g. `SCHEMAGEN_PKG=...@latest`).
+SCHEMAGEN_PKG ?= go.opentelemetry.io/collector/cmd/schemagen@v0.22.1-0.20260615181954-d04d642d0a3e
+
 .PHONY: schemagen
 schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
-	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
+	go run $(SCHEMAGEN_PKG) $(FLAGS) $(SRC)

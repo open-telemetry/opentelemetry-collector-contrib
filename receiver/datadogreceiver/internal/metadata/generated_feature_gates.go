@@ -16,8 +16,8 @@ var ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate = feature
 
 var ReceiverDatadogreceiverEnable128BitTraceIDFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.datadogreceiver.Enable128BitTraceID",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, adds support for 128bits TraceIDs for spans coming from Datadog instrumented services."),
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, reconstructs full 128-bit TraceIDs for spans coming from Datadog instrumented services so they correlate with OpenTelemetry spans. Enabled by default; disable to fall back to 64-bit (zero-padded) TraceIDs."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36926"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
