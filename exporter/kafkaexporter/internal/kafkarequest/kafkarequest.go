@@ -99,7 +99,7 @@ func recordSize(rec *kgo.Record) int {
 }
 
 // splitByBytes places records into bins of at most maxSize bytes. Records
-// that individually exceed maxSize are emitted as their own single-record
+// that individually equal or exceed maxSize are emitted as their own single-record
 // Requests; the broker surfaces MessageTooLarge as a permanent failure.
 // Output is sorted by size descending so the last Request is the smallest,
 // per the interface contract.
