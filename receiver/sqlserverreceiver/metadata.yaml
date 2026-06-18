@@ -64,6 +64,11 @@ attributes:
     description: TCP port used by the client.
     type: int
     requirement_level: recommended
+  cursor.state:
+    description: The state of the cursor.
+    type: string
+    requirement_level: recommended
+    enum: [active, cached]
   database.status:
     description: The current status of a database
     type: string
@@ -338,6 +343,16 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [temporary, permanent]
+  task.state:
+    description: The state of the task.
+    type: string
+    requirement_level: recommended
+    enum: [running, limit_reached]
+  task.type:
+    description: The type of the task operation.
+    type: string
+    requirement_level: recommended
+    enum: [started, aborted]
   tempdb.state:
     description: The status of the tempdb space usage.
     type: string
@@ -361,6 +376,11 @@ attributes:
     description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
     type: string
     requirement_level: recommended
+  worker.state:
+    description: The state of the worker thread.
+    type: string
+    requirement_level: recommended
+    enum: [total, active, available, waiting_for_cpu]
   # attributes for events
   ## common
 events:
@@ -466,6 +486,17 @@ metrics:
     unit: "{compilations}/s"
     gauge:
       value_type: double
+  sqlserver.clr.execution.time:
+    enabled: false
+    description: Cumulative time spent executing in the CLR.
+    stability: development
+    unit: "ms"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.computer.uptime:
     enabled: false
     description: Computer uptime.
@@ -482,6 +513,42 @@ metrics:
     gauge:
       value_type: int
       input_type: string
+  sqlserver.cursor.count:
+    enabled: false
+    description: Number of cursors by state (active or cached).
+    stability: development
+    unit: "{cursor}"
+    gauge:
+      value_type: int
+    attributes: [cursor.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.cursor.memory:
+    enabled: false
+    description: Memory used by cursors.
+    stability: development
+    unit: "KBy"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.cursor.plan.count:
+    enabled: false
+    description: Number of active cursor plans.
+    stability: development
+    unit: "{plan}"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.cursor.request.rate:
+    enabled: false
+    description: Rate of cursor requests per second.
+    stability: development
+    unit: "{request}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.backup_or_restore.rate:
     enabled: false
     description: Total number of backups/restores.
@@ -874,6 +941,15 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.stored_procedure.invocation.rate:
+    enabled: false
+    description: Rate of stored procedure invocations per second.
+    stability: development
+    unit: "{invocation}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.table.count:
     enabled: false
     description: The number of tables.
@@ -884,6 +960,24 @@ metrics:
       monotonic: false
       value_type: int
     attributes: [table.state, table.status]
+  sqlserver.task.count:
+    enabled: false
+    description: Number of tasks by state (running or limit_reached).
+    stability: development
+    unit: “{task}”
+    gauge:
+      value_type: int
+    attributes: [task.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.task.rate:
+    enabled: false
+    description: Rate of tasks by type (started or aborted) per second.
+    stability: development
+    unit: “{task}/s”
+    gauge:
+      value_type: double
+    attributes: [task.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false
     description: Time consumed in transaction delays.
@@ -977,6 +1071,24 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
+  sqlserver.worker.request.waiting:
+    enabled: false
+    description: Number of requests waiting for a worker thread.
+    stability: development
+    unit: "{request}"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.worker.thread.count:
+    enabled: false
+    description: Number of worker threads by state.
+    stability: development
+    unit: "{thread}"
+    gauge:
+      value_type: int
+    attributes: [worker.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 feature_gates:
   - id: receiver.sqlserver.RemoveServerResourceAttribute

@@ -82,6 +82,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if isWorkerThreadsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -299,7 +303,15 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
-		metrics.SqlserverUserConnectionCount.Enabled
+		metrics.SqlserverUserConnectionCount.Enabled ||
+		metrics.SqlserverCursorCount.Enabled ||
+		metrics.SqlserverCursorPlanCount.Enabled ||
+		metrics.SqlserverCursorMemory.Enabled ||
+		metrics.SqlserverCursorRequestRate.Enabled ||
+		metrics.SqlserverClrExecutionTime.Enabled ||
+		metrics.SqlserverTaskCount.Enabled ||
+		metrics.SqlserverTaskRate.Enabled ||
+		metrics.SqlserverStoredProcedureInvocationRate.Enabled
 }
 
 func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
@@ -308,4 +320,13 @@ func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverOsWaitDuration.Enabled
+}
+
+func isWorkerThreadsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverWorkerThreadCount.Enabled ||
+		metrics.SqlserverWorkerRequestWaiting.Enabled
 }
