@@ -192,8 +192,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(totalUsage))
 
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+	r.mb.RecordContainerMemoryAvailableDataPoint(now, int64(memoryStats.Limit-totalUsage))
 
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
 
@@ -243,6 +245,8 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 			recorder(now, int64(val))
 		}
 	}
+
+	r.mb.RecordContainerMemoryPagingFaultsDataPoint(now, int64(memoryStats.Stats["total_pgfault"]))
 }
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
@@ -277,6 +281,8 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	for netInterface, stats := range *networks {
 		r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.RxBytes), netInterface)
 		r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.TxBytes), netInterface)
+		r.mb.RecordContainerNetworkIoDataPoint(now, int64(stats.RxBytes), "receive", netInterface)
+		r.mb.RecordContainerNetworkIoDataPoint(now, int64(stats.TxBytes), "transmit", netInterface)
 		r.mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(now, int64(stats.RxDropped), netInterface)
 		r.mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(now, int64(stats.TxDropped), netInterface)
 		r.mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(now, int64(stats.RxPackets), netInterface)
@@ -289,9 +295,13 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
 	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.SystemUsage)/1_000_000_000, metadata.WithCPUModeMetricAttribute("system"))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.TotalUsage)/1_000_000_000)
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInKernelmode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("kernel"))
 	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInUsermode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("user"))
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
