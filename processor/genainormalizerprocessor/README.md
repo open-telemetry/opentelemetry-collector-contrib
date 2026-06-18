@@ -233,7 +233,7 @@ Messages are serialized as a JSON array of objects with this structure:
   },
   {
     "role": "tool",
-    "parts": [{"type": "tool_call_response", "id": "call_1", "response": "sunny, 22C"}]
+    "parts": [{"type": "tool_call_response", "id": "call_1", "result": "sunny, 22C"}]
   }
 ]
 ```

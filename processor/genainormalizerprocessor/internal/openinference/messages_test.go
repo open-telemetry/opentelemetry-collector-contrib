@@ -132,7 +132,7 @@ func TestReconstructMessages_ToolResponse(t *testing.T) {
 	part := parts[0].(map[string]interface{})
 	assert.Equal(t, "tool_call_response", part["type"])
 	assert.Equal(t, "call_abc", part["id"])
-	assert.Equal(t, "sunny, 22C", part["response"])
+	assert.Equal(t, "sunny, 22C", part["result"])
 }
 
 func TestReconstructMessages_ToolResponseExplicitRole(t *testing.T) {

@@ -42,9 +42,9 @@ type toolCallRequestPart struct {
 }
 
 type toolCallResponsePart struct {
-	Type     string `json:"type"`
-	ID       string `json:"id,omitempty"`
-	Response string `json:"response"`
+	Type   string `json:"type"`
+	ID     string `json:"id,omitempty"`
+	Result string `json:"result"`
 }
 
 type toolCallFields struct {
@@ -208,9 +208,9 @@ func buildSingleMessage(mf *messageFields) chatMessage {
 	if mf.toolCallID != "" {
 		msg.Parts = []interface{}{
 			toolCallResponsePart{
-				Type:     "tool_call_response",
-				ID:       mf.toolCallID,
-				Response: mf.content,
+				Type:   "tool_call_response",
+				ID:     mf.toolCallID,
+				Result: mf.content,
 			},
 		}
 		return msg
