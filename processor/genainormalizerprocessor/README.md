@@ -70,7 +70,9 @@ For target keys with a typed primitive constructor in semconv (`gen_ai.usage.inp
 - int / double / bool -> string: converted to canonical string form.
 - structured source (map / slice) -> primitive target: dropped (would lose information).
 
-For target keys defined as `any` in the spec (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`, `gen_ai.operation.name` enum, etc.), the processor preserves whatever shape the source emitted. Backends that require a uniform type for these targets should pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based shape normalization.
+For target keys defined as `any` in the spec (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`, `gen_ai.operation.name` enum, etc.), the processor preserves whatever shape the source emitted.
+
+Backends that require a uniform type for these targets should pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based shape normalization.
 
 ## Examples
 
@@ -173,8 +175,8 @@ Attribute renames:
 | `llm.token_count.completion` | `gen_ai.usage.output_tokens` |
 | `llm.model_name` | `gen_ai.request.model` |
 | `llm.provider` | `gen_ai.provider.name` |
-| `llm.input_messages` | `gen_ai.input.messages` |
-| `llm.output_messages` | `gen_ai.output.messages` |
+| `llm.input_messages.N.message.*` | `gen_ai.input.messages` (reconstructed as JSON, see below) |
+| `llm.output_messages.N.message.*` | `gen_ai.output.messages` (reconstructed as JSON, see below) |
 | `embedding.model_name` | `gen_ai.request.model` |
 | `tool.name` | `gen_ai.tool.name` |
 | `tool.description` | `gen_ai.tool.description` |
@@ -185,7 +187,58 @@ Attribute renames:
 | `session.id` | `gen_ai.conversation.id` |
 | `openinference.span.kind` | `gen_ai.operation.name` (with value mapping, see below) |
 
-See [`internal/openinference/mappings.go`](./internal/openinference/mappings.go) for the canonical map. Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
+See [`internal/openinference/mappings.go`](./internal/openinference/mappings.go) for the canonical map.
+
+Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
+
+### Message reconstruction
+
+OpenInference represents messages as flattened indexed span attributes (e.g., `llm.input_messages.0.message.role`, `llm.input_messages.0.message.content`). The processor reconstructs these into a single JSON string attribute following the [GenAI input messages schema](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#messages) and sets it as `gen_ai.input.messages` (or `gen_ai.output.messages`).
+
+Supported OpenInference message fields:
+
+- `llm.{input,output}_messages.N.message.role`
+- `llm.{input,output}_messages.N.message.content`
+- `llm.{input,output}_messages.N.message.name`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.id`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.name`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.arguments`
+- `llm.{input,output}_messages.N.message.tool_call_id`
+
+#### Role inference
+
+When the `role` field is absent or empty, the processor infers it from context:
+
+| Condition | Inferred role |
+|-----------|---------------|
+| `tool_call_id` is present | `tool` |
+| `tool_calls` are present | `assistant` |
+| Neither present | `user` |
+
+When `tool_call_id` is present and `role` is explicitly `"user"`, the processor overrides it to `"tool"` (common OpenInference pattern where tool responses are tagged with the `user` role).
+
+#### Output format
+
+Messages are serialized as a JSON array of objects with this structure:
+
+```json
+[
+  {
+    "role": "user",
+    "parts": [{"type": "text", "content": "Hello"}]
+  },
+  {
+    "role": "assistant",
+    "parts": [{"type": "tool_call", "id": "call_1", "name": "get_weather", "arguments": {"city": "Berlin"}}]
+  },
+  {
+    "role": "tool",
+    "parts": [{"type": "tool_call_response", "id": "call_1", "response": "sunny, 22C"}]
+  }
+]
+```
+
+Messages are ordered by their numeric index N. The `arguments` field is parsed as JSON if valid; otherwise kept as a raw string.
 
 ### `openllmetry`
 
