@@ -4,7 +4,6 @@
 package kafkarequest
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -28,12 +27,11 @@ func BenchmarkMergeSplit_Bytes(b *testing.B) {
 		b.Run(fmt.Sprintf("records=%d", n), func(b *testing.B) {
 			records := benchRecords(n, 256)
 			req := New(records)
-			ctx := context.Background()
 			maxSize := 4096
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				_, err := req.MergeSplit(ctx, maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+				_, err := req.MergeSplit(b.Context(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -47,11 +45,10 @@ func BenchmarkMergeSplit_Items(b *testing.B) {
 		b.Run(fmt.Sprintf("records=%d", n), func(b *testing.B) {
 			records := benchRecords(n, 64)
 			req := New(records)
-			ctx := context.Background()
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				_, err := req.MergeSplit(ctx, 100, exporterhelper.RequestSizerTypeItems, nil)
+				_, err := req.MergeSplit(b.Context(), 100, exporterhelper.RequestSizerTypeItems, nil)
 				if err != nil {
 					b.Fatal(err)
 				}

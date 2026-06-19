@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 )
 
-func rec(topic string, key, value []byte, headers ...kgo.RecordHeader) *kgo.Record {
-	return &kgo.Record{Topic: topic, Key: key, Value: value, Headers: headers}
+func rec(key, value []byte, headers ...kgo.RecordHeader) *kgo.Record {
+	return &kgo.Record{Topic: "t", Key: key, Value: value, Headers: headers}
 }
 
 func TestBytesSize(t *testing.T) {
@@ -28,17 +28,17 @@ func TestBytesSize(t *testing.T) {
 	}{
 		{"nil", nil, 0},
 		{"empty", []*kgo.Record{}, 0},
-		{"single", []*kgo.Record{rec("t", []byte("k"), []byte("vv"))}, 3},
+		{"single", []*kgo.Record{rec([]byte("k"), []byte("vv"))}, 3},
 		{
 			"with_headers",
-			[]*kgo.Record{rec("t", []byte("k"), []byte("vv"), kgo.RecordHeader{Key: "h", Value: []byte("hh")})},
+			[]*kgo.Record{rec([]byte("k"), []byte("vv"), kgo.RecordHeader{Key: "h", Value: []byte("hh")})},
 			6,
 		},
 		{
 			"many",
 			[]*kgo.Record{
-				rec("t", []byte("k1"), []byte("v1")),
-				rec("t", nil, []byte("vv")),
+				rec([]byte("k1"), []byte("v1")),
+				rec(nil, []byte("vv")),
 			},
 			6,
 		},
@@ -56,17 +56,17 @@ func TestItemsCount(t *testing.T) {
 }
 
 func TestRecordsAccessor(t *testing.T) {
-	r := []*kgo.Record{rec("t", nil, []byte("v"))}
+	r := []*kgo.Record{rec(nil, []byte("v"))}
 	assert.Same(t, &r[0], &New(r).Records()[0])
 }
 
 func TestOnErrorReturnsSelf(t *testing.T) {
-	r := New([]*kgo.Record{rec("t", nil, []byte("v"))})
+	r := New([]*kgo.Record{rec(nil, []byte("v"))})
 	assert.Same(t, r, r.OnError(errors.New("anything")))
 }
 
 func TestMergeSplit_NoSplit(t *testing.T) {
-	r := New([]*kgo.Record{rec("t", nil, []byte("hello"))})
+	r := New([]*kgo.Record{rec(nil, []byte("hello"))})
 	got, err := r.MergeSplit(t.Context(), 0, exporterhelper.RequestSizerTypeBytes, nil)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
@@ -74,8 +74,8 @@ func TestMergeSplit_NoSplit(t *testing.T) {
 }
 
 func TestMergeSplit_MergesOther(t *testing.T) {
-	a := New([]*kgo.Record{rec("t", nil, []byte("aa"))})
-	b := New([]*kgo.Record{rec("t", nil, []byte("bbbb"))})
+	a := New([]*kgo.Record{rec(nil, []byte("aa"))})
+	b := New([]*kgo.Record{rec(nil, []byte("bbbb"))})
 	got, err := a.MergeSplit(t.Context(), 0, exporterhelper.RequestSizerTypeBytes, b)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
@@ -89,18 +89,18 @@ func TestMergeSplit_RejectsIncompatibleType(t *testing.T) {
 }
 
 func TestMergeSplit_RejectsUnknownSizer(t *testing.T) {
-	r := New([]*kgo.Record{rec("t", nil, []byte("v"))})
+	r := New([]*kgo.Record{rec(nil, []byte("v"))})
 	_, err := r.MergeSplit(t.Context(), 100, exporterhelper.RequestSizerType{}, nil)
 	require.Error(t, err)
 }
 
 func TestMergeSplit_ByItems(t *testing.T) {
 	records := []*kgo.Record{
-		rec("t", nil, []byte("1")),
-		rec("t", nil, []byte("2")),
-		rec("t", nil, []byte("3")),
-		rec("t", nil, []byte("4")),
-		rec("t", nil, []byte("5")),
+		rec(nil, []byte("1")),
+		rec(nil, []byte("2")),
+		rec(nil, []byte("3")),
+		rec(nil, []byte("4")),
+		rec(nil, []byte("5")),
 	}
 	got, err := New(records).MergeSplit(t.Context(), 2, exporterhelper.RequestSizerTypeItems, nil)
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestMergeSplit_ByItems(t *testing.T) {
 }
 
 func TestMergeSplit_ByRequests(t *testing.T) {
-	r := New([]*kgo.Record{rec("t", nil, []byte("v1")), rec("t", nil, []byte("v2"))})
+	r := New([]*kgo.Record{rec(nil, []byte("v1")), rec(nil, []byte("v2"))})
 	got, err := r.MergeSplit(t.Context(), 10, exporterhelper.RequestSizerTypeRequests, nil)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
@@ -120,10 +120,10 @@ func TestMergeSplit_ByRequests(t *testing.T) {
 
 func TestMergeSplit_ByBytes_PacksAndOrders(t *testing.T) {
 	records := []*kgo.Record{
-		rec("t", nil, []byte("aaaa")), // 4
-		rec("t", nil, []byte("bb")),   // 2
-		rec("t", nil, []byte("ccc")),  // 3
-		rec("t", nil, []byte("d")),    // 1
+		rec(nil, []byte("aaaa")), // 4
+		rec(nil, []byte("bb")),   // 2
+		rec(nil, []byte("ccc")),  // 3
+		rec(nil, []byte("d")),    // 1
 	}
 	got, err := New(records).MergeSplit(t.Context(), 5, exporterhelper.RequestSizerTypeBytes, nil)
 	require.NoError(t, err)
@@ -136,9 +136,9 @@ func TestMergeSplit_ByBytes_PacksAndOrders(t *testing.T) {
 
 func TestMergeSplit_ByBytes_OversizedRecordEmittedAlone(t *testing.T) {
 	records := []*kgo.Record{
-		rec("t", nil, []byte("aa")),               // 2, fits
-		rec("t", nil, []byte("oversizedpayload")), // 16, alone
-		rec("t", nil, []byte("b")),                // 1, fits
+		rec(nil, []byte("aa")),               // 2, fits
+		rec(nil, []byte("oversizedpayload")), // 16, alone
+		rec(nil, []byte("b")),                // 1, fits
 	}
 	got, err := New(records).MergeSplit(t.Context(), 5, exporterhelper.RequestSizerTypeBytes, nil)
 	require.NoError(t, err)
@@ -157,7 +157,7 @@ func TestMergeSplit_ByBytes_LastIsSmallest_Property(t *testing.T) {
 	sizes := []int{1, 2, 3, 4, 5, 12, 7, 6, 1, 8, 2, 9}
 	records := make([]*kgo.Record, len(sizes))
 	for i, s := range sizes {
-		records[i] = rec("t", nil, make([]byte, s))
+		records[i] = rec(nil, make([]byte, s))
 	}
 	for _, maxSize := range []int{1, 3, 5, 7, 10, 13, 100} {
 		t.Run(fmt.Sprintf("maxSize=%d", maxSize), func(t *testing.T) {
