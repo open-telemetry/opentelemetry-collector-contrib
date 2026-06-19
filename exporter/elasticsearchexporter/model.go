@@ -166,15 +166,7 @@ type encodingContext struct {
 	scopeSchemaURL    string
 }
 
-// spanEventEncoder is the strategy interface for encoding span events within ecsModeEncoder.
-// The concrete type is selected at construction time based on config.
-// Implementations return the index the document should be written to, which may differ
-// from the router-computed index passed in.
-type spanEventEncoder interface {
-	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) (elasticsearch.Index, error)
-}
-
-func newEncoder(mode MappingMode, cfg MappingsSettings) (documentEncoder, error) {
+func newEncoder(mode MappingMode) (documentEncoder, error) {
 	switch mode {
 	case MappingNone:
 		return legacyModeEncoder{
@@ -197,12 +189,7 @@ func newEncoder(mode MappingMode, cfg MappingsSettings) (documentEncoder, error)
 			attributesPrefix: "",
 		}, nil
 	case MappingECS:
-		var spanEvt spanEventEncoder = nopSpanEventEncoder{}
-		if cfg.ECSSpanEventsToLogs {
-			spanEvt = ecsSpanEventEncoder{}
-		}
 		return ecsModeEncoder{
-			spanEventEncoder:           spanEvt,
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
 		}, nil
 	case MappingBodyMap:
@@ -222,7 +209,6 @@ func newEncoder(mode MappingMode, cfg MappingsSettings) (documentEncoder, error)
 
 type legacyModeEncoder struct {
 	nonOTelSpanEncoder
-	nopSpanEventEncoder
 	metricsUnsupportedEncoder
 	profilesUnsupportedEncoder
 	attributesPrefix string
@@ -230,7 +216,6 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	spanEventEncoder
 	profilesUnsupportedEncoder
 }
 
@@ -553,11 +538,9 @@ func addDataStreamAttributes(document *objmodel.Document, key string, idx elasti
 	}
 }
 
-// ecsSpanEventEncoder encodes span events as separate ECS log documents.
+// encodeSpanEvent encodes span events as separate ECS log documents.
 // Exception events go to logs-apm.error-*, non-exception events to logs-apm.app.<service>-*.
-type ecsSpanEventEncoder struct{}
-
-func (ecsSpanEventEncoder) encodeSpanEvent(
+func (ecsModeEncoder) encodeSpanEvent(
 	ec encodingContext,
 	span ptrace.Span,
 	event ptrace.SpanEvent,
@@ -630,11 +613,9 @@ func ecsSpanEventNamespace(ec encodingContext, event ptrace.SpanEvent) string {
 	return sanitizeDataStreamField(ns, disallowedNamespaceRunes, "")
 }
 
-// nopSpanEventEncoder is the default spanEventEncoder: it discards span events,
-// keeping them embedded within the parent span document only.
-type nopSpanEventEncoder struct{}
-
-func (nopSpanEventEncoder) encodeSpanEvent(_ encodingContext, _ ptrace.Span, _ ptrace.SpanEvent, idx elasticsearch.Index, _ *bytes.Buffer) (elasticsearch.Index, error) {
+// encodeSpanEvent is a no-op for legacy mapping modes: span events remain embedded
+// within the parent span document rather than being extracted as separate documents.
+func (legacyModeEncoder) encodeSpanEvent(_ encodingContext, _ ptrace.Span, _ ptrace.SpanEvent, idx elasticsearch.Index, _ *bytes.Buffer) (elasticsearch.Index, error) {
 	return idx, nil
 }
 

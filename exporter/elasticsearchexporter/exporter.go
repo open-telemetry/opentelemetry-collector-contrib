@@ -72,7 +72,7 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		telemetryBuilder:    telemetryBuilder,
 	}
 	for mappingMode := range NumMappingModes {
-		encoder, err := newEncoder(mappingMode, cfg.Mapping)
+		encoder, err := newEncoder(mappingMode)
 		if err != nil {
 			return nil, err
 		}

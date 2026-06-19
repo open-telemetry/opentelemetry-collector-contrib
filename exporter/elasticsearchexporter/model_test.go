@@ -129,7 +129,7 @@ func TestDynamicTemplateMode(t *testing.T) {
 
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
-		encoder, _ := newEncoder(MappingNone, MappingsSettings{})
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceSpans()
 		var buf bytes.Buffer
 		err := encoder.encodeSpan(
@@ -146,7 +146,7 @@ func TestEncodeSpan(t *testing.T) {
 
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42454.
 	t.Run("data stream", func(t *testing.T) {
-		encoder, _ := newEncoder(MappingNone, MappingsSettings{})
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceSpans()
 		var buf bytes.Buffer
 		err := encoder.encodeSpan(
@@ -165,7 +165,7 @@ func TestEncodeSpan(t *testing.T) {
 
 func TestEncodeLog(t *testing.T) {
 	t.Run("empty timestamp with observedTimestamp override", func(t *testing.T) {
-		encoder, _ := newEncoder(MappingNone, MappingsSettings{})
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
 		var buf bytes.Buffer
@@ -184,7 +184,7 @@ func TestEncodeLog(t *testing.T) {
 	})
 
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
-		encoder, _ := newEncoder(MappingNone, MappingsSettings{})
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceLogs()
 		var buf bytes.Buffer
 		err := encoder.encodeLog(
@@ -207,7 +207,7 @@ func TestEncodeMetric(t *testing.T) {
 	metrics := createTestMetrics(t)
 
 	// Encode the metrics.
-	encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+	encoder, _ := newEncoder(MappingECS)
 	hasher := newDataPointHasher(MappingECS)
 
 	groupedDataPoints := make(map[metricgroup.HashKey][]datapoints.DataPoint)
@@ -253,7 +253,7 @@ func TestEncodeMetric(t *testing.T) {
 }
 
 func TestEncodeMetricDocCountHint(t *testing.T) {
-	encoder, err := newEncoder(MappingECS, MappingsSettings{})
+	encoder, err := newEncoder(MappingECS)
 	require.NoError(t, err)
 
 	ec := encodingContext{
@@ -484,7 +484,7 @@ func TestEncodeAttributes(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			encoder, err := newEncoder(test.mappingMode, MappingsSettings{})
+			encoder, err := newEncoder(test.mappingMode)
 			require.NoError(t, err)
 
 			var buf bytes.Buffer
@@ -551,7 +551,7 @@ func TestEncodeSpan_Events(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			encoder, err := newEncoder(test.mappingMode, MappingsSettings{})
+			encoder, err := newEncoder(test.mappingMode)
 			require.NoError(t, err)
 
 			var buf bytes.Buffer
@@ -599,7 +599,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	logs.MarkReadOnly()
 
 	var buf bytes.Buffer
-	encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+	encoder, _ := newEncoder(MappingECS)
 	err = encoder.encodeLog(
 		encodingContext{resource: resource, scope: scope},
 		record, elasticsearch.Index{}, &buf,
@@ -610,7 +610,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 }
 
 func TestEncodeSpanECSMode(t *testing.T) {
-	encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+	encoder, _ := newEncoder(MappingECS)
 
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
@@ -836,7 +836,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 	logs.MarkReadOnly()
 
 	var buf bytes.Buffer
-	encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+	encoder, _ := newEncoder(MappingECS)
 	err = encoder.encodeLog(encodingContext{
 		resource: resource,
 		scope:    scope,
@@ -972,7 +972,7 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			}
 
 			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+			encoder, _ := newEncoder(MappingECS)
 			err := encoder.encodeLog(
 				encodingContext{resource: resource, scope: scope},
 				record, elasticsearch.Index{}, &buf,
@@ -1148,7 +1148,7 @@ func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
 		logs.MarkReadOnly()
 
 		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS, MappingsSettings{})
+		encoder, _ := newEncoder(MappingECS)
 		err = encoder.encodeLog(
 			encodingContext{resource: resource, scope: scope},
 			record, elasticsearch.Index{}, &buf,
@@ -1363,7 +1363,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 	}
 
-	encoder, _ := newEncoder(MappingOTel, MappingsSettings{})
+	encoder, _ := newEncoder(MappingOTel)
 
 	for _, tc := range tests {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
@@ -1507,7 +1507,7 @@ func assignDatastreamData(or oTelRecord, a ...string) oTelRecord {
 func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	// If there is an attribute named "foo", and another called "foo.bar",
 	// then "foo" will be renamed to "foo.value".
-	encoder, _ := newEncoder(MappingNone, MappingsSettings{})
+	encoder, _ := newEncoder(MappingNone)
 	td := mockResourceLogs()
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
@@ -1561,7 +1561,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	bodyMap.PutDouble("pi", 3.14)
 	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
 
-	encoder, _ := newEncoder(MappingBodyMap, MappingsSettings{})
+	encoder, _ := newEncoder(MappingBodyMap)
 	var buf bytes.Buffer
 	err := encoder.encodeLog(
 		encodingContext{resource: resourceLogs.Resource(), scope: scopeLogs.Scope()},
@@ -1588,8 +1588,8 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }
 
-// TestECSSpanEventEncoder asserts the correct ECS document shape that ecsSpanEventEncoder
-// produces for all combinations of (exception / non-exception) × (transaction parent / span parent).
+// TestECSSpanEventEncoder asserts the correct ECS document shape produced by encodeSpanEvent
+// for all combinations of (exception / non-exception) × (transaction parent / span parent).
 func TestECSSpanEventEncoder(t *testing.T) {
 	const (
 		traceID = "01020304050607080102030405060708"
@@ -1770,7 +1770,7 @@ func TestECSSpanEventEncoder(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			encoder, _ := newEncoder(MappingECS, MappingsSettings{ECSSpanEventsToLogs: true})
+			encoder, _ := newEncoder(MappingECS)
 
 			resource := pcommon.NewResource()
 			tc.resourceAttrs(resource.Attributes())
