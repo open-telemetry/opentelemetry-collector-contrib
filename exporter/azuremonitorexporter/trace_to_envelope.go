@@ -521,7 +521,11 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 
 // Returns the RPC status code as a string
 func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
-	// Honor the attribute rpc.grpc.status_code if there
+	// Prefer the new rpc.response.status_code (string) attribute
+	if rpcAttributes.RPCResponseStatusCode != "" {
+		return rpcAttributes.RPCResponseStatusCode
+	}
+	// Fall back to the deprecated rpc.grpc.status_code (int) attribute
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
 	}
@@ -675,7 +679,10 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 		return unknownSpanType
 	}
 
-	// RPC
+	// RPC — check both the new (rpc.system.name) and deprecated (rpc.system) attribute keys
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemNameKey)); exists {
+		return rpcSpanType
+	}
 	if _, exists := attributeMap.Get("rpc.system"); exists {
 		return rpcSpanType
 	}

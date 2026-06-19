@@ -217,10 +217,15 @@ func (attrs *httpAttributes) MapAttribute(k string, v pcommon.Value) bool {
 
 // rpcAttributes is the set of known attributes for RPC Spans
 type rpcAttributes struct {
-	RPCSystem         string
-	RPCService        string
-	RPCMethod         string
+	// rpc.system (deprecated) or rpc.system.name (v1.39.0+)
+	RPCSystem string
+	// rpc.service (deprecated in v1.39.0, merged into rpc.method)
+	RPCService string
+	RPCMethod  string
+	// rpc.grpc.status_code (deprecated) — integer status code
 	RPCGRPCStatusCode int64
+	// rpc.response.status_code (v1.39.0+) — string status code
+	RPCResponseStatusCode string
 
 	ClientAttributes  clientAttributes
 	ServerAttributes  serverAttributes
@@ -230,14 +235,24 @@ type rpcAttributes struct {
 // MapAttribute attempts to map a Span attribute to one of the known types
 func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case "rpc.system":
+	case string(conventions.RPCSystemNameKey):
 		attrs.RPCSystem = v.Str()
+	case "rpc.system":
+		// Only use deprecated key if the new key hasn't been set
+		if attrs.RPCSystem == "" {
+			attrs.RPCSystem = v.Str()
+		}
 	case "rpc.service":
 		attrs.RPCService = v.Str()
 	case string(conventions.RPCMethodKey):
 		attrs.RPCMethod = v.Str()
+	case string(conventions.RPCResponseStatusCodeKey):
+		attrs.RPCResponseStatusCode = v.Str()
 	case "rpc.grpc.status_code":
-		attrs.RPCGRPCStatusCode = v.Int()
+		// Only use deprecated key if the new key hasn't been set
+		if attrs.RPCResponseStatusCode == "" {
+			attrs.RPCGRPCStatusCode = v.Int()
+		}
 
 	case string(conventions.ServerAddressKey):
 		attrs.ServerAttributes.ServerAddress = v.Str()
