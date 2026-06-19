@@ -32,6 +32,8 @@ func NewLogger(cfg config.Logs) (*zap.Logger, error) {
 func newZapConfig(cfg config.Logs) (zap.Config, error) {
 	zapCfg := zap.NewProductionConfig()
 
+	zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
 	enc := strings.ToLower(strings.TrimSpace(cfg.Encoding))
 	if enc == "" {
 		enc = "json"
@@ -40,7 +42,6 @@ func newZapConfig(cfg config.Logs) (zap.Config, error) {
 	switch enc {
 	case "console":
 		zapCfg.Encoding = "console"
-		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	case "json":
 		zapCfg.Encoding = "json"
 	default:
