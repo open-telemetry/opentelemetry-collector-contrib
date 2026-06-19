@@ -1120,6 +1120,26 @@ func (ms *SqlserverPageCheckpointFlushRateMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
+// SqlserverPageCompressionRateMetricConfig provides config for the sqlserver.page.compression.rate metric.
+type SqlserverPageCompressionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageCompressionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverPageLazyWriteRateMetricConfig provides config for the sqlserver.page.lazy_write.rate metric.
 type SqlserverPageLazyWriteRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1857,13 +1877,13 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// SqlserverWorktableCacheRatioMetricConfig provides config for the sqlserver.worktable.cache.ratio metric.
-type SqlserverWorktableCacheRatioMetricConfig struct {
+// SqlserverWorktableCachePercentMetricConfig provides config for the sqlserver.worktable.cache.percent metric.
+type SqlserverWorktableCachePercentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverWorktableCacheRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverWorktableCachePercentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1920,6 +1940,7 @@ type MetricsConfig struct {
 	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageCompressionRate                SqlserverPageCompressionRateMetricConfig                `mapstructure:"sqlserver.page.compression.rate"`
 	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
 	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
 	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
@@ -1947,7 +1968,7 @@ type MetricsConfig struct {
 	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
 	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
-	SqlserverWorktableCacheRatio                SqlserverWorktableCacheRatioMetricConfig                `mapstructure:"sqlserver.worktable.cache.ratio"`
+	SqlserverWorktableCachePercent              SqlserverWorktableCachePercentMetricConfig              `mapstructure:"sqlserver.worktable.cache.percent"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2095,6 +2116,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverPageCheckpointFlushRate: SqlserverPageCheckpointFlushRateMetricConfig{
 			Enabled: true,
 		},
+		SqlserverPageCompressionRate: SqlserverPageCompressionRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverPageLazyWriteRate: SqlserverPageLazyWriteRateMetricConfig{
 			Enabled: true,
 		},
@@ -2190,7 +2214,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 			Enabled: true,
 		},
-		SqlserverWorktableCacheRatio: SqlserverWorktableCacheRatioMetricConfig{
+		SqlserverWorktableCachePercent: SqlserverWorktableCachePercentMetricConfig{
 			Enabled: false,
 		},
 	}

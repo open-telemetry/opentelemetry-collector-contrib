@@ -96,18 +96,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of access method scans, by scan type.
+          - description: Number of access method scans, by kind.
             gauge:
               dataPoints:
                 - asDouble: 120
                   attributes:
-                    - key: sqlserver.access.scan.type
+                    - key: sqlserver.access.scan.kind
                       value:
                         stringValue: range
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.access.scan.rate
-            unit: '{scan}/s'
+            unit: '{scans}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -136,18 +136,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of access method scans, by scan type.
+          - description: Number of access method scans, by kind.
             gauge:
               dataPoints:
                 - asDouble: 37
                   attributes:
-                    - key: sqlserver.access.scan.type
+                    - key: sqlserver.access.scan.kind
                       value:
                         stringValue: probe
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.access.scan.rate
-            unit: '{scan}/s'
+            unit: '{scans}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -176,18 +176,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of access method scans, by scan type.
+          - description: Number of access method scans, by kind.
             gauge:
               dataPoints:
                 - asDouble: 5
                   attributes:
-                    - key: sqlserver.access.scan.type
+                    - key: sqlserver.access.scan.kind
                       value:
                         stringValue: free_space
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.access.scan.rate
-            unit: '{scan}/s'
+            unit: '{scans}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -216,7 +216,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of page allocation operations, by kind.
+          - description: Number of page allocation/deallocation operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 812
@@ -227,7 +227,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.allocation.rate
-            unit: '{page}/s'
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -256,7 +256,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of page allocation operations, by kind.
+          - description: Number of page allocation/deallocation operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 401
@@ -267,7 +267,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.allocation.rate
-            unit: '{page}/s'
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -296,7 +296,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of page allocation operations, by kind.
+          - description: Number of page allocation/deallocation operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 12
@@ -307,7 +307,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.allocation.rate
-            unit: '{page}/s'
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -336,18 +336,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of page allocation operations, by kind.
+          - description: Number of page compression operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 60
                   attributes:
-                    - key: sqlserver.page.allocation.kind
+                    - key: sqlserver.page.compression.kind
                       value:
                         stringValue: compressed
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.page.allocation.rate
-            unit: '{page}/s'
+            name: sqlserver.page.compression.rate
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -376,18 +376,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of page allocation operations, by kind.
+          - description: Number of page compression operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 75
                   attributes:
-                    - key: sqlserver.page.allocation.kind
+                    - key: sqlserver.page.compression.kind
                       value:
-                        stringValue: compression_attempted
+                        stringValue: attempted
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.page.allocation.rate
-            unit: '{page}/s'
+            name: sqlserver.page.compression.rate
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -416,7 +416,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of extent allocation operations.
+          - description: Number of extent allocation/deallocation operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 30
@@ -427,7 +427,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.extent.operation.rate
-            unit: '{extent}/s'
+            unit: '{extents}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -456,7 +456,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of extent allocation operations.
+          - description: Number of extent allocation/deallocation operations, by kind.
             gauge:
               dataPoints:
                 - asDouble: 11
@@ -467,7 +467,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.extent.operation.rate
-            unit: '{extent}/s'
+            unit: '{extents}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -503,7 +503,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.ghost_record.skipped.rate
-            unit: '{record}/s'
+            unit: '{records}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -539,7 +539,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.scan_point.revalidation.rate
-            unit: '{revalidation}/s'
+            unit: '{revalidations}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -574,7 +574,7 @@ resourceMetrics:
                 - asDouble: 97.5
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.worktable.cache.ratio
+            name: sqlserver.worktable.cache.percent
             unit: '%'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -879,7 +879,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.readahead.rate
-            unit: '{page}/s'
+            unit: '{pages}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

@@ -222,19 +222,19 @@ metrics:
 
 ### sqlserver.access.scan.rate
 
-Number of access method scans, by scan type.
+Number of access method scans, by kind.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {scan}/s | Gauge | Double | Development |
+| {scans}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``full``, ``probe``, ``range`` | Required | - |
+| sqlserver.access.scan.kind | The kind of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
 
 ### sqlserver.attention.rate
 
@@ -389,13 +389,13 @@ Total number of deadlocks.
 
 ### sqlserver.extent.operation.rate
 
-Number of extent allocation operations.
+Number of extent allocation/deallocation operations, by kind.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {extent}/s | Gauge | Double | Development |
+| {extents}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -411,7 +411,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {record}/s | Gauge | Double | Development |
+| {records}/s | Gauge | Double | Development |
 
 ### sqlserver.index.search.rate
 
@@ -594,19 +594,19 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.page.allocation.rate
 
-Number of page allocation operations, by kind.
+Number of page allocation/deallocation operations, by kind.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {page}/s | Gauge | Double | Development |
+| {pages}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.page.allocation.kind | The kind of page allocation operation. | Str: ``allocated``, ``compressed``, ``compression_attempted``, ``deallocated``, ``mixed`` | Required | - |
+| sqlserver.page.allocation.kind | The kind of page allocation operation. | Str: ``allocated``, ``deallocated``, ``mixed`` | Required | - |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -615,6 +615,22 @@ Number of free list stalls.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{stalls}/s” | Gauge | Int | Development |
+
+### sqlserver.page.compression.rate
+
+Number of page compression operations, by kind.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pages}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.compression.kind | The kind of page compression operation. | Str: ``attempted``, ``compressed`` | Required | - |
 
 ### sqlserver.page.lookup.rate
 
@@ -632,7 +648,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {page}/s | Gauge | Double | Development |
+| {pages}/s | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 
@@ -738,7 +754,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {revalidation}/s | Gauge | Double | Development |
+| {revalidations}/s | Gauge | Double | Development |
 
 ### sqlserver.table.count
 
@@ -771,7 +787,7 @@ Total number of mirror write transactions.
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
 
-### sqlserver.worktable.cache.ratio
+### sqlserver.worktable.cache.percent
 
 Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
 

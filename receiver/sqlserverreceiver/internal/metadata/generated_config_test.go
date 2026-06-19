@@ -170,6 +170,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverPageCheckpointFlushRate: SqlserverPageCheckpointFlushRateMetricConfig{
 						Enabled: true,
 					},
+					SqlserverPageCompressionRate: SqlserverPageCompressionRateMetricConfig{
+						Enabled: true,
+					},
 					SqlserverPageLazyWriteRate: SqlserverPageLazyWriteRateMetricConfig{
 						Enabled: true,
 					},
@@ -265,7 +268,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 						Enabled: true,
 					},
-					SqlserverWorktableCacheRatio: SqlserverWorktableCacheRatioMetricConfig{
+					SqlserverWorktableCachePercent: SqlserverWorktableCachePercentMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -429,6 +432,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverPageCheckpointFlushRate: SqlserverPageCheckpointFlushRateMetricConfig{
 						Enabled: false,
 					},
+					SqlserverPageCompressionRate: SqlserverPageCompressionRateMetricConfig{
+						Enabled: false,
+					},
 					SqlserverPageLazyWriteRate: SqlserverPageLazyWriteRateMetricConfig{
 						Enabled: false,
 					},
@@ -524,7 +530,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 						Enabled: false,
 					},
-					SqlserverWorktableCacheRatio: SqlserverWorktableCacheRatioMetricConfig{
+					SqlserverWorktableCachePercent: SqlserverWorktableCachePercentMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -545,7 +551,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAccessScanRateMetricConfig{}, SqlserverAttentionRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverExtentOperationRateMetricConfig{}, SqlserverGhostRecordSkippedRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageAllocationRateMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageReadaheadRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverScanPointRevalidationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorktableCacheRatioMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAccessScanRateMetricConfig{}, SqlserverAttentionRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverExtentOperationRateMetricConfig{}, SqlserverGhostRecordSkippedRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageAllocationRateMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageCompressionRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageReadaheadRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverScanPointRevalidationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorktableCachePercentMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

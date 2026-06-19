@@ -1003,7 +1003,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, rangeScansPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanTypeRange)
+				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanKindRange)
 			}
 		case probeScansPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1011,7 +1011,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, probeScansPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanTypeProbe)
+				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanKindProbe)
 			}
 		case freeSpaceScansPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1019,7 +1019,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeSpaceScansPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanTypeFreeSpace)
+				s.mb.RecordSqlserverAccessScanRateDataPoint(now, val.(float64), metadata.AttributeSqlserverAccessScanKindFreeSpace)
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1051,7 +1051,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pagesCompressedPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageAllocationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageAllocationKindCompressed)
+				s.mb.RecordSqlserverPageCompressionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageCompressionKindCompressed)
 			}
 		case pageCompressionAttemptsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1059,7 +1059,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageCompressionAttemptsPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageAllocationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageAllocationKindCompressionAttempted)
+				s.mb.RecordSqlserverPageCompressionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageCompressionKindAttempted)
 			}
 		case extentsAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1107,7 +1107,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, worktablesFromCacheRatio)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverWorktableCacheRatioDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverWorktableCachePercentDataPoint(now, val.(float64))
 			}
 		}
 

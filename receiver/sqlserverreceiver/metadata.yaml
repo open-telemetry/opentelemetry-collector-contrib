@@ -149,11 +149,11 @@ attributes:
     description: The port number on which the server is listening.
     type: int
     requirement_level: recommended
-  sqlserver.access.scan.type:
-    description: The type of access method scan being performed.
+  sqlserver.access.scan.kind:
+    description: The kind of access method scan being performed.
     type: string
     requirement_level: required
-    enum: [free_space, full, probe, range]
+    enum: [free_space, probe, range]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -211,7 +211,12 @@ attributes:
     description: The kind of page allocation operation.
     type: string
     requirement_level: required
-    enum: [allocated, compressed, compression_attempted, deallocated, mixed]
+    enum: [allocated, deallocated, mixed]
+  sqlserver.page.compression.kind:
+    description: The kind of page compression operation.
+    type: string
+    requirement_level: required
+    enum: [attempted, compressed]
   sqlserver.parameterization.result:
     description: The result of an auto-parameterization attempt by the SQL Server query optimizer.
     type: string
@@ -463,12 +468,12 @@ events:
 metrics:
   sqlserver.access.scan.rate:
     enabled: false
-    description: Number of access method scans, by scan type.
+    description: Number of access method scans, by kind.
     stability: development
-    unit: "{scan}/s"
+    unit: "{scans}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.access.scan.type]
+    attributes: [sqlserver.access.scan.kind]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.attention.rate:
     enabled: false
@@ -612,9 +617,9 @@ metrics:
     attributes: []
   sqlserver.extent.operation.rate:
     enabled: false
-    description: Number of extent allocation operations.
+    description: Number of extent allocation/deallocation operations, by kind.
     stability: development
-    unit: "{extent}/s"
+    unit: "{extents}/s"
     gauge:
       value_type: double
     attributes: [sqlserver.extent.operation.kind]
@@ -623,7 +628,7 @@ metrics:
     enabled: false
     description: Number of ghosted records skipped during scans.
     stability: development
-    unit: "{record}/s"
+    unit: "{records}/s"
     gauge:
       value_type: double
     attributes: []
@@ -792,9 +797,9 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.allocation.rate:
     enabled: false
-    description: Number of page allocation operations, by kind.
+    description: Number of page allocation/deallocation operations, by kind.
     stability: development
-    unit: "{page}/s"
+    unit: "{pages}/s"
     gauge:
       value_type: double
     attributes: [sqlserver.page.allocation.kind]
@@ -822,6 +827,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.compression.rate:
+    enabled: false
+    description: Number of page compression operations, by kind.
+    stability: development
+    unit: "{pages}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.page.compression.kind]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.lazy_write.rate:
     enabled: true
     description: Number of lazy writes moving dirty pages to disk.
@@ -859,7 +873,7 @@ metrics:
     enabled: false
     description: Number of pages read from disk by the read-ahead manager.
     stability: development
-    unit: "{page}/s"
+    unit: "{pages}/s"
     gauge:
       value_type: double
     attributes: []
@@ -947,7 +961,7 @@ metrics:
     enabled: false
     description: Number of times scan points needed to be revalidated.
     stability: development
-    unit: "{revalidation}/s"
+    unit: "{revalidations}/s"
     gauge:
       value_type: double
     attributes: []
@@ -1055,7 +1069,7 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-  sqlserver.worktable.cache.ratio:
+  sqlserver.worktable.cache.percent:
     enabled: false
     description: Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
     stability: development

@@ -71,6 +71,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
 	cfg.Metrics.SqlserverPageAllocationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageCompressionRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
 	cfg.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
@@ -102,7 +103,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-	cfg.Metrics.SqlserverWorktableCacheRatio.Enabled = enabled
+	cfg.Metrics.SqlserverWorktableCachePercent.Enabled = enabled
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled

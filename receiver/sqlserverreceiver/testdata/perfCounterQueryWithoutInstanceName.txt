@@ -228,6 +228,7 @@ LEFT OUTER JOIN @PCounters AS pc1
 	ON (
 		pc.[counter_name] = REPLACE(pc1.[counter_name],' base','')
 		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' (ms)')
+		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' Ratio')
 	)
 	AND pc.[object_name] = pc1.[object_name]
 	AND pc.[instance_name] = pc1.[instance_name]
