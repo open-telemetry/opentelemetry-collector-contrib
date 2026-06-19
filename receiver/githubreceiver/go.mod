@@ -44,6 +44,7 @@ require (
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect

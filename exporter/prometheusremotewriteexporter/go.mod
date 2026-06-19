@@ -68,6 +68,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 // indirect
 	github.com/aws/smithy-go v1.26.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect

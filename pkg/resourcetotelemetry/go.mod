@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect

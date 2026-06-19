@@ -62,7 +62,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.21 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect

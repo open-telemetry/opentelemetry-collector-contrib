@@ -36,6 +36,7 @@ require (
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
