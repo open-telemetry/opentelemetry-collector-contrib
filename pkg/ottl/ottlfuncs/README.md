@@ -1006,7 +1006,7 @@ The `Filter` converter returns a new `pcommon.Slice` or `pcommon.Map` containing
 
 `predicate` is a lambda expression with exactly two parameters and a boolean result. The first parameter is
 the element index when filtering a slice (`int64`), or the element key when filtering a map (`string`). The
-second parameter is the element value. Use `_` as a parameter name to ignore the index or key.
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
 
 If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
 
