@@ -160,22 +160,25 @@ func TestLoadConfig(t *testing.T) {
 		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				HostName: metadata.ResourceAttributeConfig{
+				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerAddress: metadata.ResourceAttributeConfig{
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerPort: metadata.ResourceAttributeConfig{
+				ServerAddress: metadata.ServerAddressResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ServerPortResourceAttributeConfig{
 					Enabled: true,
 				},
 			},
@@ -190,22 +193,25 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				HostName: metadata.ResourceAttributeConfig{
+				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerAddress: metadata.ResourceAttributeConfig{
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				ServerPort: metadata.ResourceAttributeConfig{
+				ServerAddress: metadata.ServerAddressResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ServerPortResourceAttributeConfig{
 					Enabled: true,
 				},
 			},
