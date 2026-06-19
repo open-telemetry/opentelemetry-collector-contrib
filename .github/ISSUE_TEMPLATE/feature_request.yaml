@@ -17,7 +17,6 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
-      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -191,6 +190,7 @@ body:
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/attributes
+      - processor/awsecsattributes
       - processor/cardinalityguardian
       - processor/coralogix
       - processor/cumulativetodelta
@@ -239,6 +239,7 @@ body:
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
+      - receiver/activedirectoryinv
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark

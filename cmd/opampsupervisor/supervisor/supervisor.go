@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -46,6 +47,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
+	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -1200,10 +1202,14 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 			if item == nil {
 				continue
 			}
+			if remoteConfigDeclaresResourceAttributes(item.Body) {
+				remoteConfigComposers = append(remoteConfigComposers, composeClearResourceAttributesConfig)
+			}
 			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
 				return item.Body
 			})
 		}
+		remoteConfigComposers = append(remoteConfigComposers, s.composeRequiredResourceAttributesConfig)
 	}
 	return remoteConfigComposers
 }
@@ -1242,8 +1248,21 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+	attrNames := make([]string, 0, len(resourceAttrs))
+	for name := range resourceAttrs {
+		attrNames = append(attrNames, name)
+	}
+	sort.Strings(attrNames)
+
+	resourceAttributeValues := make([]resourceAttributeTemplateValue, 0, len(attrNames))
+	for _, name := range attrNames {
+		resourceAttributeValues = append(resourceAttributeValues, resourceAttributeTemplateValue{
+			Name:  name,
+			Value: resourceAttrs[name],
+		})
+	}
 	tplVars := map[string]any{
-		"ResourceAttributes": resourceAttrs,
+		"ResourceAttributes": resourceAttributeValues,
 		"SupervisorPort":     s.opampServerPort,
 	}
 	err := s.extraTelemetryConfigTemplate.Execute(
@@ -1256,6 +1275,41 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	}
 
 	return cfg.Bytes()
+}
+
+func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
+	cfg, err := gyaml.Marshal(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": []map[string]any{
+						{
+							"name":  "service.instance.id",
+							"value": s.persistentState.InstanceID.String(),
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not compose required resource attributes config", zap.Error(err))
+		return nil
+	}
+
+	return cfg
+}
+
+func composeClearResourceAttributesConfig() []byte {
+	return []byte("service:\n  telemetry:\n    resource:\n      " + config.ClearResourceAttributesKey + ": true\n")
+}
+
+func remoteConfigDeclaresResourceAttributes(body []byte) bool {
+	conf, err := config.NewConfFromYAML(body)
+	if err != nil {
+		return false
+	}
+	return conf.Get("service::telemetry::resource::attributes") != nil
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1285,6 +1339,11 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 }
 
 type configComposer func() []byte
+
+type resourceAttributeTemplateValue struct {
+	Name  string
+	Value string
+}
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig, configFiles []string) ([]byte, error) {
 	conf := confmap.New()
@@ -1329,12 +1388,78 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		}
 	}
 
+	if err := normalizeTelemetryResourceConfig(conf); err != nil {
+		s.telemetrySettings.Logger.Error("Could not normalize telemetry resource config", zap.Error(err))
+		return []byte(""), err
+	}
+
 	b, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
 	}
 	return b, nil
+}
+
+func normalizeTelemetryResourceConfig(conf *confmap.Conf) error {
+	rawResourceCfg := conf.Get("service::telemetry::resource")
+	if rawResourceCfg == nil {
+		return nil
+	}
+
+	resourceMap, ok := rawResourceCfg.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	var resourceCfg otelconftelemetry.ResourceConfig
+	if err := confmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
+		return err
+	}
+
+	if len(resourceCfg.Attributes) == 0 || len(resourceCfg.LegacyAttributes) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]int, len(resourceCfg.Attributes))
+	for idx, attr := range resourceCfg.Attributes {
+		seen[attr.Name] = idx
+	}
+
+	legacyNames := make([]string, 0, len(resourceCfg.LegacyAttributes))
+	for name, value := range resourceCfg.LegacyAttributes {
+		if value == nil {
+			continue
+		}
+		if idx, exists := seen[name]; exists {
+			resourceCfg.Attributes[idx].Value = value
+			continue
+		}
+		legacyNames = append(legacyNames, name)
+	}
+	sort.Strings(legacyNames)
+
+	for _, name := range legacyNames {
+		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
+			Name:  name,
+			Value: resourceCfg.LegacyAttributes[name],
+		})
+	}
+	resourceCfg.LegacyAttributes = nil
+
+	normalized := confmap.New()
+	if err := normalized.Marshal(resourceCfg); err != nil {
+		return err
+	}
+
+	conf.Delete("service::telemetry::resource")
+	return conf.Merge(confmap.NewFromStringMap(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": normalized.ToStringMap(),
+			},
+		},
+	}))
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by

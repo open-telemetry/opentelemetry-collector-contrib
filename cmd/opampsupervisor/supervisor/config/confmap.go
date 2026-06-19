@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -25,6 +26,12 @@ var providerSchemes = map[string]struct{}{
 	"file": {},
 	"env":  {},
 }
+
+// ClearResourceAttributesKey is an internal merge sentinel used to give
+// remote service.telemetry.resource.attributes explicit clear semantics.
+// It is injected into a synthetic config before the actual remote config,
+// consumed by MergeConf, and never written to the final collector config.
+const ClearResourceAttributesKey = "__opampsupervisor_clear_resource_attributes__"
 
 // ErrConfigFileNotFound marks required config sources that point to missing files.
 var ErrConfigFileNotFound = errors.New("config file not found")
@@ -167,17 +174,30 @@ func MergeConfFromYAML(base *confmap.Conf, yamlBytes []byte) error {
 	return MergeConf(base, incoming)
 }
 
-// MergeConf merges incoming into base while appending service.extensions with deduplication.
+// MergeConf merges incoming into base while preserving Supervisor-specific
+// merge semantics that collector confmap does not provide by default.
 func MergeConf(base, incoming *confmap.Conf) error {
 	baseExtensions := getExtensions(base)
 	incomingExtensions := getExtensions(incoming)
+	baseResourceAttributes := getResourceAttributes(base)
+	incomingResourceAttributes := getResourceAttributes(incoming)
+	incomingClearsResourceAttributes := shouldClearResourceAttributes(incoming)
+
+	if incomingClearsResourceAttributes {
+		clearResourceAttributes(base)
+	}
 
 	if err := base.Merge(incoming); err != nil {
 		return err
 	}
+	base.Delete("service::telemetry::resource::" + ClearResourceAttributesKey)
 
 	if len(baseExtensions) > 0 || len(incomingExtensions) > 0 {
 		setExtensions(base, deduplicateExtensions(baseExtensions, incomingExtensions))
+	}
+
+	if !incomingClearsResourceAttributes && len(baseResourceAttributes) > 0 && len(incomingResourceAttributes) > 0 {
+		setResourceAttributes(base, mergeResourceAttributes(baseResourceAttributes, incomingResourceAttributes))
 	}
 
 	return nil
@@ -219,5 +239,93 @@ func deduplicateExtensions(base, incoming []any) []any {
 			result = append(result, ext)
 		}
 	}
+	return result
+}
+
+func getResourceAttributes(conf *confmap.Conf) []any {
+	val := conf.Get("service::telemetry::resource::attributes")
+	if val == nil {
+		return nil
+	}
+	attrs, ok := val.([]any)
+	if !ok {
+		return nil
+	}
+	result := make([]any, len(attrs))
+	copy(result, attrs)
+	return result
+}
+
+func shouldClearResourceAttributes(conf *confmap.Conf) bool {
+	shouldClear, ok := conf.Get("service::telemetry::resource::" + ClearResourceAttributesKey).(bool)
+	return ok && shouldClear
+}
+
+func clearResourceAttributes(conf *confmap.Conf) {
+	schemaURL := conf.Get("service::telemetry::resource::schema_url")
+	detectors := conf.Get("service::telemetry::resource::detectors")
+
+	conf.Delete("service::telemetry::resource")
+
+	resource := make(map[string]any)
+	if schemaURL != nil {
+		resource["schema_url"] = schemaURL
+	}
+	if detectors != nil {
+		resource["detectors"] = detectors
+	}
+	if len(resource) == 0 {
+		return
+	}
+
+	_ = conf.Merge(confmap.NewFromStringMap(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": resource,
+			},
+		},
+	}))
+}
+
+func setResourceAttributes(conf *confmap.Conf, attrs []any) {
+	overlay := confmap.NewFromStringMap(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": attrs,
+				},
+			},
+		},
+	})
+	_ = conf.Merge(overlay)
+}
+
+func mergeResourceAttributes(base, incoming []any) []any {
+	merged := append(slices.Clone(base), incoming...)
+	seenByName := make(map[string]int, len(merged))
+	result := make([]any, 0, len(merged))
+
+	for _, attr := range merged {
+		attrMap, ok := attr.(map[string]any)
+		if !ok {
+			result = append(result, attr)
+			continue
+		}
+
+		name, ok := attrMap["name"].(string)
+		if !ok || name == "" {
+			result = append(result, attr)
+			continue
+		}
+
+		if idx, exists := seenByName[name]; exists {
+			result[idx] = attr
+			continue
+		}
+
+		seenByName[name] = len(result)
+		result = append(result, attr)
+	}
+
 	return result
 }

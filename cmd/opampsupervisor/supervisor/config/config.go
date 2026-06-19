@@ -359,8 +359,6 @@ type Telemetry struct {
 	_ struct{}
 }
 
-type ResourceConfig = otelconftelemetry.ResourceConfig
-
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
