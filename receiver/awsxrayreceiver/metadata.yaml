@@ -13,3 +13,19 @@ status:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+
+feature_gates:
+  - id: receiver.awsxray.DontEmitV0HttpConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver will stop emitting the legacy HTTP semantic conventions
+      (http.method, http.url, http.status_code).
+    from_version: v0.155.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
+  - id: receiver.awsxray.EmitV1HttpConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver will emit the stable HTTP semantic conventions
+      (http.request.method, url.full, http.response.status_code).
+    from_version: v0.155.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
