@@ -811,7 +811,7 @@ func TestFlushing(t *testing.T) {
 	}
 	export := buildExportFunc(fe.conf)
 	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export)
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -866,7 +866,7 @@ func TestAppend(t *testing.T) {
 	}
 	export := buildExportFunc(fe.conf)
 	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export)
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -892,7 +892,7 @@ func TestAppend(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(ctx))
 
 	// Restart the exporter
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export)
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
