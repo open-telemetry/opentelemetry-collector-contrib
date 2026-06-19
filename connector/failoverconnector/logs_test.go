@@ -5,11 +5,13 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -168,6 +170,63 @@ func TestLogsWithQueue(t *testing.T) {
 	ld := sampleLog()
 
 	assert.NoError(t, conn.ConsumeLogs(t.Context(), ld))
+}
+
+// deadlineCapturingLogsConsumer records ctx.Deadline() observed during ConsumeLogs.
+type deadlineCapturingLogsConsumer struct {
+	consumer.Logs
+	once        sync.Once
+	called      chan struct{}
+	hasDeadline bool
+	deadline    time.Time
+}
+
+func (c *deadlineCapturingLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	c.once.Do(func() {
+		c.deadline, c.hasDeadline = ctx.Deadline()
+		close(c.called)
+	})
+	return c.Logs.ConsumeLogs(ctx, ld)
+}
+
+// TestLogsQueueDoesNotImposeDownstreamDeadline verifies that when the failover connector's
+// sending_queue is enabled, the wrapped exporterhelper does not impose its default 5s timeout
+// on the downstream pipeline's ctx — see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48567.
+func TestLogsQueueDoesNotImposeDownstreamDeadline(t *testing.T) {
+	sink := &consumertest.LogsSink{}
+	capture := &deadlineCapturingLogsConsumer{Logs: sink, called: make(chan struct{})}
+
+	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{logsFirst}},
+		RetryInterval:    50 * time.Millisecond,
+		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+	}
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsFirst: capture,
+	})
+
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*wrappedLogsConnector)
+	require.NoError(t, failoverConnector.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, conn.ConsumeLogs(t.Context(), sampleLog()))
+
+	select {
+	case <-capture.called:
+	case <-time.After(2 * time.Second):
+		t.Fatal("downstream consumer was not called within 2s")
+	}
+
+	assert.False(t, capture.hasDeadline,
+		"downstream ctx should not carry a deadline imposed by the failover connector, got %v (in %s)",
+		capture.deadline, time.Until(capture.deadline))
 }
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
