@@ -40,6 +40,7 @@ func createDefaultConfig() component.Config {
 		IdleSeriesTimeout:         0,
 		IdleSeriesCleanupInterval: 5 * time.Minute,
 		TraceIDCacheSize:          100,
+		Logs:                      LogsConfig{DecodeJSONMessage: true},
 		Intake: IntakeConfig{
 			Behavior: defaultConfigIntakeBehavior,
 			Proxy: ProxyConfig{

@@ -50,6 +50,16 @@ func TestCreateProcessors(t *testing.T) {
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Insert),
 		},
 		{
+			configName:   "config_invalid_combine_newname.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Combine),
+		},
+		{
+			configName:   "config_invalid_combine_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", aggregationTypeFieldName, actionFieldName, Combine),
+		},
+		{
 			configName:   "config_invalid_group.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group),
