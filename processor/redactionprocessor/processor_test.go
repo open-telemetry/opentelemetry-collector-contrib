@@ -2221,7 +2221,7 @@ func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
 		},
 	}
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	const workers = 16
