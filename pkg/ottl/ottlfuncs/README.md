@@ -510,6 +510,7 @@ Available Converters:
 - [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -991,6 +992,51 @@ Examples:
      - `user.name`: smith
      - `user.password`: pass123
 
+### Find
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Find(source, predicate, Optional[mapper])`
+
+The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
+If no element matches, it returns `nil`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when searching a slice (`int64`), or the element 
+key when searching a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+`mapper` is an optional lambda expression with exactly two parameters. When provided, 
+it transforms the matched element before returning it. The first parameter is the found element 
+index or key, and the second parameter is the element value. When omitted, the matched value 
+is returned as-is.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Find a slice element by value:
+
+- `Find(log.attributes["tags"], (_, v) => v == "prod")`
+
+Find a map element by key:
+
+- `Find(log.attributes, (k, _) => k == "http.method")`
+
+Find a map element key instead of value:
+
+- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
+
+Transform the found element:
+
+- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
+
+Store the found value:
+
+- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 

@@ -495,6 +495,8 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -1597,6 +1599,30 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["in_cidr"], IsInCIDR(attributes["server.ip"], ["192.168.0.0/16"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("in_cidr", true)
+			},
+		},
+		{
+			statement: `set(attributes["found_slice"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_slice", "value1")
+			},
+		},
+		{
+			statement: `set(attributes["found_map"], Find(attributes["foo"], (k, _) => k == "bar"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_map", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["found_map_mapped"], Find(attributes["foo"], (k, _) => k == "bar", (k, v) => Concat([k, ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_map_mapped", "bar:pass")
+			},
+		},
+		{
+			statement: `set(attributes["found_slice_mapped"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1", (i, v) => Concat([String(i), ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("found_slice_mapped", "0:value1")
 			},
 		},
 	}
