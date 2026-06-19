@@ -176,6 +176,8 @@ func MergeConfFromYAML(base *confmap.Conf, yamlBytes []byte) error {
 
 // MergeConf merges incoming into base while preserving Supervisor-specific
 // merge semantics that collector confmap does not provide by default.
+// service extension lists are concatenated and resource attributes are
+// merged by name.
 func MergeConf(base, incoming *confmap.Conf) error {
 	baseExtensions := getExtensions(base)
 	incomingExtensions := getExtensions(incoming)
