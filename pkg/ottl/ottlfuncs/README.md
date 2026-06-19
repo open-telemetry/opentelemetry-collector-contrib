@@ -535,6 +535,7 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
+- [Map](#map)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -1528,6 +1529,38 @@ Examples:
 - `IsValidLuhn(span.attributes["credit_card_number"])`
 
 - `IsValidLuhn("17893729974")`
+
+### Map
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Map(source, mapper)`
+
+The `Map` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
+transformed by `mapper`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`mapper` is a lambda expression with exactly two parameters. The first parameter is the element
+index when mapping a slice (`int64`), or the element key when mapping a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Mapping slice values:
+
+- `Map(log.attributes["counts"], (_, v) => Int(v) * 2)`
+
+Stringify map values:
+
+- `Map(log.attributes, (_, v) => String(v))`
+
+Store the mapped result:
+
+- `set(log.attributes["doubled"], Map(log.attributes["counts"], (_, v) => Int(v)))`
 
 ### MD5
 

@@ -495,6 +495,8 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -1597,6 +1599,25 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["in_cidr"], IsInCIDR(attributes["server.ip"], ["192.168.0.0/16"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("in_cidr", true)
+			},
+		},
+		{
+			statement: `set(attributes["mapped_slice"], Map(attributes["primitiveValuesSlice"], (i, v) => Concat([String(i), ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("mapped_slice")
+				mapped.AppendEmpty().SetStr("0:value1")
+				mapped.AppendEmpty().SetStr("1:42")
+				mapped.AppendEmpty().SetStr("2:true")
+			},
+		},
+		{
+			statement: `set(attributes["mapped_map"], Map(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptyMap("mapped_map")
+				mapped.PutStr("bar", "bar:pass")
+				mapped.PutStr("flags", "flags:pass")
+				mapped.PutStr("slice", `slice:["val"]`)
+				mapped.PutStr("nested", `nested:{"test":"pass"}`)
 			},
 		},
 	}
