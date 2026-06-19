@@ -26,10 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
+					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
+						Enabled: true,
+					},
+					ApacheConnections: ApacheConnectionsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionsAsyncMetricAttributeKey{ApacheConnectionsAsyncMetricAttributeKeyConnectionState},
+						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheCPULoad: ApacheCPULoadMetricConfig{
 						Enabled: true,
@@ -37,10 +40,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheCPUTime: ApacheCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheCPUTimeMetricAttributeKey{ApacheCPUTimeMetricAttributeKeyCPULevel, ApacheCPUTimeMetricAttributeKeyCPUMode},
-					},
-					ApacheCurrentConnections: ApacheCurrentConnectionsMetricConfig{
-						Enabled: true,
+						EnabledAttributes:   []ApacheCPUTimeMetricAttributeKey{ApacheCPUTimeMetricAttributeKeyApacheProcessLevel, ApacheCPUTimeMetricAttributeKeyCPUMode},
 					},
 					ApacheLoad1: ApacheLoad1MetricConfig{
 						Enabled: true,
@@ -51,16 +51,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheLoad5: ApacheLoad5MetricConfig{
 						Enabled: true,
 					},
+					ApacheRequestCount: ApacheRequestCountMetricConfig{
+						Enabled: true,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: true,
-					},
-					ApacheRequests: ApacheRequestsMetricConfig{
-						Enabled: true,
-					},
-					ApacheScoreboard: ApacheScoreboardMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheScoreboardMetricAttributeKey{ApacheScoreboardMetricAttributeKeyScoreboardState},
 					},
 					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: true,
@@ -68,10 +63,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: true,
 					},
+					ApacheWorkerActive: ApacheWorkerActiveMetricConfig{
+						Enabled: true,
+					},
+					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: true,
+					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyWorkersState},
+						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyApacheWorkerState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -84,10 +85,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ApacheConnectionsAsync: ApacheConnectionsAsyncMetricConfig{
+					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
+						Enabled: false,
+					},
+					ApacheConnections: ApacheConnectionsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionsAsyncMetricAttributeKey{ApacheConnectionsAsyncMetricAttributeKeyConnectionState},
+						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheCPULoad: ApacheCPULoadMetricConfig{
 						Enabled: false,
@@ -95,10 +99,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheCPUTime: ApacheCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheCPUTimeMetricAttributeKey{ApacheCPUTimeMetricAttributeKeyCPULevel, ApacheCPUTimeMetricAttributeKeyCPUMode},
-					},
-					ApacheCurrentConnections: ApacheCurrentConnectionsMetricConfig{
-						Enabled: false,
+						EnabledAttributes:   []ApacheCPUTimeMetricAttributeKey{ApacheCPUTimeMetricAttributeKeyApacheProcessLevel, ApacheCPUTimeMetricAttributeKeyCPUMode},
 					},
 					ApacheLoad1: ApacheLoad1MetricConfig{
 						Enabled: false,
@@ -109,16 +110,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheLoad5: ApacheLoad5MetricConfig{
 						Enabled: false,
 					},
+					ApacheRequestCount: ApacheRequestCountMetricConfig{
+						Enabled: false,
+					},
 					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: false,
-					},
-					ApacheRequests: ApacheRequestsMetricConfig{
-						Enabled: false,
-					},
-					ApacheScoreboard: ApacheScoreboardMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheScoreboardMetricAttributeKey{ApacheScoreboardMetricAttributeKeyScoreboardState},
 					},
 					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: false,
@@ -126,10 +122,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheUptime: ApacheUptimeMetricConfig{
 						Enabled: false,
 					},
+					ApacheWorkerActive: ApacheWorkerActiveMetricConfig{
+						Enabled: false,
+					},
+					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
+						Enabled: false,
+					},
 					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyWorkersState},
+						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyApacheWorkerState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -142,7 +144,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionsAsyncMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheCurrentConnectionsMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheRequestsMetricConfig{}, ApacheScoreboardMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionsMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

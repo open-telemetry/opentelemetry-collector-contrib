@@ -75,19 +75,19 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "ServerUptimeSeconds":
 			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
 		case "ConnsTotal":
-			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionActiveDataPoint(now, metricValue))
 		case "ConnsAsyncWriting":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateWriting))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateWriting))
 		case "ConnsAsyncKeepAlive":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateKeepalive))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateKeepalive))
 		case "ConnsAsyncClosing":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateClosing))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateClosing))
 		case "BusyWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
+			addPartialIfError(errs, r.mb.RecordApacheWorkerActiveDataPoint(now, metricValue))
 		case "IdleWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
+			addPartialIfError(errs, r.mb.RecordApacheWorkerIdleDataPoint(now, metricValue))
 		case "Total Accesses":
-			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+			addPartialIfError(errs, r.mb.RecordApacheRequestCountDataPoint(now, metricValue))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
@@ -98,22 +98,22 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "CPUChildrenSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeApacheProcessLevelChildren, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUChildrenUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeApacheProcessLevelChildren, metadata.AttributeCPUModeUser),
 			)
 		case "CPUSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeApacheProcessLevelSelf, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeApacheProcessLevelSelf, metadata.AttributeCPUModeUser),
 			)
 		case "CPULoad":
 			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue))
@@ -128,7 +128,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
+				r.mb.RecordApacheWorkersDataPoint(now, score, state)
 			}
 		}
 	}
@@ -175,50 +175,50 @@ func parseStats(resp string) map[string]string {
 	return metrics
 }
 
-type scoreboardCountsByLabel map[metadata.AttributeScoreboardState]int64
+type scoreboardCountsByLabel map[metadata.AttributeApacheWorkerState]int64
 
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
 func parseScoreboard(values string) scoreboardCountsByLabel {
 	scoreboard := scoreboardCountsByLabel{
-		metadata.AttributeScoreboardStateWaiting:     0,
-		metadata.AttributeScoreboardStateStarting:    0,
-		metadata.AttributeScoreboardStateReading:     0,
-		metadata.AttributeScoreboardStateSending:     0,
-		metadata.AttributeScoreboardStateKeepalive:   0,
-		metadata.AttributeScoreboardStateDnslookup:   0,
-		metadata.AttributeScoreboardStateClosing:     0,
-		metadata.AttributeScoreboardStateLogging:     0,
-		metadata.AttributeScoreboardStateFinishing:   0,
-		metadata.AttributeScoreboardStateIdleCleanup: 0,
-		metadata.AttributeScoreboardStateOpen:        0,
+		metadata.AttributeApacheWorkerStateWaiting:     0,
+		metadata.AttributeApacheWorkerStateStarting:    0,
+		metadata.AttributeApacheWorkerStateReading:     0,
+		metadata.AttributeApacheWorkerStateSending:     0,
+		metadata.AttributeApacheWorkerStateKeepalive:   0,
+		metadata.AttributeApacheWorkerStateDnslookup:   0,
+		metadata.AttributeApacheWorkerStateClosing:     0,
+		metadata.AttributeApacheWorkerStateLogging:     0,
+		metadata.AttributeApacheWorkerStateFinishing:   0,
+		metadata.AttributeApacheWorkerStateIdleCleanup: 0,
+		metadata.AttributeApacheWorkerStateOpen:        0,
 	}
 
 	for _, char := range values {
 		switch string(char) {
 		case "_":
-			scoreboard[metadata.AttributeScoreboardStateWaiting]++
+			scoreboard[metadata.AttributeApacheWorkerStateWaiting]++
 		case "S":
-			scoreboard[metadata.AttributeScoreboardStateStarting]++
+			scoreboard[metadata.AttributeApacheWorkerStateStarting]++
 		case "R":
-			scoreboard[metadata.AttributeScoreboardStateReading]++
+			scoreboard[metadata.AttributeApacheWorkerStateReading]++
 		case "W":
-			scoreboard[metadata.AttributeScoreboardStateSending]++
+			scoreboard[metadata.AttributeApacheWorkerStateSending]++
 		case "K":
-			scoreboard[metadata.AttributeScoreboardStateKeepalive]++
+			scoreboard[metadata.AttributeApacheWorkerStateKeepalive]++
 		case "D":
-			scoreboard[metadata.AttributeScoreboardStateDnslookup]++
+			scoreboard[metadata.AttributeApacheWorkerStateDnslookup]++
 		case "C":
-			scoreboard[metadata.AttributeScoreboardStateClosing]++
+			scoreboard[metadata.AttributeApacheWorkerStateClosing]++
 		case "L":
-			scoreboard[metadata.AttributeScoreboardStateLogging]++
+			scoreboard[metadata.AttributeApacheWorkerStateLogging]++
 		case "G":
-			scoreboard[metadata.AttributeScoreboardStateFinishing]++
+			scoreboard[metadata.AttributeApacheWorkerStateFinishing]++
 		case "I":
-			scoreboard[metadata.AttributeScoreboardStateIdleCleanup]++
+			scoreboard[metadata.AttributeApacheWorkerStateIdleCleanup]++
 		case ".":
-			scoreboard[metadata.AttributeScoreboardStateOpen]++
+			scoreboard[metadata.AttributeApacheWorkerStateOpen]++
 		default:
-			scoreboard[metadata.AttributeScoreboardStateUnknown]++
+			scoreboard[metadata.AttributeApacheWorkerStateUnknown]++
 		}
 	}
 	return scoreboard
