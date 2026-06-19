@@ -156,11 +156,13 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	function, err := p.newFunctionCall(parsed.Editor)
+
+	pc := p.newParseContext()
+	function, err := pc.newFunctionCall(parsed.Editor)
 	if err != nil {
 		return nil, err
 	}
-	expression, err := p.newBoolExpr(parsed.WhereClause)
+	expression, err := pc.newBoolExpr(parsed.WhereClause)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +206,8 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	expression, err := p.newBoolExpr(parsed)
+
+	expression, err := p.newParseContext().newBoolExpr(parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -620,7 +623,7 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	if err != nil {
 		return nil, err
 	}
-	getter, err := p.newGetter(*parsed)
+	getter, err := p.newParseContext().newGetter(*parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -646,4 +649,17 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 			},
 		},
 	}, nil
+}
+
+// parseContext represents the context used during parsing operations. It is used to store
+// the current parser reference and lexical scopes for local identifiers (e.g. in lambda bodies).
+type parseContext[K any] struct {
+	*Parser[K]
+	localScopes localScopeStack
+}
+
+func (p *Parser[K]) newParseContext() *parseContext[K] {
+	return &parseContext[K]{
+		Parser: p,
+	}
 }
