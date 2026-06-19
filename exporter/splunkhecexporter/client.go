@@ -201,7 +201,7 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 
 	for _, rp := range pp.ResourceProfiles().All() {
 		rl := ld.ResourceLogs().AppendEmpty()
-		rp.Resource().Attributes().CopyTo(rl.Resource().Attributes())
+		rp.Resource().Attributes().MoveTo(rl.Resource().Attributes())
 
 		sl := rl.ScopeLogs().AppendEmpty()
 		sl.Scope().SetName(profilingLibraryName)
@@ -214,7 +214,7 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 					permanentErrors = append(permanentErrors, err)
 					continue
 				}
-				lr.CopyTo(sl.LogRecords().AppendEmpty())
+				lr.MoveTo(sl.LogRecords().AppendEmpty())
 			}
 		}
 	}
@@ -275,7 +275,7 @@ func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.Resourc
 	dstScope.SetSchemaUrl(scope.SchemaUrl())
 
 	dstProfile := dstScope.Profiles().AppendEmpty()
-	prof.CopyTo(dstProfile)
+	prof.MoveTo(dstProfile)
 
 	return profiles
 }
