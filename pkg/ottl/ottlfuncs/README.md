@@ -494,6 +494,8 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [All](#all)
+- [Any](#any)
 - [Base64Decode](#base64decode-deprecated)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
@@ -591,6 +593,74 @@ Available Converters:
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
+
+### All
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`All(source, predicate)`
+
+The `All` converter returns `true` if `predicate` evaluates to `true` for every element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `true`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check that every slice element matches:
+
+- `All(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check that every map key matches:
+
+- `All(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["all_prod"], true) where All(log.attributes["tags"], (_, v) => v == "prod")`
+
+### Any
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Any(source, predicate)`
+
+The `Any` converter returns `true` if `predicate` evaluates to `true` for at least one element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `false`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check whether any slice element matches:
+
+- `Any(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check whether any map key matches:
+
+- `Any(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
 
 ### Base64Decode (Deprecated)
 
