@@ -70,16 +70,7 @@ func TestRetrieveURIForProvider(t *testing.T) {
 func TestRetrieveURIAsConf_EnvURIWithoutLogger_DoesNotPanic(t *testing.T) {
 	t.Run("unset environment variable", func(t *testing.T) {
 		const envVar = "OTELCOLCONTRIB_OPAMPSUPERVISOR_TEST_UNSET_ENV"
-
-		originalValue, wasSet := os.LookupEnv(envVar)
-		require.NoError(t, os.Unsetenv(envVar))
-		t.Cleanup(func() {
-			if wasSet {
-				_ = os.Setenv(envVar, originalValue)
-				return
-			}
-			_ = os.Unsetenv(envVar)
-		})
+		_ = os.Unsetenv(envVar)
 
 		conf, err := RetrieveURIAsConf("env:"+envVar, nil)
 		require.NoError(t, err)
