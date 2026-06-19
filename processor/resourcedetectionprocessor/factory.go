@@ -38,7 +38,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
 	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
 	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -88,7 +88,8 @@ func NewFactory() processor.Factory {
 		openshift.TypeStr:        openshift.NewDetector,
 		nova.TypeStr:             nova.NewDetector,
 		oraclecloud.TypeStr:      oraclecloud.NewDetector,
-		k8snode.TypeStr:          k8snode.NewDetector,
+		k8sapi.TypeStr:           k8sapi.NewDetector,
+		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
 		tencentcvm.TypeStr:       tencentcvm.NewDetector,
@@ -104,6 +105,7 @@ func NewFactory() processor.Factory {
 	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),

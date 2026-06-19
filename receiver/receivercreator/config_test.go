@@ -124,6 +124,13 @@ func TestLoadConfig(t *testing.T) {
 					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
 					observer.KafkaTopicType:   {},
 				},
+				Discovery: DiscoveryConfig{
+					DefaultFileLogConfig: userConfigMap{
+						"include_file_path": true,
+						"include_file_name": false,
+						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+					},
+				},
 			},
 		},
 	}

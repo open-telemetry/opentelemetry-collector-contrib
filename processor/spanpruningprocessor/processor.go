@@ -6,12 +6,14 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
@@ -31,10 +33,11 @@ type attributePattern struct {
 // spanPruningProcessor aggregates similar leaf spans (and eligible parents)
 // according to configuration while emitting telemetry about pruning actions.
 type spanPruningProcessor struct {
-	config            *Config
-	logger            *zap.Logger
-	attributePatterns []attributePattern
-	telemetryBuilder  *metadata.TelemetryBuilder
+	config                      *Config
+	logger                      *zap.Logger
+	attributePatterns           []attributePattern
+	telemetryBuilder            *metadata.TelemetryBuilder
+	enableAttributeLossAnalysis bool
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
@@ -51,10 +54,11 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 	}
 
 	return &spanPruningProcessor{
-		config:            cfg,
-		logger:            set.Logger,
-		attributePatterns: patterns,
-		telemetryBuilder:  telemetryBuilder,
+		config:                      cfg,
+		logger:                      set.Logger,
+		attributePatterns:           patterns,
+		telemetryBuilder:            telemetryBuilder,
+		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
 	}, nil
 }
 
@@ -62,6 +66,29 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 func (p *spanPruningProcessor) shutdown(_ context.Context) error {
 	p.telemetryBuilder.Shutdown()
 	return nil
+}
+
+// shouldSampleAttributeLossExemplar decides whether to attach exemplars to
+// attribute-loss metrics based on the configured sampling rate.
+func (p *spanPruningProcessor) shouldSampleAttributeLossExemplar() bool {
+	rate := p.config.AttributeLossExemplarSampleRate
+	if rate <= 0 {
+		return false
+	}
+	if rate >= 1 {
+		return true
+	}
+	return rand.Float64() < rate
+}
+
+// createExemplarContext creates a context with span context for exemplar attachment.
+// Uses direct type casting since pcommon and trace ID types are identical byte arrays.
+func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID pcommon.SpanID) context.Context {
+	return trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID(traceID),
+		SpanID:     trace.SpanID(spanID),
+		TraceFlags: trace.FlagsSampled,
+	}))
 }
 
 // processTraces runs aggregation for each trace batch and records processor
@@ -135,7 +162,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	}
 
 	// Phase 1: Analyze aggregations (bottom-up)
-	aggregationGroups := p.analyzeAggregationsWithTree(tree)
+	aggregationGroups := p.analyzeAggregationsWithTree(ctx, tree)
 	if len(aggregationGroups) == 0 {
 		return
 	}
@@ -144,7 +171,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	plan := p.buildAggregationPlan(aggregationGroups)
 
 	// Phase 3: Execute aggregations (top-down) and record pruned spans
-	prunedCount := p.executeAggregations(plan)
+	prunedCount := p.executeAggregations(plan, tree)
 
 	// Record telemetry after aggregation is complete
 	p.telemetryBuilder.ProcessorSpanpruningSpansPruned.Add(ctx, int64(prunedCount))
@@ -157,7 +184,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
 // Uses markedForRemoval field on nodes instead of separate map for better performance
 // Optimized to walk up from marked nodes instead of scanning all nodes
-func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
+func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, tree *traceTree) map[string]aggregationGroup {
 	// Step 1: Get pre-computed leaf nodes
 	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {
@@ -179,20 +206,75 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 			continue
 		}
 
-		// Find template from nodes
-		templateNode := findLongestDurationNode(nodes)
+		// Outlier analysis and filtering FIRST (before attribute loss).
+		var outlierResult *outlierAnalysisResult
+		var preservedOutliers []*spanNode
+		aggregateNodes := nodes
+
+		if p.config.EnableOutlierAnalysis {
+			outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+			// Record outlier metrics.
+			if outlierResult != nil && outlierResult.hasOutliers {
+				p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+				if len(outlierResult.correlations) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+				}
+			}
+
+			// Filter outliers when preservation is enabled.
+			if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
+				aggregateNodes, preservedOutliers = filterOutlierNodes(
+					nodes,
+					outlierResult,
+					p.config.OutlierAnalysis,
+				)
+
+				if len(preservedOutliers) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(len(preservedOutliers)))
+				}
+
+				// Skip aggregation if too few normal spans remain.
+				if len(aggregateNodes) < p.config.MinSpansToAggregate {
+					continue
+				}
+			}
+		}
+
+		// Find template from filtered nodes (excludes preserved outliers).
+		templateNode := findLongestDurationNode(aggregateNodes)
+		var lossInfo attributeLossSummary
+		if p.enableAttributeLossAnalysis {
+			lossInfo = analyzeAttributeLoss(aggregateNodes, templateNode)
+			if !lossInfo.isEmpty() {
+				recordCtx := ctx
+				if p.shouldSampleAttributeLossExemplar() {
+					recordCtx = createExemplarContext(ctx, templateNode.span.TraceID(), templateNode.span.SpanID())
+				}
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
+			}
+		}
 
 		aggregationGroups[groupKey] = aggregationGroup{
-			nodes:        nodes,
-			depth:        0,
-			templateNode: templateNode,
+			nodes:             aggregateNodes,
+			depth:             0,
+			lossInfo:          lossInfo,
+			templateNode:      templateNode,
+			outlierAnalysis:   outlierResult,
+			preservedOutliers: preservedOutliers,
 		}
 
-		// Mark spans for removal
-		for _, node := range nodes {
+		// Mark only aggregated spans for removal.
+		for _, node := range aggregateNodes {
 			node.markedForRemoval = true
 		}
-		markedNodes = append(markedNodes, nodes...)
+		markedNodes = append(markedNodes, aggregateNodes...)
+
+		// Mark outliers as preserved (not removed).
+		for _, outlier := range preservedOutliers {
+			outlier.isPreservedOutlier = true
+		}
 	}
 
 	if len(aggregationGroups) == 0 {
@@ -224,7 +306,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		// Group parent candidates by name + status
 		parentGroups := make(map[string][]*spanNode)
 		for _, node := range eligibleParents {
-			parentKey := p.buildParentGroupKey(node.span)
+			parentKey := p.buildParentGroupKey(node.span, depth)
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
@@ -235,13 +317,40 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 				continue
 			}
 
-			// Find the template node (longest duration) for this group
+			// Outlier analysis FIRST (before attribute loss).
+			var outlierResult *outlierAnalysisResult
+			if p.config.EnableOutlierAnalysis {
+				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+				if outlierResult != nil && outlierResult.hasOutliers {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+					if len(outlierResult.correlations) > 0 {
+						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+					}
+				}
+			}
+
+			// Find the template node (longest duration) for this group.
 			templateNode := findLongestDurationNode(nodes)
+			var lossInfo attributeLossSummary
+			if p.enableAttributeLossAnalysis {
+				lossInfo = analyzeAttributeLoss(nodes, templateNode)
+				if !lossInfo.isEmpty() {
+					recordCtx := ctx
+					if p.shouldSampleAttributeLossExemplar() {
+						recordCtx = createExemplarContext(ctx, templateNode.span.TraceID(), templateNode.span.SpanID())
+					}
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
+				}
+			}
 
 			aggregationGroups[parentKey] = aggregationGroup{
-				nodes:        nodes,
-				depth:        depth,
-				templateNode: templateNode,
+				nodes:           nodes,
+				depth:           depth,
+				lossInfo:        lossInfo,
+				templateNode:    templateNode,
+				outlierAnalysis: outlierResult,
 			}
 			// Mark parent nodes for removal
 			for _, node := range nodes {

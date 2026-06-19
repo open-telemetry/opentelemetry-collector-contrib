@@ -23,7 +23,7 @@ $defs:
         items:
           $ref: field_extract_config
       deployment_name_from_replicaset:
-        description: DeploymentNameFromReplicaSet allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources.
+        description: 'DeploymentNameFromReplicaSet allows extracting deployment name from ReplicaSet name by trimming pod template hash. Deprecated: This option now defaults to true and will be removed in future releases.'
         type: boolean
       labels:
         description: Labels allows extracting data from pod labels and record it as resource attributes. It is a list of FieldExtractConfig type. See FieldExtractConfig documentation for more details.
@@ -31,7 +31,7 @@ $defs:
         items:
           $ref: field_extract_config
       metadata:
-        description: 'Metadata allows to extract pod/namespace/node metadata from a list of metadata fields. The field accepts a list of strings. Metadata fields supported right now are, k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.node.name, k8s.namespace.name, k8s.pod.start_time, k8s.replicaset.name, k8s.replicaset.uid, k8s.daemonset.name, k8s.daemonset.uid, k8s.job.name, k8s.job.uid, k8s.cronjob.name, k8s.cronjob.uid, k8s.statefulset.name, k8s.statefulset.uid, k8s.container.name, container.id, container.image.name, container.image.tag, container.image.repo_digests k8s.cluster.uid Specifying anything other than these values will result in an error. By default, the following fields are extracted and added to spans, metrics and logs as resource attributes: - k8s.pod.name - k8s.pod.uid - k8s.pod.start_time - k8s.namespace.name - k8s.node.name - k8s.deployment.name (if the pod is controlled by a deployment) - k8s.container.name (requires an additional attribute to be set: container.id) - container.image.name (requires one of the following additional attributes to be set: container.id or k8s.container.name) - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name)'
+        description: 'Metadata allows to extract pod/namespace/node metadata from a list of metadata fields. The field accepts a list of strings. Metadata fields supported right now are, k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.node.name, k8s.namespace.name, k8s.pod.start_time, k8s.replicaset.name, k8s.replicaset.uid, k8s.daemonset.name, k8s.daemonset.uid, k8s.job.name, k8s.job.uid, k8s.cronjob.name, k8s.cronjob.uid, k8s.statefulset.name, k8s.statefulset.uid, k8s.container.name, container.id, container.image.name, container.image.tag, container.image.repo_digests k8s.cluster.uid Specifying anything other than these values will result in an error. By default, the following fields are extracted and added to spans, metrics and logs as resource attributes: - k8s.pod.name - k8s.pod.uid - k8s.pod.start_time - k8s.namespace.name - k8s.node.name - k8s.deployment.name (if the pod is controlled by a deployment) - k8s.container.name (requires an additional attribute to be set: container.id) - container.image.name (requires one of the following additional attributes to be set: container.id or k8s.container.name) - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name) — deprecated, use container.image.tags - container.image.tags (requires one of the following additional attributes to be set: container.id or k8s.container.name)'
         type: array
         items:
           type: string
@@ -43,7 +43,7 @@ $defs:
     type: object
     properties:
       from:
-        description: From represents the source of the labels/annotations. Allowed values are "pod", "namespace", and "node". The default is pod.
+        description: From represents the source of the labels/annotations. Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
         type: string
       key:
         description: Key represents the annotation (or label) name. This must exactly match an annotation (or label) name.
@@ -128,11 +128,19 @@ properties:
     type: array
     items:
       $ref: pod_association_config
+  pod_delete_grace_period:
+    description: PodDeleteGracePeriod is the duration to wait before deleting a pod from the cache after receiving a delete event.
+    type: string
+    format: duration
   wait_for_metadata:
     description: WaitForMetadata is a flag that determines if the processor should wait k8s metadata to be synced when starting.
     type: boolean
   wait_for_metadata_timeout:
     description: WaitForMetadataTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
+    type: string
+    format: duration
+  watch_sync_period:
+    description: WatchSyncPeriod determines the resync period for K8s informers. Reprocessing the informer cache periodically can cause significant memory churn and CPU spikes. Setting this to 0 disables resync.
     type: string
     format: duration
 allOf:

@@ -14,9 +14,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -413,4 +416,70 @@ func readLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	return bytes.NewReader(data)
+}
+
+func TestRPCAttributeFeatureGates(t *testing.T) {
+	// not parallel: mutates global featuregate registry
+	record := &CloudTrailRecord{
+		EventVersion: "1.08",
+		EventID:      "test-event-id",
+		EventName:    "TestAction",
+		EventType:    "AwsApiCall",
+		EventSource:  "test.amazonaws.com",
+	}
+
+	tests := []struct {
+		name           string
+		emitV1         bool
+		dontEmitV0     bool
+		wantSystem     bool
+		wantService    bool
+		wantSystemName bool
+	}{
+		{
+			name:           "default: only v0 attributes",
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: false,
+		},
+		{
+			name:           "emit v1: both old and new",
+			emitV1:         true,
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: true,
+		},
+		{
+			name:           "emit v1 and dont emit v0: only new",
+			emitV1:         true,
+			dontEmitV0:     true,
+			wantSystem:     false,
+			wantService:    false,
+			wantSystemName: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := featuregate.GlobalRegistry()
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), tt.emitV1))
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
+			t.Cleanup(func() {
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
+			})
+
+			u := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test"}, false)
+			attrs := pcommon.NewMap()
+			u.setLogAttributes(attrs, record)
+
+			_, hasSystem := attrs.Get("rpc.system")
+			_, hasService := attrs.Get("rpc.service")
+			_, hasSystemName := attrs.Get("rpc.system.name")
+
+			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
+			require.Equal(t, tt.wantService, hasService, "rpc.service")
+			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
+		})
+	}
 }

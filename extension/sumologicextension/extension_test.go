@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,19 +87,22 @@ func TestBasicStart(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
-				_, err := w.Write([]byte(`{
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, "collector_name")
+
+				_, writeErr := w.Write([]byte(`{
 					"collectorCredentialID": "collectorId",
 					"collectorCredentialKey": "collectorKey",
 					"collectorId": "id"
 				}`))
-				if err != nil {
+				if writeErr != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 
@@ -145,13 +149,16 @@ func TestStoreCredentials(t *testing.T) {
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
 				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -466,13 +473,16 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
 				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -565,13 +575,15 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -631,13 +643,15 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -661,6 +675,9 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			// register again because force registration was set
 			case 3:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -718,11 +735,13 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 	t.Parallel()
 
+	hostname, err := getHostname(zap.NewNop())
+	require.NoError(t, err)
+
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := reqCount.Add(1)
 
 			switch reqNum {
@@ -730,11 +749,14 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
 
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
+
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
+				_, err = w.Write([]byte(`{
 					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
@@ -1086,13 +1108,15 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch {
 			// register
 			case reqNum <= retriesLimit:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1155,8 +1179,10 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			assert.Equal(t, registerURL, req.URL.Path)
+
+			// Verify registration payload
+			verifyRegistrationPayload(t, req, hostname)
 
 			authHeader := req.Header.Get("Authorization")
 			assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1608,6 +1634,115 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestStartDoesNotBlockWhenMetadataUpdateFails verifies that when update_metadata
+// is enabled and the first metadata request returns an error (e.g. HTTP 500 on
+// Windows before the network is fully initialized), Start() still returns nil so
+// that collector startup is not blocked.
+func TestStartDoesNotBlockWhenMetadataUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	var reqCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		n := reqCount.Add(1)
+		switch req.URL.Path {
+		case registerURL:
+			_, err := w.Write([]byte(`{
+				"collectorCredentialID": "collectorId",
+				"collectorCredentialKey": "collectorKey",
+				"collectorId": "id"
+			}`))
+			assert.NoError(t, err)
+		case metadataURL:
+			// Always return 500 so the async goroutine keeps retrying.
+			// We only care that Start() returned without an error.
+			w.WriteHeader(http.StatusInternalServerError)
+		case heartbeatURL:
+			if n > 10 {
+				w.WriteHeader(http.StatusNoContent)
+			}
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(func() { srv.Close() })
+
+	dir := t.TempDir()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectorName = "collector_name"
+	cfg.APIBaseURL = srv.URL
+	cfg.Credentials.InstallationToken = "dummy_install_token"
+	cfg.CollectorCredentialsDirectory = dir
+	cfg.BackOff.InitialInterval = time.Millisecond
+	cfg.BackOff.MaxInterval = time.Millisecond
+
+	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+
+	// Start() must not return an error even though the metadata endpoint is
+	// returning HTTP 500.
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
+}
+
+// TestUpdateMetadataAsyncRetriesUntilSuccess verifies that the async retry
+// goroutine keeps retrying the metadata update after a transient failure and
+// exits once the update succeeds.
+func TestUpdateMetadataAsyncRetriesUntilSuccess(t *testing.T) {
+	t.Parallel()
+
+	var metadataReqCount atomic.Int32
+	const failUntilReq = 3 // fail the first N metadata requests
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case registerURL:
+			_, err := w.Write([]byte(`{
+				"collectorCredentialID": "collectorId",
+				"collectorCredentialKey": "collectorKey",
+				"collectorId": "id"
+			}`))
+			assert.NoError(t, err)
+		case metadataURL:
+			n := metadataReqCount.Add(1)
+			if n <= failUntilReq {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+		case heartbeatURL:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(func() { srv.Close() })
+
+	dir := t.TempDir()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectorName = "collector_name"
+	cfg.APIBaseURL = srv.URL
+	cfg.Credentials.InstallationToken = "dummy_install_token"
+	cfg.CollectorCredentialsDirectory = dir
+	cfg.BackOff.InitialInterval = time.Millisecond
+	cfg.BackOff.MaxInterval = time.Millisecond
+
+	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+
+	// The async goroutine should eventually succeed, meaning the total metadata
+	// request count must exceed failUntilReq.
+	assert.Eventually(t,
+		func() bool { return metadataReqCount.Load() > failUntilReq },
+		5*time.Second, 10*time.Millisecond,
+		"async metadata retry goroutine should have retried and succeeded",
+	)
+
+	require.NoError(t, se.Shutdown(t.Context()))
+}
+
 func Test_cleanupBuildVersion(t *testing.T) {
 	type args struct {
 		version string
@@ -1676,4 +1811,22 @@ func Test_cleanupBuildVersion(t *testing.T) {
 			assert.Equalf(t, tt.want, cleanupBuildVersion(tt.args.version), "cleanupBuildVersion(%v)", tt.args.version)
 		})
 	}
+}
+
+// Verify Registration Payload
+func verifyRegistrationPayload(t *testing.T, req *http.Request, expectedName string) {
+	t.Helper()
+
+	// Read request body
+	body, err := io.ReadAll(req.Body)
+	assert.NoError(t, err)
+
+	// Unmarshal collector name
+	var payload struct {
+		CollectorName string `json:"collectorName"`
+	}
+	err = json.Unmarshal(body, &payload)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedName, payload.CollectorName)
 }

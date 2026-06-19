@@ -22,11 +22,12 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := t.Context()
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
@@ -40,13 +41,12 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
-	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs := metadata.NewDefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMCPUTime.Enabled = true
-	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
@@ -63,8 +63,10 @@ func TestScrape_TLS(t *testing.T) {
 	mockServer := mock.MockServer(t, true)
 	defer mockServer.Close()
 
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
+
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
@@ -97,16 +99,16 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 }
 
 func setResourcePoolMemoryUsageAttrFeatureGate(t *testing.T, val bool) {
-	wasEnabled := enableResourcePoolMemoryUsageAttr.IsEnabled()
+	wasEnabled := metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(
-		enableResourcePoolMemoryUsageAttr.ID(),
+		metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.ID(),
 		val,
 	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		err := featuregate.GlobalRegistry().Set(
-			enableResourcePoolMemoryUsageAttr.ID(),
+			metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.ID(),
 			wasEnabled,
 		)
 		require.NoError(t, err)
@@ -120,7 +122,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		mb:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 reaggregation_enabled: true
 

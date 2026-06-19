@@ -142,7 +142,7 @@ processors:
 
   # The resource detection processor adds context related to the cloud provider the Collector is running on.
   # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
-  resourcedetection:
+  resource_detection:
     detectors: [gcp, ecs, ec2, azure, system]
 
 # Read more about exporters here:
@@ -260,10 +260,10 @@ exporters:
       #
       # resource_attributes_as_tags: false
 
-      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
-      ## Set to true to add metadata about the instrumentation scope that created a metric.
+      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: true
+      ## Adds metadata about the instrumentation scope that created a metric. Set to false to disable.
       #
-      # instrumentation_scope_metadata_as_tags: false
+      # instrumentation_scope_metadata_as_tags: true
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
@@ -532,10 +532,10 @@ service:
       #
       # metrics/gateway:
       #   receivers: [otlp]
-      #   processors: [resourcedetection]
+      #   processors: [resource_detection]
       #   exporters: [otlp]
       #
       # traces/gateway:
       #   receivers: [otlp]
-      #   processors: [resourcedetection]
+      #   processors: [resource_detection]
       #   exporters: [otlp]

@@ -13,3 +13,8 @@ extensions:
 
 service:
   extensions: [opamp]
+  telemetry:
+    resource:
+      attributes:
+        - name: service.instance.id
+          value: "{{.InstanceUid}}"

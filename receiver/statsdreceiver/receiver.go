@@ -92,7 +92,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 	case transport.TCP, transport.TCP4, transport.TCP6:
 		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
 	case transport.UDS:
-		return transport.NewUDSServer(trans, config.NetAddr.Endpoint, config.SocketPermissions)
+		return transport.NewUDSServer(trans, config.NetAddr.Endpoint, config.SocketPermissions, config.SocketBufferSize)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
@@ -113,6 +113,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.EnableIPOnlyAggregation,
+		r.config.IgnoreHost,
 		r.config.TimerHistogramMapping,
 		r.config.CounterType,
 	)

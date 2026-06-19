@@ -52,6 +52,7 @@ The following exporter configuration parameters are supported.
 | `notifications:`        |                                                                                                                                            |             |          |
 | `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
 | `tag_object_after_ingestion`        | If enabled the receiver will attempt to tag the object after successfully ingesting it.                                                                  | false       | Optional |
+| `skip_ingesting_tagged_objects`        | If enabled the receiver will skip objects tagged by `tag_object_after_ingestion`. This can be used as a checkpointing mechanism, and requires an additional `s3:GetObjectTagging` permission                                                                  | false       | Optional |
 
 There are two modes of operation:
 

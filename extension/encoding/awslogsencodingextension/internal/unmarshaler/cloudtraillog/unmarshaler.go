@@ -507,14 +507,19 @@ func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *C
 		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	}
 
-	attrs.PutStr(string(conventionsv138.RPCSystemKey), record.EventType)
+	if !metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+		attrs.PutStr(string(conventionsv138.RPCSystemKey), record.EventType)
+		if record.EventSource != "" {
+			attrs.PutStr(string(conventionsv138.RPCServiceKey), record.EventSource)
+		}
+	}
+
+	if metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
+		attrs.PutStr(string(conventions.RPCSystemNameKey), record.EventType)
+	}
 
 	if record.APIVersion != "" {
 		attrs.PutStr("aws.cloudtrail.api_version", record.APIVersion)
-	}
-
-	if record.EventSource != "" {
-		attrs.PutStr(string(conventionsv138.RPCServiceKey), record.EventSource)
 	}
 
 	if record.RequestID != "" {

@@ -1,0 +1,11 @@
+receivers:
+  awscloudwatch:
+    region: us-west-2
+    # profile: <your profile name>
+    metrics:
+      collection_interval: 5m
+      period: 300s
+      discovery:
+        filters:
+          namespace: AWS/EC2
+        limit: 50

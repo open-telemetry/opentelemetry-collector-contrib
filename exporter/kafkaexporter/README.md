@@ -38,14 +38,17 @@ The following settings can be optionally configured:
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for log messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id`. See [Message Key](#message-key) for details.
 - `metrics`
   - `topic` (default = otlp\_metrics): The name of the Kafka topic to publish metrics to.
   - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for metric messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_metrics_by_resource_attributes`. See [Message Key](#message-key) for details.
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic to publish traces to.
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for trace messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_traces_by_id`. See [Message Key](#message-key) for details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
 - `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values configured in `include_metadata_keys`.
 - `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
@@ -84,13 +87,7 @@ The following settings can be optionally configured:
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When
-    disabled, the client does not make the initial request to broker at the
-    startup.
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
-  - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
 - `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)
@@ -108,6 +105,7 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes, calculated before compression.
+  - `max_broker_write_bytes` (default = 104857600) the maximum bytes the producer will write to a broker in a single request. Must be greater than or equal to `max_message_bytes`. Increase this when raising `max_message_bytes` above 100 MiB.
   - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
@@ -172,6 +170,16 @@ The destination topic can be defined in a few different ways and takes priority 
 2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
 3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
 4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic.
+
+## Message Key
+
+The Kafka record key can be set in the following ways, in order of precedence:
+
+1. When `<signal>::message_key_from_metadata_key` is configured and the named metadata key is present and non-empty, its value is used as the record key. This is intended to be used together with an upstream processor that evaluates OTTL expressions and stores the result in request metadata.
+2. When one of the `partition_*` flags is set (`partition_traces_by_id`, `partition_metrics_by_resource_attributes`, `partition_logs_by_resource_attributes`, or `partition_logs_by_trace_id`), the record key is derived from the signal data. These flags are mutually exclusive with `message_key_from_metadata_key` for the same signal.
+3. For Jaeger encodings (`jaeger_proto`, `jaeger_json`), the marshaler always keys records by the trace ID.
+4. Otherwise the record key is nil and the configured `record_partitioner` strategy determines which partition receives the record.
+
 
 ## Partitioning Kafka Records
 

@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -37,6 +39,7 @@ type k8sobjectsreceiver struct {
 	client          dynamic.Interface
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
+	storageClient   storage.Client
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
@@ -61,10 +64,6 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		objects[i].exclude = make(map[apiWatch.EventType]bool)
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
-		}
-		// Set default interval if in PullMode and interval is 0
-		if objects[i].Mode == k8sinventory.PullMode && objects[i].Interval == 0 {
-			objects[i].Interval = defaultPullInterval
 		}
 	}
 
@@ -124,6 +123,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 					Exclude:             object.exclude,
 				},
 				kr.setting.Logger,
+				kr.storageClient,
 				func(data *apiWatch.Event) {
 					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
 					if err != nil {
@@ -146,6 +146,15 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	kr.client = client
+
+	// Initialize storage client for resource version persistence if storage is configured
+	if kr.config.Storage != nil {
+		storageClient, storageErr := getStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+		if storageErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", storageErr)
+		}
+		kr.storageClient = storageClient
+	}
 
 	// Validate objects against K8s API
 	validObjects, err := kr.config.getValidObjects()
@@ -232,12 +241,20 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
+func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
 	kr.setting.Logger.Info("Object Receiver stopped")
 	if kr.cancel != nil {
 		kr.cancel()
 	}
 	kr.stopWatches()
+
+	// Close storage client if it exists
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
@@ -289,10 +306,44 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx, &kr.wg)
+	stopChan := kr.startObserver(ctx, obs, object)
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
 	return nil
+}
+
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
+	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
+		return obs.Start(ctx, &kr.wg)
+	}
+
+	stopChan := make(chan struct{})
+	kr.wg.Add(1)
+	//nolint:modernize // WaitGroup.Go not available without additional dependencies
+	go func() {
+		defer kr.wg.Done()
+
+		timer := time.NewTimer(object.InitialDelay)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+		case <-stopChan:
+			return
+		case <-ctx.Done():
+			return
+		}
+
+		observerStopChan := obs.Start(ctx, &kr.wg)
+
+		select {
+		case <-stopChan:
+			close(observerStopChan)
+		case <-ctx.Done():
+		}
+	}()
+
+	return stopChan
 }
 
 // handleError handles errors according to the configured error mode
@@ -320,4 +371,26 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		// This shouldn't happen as we validate ErrorMode during config validation
 		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
 	}
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
+	}
+
+	extension, ok := host.GetExtensions()[*storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
+	}
+
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }

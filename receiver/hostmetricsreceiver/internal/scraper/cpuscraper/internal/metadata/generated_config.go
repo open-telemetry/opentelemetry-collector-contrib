@@ -12,7 +12,7 @@ import (
 type SystemCPUFrequencyMetricAttributeKey string
 
 const (
-	SystemCPUFrequencyMetricAttributeKeyCpu             SystemCPUFrequencyMetricAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyCPU             SystemCPUFrequencyMetricAttributeKey = "cpu"
 	SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID SystemCPUFrequencyMetricAttributeKey = "host.cpu.socket.id"
 	SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID   SystemCPUFrequencyMetricAttributeKey = "host.cpu.core.id"
 )
@@ -43,7 +43,7 @@ func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUFrequencyMetricAttributeKeyCpu, SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID, SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID:
+		case SystemCPUFrequencyMetricAttributeKeyCPU, SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID, SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID:
 		default:
 			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
@@ -102,7 +102,7 @@ func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 type SystemCPUTimeMetricAttributeKey string
 
 const (
-	SystemCPUTimeMetricAttributeKeyCpu             SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyCPU             SystemCPUTimeMetricAttributeKey = "cpu"
 	SystemCPUTimeMetricAttributeKeyState           SystemCPUTimeMetricAttributeKey = "state"
 	SystemCPUTimeMetricAttributeKeyHostCPUSocketID SystemCPUTimeMetricAttributeKey = "host.cpu.socket.id"
 	SystemCPUTimeMetricAttributeKeyHostCPUCoreID   SystemCPUTimeMetricAttributeKey = "host.cpu.core.id"
@@ -134,7 +134,7 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SystemCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState, SystemCPUTimeMetricAttributeKeyHostCPUSocketID, SystemCPUTimeMetricAttributeKeyHostCPUCoreID:
+		case SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState, SystemCPUTimeMetricAttributeKeyHostCPUSocketID, SystemCPUTimeMetricAttributeKeyHostCPUCoreID:
 		default:
 			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
@@ -153,7 +153,7 @@ func (ms *SystemCPUTimeMetricConfig) Validate() error {
 type SystemCPUUtilizationMetricAttributeKey string
 
 const (
-	SystemCPUUtilizationMetricAttributeKeyCpu             SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyCPU             SystemCPUUtilizationMetricAttributeKey = "cpu"
 	SystemCPUUtilizationMetricAttributeKeyState           SystemCPUUtilizationMetricAttributeKey = "state"
 	SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID SystemCPUUtilizationMetricAttributeKey = "host.cpu.socket.id"
 	SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID   SystemCPUUtilizationMetricAttributeKey = "host.cpu.core.id"
@@ -185,7 +185,7 @@ func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState, SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID, SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID:
+		case SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState, SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID, SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID:
 		default:
 			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
@@ -214,7 +214,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
+			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
 		},
 		SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 			Enabled: false,
@@ -225,12 +225,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
 		},
 		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 		},
 	}
 }
@@ -240,8 +240,13 @@ type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

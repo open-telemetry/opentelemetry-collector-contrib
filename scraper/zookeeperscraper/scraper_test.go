@@ -86,6 +86,25 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedNumResourceMetrics: 1,
 		},
 		{
+			name: "Test correctness with v3.7.2",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.7.2",
+				"ruok": "ruok-valid",
+			},
+			expectedMetricsFilename: "correctness-v3.7.2",
+			expectedResourceAttributes: map[string]string{
+				"server.state": "standalone",
+				"zk.version":   "3.7.2-a055d78707164783287056086786315873919992",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
+			},
+			expectedNumResourceMetrics: 1,
+		},
+		{
 			name:                "Arbitrary connection error",
 			mockZKConnectionErr: true,
 			expectedLogs: []logMsg{
@@ -122,7 +141,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			},
 			expectedLogs: []logMsg{
 				{
-					msg:   "non-integer value from mntr",
+					msg:   "non-parseable value from mntr",
 					level: zapcore.DebugLevel,
 				},
 				{
