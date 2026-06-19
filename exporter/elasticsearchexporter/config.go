@@ -292,6 +292,12 @@ type MappingsSettings struct {
 	// If unspecified, all mapping modes are allowed.
 	AllowedModes []string `mapstructure:"allowed_modes"`
 
+	// ECSSpanEventsToLogs, when true, extracts span events as separate log documents
+	// in ECS mapping mode. Exception events (name "exception" with exception.type or
+	// exception.message) are routed to logs-apm.error-*, all other span events to
+	// logs-apm.app.<service>-*. Disabled by default; has no effect in other mapping modes.
+	ECSSpanEventsToLogs bool `mapstructure:"ecs_span_events_to_logs"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
