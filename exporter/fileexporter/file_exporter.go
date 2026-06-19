@@ -5,6 +5,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -64,8 +65,8 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 	export := buildExportFunc(e.conf)
 
 	// Optionally ensure the output directory exists.
+	dir := filepath.Dir(e.conf.Path)
 	if e.conf.CreateDirectory {
-		dir := filepath.Dir(e.conf.Path)
 		perm := os.FileMode(0o755)
 		if e.conf.directoryPermissionsParsed != 0 {
 			perm = os.FileMode(e.conf.directoryPermissionsParsed)
@@ -74,6 +75,10 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if err = checkDirWritable(dir); err != nil {
+		return err
 	}
 
 	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
@@ -93,4 +98,42 @@ func (e *fileExporter) Shutdown(context.Context) error {
 	w := e.writer
 	e.writer = nil
 	return w.shutdown()
+}
+
+func checkDirWritable(dir string) error {
+	if info, err := os.Stat(dir); err == nil && !info.IsDir() {
+		return fmt.Errorf("path %q is not a directory", dir)
+	}
+
+	existingDir := findClosestExistingDir(dir)
+	if existingDir == "" {
+		existingDir = "."
+	}
+
+	f, err := os.CreateTemp(existingDir, "otel-write-check-*.tmp")
+	if err != nil {
+		return fmt.Errorf("directory %q is not writable: %w", existingDir, err)
+	}
+	f.Close()
+	_ = os.Remove(f.Name())
+	return nil
+}
+
+func findClosestExistingDir(dir string) string {
+	for {
+		if dir == "" || dir == "." || dir == "/" {
+			return dir
+		}
+		if len(dir) == 2 && dir[1] == ':' {
+			return dir
+		}
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return dir
+		}
+		dir = parent
+	}
 }

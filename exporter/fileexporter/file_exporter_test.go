@@ -1031,3 +1031,35 @@ func TestFileAppendLogsExporter(t *testing.T) {
 		})
 	}
 }
+
+func TestFileExporterWritabilityCheck(t *testing.T) {
+	// Create a temporary file to act as a non-directory path.
+	tempFile := filepath.Join(t.TempDir(), "not_a_directory")
+	err := os.WriteFile(tempFile, []byte("data"), 0o644)
+	require.NoError(t, err)
+
+	// Test 1: fileExporter.Start should fail when the destination directory is actually a file.
+	cfg1 := &Config{
+		Path:       filepath.Join(tempFile, "output.log"),
+		FormatType: formatTypeJSON,
+	}
+	fe1 := newFileExporter(cfg1, zap.NewNop()).(*fileExporter)
+	err = fe1.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a directory")
+
+	// Test 2: groupingFileExporter.Start should fail when the destination directory is actually a file.
+	cfg2 := &Config{
+		Path:       filepath.Join(tempFile, "*.log"),
+		FormatType: formatTypeJSON,
+		GroupBy: &GroupBy{
+			Enabled:           true,
+			ResourceAttribute: "fileexporter.path_segment",
+		},
+	}
+	fe2 := newFileExporter(cfg2, zap.NewNop()).(*groupingFileExporter)
+	err = fe2.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a directory")
+}
+

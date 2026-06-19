@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -296,6 +297,11 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	export := buildExportFunc(e.conf)
 
 	pathParts := strings.Split(e.conf.Path, "*")
+
+	dir := filepath.Dir(pathParts[0])
+	if err = checkDirWritable(dir); err != nil {
+		return err
+	}
 
 	e.pathPrefix = cleanPathPrefix(pathParts[0])
 	e.attribute = e.conf.GroupBy.ResourceAttribute
