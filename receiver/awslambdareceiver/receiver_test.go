@@ -406,11 +406,9 @@ func TestExtractFirstKey(t *testing.T) {
 
 func TestDetectTriggerType(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        []byte
-		want         eventType
-		isError      bool
-		errorContent string
+		name  string
+		input []byte
+		want  eventType
 	}{
 		{
 			name:  "Parse S3 event",
@@ -418,26 +416,19 @@ func TestDetectTriggerType(t *testing.T) {
 			want:  s3Event,
 		},
 		{
-			name:         "Invalid event - unknown json",
-			input:        []byte(`{"key": "value"}`),
-			isError:      true,
-			errorContent: "unknown event type",
+			name:  "Invalid event - unknown json",
+			input: []byte(`{"key": "value"}`),
+			want:  customEvent,
 		},
 		{
-			name:         "Invalid event - no JSON key",
-			input:        []byte(`invalid content`),
-			isError:      true,
-			errorContent: "invalid JSON payload",
+			name:  "Invalid event - no JSON key",
+			input: []byte(`invalid content`),
+			want:  customEvent,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := detectTriggerType(tt.input)
-			if tt.errorContent != "" {
-				require.ErrorContains(t, err, tt.errorContent)
-				return
-			}
-			require.NoError(t, err)
+			got := detectTriggerType(tt.input)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -496,22 +487,22 @@ func TestHandleCustomTrigger(t *testing.T) {
 			expectHandleCount: 0,
 		},
 		{
-			name: "Event handling fails for unknown event type",
+			name: "Custom trigger for custom event",
 			handlerFunc: func() internal.CustomTriggerHandler {
 				handler := internal.NewMockCustomTriggerHandler(goMock)
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
 				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
 				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
 				handler.EXPECT().Error().AnyTimes().Return(nil)
 
 				handler.EXPECT().
 					GetNext(gomock.Any()).Times(1).
-					Return([]byte(`{"test": "unknown trigger"}`), nil)
+					Return([]byte(`{"test": "someMessage"}`), nil)
 
 				return handler
 			},
-			expectHandleCount: 0,
-			expectError:       "unknown event type with key: test",
+			expectHandleCount: 1,
 		},
 		{
 			name: "Event handling ends with error when handler returns error",

@@ -28,9 +28,10 @@ import (
 type eventType string
 
 const (
-	s3Event           eventType = "S3Event"
-	cwEvent           eventType = "CloudWatchEvent"
-	customReplayEvent eventType = "replayFailedEvents"
+	s3Event     eventType = "S3Event"
+	cwEvent     eventType = "CloudWatchEvent"
+	customEvent eventType = "CustomEvent"
+	replayEvent eventType = "replayFailedEvents"
 
 	// defaultMetricsEncodingExtension defines the default encoding extension ID for metrics when none is specified
 	defaultMetricsEncodingExtension = "awscloudwatchmetricstreams_encoding"
@@ -113,14 +114,9 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 
 // processLambdaEvent filters trigger events and forward to dedicated processors
 func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.RawMessage) error {
-	triggerType, err := detectTriggerType(event)
-	if err != nil {
-		// Unknown or invalid event triggers are suppressed so that they do not get replayed by the lambda framework.
-		a.logger.Error("Received an event with invalid or unsupported trigger type", zap.Error(err))
-		return nil
-	}
+	triggerType := detectTriggerType(event)
 
-	if triggerType == customReplayEvent {
+	if triggerType == replayEvent {
 		a.logger.Info("Running custom event", zap.String(logInvokedTrigger, string(triggerType)))
 		service, err := a.s3Provider.GetService(ctx)
 		if err != nil {
@@ -159,13 +155,7 @@ func (a *awsLambdaReceiver) handleCustomTriggers(ctx context.Context, customEven
 			continue
 		}
 
-		tType, err := detectTriggerType(content)
-		if err != nil {
-			// Note - Manual triggers are synchronous.
-			// Errors for synchronous invocations are not retried by Lambda & not stored at error destination.
-			return fmt.Errorf("invalid lambda trigger event from custom trigger: %w", err)
-		}
-
+		tType := detectTriggerType(content)
 		err = a.handleEvent(ctx, content, tType)
 		if err != nil {
 			a.logger.Error("error while processing content of the custom trigger", zap.Error(err))
@@ -246,7 +236,7 @@ func newLogsHandler(
 		}
 		getLogsDecoder = s3Router.GetDecoder
 	} else {
-		s3LogsDecoder := internal.NewDefaultS3LogsDecoder()
+		s3LogsDecoder := internal.NewDefaultBlobDecoder()
 		if cfg.S3.Encoding != "" {
 			logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
 			s3LogsDecoder, err = resolveLogsDecoder(host, cfg.S3.Encoding)
@@ -272,6 +262,17 @@ func newLogsHandler(
 	}
 	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
 
+	customDecoder := internal.NewDefaultBlobDecoder()
+	if cfg.Custom.Encoding != "" {
+		logger.Info("Using configured encoding for custom logs trigger", zap.String("encoding", cfg.Custom.Encoding))
+		customDecoder, err = resolveLogsDecoder(host, cfg.Custom.Encoding)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	registry[customEvent] = newCustomHandler(customDecoder, next)
+
 	return newHandlerProvider(registry), nil
 }
 
@@ -281,7 +282,7 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 	sortedEncodings := cfg.sortedEncodings()
 	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
 
-	defaultDecoder := internal.NewDefaultS3LogsDecoder()
+	defaultDecoder := internal.NewDefaultBlobDecoder()
 	for _, enc := range sortedEncodings {
 		if enc.Encoding == "" {
 			// No extension configured: use the raw-passthrough decoder.
@@ -398,31 +399,35 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 // Supported trigger types are:
 // - S3Event
 // - CloudWatchEvent
+// - CustomEvent
 // See payload content at official documentation,
 //   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
 //   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
 //
 // Suppoerted custom trigger type:
 // - replayFailedEvents
-func detectTriggerType(data []byte) (eventType, error) {
+// Beyond these, all other events will be fall through to CustomEvent category.
+func detectTriggerType(data []byte) eventType {
 	switch {
 	case bytes.HasPrefix(data, []byte(`{"Records"`)):
-		return s3Event, nil
+		return s3Event
 	case bytes.HasPrefix(data, []byte(`{"awslogs"`)):
-		return cwEvent, nil
+		return cwEvent
 	}
 
 	// fallback for possible manual trigger cases
 	key, err := extractFirstKey(data)
 	if err != nil {
-		return "", err
+		// Note errors are intentionally ignored. Return as a custom event
+		return customEvent
 	}
 
-	if key == string(customReplayEvent) {
-		return customReplayEvent, nil
+	if key == string(replayEvent) {
+		return replayEvent
 	}
 
-	return "", fmt.Errorf("unknown event type with key: %s", key)
+	// fallback to handle as a custom event
+	return customEvent
 }
 
 // extractFirstKey extracts the first JSON key from byte array without parsing it.
