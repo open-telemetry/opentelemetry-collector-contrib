@@ -37,7 +37,7 @@ const (
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
 	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
 	sourceKey                      = "source"                             // OpenTelemetry non-standard constant.
-	sourceValue                    = "spanmetrics"
+	sourceValue                    = "spanmetrics"                        // OpenTelemetry non-standard constant.
 	otelStatusCodeKey              = "otel.status_code"                   // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
