@@ -214,14 +214,21 @@ Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, 
 | `tool_calls` are present | `assistant` |
 | Neither present | `user` |
 
-##### GenAI semconv message fields not produced
+##### GenAI semconv part types not produced
 
-The following fields defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) are not produced by this processor because OpenInference does not emit them:
+The following part types are defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) but are not emitted by this processor:
 
-| Field | Schema | Reason not produced |
-|-------|--------|---------------------|
-| `GenericServerToolCall` part type | input messages | Not emitted by OpenInference instrumentors |
-| `finish_reason` (non-empty) | output messages | OpenInference has no per-message finish reason; emitted as `""` |
+| Part type | Applies to | Reason not produced |
+|-----------|------------|---------------------|
+| `blob` | input & output | Multimodal — OpenInference uses the `message.contents.M.message_content.*` indexed array, which is not reconstructed (see multimodal limitation above) |
+| `file` | input & output | Same multimodal limitation |
+| `uri` | input & output | Same multimodal limitation |
+| `reasoning` | input & output | OpenInference carries reasoning inside the `message.contents` indexed array (type `"reasoning"`), not as a top-level message field; blocked by the same multimodal limitation |
+| `server_tool_call` (incl. nested `GenericServerToolCall`) | input & output | OpenInference does not model server-side tool calls (e.g. `code_interpreter`, `web_search`) as flattened span attributes |
+| `server_tool_call_response` (incl. nested `GenericServerToolCallResponse`) | input & output | Same — no OpenInference source attributes exist for server tool responses |
+| `compaction` | input & output | OpenInference does not emit compaction/context-window summary data |
+| `GenericPart` | input & output | Extensibility type — no OpenInference source attributes to map from |
+| `finish_reason` (non-empty) | output only | OpenInference has no per-message finish reason; the field is required by the schema and always emitted as `""`. Use the span-level `gen_ai.response.finish_reasons` instead |
 
 ##### Output format
 
