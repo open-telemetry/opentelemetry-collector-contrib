@@ -245,6 +245,7 @@ func cleanPathPrefix(pathPrefix string) string {
 }
 
 func (e *groupingFileExporter) fullPath(pathSegment string) string {
+	pathSegment = strings.ReplaceAll(pathSegment, "\\", "/")
 	if strings.HasPrefix(pathSegment, "./") {
 		pathSegment = pathSegment[1:]
 	} else if strings.HasPrefix(pathSegment, "../") {
