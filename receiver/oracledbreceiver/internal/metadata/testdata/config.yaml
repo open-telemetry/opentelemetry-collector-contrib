@@ -1,13 +1,10 @@
 default:
 all_set:
   metrics:
-    oracledb.buffer.count:
+    oracledb.buffer.inspected:
       enabled: true
       attributes: ["oracledb.buffer.state"]
     oracledb.buffer.requests:
-      enabled: true
-      attributes: ["oracledb.buffer.request.type"]
-    oracledb.buffer.scanned:
       enabled: true
     oracledb.buffer_cache.block.changes:
       enabled: true
@@ -176,13 +173,10 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
-    oracledb.buffer.count:
+    oracledb.buffer.inspected:
       enabled: true
       attributes: []
     oracledb.buffer.requests:
-      enabled: true
-      attributes: []
-    oracledb.buffer.scanned:
       enabled: true
     oracledb.buffer_cache.block.changes:
       enabled: true
@@ -351,13 +345,10 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
-    oracledb.buffer.count:
+    oracledb.buffer.inspected:
       enabled: false
       attributes: ["oracledb.buffer.state"]
     oracledb.buffer.requests:
-      enabled: false
-      attributes: ["oracledb.buffer.request.type"]
-    oracledb.buffer.scanned:
       enabled: false
     oracledb.buffer_cache.block.changes:
       enabled: false

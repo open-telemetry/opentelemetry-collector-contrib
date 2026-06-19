@@ -241,9 +241,9 @@ metrics:
     enabled: true
 ```
 
-### oracledb.buffer.count
+### oracledb.buffer.inspected
 
-Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state. state=free counts the free buffers DBWR found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').
+Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state. state=free counts reusable buffers skipped (v$sysstat 'free buffer inspected'); state=dirty counts dirty buffers found (v$sysstat 'dirty buffers inspected'). A rising dirty share indicates the cache fills with dirty blocks faster than DBWR can flush them.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -253,29 +253,15 @@ Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.buffer.state | The state of the buffers being counted in the buffer cache (e.g. free). | Str: ``free`` | Recommended | - |
+| oracledb.buffer.state | The state of a buffer encountered while inspecting the LRU queue for a reusable buffer (free = a reusable buffer that was skipped; dirty = a dirty buffer found). | Str: ``free``, ``dirty`` | Recommended | - |
 
 ### oracledb.buffer.requests
 
-Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.
+Number of times a reusable or free buffer was requested to create or load a block (v$sysstat 'free buffer requested').
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {requests} | Sum | Int | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.buffer.request.type | The type of buffer-management request handled by the Database Writer (DBWR) (e.g. make_free). | Str: ``make_free`` | Recommended | - |
-
-### oracledb.buffer.scanned
-
-Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {buffers} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.buffer_cache.block.changes
 

@@ -85,11 +85,11 @@ const (
 	// Buffer cache and DBWR v$sysstat names
 	dbBlockChanges               = "db block changes"
 	dbBlockGetsFromCache         = "db block gets from cache"
-	dbwrBuffersScanned           = "DBWR buffers scanned"
 	dbwrCheckpointBuffersWritten = "DBWR checkpoint buffers written"
 	dbwrCheckpoints              = "DBWR checkpoints"
-	dbwrFreeBuffersFound         = "DBWR free buffers found"
-	dbwrMakeFreeRequests         = "DBWR make free requests"
+	freeBufferRequested          = "free buffer requested"
+	freeBufferInspected          = "free buffer inspected"
+	dirtyBuffersInspected        = "dirty buffers inspected"
 
 	// I/O performance v$sysstat names
 	physicalReadBytesStat            = "physical read bytes"
@@ -323,10 +323,9 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbBufferScanned.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbBufferCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
@@ -542,10 +541,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			case dbwrBuffersScanned:
-				if err := s.mb.RecordOracledbBufferScannedDataPoint(now, row["VALUE"]); err != nil {
-					scrapeErrors = append(scrapeErrors, err)
-				}
 			case dbwrCheckpointBuffersWritten:
 				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
@@ -554,12 +549,16 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			case dbwrFreeBuffersFound:
-				if err := s.mb.RecordOracledbBufferCountDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+			case freeBufferRequested:
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			case dbwrMakeFreeRequests:
-				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferRequestTypeMakeFree); err != nil {
+			case freeBufferInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dirtyBuffersInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateDirty); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

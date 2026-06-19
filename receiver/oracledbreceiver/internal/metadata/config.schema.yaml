@@ -4,8 +4,8 @@ $defs:
     description: MetricsConfig provides config for oracledb metrics.
     type: object
     properties:
-      oracledb.buffer.count:
-        description: "OracledbBufferCountMetricConfig provides config for the oracledb.buffer.count metric."
+      oracledb.buffer.inspected:
+        description: "OracledbBufferInspectedMetricConfig provides config for the oracledb.buffer.inspected metric."
         type: object
         properties:
           enabled:
@@ -13,13 +13,6 @@ $defs:
             default: false
       oracledb.buffer.requests:
         description: "OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.buffer.scanned:
-        description: "OracledbBufferScannedMetricConfig provides config for the oracledb.buffer.scanned metric."
         type: object
         properties:
           enabled:

@@ -77,11 +77,11 @@ var queryResponses = map[string][]metricRow{
 		// Buffer cache and DBWR v$sysstat rows
 		{"NAME": dbBlockChanges, "VALUE": "8800000"},
 		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
-		{"NAME": dbwrBuffersScanned, "VALUE": "55000"},
 		{"NAME": dbwrCheckpointBuffersWritten, "VALUE": "12000"},
 		{"NAME": dbwrCheckpoints, "VALUE": "320"},
-		{"NAME": dbwrFreeBuffersFound, "VALUE": "48000"},
-		{"NAME": dbwrMakeFreeRequests, "VALUE": "6100"},
+		{"NAME": freeBufferRequested, "VALUE": "6100"},
+		{"NAME": freeBufferInspected, "VALUE": "55000"},
+		{"NAME": dirtyBuffersInspected, "VALUE": "1200"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -410,10 +410,9 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbBufferCacheBlockChanges.Enabled = true
 	cfg.Metrics.OracledbBufferCacheBlockGets.Enabled = true
-	cfg.Metrics.OracledbBufferScanned.Enabled = true
+	cfg.Metrics.OracledbBufferInspected.Enabled = true
 	cfg.Metrics.OracledbCheckpointBuffers.Enabled = true
 	cfg.Metrics.OracledbCheckpointCompleted.Enabled = true
-	cfg.Metrics.OracledbBufferCount.Enabled = true
 	cfg.Metrics.OracledbBufferRequests.Enabled = true
 
 	scrpr := oracleScraper{
@@ -462,13 +461,13 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	// Standalone counters (no attributes).
 	assert.Equal(t, int64(8800000), got["oracledb.buffer_cache.block.changes"][""])
 	assert.Equal(t, int64(7700000), got["oracledb.buffer_cache.block.gets"][""])
-	assert.Equal(t, int64(55000), got["oracledb.buffer.scanned"][""])
 	assert.Equal(t, int64(12000), got["oracledb.checkpoint.buffers"][""])
 	assert.Equal(t, int64(320), got["oracledb.checkpoint.completed"][""])
 
-	// Attributed counters carry a single data point keyed by the buffer state / request type.
-	assert.Equal(t, int64(48000), got["oracledb.buffer.count"]["oracledb.buffer.state=free"])
-	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"]["oracledb.buffer.request.type=make_free"])
+	// buffer.requests has no attributes; buffer.inspected is keyed by buffer state.
+	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"][""])
+	assert.Equal(t, int64(55000), got["oracledb.buffer.inspected"]["oracledb.buffer.state=free"])
+	assert.Equal(t, int64(1200), got["oracledb.buffer.inspected"]["oracledb.buffer.state=dirty"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

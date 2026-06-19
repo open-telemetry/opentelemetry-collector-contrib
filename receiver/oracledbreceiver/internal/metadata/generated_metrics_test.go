@@ -67,8 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["oracledb.buffer.count"] = mb.metricOracledbBufferCount.config.AggregationStrategy
-			aggMap["oracledb.buffer.requests"] = mb.metricOracledbBufferRequests.config.AggregationStrategy
+			aggMap["oracledb.buffer.inspected"] = mb.metricOracledbBufferInspected.config.AggregationStrategy
 			aggMap["oracledb.execution.utilization"] = mb.metricOracledbExecutionUtilization.config.AggregationStrategy
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
@@ -88,19 +87,13 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordOracledbBufferCountDataPoint(ts, "1", AttributeOracledbBufferStateFree)
+			mb.RecordOracledbBufferInspectedDataPoint(ts, "1", AttributeOracledbBufferStateFree)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbBufferCountDataPoint(ts, "3", AttributeOracledbBufferStateFree)
+				mb.RecordOracledbBufferInspectedDataPoint(ts, "3", AttributeOracledbBufferStateDirty)
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbBufferRequestsDataPoint(ts, "1", AttributeOracledbBufferRequestTypeMakeFree)
-			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbBufferRequestsDataPoint(ts, "3", AttributeOracledbBufferRequestTypeMakeFree)
-			}
-
-			allMetricsCount++
-			mb.RecordOracledbBufferScannedDataPoint(ts, "1")
+			mb.RecordOracledbBufferRequestsDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbBufferCacheBlockChangesDataPoint(ts, "1")
@@ -339,8 +332,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricOracledbBufferCount.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbBufferRequests.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbBufferInspected.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbExecutionUtilization.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
@@ -377,13 +369,13 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
-				case "oracledb.buffer.count":
+				case "oracledb.buffer.inspected":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.buffer.count"], "Found a duplicate in the metrics slice: oracledb.buffer.count")
-						validatedMetrics["oracledb.buffer.count"] = true
+						assert.False(t, validatedMetrics["oracledb.buffer.inspected"], "Found a duplicate in the metrics slice: oracledb.buffer.inspected")
+						validatedMetrics["oracledb.buffer.inspected"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state. state=free counts the free buffers DBWR found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').", mi.Description())
+						assert.Equal(t, "Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state. state=free counts reusable buffers skipped (v$sysstat 'free buffer inspected'); state=dirty counts dirty buffers found (v$sysstat 'dirty buffers inspected'). A rising dirty share indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
 						assert.Equal(t, "{buffers}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -396,11 +388,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "free", oracledbBufferStateAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.buffer.count"], "Found a duplicate in the metrics slice: oracledb.buffer.count")
-						validatedMetrics["oracledb.buffer.count"] = true
+						assert.False(t, validatedMetrics["oracledb.buffer.inspected"], "Found a duplicate in the metrics slice: oracledb.buffer.inspected")
+						validatedMetrics["oracledb.buffer.inspected"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffers tracked by the Database Writer (DBWR), grouped by buffer state. state=free counts the free buffers DBWR found while scanning for buffers to write (v$sysstat 'DBWR free buffers found').", mi.Description())
+						assert.Equal(t, "Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state. state=free counts reusable buffers skipped (v$sysstat 'free buffer inspected'); state=dirty counts dirty buffers found (v$sysstat 'dirty buffers inspected'). A rising dirty share indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
 						assert.Equal(t, "{buffers}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -408,7 +400,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.buffer.count"] {
+						switch aggMap["oracledb.buffer.inspected"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -422,56 +414,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "oracledb.buffer.requests":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.buffer.requests"], "Found a duplicate in the metrics slice: oracledb.buffer.requests")
-						validatedMetrics["oracledb.buffer.requests"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
-						assert.Equal(t, "{requests}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbBufferRequestTypeAttrVal, ok := dp.Attributes().Get("oracledb.buffer.request.type")
-						assert.True(t, ok)
-						assert.Equal(t, "make_free", oracledbBufferRequestTypeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["oracledb.buffer.requests"], "Found a duplicate in the metrics slice: oracledb.buffer.requests")
-						validatedMetrics["oracledb.buffer.requests"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of buffer-management requests handled by the Database Writer (DBWR), grouped by request type. request.type=make_free counts requests to make free buffers available for foreground sessions (v$sysstat 'DBWR make free requests'); a rising value indicates the cache fills with dirty blocks faster than DBWR can flush them.", mi.Description())
-						assert.Equal(t, "{requests}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.buffer.requests"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("oracledb.buffer.request.type")
-						assert.False(t, ok)
-					}
-				case "oracledb.buffer.scanned":
-					assert.False(t, validatedMetrics["oracledb.buffer.scanned"], "Found a duplicate in the metrics slice: oracledb.buffer.scanned")
-					validatedMetrics["oracledb.buffer.scanned"] = true
+					assert.False(t, validatedMetrics["oracledb.buffer.requests"], "Found a duplicate in the metrics slice: oracledb.buffer.requests")
+					validatedMetrics["oracledb.buffer.requests"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of buffers the Database Writer (DBWR) inspected while looking for dirty buffers to write (v$sysstat 'DBWR buffers scanned').", mi.Description())
-					assert.Equal(t, "{buffers}", mi.Unit())
+					assert.Equal(t, "Number of times a reusable or free buffer was requested to create or load a block (v$sysstat 'free buffer requested').", mi.Description())
+					assert.Equal(t, "{requests}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
