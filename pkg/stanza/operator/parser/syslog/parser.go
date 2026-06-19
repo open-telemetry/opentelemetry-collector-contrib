@@ -13,6 +13,7 @@ import (
 	"time"
 
 	sl "github.com/leodido/go-syslog/v4"
+	"github.com/leodido/go-syslog/v4/ciscoios"
 	"github.com/leodido/go-syslog/v4/nontransparent"
 	"github.com/leodido/go-syslog/v4/octetcounting"
 	"github.com/leodido/go-syslog/v4/rfc3164"
@@ -56,6 +57,15 @@ type Parser struct {
 	allowSkipPriHeader           bool
 	nonTransparentFramingTrailer *string
 	maxOctets                    int
+	enableCompliantMsg           bool
+	enableRFC3339                bool
+	enableSecondFractions        bool
+	enableLenientDay             bool
+	enableEmbeddedNewlines       bool
+	enableCiscoHostname          bool
+	ciscoIOS                     *CiscoIOSConfig
+	year                         *int
+	timezone                     *time.Location
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
@@ -187,25 +197,69 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
 			}
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location), rfc3164.WithLenientDay()).Parse(input)
+			opts := []sl.MachineOption{
+				rfc3164.WithLocaleTimezone(p.location),
+			}
+			if p.enableLenientDay {
+				opts = append(opts, rfc3164.WithLenientDay())
+			}
+			if p.enableRFC3339 {
+				opts = append(opts, rfc3164.WithRFC3339())
+			}
+			if p.enableSecondFractions {
+				opts = append(opts, rfc3164.WithSecondFractions())
+			}
+			if p.enableEmbeddedNewlines {
+				opts = append(opts, rfc3164.WithEmbeddedNewlines())
+			}
+			if p.enableCiscoHostname {
+				opts = append(opts, rfc3164.WithCiscoHostname())
+			}
+			if p.ciscoIOS != nil && p.ciscoIOS.Enable {
+				var flags ciscoios.Component
+				if !p.ciscoIOS.MessageCounter {
+					flags |= ciscoios.DisableMessageCounter
+				}
+				if !p.ciscoIOS.SequenceNumber {
+					flags |= ciscoios.DisableSequenceNumber
+				}
+				if !p.ciscoIOS.Hostname {
+					flags |= ciscoios.DisableHostname
+				}
+				if !p.ciscoIOS.SecondFractions {
+					flags |= ciscoios.DisableSecondFractions
+				}
+				opts = append(opts, rfc3164.WithCiscoIOSComponents(flags))
+			}
+			if p.year != nil {
+				opts = append(opts, rfc3164.WithYear(rfc3164.Year{YYYY: *p.year}))
+			}
+			if p.timezone != nil {
+				opts = append(opts, rfc3164.WithTimezone(p.timezone))
+			}
+			return rfc3164.NewMachine(opts...).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
 		// Octet Counting Parsing RFC6587
 		case p.enableOctetCounting:
-			return newOctetCountingParseFunc(p.maxOctets), nil
+			return p.newOctetCountingParseFunc(p.maxOctets), nil
 		// Non-Transparent-Framing Parsing RFC6587
 		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == LFTrailer:
-			return newNonTransparentFramingParseFunc(nontransparent.LF), nil
+			return p.newNonTransparentFramingParseFunc(nontransparent.LF), nil
 		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == NULTrailer:
-			return newNonTransparentFramingParseFunc(nontransparent.NUL), nil
+			return p.newNonTransparentFramingParseFunc(nontransparent.NUL), nil
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
 				if p.allowSkipPriHeader && !priRegex.Match(input) {
 					input = append([]byte("<0>"), input...)
 				}
-				return rfc5424.NewMachine().Parse(input)
+				opts := []sl.MachineOption{}
+				if p.enableCompliantMsg {
+					opts = append(opts, rfc5424.WithCompliantMsg())
+				}
+				return rfc5424.NewMachine(opts...).Parse(input)
 			}, nil
 		}
 	case None:
@@ -456,7 +510,7 @@ func postprocess(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
-func newOctetCountingParseFunc(maxOctets int) parseFunc {
+func (p *Parser) newOctetCountingParseFunc(maxOctets int) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
@@ -472,6 +526,10 @@ func newOctetCountingParseFunc(maxOctets int) parseFunc {
 			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
 		}
 
+		if p.enableCompliantMsg {
+			parserOpts = append(parserOpts, sl.WithMachineOptions(rfc5424.WithCompliantMsg()))
+		}
+
 		parser := octetcounting.NewParser(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
@@ -479,14 +537,24 @@ func newOctetCountingParseFunc(maxOctets int) parseFunc {
 	}
 }
 
-func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) parseFunc {
+func (p *Parser) newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
 			err = res.Error
 		}
 
-		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			nontransparent.WithTrailer(trailerType),
+			sl.WithListener(listener),
+		}
+
+		if p.enableCompliantMsg {
+			parserOpts = append(parserOpts, sl.WithMachineOptions(rfc5424.WithCompliantMsg()))
+		}
+
+		parser := nontransparent.NewParser(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
 		return message, err

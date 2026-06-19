@@ -129,6 +129,38 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name: "all_options_rfc3164",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = RFC3164
+					cfg.EnableRFC3339 = true
+					cfg.EnableSecondFractions = true
+					cfg.EnableLenientDay = false
+					cfg.EnableEmbeddedNewlines = true
+					cfg.EnableCiscoHostname = true
+					cfg.CiscoIOS = &CiscoIOSConfig{
+						Enable:          true,
+						MessageCounter:  false,
+						SequenceNumber:  false,
+						Hostname:        false,
+						SecondFractions: false,
+					}
+					y := 2026
+					cfg.Year = &y
+					cfg.Timezone = "America/New_York"
+					return cfg
+				}(),
+			},
+			{
+				Name: "compliant_msg_rfc5424",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = RFC5424
+					cfg.EnableCompliantMsg = true
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -240,4 +272,24 @@ func TestParserInvalidLocation(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
 	require.ErrorContains(t, err, "failed to load location "+config.Location)
+}
+
+func TestValidationOptions(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+
+	t.Run("enable_compliant_msg with RFC3164 fails", func(t *testing.T) {
+		cfg := NewConfig()
+		cfg.Protocol = RFC3164
+		cfg.EnableCompliantMsg = true
+		_, err := cfg.Build(set)
+		require.ErrorContains(t, err, "enable_compliant_msg is only compatible with protocol rfc5424")
+	})
+
+	t.Run("RFC3164 option with RFC5424 fails", func(t *testing.T) {
+		cfg := NewConfig()
+		cfg.Protocol = RFC5424
+		cfg.EnableRFC3339 = true
+		_, err := cfg.Build(set)
+		require.ErrorContains(t, err, "rfc3164 options are only compatible with protocol rfc3164")
+	})
 }

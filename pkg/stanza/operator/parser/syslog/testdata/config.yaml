@@ -47,3 +47,23 @@ timestamp:
     parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
+all_options_rfc3164:
+  type: syslog_parser
+  protocol: rfc3164
+  enable_rfc3339: true
+  enable_second_fractions: true
+  enable_lenient_day: false
+  enable_embedded_newlines: true
+  enable_cisco_hostname: true
+  cisco_ios:
+    enable: true
+    message_counter: false
+    sequence_number: false
+    hostname: false
+    second_fractions: false
+  year: 2026
+  timezone: America/New_York
+compliant_msg_rfc5424:
+  type: syslog_parser
+  protocol: rfc5424
+  enable_compliant_msg: true

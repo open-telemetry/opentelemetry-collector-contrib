@@ -349,3 +349,212 @@ func TestSyslogQuietModeProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestSyslogParseRFC5424_CompliantMsg(t *testing.T) {
+	cfg := basicConfig()
+	cfg.Protocol = syslog.RFC5424
+	cfg.EnableCompliantMsg = true
+
+	// Strict compliant messages have structured data and VERSION.
+	body := `<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.`
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	err = op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, err)
+
+	newEntry := entry.New()
+	newEntry.Body = body
+	err = op.Process(t.Context(), newEntry)
+	require.NoError(t, err)
+
+	select {
+	case e := <-fake.Received:
+		require.Equal(t, body, e.Body)
+		val, ok := e.Get(entry.NewAttributeField("message"))
+		require.True(t, ok)
+		require.Equal(t, "%% It's time to make the do-nuts.", val)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
+func TestSyslogParseRFC3164_NewOptions(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+
+	t.Run("RFC3339 timestamp", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		cfg.EnableRFC3339 = true
+
+		body := `<13>2003-10-11T22:14:15Z mymachine su: 'su root' failed`
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			require.Equal(t, time.Date(2003, time.October, 11, 22, 14, 15, 0, time.UTC), e.Timestamp)
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+
+	t.Run("Second fractions", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		cfg.EnableSecondFractions = true
+
+		body := `<13>Feb  5 17:32:18.123 mymachine su: 'su root' failed`
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			// Uses current year, let's just check the month/day/time
+			require.Equal(t, time.February, e.Timestamp.Month())
+			require.Equal(t, 5, e.Timestamp.Day())
+			require.Equal(t, 17, e.Timestamp.Hour())
+			require.Equal(t, 32, e.Timestamp.Minute())
+			require.Equal(t, 18, e.Timestamp.Second())
+			require.Equal(t, 123000000, e.Timestamp.Nanosecond())
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+
+	t.Run("Embedded newlines", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		cfg.EnableEmbeddedNewlines = true
+
+		body := "<13>Feb  5 17:32:18 mymachine su: 'su root' failed\nwith embedded\nnewlines"
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			val, _ := e.Get(entry.NewAttributeField("message"))
+			require.Equal(t, "'su root' failed\nwith embedded\nnewlines", val)
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+
+	t.Run("Cisco IOS options", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		cfg.CiscoIOS = &syslog.CiscoIOSConfig{
+			Enable:          true,
+			MessageCounter:  true,
+			SequenceNumber:  true,
+			Hostname:        true,
+			SecondFractions: true,
+		}
+
+		body := `<189>237: 000485: router1: *Jan  8 19:46:03.295: %SYS-5-CONFIG_I: Configured from console by console`
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			val, _ := e.Get(entry.NewAttributeField("message"))
+			require.Equal(t, "Configured from console by console", val)
+			appname, _ := e.Get(entry.NewAttributeField("appname"))
+			require.Equal(t, "%SYS-5-CONFIG_I", appname)
+			hostname, _ := e.Get(entry.NewAttributeField("hostname"))
+			require.Equal(t, "router1", hostname)
+			// check that second fractions are parsed
+			require.Equal(t, 295000000, e.Timestamp.Nanosecond())
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+
+	t.Run("Year override", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		y := 2024
+		cfg.Year = &y
+
+		body := `<13>Feb  5 17:32:18 mymachine su: 'su root' failed`
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			require.Equal(t, 2024, e.Timestamp.Year())
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+
+	t.Run("Timezone Normalization", func(t *testing.T) {
+		cfg := basicConfig()
+		cfg.Protocol = syslog.RFC3164
+		cfg.Timezone = "America/New_York"
+
+		body := `<13>Feb  5 17:32:18 mymachine su: 'su root' failed`
+
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		fake := testutil.NewFakeOutput(t)
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+		newEntry := entry.New()
+		newEntry.Body = body
+		require.NoError(t, op.Process(t.Context(), newEntry))
+
+		select {
+		case e := <-fake.Received:
+			loc, err := time.LoadLocation("America/New_York")
+			require.NoError(t, err)
+			require.Equal(t, loc.String(), e.Timestamp.Location().String())
+		case <-time.After(time.Second):
+			require.FailNow(t, "timeout")
+		}
+	})
+}
