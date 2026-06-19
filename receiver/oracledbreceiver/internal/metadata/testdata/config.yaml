@@ -106,8 +106,6 @@ all_set:
       enabled: true
     oracledb.redo.log_space.requests:
       enabled: true
-    oracledb.redo.log_switch.interrupts:
-      enabled: true
     oracledb.redo.operations:
       enabled: true
       attributes: ["disk.io.direction"]
@@ -282,8 +280,6 @@ reaggregate_set:
       enabled: true
     oracledb.redo.log_space.requests:
       enabled: true
-    oracledb.redo.log_switch.interrupts:
-      enabled: true
     oracledb.redo.operations:
       enabled: true
       attributes: []
@@ -457,8 +453,6 @@ none_set:
     oracledb.redo.buffer_allocation.retries:
       enabled: false
     oracledb.redo.log_space.requests:
-      enabled: false
-    oracledb.redo.log_switch.interrupts:
       enabled: false
     oracledb.redo.operations:
       enabled: false

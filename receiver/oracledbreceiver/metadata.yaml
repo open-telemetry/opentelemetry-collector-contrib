@@ -236,9 +236,9 @@ attributes:
     description: The query execution plan used by the SQL Server.
     type: string
   oracledb.redo.kind:
-    description: The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, latching = redo allocation/copy latch waits, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit).
+    description: The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit).
     type: string
-    enum: [write, latching, log_space_wait, synch]
+    enum: [write, log_space_wait, synch]
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
@@ -856,16 +856,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{requests}"
-  oracledb.redo.log_switch.interrupts:
-    description: Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{interrupts}"
   oracledb.redo.operations:
     description: Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
     enabled: false

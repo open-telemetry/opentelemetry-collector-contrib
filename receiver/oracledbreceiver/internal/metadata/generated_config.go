@@ -1151,26 +1151,6 @@ func (ms *OracledbRedoLogSpaceRequestsMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// OracledbRedoLogSwitchInterruptsMetricConfig provides config for the oracledb.redo.log_switch.interrupts metric.
-type OracledbRedoLogSwitchInterruptsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRedoLogSwitchInterruptsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbRedoOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.operations metric.
 type OracledbRedoOperationsMetricAttributeKey string
 
@@ -1781,7 +1761,6 @@ type MetricsConfig struct {
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
 	OracledbRedoBufferAllocationRetries           OracledbRedoBufferAllocationRetriesMetricConfig           `mapstructure:"oracledb.redo.buffer_allocation.retries"`
 	OracledbRedoLogSpaceRequests                  OracledbRedoLogSpaceRequestsMetricConfig                  `mapstructure:"oracledb.redo.log_space.requests"`
-	OracledbRedoLogSwitchInterrupts               OracledbRedoLogSwitchInterruptsMetricConfig               `mapstructure:"oracledb.redo.log_switch.interrupts"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
 	OracledbRedoSize                              OracledbRedoSizeMetricConfig                              `mapstructure:"oracledb.redo.size"`
 	OracledbRedoTime                              OracledbRedoTimeMetricConfig                              `mapstructure:"oracledb.redo.time"`
@@ -1962,9 +1941,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbRedoLogSpaceRequests: OracledbRedoLogSpaceRequestsMetricConfig{
-			Enabled: false,
-		},
-		OracledbRedoLogSwitchInterrupts: OracledbRedoLogSwitchInterruptsMetricConfig{
 			Enabled: false,
 		},
 		OracledbRedoOperations: OracledbRedoOperationsMetricConfig{

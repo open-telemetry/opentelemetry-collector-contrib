@@ -537,14 +537,6 @@ Number of times a process requested space in the redo log buffer and had to wait
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {requests} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.redo.log_switch.interrupts
-
-Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {interrupts} | Sum | Int | Cumulative | true | Development |
-
 ### oracledb.redo.operations
 
 Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
@@ -579,7 +571,7 @@ Cumulative time, in seconds, spent in each phase of the redo pipeline (converted
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.redo.kind | The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, latching = redo allocation/copy latch waits, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit). | Str: ``write``, ``latching``, ``log_space_wait``, ``synch`` | Recommended | - |
+| oracledb.redo.kind | The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit). | Str: ``write``, ``log_space_wait``, ``synch`` | Recommended | - |
 
 ### oracledb.redo_allocation.utilization
 

@@ -76,7 +76,6 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
 		// Redo log v$sysstat rows (redo time values are in centiseconds)
 		{"NAME": redoWriteTime, "VALUE": "1500"},
-		{"NAME": redoWriterLatchingTime, "VALUE": "300"},
 		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
 		{"NAME": redoSynchTime, "VALUE": "900"},
 		{"NAME": redoSize, "VALUE": "104857600"},
@@ -84,7 +83,6 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": redoBlocksWritten, "VALUE": "210000"},
 		{"NAME": redoBufferAllocRetries, "VALUE": "12"},
 		{"NAME": redoLogSpaceRequests, "VALUE": "34"},
-		{"NAME": redoLogSwitchInterrupts, "VALUE": "5"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -419,7 +417,6 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	cfg.Metrics.OracledbRedoBlocks.Enabled = true
 	cfg.Metrics.OracledbRedoBufferAllocationRetries.Enabled = true
 	cfg.Metrics.OracledbRedoLogSpaceRequests.Enabled = true
-	cfg.Metrics.OracledbRedoLogSwitchInterrupts.Enabled = true
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
@@ -469,7 +466,6 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 
 	// oracledb.redo.time: centiseconds converted to seconds (value / 100), one data point per redo.kind.
 	assert.InDelta(t, 15.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=write"], floatDelta)
-	assert.InDelta(t, 3.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=latching"], floatDelta)
 	assert.InDelta(t, 2.5, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=log_space_wait"], floatDelta)
 	assert.InDelta(t, 9.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=synch"], floatDelta)
 
@@ -480,7 +476,6 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks"]["disk.io.direction=write"])
 	assert.Equal(t, int64(12), intVals["oracledb.redo.buffer_allocation.retries"][""])
 	assert.Equal(t, int64(34), intVals["oracledb.redo.log_space.requests"][""])
-	assert.Equal(t, int64(5), intVals["oracledb.redo.log_switch.interrupts"][""])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

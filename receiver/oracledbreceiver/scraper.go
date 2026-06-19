@@ -83,16 +83,14 @@ const (
 	consistentGets                 = "consistent gets"
 
 	// Redo log v$sysstat names
-	redoWriteTime           = "redo write time"
-	redoWriterLatchingTime  = "redo writer latching time"
-	redoLogSpaceWaitTime    = "redo log space wait time"
-	redoSynchTime           = "redo synch time"
-	redoSize                = "redo size"
-	redoWrites              = "redo writes"
-	redoBlocksWritten       = "redo blocks written"
-	redoBufferAllocRetries  = "redo buffer allocation retries"
-	redoLogSpaceRequests    = "redo log space requests"
-	redoLogSwitchInterrupts = "redo log switch interrupts"
+	redoWriteTime          = "redo write time"
+	redoLogSpaceWaitTime   = "redo log space wait time"
+	redoSynchTime          = "redo synch time"
+	redoSize               = "redo size"
+	redoWrites             = "redo writes"
+	redoBlocksWritten      = "redo blocks written"
+	redoBufferAllocRetries = "redo buffer allocation retries"
+	redoLogSpaceRequests   = "redo log space requests"
 
 	// I/O performance v$sysstat names
 	physicalReadBytesStat            = "physical read bytes"
@@ -329,8 +327,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoBlocks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoBufferAllocationRetries.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoLogSpaceRequests.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoLogSwitchInterrupts.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbRedoLogSpaceRequests.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -541,10 +538,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.recordRedoTime(now, row["VALUE"], metadata.AttributeOracledbRedoKindWrite); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
-			case redoWriterLatchingTime:
-				if err := s.recordRedoTime(now, row["VALUE"], metadata.AttributeOracledbRedoKindLatching); err != nil {
-					scrapeErrors = append(scrapeErrors, err)
-				}
 			case redoLogSpaceWaitTime:
 				if err := s.recordRedoTime(now, row["VALUE"], metadata.AttributeOracledbRedoKindLogSpaceWait); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
@@ -571,10 +564,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case redoLogSpaceRequests:
 				if err := s.mb.RecordOracledbRedoLogSpaceRequestsDataPoint(now, row["VALUE"]); err != nil {
-					scrapeErrors = append(scrapeErrors, err)
-				}
-			case redoLogSwitchInterrupts:
-				if err := s.mb.RecordOracledbRedoLogSwitchInterruptsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

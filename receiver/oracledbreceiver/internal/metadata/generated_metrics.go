@@ -202,7 +202,6 @@ type AttributeOracledbRedoKind int
 const (
 	_ AttributeOracledbRedoKind = iota
 	AttributeOracledbRedoKindWrite
-	AttributeOracledbRedoKindLatching
 	AttributeOracledbRedoKindLogSpaceWait
 	AttributeOracledbRedoKindSynch
 )
@@ -212,8 +211,6 @@ func (av AttributeOracledbRedoKind) String() string {
 	switch av {
 	case AttributeOracledbRedoKindWrite:
 		return "write"
-	case AttributeOracledbRedoKindLatching:
-		return "latching"
 	case AttributeOracledbRedoKindLogSpaceWait:
 		return "log_space_wait"
 	case AttributeOracledbRedoKindSynch:
@@ -225,7 +222,6 @@ func (av AttributeOracledbRedoKind) String() string {
 // MapAttributeOracledbRedoKind is a helper map of string to AttributeOracledbRedoKind attribute value.
 var MapAttributeOracledbRedoKind = map[string]AttributeOracledbRedoKind{
 	"write":          AttributeOracledbRedoKindWrite,
-	"latching":       AttributeOracledbRedoKindLatching,
 	"log_space_wait": AttributeOracledbRedoKindLogSpaceWait,
 	"synch":          AttributeOracledbRedoKindSynch,
 }
@@ -399,7 +395,8 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.recycle_bin.limit",
 	},
 	OracledbRedoBlocks: metricInfo{
-		Name: "oracledb.redo.blocks",
+		Name:       "oracledb.redo.blocks",
+		Attributes: []string{"disk.io.direction"},
 	},
 	OracledbRedoBufferAllocationRetries: metricInfo{
 		Name: "oracledb.redo.buffer_allocation.retries",
@@ -407,17 +404,16 @@ var MetricsInfo = metricsInfo{
 	OracledbRedoLogSpaceRequests: metricInfo{
 		Name: "oracledb.redo.log_space.requests",
 	},
-	OracledbRedoLogSwitchInterrupts: metricInfo{
-		Name: "oracledb.redo.log_switch.interrupts",
-	},
 	OracledbRedoOperations: metricInfo{
-		Name: "oracledb.redo.operations",
+		Name:       "oracledb.redo.operations",
+		Attributes: []string{"disk.io.direction"},
 	},
 	OracledbRedoSize: metricInfo{
 		Name: "oracledb.redo.size",
 	},
 	OracledbRedoTime: metricInfo{
-		Name: "oracledb.redo.time",
+		Name:       "oracledb.redo.time",
+		Attributes: []string{"oracledb.redo.kind"},
 	},
 	OracledbRedoAllocationUtilization: metricInfo{
 		Name: "oracledb.redo_allocation.utilization",
@@ -522,7 +518,6 @@ type metricsInfo struct {
 	OracledbRedoBlocks                            metricInfo
 	OracledbRedoBufferAllocationRetries           metricInfo
 	OracledbRedoLogSpaceRequests                  metricInfo
-	OracledbRedoLogSwitchInterrupts               metricInfo
 	OracledbRedoOperations                        metricInfo
 	OracledbRedoSize                              metricInfo
 	OracledbRedoTime                              metricInfo
@@ -3313,58 +3308,6 @@ func newMetricOracledbRedoLogSpaceRequests(cfg OracledbRedoLogSpaceRequestsMetri
 	return m
 }
 
-type metricOracledbRedoLogSwitchInterrupts struct {
-	data     pmetric.Metric                              // data buffer for generated metric.
-	config   OracledbRedoLogSwitchInterruptsMetricConfig // metric config provided by user.
-	capacity int                                         // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.redo.log_switch.interrupts metric with initial data.
-func (m *metricOracledbRedoLogSwitchInterrupts) init() {
-	m.data.SetName("oracledb.redo.log_switch.interrupts")
-	m.data.SetDescription("Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').")
-	m.data.SetUnit("{interrupts}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbRedoLogSwitchInterrupts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbRedoLogSwitchInterrupts) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbRedoLogSwitchInterrupts) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbRedoLogSwitchInterrupts(cfg OracledbRedoLogSwitchInterruptsMetricConfig) metricOracledbRedoLogSwitchInterrupts {
-	m := metricOracledbRedoLogSwitchInterrupts{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbRedoOperations struct {
 	data          pmetric.Metric                     // data buffer for generated metric.
 	config        OracledbRedoOperationsMetricConfig // metric config provided by user.
@@ -4616,7 +4559,6 @@ type MetricsBuilder struct {
 	metricOracledbRedoBlocks                            metricOracledbRedoBlocks
 	metricOracledbRedoBufferAllocationRetries           metricOracledbRedoBufferAllocationRetries
 	metricOracledbRedoLogSpaceRequests                  metricOracledbRedoLogSpaceRequests
-	metricOracledbRedoLogSwitchInterrupts               metricOracledbRedoLogSwitchInterrupts
 	metricOracledbRedoOperations                        metricOracledbRedoOperations
 	metricOracledbRedoSize                              metricOracledbRedoSize
 	metricOracledbRedoTime                              metricOracledbRedoTime
@@ -4710,7 +4652,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbRedoBlocks:                            newMetricOracledbRedoBlocks(mbc.Metrics.OracledbRedoBlocks),
 		metricOracledbRedoBufferAllocationRetries:           newMetricOracledbRedoBufferAllocationRetries(mbc.Metrics.OracledbRedoBufferAllocationRetries),
 		metricOracledbRedoLogSpaceRequests:                  newMetricOracledbRedoLogSpaceRequests(mbc.Metrics.OracledbRedoLogSpaceRequests),
-		metricOracledbRedoLogSwitchInterrupts:               newMetricOracledbRedoLogSwitchInterrupts(mbc.Metrics.OracledbRedoLogSwitchInterrupts),
 		metricOracledbRedoOperations:                        newMetricOracledbRedoOperations(mbc.Metrics.OracledbRedoOperations),
 		metricOracledbRedoSize:                              newMetricOracledbRedoSize(mbc.Metrics.OracledbRedoSize),
 		metricOracledbRedoTime:                              newMetricOracledbRedoTime(mbc.Metrics.OracledbRedoTime),
@@ -4899,7 +4840,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbRedoBlocks.emit(ils.Metrics())
 	mb.metricOracledbRedoBufferAllocationRetries.emit(ils.Metrics())
 	mb.metricOracledbRedoLogSpaceRequests.emit(ils.Metrics())
-	mb.metricOracledbRedoLogSwitchInterrupts.emit(ils.Metrics())
 	mb.metricOracledbRedoOperations.emit(ils.Metrics())
 	mb.metricOracledbRedoSize.emit(ils.Metrics())
 	mb.metricOracledbRedoTime.emit(ils.Metrics())
@@ -5391,16 +5331,6 @@ func (mb *MetricsBuilder) RecordOracledbRedoLogSpaceRequestsDataPoint(ts pcommon
 		return fmt.Errorf("failed to parse int64 for OracledbRedoLogSpaceRequests, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbRedoLogSpaceRequests.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbRedoLogSwitchInterruptsDataPoint adds a data point to oracledb.redo.log_switch.interrupts metric.
-func (mb *MetricsBuilder) RecordOracledbRedoLogSwitchInterruptsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbRedoLogSwitchInterrupts, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbRedoLogSwitchInterrupts.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

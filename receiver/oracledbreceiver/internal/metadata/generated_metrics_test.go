@@ -254,9 +254,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRedoLogSpaceRequestsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbRedoLogSwitchInterruptsDataPoint(ts, "1")
-
-			allMetricsCount++
 			mb.RecordOracledbRedoOperationsDataPoint(ts, "1", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoOperationsDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
@@ -268,7 +265,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbRedoTimeDataPoint(ts, 1, AttributeOracledbRedoKindWrite)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbRedoTimeDataPoint(ts, 3, AttributeOracledbRedoKindLatching)
+				mb.RecordOracledbRedoTimeDataPoint(ts, 3, AttributeOracledbRedoKindLogSpaceWait)
 			}
 
 			allMetricsCount++
@@ -1195,20 +1192,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').", mi.Description())
 					assert.Equal(t, "{requests}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.redo.log_switch.interrupts":
-					assert.False(t, validatedMetrics["oracledb.redo.log_switch.interrupts"], "Found a duplicate in the metrics slice: oracledb.redo.log_switch.interrupts")
-					validatedMetrics["oracledb.redo.log_switch.interrupts"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times a redo log switch was interrupted (v$sysstat 'redo log switch interrupts').", mi.Description())
-					assert.Equal(t, "{interrupts}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
