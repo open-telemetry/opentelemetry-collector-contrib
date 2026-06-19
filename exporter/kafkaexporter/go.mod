@@ -34,6 +34,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/exporter/exportertest v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/exporter/xexporter v0.153.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/pdata v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/pdata/pprofile v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/pdata/testdata v0.153.1-0.20260528150546-fe2cf23ff222
@@ -105,7 +106,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/extension v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
-	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/pipeline v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
