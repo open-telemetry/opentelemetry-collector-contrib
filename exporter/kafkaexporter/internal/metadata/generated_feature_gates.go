@@ -11,5 +11,5 @@ var ExporterKafkaUseRequestTypeFeatureGate = featuregate.GlobalRegistry().MustRe
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Kafka exporter converts pdata into Kafka records at request-creation time and uses a custom exporterhelper.Request for queue/batch sizing. PoC scope: traces only."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090"),
-	featuregate.WithRegisterFromVersion("v0.154.0"),
+	featuregate.WithRegisterFromVersion("v0.153.0"),
 )

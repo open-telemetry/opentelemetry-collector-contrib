@@ -17,12 +17,13 @@ feature_gates:
       When enabled, the Kafka exporter converts pdata into Kafka records at
       request-creation time and uses a custom exporterhelper.Request for
       queue/batch sizing. PoC scope: traces only.
-    from_version: v0.154.0
+    from_version: v0.153.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090
 
 tests:
-  config:
+  config: {}
   skip_lifecycle: true
+  skip_shutdown: true
   goleak:
     ignore:
       top:

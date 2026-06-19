@@ -195,6 +195,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `exporter.kafka.useRequestType` | alpha | When enabled, the Kafka exporter converts pdata into Kafka records at request-creation time and uses a custom exporterhelper.Request for queue/batch sizing. PoC scope: traces only. | v0.154.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090) |
+| `exporter.kafka.useRequestType` | alpha | When enabled, the Kafka exporter converts pdata into Kafka records at request-creation time and uses a custom exporterhelper.Request for queue/batch sizing. PoC scope: traces only. | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
