@@ -206,15 +206,22 @@ Supported OpenInference message fields:
 
 #### Role inference
 
-When the `role` field is absent or empty, the processor infers it from context:
+Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, `tool`. When the source `role` is absent, empty, or not one of these values, the processor infers it from context:
 
 | Condition | Inferred role |
 |-----------|---------------|
-| `tool_call_id` is present | `tool` |
+| `tool_call_id` is present | `tool` (always, regardless of source role) |
 | `tool_calls` are present | `assistant` |
 | Neither present | `user` |
 
-When `tool_call_id` is present and `role` is explicitly `"user"`, the processor overrides it to `"tool"` (common OpenInference pattern where tool responses are tagged with the `user` role).
+#### GenAI semconv message fields not produced
+
+The following fields defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) are not produced by this processor because OpenInference does not emit them:
+
+| Field | Schema | Reason not produced |
+|-------|--------|---------------------|
+| `GenericServerToolCall` part type | input messages | Not emitted by OpenInference instrumentors |
+| `finish_reason` (non-empty) | output messages | OpenInference has no per-message finish reason; emitted as `""` |
 
 #### Output format
 

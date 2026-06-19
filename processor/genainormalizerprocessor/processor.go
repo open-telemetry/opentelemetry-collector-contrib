@@ -123,6 +123,10 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		return true
 	})
 
+	if len(renames) == 0 {
+		return wrote
+	}
+
 	for _, r := range renames {
 		val, ok := attrs.Get(r.from)
 		if !ok {

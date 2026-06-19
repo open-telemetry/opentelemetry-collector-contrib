@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	oisemconv "github.com/Arize-ai/openinference/go/openinference-semantic-conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
@@ -21,8 +22,8 @@ type messagePrefix struct {
 }
 
 var messagePrefixes = []messagePrefix{
-	{"llm.input_messages.", otelsemconv.GenAIInputMessages, false},
-	{"llm.output_messages.", otelsemconv.GenAIOutputMessages, true},
+	{oisemconv.LLMInputMessages + ".", otelsemconv.GenAIInputMessages, false},
+	{oisemconv.LLMOutputMessages + ".", otelsemconv.GenAIOutputMessages, true},
 }
 
 type inputChatMessage struct {
@@ -86,6 +87,10 @@ func ReconstructMessages(attrs pcommon.Map, removeOriginals, overwrite bool) boo
 }
 
 func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, removeOriginals, overwrite bool) bool {
+	if _, existed := attrs.Get(target); existed && !overwrite {
+		return false
+	}
+
 	messages := make(map[int]*messageFields)
 	var keysToRemove []string
 
@@ -106,15 +111,13 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 		}
 
 		applyField(mf, fieldPath, v)
-		keysToRemove = append(keysToRemove, k)
+		if removeOriginals {
+			keysToRemove = append(keysToRemove, k)
+		}
 		return true
 	})
 
 	if len(messages) == 0 {
-		return false
-	}
-
-	if _, existed := attrs.Get(target); existed && !overwrite {
 		return false
 	}
 
@@ -126,10 +129,8 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 	attrs.PutStr(target, string(jsonBytes))
 
-	if removeOriginals {
-		for _, k := range keysToRemove {
-			attrs.Remove(k)
-		}
+	for _, k := range keysToRemove {
+		attrs.Remove(k)
 	}
 
 	return true
@@ -150,7 +151,11 @@ func parseIndexedField(s string) (int, string, bool) {
 	if !strings.HasPrefix(rest, msgPrefix) {
 		return 0, "", false
 	}
-	return idx, rest[len(msgPrefix):], true
+	fieldPath := rest[len(msgPrefix):]
+	if fieldPath == "" {
+		return 0, "", false
+	}
+	return idx, fieldPath, true
 }
 
 func applyField(mf *messageFields, fieldPath string, v pcommon.Value) {
@@ -215,7 +220,7 @@ func buildMessages(messages map[int]*messageFields, isOutput bool) []any {
 }
 
 func buildSingleMessage(mf *messageFields, isOutput bool) any {
-	role := inferRole(mf)
+	role := inferRole(mf, isOutput)
 	parts := buildParts(mf)
 
 	if isOutput {
@@ -269,20 +274,35 @@ func buildParts(mf *messageFields) []any {
 	return []any{}
 }
 
-func inferRole(mf *messageFields) string {
-	if mf.toolCallID != "" {
-		if mf.role == "" || mf.role == "user" {
-			return "tool"
-		}
-		return mf.role
+// GenAI semconv role enum values for input/output messages.
+const (
+	roleSystem    = "system"
+	roleUser      = "user"
+	roleAssistant = "assistant"
+	roleTool      = "tool"
+)
+
+var validRoles = map[string]bool{
+	roleSystem:    true,
+	roleUser:      true,
+	roleAssistant: true,
+	roleTool:      true,
+}
+
+// inferRole derives the GenAI semconv role for a message. Output messages
+// (gen_ai.output.messages) only allow assistant/system/user; "tool" is only
+// valid on input messages.
+func inferRole(mf *messageFields, isOutput bool) string {
+	if mf.toolCallID != "" && !isOutput {
+		return roleTool
 	}
-	if mf.role != "" {
+	if validRoles[mf.role] && !(isOutput && mf.role == roleTool) {
 		return mf.role
 	}
 	if len(mf.toolCalls) > 0 {
-		return "assistant"
+		return roleAssistant
 	}
-	return "user"
+	return roleUser
 }
 
 // MessageAggregator implements the processor's attributeAggregator interface.

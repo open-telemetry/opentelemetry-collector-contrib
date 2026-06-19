@@ -430,6 +430,43 @@ func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
 	assert.Empty(t, outMsg["finish_reason"], "output messages must have finish_reason (empty string)")
 }
 
+func TestReconstructMessages_TrailingDotKey(t *testing.T) {
+	// A key ending exactly at "message." (empty fieldPath) must not inject a
+	// phantom {"role":"user","parts":[]} entry into the output.
+	m := pcommon.NewMap()
+	m.PutStr("llm.input_messages.0.message.", "orphan") // trailing-dot key
+	m.PutStr("llm.input_messages.1.message.role", "user")
+	m.PutStr("llm.input_messages.1.message.content", "hello")
+
+	wrote := ReconstructMessages(m, true, false)
+	require.True(t, wrote)
+
+	val, ok := m.Get(otelsemconv.GenAIInputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1, "trailing-dot key must not produce a phantom message")
+	assert.Equal(t, "user", msgs[0].(map[string]any)["role"])
+}
+
+func TestReconstructMessages_ToolCallIDOnOutputMessage(t *testing.T) {
+	// A malformed span that puts tool_call_id on an output message must not
+	// produce role:"tool", which is invalid per the GenAI output-messages schema.
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.content":      "result",
+		"llm.output_messages.0.message.tool_call_id": "call_1",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	role := msgs[0].(map[string]any)["role"]
+	assert.NotEqual(t, "tool", role, "output messages must not have role:tool")
+}
+
 func TestMessageAggregator_Interface(t *testing.T) {
 	attrs := newAttrs(map[string]string{
 		"llm.input_messages.0.message.role":    "user",
