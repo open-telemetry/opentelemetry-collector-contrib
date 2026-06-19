@@ -312,7 +312,7 @@ components:
     - receiver/prometheus_remote_write
     - receiver/prometheus_simple
     - receiver/pulsar
-    - receiver/purefa
+    - receiver/pure_fa
     - receiver/purefb
     - receiver/rabbitmq
     - receiver/receiver_creator

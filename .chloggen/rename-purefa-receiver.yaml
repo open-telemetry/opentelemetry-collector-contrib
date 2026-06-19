@@ -1,0 +1,11 @@
+change_type: deprecation
+
+component: receiver/pure_fa
+
+note: Rename the `purefa` receiver type to `pure_fa` to follow the snake_case naming convention. The old `purefa` name is kept as a deprecated alias.
+
+issues: [45339]
+
+subtext:
+
+change_logs: []

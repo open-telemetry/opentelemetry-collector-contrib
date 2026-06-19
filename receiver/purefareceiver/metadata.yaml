@@ -1,5 +1,6 @@
 display_name: Pure Storage FlashArray Receiver
-type: purefa
+type: pure_fa
+deprecated_type: purefa
 
 description: |
   The Pure Storage FlashArray Receiver receives metrics from the Pure Storage FlashArray.
