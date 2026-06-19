@@ -3,7 +3,6 @@
 
 This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.google.com/pubsub) subscription.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, logs, metrics   |

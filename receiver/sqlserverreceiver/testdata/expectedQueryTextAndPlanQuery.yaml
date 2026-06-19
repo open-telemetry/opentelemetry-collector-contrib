@@ -13,6 +13,12 @@ resourceLogs:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: server.address
           value:
             stringValue: 0.0.0.0
@@ -82,9 +88,12 @@ resourceLogs:
               - key: sqlserver.query.last_started
                 value:
                   stringValue: "2026-01-15T10:30:00.0000000+00:00"
+              - key: sqlserver.query.plan.creation_time
+                value:
+                  stringValue: "2026-01-10T08:00:00.0000000+00:00"
             body: {}
             eventName: db.server.top_query
-            timeUnixNano: "1776666630093863000"
+            timeUnixNano: "1781193815535269000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

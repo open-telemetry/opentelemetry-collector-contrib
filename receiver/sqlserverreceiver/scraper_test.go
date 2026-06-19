@@ -80,6 +80,10 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
+	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
@@ -106,6 +110,8 @@ func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.Reso
 	resourceAttributes.SqlserverInstanceName.Enabled = true
 	resourceAttributes.ServerAddress.Enabled = true
 	resourceAttributes.ServerPort.Enabled = true
+	resourceAttributes.ServiceName.Enabled = true
+	resourceAttributes.ServiceNamespace.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -152,6 +158,10 @@ func TestSuccessfulScrape(t *testing.T) {
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
+			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+			cfg.LogsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, true)
@@ -826,6 +836,9 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 		"query_plan_hash":             "0x140210F64B788CB9",
 		"context_info":                "",
 		"username":                    "sa",
+		"client_app_name":             "SSMS",
+		"session_start_time":          "2025-02-12T15:00:00.000+08:00",
+		"session_duration":            "720456",
 		"procedure_id":                "0",
 		"procedure_name":              "",
 		"blocking_start_time":         "",

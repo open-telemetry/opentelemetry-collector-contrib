@@ -1,24 +1,30 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
-        - key: service.instance.id
-          value:
-            stringValue: 0.0.0.0:1433
         - key: sqlserver.computer.name
           value:
             stringValue: DESKTOP-GHAEGRD
         - key: sqlserver.instance.name
           value:
             stringValue: sqlserver
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -46,6 +52,12 @@ resourceLogs:
               - key: sqlserver.blocking_session_id
                 value:
                   intValue: "0"
+              - key: sqlserver.procedure_name
+                value:
+                  stringValue: ""
+              - key: sqlserver.client.app.name
+                value:
+                  stringValue: SSMS
               - key: sqlserver.context_info
                 value:
                   stringValue: "307837304133423133304231303438443444"
@@ -97,6 +109,12 @@ resourceLogs:
               - key: sqlserver.row_count
                 value:
                   intValue: "0"
+              - key: sqlserver.session.duration
+                value:
+                  doubleValue: 0
+              - key: sqlserver.session.start_time
+                value:
+                  stringValue: "2025-02-12T15:00:00.000+08:00"
               - key: sqlserver.session_id
                 value:
                   intValue: "0"
@@ -114,7 +132,7 @@ resourceLogs:
                   intValue: "0"
               - key: sqlserver.wait_resource
                 value:
-                  stringValue: "KEY: 5:72057594043359232 (ce52f1d31b65)"
+                  stringValue: 'KEY: 5:72057594043359232 (ce52f1d31b65)'
               - key: sqlserver.wait_time
                 value:
                   doubleValue: 0
@@ -130,14 +148,9 @@ resourceLogs:
               - key: sqlserver.procedure_id
                 value:
                   stringValue: "0"
-              - key: sqlserver.procedure_name
-                value:
-                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            spanId: ""
-            timeUnixNano: "1748221339132048638"
-            traceId: ""
+            timeUnixNano: "1781104670101813000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
