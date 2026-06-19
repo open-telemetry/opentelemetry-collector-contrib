@@ -166,25 +166,29 @@ func limitHistogramBucketsFromDataPoint(dp pmetric.HistogramDataPoint, maxBucket
 		return
 	}
 
-	for int64(bucketCounts.Len()) > maxBuckets {
-		compactHistogramBuckets(explicitBounds, bucketCounts)
-	}
+	divisor := ceilDiv(bucketCounts.Len(), int(maxBuckets))
+	compactHistogramBuckets(explicitBounds, bucketCounts, divisor)
 }
 
-func compactHistogramBuckets(bounds pcommon.Float64Slice, counts pcommon.UInt64Slice) {
+func ceilDiv(dividend, divisor int) int {
+	return (dividend-1)/divisor + 1
+}
+
+func compactHistogramBuckets(bounds pcommon.Float64Slice, counts pcommon.UInt64Slice, divisor int) {
 	compactCounts := pcommon.NewUInt64Slice()
-	compactCounts.EnsureCapacity((counts.Len() + 1) / 2)
-	for i := 0; i < counts.Len(); i += 2 {
-		if i+1 == counts.Len() {
-			compactCounts.Append(counts.At(i))
-			continue
+	compactCounts.EnsureCapacity(ceilDiv(counts.Len(), divisor))
+	for i := 0; i < counts.Len(); i += divisor {
+		end := min(i+divisor, counts.Len())
+		var count uint64
+		for j := i; j < end; j++ {
+			count += counts.At(j)
 		}
-		compactCounts.Append(counts.At(i) + counts.At(i+1))
+		compactCounts.Append(count)
 	}
 
 	compactBounds := pcommon.NewFloat64Slice()
 	compactBounds.EnsureCapacity(compactCounts.Len() - 1)
-	for i := 1; i < bounds.Len(); i += 2 {
+	for i := divisor - 1; i < bounds.Len(); i += divisor {
 		compactBounds.Append(bounds.At(i))
 	}
 

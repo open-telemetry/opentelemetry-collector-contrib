@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
+	koanfconfmap "github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -39,7 +40,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
+	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -50,6 +52,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
+	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -86,6 +89,12 @@ const (
 )
 
 const maxBufferedCustomMessages = 10
+
+// clearResourceAttributesKey is an internal merge sentinel used to give
+// remote `service.telemetry.resource.attributes` explicit clear semantics.
+// It is injected into a synthetic config before the actual remote config,
+// consumed by configMergeFunc, and never written to the final collector config.
+const clearResourceAttributesKey = "__opampsupervisor_clear_resource_attributes__"
 
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
@@ -246,7 +255,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		return nil, err
 	}
 
-	if err := confmap.Validate(cfg); err != nil {
+	if err := collectorconfmap.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
@@ -1211,10 +1220,14 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 			if item == nil {
 				continue
 			}
+			if remoteConfigDeclaresResourceAttributes(item.Body) {
+				remoteConfigComposers = append(remoteConfigComposers, composeClearResourceAttributesConfig)
+			}
 			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
 				return item.Body
 			})
 		}
+		remoteConfigComposers = append(remoteConfigComposers, s.composeRequiredResourceAttributesConfig)
 	}
 	return remoteConfigComposers
 }
@@ -1254,8 +1267,21 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+	attrNames := make([]string, 0, len(resourceAttrs))
+	for name := range resourceAttrs {
+		attrNames = append(attrNames, name)
+	}
+	sort.Strings(attrNames)
+
+	resourceAttributeValues := make([]resourceAttributeTemplateValue, 0, len(attrNames))
+	for _, name := range attrNames {
+		resourceAttributeValues = append(resourceAttributeValues, resourceAttributeTemplateValue{
+			Name:  name,
+			Value: resourceAttrs[name],
+		})
+	}
 	tplVars := map[string]any{
-		"ResourceAttributes": resourceAttrs,
+		"ResourceAttributes": resourceAttributeValues,
 		"SupervisorPort":     s.opampServerPort,
 	}
 	err := s.extraTelemetryConfigTemplate.Execute(
@@ -1268,6 +1294,41 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	}
 
 	return cfg.Bytes()
+}
+
+func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
+	cfg, err := gyaml.Marshal(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": map[string]any{
+					"attributes": []map[string]any{
+						{
+							"name":  "service.instance.id",
+							"value": s.persistentState.InstanceID.String(),
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not compose required resource attributes config", zap.Error(err))
+		return nil
+	}
+
+	return cfg
+}
+
+func composeClearResourceAttributesConfig() []byte {
+	return []byte("service:\n  telemetry:\n    resource:\n      " + clearResourceAttributesKey + ": true\n")
+}
+
+func remoteConfigDeclaresResourceAttributes(body []byte) bool {
+	k := koanf.New("::")
+	if err := k.Load(rawbytes.Provider(body), yaml.Parser()); err != nil {
+		return false
+	}
+	return k.Exists("service::telemetry::resource::attributes")
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1297,6 +1358,11 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 }
 
 type configComposer func() []byte
+
+type resourceAttributeTemplateValue struct {
+	Name  string
+	Value string
+}
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig, configFiles []string) ([]byte, error) {
 	conf := koanf.New("::")
@@ -1341,12 +1407,83 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		}
 	}
 
-	b, err := conf.Marshal(yaml.Parser())
+	raw := conf.Raw()
+	if err := normalizeTelemetryResourceConfig(raw); err != nil {
+		s.telemetrySettings.Logger.Error("Could not normalize telemetry resource config", zap.Error(err))
+		return []byte(""), err
+	}
+
+	normalizedConf := koanf.New("::")
+	if err := normalizedConf.Load(koanfconfmap.Provider(raw, ""), nil); err != nil {
+		s.telemetrySettings.Logger.Error("Could not reload normalized config", zap.Error(err))
+		return []byte(""), err
+	}
+
+	b, err := normalizedConf.Marshal(yaml.Parser())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
 	}
 	return b, nil
+}
+
+func normalizeTelemetryResourceConfig(raw map[string]any) error {
+	rawResourceCfg := maps.Search(raw, []string{"service", "telemetry", "resource"})
+	if rawResourceCfg == nil {
+		return nil
+	}
+
+	resourceMap, ok := rawResourceCfg.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	var resourceCfg otelconftelemetry.ResourceConfig
+	if err := collectorconfmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
+		return err
+	}
+
+	if len(resourceCfg.Attributes) == 0 || len(resourceCfg.LegacyAttributes) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]int, len(resourceCfg.Attributes))
+	for idx, attr := range resourceCfg.Attributes {
+		seen[attr.Name] = idx
+	}
+
+	legacyNames := make([]string, 0, len(resourceCfg.LegacyAttributes))
+	for name, value := range resourceCfg.LegacyAttributes {
+		if value == nil {
+			continue
+		}
+		if idx, exists := seen[name]; exists {
+			resourceCfg.Attributes[idx].Value = value
+			continue
+		}
+		legacyNames = append(legacyNames, name)
+	}
+	sort.Strings(legacyNames)
+
+	for _, name := range legacyNames {
+		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
+			Name:  name,
+			Value: resourceCfg.LegacyAttributes[name],
+		})
+	}
+	resourceCfg.LegacyAttributes = nil
+
+	normalized := collectorconfmap.New()
+	if err := normalized.Marshal(resourceCfg); err != nil {
+		return err
+	}
+
+	serviceMap, ok := maps.Search(raw, []string{"service", "telemetry"}).(map[string]any)
+	if !ok {
+		return nil
+	}
+	serviceMap["resource"] = normalized.ToStringMap()
+	return nil
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by
@@ -2386,13 +2523,23 @@ func (s *Supervisor) getTracer() trace.Tracer {
 	return tracer
 }
 
-// The default koanf behavior is to override lists in the config.
-// Instead, we provide this function, which merges the source and destination config's
-// extension lists by concatenating the two.
+// configMergeFunc preserves Supervisor-specific merge semantics that koanf does
+// not provide by default: service extension lists are concatenated and resource
+// attributes are merged by name.
 // Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
 func configMergeFunc(src, dest map[string]any) error {
 	srcExtensions := maps.Search(src, []string{"service", "extensions"})
 	destExtensions := maps.Search(dest, []string{"service", "extensions"})
+	srcResourceAttributes := maps.Search(src, []string{"service", "telemetry", "resource", "attributes"})
+	destResourceAttributes := maps.Search(dest, []string{"service", "telemetry", "resource", "attributes"})
+	if resource, ok := maps.Search(src, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+		if shouldClear, ok := resource[clearResourceAttributesKey].(bool); ok && shouldClear {
+			if destResource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+				clearResourceAttributes(destResource)
+			}
+			delete(resource, clearResourceAttributesKey)
+		}
+	}
 
 	maps.Merge(src, dest)
 
@@ -2418,5 +2565,56 @@ func configMergeFunc(src, dest map[string]any) error {
 		}
 	}
 
+	if destAttrs, ok := destResourceAttributes.([]any); ok {
+		if srcAttrs, ok := srcResourceAttributes.([]any); ok {
+			if resource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+				resource["attributes"] = mergeResourceAttributes(destAttrs, srcAttrs)
+			}
+		}
+	}
+
 	return nil
+}
+
+func clearResourceAttributes(resource map[string]any) {
+	delete(resource, "attributes")
+	delete(resource, "attributes_list")
+	for key := range resource {
+		switch key {
+		case "schema_url", "detectors":
+			continue
+		default:
+			delete(resource, key)
+		}
+	}
+}
+
+func mergeResourceAttributes(destAttrs, srcAttrs []any) []any {
+	merged := append(slices.Clone(destAttrs), srcAttrs...)
+	seenByName := make(map[string]int, len(merged))
+	result := make([]any, 0, len(merged))
+
+	for _, attr := range merged {
+		attrMap, ok := attr.(map[string]any)
+		if !ok {
+			result = append(result, attr)
+			continue
+		}
+
+		name, ok := attrMap["name"].(string)
+		if !ok || name == "" {
+			result = append(result, attr)
+			continue
+		}
+
+		if idx, exists := seenByName[name]; exists {
+			result[idx] = attr
+			continue
+		}
+
+		seenByName[name] = len(result)
+		result = append(result, attr)
+	}
+
+	return result
 }
