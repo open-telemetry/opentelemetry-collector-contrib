@@ -98,6 +98,14 @@ all_set:
       enabled: true
     redis.net.output:
       enabled: true
+    redis.pubsub.channels:
+      enabled: true
+    redis.pubsub.clients:
+      enabled: true
+    redis.pubsub.patterns:
+      enabled: true
+    redis.pubsub.shard_channels:
+      enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
     redis.replication.backlog_first_byte_offset:
@@ -233,6 +241,14 @@ reaggregate_set:
       enabled: true
     redis.net.output:
       enabled: true
+    redis.pubsub.channels:
+      enabled: true
+    redis.pubsub.clients:
+      enabled: true
+    redis.pubsub.patterns:
+      enabled: true
+    redis.pubsub.shard_channels:
+      enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
     redis.replication.backlog_first_byte_offset:
@@ -367,6 +383,14 @@ none_set:
     redis.net.input:
       enabled: false
     redis.net.output:
+      enabled: false
+    redis.pubsub.channels:
+      enabled: false
+    redis.pubsub.clients:
+      enabled: false
+    redis.pubsub.patterns:
+      enabled: false
+    redis.pubsub.shard_channels:
       enabled: false
     redis.rdb.changes_since_last_save:
       enabled: false

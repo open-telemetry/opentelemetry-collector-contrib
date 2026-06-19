@@ -1142,6 +1142,86 @@ func (ms *RedisNetOutputMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// RedisPubsubChannelsMetricConfig provides config for the redis.pubsub.channels metric.
+type RedisPubsubChannelsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisPubsubChannelsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisPubsubClientsMetricConfig provides config for the redis.pubsub.clients metric.
+type RedisPubsubClientsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisPubsubClientsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisPubsubPatternsMetricConfig provides config for the redis.pubsub.patterns metric.
+type RedisPubsubPatternsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisPubsubPatternsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisPubsubShardChannelsMetricConfig provides config for the redis.pubsub.shard_channels metric.
+type RedisPubsubShardChannelsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisPubsubShardChannelsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // RedisRdbChangesSinceLastSaveMetricConfig provides config for the redis.rdb.changes_since_last_save metric.
 type RedisRdbChangesSinceLastSaveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1496,6 +1576,10 @@ type MetricsConfig struct {
 	RedisMode                                 RedisModeMetricConfig                                 `mapstructure:"redis.mode"`
 	RedisNetInput                             RedisNetInputMetricConfig                             `mapstructure:"redis.net.input"`
 	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
+	RedisPubsubChannels                       RedisPubsubChannelsMetricConfig                       `mapstructure:"redis.pubsub.channels"`
+	RedisPubsubClients                        RedisPubsubClientsMetricConfig                        `mapstructure:"redis.pubsub.clients"`
+	RedisPubsubPatterns                       RedisPubsubPatternsMetricConfig                       `mapstructure:"redis.pubsub.patterns"`
+	RedisPubsubShardChannels                  RedisPubsubShardChannelsMetricConfig                  `mapstructure:"redis.pubsub.shard_channels"`
 	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset    RedisReplicationBacklogFirstByteOffsetMetricConfig    `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                    RedisReplicationOffsetMetricConfig                    `mapstructure:"redis.replication.offset"`
@@ -1663,6 +1747,18 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisNetOutput: RedisNetOutputMetricConfig{
 			Enabled: true,
+		},
+		RedisPubsubChannels: RedisPubsubChannelsMetricConfig{
+			Enabled: true,
+		},
+		RedisPubsubClients: RedisPubsubClientsMetricConfig{
+			Enabled: false,
+		},
+		RedisPubsubPatterns: RedisPubsubPatternsMetricConfig{
+			Enabled: true,
+		},
+		RedisPubsubShardChannels: RedisPubsubShardChannelsMetricConfig{
+			Enabled: false,
 		},
 		RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 			Enabled: true,

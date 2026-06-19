@@ -30,9 +30,8 @@ func TestRedisRunnable(t *testing.T) {
 	require.NoError(t, err)
 	md, err := runner.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
-	// + 9 because there are three keyspace entries each of which has three metrics
-	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
-	assert.Equal(t, len(rs.dataPointRecorders())+9-18, md.DataPointCount())
+	// -20 because maxmemory, slave_repl_offset, cluster metrics, and some pubsub metrics are by default disabled, so recorder is there, but there won't be data point
+	assert.Equal(t, len(rs.dataPointRecorders())+9-20, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()
