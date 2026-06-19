@@ -99,6 +99,25 @@ func (v *vcenterMetricScraper) createHostResourceBuilder(
 	return rb
 }
 
+// createHostDatastoreResourceBuilder returns a ResourceBuilder with
+// attributes set for a vSphere Host and a Datastore
+func (v *vcenterMetricScraper) createHostDatastoreResourceBuilder(
+	dc *mo.Datacenter,
+	cr *mo.ComputeResource,
+	hs *mo.HostSystem,
+	ds *mo.Datastore,
+) *metadata.ResourceBuilder {
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dc.Name)
+	if cr.Reference().Type == "ClusterComputeResource" {
+		rb.SetVcenterClusterName(cr.Name)
+	}
+	rb.SetVcenterDatastoreName(ds.Name)
+	rb.SetVcenterHostName(hs.Name)
+
+	return rb
+}
+
 // createVMResourceBuilder returns a ResourceBuilder with
 // attributes set for a vSphere Virtual Machine
 func (v *vcenterMetricScraper) createVMResourceBuilder(

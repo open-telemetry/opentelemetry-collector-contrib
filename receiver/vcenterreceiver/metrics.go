@@ -206,6 +206,7 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, memUtilization)
 	v.mb.RecordVcenterHostCPUUsageDataPoint(ts, int64(z.OverallCpuUsage))
+	v.mb.RecordVcenterHostUptimeDataPoint(ts, int64(z.Uptime))
 
 	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
 	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
@@ -390,6 +391,37 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 	}
 }
 
+var hostDatastorePerfMetricList = []string{
+	// datastore metrics
+	"datastore.sizeNormalizedDatastoreLatency.average",
+	"datastore.numberWriteAveraged.average",
+	"datastore.numberReadAveraged.average",
+}
+
+// recordHostPerformanceMetrics records performance metrics for a vSphere Host, relatively to a datastore
+func (v *vcenterMetricScraper) recordHostDatastorePerformanceMetrics(entityMetric *performance.EntityMetric, dsID string) {
+	for _, val := range entityMetric.Value {
+		if val.Instance != dsID {
+			continue
+		}
+		for j, nestedValue := range val.Value {
+			si := entityMetric.SampleInfo[j]
+			switch val.Name {
+			/******************************************/
+			// Performance Monitoring Level 1 Metrics //
+			/******************************************/
+			// (per device requires level 3)
+			case "datastore.sizeNormalizedDatastoreLatency.average":
+				v.mb.RecordVcenterHostDatastoreNormalizedLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
+			case "datastore.numberWriteAveraged.average":
+				v.mb.RecordVcenterHostDatastoreOperationsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
+			case "datastore.numberReadAveraged.average":
+				v.mb.RecordVcenterHostDatastoreOperationsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
+			}
+		}
+	}
+}
+
 // vmPerfMetricList may be customizable in the future but here is the full list of Virtual Machine Performance Counters
 // https://docs.vmware.com/en/vRealize-Operations/8.6/com.vmware.vcom.metrics.doc/GUID-1322F5A4-DA1D-481F-BBEA-99B228E96AF2.html
 var vmPerfMetricList = []string{
@@ -419,6 +451,7 @@ var vmPerfMetricList = []string{
 	"cpu.idle.summation",
 	"cpu.wait.summation",
 	"cpu.ready.summation",
+	"cpu.latency.average",
 }
 
 // recordVMPerformanceMetrics records performance metrics for a vSphere Virtual Machine
@@ -480,6 +513,8 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 			case "cpu.ready.summation":
 				readyTime := float64(nestedValue) / float64(si.Interval) * 10
 				v.mb.RecordVcenterVMCPUTimeDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), readyTime, metadata.AttributeCPUStateReady, val.Instance)
+			case "cpu.latency.average":
+				v.mb.RecordVcenterVMCPULatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), float64(nestedValue))
 			case "net.broadcastRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)

@@ -432,6 +432,24 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.host.datastore.normalized_latency.avg:
+    enabled: false
+    description: The size-normalized I/O latency of the datastore for this host.
+    stability: development
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.datastore.operations:
+    enabled: false
+    description: The IOPs of the datastore for this host.
+    stability: development
+    unit: "{operations/s}"
+    gauge:
+      value_type: int
+    attributes: [disk_direction]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
@@ -537,6 +555,16 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
+  vcenter.host.uptime:
+    enabled: false
+    description: Total time elapsed since last operating system boot-up.
+    stability: development
+    unit: s
+    sum:
+      monotonic: true
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.host.vsan.cache.hit_rate:
     enabled: true
     description: The host's read IOs which could be satisfied by the local client cache.
@@ -652,6 +680,14 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [memory_usage_type]
+  vcenter.vm.cpu.latency.avg:
+    enabled: false
+    description: Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
   vcenter.vm.cpu.readiness:
     enabled: true
     description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.

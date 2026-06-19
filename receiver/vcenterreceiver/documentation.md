@@ -812,6 +812,32 @@ metrics:
     enabled: true
 ```
 
+### vcenter.host.datastore.normalized_latency.avg
+
+The size-normalized I/O latency of the datastore for this host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| us | Gauge | Int | Development |
+
+### vcenter.host.datastore.operations
+
+The IOPs of the datastore for this host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operations/s} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended | - |
+
 ### vcenter.host.memory.capacity
 
 Total memory  capacity of the host system.
@@ -819,6 +845,22 @@ Total memory  capacity of the host system.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Double | Cumulative | false | Development |
+
+### vcenter.host.uptime
+
+Total time elapsed since last operating system boot-up.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
+
+### vcenter.vm.cpu.latency.avg
+
+Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### vcenter.vm.cpu.time
 
