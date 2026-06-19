@@ -70,7 +70,11 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 	// Attempt detection once at start, but do NOT treat failure as "feature absent"
 	// (issue #48875). A transient ClickHouse outage at startup must not cache a
 	// degraded INSERT that omits the keys / EventName columns forever.
-	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures); err != nil {
+	//
+	// For permanent failures (unknown table, access denied) the fallback renders
+	// a degraded INSERT without the optional columns so write-only ClickHouse
+	// users keep delivering rows instead of silently losing everything.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderDegradedInsert); err != nil {
 		e.logger.Warn("clickhouseexporter schema detection deferred; will retry on first batch", zap.Error(err))
 	}
 
@@ -125,7 +129,9 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	// start), re-probe before preparing the INSERT. ensureDetected returns a
 	// plain (non-permanent) error on continued failure so exporterhelper's
 	// retry_on_failure / sending queue defers this batch instead of dropping it.
-	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures); err != nil {
+	// Permanent failures (access denied, unknown table) fall back to a degraded
+	// INSERT so write-only users keep delivering.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderDegradedInsert); err != nil {
 		return err
 	}
 
@@ -247,6 +253,20 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		zap.String("total_cost", totalDuration.String()))
 
 	return nil
+}
+
+// renderDegradedInsert renders the INSERT statement with all optional feature
+// flags at their zero values. Used as the fallback when DESC TABLE fails with a
+// permanent ClickHouse error (access denied, unknown table) so write-only users
+// keep delivering rows without the keys/EventName columns.
+func (e *logsJSONExporter) renderDegradedInsert() {
+	// Feature flags are already at zero values (the struct was zero-initialized
+	// or start() has not set them). Render the INSERT with those defaults.
+	if err := e.renderInsertLogsJSONSQL(); err != nil {
+		// renderInsertLogsJSONSQL only fails if the template is malformed,
+		// which is a compile-time invariant — but surface it just in case.
+		e.logger.Error("failed to render degraded INSERT", zap.Error(err))
+	}
 }
 
 func (e *logsJSONExporter) renderInsertLogsJSONSQL() error {

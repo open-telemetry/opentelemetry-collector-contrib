@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,7 +51,7 @@ func TestTracesJSONExporter_StartIsNonFatalOnDescFailure(t *testing.T) {
 
 	// Simulate start() reaching ensureDetected after the table-create branch.
 	// The first probe fails — start() must still return nil (non-fatal).
-	err := exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe)
+	err := exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe, nil)
 	require.Error(t, err, "first probe must propagate the failure")
 	require.ErrorContains(t, err, "schema detection deferred")
 	require.Equal(t, int32(1), descCalls.Load())
@@ -59,7 +60,7 @@ func TestTracesJSONExporter_StartIsNonFatalOnDescFailure(t *testing.T) {
 
 	// First batch arrives while ClickHouse is still down: the push helper
 	// re-probes, gets the same failure, and returns a retryable error.
-	err = exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe)
+	err = exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe, nil)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "schema detection deferred")
 	require.Equal(t, int32(2), descCalls.Load())
@@ -68,7 +69,7 @@ func TestTracesJSONExporter_StartIsNonFatalOnDescFailure(t *testing.T) {
 	// ClickHouse recovers: the next probe succeeds, INSERT is rendered with the
 	// keys columns, and subsequent calls reuse the cached INSERT.
 	descFails.Store(false)
-	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe))
+	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe, nil))
 	require.Equal(t, int32(3), descCalls.Load())
 	require.Equal(t, schemaDetected, schemaDetectionState(exp.detector.state.Load()))
 	require.NotEmpty(t, exp.insertSQL)
@@ -78,8 +79,8 @@ func TestTracesJSONExporter_StartIsNonFatalOnDescFailure(t *testing.T) {
 		"INSERT must include SpanAttributesKeys once detection succeeds")
 
 	// Further ensureDetected calls are no-ops; the stub is not invoked again.
-	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe))
-	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe))
+	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe, nil))
+	require.NoError(t, exp.detector.ensureDetected(t.Context(), exp.logger, stubProbe, nil))
 	assert.Equal(t, int32(3), descCalls.Load())
 }
 
@@ -159,3 +160,47 @@ func (*stubFailingConn) AsyncInsert(context.Context, string, bool, ...any) error
 func (*stubFailingConn) Ping(context.Context) error { return nil }
 func (*stubFailingConn) Stats() driver.Stats        { return driver.Stats{} }
 func (*stubFailingConn) Close() error               { return nil }
+
+// stubAccessDeniedConn is a driver.Conn that returns a permanent ACCESS_DENIED
+// exception from Query, simulating a write-only ClickHouse user that has
+// INSERT privilege but not SELECT/DESC.
+type stubAccessDeniedConn struct {
+	stubFailingConn
+}
+
+func (*stubAccessDeniedConn) Query(context.Context, string, ...any) (driver.Rows, error) {
+	return nil, &proto.Exception{
+		Code:    chCodeAccessDenied,
+		Name:    "ACCESS_DENIED",
+		Message: "Not enough privileges. To execute this query, it's necessary to have the grant SELECT(name) ON system.columns",
+	}
+}
+
+func (*stubAccessDeniedConn) PrepareBatch(_ context.Context, _ string, _ ...driver.PrepareBatchOption) (driver.Batch, error) {
+	return noopBatch{}, nil
+}
+
+// TestTracesJSONExporter_PermanentFailureFallsBack verifies that a write-only
+// ClickHouse user (INSERT granted, SELECT/DESC denied) does not lose data.
+// When DESC TABLE returns ACCESS_DENIED the exporter must fall back to a
+// degraded INSERT (without the optional keys columns) and deliver rows.
+func TestTracesJSONExporter_PermanentFailureFallsBack(t *testing.T) {
+	cfg := withDefaultConfig()
+	cfg.Endpoint = defaultEndpoint
+	exp := newTracesJSONExporter(zaptest.NewLogger(t), cfg)
+	exp.db = &stubAccessDeniedConn{}
+
+	// pushTraceData drives ensureDetected → probeSchemaFeatures → ACCESS_DENIED
+	// → fallback renders degraded INSERT → push proceeds.
+	err := exp.pushTraceData(t.Context(), makeMinimalTraces())
+	require.NoError(t, err, "push must succeed after falling back to degraded INSERT")
+	require.Equal(t, schemaDetected, schemaDetectionState(exp.detector.state.Load()))
+	require.NotEmpty(t, exp.insertSQL, "INSERT must be rendered even after permanent DESC failure")
+	assert.NotContains(t, exp.insertSQL, tracesJSONColumnResourceAttributesKeys,
+		"degraded INSERT must NOT include keys columns")
+	assert.NotContains(t, exp.insertSQL, tracesJSONColumnSpanAttributesKeys,
+		"degraded INSERT must NOT include keys columns")
+
+	// Subsequent pushes must succeed without re-probing.
+	require.NoError(t, exp.pushTraceData(t.Context(), makeMinimalTraces()))
+}

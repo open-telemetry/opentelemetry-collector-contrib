@@ -69,7 +69,11 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 	// (issue #48875). A transient ClickHouse outage at startup must not cache a
 	// degraded INSERT that omits the keys columns forever. ensureDetected leaves
 	// the detector in schemaUnknown on error so the first push re-detects.
-	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures); err != nil {
+	//
+	// For permanent failures (unknown table, access denied) the fallback renders
+	// a degraded INSERT without the optional columns so write-only ClickHouse
+	// users keep delivering rows instead of silently losing everything.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderInsertTracesJSONSQL); err != nil {
 		e.logger.Warn("clickhouseexporter schema detection deferred; will retry on first batch", zap.Error(err))
 	}
 
@@ -119,7 +123,9 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 	// start), re-probe before preparing the INSERT. ensureDetected returns a
 	// plain (non-permanent) error on continued failure so exporterhelper's
 	// retry_on_failure / sending queue defers this batch instead of dropping it.
-	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures); err != nil {
+	// Permanent failures (access denied, unknown table) fall back to a degraded
+	// INSERT so write-only users keep delivering.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderInsertTracesJSONSQL); err != nil {
 		return err
 	}
 
