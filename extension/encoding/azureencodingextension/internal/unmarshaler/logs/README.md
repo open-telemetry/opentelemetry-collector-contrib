@@ -574,6 +574,8 @@ For log categories where the identity structure is not known, the entire identit
 | `statusText`              | `http.response.status_text`                   | Log Attribute |
 | `uri`                     | `url.full` with parsed `url.scheme`, `url.domain`, `url.fragment`, `url.query`, `url.path` and `url.port`. If unparsable - only `url.original`                   | Log Attribute |
 | `protocol`                | `network.protocol.name`                       | Log Attribute |
+| `schemaVersion`           | `azure.storage.schema_version`                | Log Attribute |
+| `resourceType`            | `azure.resource.type`                         | Log Attribute |
 | `accountName`             | `azure.storage.namespace`                     | Log Attribute |
 | `userAgentHeader`         | `user_agent.original`                         | Log Attribute |
 | `clientRequestId`         | `azure.service.request.id`                    | Log Attribute |
