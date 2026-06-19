@@ -36,6 +36,8 @@ const (
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
 	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
+	sourceKey                      = "source"                             // OpenTelemetry non-standard constant.
+	sourceValue                    = "spanmetrics"
 	otelStatusCodeKey              = "otel.status_code"                   // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
@@ -314,6 +316,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		rm := m.ResourceMetrics().AppendEmpty()
 		if !metadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
+			rm.Resource().Attributes().PutStr(sourceKey, sourceValue)
 		}
 
 		sm := rm.ScopeMetrics().AppendEmpty()

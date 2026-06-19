@@ -264,9 +264,14 @@ result in multiple Prometheus `calls_total` (counter type) time series and the `
 For example:
 
 ```
-target_info{job="shippingservice", instance="...", ...} 1
+target_info{job="shippingservice", instance="...", source="spanmetrics", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
+
+The `source="spanmetrics"` resource attribute is added to all generated metrics so that the resulting
+`target_info` series can be distinguished from other sources. It is added whenever resource attributes
+are propagated (i.e. when the `connector.spanmetrics.excludeResourceMetrics` feature gate is disabled,
+or when `add_resource_attributes` is set to `true`).
 
 ### More Examples
 
