@@ -47,7 +47,7 @@ func Test_NewUDSServer_CleansUpStaleSocket(t *testing.T) {
 	defer os.Remove(socketPath)
 
 	// Create first server
-	server1, err := NewUDSServer("unixgram", socketPath, 0o622)
+	server1, err := NewUDSServer("unixgram", socketPath, 0o622, 0)
 	require.NoError(t, err)
 	require.NotNil(t, server1)
 
@@ -60,7 +60,7 @@ func Test_NewUDSServer_CleansUpStaleSocket(t *testing.T) {
 	require.NoError(t, err, "socket file should still exist after simulated crash")
 
 	// Create second server on the same path — should succeed
-	server2, err := NewUDSServer("unixgram", socketPath, 0o622)
+	server2, err := NewUDSServer("unixgram", socketPath, 0o622, 0)
 	require.NoError(t, err, "should be able to start a new server on the same socket path")
 	require.NotNil(t, server2)
 
