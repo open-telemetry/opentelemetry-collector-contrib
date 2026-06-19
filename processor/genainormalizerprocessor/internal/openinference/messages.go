@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	oisemconv "github.com/Arize-ai/openinference/go/openinference-semantic-conventions"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
@@ -296,7 +296,7 @@ func inferRole(mf *messageFields, isOutput bool) string {
 	if mf.toolCallID != "" && !isOutput {
 		return roleTool
 	}
-	if validRoles[mf.role] && !(isOutput && mf.role == roleTool) {
+	if validRoles[mf.role] && (!isOutput || mf.role != roleTool) {
 		return mf.role
 	}
 	if len(mf.toolCalls) > 0 {
