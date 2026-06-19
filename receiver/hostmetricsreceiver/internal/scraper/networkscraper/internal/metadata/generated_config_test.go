@@ -26,6 +26,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemNetworkBandwidthLimit: SystemNetworkBandwidthLimitMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyDevice},
+					},
+					SystemNetworkBandwidthUtilization: SystemNetworkBandwidthUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkBandwidthUtilizationMetricAttributeKey{SystemNetworkBandwidthUtilizationMetricAttributeKeyDevice},
+					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -64,6 +74,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemNetworkBandwidthLimit: SystemNetworkBandwidthLimitMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyDevice},
+					},
+					SystemNetworkBandwidthUtilization: SystemNetworkBandwidthUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkBandwidthUtilizationMetricAttributeKey{SystemNetworkBandwidthUtilizationMetricAttributeKeyDevice},
+					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -102,7 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkConnectionsMetricConfig{}, SystemNetworkConntrackCountMetricConfig{}, SystemNetworkConntrackMaxMetricConfig{}, SystemNetworkDroppedMetricConfig{}, SystemNetworkErrorsMetricConfig{}, SystemNetworkIoMetricConfig{}, SystemNetworkPacketsMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkBandwidthLimitMetricConfig{}, SystemNetworkBandwidthUtilizationMetricConfig{}, SystemNetworkConnectionsMetricConfig{}, SystemNetworkConntrackCountMetricConfig{}, SystemNetworkConntrackMaxMetricConfig{}, SystemNetworkDroppedMetricConfig{}, SystemNetworkErrorsMetricConfig{}, SystemNetworkIoMetricConfig{}, SystemNetworkPacketsMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
