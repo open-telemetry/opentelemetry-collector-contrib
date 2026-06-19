@@ -542,7 +542,7 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(shutdownCtx context.Context) error {
-			// Stop the logs agent before cancelling ctx. cancel() pre-cancels
+			// Stop the logs agent before canceling ctx. cancel() pre-cancels
 			// the context that pipeline goroutines were started with, causing
 			// the serial stopper inside logsAgent.Stop() to find them already
 			// gone and skip the proper DestinationSender.Stop() sequence — which
