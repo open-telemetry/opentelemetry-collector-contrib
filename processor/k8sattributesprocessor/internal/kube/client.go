@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,14 +54,16 @@ type WatchClient struct {
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
-	Pods         map[PodIdentifier]*Pod
-	Rules        ExtractionRules
-	Filters      Filters
-	Associations []Association
-	Exclude      Excludes
+	Pods                      map[PodIdentifier]*Pod
+	Rules                     ExtractionRules
+	Filters                   Filters
+	Associations              []Association
+	hasContainerIDAssociation bool
+	Exclude                   Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
@@ -95,7 +98,16 @@ type WatchClient struct {
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
+// time-hash-int is the unix timestamp in minutes of the job creation time
+// 8 digits will last until 2160, we are safe for a while
+var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
+
+// cronJobSuffixTimeSkewMinutes is the maximum allowed difference
+// in minutes between pod creation time and the timestamp suffix
+// in the job name (created by cronjob)
+// If the suffix falls outside of the range, it is assumed that it's not a cronjob
+// (i.e. the suffix is human generated, like a date 20260407)
+const cronJobSuffixTimeSkewMinutes int64 = 60 * 24 // 1 day
 
 // podTemplateHashLabel contains the label that K8s Deployment
 // controller adds to ReplicaSets to ensure that child ReplicaSets
@@ -125,6 +137,7 @@ func New(
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 	watchSyncPeriod time.Duration,
+	podDeleteGracePeriod time.Duration,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -132,17 +145,19 @@ func New(
 	}
 
 	c := &WatchClient{
-		logger:                 set.Logger,
-		Rules:                  rules,
-		Filters:                filters,
-		Associations:           associations,
-		Exclude:                exclude,
-		cronJobRegex:           cronJobRegex,
-		stopCh:                 make(chan struct{}),
-		telemetryBuilder:       telemetryBuilder,
-		waitForMetadata:        waitForMetadata,
-		waitForMetadataTimeout: waitForMetadataTimeout,
-		watchSyncPeriod:        watchSyncPeriod,
+		logger:                    set.Logger,
+		Rules:                     rules,
+		Filters:                   filters,
+		Associations:              associations,
+		hasContainerIDAssociation: hasContainerIDAssociation(associations),
+		Exclude:                   exclude,
+		cronJobRegex:              cronJobRegex,
+		stopCh:                    make(chan struct{}),
+		telemetryBuilder:          telemetryBuilder,
+		waitForMetadata:           waitForMetadata,
+		waitForMetadataTimeout:    waitForMetadataTimeout,
+		watchSyncPeriod:           watchSyncPeriod,
+		podDeleteGracePeriod:      podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -262,7 +277,7 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	// Start the delete loop for cleaning up old pods from cache
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+	go c.deleteLoop(time.Second*30, c.podDeleteGracePeriod)
 
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
@@ -1007,15 +1022,24 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						name := parts[1]
+					var cronjobName string
+					// Attempt to use the Job informer when it is running (e.g. k8s.cronjob.uid or from: job
+					// label/annotation extraction). Otherwise fall back to heuristics on the Job name suffix.
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						cronjobName = job.CronJob.Name
+						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
+					} else {
+						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
+						c.logger.Debug("used heuristics for cronjob name", zap.String("cronjob", cronjobName))
+					}
+
+					if cronjobName != "" {
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = name
+							tags[string(conventions.K8SCronJobNameKey)] = cronjobName
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = name
+							tags[string(conventions.ServiceNameKey)] = cronjobName
 						}
 					}
 				}
@@ -1104,7 +1128,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		},
 	}
 
-	if rules.StartTime {
+	// Creation time is required for k8s.pod.start_time and for CronJob name heuristics
+	// (Job name suffix vs pod creation) when k8s.pod.start_time is not extracted.
+	if rules.StartTime || rules.CronJobName || rules.ServiceName {
 		transformedPod.SetCreationTimestamp(pod.GetCreationTimestamp())
 	}
 
@@ -1588,11 +1614,16 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	var staleContainerIDRequests []deleteRequest
 
 	c.m.Lock()
-	defer c.m.Unlock()
-
-	identifiers := c.getIdentifiersFromAssoc(newPod)
+	var oldPod *Pod
+	if newPod.PodUID != "" {
+		if op, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && op.PodUID == newPod.PodUID {
+			oldPod = op
+		}
+	}
 	for i := range identifiers {
 		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
@@ -1606,6 +1637,21 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		}
 		c.Pods[id] = newPod
 	}
+	if c.hasContainerIDAssociation && oldPod != nil &&
+		c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
+		// Run stale container.id cleanup only when this watch actually replaced the pod under
+		// k8s.pod.uid. The loop skips c.Pods[uid]=newPod when pod.Status.StartTime is older than
+		// the StartTime already stored for that key, so a stale watch leaves the UID entry
+		// pointing at the previous *Pod.
+		//
+		// Only container.id-based identifiers are handled here.
+		// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
+		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
+		staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+	}
+	c.m.Unlock()
+
+	c.appendDeleteRequests(staleContainerIDRequests)
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
@@ -1618,6 +1664,78 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 		if ok && p.PodUID == string(pod.UID) {
 			c.appendDeleteQueue(id, p.PodUID)
 		}
+	}
+}
+
+func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
+	staleContainerIDs := staleContainerIDs(oldPod, newPod)
+	if len(staleContainerIDs) == 0 {
+		return nil
+	}
+
+	identifiers := c.getIdentifiersFromAssoc(oldPod)
+	requests := make([]deleteRequest, 0, len(staleContainerIDs))
+	for i := range identifiers {
+		id := identifiers[i]
+		if !podIdentifierHasContainerID(id, staleContainerIDs) {
+			continue
+		}
+		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
+			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
+		}
+	}
+	return requests
+}
+
+func staleContainerIDs(oldPod, newPod *Pod) map[string]struct{} {
+	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
+		return nil
+	}
+
+	staleContainerIDs := map[string]struct{}{}
+	for containerID := range oldPod.Containers.ByID {
+		if containerID == "" {
+			continue
+		}
+		if _, ok := newPod.Containers.ByID[containerID]; !ok {
+			staleContainerIDs[containerID] = struct{}{}
+		}
+	}
+	return staleContainerIDs
+}
+
+func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struct{}) bool {
+	for i := range id {
+		attr := id[i]
+		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
+			if _, ok := containerIDs[attr.Value]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasContainerIDAssociation(associations []Association) bool {
+	for _, assoc := range associations {
+		for _, source := range assoc.Sources {
+			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func podUIDIdentifier(podUID string) PodIdentifier {
+	return PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), podUID),
+	}
+}
+
+func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
+	for i := range requests {
+		c.appendDeleteQueue(requests[i].id, requests[i].podUID)
 	}
 }
 
@@ -2019,4 +2137,33 @@ func extractDeploymentNameFromReplicaSet(replicasetName, podTemplateHash string)
 	}
 	// Remove the pod template hash suffix and the hyphen
 	return replicasetName[:len(replicasetName)-len(podTemplateHash)-1]
+}
+
+// extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
+// a heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
+// If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
+func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
+	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
+	// time value in minutes).
+	parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+	if len(parts) != 3 {
+		return ""
+	}
+	suffixMinutes, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		c.logger.Debug("failed to parse cronjob timestamp", zap.Error(err))
+		// assume not a cronjob
+		return ""
+	}
+	podMinutes := pod.GetCreationTimestamp().Unix() / 60
+	diff := podMinutes - suffixMinutes
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > cronJobSuffixTimeSkewMinutes {
+		// assume not a cronjob
+		return ""
+	}
+
+	return parts[1]
 }

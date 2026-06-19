@@ -1,5 +1,0 @@
-change_type: deprecation
-component: connector/slow_sql
-note: Rename component type from `slowsql` to `slow_sql` to follow snake_case naming convention. The old name is kept as a deprecated alias.
-issues: [48020]
-change_logs: [user]
