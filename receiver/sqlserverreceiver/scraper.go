@@ -438,11 +438,11 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const lockOwnerBlocks = "Lock Owner Blocks"
 	const lockOwnerBlocksAllocated = "Lock Owner Blocks Allocated"
 	const lockRequestsPerSec = "Lock Requests/sec"
-	const lockTimeoutsNonzeroPerSec = "Lock Timeouts (timeout > 0)/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
 	const lockWaitCount = "Lock Wait Count"
 	const lockWaitTimeMS = "Lock Wait Time (ms)"
 	const lockWaits = "Lock Waits/sec"
+	const lockTimeoutsNonzeroPerSec = "Lock Timeouts (timeout > 0)/sec"
 	const loginsPerSec = "Logins/sec"
 	const logoutPerSec = "Logouts/sec"
 	const misguidedPlanExecutionsPerSec = "Misguided plan executions/sec"
@@ -714,7 +714,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeMS)
 				errs = append(errs, err)
 			} else {
-				// Counter reports milliseconds; emit seconds to match OTel convention.
 				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
 			}
 		case lockWaits:
@@ -1483,18 +1482,26 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 	return result, err
 }
 
+// SQLServer:SQL Errors counter instance names.
+const (
+	dbOfflineErrors      = "DB Offline Errors"
+	infoErrors           = "Info Errors"
+	killConnectionErrors = "Kill Connection Errors"
+	userErrors           = "User Errors"
+)
+
 // errorCategoryAttr maps a SQLServer:SQL Errors counter instance to the
 // sqlserver.error.category attribute value. The "_Total" instance is
 // intentionally skipped since callers can sum the per-category points.
 func errorCategoryAttr(instance string) (metadata.AttributeSqlserverErrorCategory, bool) {
 	switch instance {
-	case "DB Offline Errors":
+	case dbOfflineErrors:
 		return metadata.AttributeSqlserverErrorCategoryDbOffline, true
-	case "Info Errors":
+	case infoErrors:
 		return metadata.AttributeSqlserverErrorCategoryInfo, true
-	case "Kill Connection Errors":
+	case killConnectionErrors:
 		return metadata.AttributeSqlserverErrorCategoryKillConnection, true
-	case "User Errors":
+	case userErrors:
 		return metadata.AttributeSqlserverErrorCategoryUser, true
 	default:
 		return 0, false
