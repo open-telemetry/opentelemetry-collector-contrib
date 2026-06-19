@@ -220,6 +220,22 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.access.scan.rate
+
+Number of access method scans, by scan type.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {scan}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``full``, ``probe``, ``range`` | Required | - |
+
 ### sqlserver.attention.rate
 
 Number of SQL attentions (client cancellation interrupts) received per second.
@@ -370,6 +386,32 @@ Total number of deadlocks.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
+
+### sqlserver.extent.operation.rate
+
+Number of extent allocation operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {extent}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.extent.operation.kind | The kind of extent allocation operation. | Str: ``allocated``, ``deallocated`` | Required | - |
+
+### sqlserver.ghost_record.skipped.rate
+
+Number of ghosted records skipped during scans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {record}/s | Gauge | Double | Development |
 
 ### sqlserver.index.search.rate
 
@@ -550,6 +592,22 @@ This metric is only available when the receiver is configured to directly connec
 | wait.category | Category of the reason for a wait. | Any Str | Recommended | - |
 | wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str | Recommended | - |
 
+### sqlserver.page.allocation.rate
+
+Number of page allocation operations, by kind.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.allocation.kind | The kind of page allocation operation. | Str: ``allocated``, ``compressed``, ``compression_attempted``, ``deallocated``, ``mixed`` | Required | - |
+
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
 Number of free list stalls.
@@ -565,6 +623,16 @@ Total number of page lookups.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
+
+### sqlserver.page.readahead.rate
+
+Number of pages read from disk by the read-ahead manager.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 
@@ -662,6 +730,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
 
+### sqlserver.scan_point.revalidation.rate
+
+Number of times scan points needed to be revalidated.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {revalidation}/s | Gauge | Double | Development |
+
 ### sqlserver.table.count
 
 The number of tables.
@@ -692,6 +770,16 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
+
+### sqlserver.worktable.cache.ratio
+
+Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ## Default Events
 
