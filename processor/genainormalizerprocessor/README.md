@@ -188,7 +188,7 @@ Attribute renames:
 See [`internal/openinference/mappings.go`](./internal/openinference/mappings.go) for the canonical map.
 Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
 
-### Message reconstruction
+#### Message reconstruction
 
 OpenInference represents messages as flattened indexed span attributes (e.g., `llm.input_messages.0.message.role`, `llm.input_messages.0.message.content`). The processor reconstructs these into a single JSON string attribute following the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-spans.md#messages) and sets it as `gen_ai.input.messages` (or `gen_ai.output.messages`).
 
@@ -204,7 +204,7 @@ Supported OpenInference message fields:
 
 **Not supported:** multimodal content arrays (`llm.{input,output}_messages.N.message.contents.M.message_content.*`). OpenInference's indexed content array format for images, audio, and other modalities is not reconstructed. Only the flat `message.content` string field is handled. Multimodal spans pass through with the original flattened attributes intact.
 
-#### Role inference
+##### Role inference
 
 Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, `tool`. When the source `role` is absent, empty, or not one of these values, the processor infers it from context:
 
@@ -214,7 +214,7 @@ Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, 
 | `tool_calls` are present | `assistant` |
 | Neither present | `user` |
 
-#### GenAI semconv message fields not produced
+##### GenAI semconv message fields not produced
 
 The following fields defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) are not produced by this processor because OpenInference does not emit them:
 
@@ -223,7 +223,7 @@ The following fields defined in the [GenAI input messages schema](https://github
 | `GenericServerToolCall` part type | input messages | Not emitted by OpenInference instrumentors |
 | `finish_reason` (non-empty) | output messages | OpenInference has no per-message finish reason; emitted as `""` |
 
-#### Output format
+##### Output format
 
 Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json).
 
