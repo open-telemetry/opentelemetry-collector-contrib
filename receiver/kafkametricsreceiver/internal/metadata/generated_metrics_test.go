@@ -96,67 +96,57 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 3, "broker-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 3, "group-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionReplicasDataPoint(ts, 3, "topic-val-2", 10)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
@@ -181,7 +171,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 3, "topic-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")

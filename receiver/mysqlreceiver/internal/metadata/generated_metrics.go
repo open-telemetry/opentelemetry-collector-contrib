@@ -1058,79 +1058,99 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 
 var MetricsInfo = metricsInfo{
 	MysqlBufferPoolDataPages: metricInfo{
-		Name: "mysql.buffer_pool.data_pages",
+		Name:       "mysql.buffer_pool.data_pages",
+		Attributes: []string{"buffer_pool_data"},
 	},
 	MysqlBufferPoolLimit: metricInfo{
 		Name: "mysql.buffer_pool.limit",
 	},
 	MysqlBufferPoolOperations: metricInfo{
-		Name: "mysql.buffer_pool.operations",
+		Name:       "mysql.buffer_pool.operations",
+		Attributes: []string{"buffer_pool_operations"},
 	},
 	MysqlBufferPoolPageFlushes: metricInfo{
 		Name: "mysql.buffer_pool.page_flushes",
 	},
 	MysqlBufferPoolPages: metricInfo{
-		Name: "mysql.buffer_pool.pages",
+		Name:       "mysql.buffer_pool.pages",
+		Attributes: []string{"buffer_pool_pages"},
 	},
 	MysqlBufferPoolUsage: metricInfo{
-		Name: "mysql.buffer_pool.usage",
+		Name:       "mysql.buffer_pool.usage",
+		Attributes: []string{"buffer_pool_data"},
 	},
 	MysqlClientNetworkIo: metricInfo{
-		Name: "mysql.client.network.io",
+		Name:       "mysql.client.network.io",
+		Attributes: []string{"direction"},
 	},
 	MysqlCommands: metricInfo{
-		Name: "mysql.commands",
+		Name:       "mysql.commands",
+		Attributes: []string{"command"},
 	},
 	MysqlConnectionCount: metricInfo{
 		Name: "mysql.connection.count",
 	},
 	MysqlConnectionErrors: metricInfo{
-		Name: "mysql.connection.errors",
+		Name:       "mysql.connection.errors",
+		Attributes: []string{"connection_error"},
 	},
 	MysqlDoubleWrites: metricInfo{
-		Name: "mysql.double_writes",
+		Name:       "mysql.double_writes",
+		Attributes: []string{"double_writes"},
 	},
 	MysqlHandlers: metricInfo{
-		Name: "mysql.handlers",
+		Name:       "mysql.handlers",
+		Attributes: []string{"handler"},
 	},
 	MysqlIndexIoWaitCount: metricInfo{
-		Name: "mysql.index.io.wait.count",
+		Name:       "mysql.index.io.wait.count",
+		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
 	},
 	MysqlIndexIoWaitTime: metricInfo{
-		Name: "mysql.index.io.wait.time",
+		Name:       "mysql.index.io.wait.time",
+		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
 	},
 	MysqlJoins: metricInfo{
-		Name: "mysql.joins",
+		Name:       "mysql.joins",
+		Attributes: []string{"join_kind"},
 	},
 	MysqlLocks: metricInfo{
-		Name: "mysql.locks",
+		Name:       "mysql.locks",
+		Attributes: []string{"locks"},
 	},
 	MysqlLogOperations: metricInfo{
-		Name: "mysql.log_operations",
+		Name:       "mysql.log_operations",
+		Attributes: []string{"log_operations"},
 	},
 	MysqlMaxUsedConnections: metricInfo{
 		Name: "mysql.max_used_connections",
 	},
 	MysqlMysqlxConnections: metricInfo{
-		Name: "mysql.mysqlx_connections",
+		Name:       "mysql.mysqlx_connections",
+		Attributes: []string{"connection_status"},
 	},
 	MysqlMysqlxWorkerThreads: metricInfo{
-		Name: "mysql.mysqlx_worker_threads",
+		Name:       "mysql.mysqlx_worker_threads",
+		Attributes: []string{"mysqlx_threads"},
 	},
 	MysqlOpenedResources: metricInfo{
-		Name: "mysql.opened_resources",
+		Name:       "mysql.opened_resources",
+		Attributes: []string{"opened_resources"},
 	},
 	MysqlOperations: metricInfo{
-		Name: "mysql.operations",
+		Name:       "mysql.operations",
+		Attributes: []string{"operations"},
 	},
 	MysqlPageOperations: metricInfo{
-		Name: "mysql.page_operations",
+		Name:       "mysql.page_operations",
+		Attributes: []string{"page_operations"},
 	},
 	MysqlPageSize: metricInfo{
 		Name: "mysql.page_size",
 	},
 	MysqlPreparedStatements: metricInfo{
-		Name: "mysql.prepared_statements",
+		Name:       "mysql.prepared_statements",
+		Attributes: []string{"prepared_statements_command"},
 	},
 	MysqlQueryClientCount: metricInfo{
 		Name: "mysql.query.client.count",
@@ -1148,55 +1168,72 @@ var MetricsInfo = metricsInfo{
 		Name: "mysql.replica.time_behind_source",
 	},
 	MysqlRowLocks: metricInfo{
-		Name: "mysql.row_locks",
+		Name:       "mysql.row_locks",
+		Attributes: []string{"row_locks"},
 	},
 	MysqlRowOperations: metricInfo{
-		Name: "mysql.row_operations",
+		Name:       "mysql.row_operations",
+		Attributes: []string{"row_operations"},
 	},
 	MysqlSorts: metricInfo{
-		Name: "mysql.sorts",
+		Name:       "mysql.sorts",
+		Attributes: []string{"sorts"},
 	},
 	MysqlStatementEventCount: metricInfo{
-		Name: "mysql.statement_event.count",
+		Name:       "mysql.statement_event.count",
+		Attributes: []string{"schema", "digest", "digest_text", "event_state"},
 	},
 	MysqlStatementEventWaitTime: metricInfo{
-		Name: "mysql.statement_event.wait.time",
+		Name:       "mysql.statement_event.wait.time",
+		Attributes: []string{"schema", "digest", "digest_text"},
 	},
 	MysqlTableAverageRowLength: metricInfo{
-		Name: "mysql.table.average_row_length",
+		Name:       "mysql.table.average_row_length",
+		Attributes: []string{"table_name", "schema"},
 	},
 	MysqlTableIoWaitCount: metricInfo{
-		Name: "mysql.table.io.wait.count",
+		Name:       "mysql.table.io.wait.count",
+		Attributes: []string{"io_waits_operations", "table_name", "schema"},
 	},
 	MysqlTableIoWaitTime: metricInfo{
-		Name: "mysql.table.io.wait.time",
+		Name:       "mysql.table.io.wait.time",
+		Attributes: []string{"io_waits_operations", "table_name", "schema"},
 	},
 	MysqlTableLockWaitReadCount: metricInfo{
-		Name: "mysql.table.lock_wait.read.count",
+		Name:       "mysql.table.lock_wait.read.count",
+		Attributes: []string{"schema", "table_name", "read_lock_type"},
 	},
 	MysqlTableLockWaitReadTime: metricInfo{
-		Name: "mysql.table.lock_wait.read.time",
+		Name:       "mysql.table.lock_wait.read.time",
+		Attributes: []string{"schema", "table_name", "read_lock_type"},
 	},
 	MysqlTableLockWaitWriteCount: metricInfo{
-		Name: "mysql.table.lock_wait.write.count",
+		Name:       "mysql.table.lock_wait.write.count",
+		Attributes: []string{"schema", "table_name", "write_lock_type"},
 	},
 	MysqlTableLockWaitWriteTime: metricInfo{
-		Name: "mysql.table.lock_wait.write.time",
+		Name:       "mysql.table.lock_wait.write.time",
+		Attributes: []string{"schema", "table_name", "write_lock_type"},
 	},
 	MysqlTableRows: metricInfo{
-		Name: "mysql.table.rows",
+		Name:       "mysql.table.rows",
+		Attributes: []string{"table_name", "schema"},
 	},
 	MysqlTableSize: metricInfo{
-		Name: "mysql.table.size",
+		Name:       "mysql.table.size",
+		Attributes: []string{"table_name", "schema", "table_size_type"},
 	},
 	MysqlTableOpenCache: metricInfo{
-		Name: "mysql.table_open_cache",
+		Name:       "mysql.table_open_cache",
+		Attributes: []string{"cache_status"},
 	},
 	MysqlThreads: metricInfo{
-		Name: "mysql.threads",
+		Name:       "mysql.threads",
+		Attributes: []string{"threads"},
 	},
 	MysqlTmpResources: metricInfo{
-		Name: "mysql.tmp_resources",
+		Name:       "mysql.tmp_resources",
+		Attributes: []string{"tmp_resource"},
 	},
 	MysqlUptime: metricInfo{
 		Name: "mysql.uptime",
@@ -1255,7 +1292,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricMysqlBufferPoolDataPages struct {

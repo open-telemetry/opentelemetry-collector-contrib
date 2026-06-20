@@ -173,6 +173,77 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestProcessContextSwitchesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessContextSwitches
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessContextSwitchesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.context_switches doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ProcessContextSwitches
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestProcessCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.cpu.time doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ProcessCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestProcessCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.cpu.utilization doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ProcessCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestProcessDiskIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessDiskIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessDiskIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.disk.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ProcessDiskIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestProcessDiskOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessDiskOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessDiskOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.disk.operations doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ProcessDiskOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestProcessPagingFaultsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessPagingFaults
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessPagingFaultsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.paging.faults doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ProcessPagingFaults
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

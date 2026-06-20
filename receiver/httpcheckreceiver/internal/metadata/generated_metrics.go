@@ -21,40 +21,52 @@ const (
 
 var MetricsInfo = metricsInfo{
 	HttpcheckClientConnectionDuration: metricInfo{
-		Name: "httpcheck.client.connection.duration",
+		Name:       "httpcheck.client.connection.duration",
+		Attributes: []string{"http.url", "network.transport"},
 	},
 	HttpcheckClientRequestDuration: metricInfo{
-		Name: "httpcheck.client.request.duration",
+		Name:       "httpcheck.client.request.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckDNSLookupDuration: metricInfo{
-		Name: "httpcheck.dns.lookup.duration",
+		Name:       "httpcheck.dns.lookup.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckDuration: metricInfo{
-		Name: "httpcheck.duration",
+		Name:       "httpcheck.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckError: metricInfo{
-		Name: "httpcheck.error",
+		Name:       "httpcheck.error",
+		Attributes: []string{"http.url", "error.message"},
 	},
 	HttpcheckResponseDuration: metricInfo{
-		Name: "httpcheck.response.duration",
+		Name:       "httpcheck.response.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckResponseSize: metricInfo{
-		Name: "httpcheck.response.size",
+		Name:       "httpcheck.response.size",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckStatus: metricInfo{
-		Name: "httpcheck.status",
+		Name:       "httpcheck.status",
+		Attributes: []string{"http.url", "http.status_code", "http.method", "http.status_class"},
 	},
 	HttpcheckTLSCertRemaining: metricInfo{
-		Name: "httpcheck.tls.cert_remaining",
+		Name:       "httpcheck.tls.cert_remaining",
+		Attributes: []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
 	},
 	HttpcheckTLSHandshakeDuration: metricInfo{
-		Name: "httpcheck.tls.handshake.duration",
+		Name:       "httpcheck.tls.handshake.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckValidationFailed: metricInfo{
-		Name: "httpcheck.validation.failed",
+		Name:       "httpcheck.validation.failed",
+		Attributes: []string{"http.url", "validation.type"},
 	},
 	HttpcheckValidationPassed: metricInfo{
-		Name: "httpcheck.validation.passed",
+		Name:       "httpcheck.validation.passed",
+		Attributes: []string{"http.url", "validation.type"},
 	},
 }
 
@@ -74,7 +86,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricHttpcheckClientConnectionDuration struct {

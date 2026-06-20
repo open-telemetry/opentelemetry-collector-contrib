@@ -67,22 +67,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsAcceptedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNginxConnectionsCurrentDataPoint(ts, 3, AttributeStateReading)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsHandledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxRequestsDataPoint(ts, 1)

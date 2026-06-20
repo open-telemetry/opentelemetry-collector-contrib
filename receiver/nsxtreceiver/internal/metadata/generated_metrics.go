@@ -130,10 +130,12 @@ var MapAttributePacketType = map[string]AttributePacketType{
 
 var MetricsInfo = metricsInfo{
 	NsxtNodeCPUUtilization: metricInfo{
-		Name: "nsxt.node.cpu.utilization",
+		Name:       "nsxt.node.cpu.utilization",
+		Attributes: []string{"class"},
 	},
 	NsxtNodeFilesystemUsage: metricInfo{
-		Name: "nsxt.node.filesystem.usage",
+		Name:       "nsxt.node.filesystem.usage",
+		Attributes: []string{"disk_state"},
 	},
 	NsxtNodeFilesystemUtilization: metricInfo{
 		Name: "nsxt.node.filesystem.utilization",
@@ -145,10 +147,12 @@ var MetricsInfo = metricsInfo{
 		Name: "nsxt.node.memory.usage",
 	},
 	NsxtNodeNetworkIo: metricInfo{
-		Name: "nsxt.node.network.io",
+		Name:       "nsxt.node.network.io",
+		Attributes: []string{"direction"},
 	},
 	NsxtNodeNetworkPacketCount: metricInfo{
-		Name: "nsxt.node.network.packet.count",
+		Name:       "nsxt.node.network.packet.count",
+		Attributes: []string{"direction", "packet.type"},
 	},
 }
 
@@ -163,7 +167,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricNsxtNodeCPUUtilization struct {

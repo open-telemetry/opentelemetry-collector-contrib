@@ -276,13 +276,16 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.bgwriter.buffers.allocated",
 	},
 	PostgresqlBgwriterBuffersWrites: metricInfo{
-		Name: "postgresql.bgwriter.buffers.writes",
+		Name:       "postgresql.bgwriter.buffers.writes",
+		Attributes: []string{"bg_buffer_source"},
 	},
 	PostgresqlBgwriterCheckpointCount: metricInfo{
-		Name: "postgresql.bgwriter.checkpoint.count",
+		Name:       "postgresql.bgwriter.checkpoint.count",
+		Attributes: []string{"bg_checkpoint_type"},
 	},
 	PostgresqlBgwriterDuration: metricInfo{
-		Name: "postgresql.bgwriter.duration",
+		Name:       "postgresql.bgwriter.duration",
+		Attributes: []string{"bg_duration_type"},
 	},
 	PostgresqlBgwriterMaxwritten: metricInfo{
 		Name: "postgresql.bgwriter.maxwritten",
@@ -294,7 +297,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.blks_read",
 	},
 	PostgresqlBlocksRead: metricInfo{
-		Name: "postgresql.blocks_read",
+		Name:       "postgresql.blocks_read",
+		Attributes: []string{"source"},
 	},
 	PostgresqlCommits: metricInfo{
 		Name: "postgresql.commits",
@@ -306,7 +310,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.database.count",
 	},
 	PostgresqlDatabaseLocks: metricInfo{
-		Name: "postgresql.database.locks",
+		Name:       "postgresql.database.locks",
+		Attributes: []string{"relation", "mode", "lock_type"},
 	},
 	PostgresqlDbSize: metricInfo{
 		Name: "postgresql.db_size",
@@ -315,7 +320,8 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.deadlocks",
 	},
 	PostgresqlFunctionCalls: metricInfo{
-		Name: "postgresql.function.calls",
+		Name:       "postgresql.function.calls",
+		Attributes: []string{"function"},
 	},
 	PostgresqlIndexScans: metricInfo{
 		Name: "postgresql.index.scans",
@@ -324,16 +330,19 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.index.size",
 	},
 	PostgresqlOperations: metricInfo{
-		Name: "postgresql.operations",
+		Name:       "postgresql.operations",
+		Attributes: []string{"operation"},
 	},
 	PostgresqlReplicationDataDelay: metricInfo{
-		Name: "postgresql.replication.data_delay",
+		Name:       "postgresql.replication.data_delay",
+		Attributes: []string{"replication_client"},
 	},
 	PostgresqlRollbacks: metricInfo{
 		Name: "postgresql.rollbacks",
 	},
 	PostgresqlRows: metricInfo{
-		Name: "postgresql.rows",
+		Name:       "postgresql.rows",
+		Attributes: []string{"state"},
 	},
 	PostgresqlSequentialScans: metricInfo{
 		Name: "postgresql.sequential_scans",
@@ -372,10 +381,12 @@ var MetricsInfo = metricsInfo{
 		Name: "postgresql.wal.age",
 	},
 	PostgresqlWalDelay: metricInfo{
-		Name: "postgresql.wal.delay",
+		Name:       "postgresql.wal.delay",
+		Attributes: []string{"wal_operation_lag", "replication_client"},
 	},
 	PostgresqlWalLag: metricInfo{
-		Name: "postgresql.wal.lag",
+		Name:       "postgresql.wal.lag",
+		Attributes: []string{"wal_operation_lag", "replication_client"},
 	},
 }
 
@@ -419,7 +430,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricPostgresqlBackends struct {

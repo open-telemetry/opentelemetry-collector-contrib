@@ -77,21 +77,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpFrequencyOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpSkewDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordNtpStratumDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeCorrectionDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)

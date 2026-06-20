@@ -293,7 +293,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.block_manager.disk.usage",
 	},
 	SparkDriverBlockManagerMemoryUsage: metricInfo{
-		Name: "spark.driver.block_manager.memory.usage",
+		Name:       "spark.driver.block_manager.memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkDriverCodeGeneratorCompilationAverageTime: metricInfo{
 		Name: "spark.driver.code_generator.compilation.average_time",
@@ -326,28 +327,35 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.dag_scheduler.job.count",
 	},
 	SparkDriverDagSchedulerStageCount: metricInfo{
-		Name: "spark.driver.dag_scheduler.stage.count",
+		Name:       "spark.driver.dag_scheduler.stage.count",
+		Attributes: []string{"scheduler_status"},
 	},
 	SparkDriverDagSchedulerStageFailed: metricInfo{
 		Name: "spark.driver.dag_scheduler.stage.failed",
 	},
 	SparkDriverExecutorGcOperations: metricInfo{
-		Name: "spark.driver.executor.gc.operations",
+		Name:       "spark.driver.executor.gc.operations",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorGcTime: metricInfo{
-		Name: "spark.driver.executor.gc.time",
+		Name:       "spark.driver.executor.gc.time",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorMemoryExecution: metricInfo{
-		Name: "spark.driver.executor.memory.execution",
+		Name:       "spark.driver.executor.memory.execution",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryJvm: metricInfo{
-		Name: "spark.driver.executor.memory.jvm",
+		Name:       "spark.driver.executor.memory.jvm",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryPool: metricInfo{
-		Name: "spark.driver.executor.memory.pool",
+		Name:       "spark.driver.executor.memory.pool",
+		Attributes: []string{"pool_memory_type"},
 	},
 	SparkDriverExecutorMemoryStorage: metricInfo{
-		Name: "spark.driver.executor.memory.storage",
+		Name:       "spark.driver.executor.memory.storage",
+		Attributes: []string{"location"},
 	},
 	SparkDriverHiveExternalCatalogFileCacheHits: metricInfo{
 		Name: "spark.driver.hive_external_catalog.file_cache_hits",
@@ -392,10 +400,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.memory.usage",
 	},
 	SparkExecutorShuffleIoSize: metricInfo{
-		Name: "spark.executor.shuffle.io.size",
+		Name:       "spark.executor.shuffle.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkExecutorStorageMemoryUsage: metricInfo{
-		Name: "spark.executor.storage_memory.usage",
+		Name:       "spark.executor.storage_memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkExecutorTaskActive: metricInfo{
 		Name: "spark.executor.task.active",
@@ -404,7 +414,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.task.limit",
 	},
 	SparkExecutorTaskResult: metricInfo{
-		Name: "spark.executor.task.result",
+		Name:       "spark.executor.task.result",
+		Attributes: []string{"executor_task_result"},
 	},
 	SparkExecutorTime: metricInfo{
 		Name: "spark.executor.time",
@@ -413,13 +424,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.job.stage.active",
 	},
 	SparkJobStageResult: metricInfo{
-		Name: "spark.job.stage.result",
+		Name:       "spark.job.stage.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkJobTaskActive: metricInfo{
 		Name: "spark.job.task.active",
 	},
 	SparkJobTaskResult: metricInfo{
-		Name: "spark.job.task.result",
+		Name:       "spark.job.task.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkStageDiskSpilled: metricInfo{
 		Name: "spark.stage.disk.spilled",
@@ -431,10 +444,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.executor.run_time",
 	},
 	SparkStageIoRecords: metricInfo{
-		Name: "spark.stage.io.records",
+		Name:       "spark.stage.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageIoSize: metricInfo{
-		Name: "spark.stage.io.size",
+		Name:       "spark.stage.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkStageJvmGcTime: metricInfo{
 		Name: "spark.stage.jvm_gc_time",
@@ -446,7 +461,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.memory.spilled",
 	},
 	SparkStageShuffleBlocksFetched: metricInfo{
-		Name: "spark.stage.shuffle.blocks_fetched",
+		Name:       "spark.stage.shuffle.blocks_fetched",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleFetchWaitTime: metricInfo{
 		Name: "spark.stage.shuffle.fetch_wait_time",
@@ -455,10 +471,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.io.disk",
 	},
 	SparkStageShuffleIoReadSize: metricInfo{
-		Name: "spark.stage.shuffle.io.read.size",
+		Name:       "spark.stage.shuffle.io.read.size",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleIoRecords: metricInfo{
-		Name: "spark.stage.shuffle.io.records",
+		Name:       "spark.stage.shuffle.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageShuffleIoWriteSize: metricInfo{
 		Name: "spark.stage.shuffle.io.write.size",
@@ -467,13 +485,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.write_time",
 	},
 	SparkStageStatus: metricInfo{
-		Name: "spark.stage.status",
+		Name:       "spark.stage.status",
+		Attributes: []string{"stage_active", "stage_complete", "stage_pending", "stage_failed"},
 	},
 	SparkStageTaskActive: metricInfo{
 		Name: "spark.stage.task.active",
 	},
 	SparkStageTaskResult: metricInfo{
-		Name: "spark.stage.task.result",
+		Name:       "spark.stage.task.result",
+		Attributes: []string{"stage_task_result"},
 	},
 	SparkStageTaskResultSize: metricInfo{
 		Name: "spark.stage.task.result_size",
@@ -547,7 +567,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSparkDriverBlockManagerDiskUsage struct {

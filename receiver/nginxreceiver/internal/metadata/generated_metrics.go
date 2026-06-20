@@ -58,7 +58,8 @@ var MetricsInfo = metricsInfo{
 		Name: "nginx.connections_accepted",
 	},
 	NginxConnectionsCurrent: metricInfo{
-		Name: "nginx.connections_current",
+		Name:       "nginx.connections_current",
+		Attributes: []string{"state"},
 	},
 	NginxConnectionsHandled: metricInfo{
 		Name: "nginx.connections_handled",
@@ -76,7 +77,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricNginxConnectionsAccepted struct {

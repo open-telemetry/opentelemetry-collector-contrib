@@ -21,157 +21,208 @@ const (
 
 var MetricsInfo = metricsInfo{
 	SplunkAggregationQueueRatio: metricInfo{
-		Name: "splunk.aggregation.queue.ratio",
+		Name:       "splunk.aggregation.queue.ratio",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkBucketsSearchableStatus: metricInfo{
-		Name: "splunk.buckets.searchable.status",
+		Name:       "splunk.buckets.searchable.status",
+		Attributes: []string{"splunk.host", "splunk.indexer.searchable", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedBucketCount: metricInfo{
-		Name: "splunk.data.indexes.extended.bucket.count",
+		Name:       "splunk.data.indexes.extended.bucket.count",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedBucketEventCount: metricInfo{
-		Name: "splunk.data.indexes.extended.bucket.event.count",
+		Name:       "splunk.data.indexes.extended.bucket.event.count",
+		Attributes: []string{"splunk.index.name", "splunk.bucket.dir", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedBucketHotCount: metricInfo{
-		Name: "splunk.data.indexes.extended.bucket.hot.count",
+		Name:       "splunk.data.indexes.extended.bucket.hot.count",
+		Attributes: []string{"splunk.index.name", "splunk.bucket.dir", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedBucketWarmCount: metricInfo{
-		Name: "splunk.data.indexes.extended.bucket.warm.count",
+		Name:       "splunk.data.indexes.extended.bucket.warm.count",
+		Attributes: []string{"splunk.index.name", "splunk.bucket.dir", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedEventCount: metricInfo{
-		Name: "splunk.data.indexes.extended.event.count",
+		Name:       "splunk.data.indexes.extended.event.count",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedRawSize: metricInfo{
-		Name: "splunk.data.indexes.extended.raw.size",
+		Name:       "splunk.data.indexes.extended.raw.size",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkDataIndexesExtendedTotalSize: metricInfo{
-		Name: "splunk.data.indexes.extended.total.size",
+		Name:       "splunk.data.indexes.extended.total.size",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkHealth: metricInfo{
-		Name: "splunk.health",
+		Name:       "splunk.health",
+		Attributes: []string{"splunk.feature", "splunk.feature.health", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerAvgRate: metricInfo{
-		Name: "splunk.indexer.avg.rate",
+		Name:       "splunk.indexer.avg.rate",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerCPUTime: metricInfo{
-		Name: "splunk.indexer.cpu.time",
+		Name:       "splunk.indexer.cpu.time",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerQueueRatio: metricInfo{
-		Name: "splunk.indexer.queue.ratio",
+		Name:       "splunk.indexer.queue.ratio",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerRawWriteTime: metricInfo{
-		Name: "splunk.indexer.raw.write.time",
+		Name:       "splunk.indexer.raw.write.time",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerRollingrestartStatus: metricInfo{
-		Name: "splunk.indexer.rollingrestart.status",
+		Name:       "splunk.indexer.rollingrestart.status",
+		Attributes: []string{"splunk.searchable.restart", "splunk.rollingorrestart", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexerThroughput: metricInfo{
-		Name: "splunk.indexer.throughput",
+		Name:       "splunk.indexer.throughput",
+		Attributes: []string{"splunk.indexer.status", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexesAvgSize: metricInfo{
-		Name: "splunk.indexes.avg.size",
+		Name:       "splunk.indexes.avg.size",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexesAvgUsage: metricInfo{
-		Name: "splunk.indexes.avg.usage",
+		Name:       "splunk.indexes.avg.usage",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexesBucketCount: metricInfo{
-		Name: "splunk.indexes.bucket.count",
+		Name:       "splunk.indexes.bucket.count",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexesMedianDataAge: metricInfo{
-		Name: "splunk.indexes.median.data.age",
+		Name:       "splunk.indexes.median.data.age",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIndexesSize: metricInfo{
-		Name: "splunk.indexes.size",
+		Name:       "splunk.indexes.size",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkIoAvgIops: metricInfo{
-		Name: "splunk.io.avg.iops",
+		Name:       "splunk.io.avg.iops",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkKvstoreBackupStatus: metricInfo{
-		Name: "splunk.kvstore.backup.status",
+		Name:       "splunk.kvstore.backup.status",
+		Attributes: []string{"splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkKvstoreReplicationStatus: metricInfo{
-		Name: "splunk.kvstore.replication.status",
+		Name:       "splunk.kvstore.replication.status",
+		Attributes: []string{"splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkKvstoreStatus: metricInfo{
-		Name: "splunk.kvstore.status",
+		Name:       "splunk.kvstore.status",
+		Attributes: []string{"splunk.kvstore.storage.engine", "splunk.kvstore.external", "splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkLicenseExpirationSecondsRemaining: metricInfo{
-		Name: "splunk.license.expiration.seconds_remaining",
+		Name:       "splunk.license.expiration.seconds_remaining",
+		Attributes: []string{"splunk.license.status", "splunk.license.label", "splunk.license.type", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkLicenseIndexUsage: metricInfo{
-		Name: "splunk.license.index.usage",
+		Name:       "splunk.license.index.usage",
+		Attributes: []string{"splunk.index.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkParseQueueRatio: metricInfo{
-		Name: "splunk.parse.queue.ratio",
+		Name:       "splunk.parse.queue.ratio",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkPipelineSetCount: metricInfo{
-		Name: "splunk.pipeline.set.count",
+		Name:       "splunk.pipeline.set.count",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSchedulerAvgExecutionLatency: metricInfo{
-		Name: "splunk.scheduler.avg.execution.latency",
+		Name:       "splunk.scheduler.avg.execution.latency",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSchedulerAvgRunTime: metricInfo{
-		Name: "splunk.scheduler.avg.run.time",
+		Name:       "splunk.scheduler.avg.run.time",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSchedulerCompletionRatio: metricInfo{
-		Name: "splunk.scheduler.completion.ratio",
+		Name:       "splunk.scheduler.completion.ratio",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSearchDuration: metricInfo{
-		Name: "splunk.search.duration",
+		Name:       "splunk.search.duration",
+		Attributes: []string{"splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSearchInitiation: metricInfo{
-		Name: "splunk.search.initiation",
+		Name:       "splunk.search.initiation",
+		Attributes: []string{"splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSearchStatus: metricInfo{
-		Name: "splunk.search.status",
+		Name:       "splunk.search.status",
+		Attributes: []string{"splunk.search.state", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkSearchSuccess: metricInfo{
-		Name: "splunk.search.success",
+		Name:       "splunk.search.success",
+		Attributes: []string{"splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerIntrospectionQueuesCurrent: metricInfo{
-		Name: "splunk.server.introspection.queues.current",
+		Name:       "splunk.server.introspection.queues.current",
+		Attributes: []string{"splunk.queue.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerIntrospectionQueuesCurrentBytes: metricInfo{
-		Name: "splunk.server.introspection.queues.current.bytes",
+		Name:       "splunk.server.introspection.queues.current.bytes",
+		Attributes: []string{"splunk.queue.name", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsAdhoc: metricInfo{
-		Name: "splunk.server.searchartifacts.adhoc",
+		Name:       "splunk.server.searchartifacts.adhoc",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsAdhocSize: metricInfo{
-		Name: "splunk.server.searchartifacts.adhoc.size",
+		Name:       "splunk.server.searchartifacts.adhoc.size",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsCompleted: metricInfo{
-		Name: "splunk.server.searchartifacts.completed",
+		Name:       "splunk.server.searchartifacts.completed",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsCompletedSize: metricInfo{
-		Name: "splunk.server.searchartifacts.completed.size",
+		Name:       "splunk.server.searchartifacts.completed.size",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsIncomplete: metricInfo{
-		Name: "splunk.server.searchartifacts.incomplete",
+		Name:       "splunk.server.searchartifacts.incomplete",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsIncompleteSize: metricInfo{
-		Name: "splunk.server.searchartifacts.incomplete.size",
+		Name:       "splunk.server.searchartifacts.incomplete.size",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsInvalid: metricInfo{
-		Name: "splunk.server.searchartifacts.invalid",
+		Name:       "splunk.server.searchartifacts.invalid",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsJobCacheCount: metricInfo{
-		Name: "splunk.server.searchartifacts.job.cache.count",
+		Name:       "splunk.server.searchartifacts.job.cache.count",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsJobCacheSize: metricInfo{
-		Name: "splunk.server.searchartifacts.job.cache.size",
+		Name:       "splunk.server.searchartifacts.job.cache.size",
+		Attributes: []string{"splunk.host", "splunk.searchartifacts.cache.type", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsSavedsearches: metricInfo{
-		Name: "splunk.server.searchartifacts.savedsearches",
+		Name:       "splunk.server.searchartifacts.savedsearches",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsScheduled: metricInfo{
-		Name: "splunk.server.searchartifacts.scheduled",
+		Name:       "splunk.server.searchartifacts.scheduled",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkServerSearchartifactsScheduledSize: metricInfo{
-		Name: "splunk.server.searchartifacts.scheduled.size",
+		Name:       "splunk.server.searchartifacts.scheduled.size",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkTypingQueueRatio: metricInfo{
-		Name: "splunk.typing.queue.ratio",
+		Name:       "splunk.typing.queue.ratio",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 }
 
@@ -230,7 +281,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSplunkAggregationQueueRatio struct {

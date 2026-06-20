@@ -31,7 +31,8 @@ var MetricsInfo = metricsInfo{
 		Name: "container.cpu.percent",
 	},
 	ContainerCPUUsagePercpu: metricInfo{
-		Name: "container.cpu.usage.percpu",
+		Name:       "container.cpu.usage.percpu",
+		Attributes: []string{"core"},
 	},
 	ContainerCPUUsageSystem: metricInfo{
 		Name: "container.cpu.usage.system",
@@ -71,7 +72,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricContainerBlockioIoServiceBytesRecursiveRead struct {

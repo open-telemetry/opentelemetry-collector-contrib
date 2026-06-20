@@ -88,6 +88,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestFileCtimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FileCtime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FileCtimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric file.ctime doesn't have an attribute invalid, valid attributes: [file.permissions]")
+
+	cfg = DefaultMetricsConfig().FileCtime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
