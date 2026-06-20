@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/twmb/franz-go/pkg/kadm"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -20,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -31,8 +28,8 @@ const (
 )
 
 type topicScraperFranz struct {
-	adm *kadm.Client
-	cl  *kgo.Client
+	// clients is the shared franz-go admin client provider.
+	clients *franzAdminProvider
 
 	settings    receiver.Settings
 	topicFilter *regexp.Regexp
@@ -44,36 +41,23 @@ type topicScraperFranz struct {
 func (s *topicScraperFranz) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	s.host = host
+	if s.clients == nil {
+		s.clients = newFranzAdminProvider(s.config.ClientConfig, s.settings.Logger)
+	}
+	s.clients.retain()
 	return nil
 }
 
 func (s *topicScraperFranz) shutdown(context.Context) error {
-	if s.adm != nil {
-		s.adm.Close()
-		s.adm = nil
+	if s.clients != nil {
+		s.clients.release()
 	}
-	if s.cl != nil {
-		s.cl.Close()
-		s.cl = nil
-	}
-	return nil
-}
-
-func (s *topicScraperFranz) ensureClients(ctx context.Context) error {
-	if s.adm != nil && s.cl != nil {
-		return nil
-	}
-	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, s.host, s.config.ClientConfig, s.settings.Logger)
-	if err != nil {
-		return fmt.Errorf("failed to create franz-go admin client: %w", err)
-	}
-	s.adm = adm
-	s.cl = cl
 	return nil
 }
 
 func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if err := s.ensureClients(ctx); err != nil {
+	adm, err := s.clients.admin(ctx, s.host)
+	if err != nil {
 		return pmetric.Metrics{}, err
 	}
 
@@ -81,7 +65,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// 1) list topics (with metadata details)
-	td, err := s.adm.ListTopics(ctx)
+	td, err := adm.ListTopics(ctx)
 	if err != nil {
 		s.settings.Logger.Error("franz-go: ListTopics failed", zap.Error(err))
 		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListTopics failed: %w", err)
@@ -96,11 +80,11 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 
 	// 2) offsets for matched topics (newest & oldest)
-	endOffs, err := s.adm.ListEndOffsets(ctx, matched...)
+	endOffs, err := adm.ListEndOffsets(ctx, matched...)
 	if err != nil {
 		scrapeErrs.Add(fmt.Errorf("franz-go: ListEndOffsets failed: %w", err))
 	}
-	startOffs, err := s.adm.ListStartOffsets(ctx, matched...)
+	startOffs, err := adm.ListStartOffsets(ctx, matched...)
 	if err != nil {
 		scrapeErrs.Add(fmt.Errorf("franz-go: ListStartOffsets failed: %w", err))
 	}
@@ -126,7 +110,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 			}
 		}
 
-		rcs, derr := s.adm.DescribeTopicConfigs(ctx, matched...)
+		rcs, derr := adm.DescribeTopicConfigs(ctx, matched...)
 		if derr != nil {
 			s.settings.Logger.Warn("franz-go: DescribeTopicConfigs failed", zap.Error(derr))
 			scrapeErrs.AddPartial(len(matched), fmt.Errorf("DescribeTopicConfigs: %w", derr))
@@ -213,7 +197,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 // Factory helper for franz-go path (selected via feature gate elsewhere).
-func createTopicsScraperFranz(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
+func createTopicsScraperFranz(_ context.Context, cfg Config, settings receiver.Settings, clients *franzAdminProvider) (scraper.Metrics, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
@@ -222,6 +206,7 @@ func createTopicsScraperFranz(_ context.Context, cfg Config, settings receiver.S
 		settings:    settings,
 		topicFilter: topicFilter,
 		config:      cfg,
+		clients:     clients,
 	}
 	return scraper.NewMetrics(
 		s.scrape,
