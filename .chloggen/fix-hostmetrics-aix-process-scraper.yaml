@@ -1,0 +1,15 @@
+change_type: enhancement
+
+component: receiver/host_metrics
+
+note: Add AIX-specific process scraper implementation.
+
+issues: [47095]
+
+subtext: |
+  Implements AIX versions of the platform-specific process scraper hooks
+  (CPU time/utilization recording, process name, executable, and command
+  extraction), replacing the previous empty stubs that the "others"
+  fallback provided.
+
+change_logs: [user]
