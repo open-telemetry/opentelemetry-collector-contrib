@@ -945,6 +945,46 @@ func (ms *VcenterHostDiskThroughputMetricConfig) Validate() error {
 	return nil
 }
 
+// VcenterHostMemoryActiveMetricConfig provides config for the vcenter.host.memory.active metric.
+type VcenterHostMemoryActiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *VcenterHostMemoryActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// VcenterHostMemoryBalloonedMetricConfig provides config for the vcenter.host.memory.ballooned metric.
+type VcenterHostMemoryBalloonedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *VcenterHostMemoryBalloonedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // VcenterHostMemoryCapacityMetricConfig provides config for the vcenter.host.memory.capacity metric.
 type VcenterHostMemoryCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -952,6 +992,26 @@ type VcenterHostMemoryCapacityMetricConfig struct {
 }
 
 func (ms *VcenterHostMemoryCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// VcenterHostMemoryGrantedMetricConfig provides config for the vcenter.host.memory.granted metric.
+type VcenterHostMemoryGrantedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *VcenterHostMemoryGrantedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2539,7 +2599,10 @@ type MetricsConfig struct {
 	VcenterHostDiskLatencyAvg           VcenterHostDiskLatencyAvgMetricConfig           `mapstructure:"vcenter.host.disk.latency.avg"`
 	VcenterHostDiskLatencyMax           VcenterHostDiskLatencyMaxMetricConfig           `mapstructure:"vcenter.host.disk.latency.max"`
 	VcenterHostDiskThroughput           VcenterHostDiskThroughputMetricConfig           `mapstructure:"vcenter.host.disk.throughput"`
+	VcenterHostMemoryActive             VcenterHostMemoryActiveMetricConfig             `mapstructure:"vcenter.host.memory.active"`
+	VcenterHostMemoryBallooned          VcenterHostMemoryBalloonedMetricConfig          `mapstructure:"vcenter.host.memory.ballooned"`
 	VcenterHostMemoryCapacity           VcenterHostMemoryCapacityMetricConfig           `mapstructure:"vcenter.host.memory.capacity"`
+	VcenterHostMemoryGranted            VcenterHostMemoryGrantedMetricConfig            `mapstructure:"vcenter.host.memory.granted"`
 	VcenterHostMemoryUsage              VcenterHostMemoryUsageMetricConfig              `mapstructure:"vcenter.host.memory.usage"`
 	VcenterHostMemoryUtilization        VcenterHostMemoryUtilizationMetricConfig        `mapstructure:"vcenter.host.memory.utilization"`
 	VcenterHostNetworkPacketDropRate    VcenterHostNetworkPacketDropRateMetricConfig    `mapstructure:"vcenter.host.network.packet.drop.rate"`
@@ -2696,7 +2759,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterHostDiskThroughputMetricAttributeKey{VcenterHostDiskThroughputMetricAttributeKeyDiskDirection, VcenterHostDiskThroughputMetricAttributeKeyObjectName},
 		},
+		VcenterHostMemoryActive: VcenterHostMemoryActiveMetricConfig{
+			Enabled: false,
+		},
+		VcenterHostMemoryBallooned: VcenterHostMemoryBalloonedMetricConfig{
+			Enabled: false,
+		},
 		VcenterHostMemoryCapacity: VcenterHostMemoryCapacityMetricConfig{
+			Enabled: false,
+		},
+		VcenterHostMemoryGranted: VcenterHostMemoryGrantedMetricConfig{
 			Enabled: false,
 		},
 		VcenterHostMemoryUsage: VcenterHostMemoryUsageMetricConfig{

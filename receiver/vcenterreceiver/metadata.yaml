@@ -461,6 +461,28 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [disk_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
+  vcenter.host.memory.active:
+    enabled: false
+    description: The amount of memory the host's powered-on VMs are actively using.
+    stability: development
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.memory.ballooned:
+    enabled: false
+    description: The amount of guest physical memory reclaimed from the host's VMs via the balloon driver.
+    stability: development
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.memory.capacity:
     enabled: false
     description: Total memory  capacity of the host system.
@@ -471,6 +493,17 @@ metrics:
       value_type: double
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.memory.granted:
+    enabled: false
+    description: The amount of machine memory that is granted to the powered-on VMs on the host.
+    stability: development
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.memory.usage:
     enabled: true
     description: The amount of memory the host system is using.
