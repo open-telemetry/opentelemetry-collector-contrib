@@ -84,6 +84,13 @@ func (sn *streamNames) groupName() string {
 	return sn.group
 }
 
+func (sn *streamNames) checkpointKey() string {
+	if sn.groupIdentifier != "" {
+		return sn.groupIdentifier
+	}
+	return sn.group
+}
+
 type streamPrefix struct {
 	group           string
 	groupIdentifier string
@@ -112,9 +119,17 @@ func (sp *streamPrefix) groupName() string {
 	return sp.group
 }
 
+func (sp *streamPrefix) checkpointKey() string {
+	if sp.groupIdentifier != "" {
+		return sp.groupIdentifier
+	}
+	return sp.group
+}
+
 type groupRequest interface {
 	request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput
 	groupName() string
+	checkpointKey() string
 }
 
 func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.Logs) *logsReceiver {
@@ -238,23 +253,38 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 
 		// Retrieve the last persisted timestamp for this log group if exists
 		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
-			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+			cpKey := r.checkpointKey()
+			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, cpKey)
+			if err != nil || checkpoint == "" {
+				// Migrate: try the old key (group name) if the new key (ARN) has no checkpoint
+				oldKey := r.groupName()
+				if oldKey != cpKey {
+					checkpoint, err = l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, oldKey)
+					if err == nil && checkpoint != "" {
+						// Migrate old checkpoint to new key and delete old
+						_ = l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, cpKey, checkpoint)
+						_ = l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, oldKey)
+						l.settings.Logger.Info("Migrated checkpoint from log group name to ARN key",
+							zap.String("oldKey", oldKey),
+							zap.String("newKey", cpKey))
+					}
+				}
+			}
 			if err == nil && checkpoint != "" {
 				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
 				if parseErr == nil && parsedTime.After(startTime) {
 					startTime = parsedTime
 					l.settings.Logger.Info("Resuming from previously known checkpoint(s)",
-						zap.String("logGroup", logGroup),
+						zap.String("checkpointKey", cpKey),
 						zap.Time("startTime", startTime))
 				} else if parseErr != nil {
 					l.settings.Logger.Warn("Failed to parse persisted timestamp, using default start time",
-						zap.String("logGroup", logGroup),
+						zap.String("checkpointKey", cpKey),
 						zap.String("checkpoint", checkpoint),
 						zap.Error(parseErr))
-					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, logGroup); err != nil {
+					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, cpKey); err != nil {
 						l.settings.Logger.Error("Failed to delete invalid checkpoint",
-							zap.String("logGroup", logGroup),
+							zap.String("checkpointKey", cpKey),
 							zap.String("checkpoint", checkpoint),
 							zap.Error(err))
 					}
@@ -270,12 +300,12 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 
 		// Persist the new end time as the checkpoint for this log group
 		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
+			cpKey := r.checkpointKey()
 			newCheckpoint := endTime.Format(time.RFC3339)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, cpKey, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
-					zap.String("logGroup", logGroup),
+					zap.String("checkpointKey", cpKey),
 					zap.String("checkpoint", newCheckpoint),
 					zap.Error(err))
 			}

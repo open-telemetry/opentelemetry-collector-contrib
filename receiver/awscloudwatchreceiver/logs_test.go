@@ -929,6 +929,77 @@ type mockClient struct {
 	mock.Mock
 }
 
+func TestCheckpointKeyUsesARN(t *testing.T) {
+	arn := "arn:aws:logs:us-east-2:123456789012:log-group:/my/group"
+
+	sn := &streamNames{group: "/my/group", groupIdentifier: arn}
+	require.Equal(t, arn, sn.checkpointKey())
+
+	sp := &streamPrefix{group: "/my/group", groupIdentifier: arn}
+	require.Equal(t, arn, sp.checkpointKey())
+}
+
+func TestCheckpointKeyFallsBackToGroupName(t *testing.T) {
+	sn := &streamNames{group: "/my/group"}
+	require.Equal(t, "/my/group", sn.checkpointKey())
+
+	sp := &streamPrefix{group: "/my/group"}
+	require.Equal(t, "/my/group", sp.checkpointKey())
+}
+
+func TestAutodiscoverTrimsARNSuffix(t *testing.T) {
+	mc := &mockClient{}
+	logGroupName := "/test/group"
+	logGroupARN := "arn:aws:logs:us-east-2:123456789012:log-group:/test/group:*"
+
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{
+					LogGroupName: &logGroupName,
+					Arn:          &logGroupARN,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-east-2"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit: 10,
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	rcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	rcvr.client = mc
+
+	grs, err := rcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+	require.Equal(t, logGroupName, grs[0].groupName())
+	// The checkpoint key should use the trimmed ARN (no :* suffix)
+	require.Equal(t, "arn:aws:logs:us-east-2:123456789012:log-group:/test/group", grs[0].checkpointKey())
+}
+
+func TestLogGroupIdentifierUsedInFilterRequest(t *testing.T) {
+	arn := "arn:aws:logs:us-east-2:123456789012:log-group:/my/group"
+	sn := &streamNames{group: "/my/group", groupIdentifier: arn}
+
+	st := time.Now().Add(-time.Hour)
+	et := time.Now()
+	req := sn.request(100, "", &st, &et)
+
+	require.NotNil(t, req.LogGroupIdentifier)
+	require.Equal(t, arn, *req.LogGroupIdentifier)
+	require.Nil(t, req.LogGroupName)
+}
+
 func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.DescribeLogGroupsOutput), args.Error(1)
