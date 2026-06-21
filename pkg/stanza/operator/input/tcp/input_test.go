@@ -463,3 +463,44 @@ func BenchmarkTCPInput(b *testing.B) {
 
 	close(done)
 }
+
+func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.OneLogPerPacket = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	tcpInput := op.(*Input)
+	tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+
+	_, err = conn.Write([]byte("partial mess"))
+	require.NoError(t, err)
+
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.SetLinger(0) // forces RST instead of FIN on close
+	}
+	conn.Close()
+	select {
+	case entry := <-entryChan:
+		t.Errorf("expected no entry to be emitted after read error, got: %q", entry.Body)
+	case <-time.After(500 * time.Millisecond):
+	}
+}
