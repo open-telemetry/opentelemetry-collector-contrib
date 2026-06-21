@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tj/assert"
@@ -61,6 +62,78 @@ func TestIntegrationWithConnectionPool(t *testing.T) {
 	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
+}
+
+func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
+	ctx := t.Context()
+	container, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				ExposedPorts: []string{postgresqlPort},
+				Cmd:          []string{"-c", "max_prepared_transactions=10"},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, container.Start(ctx))
+	defer testcontainers.CleanupContainer(t, container)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+	port, err := container.MappedPort(ctx, postgresqlPort)
+	require.NoError(t, err)
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@%s/otel?sslmode=disable", net.JoinHostPort(host, port.Port())))
+	require.NoError(t, err)
+	defer db.Close()
+	require.NoError(t, db.PingContext(ctx))
+
+	_, err = db.ExecContext(ctx, "CREATE TABLE prepared_lock_test (id integer)")
+	require.NoError(t, err)
+	conn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "BEGIN")
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "INSERT INTO prepared_lock_test VALUES (1)")
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "PREPARE TRANSACTION 'otel_prepared_lock'")
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+	defer func() {
+		_, rollbackErr := db.ExecContext(ctx, "ROLLBACK PREPARED 'otel_prepared_lock'")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	var expectedCount, nullPIDCount int64
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock'`).Scan(&expectedCount)
+	require.NoError(t, err)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock' AND pid IS NULL`).Scan(&nullPIDCount)
+	require.NoError(t, err)
+	require.Positive(t, nullPIDCount)
+
+	client := &postgreSQLClient{client: db}
+	locks, err := client.getDatabaseLocks(ctx)
+	require.NoError(t, err)
+
+	found := false
+	for _, lock := range locks {
+		if lock.lockType == "transactionid" && lock.mode == "ExclusiveLock" {
+			require.Empty(t, lock.relation)
+			require.Equal(t, expectedCount, lock.locks)
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected transactionid lock group")
 }
 
 func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {

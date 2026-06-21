@@ -729,6 +729,19 @@ resourceMetrics:
                         stringValue: relation
                   startTimeUnixNano: "1706802337738657906"
                   timeUnixNano: "1706802396744882628"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: virtualxid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.database.locks
             unit: '{lock}'
         scope:
