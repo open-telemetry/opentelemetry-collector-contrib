@@ -171,18 +171,18 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		d.BucketCounts = bc
 	}
 	if v, ok := raw["min"]; ok {
-		var min float64
-		if err := v.Decode(&min); err != nil {
+		var minVal float64
+		if err := v.Decode(&minVal); err != nil {
 			return fmt.Errorf("datapoint assertion: decode min: %w", err)
 		}
-		d.Min = &min
+		d.Min = &minVal
 	}
 	if v, ok := raw["max"]; ok {
-		var max float64
-		if err := v.Decode(&max); err != nil {
+		var maxVal float64
+		if err := v.Decode(&maxVal); err != nil {
 			return fmt.Errorf("datapoint assertion: decode max: %w", err)
 		}
-		d.Max = &max
+		d.Max = &maxVal
 	}
 	return nil
 }
