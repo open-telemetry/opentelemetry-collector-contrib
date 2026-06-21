@@ -318,6 +318,9 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 	COUNT(*) AS locks
 	FROM pg_locks
 	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database IS NULL
+	OR pg_locks.database = 0
+	OR pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
 	GROUP BY pg_class.relname, pg_locks.mode, pg_locks.locktype;`
 
 	rows, err := c.client.QueryContext(ctx, query)

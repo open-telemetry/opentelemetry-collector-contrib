@@ -113,6 +113,26 @@ func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
 		assert.NoError(t, rollbackErr)
 	}()
 
+	_, err = db.ExecContext(ctx, "CREATE DATABASE other_database")
+	require.NoError(t, err)
+	otherDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@%s/other_database?sslmode=disable", net.JoinHostPort(host, port.Port())))
+	require.NoError(t, err)
+	defer otherDB.Close()
+	require.NoError(t, otherDB.PingContext(ctx))
+	_, err = otherDB.ExecContext(ctx, "CREATE TABLE other_database_lock_test (id integer)")
+	require.NoError(t, err)
+	otherConn, err := otherDB.Conn(ctx)
+	require.NoError(t, err)
+	defer otherConn.Close()
+	_, err = otherConn.ExecContext(ctx, "BEGIN")
+	require.NoError(t, err)
+	defer func() {
+		_, rollbackErr := otherConn.ExecContext(ctx, "ROLLBACK")
+		assert.NoError(t, rollbackErr)
+	}()
+	_, err = otherConn.ExecContext(ctx, "LOCK TABLE other_database_lock_test IN ACCESS EXCLUSIVE MODE")
+	require.NoError(t, err)
+
 	var expectedCount, nullPIDCount int64
 	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock'`).Scan(&expectedCount)
 	require.NoError(t, err)
@@ -126,6 +146,10 @@ func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
 
 	found := false
 	for _, lock := range locks {
+		require.False(t,
+			lock.relation == "" && lock.lockType == "relation" && lock.mode == "AccessExclusiveLock",
+			"relation lock from another database must not be emitted as an empty relation",
+		)
 		if lock.lockType == "transactionid" && lock.mode == "ExclusiveLock" {
 			require.Empty(t, lock.relation)
 			require.Equal(t, expectedCount, lock.locks)
