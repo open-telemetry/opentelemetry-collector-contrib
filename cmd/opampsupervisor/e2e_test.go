@@ -263,8 +263,11 @@ func createHealthCheckCollectorConfFile(t *testing.T, port string) string {
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) (*supervisor.Supervisor, *config.Supervisor) {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
+	return newSupervisorFromConfigFile(t, cfgFile.Name())
+}
 
-	cfg, err := config.Load(cfgFile.Name())
+func newSupervisorFromConfigFile(t *testing.T, path string) (*supervisor.Supervisor, *config.Supervisor) {
+	cfg, err := config.Load(path)
 	require.NoError(t, err)
 
 	logger, err := zap.NewDevelopment()
@@ -309,6 +312,69 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	require.NoError(t, err)
 
 	return cfgFile
+}
+
+func writeTempConfigFile(t *testing.T, body string) string {
+	t.Helper()
+
+	f, err := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	_, err = f.WriteString(body)
+	require.NoError(t, err)
+
+	return f.Name()
+}
+
+func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, configFiles []string, useHUP bool) string {
+	t.Helper()
+
+	var extension string
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	executablePath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
+	require.NoError(t, err)
+
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "server:\n  endpoint: %q\n\n", "ws://"+serverAddr+"/v1/opamp")
+	buf.WriteString("capabilities:\n")
+	buf.WriteString("  reports_effective_config: true\n")
+	buf.WriteString("  reports_own_metrics: true\n")
+	buf.WriteString("  reports_own_logs: true\n")
+	buf.WriteString("  reports_own_traces: true\n")
+	buf.WriteString("  reports_health: true\n")
+	buf.WriteString("  accepts_remote_config: true\n")
+	buf.WriteString("  reports_remote_config: true\n")
+	buf.WriteString("  accepts_restart_command: true\n\n")
+	fmt.Fprintf(&buf, "storage:\n  directory: %q\n\n", storageDir)
+	fmt.Fprintf(&buf, "agent:\n  executable: %q\n", executablePath)
+	if useHUP {
+		buf.WriteString("  use_hup_config_reload: true\n")
+	}
+	buf.WriteString("  config_files:\n")
+	for _, file := range configFiles {
+		fmt.Fprintf(&buf, "    - %q\n", file)
+	}
+
+	return writeTempConfigFile(t, buf.String())
+}
+
+func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
+	t.Helper()
+
+	var cfg string
+	require.Eventually(t, func() bool {
+		value, ok := effectiveConfig.Load().(string)
+		if !ok || value == "" {
+			return false
+		}
+		cfg = value
+		return strings.Contains(cfg, "service:")
+	}, 10*time.Second, 200*time.Millisecond)
+
+	return cfg
 }
 
 // escapePathStringForWin escapes Windows paths for YAML double-quoted strings.
@@ -503,6 +569,89 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+		})
+	}
+}
+
+func TestSupervisorStartsCollectorWithDeclarativeTelemetryResourceConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+
+			var effectiveConfig atomic.Value
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					if message.EffectiveConfig != nil {
+						configFile := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+						if configFile != nil {
+							effectiveConfig.Store(string(configFile.Body))
+						}
+					}
+					return &protobufs.ServerToAgent{}
+				},
+			})
+
+			cfgFile := writeTempConfigFile(t, `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: otelcol.service.mode
+          value: agent
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`)
+
+			extraConfigData := map[string]string{
+				"url":          server.addr,
+				"storage_dir":  storageDir,
+				"local_config": cfgFile,
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start(t.Context()))
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			k := koanf.New("::")
+			require.NoError(t, k.Load(rawbytes.Provider([]byte(waitForEffectiveConfigMessage(t, &effectiveConfig))), yaml.Parser()))
+
+			resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+			require.True(t, ok)
+			assert.NotContains(t, resource, "service.name")
+			assert.NotContains(t, resource, "service.version")
+
+			attrs, ok := resource["attributes"].([]any)
+			require.True(t, ok)
+
+			attrNames := make(map[string]struct{}, len(attrs))
+			for _, attr := range attrs {
+				attrMap, ok := attr.(map[string]any)
+				require.True(t, ok)
+				name, ok := attrMap["name"].(string)
+				require.True(t, ok)
+				attrNames[name] = struct{}{}
+			}
+
+			assert.Contains(t, attrNames, "otelcol.service.mode")
+			assert.Contains(t, attrNames, "service.name")
 		})
 	}
 }
@@ -1323,10 +1472,32 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	require.Eventually(t, func() bool {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
-			// The effective config may be structurally different compared to what was sent,
-			// and currently has most values redacted,
-			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, "test_key:")
+			// The effective config may be structurally different compared to what was sent.
+			// Recent Collector versions may normalize telemetry resource keys into the
+			// declarative `attributes` list, so accept both shapes.
+			k := koanf.New("::")
+			if err := k.Load(rawbytes.Provider([]byte(cfg)), yaml.Parser()); err != nil {
+				return false
+			}
+
+			if k.Exists("service::telemetry::resource::test_key") {
+				return true
+			}
+
+			attrs, ok := k.Get("service::telemetry::resource::attributes").([]any)
+			if !ok {
+				return false
+			}
+
+			for _, attr := range attrs {
+				attrMap, ok := attr.(map[string]any)
+				if !ok {
+					continue
+				}
+				if name, ok := attrMap["name"].(string); ok && name == "test_key" {
+					return true
+				}
+			}
 		}
 
 		return false
@@ -1413,6 +1584,75 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	require.Subset(t, actualNonIdentifyingAttributes, expectedNonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
+}
+
+func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
+	const updatedServiceName = "updated-agent-description-e2e"
+	const updatedServiceVersion = "updated-version-e2e"
+
+	var agentDescription atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(proto.Clone(message.AgentDescription).(*protobufs.AgentDescription))
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	updatedConfig := []byte(fmt.Sprintf(`
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    resource:
+      service.name: %s
+      service.version: %s
+`, updatedServiceName, updatedServiceVersion))
+	updatedConfigHash := sha256.Sum256(updatedConfig)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: updatedConfig},
+				},
+			},
+			ConfigHash: updatedConfigHash[:],
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		require.True(c, ok)
+
+		identifyingAttributes := keyValuesToStringMap(ad.IdentifyingAttributes)
+		nonIdentifyingAttributes := keyValuesToStringMap(ad.NonIdentifyingAttributes)
+
+		assert.Equal(c, updatedServiceName, identifyingAttributes["service.name"])
+		assert.Equal(c, updatedServiceVersion, identifyingAttributes["service.version"])
+		assert.Equal(c, "my-client-id", identifyingAttributes["client.id"])
+		assert.Equal(c, "prod", nonIdentifyingAttributes["env"])
+	}, 10*time.Second, 250*time.Millisecond)
 }
 
 func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
