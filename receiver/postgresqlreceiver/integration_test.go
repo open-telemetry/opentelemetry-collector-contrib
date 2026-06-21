@@ -69,7 +69,6 @@ func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
 	container, err := testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				Env: map[string]string{
@@ -255,7 +254,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
 				Env: map[string]string{
