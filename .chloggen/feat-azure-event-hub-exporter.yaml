@@ -1,0 +1,14 @@
+change_type: new_component
+
+component: exporter/azure_event_hub
+
+note: Add Azure Event Hub exporter that sends OpenTelemetry logs, metrics, and traces to Azure Event Hubs encoded as OTLP JSON.
+
+issues: [49204]
+
+subtext: |
+  Supports SAS connection string and auth extension (service principal, managed identity,
+  workload identity) authentication. Optional per-signal partition strategies route
+  telemetry to consistent partitions by trace ID or resource attributes hash.
+
+change_logs: [user]
