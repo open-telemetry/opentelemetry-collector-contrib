@@ -113,7 +113,7 @@ func BenchmarkResourceProvider(b *testing.B) {
 	d1 := &benchDetector{res: generateResource(b, 0, 10)}
 	d2 := &benchDetector{res: generateResource(b, 0, 10)}
 	d3 := &benchDetector{res: generateResource(b, 0, 10)}
-	provider := NewResourceProvider(zap.NewNop(), 0, d1, d2, d3)
+	provider := NewResourceProvider(zap.NewNop(), fastRetryConfig, d1, d2, d3)
 	ctx := b.Context()
 	client := &http.Client{}
 	_ = provider.Refresh(ctx, client)

@@ -32,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.154.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/collector/config/configopaque v1.60.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/collector/config/configoptional v1.60.1-0.20260618174006-415d3dcae73b
+	go.opentelemetry.io/collector/config/configretry v1.60.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/collector/config/configtls v1.60.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/collector/confmap v1.60.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/collector/confmap/xconfmap v0.154.1-0.20260618174006-415d3dcae73b
@@ -72,6 +73,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3 // indirect
 	github.com/aws/smithy-go v1.27.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
