@@ -198,6 +198,3 @@ receivers:
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-
-For metrics or logs derived from custom PostgreSQL queries, use the [SQL Query Receiver](../sqlqueryreceiver/README.md)
-with its `postgres` driver rather than configuring custom SQL in this receiver.
