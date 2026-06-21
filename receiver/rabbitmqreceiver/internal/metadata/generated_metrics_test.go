@@ -76,30 +76,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRabbitmqMessageCurrentDataPoint(ts, 3, AttributeMessageStateUnacknowledged)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
