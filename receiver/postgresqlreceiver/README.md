@@ -95,7 +95,8 @@ GRANT pg_monitor TO otelu;
 ```
 
 Query sample events include the backend's `postgresql.state`. The `postgresql.backends` metric instead reports the
-total number of PostgreSQL backend processes associated with each database, across all states reported by `pg_stat_activity`.
+total number of PostgreSQL backend processes associated with each database, including client connections in active,
+idle, and idle-in-transaction states, as reported by `pg_stat_activity`.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 

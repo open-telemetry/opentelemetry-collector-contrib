@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.
+The total number of PostgreSQL backend processes associated with this database, including client connections in active, idle, and idle-in-transaction states, as reported by `pg_stat_activity`.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
