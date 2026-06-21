@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RiakNodeOperationCount"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
-			aggMap["RiakNodeOperationTimeMean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
-			aggMap["RiakVnodeIndexOperationCount"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
-			aggMap["RiakVnodeOperationCount"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
+			aggMap["riak.node.operation.count"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
+			aggMap["riak.node.operation.time.mean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
+			aggMap["riak.vnode.index.operation.count"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
+			aggMap["riak.vnode.operation.count"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -79,36 +79,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestGet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)

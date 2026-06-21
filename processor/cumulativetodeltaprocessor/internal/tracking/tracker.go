@@ -10,6 +10,7 @@ import (
 	"math"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -19,6 +20,19 @@ import (
 
 // Allocate a minimum of 64 bytes to the builder initially
 const initialBytes = 64
+
+// Reason constants surfaced by Convert. The Initial and BucketMismatch values
+// match the processor's metadata.yaml `reason` attribute on the
+// `cumulativetodelta_datapoints_dropped` metric. Reset is reported on every
+// reset detection — sum and exponential-histogram resets drop the point and
+// the reason is recorded on the dropped metric, while histogram resets pass
+// the point through with the full cumulative value (see
+// processor_telemetry_test.go for the case).
+const (
+	ReasonReset          = "reset"
+	ReasonInitial        = "initial"
+	ReasonBucketMismatch = "bucket_mismatch"
+)
 
 type InitialValue int
 
@@ -90,22 +104,28 @@ type MetricTracker struct {
 	logger       *zap.Logger
 	maxStaleness time.Duration
 	states       sync.Map
+	streams      atomic.Int64
 	initialValue InitialValue
 	startTime    pcommon.Timestamp
 }
 
-func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
+// Streams returns the number of metric streams currently tracked.
+func (t *MetricTracker) Streams() int64 {
+	return t.streams.Load()
+}
+
+func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, reason string) {
 	metricID := in.Identity
 	metricPoint := in.Value
 	if !metricID.IsSupportedMetricType() {
-		return out, valid
+		return out, valid, reason
 	}
 
 	// NaN is used to signal "stale" metrics.
 	// These are ignored for now.
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/3423
 	if metricID.IsFloatVal() && math.IsNaN(metricPoint.FloatValue) {
-		return out, valid
+		return out, valid, reason
 	}
 
 	b := identityBufferPool.Get().(*bytes.Buffer)
@@ -118,6 +138,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		prevPoint: metricPoint,
 	})
 	if !ok {
+		t.streams.Add(1)
 		switch metricID.MetricType {
 		case pmetric.MetricTypeHistogram:
 			val := metricPoint.HistogramValue.Clone()
@@ -133,15 +154,17 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		switch t.initialValue {
 		case InitialValueAuto:
 			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
-				return out, valid
+				reason = ReasonInitial
+				return out, valid, reason
 			}
 			out.StartTimestamp = metricID.StartTimestamp
 			valid = true
 		case InitialValueKeep:
 			valid = true
 		case InitialValueDrop:
+			reason = ReasonInitial
 		}
-		return out, valid
+		return out, valid, reason
 	}
 
 	valid = true
@@ -162,9 +185,11 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 		if len(value.BucketCounts) != len(prevValue.BucketCounts) {
 			valid = false
+			reason = ReasonBucketMismatch
 			t.logger.Warn("Points in histogram series have different numbers of buckets; some data will be dropped")
 		} else if !slices.Equal(value.BucketBounds, prevValue.BucketBounds) {
 			valid = false
+			reason = ReasonBucketMismatch
 			t.logger.Warn("Points in histogram series have different bucket boundaries; some data will be dropped")
 		}
 
@@ -177,6 +202,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}
+		} else if valid {
+			reason = ReasonReset
 		}
 
 		out.HistogramValue = &delta
@@ -187,7 +214,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 		// Count and ZeroThreshold should only increase when merging, and Scale should only decrease.
 		if value.Count < prevValue.Count || value.ZeroThreshold < prevValue.ZeroThreshold || value.Scale > prevValue.Scale {
-			return out, false
+			return out, false, ReasonReset
 		}
 
 		delta := value.Clone()
@@ -229,6 +256,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
 				valid = false
+				reason = ReasonReset
 			}
 
 			out.FloatValue = delta
@@ -240,6 +268,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
 				valid = false
+				reason = ReasonReset
 			}
 
 			out.IntValue = delta
@@ -248,7 +277,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	}
 
 	state.prevPoint = metricPoint
-	return out, valid
+	return out, valid, reason
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
@@ -274,6 +303,7 @@ func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 		if lastObserved < staleBefore {
 			t.logger.Debug("removing stale state key", zap.String("key", key.(string)))
 			t.states.Delete(key)
+			t.streams.Add(-1)
 		}
 		return true
 	})

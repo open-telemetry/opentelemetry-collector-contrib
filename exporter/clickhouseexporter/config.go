@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -313,6 +314,6 @@ func (cfg *Config) clusterString() string {
 	if cfg.ClusterName == "" {
 		return ""
 	}
-
-	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
+	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
+	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
 }

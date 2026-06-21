@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -487,13 +487,456 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestMysqlBufferPoolDataPagesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlBufferPoolDataPages
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlBufferPoolDataPagesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.buffer_pool.data_pages doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().MysqlBufferPoolDataPages
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlBufferPoolOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlBufferPoolOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlBufferPoolOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.buffer_pool.operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MysqlBufferPoolOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlBufferPoolPagesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlBufferPoolPages
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlBufferPoolPagesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.buffer_pool.pages doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlBufferPoolPages
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlBufferPoolUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlBufferPoolUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlBufferPoolUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.buffer_pool.usage doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().MysqlBufferPoolUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlClientNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlClientNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlClientNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.client.network.io doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlClientNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlCommandsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlCommands
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlCommandsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.commands doesn't have an attribute invalid, valid attributes: [command]")
+
+	cfg = DefaultMetricsConfig().MysqlCommands
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlConnectionErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlConnectionErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlConnectionErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.connection.errors doesn't have an attribute invalid, valid attributes: [error]")
+
+	cfg = DefaultMetricsConfig().MysqlConnectionErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlDoubleWritesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlDoubleWrites
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlDoubleWritesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.double_writes doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlDoubleWrites
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlHandlersMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlHandlers
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlHandlersMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.handlers doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlHandlers
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlIndexIoWaitCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlIndexIoWaitCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlIndexIoWaitCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.index.io.wait.count doesn't have an attribute invalid, valid attributes: [operation, table, schema, index]")
+
+	cfg = DefaultMetricsConfig().MysqlIndexIoWaitCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlIndexIoWaitTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlIndexIoWaitTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlIndexIoWaitTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.index.io.wait.time doesn't have an attribute invalid, valid attributes: [operation, table, schema, index]")
+
+	cfg = DefaultMetricsConfig().MysqlIndexIoWaitTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlJoinsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlJoins
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlJoinsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.joins doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlJoins
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlLocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlLocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlLocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.locks doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlLocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlLogOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlLogOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlLogOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.log_operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MysqlLogOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlMysqlxConnectionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlMysqlxConnections
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlMysqlxConnectionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.mysqlx_connections doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().MysqlMysqlxConnections
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlMysqlxWorkerThreadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlMysqlxWorkerThreads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlMysqlxWorkerThreadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.mysqlx_worker_threads doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlMysqlxWorkerThreads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlOpenedResourcesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlOpenedResources
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlOpenedResourcesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.opened_resources doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlOpenedResources
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MysqlOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlPageOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlPageOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlPageOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.page_operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MysqlPageOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlPreparedStatementsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlPreparedStatements
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlPreparedStatementsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.prepared_statements doesn't have an attribute invalid, valid attributes: [command]")
+
+	cfg = DefaultMetricsConfig().MysqlPreparedStatements
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlRowLocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlRowLocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlRowLocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.row_locks doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlRowLocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlRowOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlRowOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlRowOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.row_operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MysqlRowOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlSortsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlSorts
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlSortsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.sorts doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlSorts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlStatementEventCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlStatementEventCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlStatementEventCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.statement_event.count doesn't have an attribute invalid, valid attributes: [schema, digest, digest_text, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlStatementEventCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlStatementEventWaitTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlStatementEventWaitTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlStatementEventWaitTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.statement_event.wait.time doesn't have an attribute invalid, valid attributes: [schema, digest, digest_text]")
+
+	cfg = DefaultMetricsConfig().MysqlStatementEventWaitTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableAverageRowLengthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableAverageRowLength
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableAverageRowLengthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.average_row_length doesn't have an attribute invalid, valid attributes: [table, schema]")
+
+	cfg = DefaultMetricsConfig().MysqlTableAverageRowLength
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableIoWaitCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableIoWaitCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableIoWaitCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.io.wait.count doesn't have an attribute invalid, valid attributes: [operation, table, schema]")
+
+	cfg = DefaultMetricsConfig().MysqlTableIoWaitCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableIoWaitTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableIoWaitTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableIoWaitTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.io.wait.time doesn't have an attribute invalid, valid attributes: [operation, table, schema]")
+
+	cfg = DefaultMetricsConfig().MysqlTableIoWaitTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableLockWaitReadCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableLockWaitReadCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableLockWaitReadCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.lock_wait.read.count doesn't have an attribute invalid, valid attributes: [schema, table, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlTableLockWaitReadCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableLockWaitReadTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableLockWaitReadTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableLockWaitReadTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.lock_wait.read.time doesn't have an attribute invalid, valid attributes: [schema, table, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlTableLockWaitReadTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableLockWaitWriteCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableLockWaitWriteCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableLockWaitWriteCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.lock_wait.write.count doesn't have an attribute invalid, valid attributes: [schema, table, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlTableLockWaitWriteCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableLockWaitWriteTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableLockWaitWriteTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableLockWaitWriteTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.lock_wait.write.time doesn't have an attribute invalid, valid attributes: [schema, table, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlTableLockWaitWriteTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableRowsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableRows
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableRowsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.rows doesn't have an attribute invalid, valid attributes: [table, schema]")
+
+	cfg = DefaultMetricsConfig().MysqlTableRows
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table.size doesn't have an attribute invalid, valid attributes: [table, schema, kind]")
+
+	cfg = DefaultMetricsConfig().MysqlTableSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTableOpenCacheMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTableOpenCache
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTableOpenCacheMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.table_open_cache doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().MysqlTableOpenCache
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlThreadsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlThreads
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlThreadsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.threads doesn't have an attribute invalid, valid attributes: [kind]")
+
+	cfg = DefaultMetricsConfig().MysqlThreads
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMysqlTmpResourcesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MysqlTmpResources
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MysqlTmpResourcesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mysql.tmp_resources doesn't have an attribute invalid, valid attributes: [resource]")
+
+	cfg = DefaultMetricsConfig().MysqlTmpResources
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

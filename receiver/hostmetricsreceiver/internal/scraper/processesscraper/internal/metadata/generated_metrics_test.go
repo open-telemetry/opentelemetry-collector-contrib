@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemProcessesCount"] = mb.metricSystemProcessesCount.config.AggregationStrategy
+			aggMap["system.processes.count"] = mb.metricSystemProcessesCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -67,14 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemProcessesCountDataPoint(ts, 3, AttributeStatusDaemon)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)

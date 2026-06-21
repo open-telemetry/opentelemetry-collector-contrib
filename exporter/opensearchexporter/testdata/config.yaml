@@ -114,6 +114,11 @@ opensearch/traces_index_time_format_invalid:
   traces_index_fallback: "default-service"
   traces_index_time_format: "invalid_format!"
 
+opensearch/pipeline:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  pipeline: "my-pipeline"
+
 opensearch/sending_queue_with_batch:
   http:
     endpoint: https://opensearch.example.com:9200
@@ -121,3 +126,16 @@ opensearch/sending_queue_with_batch:
   logs_index_time_format: "yyyy-MM-dd"
   sending_queue:
     batch:
+
+opensearch/otel_v1:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  mapping:
+    mode: "otel-v1"
+
+opensearch/otel_v1_with_dataset:
+  dataset: ngnix
+  http:
+    endpoint: https://opensearch.example.com:9200
+  mapping:
+    mode: "otel-v1"

@@ -1,4 +1,5 @@
-type: slowsql
+type: slow_sql
+deprecated_type: slowsql
 display_name: Slow SQL Connector
 
 status:

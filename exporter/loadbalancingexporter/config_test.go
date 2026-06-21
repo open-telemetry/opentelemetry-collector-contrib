@@ -27,6 +27,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 }
 
+func TestLoadConfigDeprecatedTypeAlias(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-deprecated.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.DeprecatedType, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NotNil(t, cfg)
+}
+
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -6,12 +6,12 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorTailsamplingprocessorDisableinvertdecisionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.tailsamplingprocessor.disableinvertdecisions",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833"),
-	featuregate.WithRegisterFromVersion("v0.126.0"),
+var ProcessorTailsamplingprocessorMetricstatcountbytessampledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.tailsamplingprocessor.metricstatcountbytessampled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48348"),
+	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
 var ProcessorTailsamplingprocessorMetricstatcountspanssampledFeatureGate = featuregate.GlobalRegistry().MustRegister(

@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ContainerCPUUsagePercpu"] = mb.metricContainerCPUUsagePercpu.config.AggregationStrategy
+			aggMap["container.cpu.usage.percpu"] = mb.metricContainerCPUUsagePercpu.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -76,50 +76,39 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUPercentDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerCPUUsagePercpuDataPoint(ts, 3, "core-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1)

@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -557,13 +557,216 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestContainerBlockioIoMergedRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoMergedRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoMergedRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_merged_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoMergedRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoQueuedRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoQueuedRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoQueuedRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_queued_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoQueuedRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoServiceBytesRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoServiceBytesRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_service_bytes_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoServiceBytesRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoServiceTimeRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoServiceTimeRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_service_time_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoServiceTimeRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoServicedRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoServicedRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoServicedRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_serviced_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoServicedRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoTimeRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoTimeRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoTimeRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_time_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoTimeRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioIoWaitTimeRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioIoWaitTimeRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.io_wait_time_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioIoWaitTimeRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerBlockioSectorsRecursiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerBlockioSectorsRecursive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerBlockioSectorsRecursiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.blockio.sectors_recursive doesn't have an attribute invalid, valid attributes: [device_major, device_minor, operation]")
+
+	cfg = DefaultMetricsConfig().ContainerBlockioSectorsRecursive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerCPUUsagePercpuMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerCPUUsagePercpu
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerCPUUsagePercpuMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.usage.percpu doesn't have an attribute invalid, valid attributes: [core]")
+
+	cfg = DefaultMetricsConfig().ContainerCPUUsagePercpu
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageRxBytesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageRxBytes
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageRxBytesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.rx_bytes doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageRxBytes
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageRxDroppedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageRxDropped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageRxDroppedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.rx_dropped doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageRxDropped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageRxErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageRxErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageRxErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.rx_errors doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageRxErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageRxPacketsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageRxPackets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageRxPacketsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.rx_packets doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageRxPackets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageTxBytesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageTxBytes
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageTxBytesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.tx_bytes doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageTxBytes
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageTxDroppedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageTxDropped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageTxDroppedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.tx_dropped doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageTxDropped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageTxErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageTxErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageTxErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.tx_errors doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageTxErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestContainerNetworkIoUsageTxPacketsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerNetworkIoUsageTxPackets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ContainerNetworkIoUsageTxPacketsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.network.io.usage.tx_packets doesn't have an attribute invalid, valid attributes: [interface]")
+
+	cfg = DefaultMetricsConfig().ContainerNetworkIoUsageTxPackets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

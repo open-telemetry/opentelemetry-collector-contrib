@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -162,12 +162,84 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestAerospikeNamespaceMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNamespaceMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNamespaceMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.namespace.memory.usage doesn't have an attribute invalid, valid attributes: [component]")
+
+	cfg = DefaultMetricsConfig().AerospikeNamespaceMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestAerospikeNamespaceQueryCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNamespaceQueryCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNamespaceQueryCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.namespace.query.count doesn't have an attribute invalid, valid attributes: [type, index, result]")
+
+	cfg = DefaultMetricsConfig().AerospikeNamespaceQueryCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestAerospikeNamespaceScanCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNamespaceScanCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNamespaceScanCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.namespace.scan.count doesn't have an attribute invalid, valid attributes: [type, result]")
+
+	cfg = DefaultMetricsConfig().AerospikeNamespaceScanCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestAerospikeNamespaceTransactionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNamespaceTransactionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNamespaceTransactionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.namespace.transaction.count doesn't have an attribute invalid, valid attributes: [type, result]")
+
+	cfg = DefaultMetricsConfig().AerospikeNamespaceTransactionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestAerospikeNodeConnectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNodeConnectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNodeConnectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.node.connection.count doesn't have an attribute invalid, valid attributes: [type, operation]")
+
+	cfg = DefaultMetricsConfig().AerospikeNodeConnectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestAerospikeNodeConnectionOpenMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().AerospikeNodeConnectionOpen
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []AerospikeNodeConnectionOpenMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric aerospike.node.connection.open doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().AerospikeNodeConnectionOpen
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

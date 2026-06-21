@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["FileCtime"] = mb.metricFileCtime.config.AggregationStrategy
+			aggMap["file.ctime"] = mb.metricFileCtime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -88,11 +88,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordFileCtimeDataPoint(ts, 3, "file.permissions-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFileMtimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFileSizeDataPoint(ts, 1)

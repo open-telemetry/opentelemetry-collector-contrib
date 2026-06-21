@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NginxConnectionsCurrent"] = mb.metricNginxConnectionsCurrent.config.AggregationStrategy
+			aggMap["nginx.connections_current"] = mb.metricNginxConnectionsCurrent.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -67,22 +67,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsAcceptedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNginxConnectionsCurrentDataPoint(ts, 3, AttributeStateReading)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxConnectionsHandledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNginxRequestsDataPoint(ts, 1)
