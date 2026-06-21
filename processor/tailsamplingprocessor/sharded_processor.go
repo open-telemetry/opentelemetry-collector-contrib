@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -50,6 +51,9 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 			return nil, err
 		}
 		shards[i] = p.(*tailSamplingSpanProcessor)
+		// Tag this shard's emissions so per-shard gauges don't overwrite
+		// each other when they share the same metric name.
+		shards[i].shardAttrOpt = metric.WithAttributes(attribute.Int("shard", int(i)))
 	}
 
 	return &shardedProcessor{

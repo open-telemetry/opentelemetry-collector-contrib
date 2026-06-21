@@ -230,7 +230,8 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Value: 1,
+							Attributes: attribute.NewSet(attribute.Int("shard", 0)),
+							Value:      1,
 						},
 					},
 				},
