@@ -113,150 +113,123 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterHostCountDataPoint(ts, 3, false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVMCountDataPoint(ts, 3, AttributeVMCountPowerStateOff)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanCongestionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 1, AttributeEntityStatusRed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 3, AttributeEntityStatusYellow)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterCPULimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 3, AttributeDiskStateUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterHostCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeHostPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterHostCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeHostPowerStateOff)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterVMCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeVMCountPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterVMCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeVMCountPowerStateOff)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUReservedDataPoint(ts, 1, AttributeCPUReservationTypeTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostCPUReservedDataPoint(ts, 3, AttributeCPUReservationTypeUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
@@ -266,113 +239,93 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCongestionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 1, AttributeMemoryGrantedTypePrivate)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 3, AttributeMemoryGrantedTypeShared)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1, AttributeMemoryUsageTypeGuest)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 3, AttributeMemoryUsageTypeHost)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUReadinessDataPoint(ts, 1)
@@ -382,66 +335,54 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMCPUTimeDataPoint(ts, 3, AttributeCPUStateReady, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, AttributeDiskTypePhysical, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryGrantedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
@@ -457,49 +398,42 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
