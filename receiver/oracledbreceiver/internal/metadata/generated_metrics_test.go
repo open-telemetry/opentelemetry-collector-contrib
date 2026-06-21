@@ -175,9 +175,6 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordOracledbLockTimeDataPoint(ts, 3, AttributeOracledbLockKindForeground)
 			}
 
-			allMetricsCount++
-			mb.RecordOracledbLockWaitTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
@@ -765,20 +762,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("oracledb.lock.kind")
 						assert.False(t, ok)
 					}
-				case "oracledb.lock.wait.time":
-					assert.False(t, validatedMetrics["oracledb.lock.wait.time"], "Found a duplicate in the metrics slice: oracledb.lock.wait.time")
-					validatedMetrics["oracledb.lock.wait.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.logical_reads":
 					assert.False(t, validatedMetrics["oracledb.logical_reads"], "Found a duplicate in the metrics slice: oracledb.logical_reads")
 					validatedMetrics["oracledb.logical_reads"] = true

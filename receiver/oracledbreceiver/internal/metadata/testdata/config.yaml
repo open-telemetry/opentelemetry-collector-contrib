@@ -51,8 +51,6 @@ all_set:
     oracledb.lock.time:
       enabled: true
       attributes: ["oracledb.lock.kind"]
-    oracledb.lock.wait.time:
-      enabled: true
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
@@ -225,8 +223,6 @@ reaggregate_set:
     oracledb.lock.time:
       enabled: true
       attributes: []
-    oracledb.lock.wait.time:
-      enabled: true
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
@@ -399,8 +395,6 @@ none_set:
     oracledb.lock.time:
       enabled: false
       attributes: ["oracledb.lock.kind"]
-    oracledb.lock.wait.time:
-      enabled: false
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:

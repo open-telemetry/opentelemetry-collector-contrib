@@ -100,7 +100,6 @@ const (
 	transactionRollbacks          = "transaction rollbacks"
 	transactionLockBackgroundTime = "transaction lock background get time"
 	transactionLockForegroundTime = "transaction lock foreground wait time"
-	totalLockTime                 = "Total Lock Time"
 	recoveryBlocksRead            = "recovery blocks read"
 	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
 	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
@@ -321,7 +320,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbLockWaitTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocksRead.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSmonTxnRecoveryPosts.Enabled ||
@@ -551,14 +549,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
 					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockKindForeground)
-				}
-			case totalLockTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
-				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", totalLockTime, row["VALUE"], err))
-				} else {
-					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbLockWaitTimeDataPoint(now, value/100)
 				}
 			case recoveryBlocksRead:
 				if err := s.mb.RecordOracledbRecoveryBlocksReadDataPoint(now, row["VALUE"]); err != nil {

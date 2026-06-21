@@ -317,9 +317,6 @@ var MetricsInfo = metricsInfo{
 	OracledbLockTime: metricInfo{
 		Name: "oracledb.lock.time",
 	},
-	OracledbLockWaitTime: metricInfo{
-		Name: "oracledb.lock.wait.time",
-	},
 	OracledbLogicalReads: metricInfo{
 		Name: "oracledb.logical_reads",
 	},
@@ -479,7 +476,6 @@ type metricsInfo struct {
 	OracledbHostCPUUtilization                    metricInfo
 	OracledbLibraryCacheUtilization               metricInfo
 	OracledbLockTime                              metricInfo
-	OracledbLockWaitTime                          metricInfo
 	OracledbLogicalReads                          metricInfo
 	OracledbLogons                                metricInfo
 	OracledbParallelOperationsDowngraded1To25Pct  metricInfo
@@ -1822,58 +1818,6 @@ func (m *metricOracledbLockTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbLockTime(cfg OracledbLockTimeMetricConfig) metricOracledbLockTime {
 	m := metricOracledbLockTime{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbLockWaitTime struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   OracledbLockWaitTimeMetricConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.lock.wait.time metric with initial data.
-func (m *metricOracledbLockWaitTime) init() {
-	m.data.SetName("oracledb.lock.wait.time")
-	m.data.SetDescription("Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbLockWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbLockWaitTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbLockWaitTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbLockWaitTime(cfg OracledbLockWaitTimeMetricConfig) metricOracledbLockWaitTime {
-	m := metricOracledbLockWaitTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4494,7 +4438,6 @@ type MetricsBuilder struct {
 	metricOracledbHostCPUUtilization                    metricOracledbHostCPUUtilization
 	metricOracledbLibraryCacheUtilization               metricOracledbLibraryCacheUtilization
 	metricOracledbLockTime                              metricOracledbLockTime
-	metricOracledbLockWaitTime                          metricOracledbLockWaitTime
 	metricOracledbLogicalReads                          metricOracledbLogicalReads
 	metricOracledbLogons                                metricOracledbLogons
 	metricOracledbParallelOperationsDowngraded1To25Pct  metricOracledbParallelOperationsDowngraded1To25Pct
@@ -4588,7 +4531,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbHostCPUUtilization:                    newMetricOracledbHostCPUUtilization(mbc.Metrics.OracledbHostCPUUtilization),
 		metricOracledbLibraryCacheUtilization:               newMetricOracledbLibraryCacheUtilization(mbc.Metrics.OracledbLibraryCacheUtilization),
 		metricOracledbLockTime:                              newMetricOracledbLockTime(mbc.Metrics.OracledbLockTime),
-		metricOracledbLockWaitTime:                          newMetricOracledbLockWaitTime(mbc.Metrics.OracledbLockWaitTime),
 		metricOracledbLogicalReads:                          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
 		metricOracledbLogons:                                newMetricOracledbLogons(mbc.Metrics.OracledbLogons),
 		metricOracledbParallelOperationsDowngraded1To25Pct:  newMetricOracledbParallelOperationsDowngraded1To25Pct(mbc.Metrics.OracledbParallelOperationsDowngraded1To25Pct),
@@ -4777,7 +4719,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbHostCPUUtilization.emit(ils.Metrics())
 	mb.metricOracledbLibraryCacheUtilization.emit(ils.Metrics())
 	mb.metricOracledbLockTime.emit(ils.Metrics())
-	mb.metricOracledbLockWaitTime.emit(ils.Metrics())
 	mb.metricOracledbLogicalReads.emit(ils.Metrics())
 	mb.metricOracledbLogons.emit(ils.Metrics())
 	mb.metricOracledbParallelOperationsDowngraded1To25Pct.emit(ils.Metrics())
@@ -5041,11 +4982,6 @@ func (mb *MetricsBuilder) RecordOracledbLibraryCacheUtilizationDataPoint(ts pcom
 // RecordOracledbLockTimeDataPoint adds a data point to oracledb.lock.time metric.
 func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbLockKindAttributeValue AttributeOracledbLockKind) {
 	mb.metricOracledbLockTime.recordDataPoint(mb.startTime, ts, val, oracledbLockKindAttributeValue.String())
-}
-
-// RecordOracledbLockWaitTimeDataPoint adds a data point to oracledb.lock.wait.time metric.
-func (mb *MetricsBuilder) RecordOracledbLockWaitTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbLockWaitTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.

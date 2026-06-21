@@ -77,7 +77,6 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": transactionRollbacks, "VALUE": "4521"},
 		{"NAME": transactionLockBackgroundTime, "VALUE": "350"},  // cs -> 3.5 s
 		{"NAME": transactionLockForegroundTime, "VALUE": "1200"}, // cs -> 12 s
-		{"NAME": totalLockTime, "VALUE": "2500"},                 // cs -> 25 s
 		{"NAME": recoveryBlocksRead, "VALUE": "8800"},
 		{"NAME": smonInstanceRecoveryPosts, "VALUE": "12"},
 		{"NAME": smonTxnRecoveryPosts, "VALUE": "7"},
@@ -410,7 +409,6 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
 	cfg.Metrics.OracledbLockTime.Enabled = true
-	cfg.Metrics.OracledbLockWaitTime.Enabled = true
 	cfg.Metrics.OracledbRecoveryBlocksRead.Enabled = true
 	cfg.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled = true
 	cfg.Metrics.OracledbSmonTxnRecoveryPosts.Enabled = true
@@ -439,7 +437,6 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	assert.InDelta(t, float64(4521), got["oracledb.transaction.rollbacks"][""], 1e-9)
 	assert.InDelta(t, 3.5, got["oracledb.lock.time"]["oracledb.lock.kind=background"], 1e-9)
 	assert.InDelta(t, 12.0, got["oracledb.lock.time"]["oracledb.lock.kind=foreground"], 1e-9)
-	assert.InDelta(t, 25.0, got["oracledb.lock.wait.time"][""], 1e-9)
 	assert.InDelta(t, float64(8800), got["oracledb.recovery.blocks_read"][""], 1e-9)
 	assert.InDelta(t, float64(12), got["oracledb.smon.instance_recovery.posts"][""], 1e-9)
 	assert.InDelta(t, float64(7), got["oracledb.smon.txn_recovery.posts"][""], 1e-9)

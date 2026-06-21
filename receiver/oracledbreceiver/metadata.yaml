@@ -593,15 +593,6 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
-  oracledb.lock.wait.time:
-    description: Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true

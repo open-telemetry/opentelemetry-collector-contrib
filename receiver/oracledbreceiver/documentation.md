@@ -357,14 +357,6 @@ Cumulative time spent on transaction lock activity, in seconds (converted from c
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.lock.kind | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
 
-### oracledb.lock.wait.time
-
-Cumulative total time sessions spent waiting on locks, in seconds (converted from centiseconds). Sourced from v$sysstat name Total Lock Time. Distinct from oracledb.lock.time, which breaks out background-get vs foreground-wait lock timing via oracledb.lock.kind.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
 ### oracledb.logons
 
 Number of logon operations

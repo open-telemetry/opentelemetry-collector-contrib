@@ -17,7 +17,7 @@ issues: [49064]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds oracledb.transaction.rollbacks, oracledb.lock.time (attribute oracledb.lock.kind),
-  oracledb.lock.wait.time, oracledb.recovery.blocks_read, oracledb.smon.instance_recovery.posts,
+  oracledb.recovery.blocks_read, oracledb.smon.instance_recovery.posts,
   oracledb.smon.txn_recovery.posts, and oracledb.gc.current_block.receive.time. All are disabled
   by default and add no new database queries.
 
