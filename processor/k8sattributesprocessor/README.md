@@ -3,7 +3,6 @@
 
 The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
@@ -233,6 +232,12 @@ Reprocessing the informer cache periodically (resyncing) enqueues all cached K8s
 Because resource state modifications are already pushed immediately via Kubernetes watch events, a resync period is almost entirely unnecessary.
 
 - `watch_sync_period` (`default: 5m`): The resync period for K8s informers. You may set this to `0s` to disable resyncing completely (recommended for large clusters).
+
+## Pod Deletion Grace Period
+
+After receiving a pod deletion event, the processor can keep the pod's metadata in its lookup cache for a short period before eviction. This grace window ensures that delayed spans, metrics, or logs that belong to the deleted pod can still be correctly enriched.
+
+- `pod_delete_grace_period` (`default: 120s`): The grace period to wait before deleting a pod's metadata from the lookup cache after a deletion event.
 
 
 ## Extracting attributes from pod labels and annotations
@@ -719,6 +724,10 @@ k8s_attributes:
   # Default: 5m
   watch_sync_period: 5m
   
+  # Grace period to wait before removing deleted pods from the cache.
+  # Default: 120s
+  pod_delete_grace_period: 120s
+  
   # Extract configuration - defines what metadata to extract
   extract:
     # Metadata fields to extract as resource attributes
@@ -891,6 +900,7 @@ k8s_attributes:
 | `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
 | `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
+| `pod_delete_grace_period` | duration | `120s` | Grace period to wait before deleting pod metadata from the cache on deletion |
 
 #### Extract Options
 

@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"text/template"
@@ -124,6 +125,7 @@ type testingOpAMPServer struct {
 	addr                string
 	supervisorConnected chan bool
 	sendToSupervisor    func(*protobufs.ServerToAgent)
+	disconnectAgent     func() error
 	start               func()
 	shutdown            func()
 }
@@ -190,30 +192,82 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		}
 		didShutdown.Store(true)
 	}
+
 	send := func(msg *protobufs.ServerToAgent) {
 		if !isAgentConnected.Load() {
 			require.Fail(t, "Agent connection has not been established")
 		}
-
 		err = agentConn.Load().(types.Connection).Send(t.Context(), msg)
 		require.NoError(t, err)
 	}
+
+	disconnectAgent := func() error {
+		if !isAgentConnected.Load() {
+			return errors.New("agent connection has not been established")
+		}
+		return agentConn.Load().(types.Connection).Disconnect()
+	}
+
 	t.Cleanup(func() {
 		shutdown()
 	})
+
 	return &testingOpAMPServer{
 		addr:                httpSrv.Listener.Addr().String(),
 		supervisorConnected: connectedChan,
 		sendToSupervisor:    send,
+		disconnectAgent:     disconnectAgent,
 		start:               httpSrv.Start,
 		shutdown:            shutdown,
 	}
 }
 
+// createHealthCheckCollectorConfWithPort creates a collector config with a healthcheck on the specified port.
+// Returns the config bytes and hash.
+func createHealthCheckCollectorConfWithPort(t *testing.T, port string) (*bytes.Buffer, []byte) {
+	cfg := fmt.Sprintf(`
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  health_check:
+    endpoint: "localhost:%s"
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`, port)
+
+	h := sha256.Sum256([]byte(cfg))
+	return bytes.NewBufferString(cfg), h[:]
+}
+
+// createHealthCheckCollectorConfFile creates a collector config file with a healthcheck on the specified port.
+func createHealthCheckCollectorConfFile(t *testing.T, port string) string {
+	cfg, _ := createHealthCheckCollectorConfWithPort(t, port)
+	cfgFile, err := os.CreateTemp(t.TempDir(), "healthcheck_config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { cfgFile.Close() })
+
+	_, err = cfgFile.Write(cfg.Bytes())
+	require.NoError(t, err)
+
+	return cfgFile.Name()
+}
+
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) (*supervisor.Supervisor, *config.Supervisor) {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
+	return newSupervisorFromConfigFile(t, cfgFile.Name())
+}
 
-	cfg, err := config.Load(cfgFile.Name())
+func newSupervisorFromConfigFile(t *testing.T, path string) (*supervisor.Supervisor, *config.Supervisor) {
+	cfg, err := config.Load(path)
 	require.NoError(t, err)
 
 	logger, err := zap.NewDevelopment()
@@ -242,7 +296,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		"goos":        runtime.GOOS,
 		"goarch":      runtime.GOARCH,
 		"extension":   extension,
-		"storage_dir": strings.ReplaceAll(t.TempDir(), "\\", "\\\\"),
+		"storage_dir": escapePathStringForWin(t.TempDir()),
 	}
 
 	for key, val := range extraConfigData {
@@ -258,6 +312,127 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	require.NoError(t, err)
 
 	return cfgFile
+}
+
+func writeTempConfigFile(t *testing.T, body string) string {
+	t.Helper()
+
+	f, err := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	_, err = f.WriteString(body)
+	require.NoError(t, err)
+
+	return f.Name()
+}
+
+func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, configFiles []string, useHUP bool) string {
+	t.Helper()
+
+	var extension string
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	executablePath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
+	require.NoError(t, err)
+
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "server:\n  endpoint: %q\n\n", "ws://"+serverAddr+"/v1/opamp")
+	buf.WriteString("capabilities:\n")
+	buf.WriteString("  reports_effective_config: true\n")
+	buf.WriteString("  reports_own_metrics: true\n")
+	buf.WriteString("  reports_own_logs: true\n")
+	buf.WriteString("  reports_own_traces: true\n")
+	buf.WriteString("  reports_health: true\n")
+	buf.WriteString("  accepts_remote_config: true\n")
+	buf.WriteString("  reports_remote_config: true\n")
+	buf.WriteString("  accepts_restart_command: true\n\n")
+	fmt.Fprintf(&buf, "storage:\n  directory: %q\n\n", storageDir)
+	fmt.Fprintf(&buf, "agent:\n  executable: %q\n", executablePath)
+	if useHUP {
+		buf.WriteString("  use_hup_config_reload: true\n")
+	}
+	buf.WriteString("  config_files:\n")
+	for _, file := range configFiles {
+		fmt.Fprintf(&buf, "    - %q\n", file)
+	}
+
+	return writeTempConfigFile(t, buf.String())
+}
+
+func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
+	t.Helper()
+
+	var cfg string
+	require.Eventually(t, func() bool {
+		value, ok := effectiveConfig.Load().(string)
+		if !ok || value == "" {
+			return false
+		}
+		cfg = value
+		return strings.Contains(cfg, "service:")
+	}, 10*time.Second, 200*time.Millisecond)
+
+	return cfg
+}
+
+// escapePathStringForWin escapes Windows paths for YAML double-quoted strings.
+// Some test templates wrap storage.directory in double quotes, where backslashes
+// would be treated as escape prefixes (e.g., \U, \t), so we must escape them.
+// Non-Windows paths are returned unchanged.
+func escapePathStringForWin(path string) string {
+	if runtime.GOOS != "windows" {
+		return path
+	}
+	return strings.ReplaceAll(path, "\\", "\\\\")
+}
+
+// This test ensures the Supervisor config validation path can validate
+// agent::startup_fallback_configs by executing the real Collector binary with:
+//
+//	<collector> validate --config <cfg1> [--config <cfg2> ...]
+//
+// The e2e test Makefile target builds the binary at:
+//
+//	../../bin/otelcontribcol_<GOOS>_<GOARCH>[.exe]
+func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
+	// Ensure the collector binary exists where the e2e tests expect it.
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	colBinName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
+	collectorPath := filepath.Clean(filepath.Join("..", "..", "bin", colBinName))
+	require.FileExists(t, collectorPath, "expected Collector binary at %q", collectorPath)
+
+	t.Run("Valid fallback config", func(t *testing.T) {
+		goodColConfigPath := filepath.Join("testdata", "collector", "healthcheck_config.yaml")
+		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"startup_fallback_config": escapePathStringForWin(goodColConfigPath),
+		})
+
+		cfg, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("Invalid fallback config", func(t *testing.T) {
+		badColConfigPath := filepath.Join("testdata", "collector", "bad_config.yaml")
+		badCfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"startup_fallback_config": escapePathStringForWin(badColConfigPath),
+		})
+
+		cfg, err := config.Load(badCfgFile.Name())
+		require.NoError(t, err)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
+		require.ErrorContains(t, err, "could not validate startup fallback configs with agent::executable")
+	})
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
@@ -398,6 +573,89 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 	}
 }
 
+func TestSupervisorStartsCollectorWithDeclarativeTelemetryResourceConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+
+			var effectiveConfig atomic.Value
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					if message.EffectiveConfig != nil {
+						configFile := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+						if configFile != nil {
+							effectiveConfig.Store(string(configFile.Body))
+						}
+					}
+					return &protobufs.ServerToAgent{}
+				},
+			})
+
+			cfgFile := writeTempConfigFile(t, `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: otelcol.service.mode
+          value: agent
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`)
+
+			extraConfigData := map[string]string{
+				"url":          server.addr,
+				"storage_dir":  storageDir,
+				"local_config": cfgFile,
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start(t.Context()))
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			k := koanf.New("::")
+			require.NoError(t, k.Load(rawbytes.Provider([]byte(waitForEffectiveConfigMessage(t, &effectiveConfig))), yaml.Parser()))
+
+			resource, ok := k.Get("service::telemetry::resource").(map[string]any)
+			require.True(t, ok)
+			assert.NotContains(t, resource, "service.name")
+			assert.NotContains(t, resource, "service.version")
+
+			attrs, ok := resource["attributes"].([]any)
+			require.True(t, ok)
+
+			attrNames := make(map[string]struct{}, len(attrs))
+			for _, attr := range attrs {
+				attrMap, ok := attr.(map[string]any)
+				require.True(t, ok)
+				name, ok := attrMap["name"].(string)
+				require.True(t, ok)
+				attrNames[name] = struct{}{}
+			}
+
+			assert.Contains(t, attrNames, "otelcol.service.mode")
+			assert.Contains(t, attrNames, "service.name")
+		})
+	}
+}
+
 func TestSupervisorStartsCollectorWithNoPipelineConfig(t *testing.T) {
 	modes := getTestModes()
 
@@ -534,6 +792,13 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 
 			require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
 
+			fallbackConfigHealthCheckPort, err := findRandomPort()
+			require.NoError(t, err)
+			fallbackConfigPath, _, _ := createFallbackCollectorConf(
+				t,
+				strconv.Itoa(fallbackConfigHealthCheckPort),
+			)
+
 			connected := atomic.Bool{}
 			server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
 				OnConnected: func(ctx context.Context, conn types.Connection) {
@@ -543,20 +808,26 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			defer server.shutdown()
 
 			extraConfigData := map[string]string{
-				"url":         server.addr,
-				"storage_dir": storageDir,
+				"url":                     server.addr,
+				"storage_dir":             storageDir,
+				"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "fallback", extraConfigData)
 			if mode.UseHUPConfigReload {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
 			require.Nil(t, s.Start(t.Context()))
 			defer s.Shutdown()
+
+			// Fallback should not be applied when a persisted remote config exists.
+			require.Never(t, func() bool {
+				return healthCheckOK(fallbackConfigHealthCheckPort)
+			}, 2*time.Second, 200*time.Millisecond, "Fallback config should not be applied when persisted config exists")
 
 			// Verify the collector runs eventually by pinging the healthcheck extension
 			require.Eventually(t, func() bool {
@@ -706,7 +977,8 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	require.Nil(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
-	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
+	// Verify the collector is not running by checking the healthcheck endpoint fails consistently
+	// Start the server and wait for the supervisor to connect
 	time.Sleep(250 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
 
@@ -716,7 +988,6 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 		require.ErrorContains(t, err, "No connection could be made")
 	}
 
-	// Start the server and wait for the supervisor to connect
 	server.start()
 
 	// Verify supervisor connects to server
@@ -824,6 +1095,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				return false
 			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
+			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
 			require.Eventually(t, func() bool {
 				health := healthReport.Load().(*protobufs.ComponentHealth)
 
@@ -832,7 +1104,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				}
 
 				return false
-			}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
+			}, unhealthyTimeout, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
 
 			cfg, hash, _, _ = createSimplePipelineCollectorConf(t)
 
@@ -1200,10 +1472,32 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	require.Eventually(t, func() bool {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
-			// The effective config may be structurally different compared to what was sent,
-			// and currently has most values redacted,
-			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, "test_key:")
+			// The effective config may be structurally different compared to what was sent.
+			// Recent Collector versions may normalize telemetry resource keys into the
+			// declarative `attributes` list, so accept both shapes.
+			k := koanf.New("::")
+			if err := k.Load(rawbytes.Provider([]byte(cfg)), yaml.Parser()); err != nil {
+				return false
+			}
+
+			if k.Exists("service::telemetry::resource::test_key") {
+				return true
+			}
+
+			attrs, ok := k.Get("service::telemetry::resource::attributes").([]any)
+			if !ok {
+				return false
+			}
+
+			for _, attr := range attrs {
+				attrMap, ok := attr.(map[string]any)
+				if !ok {
+					continue
+				}
+				if name, ok := attrMap["name"].(string); ok && name == "test_key" {
+					return true
+				}
+			}
 		}
 
 		return false
@@ -1290,6 +1584,75 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	require.Subset(t, actualNonIdentifyingAttributes, expectedNonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
+}
+
+func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
+	const updatedServiceName = "updated-agent-description-e2e"
+	const updatedServiceVersion = "updated-version-e2e"
+
+	var agentDescription atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(proto.Clone(message.AgentDescription).(*protobufs.AgentDescription))
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	updatedConfig := []byte(fmt.Sprintf(`
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    resource:
+      service.name: %s
+      service.version: %s
+`, updatedServiceName, updatedServiceVersion))
+	updatedConfigHash := sha256.Sum256(updatedConfig)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: updatedConfig},
+				},
+			},
+			ConfigHash: updatedConfigHash[:],
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		require.True(c, ok)
+
+		identifyingAttributes := keyValuesToStringMap(ad.IdentifyingAttributes)
+		nonIdentifyingAttributes := keyValuesToStringMap(ad.NonIdentifyingAttributes)
+
+		assert.Equal(c, updatedServiceName, identifyingAttributes["service.name"])
+		assert.Equal(c, updatedServiceVersion, identifyingAttributes["service.version"])
+		assert.Equal(c, "my-client-id", identifyingAttributes["client.id"])
+		assert.Equal(c, "prod", nonIdentifyingAttributes["env"])
+	}, 10*time.Second, 250*time.Millisecond)
 }
 
 func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
@@ -1433,6 +1796,15 @@ func createHostMetricsCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	}
 
 	return &confmapBuf, h.Sum(nil)
+}
+
+func healthCheckOK(port int) bool {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
@@ -2085,13 +2457,13 @@ func TestSupervisorLogging(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 	require.True(t, connected.Load(), "Supervisor failed to connect")
-	// give the collector some time to write to the log file
-	time.Sleep(5 * time.Second)
+
 	s.Shutdown()
 
 	// Read from log file checking for Info level logs
 	logFile, err := os.Open(supervisorLogFilePath)
 	require.NoError(t, err)
+	defer logFile.Close()
 
 	reader := bufio.NewReader(logFile)
 	seenCollectorLog := false
@@ -2116,7 +2488,6 @@ func TestSupervisorLogging(t *testing.T) {
 	}
 	// verify a collector log was read
 	require.True(t, seenCollectorLog)
-	require.NoError(t, logFile.Close())
 }
 
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
@@ -2630,6 +3001,182 @@ func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	return empty
 }
 
+// createFallbackCollectorConf creates a fallback collector config file and returns
+// the path to the file, along with input/output files for testing the pipeline.
+func createFallbackCollectorConf(t *testing.T, healthCheckPort string) (string, *os.File, *os.File) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	tempDir := t.TempDir()
+	inputFile, err := os.CreateTemp(tempDir, "fallback_input_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { inputFile.Close() })
+
+	outputFile, err := os.CreateTemp(tempDir, "fallback_output_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { outputFile.Close() })
+
+	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "fallback_config.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{
+			"inputLogFile":    inputFile.Name(),
+			"outputLogFile":   outputFile.Name(),
+			"healthCheckPort": healthCheckPort,
+		},
+	)
+	require.NoError(t, err)
+
+	// Write the fallback config to a file
+	fallbackConfigFile, err := os.CreateTemp(tempDir, "fallback_config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { fallbackConfigFile.Close() })
+
+	_, err = fallbackConfigFile.Write(confmapBuf.Bytes())
+	require.NoError(t, err)
+
+	return fallbackConfigFile.Name(), inputFile, outputFile
+}
+
+func TestSupervisorFallbackWhenNoPersistedConfig(t *testing.T) {
+	storageDir := t.TempDir()
+
+	fallbackPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	localPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	fallbackConfigPath, fallbackInputFile, fallbackOutputFile := createFallbackCollectorConf(
+		t,
+		strconv.Itoa(fallbackPort),
+	)
+	localConfigPath := createHealthCheckCollectorConfFile(t, strconv.Itoa(localPort))
+
+	// Create an unstarted server - simulating server being unavailable at startup
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnConnected: func(ctx context.Context, conn types.Connection) {
+				connected.Store(true)
+			},
+		})
+	defer server.shutdown()
+
+	// Start supervisor with fallback config and local config for normal operation
+	s, _ := newSupervisor(t, "fallback", map[string]string{
+		"url":                     server.addr,
+		"storage_dir":             storageDir,
+		"local_config":            localConfigPath,
+		"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
+	})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	// Collector should start with fallback config while the server is unavailable.
+	require.Eventually(t, func() bool {
+		return healthCheckOK(fallbackPort)
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not start with fallback config")
+
+	require.Never(t, func() bool {
+		return healthCheckOK(localPort)
+	}, 2*time.Second, 200*time.Millisecond, "Collector should not use local config before initial OpAMP connection")
+
+	// Verify the collector is processing data with fallback config
+	sampleLog := `{"body":"fallback startup test"}`
+	n, err := fallbackInputFile.WriteString(sampleLog + "\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, readErr := fallbackOutputFile.Read(logRecord)
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			return false
+		}
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in fallback output")
+
+	require.False(t, connected.Load(), "Supervisor should not connect without a running server")
+}
+
+func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
+	storageDir := t.TempDir()
+
+	fallbackPort, err := findRandomPort()
+	require.NoError(t, err)
+	localPort, err := findRandomPort()
+	require.NoError(t, err)
+	for localPort == fallbackPort {
+		localPort, err = findRandomPort()
+		require.NoError(t, err)
+	}
+
+	// Create fallback config for when server is unavailable
+	fallbackConfigPath, _, _ := createFallbackCollectorConf(t, strconv.Itoa(fallbackPort))
+	localConfigPath := createHealthCheckCollectorConfFile(t, strconv.Itoa(localPort))
+
+	connected := atomic.Bool{}
+
+	// Start with an unstarted server to trigger startup fallback
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnConnected: func(ctx context.Context, conn types.Connection) {
+				connected.Store(true)
+			},
+		})
+	defer server.shutdown()
+
+	// Start supervisor with fallback config and local config
+	s, _ := newSupervisor(t, "fallback", map[string]string{
+		"url":                     server.addr,
+		"storage_dir":             storageDir,
+		"local_config":            localConfigPath,
+		"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
+	})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	// Wait for fallback to be triggered and collector to start with fallback config
+	require.Eventually(t, func() bool {
+		return healthCheckOK(fallbackPort)
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not start with fallback config")
+
+	// Now start the OpAMP server
+	server.start()
+
+	// Wait for supervisor to connect
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect after server started")
+
+	// After the first connection, the supervisor should switch to the normal config.
+	require.Eventually(t, func() bool {
+		return healthCheckOK(localPort)
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not switch to normal config after first connection")
+	require.Eventually(t, func() bool {
+		return !healthCheckOK(fallbackPort)
+	}, 10*time.Second, 500*time.Millisecond, "Fallback config still active after first connection")
+
+	// Simulate the backend going down. Fallback should not be reapplied.
+	server.shutdown()
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	require.Eventually(t, func() bool {
+		return healthCheckOK(localPort)
+	}, 5*time.Second, 500*time.Millisecond, "Collector stopped running after backend loss")
+	require.Never(t, func() bool {
+		return healthCheckOK(fallbackPort)
+	}, 3*time.Second, 200*time.Millisecond, "Fallback config should not be re-applied after initial connection")
+}
+
 func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 	modes := getTestModes()
 
@@ -2757,11 +3304,7 @@ func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
 		})
 
 		// Enable extensions feature-gate
-		err := featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), true)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), false))
-		})
+		enableExtensionsFeatureGate(t)
 
 		// Create supervisor with configuration that has nop extension
 		s, _ := newSupervisor(t,
@@ -2772,10 +3315,316 @@ func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
 		)
 
 		// Start supervisor and wait for successful connection
-		t.Cleanup(s.Shutdown)
+		defer s.Shutdown()
 		require.NoError(t, s.Start(t.Context()))
 
 		waitForSupervisorConnection(server.supervisorConnected, true)
 		require.True(t, connected.Load(), "Supervisor failed to connect")
 	})
+}
+
+func TestSupervisorAuthExtensions(t *testing.T) {
+	// captureAuthHandler returns an OnConnecting handler that records the
+	// Authorization header of each incoming connection attempt on authHeaders.
+	captureAuthHandler := func(authHeaders chan string) onConnectingFuncFactory {
+		return func(connectionCallbacks types.ConnectionCallbacks) func(*http.Request) types.ConnectionResponse {
+			return func(req *http.Request) types.ConnectionResponse {
+				// Non-blocking send so we don't deadlock if a test only consumes once.
+				select {
+				case authHeaders <- req.Header.Get("Authorization"):
+				default:
+				}
+				return types.ConnectionResponse{
+					Accept:              true,
+					ConnectionCallbacks: connectionCallbacks,
+				}
+			}
+		}
+	}
+
+	t.Run("bearer token auth extension", func(t *testing.T) {
+		enableExtensionsFeatureGate(t)
+
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("test-token-1"), 0o600))
+
+		authHeaders := make(chan string, 4)
+		server := newOpAMPServer(t, captureAuthHandler(authHeaders), types.ConnectionCallbacks{})
+
+		s, _ := newSupervisor(t, "auth_bearer", map[string]string{
+			"url":        server.addr,
+			"token_file": tokenFile,
+		})
+		defer s.Shutdown()
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+
+		select {
+		case got := <-authHeaders:
+			require.Equal(t, "Bearer test-token-1", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on initial connect")
+		}
+	})
+
+	t.Run("basic auth auth extension", func(t *testing.T) {
+		enableExtensionsFeatureGate(t)
+
+		authHeaders := make(chan string, 4)
+		server := newOpAMPServer(t, captureAuthHandler(authHeaders), types.ConnectionCallbacks{})
+
+		s, _ := newSupervisor(t, "auth_basic", map[string]string{
+			"url":      server.addr,
+			"username": "alice",
+			"password": "secret",
+		})
+		defer s.Shutdown()
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+
+		// base64("alice:secret") = "YWxpY2U6c2VjcmV0"
+		select {
+		case got := <-authHeaders:
+			require.Equal(t, "Basic YWxpY2U6c2VjcmV0", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on initial connect")
+		}
+	})
+
+	t.Run("oauth2 client credentials auth extension", func(t *testing.T) {
+		enableExtensionsFeatureGate(t)
+
+		// Pattern follows TestClientCredentials in
+		// extension/oauth2clientauthextension/extension_test.go: verify the
+		// supervisor's oauth2client extension POSTs client_credentials and
+		// receives back an opaque bearer token, then carries that token on the
+		// OpAMP connection handshake.
+		tokenServer := newMockTokenServer(t, "opamp-access-token")
+
+		authHeaders := make(chan string, 4)
+		server := newOpAMPServer(t, captureAuthHandler(authHeaders), types.ConnectionCallbacks{})
+
+		s, _ := newSupervisor(t, "auth_oauth2", map[string]string{
+			"url":           server.addr,
+			"client_id":     "opamp-client-id",
+			"client_secret": "opamp-client-secret",
+			"token_url":     tokenServer.URL,
+		})
+		defer s.Shutdown()
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+
+		select {
+		case got := <-authHeaders:
+			require.Equal(t, "Bearer opamp-access-token", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on initial connect")
+		}
+
+		require.GreaterOrEqual(t, tokenServer.requestCount(), int64(1),
+			"oauth2 extension should have contacted the token server at least once")
+	})
+
+	t.Run("auth preserved on OnConnectionSettings msg", func(t *testing.T) {
+		enableExtensionsFeatureGate(t)
+
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("rotate-token"), 0o600))
+
+		initialHeaders := make(chan string, 4)
+		initialServer := newOpAMPServer(t, captureAuthHandler(initialHeaders), types.ConnectionCallbacks{})
+
+		s, _ := newSupervisor(t, "auth_bearer_accepts_conn", map[string]string{
+			"url":        initialServer.addr,
+			"token_file": tokenFile,
+		})
+		defer s.Shutdown()
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(initialServer.supervisorConnected, true)
+		select {
+		case got := <-initialHeaders:
+			require.Equal(t, "Bearer rotate-token", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on initial connect")
+		}
+
+		newHeaders := make(chan string, 4)
+		newServer := newOpAMPServer(t, captureAuthHandler(newHeaders), types.ConnectionCallbacks{})
+
+		initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+			ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+				Opamp: &protobufs.OpAMPConnectionSettings{
+					DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
+				},
+			},
+		})
+
+		waitForSupervisorConnection(newServer.supervisorConnected, true)
+		select {
+		case got := <-newHeaders:
+			require.Equal(t, "Bearer rotate-token", got, "auth header must persist across server-pushed connection settings")
+		case <-time.After(10 * time.Second):
+			t.Fatal("did not observe Authorization header on reconnect")
+		}
+	})
+
+	t.Run("oauth2 token rotation across reconnect", func(t *testing.T) {
+		enableExtensionsFeatureGate(t)
+
+		// Verifies the supervisor's HeaderFunc consults the auth extension fresh
+		// on every reconnect, so a rotated upstream token is picked up
+		// automatically. The mock token server always returns expires_in: 1, so
+		// golang.org/x/oauth2's 10s expiry buffer treats every cached token as
+		// expired and the extension re-fetches on each connection attempt.
+		tokenServer := newMockTokenServer(t, "token-A")
+
+		authHeaders := make(chan string, 16)
+		server := newOpAMPServer(t, captureAuthHandler(authHeaders), types.ConnectionCallbacks{})
+
+		s, _ := newSupervisor(t, "auth_oauth2", map[string]string{
+			"url":           server.addr,
+			"client_id":     "opamp-client-id",
+			"client_secret": "opamp-client-secret",
+			"token_url":     tokenServer.URL,
+		})
+		defer s.Shutdown()
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		select {
+		case got := <-authHeaders:
+			require.Equal(t, "Bearer token-A", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on initial connect")
+		}
+
+		// Rotate the upstream token and force the supervisor's WS to reconnect.
+		// Server-side disconnect is a transport-level event; the opamp-go client
+		// reconnects on its own, which re-runs the HeaderFunc and pulls a fresh
+		// token from the oauth2 extension.
+		tokenServer.setToken("token-B")
+		require.NoError(t, server.disconnectAgent())
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		select {
+		case got := <-authHeaders:
+			require.Equal(t, "Bearer token-B", got)
+		case <-time.After(5 * time.Second):
+			t.Fatal("did not observe Authorization header on reconnect")
+		}
+
+		require.GreaterOrEqual(t, tokenServer.requestCount(), int64(2),
+			"oauth2 extension should have re-fetched the token at least once after reconnect")
+	})
+}
+
+// mockTokenServer is an oauth2 client_credentials token endpoint used by the
+// auth extension tests. It validates the grant type, scope, and HTTP Basic
+// client credentials, and returns the configurable currentToken with
+// expires_in: 1 so the oauth2 client's expiry buffer treats every cached token
+// as expired (forcing a fresh fetch on every request).
+type mockTokenServer struct {
+	*httptest.Server
+	mu           sync.Mutex
+	currentToken string
+	requests     atomic.Int64
+}
+
+func newMockTokenServer(t *testing.T, initialToken string) *mockTokenServer {
+	t.Helper()
+	mts := &mockTokenServer{currentToken: initialToken}
+	mts.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mts.requests.Add(1)
+
+		require.NoError(t, r.ParseForm())
+		require.Equal(t, "client_credentials", r.PostFormValue("grant_type"))
+		require.Equal(t, "opamp", r.PostFormValue("scope"))
+
+		// oauth2 client_credentials flow first tries HTTP Basic on the token
+		// endpoint, so assert that to catch any config regression.
+		username, password, ok := r.BasicAuth()
+		require.True(t, ok, "token request missing basic auth")
+		require.Equal(t, "opamp-client-id", username)
+		require.Equal(t, "opamp-client-secret", password)
+
+		mts.mu.Lock()
+		token := mts.currentToken
+		mts.mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"access_token": token,
+			"token_type":   "Bearer",
+			"expires_in":   1,
+		})
+	}))
+	t.Cleanup(mts.Server.Close)
+	return mts
+}
+
+func (m *mockTokenServer) setToken(s string) {
+	m.mu.Lock()
+	m.currentToken = s
+	m.mu.Unlock()
+}
+
+func (m *mockTokenServer) requestCount() int64 {
+	return m.requests.Load()
+}
+
+// enableExtensionsFeatureGate flips the extensions feature gate on for the
+// duration of the test and restores it in t.Cleanup.
+func enableExtensionsFeatureGate(t *testing.T) {
+	t.Helper()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), false))
+	})
+}
+
+// supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
+// in bytes. 24 MiB.
+const supervisorBinarySizeLimitBytes = 24 * 1024 * 1024
+
+// TestSupervisorBinarySize guards against unintended growth of the supervisor
+// binary. It builds the supervisor with the same flags used for release
+// artifacts into a temp dir, then asserts the resulting file is no larger than
+// supervisorBinarySizeLimitBytes.
+//
+// We intentionally do NOT measure the binary produced by `make opampsupervisor`:
+// that target is unstripped on purpose so contributors can attach a debugger to
+// local builds. The release pipeline applies `-s -w` separately, and that is the
+// artifact this budget governs — so the number reported here will not match
+// `ls -la bin/opampsupervisor_*` after a default `make` build.
+//
+// Reference for the build process of the supervisor during releases:
+// https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/cmd/opampsupervisor/.goreleaser.yaml
+func TestSupervisorBinarySize(t *testing.T) {
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		t.Skipf("binary size budget is calibrated for linux/amd64; skipping on %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+	binPath := filepath.Join(t.TempDir(), "opampsupervisor")
+
+	cmd := exec.CommandContext(t.Context(), "go", "build",
+		"-trimpath",
+		"-ldflags=-s -w -X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal.version=v1.0.0",
+		"-tags=",
+		"-o", binPath,
+		".",
+	)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "go build failed: %s", out)
+
+	info, err := os.Stat(binPath)
+	require.NoError(t, err)
+
+	require.LessOrEqualf(t, info.Size(), int64(supervisorBinarySizeLimitBytes),
+		"supervisor binary size %d bytes (%.2f MiB) exceeds limit %d bytes (%d MiB)",
+		info.Size(), float64(info.Size())/(1024*1024),
+		supervisorBinarySizeLimitBytes, supervisorBinarySizeLimitBytes/(1024*1024))
 }
