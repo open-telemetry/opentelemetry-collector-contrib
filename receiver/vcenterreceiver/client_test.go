@@ -18,12 +18,14 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 )
 
 func TestDatacenters(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        vm,
 		}
@@ -38,6 +40,7 @@ func TestDatastores(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -58,6 +61,7 @@ func TestEmptyDatastores(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -75,6 +79,7 @@ func TestComputeResources(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -93,6 +98,7 @@ func TestComputeResourcesWithStandalone(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -110,6 +116,7 @@ func TestHostSystems(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -131,6 +138,7 @@ func TestEmptyHostSystems(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -148,6 +156,7 @@ func TestResourcePools(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -165,6 +174,7 @@ func TestVMs(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -184,6 +194,7 @@ func TestEmptyVMs(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -203,6 +214,7 @@ func TestPerfMetricsQuery(t *testing.T) {
 		m := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        m,
 			pm:        pm,
@@ -225,6 +237,7 @@ func TestPerfMetricsQuery_FallbackOnBatchError(t *testing.T) {
 		m := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        m,
 			pm:        pm,
@@ -250,6 +263,7 @@ func TestPerfMetricsQueryBatching(t *testing.T) {
 		m := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        m,
 			pm:        pm,
@@ -284,6 +298,7 @@ func TestDatacenterInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -299,6 +314,7 @@ func TestResourcePoolInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -320,6 +336,7 @@ func TestVAppInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -337,6 +354,7 @@ func TestEmptyVAppInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -353,6 +371,7 @@ func TestSessionReestablish(t *testing.T) {
 		sm := session.NewManager(c)
 		pw, _ := simulator.DefaultLogin.Password()
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			cfg: &Config{
 				Username: simulator.DefaultLogin.Username(),

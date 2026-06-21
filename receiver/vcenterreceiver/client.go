@@ -333,17 +333,53 @@ func (vc *vcenterClient) PerfMetricsQuery(
 	}
 
 	resultsByRef := map[string]*performance.EntityMetric{}
-	for batch := range slices.Chunk(objs, batchSize) {
-		sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
-		if err != nil {
+	for batchChunk := range slices.Chunk(objs, batchSize) {
+		batch := slices.Clone(batchChunk)
+		for len(batch) > 0 {
+			sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
+			if err == nil {
+				result, metricErr := vc.pm.ToMetricSeries(ctx, sample)
+				if metricErr != nil {
+					return nil, metricErr
+				}
+
+				for i := range result {
+					resultsByRef[result[i].Entity.Value] = &result[i]
+				}
+				break
+			}
+
+			// Try to find if a specific object caused the batch to fail
+			var f *soap.Fault
+			for faultErr := err; faultErr != nil; faultErr = errors.Unwrap(faultErr) {
+				if soap.IsSoapFault(faultErr) {
+					f = soap.ToSoapFault(faultErr)
+					break
+				}
+			}
+
+			if f != nil && f.Detail.Fault != nil {
+				if notFound, ok := f.Detail.Fault.(*vt.ManagedObjectNotFound); ok {
+					vc.logger.Debug("Object not found during perf metric query, removing from batch and retrying", zap.String("obj", notFound.Obj.Value))
+					batch = slices.DeleteFunc(batch, func(ref vt.ManagedObjectReference) bool {
+						return ref.Value == notFound.Obj.Value
+					})
+					continue
+				}
+			}
+
+			// Batch query failed for an unhandled reason -- fall back to querying objects one at a time.
+			var errs []error
 			for _, obj := range batch {
 				singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
 				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to collect perf metric for object %s: %w", obj.Value, singleErr))
 					continue
 				}
 
 				singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
 				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to convert perf metric for object %s: %w", obj.Value, singleErr))
 					continue
 				}
 
@@ -351,15 +387,10 @@ func (vc *vcenterClient) PerfMetricsQuery(
 					resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
 				}
 			}
-			continue
-		}
-		result, err := vc.pm.ToMetricSeries(ctx, sample)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := range result {
-			resultsByRef[result[i].Entity.Value] = &result[i]
+			if len(errs) > 0 {
+				vc.logger.Debug("Batch perf metrics query failed, fell back to single queries with errors", zap.Error(errors.Join(errs...)))
+			}
+			break
 		}
 	}
 
