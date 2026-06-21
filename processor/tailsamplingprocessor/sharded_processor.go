@@ -36,6 +36,11 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 	shardCfg := cfg
 	shardCfg.NumTraces = max(1, cfg.NumTraces/uint64(numShards))
 	shardCfg.ExpectedNewTracesPerSec = cfg.ExpectedNewTracesPerSec / uint64(numShards)
+	// Decision caches are keyed on trace_id and each shard only sees ~1/N of
+	// the trace_id space. Without this division total decision-cache memory
+	// would scale by num_shards, defeating the memory benefit of sharding.
+	shardCfg.DecisionCache.SampledCacheSize = max(1, cfg.DecisionCache.SampledCacheSize/int(numShards))
+	shardCfg.DecisionCache.NonSampledCacheSize = max(1, cfg.DecisionCache.NonSampledCacheSize/int(numShards))
 	shardCfg.NumShards = 1
 
 	shards := make([]*tailSamplingSpanProcessor, numShards)
