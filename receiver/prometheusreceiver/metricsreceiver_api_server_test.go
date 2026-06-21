@@ -60,16 +60,21 @@ func TestPrometheusAPIServer(t *testing.T) {
 			require.Nil(t, response)
 		})
 
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  endpoint,
+		}
 		receiver, _ := newTestReceiver(t, &Config{
 			PrometheusConfig: cfg,
 			APIServer: APIServer{
-				Enabled: true,
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  endpoint,
-					},
-				},
+				Enabled:      true,
+				ServerConfig: serverConfig,
 			},
 		})
 		endpointsToReceivers[endpoint] = receiver

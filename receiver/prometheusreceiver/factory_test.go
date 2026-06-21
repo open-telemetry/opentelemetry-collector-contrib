@@ -51,14 +51,19 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:9090",
+	}
 	cfg.APIServer = APIServer{
-		Enabled: true,
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:9090",
-			},
-		},
+		Enabled:      true,
+		ServerConfig: serverConfig,
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	firstRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
