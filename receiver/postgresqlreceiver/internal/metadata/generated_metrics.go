@@ -431,7 +431,7 @@ type metricPostgresqlBackends struct {
 // init fills postgresql.backends metric with initial data.
 func (m *metricPostgresqlBackends) init() {
 	m.data.SetName("postgresql.backends")
-	m.data.SetDescription("The number of backends.")
+	m.data.SetDescription("The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

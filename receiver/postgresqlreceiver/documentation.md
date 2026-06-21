@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backends.
+The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

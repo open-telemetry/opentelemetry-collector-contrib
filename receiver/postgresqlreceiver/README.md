@@ -94,6 +94,9 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 GRANT pg_monitor TO otelu;
 ```
 
+Query sample events include the backend's `postgresql.state`. The `postgresql.backends` metric instead reports the
+total number of PostgreSQL backend processes associated with each database, across all states reported by `pg_stat_activity`.
+
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.
@@ -194,3 +197,6 @@ receivers:
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+For metrics or logs derived from custom PostgreSQL queries, use the [SQL Query Receiver](../sqlqueryreceiver/README.md)
+with its `postgres` driver rather than configuring custom SQL in this receiver.

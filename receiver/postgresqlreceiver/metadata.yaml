@@ -262,7 +262,7 @@ events:
 metrics:
   postgresql.backends:
     enabled: true
-    description: The number of backends.
+    description: The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.
     stability: development
     unit: "1"
     sum:

@@ -302,7 +302,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["postgresql.backends"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of backends.", mi.Description())
+					assert.Equal(t, "The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

@@ -108,9 +108,9 @@ func newPostgreSQLScraper(
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap map[databaseName]int64
-	dbSizeMap   map[databaseName]int64
-	dbStats     map[databaseName]databaseStats
+	backendCountByDB map[databaseName]int64
+	dbSizeMap        map[databaseName]int64
+	dbStats          map[databaseName]databaseStats
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -143,9 +143,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		activityMap: make(map[databaseName]int64),
-		dbSizeMap:   make(map[databaseName]int64),
-		dbStats:     make(map[databaseName]databaseStats),
+		backendCountByDB: make(map[databaseName]int64),
+		dbSizeMap:        make(map[databaseName]int64),
+		dbStats:          make(map[databaseName]databaseStats),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -426,8 +426,8 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
 	dbName := databaseName(db)
 	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
-	if activeConnections, ok := r.activityMap[dbName]; ok {
-		p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections)
+	if backendCount, ok := r.backendCountByDB[dbName]; ok {
+		p.mb.RecordPostgresqlBackendsDataPoint(now, backendCount)
 	}
 	if size, ok := r.dbSizeMap[dbName]; ok {
 		p.mb.RecordPostgresqlDbSizeDataPoint(now, size)
@@ -721,13 +721,13 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	activityByDB, err := client.getBackends(ctx, databases)
+	backendCountByDB, err := client.getBackends(ctx, databases)
 	if err != nil {
 		errs.addPartial(err)
 		return
 	}
 	r.Lock()
-	r.activityMap = activityByDB
+	r.backendCountByDB = backendCountByDB
 	r.Unlock()
 }
 

@@ -326,7 +326,7 @@ resourceMetrics:
             stringValue: otel
     scopeMetrics:
       - metrics:
-          - description: The number of backends.
+          - description: The number of PostgreSQL backend processes associated with the database, across all states reported by `pg_stat_activity`.
             name: postgresql.backends
             sum:
               aggregationTemporality: 2
