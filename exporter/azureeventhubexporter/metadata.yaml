@@ -1,0 +1,16 @@
+display_name: Azure Event Hub Exporter
+type: azure_event_hub
+
+status:
+  class: exporter
+  stability:
+    development: [metrics, logs, traces]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+  skip_lifecycle: true
+  goleak:
+    skip: true

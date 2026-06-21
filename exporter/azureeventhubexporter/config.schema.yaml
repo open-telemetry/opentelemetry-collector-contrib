@@ -1,0 +1,44 @@
+$defs:
+  event_hub_config:
+    description: EventHubConfig identifies the target Event Hub when auth-based authentication is used.
+    type: object
+    properties:
+      name:
+        description: Name of the Event Hub. Required when using auth.
+        type: string
+      namespace:
+        description: Fully qualified namespace, e.g. "mynamespace.servicebus.windows.net". Required when using auth.
+        type: string
+
+description: Config defines the configuration for the Azure Event Hub exporter.
+type: object
+properties:
+  connection:
+    description: Azure Event Hub connection string. Mutually exclusive with auth; one of the two must be set.
+    type: string
+  event_hub:
+    description: Event Hub name and namespace used when auth is configured.
+    $ref: event_hub_config
+  auth:
+    description: Component ID of an auth extension that implements azcore.TokenCredential (e.g. azureauthextension). When set, connection is ignored.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  partition_traces_by_id:
+    description: Sets the partition key to the trace ID, co-locating all spans of a trace on the same Event Hub partition.
+    type: boolean
+  partition_metrics_by_resource_attributes:
+    description: Splits the outgoing metrics batch by resource and sets the partition key to a hash of each resource's attributes.
+    type: boolean
+  partition_logs_by_resource_attributes:
+    description: Splits the outgoing logs batch by resource and sets the partition key to a hash of each resource's attributes. Mutually exclusive with partition_logs_by_trace_id.
+    type: boolean
+  partition_logs_by_trace_id:
+    description: Sets the partition key to the trace ID found on each log record. Mutually exclusive with partition_logs_by_resource_attributes.
+    type: boolean
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

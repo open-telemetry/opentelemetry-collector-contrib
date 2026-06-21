@@ -1,0 +1,74 @@
+# Default: connection string with EntityPath embedded
+azure_event_hub:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+
+# Auth extension: fully-qualified namespace + hub name, no connection string
+azure_event_hub/auth:
+  event_hub:
+    namespace: namespace.servicebus.windows.net
+    name: hubName
+  auth: azureauth
+
+# Connection string only; hub name in EventHub.Name overrides EntityPath in the string
+azure_event_hub/hub_name_override:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=ignored
+  event_hub:
+    name: actual-hub
+
+# Partition: route all spans of a trace to the same partition
+azure_event_hub/partition_traces:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition_traces_by_id: true
+
+# Partition: route metrics from the same resource to the same partition
+azure_event_hub/partition_metrics:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition_metrics_by_resource_attributes: true
+
+# Partition: route logs from the same resource to the same partition
+azure_event_hub/partition_logs_by_resource:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition_logs_by_resource_attributes: true
+
+# Partition: route logs by trace ID
+azure_event_hub/partition_logs_by_trace:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition_logs_by_trace_id: true
+
+# Queue and retry tuning
+azure_event_hub/queue:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  sending_queue:
+    enabled: true
+    num_consumers: 4
+    queue_size: 1000
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s
+
+# Error: no connection string and no auth configured
+azure_event_hub/missing_connection:
+
+# Error: connection string is not a valid Event Hub connection string
+azure_event_hub/invalid_connection_string:
+  connection: not-a-connection-string
+
+# Error: auth set but event_hub.name is missing
+azure_event_hub/auth_missing_name:
+  auth: azureauth
+  event_hub:
+    namespace: namespace.servicebus.windows.net
+
+# Error: auth set but event_hub.namespace is missing
+azure_event_hub/auth_missing_namespace:
+  auth: azureauth
+  event_hub:
+    name: hubName
+
+# Error: partition_logs_by_resource_attributes and partition_logs_by_trace_id are mutually exclusive
+azure_event_hub/partition_logs_exclusive:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition_logs_by_resource_attributes: true
+  partition_logs_by_trace_id: true
