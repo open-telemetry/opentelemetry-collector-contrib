@@ -33,8 +33,8 @@ const (
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
 // identity fields only. Attribute maps support /include mode.
-// Collection operator-suffix extensions (/include, /exclude, /regex,
-// /count, ...) are tracked as follow-ups.
+// Operator-suffix extensions (/exclude, /count, /approx, ...) are tracked
+// as follow-ups.
 type document struct {
 	Version   int                 `yaml:"version"`
 	Signal    string              `yaml:"signal"`
@@ -98,8 +98,15 @@ type metricAssertion struct {
 }
 
 type datapointAssertion struct {
-	Attributes    map[string]any `yaml:"attributes,omitempty"`
-	AttributeMode attributeMode  `yaml:"-"`
+	Attributes     map[string]any `yaml:"attributes,omitempty"`
+	AttributeMode  attributeMode  `yaml:"-"`
+	Value          any            `yaml:"value,omitempty"`
+	Count          *uint64        `yaml:"count,omitempty"`
+	Sum            *float64       `yaml:"sum,omitempty"`
+	ExplicitBounds []float64      `yaml:"explicit_bounds,omitempty"`
+	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
+	Min            *float64       `yaml:"min,omitempty"`
+	Max            *float64       `yaml:"max,omitempty"`
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
@@ -126,6 +133,56 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		}
 		d.Attributes = attrs
 		d.AttributeMode = attributeModeExact
+	}
+	// Decode optional value fields.
+	if v, ok := raw["value"]; ok {
+		var val any
+		if err := v.Decode(&val); err != nil {
+			return fmt.Errorf("datapoint assertion: decode value: %w", err)
+		}
+		d.Value = val
+	}
+	if v, ok := raw["count"]; ok {
+		var c uint64
+		if err := v.Decode(&c); err != nil {
+			return fmt.Errorf("datapoint assertion: decode count: %w", err)
+		}
+		d.Count = &c
+	}
+	if v, ok := raw["sum"]; ok {
+		var s float64
+		if err := v.Decode(&s); err != nil {
+			return fmt.Errorf("datapoint assertion: decode sum: %w", err)
+		}
+		d.Sum = &s
+	}
+	if v, ok := raw["explicit_bounds"]; ok {
+		var eb []float64
+		if err := v.Decode(&eb); err != nil {
+			return fmt.Errorf("datapoint assertion: decode explicit_bounds: %w", err)
+		}
+		d.ExplicitBounds = eb
+	}
+	if v, ok := raw["bucket_counts"]; ok {
+		var bc []uint64
+		if err := v.Decode(&bc); err != nil {
+			return fmt.Errorf("datapoint assertion: decode bucket_counts: %w", err)
+		}
+		d.BucketCounts = bc
+	}
+	if v, ok := raw["min"]; ok {
+		var min float64
+		if err := v.Decode(&min); err != nil {
+			return fmt.Errorf("datapoint assertion: decode min: %w", err)
+		}
+		d.Min = &min
+	}
+	if v, ok := raw["max"]; ok {
+		var max float64
+		if err := v.Decode(&max); err != nil {
+			return fmt.Errorf("datapoint assertion: decode max: %w", err)
+		}
+		d.Max = &max
 	}
 	return nil
 }
@@ -189,7 +246,7 @@ func compactShorthand(doc *document) {
 		for j := range doc.Resources[i].Scopes {
 			for k := range doc.Resources[i].Scopes[j].Metrics {
 				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 {
+				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 && m.Datapoints[0].Value == nil {
 					m.Datapoints = nil
 				}
 			}

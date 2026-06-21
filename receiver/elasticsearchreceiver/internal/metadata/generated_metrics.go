@@ -548,25 +548,30 @@ var MapAttributeThreadState = map[string]AttributeThreadState{
 
 var MetricsInfo = metricsInfo{
 	ElasticsearchBreakerMemoryEstimated: metricInfo{
-		Name: "elasticsearch.breaker.memory.estimated",
+		Name:       "elasticsearch.breaker.memory.estimated",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchBreakerMemoryLimit: metricInfo{
-		Name: "elasticsearch.breaker.memory.limit",
+		Name:       "elasticsearch.breaker.memory.limit",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchBreakerTripped: metricInfo{
-		Name: "elasticsearch.breaker.tripped",
+		Name:       "elasticsearch.breaker.tripped",
+		Attributes: []string{"circuit_breaker_name"},
 	},
 	ElasticsearchClusterDataNodes: metricInfo{
 		Name: "elasticsearch.cluster.data_nodes",
 	},
 	ElasticsearchClusterHealth: metricInfo{
-		Name: "elasticsearch.cluster.health",
+		Name:       "elasticsearch.cluster.health",
+		Attributes: []string{"health_status"},
 	},
 	ElasticsearchClusterInFlightFetch: metricInfo{
 		Name: "elasticsearch.cluster.in_flight_fetch",
 	},
 	ElasticsearchClusterIndicesCacheEvictions: metricInfo{
-		Name: "elasticsearch.cluster.indices.cache.evictions",
+		Name:       "elasticsearch.cluster.indices.cache.evictions",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchClusterNodes: metricInfo{
 		Name: "elasticsearch.cluster.nodes",
@@ -575,67 +580,87 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.cluster.pending_tasks",
 	},
 	ElasticsearchClusterPublishedStatesDifferences: metricInfo{
-		Name: "elasticsearch.cluster.published_states.differences",
+		Name:       "elasticsearch.cluster.published_states.differences",
+		Attributes: []string{"cluster_published_difference_state"},
 	},
 	ElasticsearchClusterPublishedStatesFull: metricInfo{
 		Name: "elasticsearch.cluster.published_states.full",
 	},
 	ElasticsearchClusterShards: metricInfo{
-		Name: "elasticsearch.cluster.shards",
+		Name:       "elasticsearch.cluster.shards",
+		Attributes: []string{"shard_state"},
 	},
 	ElasticsearchClusterStateQueue: metricInfo{
-		Name: "elasticsearch.cluster.state_queue",
+		Name:       "elasticsearch.cluster.state_queue",
+		Attributes: []string{"cluster_state_queue_state"},
 	},
 	ElasticsearchClusterStateUpdateCount: metricInfo{
-		Name: "elasticsearch.cluster.state_update.count",
+		Name:       "elasticsearch.cluster.state_update.count",
+		Attributes: []string{"cluster_state_update_state"},
 	},
 	ElasticsearchClusterStateUpdateTime: metricInfo{
-		Name: "elasticsearch.cluster.state_update.time",
+		Name:       "elasticsearch.cluster.state_update.time",
+		Attributes: []string{"cluster_state_update_state", "cluster_state_update_type"},
 	},
 	ElasticsearchIndexCacheEvictions: metricInfo{
-		Name: "elasticsearch.index.cache.evictions",
+		Name:       "elasticsearch.index.cache.evictions",
+		Attributes: []string{"cache_name", "index_aggregation_type"},
 	},
 	ElasticsearchIndexCacheMemoryUsage: metricInfo{
-		Name: "elasticsearch.index.cache.memory.usage",
+		Name:       "elasticsearch.index.cache.memory.usage",
+		Attributes: []string{"cache_name", "index_aggregation_type"},
 	},
 	ElasticsearchIndexCacheSize: metricInfo{
-		Name: "elasticsearch.index.cache.size",
+		Name:       "elasticsearch.index.cache.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexDocuments: metricInfo{
-		Name: "elasticsearch.index.documents",
+		Name:       "elasticsearch.index.documents",
+		Attributes: []string{"document_state", "index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsCompleted: metricInfo{
-		Name: "elasticsearch.index.operations.completed",
+		Name:       "elasticsearch.index.operations.completed",
+		Attributes: []string{"operation", "index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeCurrent: metricInfo{
-		Name: "elasticsearch.index.operations.merge.current",
+		Name:       "elasticsearch.index.operations.merge.current",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeDocsCount: metricInfo{
-		Name: "elasticsearch.index.operations.merge.docs_count",
+		Name:       "elasticsearch.index.operations.merge.docs_count",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsMergeSize: metricInfo{
-		Name: "elasticsearch.index.operations.merge.size",
+		Name:       "elasticsearch.index.operations.merge.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexOperationsTime: metricInfo{
-		Name: "elasticsearch.index.operations.time",
+		Name:       "elasticsearch.index.operations.time",
+		Attributes: []string{"operation", "index_aggregation_type"},
 	},
 	ElasticsearchIndexSegmentsCount: metricInfo{
-		Name: "elasticsearch.index.segments.count",
+		Name:       "elasticsearch.index.segments.count",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexSegmentsMemory: metricInfo{
-		Name: "elasticsearch.index.segments.memory",
+		Name:       "elasticsearch.index.segments.memory",
+		Attributes: []string{"index_aggregation_type", "segments_memory_object_type"},
 	},
 	ElasticsearchIndexSegmentsSize: metricInfo{
-		Name: "elasticsearch.index.segments.size",
+		Name:       "elasticsearch.index.segments.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexShardsSize: metricInfo{
-		Name: "elasticsearch.index.shards.size",
+		Name:       "elasticsearch.index.shards.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexTranslogOperations: metricInfo{
-		Name: "elasticsearch.index.translog.operations",
+		Name:       "elasticsearch.index.translog.operations",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexTranslogSize: metricInfo{
-		Name: "elasticsearch.index.translog.size",
+		Name:       "elasticsearch.index.translog.size",
+		Attributes: []string{"index_aggregation_type"},
 	},
 	ElasticsearchIndexingPressureMemoryLimit: metricInfo{
 		Name: "elasticsearch.indexing_pressure.memory.limit",
@@ -647,16 +672,20 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.indexing_pressure.memory.total.replica_rejections",
 	},
 	ElasticsearchMemoryIndexingPressure: metricInfo{
-		Name: "elasticsearch.memory.indexing_pressure",
+		Name:       "elasticsearch.memory.indexing_pressure",
+		Attributes: []string{"indexing_pressure_stage"},
 	},
 	ElasticsearchNodeCacheCount: metricInfo{
-		Name: "elasticsearch.node.cache.count",
+		Name:       "elasticsearch.node.cache.count",
+		Attributes: []string{"query_cache_count_type"},
 	},
 	ElasticsearchNodeCacheEvictions: metricInfo{
-		Name: "elasticsearch.node.cache.evictions",
+		Name:       "elasticsearch.node.cache.evictions",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchNodeCacheMemoryUsage: metricInfo{
-		Name: "elasticsearch.node.cache.memory.usage",
+		Name:       "elasticsearch.node.cache.memory.usage",
+		Attributes: []string{"cache_name"},
 	},
 	ElasticsearchNodeCacheSize: metricInfo{
 		Name: "elasticsearch.node.cache.size",
@@ -665,7 +694,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.cluster.connections",
 	},
 	ElasticsearchNodeClusterIo: metricInfo{
-		Name: "elasticsearch.node.cluster.io",
+		Name:       "elasticsearch.node.cluster.io",
+		Attributes: []string{"direction"},
 	},
 	ElasticsearchNodeDiskIoRead: metricInfo{
 		Name: "elasticsearch.node.disk.io.read",
@@ -674,7 +704,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.disk.io.write",
 	},
 	ElasticsearchNodeDocuments: metricInfo{
-		Name: "elasticsearch.node.documents",
+		Name:       "elasticsearch.node.documents",
+		Attributes: []string{"document_state"},
 	},
 	ElasticsearchNodeFsDiskAvailable: metricInfo{
 		Name: "elasticsearch.node.fs.disk.available",
@@ -701,28 +732,36 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.open_files",
 	},
 	ElasticsearchNodeOperationsCompleted: metricInfo{
-		Name: "elasticsearch.node.operations.completed",
+		Name:       "elasticsearch.node.operations.completed",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodeOperationsCurrent: metricInfo{
-		Name: "elasticsearch.node.operations.current",
+		Name:       "elasticsearch.node.operations.current",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodeOperationsGetCompleted: metricInfo{
-		Name: "elasticsearch.node.operations.get.completed",
+		Name:       "elasticsearch.node.operations.get.completed",
+		Attributes: []string{"get_result"},
 	},
 	ElasticsearchNodeOperationsGetTime: metricInfo{
-		Name: "elasticsearch.node.operations.get.time",
+		Name:       "elasticsearch.node.operations.get.time",
+		Attributes: []string{"get_result"},
 	},
 	ElasticsearchNodeOperationsTime: metricInfo{
-		Name: "elasticsearch.node.operations.time",
+		Name:       "elasticsearch.node.operations.time",
+		Attributes: []string{"operation"},
 	},
 	ElasticsearchNodePipelineIngestDocumentsCurrent: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.documents.current",
+		Name:       "elasticsearch.node.pipeline.ingest.documents.current",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodePipelineIngestDocumentsPreprocessed: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.documents.preprocessed",
+		Name:       "elasticsearch.node.pipeline.ingest.documents.preprocessed",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodePipelineIngestOperationsFailed: metricInfo{
-		Name: "elasticsearch.node.pipeline.ingest.operations.failed",
+		Name:       "elasticsearch.node.pipeline.ingest.operations.failed",
+		Attributes: []string{"ingest_pipeline_name"},
 	},
 	ElasticsearchNodeScriptCacheEvictions: metricInfo{
 		Name: "elasticsearch.node.script.cache_evictions",
@@ -734,7 +773,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.script.compilations",
 	},
 	ElasticsearchNodeSegmentsMemory: metricInfo{
-		Name: "elasticsearch.node.segments.memory",
+		Name:       "elasticsearch.node.segments.memory",
+		Attributes: []string{"segments_memory_object_type"},
 	},
 	ElasticsearchNodeShardsDataSetSize: metricInfo{
 		Name: "elasticsearch.node.shards.data_set.size",
@@ -746,13 +786,16 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.node.shards.size",
 	},
 	ElasticsearchNodeThreadPoolTasksFinished: metricInfo{
-		Name: "elasticsearch.node.thread_pool.tasks.finished",
+		Name:       "elasticsearch.node.thread_pool.tasks.finished",
+		Attributes: []string{"thread_pool_name", "task_state"},
 	},
 	ElasticsearchNodeThreadPoolTasksQueued: metricInfo{
-		Name: "elasticsearch.node.thread_pool.tasks.queued",
+		Name:       "elasticsearch.node.thread_pool.tasks.queued",
+		Attributes: []string{"thread_pool_name"},
 	},
 	ElasticsearchNodeThreadPoolThreads: metricInfo{
-		Name: "elasticsearch.node.thread_pool.threads",
+		Name:       "elasticsearch.node.thread_pool.threads",
+		Attributes: []string{"thread_pool_name", "thread_state"},
 	},
 	ElasticsearchNodeTranslogOperations: metricInfo{
 		Name: "elasticsearch.node.translog.operations",
@@ -776,7 +819,8 @@ var MetricsInfo = metricsInfo{
 		Name: "elasticsearch.os.cpu.usage",
 	},
 	ElasticsearchOsMemory: metricInfo{
-		Name: "elasticsearch.os.memory",
+		Name:       "elasticsearch.os.memory",
+		Attributes: []string{"memory_state"},
 	},
 	ElasticsearchProcessCPUTime: metricInfo{
 		Name: "elasticsearch.process.cpu.time",
@@ -791,10 +835,12 @@ var MetricsInfo = metricsInfo{
 		Name: "jvm.classes.loaded",
 	},
 	JvmGcCollectionsCount: metricInfo{
-		Name: "jvm.gc.collections.count",
+		Name:       "jvm.gc.collections.count",
+		Attributes: []string{"collector_name"},
 	},
 	JvmGcCollectionsElapsed: metricInfo{
-		Name: "jvm.gc.collections.elapsed",
+		Name:       "jvm.gc.collections.elapsed",
+		Attributes: []string{"collector_name"},
 	},
 	JvmMemoryHeapCommitted: metricInfo{
 		Name: "jvm.memory.heap.committed",
@@ -815,10 +861,12 @@ var MetricsInfo = metricsInfo{
 		Name: "jvm.memory.nonheap.used",
 	},
 	JvmMemoryPoolMax: metricInfo{
-		Name: "jvm.memory.pool.max",
+		Name:       "jvm.memory.pool.max",
+		Attributes: []string{"memory_pool_name"},
 	},
 	JvmMemoryPoolUsed: metricInfo{
-		Name: "jvm.memory.pool.used",
+		Name:       "jvm.memory.pool.used",
+		Attributes: []string{"memory_pool_name"},
 	},
 	JvmThreadsCount: metricInfo{
 		Name: "jvm.threads.count",
@@ -921,7 +969,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricElasticsearchBreakerMemoryEstimated struct {

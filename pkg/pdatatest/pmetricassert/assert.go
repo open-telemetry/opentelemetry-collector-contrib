@@ -6,6 +6,8 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -23,7 +25,7 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc := normalize(actual)
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 
@@ -138,6 +140,7 @@ func compareMetric(expected, actual metricAssertion) error {
 func compareDatapoints(expected, actual []datapointAssertion) error {
 	matched := make([]bool, len(actual))
 	var missing, unexpected []string
+	var valErrs []error
 
 	for _, edp := range expected {
 		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(i int) map[string]any {
@@ -148,18 +151,29 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 			continue
 		}
 		matched[idx] = true
+
+		if edp.Value != nil {
+			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
+				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
+			}
+		}
+
+		if err := compareDatapointValues(edp, actual[idx]); err != nil {
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
+		}
 	}
 	for i, adp := range actual {
 		if !matched[i] {
 			unexpected = append(unexpected, canonKey(adp.Attributes))
 		}
 	}
-	if len(missing) == 0 && len(unexpected) == 0 {
+	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {
 		return nil
 	}
+	var errs []error
+	errs = append(errs, valErrs...)
 	sort.Strings(missing)
 	sort.Strings(unexpected)
-	var errs []error
 	for _, k := range missing {
 		errs = append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
 	}
@@ -167,6 +181,108 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 		errs = append(errs, fmt.Errorf("unexpected datapoint with attributes %s", k))
 	}
 	return errors.Join(errs...)
+}
+
+func compareDatapointValues(expected, actual datapointAssertion) error {
+	var errs []error
+	if expected.Count != nil {
+		if actual.Count == nil {
+			errs = append(errs, errors.New("missing expected count"))
+		} else if *expected.Count != *actual.Count {
+			errs = append(errs, fmt.Errorf("count mismatch: expected %v, got %v", *expected.Count, *actual.Count))
+		}
+	}
+	if expected.Sum != nil {
+		if actual.Sum == nil {
+			errs = append(errs, errors.New("missing expected sum"))
+		} else if *expected.Sum != *actual.Sum {
+			errs = append(errs, fmt.Errorf("sum mismatch: expected %v, got %v", *expected.Sum, *actual.Sum))
+		}
+	}
+	if expected.Min != nil {
+		if actual.Min == nil {
+			errs = append(errs, errors.New("missing expected min"))
+		} else if *expected.Min != *actual.Min {
+			errs = append(errs, fmt.Errorf("min mismatch: expected %v, got %v", *expected.Min, *actual.Min))
+		}
+	}
+	if expected.Max != nil {
+		if actual.Max == nil {
+			errs = append(errs, errors.New("missing expected max"))
+		} else if *expected.Max != *actual.Max {
+			errs = append(errs, fmt.Errorf("max mismatch: expected %v, got %v", *expected.Max, *actual.Max))
+		}
+	}
+	if expected.ExplicitBounds != nil {
+		if actual.ExplicitBounds == nil {
+			errs = append(errs, errors.New("missing expected explicit_bounds"))
+		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		}
+	}
+	if expected.BucketCounts != nil {
+		if actual.BucketCounts == nil {
+			errs = append(errs, errors.New("missing expected bucket_counts"))
+		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
+			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func compareValue(expected, actual any) error {
+	if expected == actual {
+		return nil
+	}
+
+	expFloat, expIsFloat := toFloat64(expected)
+	actFloat, actIsFloat := toFloat64(actual)
+
+	expInt, expIsInt := toInt64(expected)
+	actInt, actIsInt := toInt64(actual)
+
+	if expIsInt && actIsInt && expInt == actInt {
+		return nil
+	}
+
+	if expIsFloat && actIsFloat && expFloat == actFloat {
+		return nil
+	}
+
+	return fmt.Errorf("value mismatch: expected %v, got %v", expected, actual)
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case float32:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	case uint64:
+		return float64(x), true
+	default:
+		return 0, false
+	}
+}
+
+func toInt64(v any) (int64, bool) {
+	switch x := v.(type) {
+	case int:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case float64:
+		if float64(int64(x)) == x {
+			return int64(x), true
+		}
+	}
+	return 0, false
 }
 
 // findMatchingAttributes returns the first unmatched index whose attributes
@@ -198,6 +314,18 @@ func compareAttributes(expected, actual map[string]any, mode attributeMode) erro
 			}
 			continue
 		}
+		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
+				continue
+			}
+			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
 		seen[rawKey] = struct{}{}
 		actualValue, ok := actual[rawKey]
 		if !ok {
@@ -217,6 +345,25 @@ func compareAttributes(expected, actual map[string]any, mode attributeMode) erro
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func compareRegexAttribute(key string, expectedValue, actualValue any) error {
+	pattern, ok := expectedValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
+	}
+	actualStr, ok := actualValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
+	}
+	re, err := regexp.Compile("^(?:" + pattern + ")$")
+	if err != nil {
+		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
+	}
+	if !re.MatchString(actualStr) {
+		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
+	}
+	return nil
 }
 
 func boolPtrEqual(a, b *bool) bool {

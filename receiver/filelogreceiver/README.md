@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -50,8 +49,8 @@ This receiver tails and parses logs from files.
 | `delete_after_read`                   | `false`                              | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. Must be `false` when `start_at` is set to `end`.                                                                     |
 | `acquire_fs_lock`                     | `false`                              | Whether to attempt to acquire a filesystem lock before reading a file (Unix only).                                                                                                                                                                              |
 | `file_cache_advise`                   | `false`                              | Hints the operating system to release cached file pages after they are read, helping reduce page cache usage for large sequential workloads.  (Linux only).                                                                                                                                                                              |
-| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
-| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
+| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                               |
+| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                                 |
 | `operators`                           | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
 | `storage`                             | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.              |
 | `header`                              | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must not be set when `start_at` is set to `end`.                                                          |
@@ -305,15 +304,3 @@ To enable this feature gate, use the flag: `--feature-gates=filelog.protobufChec
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
-
-### `filelog.decompressFingerprint`
-
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
-
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
-
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0`
