@@ -1,0 +1,8 @@
+change_type: enhancement
+component: exporter/elasticsearchexporter
+note: Add support for `db.system.name` semconv attribute in ECS mapping mode.
+issues: [49210]
+subtext: |
+  The exporter now maps `db.system.name` (the current semconv key) in addition
+  to the deprecated `db.system` to `span.db.type` in ECS mode.
+change_logs: [user]
