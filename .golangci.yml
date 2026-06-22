@@ -136,9 +136,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: extension/encoding/awslogsencodingextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
