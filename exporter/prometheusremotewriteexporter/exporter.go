@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strings"
 	"sync"
@@ -165,6 +166,34 @@ func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry,
 	}, nil
 }
 
+// reservedRemoteWriteHeaders are managed by the remote write protocol itself and
+// must not be overwritten by headers forwarded from client metadata. Keys are
+// stored in canonical MIME form for case-insensitive matching.
+var reservedRemoteWriteHeaders = map[string]struct{}{
+	textproto.CanonicalMIMEHeaderKey("Content-Encoding"):                  {},
+	textproto.CanonicalMIMEHeaderKey("Content-Type"):                      {},
+	textproto.CanonicalMIMEHeaderKey("User-Agent"):                        {},
+	textproto.CanonicalMIMEHeaderKey("X-Prometheus-Remote-Write-Version"): {},
+}
+
+// ReservedMetadataKeys drops any include_metadata_keys entries that would
+// collide with headers required by the remote write protocol. Dropped keys are logged
+func ReservedMetadataKeys(keys []string, logger *zap.Logger) []string {
+	if len(keys) == 0 {
+		return keys
+	}
+	filtered := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if _, reserved := reservedRemoteWriteHeaders[textproto.CanonicalMIMEHeaderKey(key)]; reserved {
+			logger.Warn("ignoring include_metadata_keys entry that collides with a reserved remote write header",
+				zap.String("key", key))
+			continue
+		}
+		filtered = append(filtered, key)
+	}
+	return filtered
+}
+
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
 func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -215,7 +244,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
-		includeMetadataKeys: cfg.IncludeMetadataKeys,
+		includeMetadataKeys: ReservedMetadataKeys(cfg.IncludeMetadataKeys, set.Logger),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
