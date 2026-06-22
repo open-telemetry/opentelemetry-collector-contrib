@@ -46,7 +46,9 @@ func migrateLegacyBackups(path string, rotation *Rotation, logger *zap.Logger) e
 	if rotation == nil {
 		return nil
 	}
-
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 	ext := filepath.Ext(base)
