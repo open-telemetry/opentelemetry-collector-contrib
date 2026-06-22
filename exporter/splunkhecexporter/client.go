@@ -275,7 +275,7 @@ func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.Resourc
 	dstScope.SetSchemaUrl(scope.SchemaUrl())
 
 	dstProfile := dstScope.Profiles().AppendEmpty()
-	prof.MoveTo(dstProfile)
+	prof.CopyTo(dstProfile)
 
 	return profiles
 }
