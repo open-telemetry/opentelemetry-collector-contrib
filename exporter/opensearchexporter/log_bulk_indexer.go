@@ -48,7 +48,8 @@ func (lbi *logBulkIndexer) close(ctx context.Context) {
 
 func (lbi *logBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		lbi.errs = append(lbi.errs, indexerErr) // retryable, not permanent
+		// retryable, not permanent
+		lbi.errs = append(lbi.errs, indexerErr)
 	}
 }
 
@@ -132,9 +133,11 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 		// resp.Status == 0 + itemErr: could be encoding error OR transport error
 		var netErr *net.OpError
 		if errors.As(itemErr, &netErr) {
-			lbi.appendRetryLogError(itemErr, logs) // transport error, retryable
+			// transport error, retryable
+			lbi.appendRetryLogError(itemErr, logs)
 		} else {
-			lbi.appendPermanentError(itemErr) // encoding error, permanent
+			// encoding error, permanent
+			lbi.appendPermanentError(itemErr)
 		}
 	}
 }
