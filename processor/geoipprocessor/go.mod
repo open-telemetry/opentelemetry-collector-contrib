@@ -75,6 +75,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.60.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.60.1-0.20260622163853-d3d6e34700b7 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.60.1-0.20260622163853-d3d6e34700b7 // indirect
@@ -128,7 +129,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go4.org/netipx v0.0.0-20230824141953-6213f710f925 // indirect
 	golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
