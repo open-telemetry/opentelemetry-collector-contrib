@@ -4,10 +4,12 @@ go 1.25.0
 
 require (
 	github.com/goccy/go-json v0.10.6
+	github.com/google/pprof v0.0.0-20260507013755-92041b743c96
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.154.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.60.1-0.20260618174006-415d3dcae73b
+	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260618174006-415d3dcae73b
 	go.opentelemetry.io/otel v1.44.0
 	go.uber.org/zap v1.28.0
 )
@@ -43,7 +45,6 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.154.1-0.20260618174006-415d3dcae73b // indirect
 	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260618174006-415d3dcae73b // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260618174006-415d3dcae73b // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260618174006-415d3dcae73b // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.154.1-0.20260618174006-415d3dcae73b // indirect
 	go.opentelemetry.io/collector/pipeline v1.60.1-0.20260618174006-415d3dcae73b // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.154.1-0.20260618174006-415d3dcae73b // indirect
