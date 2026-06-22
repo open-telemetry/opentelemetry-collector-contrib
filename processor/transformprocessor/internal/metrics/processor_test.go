@@ -1962,9 +1962,10 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 
 func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	tests := []struct {
-		name       string
-		statements []common.ContextStatements
-		want       func(td pmetric.Metrics)
+		name           string
+		statements     []common.ContextStatements
+		metricsFactory func() pmetric.Metrics
+		want           func(td pmetric.Metrics)
 	}{
 		{
 			name: "resource:resource.cache",
@@ -2100,18 +2101,73 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			name:           "exemplar:exemplar.cache",
+			metricsFactory: constructMetricsWithExemplars,
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(exemplar.cache["test"], "pass")`,
+					`set(exemplar.filtered_attributes["test"], exemplar.cache["test"])`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachExemplar(td, func(exemplar pmetric.Exemplar) {
+					exemplar.FilteredAttributes().PutStr("test", "pass")
+				})
+			},
+		},
+		{
+			name:           "exemplar:cache",
+			metricsFactory: constructMetricsWithExemplars,
+			statements: []common.ContextStatements{{
+				Context: common.Exemplar,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(filtered_attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td pmetric.Metrics) {
+				forEachExemplar(td, func(exemplar pmetric.Exemplar) {
+					exemplar.FilteredAttributes().PutStr("test", "pass")
+				})
+			},
+		},
+		{
+			name:           "exemplar:exemplar.cache multiple entries",
+			metricsFactory: constructMetricsWithExemplars,
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(exemplar.cache["test"], exemplar.double_value)`,
+						`set(exemplar.filtered_attributes["test"], exemplar.cache["test"])`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				values := []float64{1.0, 2.0, 3.0, 4.0}
+				i := 0
+				forEachExemplar(td, func(exemplar pmetric.Exemplar) {
+					exemplar.FilteredAttributes().PutDouble("test", values[i])
+					i++
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			td := constructMetrics()
+			metricsFactory := constructMetrics
+			if tt.metricsFactory != nil {
+				metricsFactory = tt.metricsFactory
+			}
+			td := metricsFactory()
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
 			require.NoError(t, err)
 
-			exTd := constructMetrics()
+			exTd := metricsFactory()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)

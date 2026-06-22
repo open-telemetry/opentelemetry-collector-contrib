@@ -82,6 +82,7 @@ func WithExemplarFunctions(exemplarFunctions []ottl.Factory[*ottlexemplar.Transf
 		factory.exemplarFunctions = mergeFunctionsToMap(factory.exemplarFunctions, exemplarFunctions)
 	}
 }
+
 // WithLogFunctions will override the default OTTL log context functions with the provided logFunctions in the resulting processor.
 // Subsequent uses of WithLogFunctions will merge the provided logFunctions with the previously registered functions.
 func WithLogFunctions(logFunctions []ottl.Factory[*ottllog.TransformContext]) FactoryOption {

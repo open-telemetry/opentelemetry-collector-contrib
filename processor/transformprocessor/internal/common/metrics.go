@@ -188,13 +188,9 @@ func (exemplarStatements) Context() ContextID {
 }
 
 func (e exemplarStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
-			metrics := smetrics.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				metric := metrics.At(k)
+	for _, rmetrics := range md.ResourceMetrics().All() {
+		for _, smetrics := range rmetrics.ScopeMetrics().All() {
+			for _, metric := range smetrics.Metrics().All() {
 				var err error
 				//exhaustive:enforce
 				switch metric.Type() {
@@ -218,10 +214,9 @@ func (e exemplarStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 func (e exemplarStatements) handleNumberDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.NumberDataPointSlice) error {
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		for j := 0; j < dp.Exemplars().Len(); j++ {
-			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, dp.Exemplars().At(j))
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
 			if err := e.executeExemplar(ctx, tCtx); err != nil {
 				return err
 			}
@@ -231,10 +226,9 @@ func (e exemplarStatements) handleNumberDataPointExemplars(ctx context.Context, 
 }
 
 func (e exemplarStatements) handleHistogramDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.HistogramDataPointSlice) error {
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		for j := 0; j < dp.Exemplars().Len(); j++ {
-			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, dp.Exemplars().At(j))
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
 			if err := e.executeExemplar(ctx, tCtx); err != nil {
 				return err
 			}
@@ -244,10 +238,9 @@ func (e exemplarStatements) handleHistogramDataPointExemplars(ctx context.Contex
 }
 
 func (e exemplarStatements) handleExponentialHistogramDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.ExponentialHistogramDataPointSlice) error {
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		for j := 0; j < dp.Exemplars().Len(); j++ {
-			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, dp.Exemplars().At(j))
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
 			if err := e.executeExemplar(ctx, tCtx); err != nil {
 				return err
 			}
