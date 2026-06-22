@@ -511,7 +511,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [type]
 
-  redis.pubsub.clients:
+  redis.pubsub.connection.count:
     enabled: false
     description: Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
     stability: development

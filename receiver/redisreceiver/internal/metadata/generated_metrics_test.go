@@ -278,7 +278,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordRedisPubsubClientsDataPoint(ts, 1)
+			mb.RecordRedisPubsubConnectionCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1252,9 +1252,9 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("type")
 						assert.False(t, ok)
 					}
-				case "redis.pubsub.clients":
-					assert.False(t, validatedMetrics["redis.pubsub.clients"], "Found a duplicate in the metrics slice: redis.pubsub.clients")
-					validatedMetrics["redis.pubsub.clients"] = true
+				case "redis.pubsub.connection.count":
+					assert.False(t, validatedMetrics["redis.pubsub.connection.count"], "Found a duplicate in the metrics slice: redis.pubsub.connection.count")
+					validatedMetrics["redis.pubsub.connection.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)", mi.Description())

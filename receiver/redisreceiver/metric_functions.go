@@ -63,7 +63,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"cluster_stats_messages_received":   rs.mb.RecordRedisClusterStatsMessagesReceivedDataPoint,
 		"links_buffer_limit_exceeded.count": rs.mb.RecordRedisClusterLinksBufferLimitExceededCountDataPoint,
 		"pubsub_channels":                   rs.recordPubsubChannels,
-		"pubsub_clients":                    rs.mb.RecordRedisPubsubClientsDataPoint,
+		"pubsub_clients":                    rs.mb.RecordRedisPubsubConnectionCountDataPoint,
 		"pubsub_patterns":                   rs.mb.RecordRedisPubsubPatternsActiveDataPoint,
 		"pubsub_shardchannels":              rs.recordPubsubShardChannels,
 	}

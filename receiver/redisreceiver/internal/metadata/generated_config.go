@@ -1190,13 +1190,13 @@ func (ms *RedisPubsubChannelsMetricConfig) Validate() error {
 	return nil
 }
 
-// RedisPubsubClientsMetricConfig provides config for the redis.pubsub.clients metric.
-type RedisPubsubClientsMetricConfig struct {
+// RedisPubsubConnectionCountMetricConfig provides config for the redis.pubsub.connection.count metric.
+type RedisPubsubConnectionCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RedisPubsubClientsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RedisPubsubConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1585,7 +1585,7 @@ type MetricsConfig struct {
 	RedisNetInput                             RedisNetInputMetricConfig                             `mapstructure:"redis.net.input"`
 	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
 	RedisPubsubChannels                       RedisPubsubChannelsMetricConfig                       `mapstructure:"redis.pubsub.channels"`
-	RedisPubsubClients                        RedisPubsubClientsMetricConfig                        `mapstructure:"redis.pubsub.clients"`
+	RedisPubsubConnectionCount                RedisPubsubConnectionCountMetricConfig                `mapstructure:"redis.pubsub.connection.count"`
 	RedisPubsubPatternsActive                 RedisPubsubPatternsActiveMetricConfig                 `mapstructure:"redis.pubsub.patterns.active"`
 	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset    RedisReplicationBacklogFirstByteOffsetMetricConfig    `mapstructure:"redis.replication.backlog_first_byte_offset"`
@@ -1760,7 +1760,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []RedisPubsubChannelsMetricAttributeKey{RedisPubsubChannelsMetricAttributeKeyType},
 		},
-		RedisPubsubClients: RedisPubsubClientsMetricConfig{
+		RedisPubsubConnectionCount: RedisPubsubConnectionCountMetricConfig{
 			Enabled: false,
 		},
 		RedisPubsubPatternsActive: RedisPubsubPatternsActiveMetricConfig{

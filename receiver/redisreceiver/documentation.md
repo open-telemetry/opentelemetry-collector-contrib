@@ -491,7 +491,7 @@ Redis server mode
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended | - |
 
-### redis.pubsub.clients
+### redis.pubsub.connection.count
 
 Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
 

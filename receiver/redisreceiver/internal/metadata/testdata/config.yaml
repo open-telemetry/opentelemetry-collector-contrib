@@ -101,7 +101,7 @@ all_set:
     redis.pubsub.channels:
       enabled: true
       attributes: ["type"]
-    redis.pubsub.clients:
+    redis.pubsub.connection.count:
       enabled: true
     redis.pubsub.patterns.active:
       enabled: true
@@ -243,7 +243,7 @@ reaggregate_set:
     redis.pubsub.channels:
       enabled: true
       attributes: []
-    redis.pubsub.clients:
+    redis.pubsub.connection.count:
       enabled: true
     redis.pubsub.patterns.active:
       enabled: true
@@ -385,7 +385,7 @@ none_set:
     redis.pubsub.channels:
       enabled: false
       attributes: ["type"]
-    redis.pubsub.clients:
+    redis.pubsub.connection.count:
       enabled: false
     redis.pubsub.patterns.active:
       enabled: false
