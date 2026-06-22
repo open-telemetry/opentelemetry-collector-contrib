@@ -26,6 +26,7 @@ subtext: |
         - context: metric
           statements:
             - aggregate_on_attributes("sum", ["cpu"]) where metric.name == "cpu.utilization_per_core"
+            - scale_metric(100.0) where metric.name == "cpu.utilization_per_core"
 
   service:
     pipelines:
