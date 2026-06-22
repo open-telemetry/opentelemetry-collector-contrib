@@ -188,6 +188,8 @@ func Test_comparison(t *testing.T) {
 		{"pvalue float vs raw float64", pcommon.NewValueDouble(1), f64a, []bool{true, false, false, true, true, false}},
 		{"pvalue float vs raw float64 diff", pcommon.NewValueDouble(1), f64b, []bool{false, true, true, true, false, false}},
 		{"pvalue int vs raw float64", pcommon.NewValueInt(1), f64b, []bool{false, true, true, true, false, false}},
+		{"pvalue float vs raw int64", pcommon.NewValueDouble(1), i64a, []bool{true, false, false, true, true, false}},
+		{"pvalue float vs raw int64 diff", pcommon.NewValueDouble(1), i64b, []bool{false, true, true, true, false, false}},
 		{"pvalue string vs raw string", pcommon.NewValueStr("1"), sa, []bool{true, false, false, true, true, false}},
 		{"pvalue string vs raw string diff", pcommon.NewValueStr("1"), sb, []bool{false, true, true, true, false, false}},
 		{"pvalue bool vs raw bool", pcommon.NewValueBool(true), tb, []bool{true, false, false, true, true, false}},
