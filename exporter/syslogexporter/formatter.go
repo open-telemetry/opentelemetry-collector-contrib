@@ -4,6 +4,8 @@
 package syslogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 
 import (
+	"strings"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -25,5 +27,35 @@ func getAttributeValueOrDefault(logRecord plog.LogRecord, attributeName, default
 	if attributeValue, found := logRecord.Attributes().Get(attributeName); found {
 		value = attributeValue.AsString()
 	}
-	return value
+	return sanitizeSyslogField(value)
+}
+
+func sanitizeSyslogField(s string) string {
+	// Strip all control characters except TAB. Replace with space.
+	return strings.Map(func(r rune) rune {
+		if r == '\t' {
+			return r
+		}
+		if r < 0x20 || r == 0x7F {
+			return ' '
+		}
+		return r
+	}, s)
+}
+
+func sanitizeHeaderField(s string, maxLength int, fallback string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if r >= 0x21 && r <= 0x7e {
+			sb.WriteRune(r)
+		}
+	}
+	res := sb.String()
+	if res == "" {
+		return fallback
+	}
+	if maxLength > 0 && len(res) > maxLength {
+		res = res[:maxLength]
+	}
+	return res
 }

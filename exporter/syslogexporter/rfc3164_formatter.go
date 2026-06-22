@@ -31,7 +31,11 @@ func (f *rfc3164Formatter) format(logRecord plog.LogRecord) string {
 }
 
 func (*rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
-	return getAttributeValueOrDefault(logRecord, priority, strconv.Itoa(defaultPriority))
+	priorityStr := getAttributeValueOrDefault(logRecord, priority, strconv.Itoa(defaultPriority))
+	if _, err := strconv.Atoi(priorityStr); err != nil {
+		return strconv.Itoa(defaultPriority)
+	}
+	return priorityStr
 }
 
 func (*rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
@@ -39,15 +43,17 @@ func (*rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
 }
 
 func (*rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {
-	return getAttributeValueOrDefault(logRecord, hostname, emptyValue)
+	val := getAttributeValueOrDefault(logRecord, hostname, emptyValue)
+	return sanitizeHeaderField(val, 0, emptyValue)
 }
 
 func (*rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	value := getAttributeValueOrDefault(logRecord, app, "")
-	if value != "" {
-		value += ":"
+	sanitized := sanitizeHeaderField(value, 0, "")
+	if sanitized != "" {
+		sanitized += ":"
 	}
-	return value
+	return sanitized
 }
 
 func (*rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
