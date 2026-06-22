@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,11 +51,13 @@ type cloudWatchMetricsScraper struct {
 	client             metricsClient
 	stsClient          stsClient
 	// accountID is the resolved AWS account ID reported as cloud.account.id.
-	// It is empty when resolution failed and no account_id override was configured.
+	// It is empty until resolution succeeds.
 	accountID string
-	// accountIDOnce ensures the account ID is resolved at most once, lazily on the
-	// first scrape, so that start() performs no network calls.
-	accountIDOnce sync.Once
+	// accountIDResolved is set once the account ID has been resolved successfully. Until
+	// then resolution is retried on each scrape, so a transient STS failure on the first
+	// attempt does not permanently leave cloud.account.id unset. Resolution runs lazily on
+	// scrape (not in start()) so that start() performs no network calls.
+	accountIDResolved bool
 }
 
 type metricsClient interface {
@@ -114,25 +115,23 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 
 // resolveAccountID resolves the AWS account ID of the active credentials via STS
 // GetCallerIdentity and stores it in s.accountID, to be reported as the cloud.account.id
-// resource attribute. If resolution fails (for example because STS is unavailable or not
-// permitted), it logs a warning and leaves s.accountID empty so that metric collection
-// proceeds without the attribute.
-//
-// It is invoked once, lazily, on the first scrape (via accountIDOnce) so that start()
-// performs no network calls.
+// resource attribute. It runs lazily on scrape (not in start(), which performs no network
+// calls) and retries on each scrape until it succeeds: a transient failure logs a warning
+// and leaves s.accountID empty for that cycle rather than latching the empty value, so
+// metrics are emitted without the attribute only until resolution succeeds.
 func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
-	s.accountIDOnce.Do(func() {
-		if s.stsClient == nil {
-			return
-		}
-		out, err := s.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-		if err != nil {
-			s.settings.Logger.Warn("unable to resolve AWS account ID via STS GetCallerIdentity; "+
-				"metrics will be emitted without the cloud.account.id resource attribute.", zap.Error(err))
-			return
-		}
-		s.accountID = aws.ToString(out.Account)
-	})
+	if s.accountIDResolved || s.stsClient == nil {
+		return
+	}
+	out, err := s.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		s.settings.Logger.Warn("unable to resolve AWS account ID via STS GetCallerIdentity; "+
+			"will retry on the next scrape. Metrics are emitted without the cloud.account.id "+
+			"resource attribute until resolution succeeds.", zap.Error(err))
+		return
+	}
+	s.accountID = aws.ToString(out.Account)
+	s.accountIDResolved = true
 }
 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
