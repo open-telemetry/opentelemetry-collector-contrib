@@ -99,13 +99,14 @@ This metadata is added to the request context and can be accessed by any downstr
 ### Custom event handling
 
 Events that are not recognized as S3 or CloudWatch Logs events are handled as custom events.
+For custom events, only the logs signal is supported.
 
 Custom events are handled in the following manner:
 
 - Receive the Lambda invocation payload
-- Decode the payload using the configured encoding extension
-  - Default encoding: Preserve the payload content as-is
-  - Custom encoding: Use the specified encoding extension via `custom::encoding`
+- Decode the payload using the configured encoding extension 
+
+If an encoding extension is not configured, then the receiver will error out and return the error.
 
 The encoding used for custom events is configured through the `custom::encoding` option.
 See the [Configurations](#configurations) section for details.

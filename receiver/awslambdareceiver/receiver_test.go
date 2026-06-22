@@ -179,6 +179,73 @@ func TestCreateMetrics(t *testing.T) {
 	require.Contains(t, m.Get("aws.s3.key"), "test-file.txt")
 }
 
+func TestCustomHandlerRegistration(t *testing.T) {
+	// Set Lambda environment variables required by Start()
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	goMock := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(goMock)
+	s3Provider := internal.NewMockS3Provider(goMock)
+	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
+
+	// A custom event payload that detectTriggerType classifies as customEvent.
+	customEventPayload := []byte(`{"custom":"payload"}`)
+
+	t.Run("custom handler is not registered by default", func(t *testing.T) {
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+
+		sink := consumertest.LogsSink{}
+		receiver, err := factory.CreateLogs(t.Context(), settings, cfg, &sink)
+		require.NoError(t, err)
+
+		host := mockHost{GetFunc: func() map[component.ID]component.Component {
+			return map[component.ID]component.Component{}
+		}}
+
+		// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+		awsReceiver := receiver.(*awsLambdaReceiver)
+		awsReceiver.hp, err = newLogsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
+		require.NoError(t, err)
+
+		// Processing fails fast since no custom handler is registered by default.
+		err = awsReceiver.processLambdaEvent(t.Context(), customEventPayload)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "cannot handle event type")
+		require.Zero(t, sink.LogRecordCount())
+	})
+
+	t.Run("registered custom extension processes log content", func(t *testing.T) {
+		customEncoding := "custom_encoding"
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Custom.Encoding = customEncoding
+
+		sink := consumertest.LogsSink{}
+		receiver, err := factory.CreateLogs(t.Context(), settings, cfg, &sink)
+		require.NoError(t, err)
+
+		host := mockHost{GetFunc: func() map[component.ID]component.Component {
+			return map[component.ID]component.Component{
+				component.MustNewID(customEncoding): &mockExtensionWithPLogUnmarshaler{},
+			}
+		}}
+
+		// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+		awsReceiver := receiver.(*awsLambdaReceiver)
+		awsReceiver.hp, err = newLogsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
+		require.NoError(t, err)
+
+		// The custom extension decodes the raw event into log records.
+		err = awsReceiver.processLambdaEvent(t.Context(), customEventPayload)
+		require.NoError(t, err)
+		require.NotZero(t, sink.LogRecordCount(), "Expected logs to be sent to sink")
+	})
+}
+
 func TestStartRequiresLambdaEnvironment(t *testing.T) {
 	// Ensure Lambda environment variables are not set
 	t.Setenv("AWS_EXECUTION_ENV", "")

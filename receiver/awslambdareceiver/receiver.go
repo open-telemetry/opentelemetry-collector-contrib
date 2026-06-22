@@ -262,16 +262,16 @@ func newLogsHandler(
 	}
 	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
 
-	customDecoder := internal.NewDefaultBlobDecoder()
+	// Customer handler: register only if provided.
 	if cfg.Custom.Encoding != "" {
 		logger.Info("Using configured encoding for custom logs trigger", zap.String("encoding", cfg.Custom.Encoding))
-		customDecoder, err = resolveLogsDecoder(host, cfg.Custom.Encoding)
+		customDecoder, err := resolveLogsDecoder(host, cfg.Custom.Encoding)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	registry[customEvent] = newCustomHandler(customDecoder, next)
+		registry[customEvent] = newCustomHandler(customDecoder, next)
+	}
 
 	return newHandlerProvider(registry), nil
 }
@@ -401,10 +401,10 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 // - CloudWatchEvent
 // - CustomEvent
 // See payload content at official documentation,
-//   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
-//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
+// - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
+// - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
 //
-// Suppoerted custom trigger type:
+// Supported custom trigger type:
 // - replayFailedEvents
 // Beyond these, all other events will be fall through to CustomEvent category.
 func detectTriggerType(data []byte) eventType {
@@ -426,7 +426,7 @@ func detectTriggerType(data []byte) eventType {
 		return replayEvent
 	}
 
-	// fallback to handle as a custom event
+	// Fallback to handle as a custom event
 	return customEvent
 }
 
