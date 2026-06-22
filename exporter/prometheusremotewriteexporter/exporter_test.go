@@ -1112,6 +1112,10 @@ func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
 	return assert.True(t, consumererror.IsPermanent(err), "error should be consumererror.Permanent")
 }
 
+func assertNonPermanentError(t assert.TestingT, err error, _ ...any) bool {
+	return assert.False(t, consumererror.IsPermanent(err), "error should not be consumererror.Permanent")
+}
+
 func TestRetries(t *testing.T) {
 	tts := []struct {
 		name             string
@@ -1119,6 +1123,7 @@ func TestRetries(t *testing.T) {
 		expectedAttempts int
 		httpStatus       int
 		RetryOnHTTP429   bool
+		retryEnabled     bool
 		assertError      assert.ErrorAssertionFunc
 		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
@@ -1129,6 +1134,7 @@ func TestRetries(t *testing.T) {
 			4,
 			http.StatusInternalServerError,
 			false,
+			true,
 			assert.NoError,
 			assert.NoError,
 			t.Context(),
@@ -1138,6 +1144,7 @@ func TestRetries(t *testing.T) {
 			3,
 			4,
 			http.StatusTooManyRequests,
+			true,
 			true,
 			assert.NoError,
 			assert.NoError,
@@ -1149,6 +1156,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusTooManyRequests,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			t.Context(),
@@ -1159,6 +1167,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusBadRequest,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			t.Context(),
@@ -1169,9 +1178,32 @@ func TestRetries(t *testing.T) {
 			0,
 			http.StatusInternalServerError,
 			false,
+			true,
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
+		},
+		{
+			"test 5xx with retry disabled returns non-permanent error",
+			4,
+			1,
+			http.StatusServiceUnavailable,
+			false,
+			false,
+			assert.Error,
+			assertNonPermanentError,
+			t.Context(),
+		},
+		{
+			"test 4xx with retry disabled returns permanent error",
+			4,
+			1,
+			http.StatusBadRequest,
+			false,
+			false,
+			assert.Error,
+			assertPermanentConsumerError,
+			t.Context(),
 		},
 	}
 
@@ -1203,7 +1235,7 @@ func TestRetries(t *testing.T) {
 				client:         http.DefaultClient,
 				retryOnHTTP429: tt.RetryOnHTTP429,
 				retrySettings: configretry.BackOffConfig{
-					Enabled: true,
+					Enabled: tt.retryEnabled,
 				},
 				settings:  testTel.NewTelemetrySettings(),
 				telemetry: telemetry,

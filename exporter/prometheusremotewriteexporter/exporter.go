@@ -447,7 +447,7 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 			}
 
 			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
-				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+				errs = multierr.Append(errs, errExecute)
 			}
 		}
 	}
@@ -567,8 +567,10 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	}
 
 	if err != nil {
-		// A permanent error is being returned here so we don't retry on context deadline exceeded.
-		return consumererror.NewPermanent(err)
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return consumererror.NewPermanent(err)
+		}
+		return err
 	}
 
 	return nil

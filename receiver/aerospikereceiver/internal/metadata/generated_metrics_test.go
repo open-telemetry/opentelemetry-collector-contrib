@@ -81,77 +81,63 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "3", AttributeNamespaceComponentIndex)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "3", AttributeQueryTypeBasic, AttributeIndexTypeSecondary, AttributeQueryResultComplete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "3", AttributeScanTypeBasic, AttributeScanResultComplete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "3", AttributeTransactionTypeRead, AttributeTransactionResultFilteredOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "3", AttributeConnectionTypeFabric, AttributeConnectionOpOpen)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "3", AttributeConnectionTypeFabric)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
