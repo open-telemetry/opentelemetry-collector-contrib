@@ -222,8 +222,8 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
         - sqlquery
         - sqlserver
         - ssh_check

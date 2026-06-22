@@ -319,7 +319,8 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.exchange_deadlocks",
 	},
 	OracledbExecutionUtilization: metricInfo{
-		Name: "oracledb.execution.utilization",
+		Name:       "oracledb.execution.utilization",
+		Attributes: []string{"oracledb.parse.type"},
 	},
 	OracledbExecutions: metricInfo{
 		Name: "oracledb.executions",
@@ -370,7 +371,8 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.parallel_operations_not_downgraded",
 	},
 	OracledbParseRate: metricInfo{
-		Name: "oracledb.parse.rate",
+		Name:       "oracledb.parse.rate",
+		Attributes: []string{"oracledb.parse.result"},
 	},
 	OracledbParseUtilization: metricInfo{
 		Name: "oracledb.parse.utilization",
@@ -385,10 +387,12 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.physical_io.cache_writes",
 	},
 	OracledbPhysicalIoRequests: metricInfo{
-		Name: "oracledb.physical_io.requests",
+		Name:       "oracledb.physical_io.requests",
+		Attributes: []string{"disk.io.direction", "disk.io.block_size"},
 	},
 	OracledbPhysicalIoTransferred: metricInfo{
-		Name: "oracledb.physical_io.transferred",
+		Name:       "oracledb.physical_io.transferred",
+		Attributes: []string{"disk.io.direction", "disk.io.type"},
 	},
 	OracledbPhysicalReadIoRequests: metricInfo{
 		Name: "oracledb.physical_read_io_requests",
@@ -409,7 +413,8 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.physical_writes_direct",
 	},
 	OracledbProcessCPUTime: metricInfo{
-		Name: "oracledb.process.cpu.time",
+		Name:       "oracledb.process.cpu.time",
+		Attributes: []string{"cpu.mode"},
 	},
 	OracledbProcessesLimit: metricInfo{
 		Name: "oracledb.processes.limit",
@@ -430,28 +435,33 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.session.stored_procedure.usage",
 	},
 	OracledbSessionWaitTime: metricInfo{
-		Name: "oracledb.session.wait.time",
+		Name:       "oracledb.session.wait.time",
+		Attributes: []string{"oracledb.session.wait.state"},
 	},
 	OracledbSessionWaits: metricInfo{
-		Name: "oracledb.session.waits",
+		Name:       "oracledb.session.waits",
+		Attributes: []string{"oracledb.session.wait.state"},
 	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
 	OracledbSessionsUsage: metricInfo{
-		Name: "oracledb.sessions.usage",
+		Name:       "oracledb.sessions.usage",
+		Attributes: []string{"session_type", "session_status"},
 	},
 	OracledbSharedPoolUtilization: metricInfo{
 		Name: "oracledb.shared_pool.utilization",
 	},
 	OracledbSortRatio: metricInfo{
-		Name: "oracledb.sort.ratio",
+		Name:       "oracledb.sort.ratio",
+		Attributes: []string{"oracledb.sort.type"},
 	},
 	OracledbSQLServiceResponseDuration: metricInfo{
 		Name: "oracledb.sql_service.response.duration",
 	},
 	OracledbSqlnetIoTransferred: metricInfo{
-		Name: "oracledb.sqlnet.io.transferred",
+		Name:       "oracledb.sqlnet.io.transferred",
+		Attributes: []string{"network.io.direction", "destination.type"},
 	},
 	OracledbStorageUsage: metricInfo{
 		Name: "oracledb.storage.usage",
@@ -460,10 +470,12 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.storage.utilization",
 	},
 	OracledbTablespaceSizeLimit: metricInfo{
-		Name: "oracledb.tablespace_size.limit",
+		Name:       "oracledb.tablespace_size.limit",
+		Attributes: []string{"tablespace_name"},
 	},
 	OracledbTablespaceSizeUsage: metricInfo{
-		Name: "oracledb.tablespace_size.usage",
+		Name:       "oracledb.tablespace_size.usage",
+		Attributes: []string{"tablespace_name"},
 	},
 	OracledbTransactionsLimit: metricInfo{
 		Name: "oracledb.transactions.limit",
@@ -553,7 +565,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricOracledbBufferCacheUtilization struct {
