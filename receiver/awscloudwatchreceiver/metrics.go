@@ -261,17 +261,18 @@ func (s *cloudWatchMetricsScraper) discoverMetrics(ctx context.Context, owningAc
 		dropped := 0
 		for i, met := range resp.Metrics {
 			var account string
-			if singleAccount {
+			switch {
+			case singleAccount:
 				// Per-identifier discovery uses the requested account; same-account discovery
 				// leaves it empty so the receiver's own resolved account is used.
 				account = owningAccount
-			} else if i >= len(resp.OwningAccounts) || resp.OwningAccounts[i] == "" {
+			case i >= len(resp.OwningAccounts) || resp.OwningAccounts[i] == "":
 				// Linked-account sweep where AWS did not return an aligned OwningAccounts entry:
 				// the metric cannot be attributed to a source account, so drop it rather than
 				// misattributing it to the monitoring account.
 				dropped++
 				continue
-			} else {
+			default:
 				// Linked-account sweep: attribute the metric to its source account.
 				account = resp.OwningAccounts[i]
 			}

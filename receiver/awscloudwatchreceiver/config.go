@@ -17,7 +17,7 @@ import (
 )
 
 // accountIDPattern matches an AWS account ID: exactly 12 digits.
-var accountIDPattern = regexp.MustCompile(`^[0-9]{12}$`)
+var accountIDPattern = regexp.MustCompile(`^\d{12}$`)
 
 var (
 	defaultPollInterval         = time.Minute
