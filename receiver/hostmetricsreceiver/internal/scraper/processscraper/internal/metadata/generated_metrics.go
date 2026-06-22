@@ -131,19 +131,24 @@ var MapAttributeState = map[string]AttributeState{
 
 var MetricsInfo = metricsInfo{
 	ProcessContextSwitches: metricInfo{
-		Name: "process.context_switches",
+		Name:       "process.context_switches",
+		Attributes: []string{"context_switch_type"},
 	},
 	ProcessCPUTime: metricInfo{
-		Name: "process.cpu.time",
+		Name:       "process.cpu.time",
+		Attributes: []string{"state"},
 	},
 	ProcessCPUUtilization: metricInfo{
-		Name: "process.cpu.utilization",
+		Name:       "process.cpu.utilization",
+		Attributes: []string{"state"},
 	},
 	ProcessDiskIo: metricInfo{
-		Name: "process.disk.io",
+		Name:       "process.disk.io",
+		Attributes: []string{"direction"},
 	},
 	ProcessDiskOperations: metricInfo{
-		Name: "process.disk.operations",
+		Name:       "process.disk.operations",
+		Attributes: []string{"direction"},
 	},
 	ProcessHandles: metricInfo{
 		Name: "process.handles",
@@ -161,7 +166,8 @@ var MetricsInfo = metricsInfo{
 		Name: "process.open_file_descriptors",
 	},
 	ProcessPagingFaults: metricInfo{
-		Name: "process.paging.faults",
+		Name:       "process.paging.faults",
+		Attributes: []string{"paging_fault_type"},
 	},
 	ProcessSignalsPending: metricInfo{
 		Name: "process.signals_pending",
@@ -192,7 +198,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricProcessContextSwitches struct {

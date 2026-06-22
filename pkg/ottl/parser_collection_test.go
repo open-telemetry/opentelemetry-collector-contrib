@@ -14,6 +14,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 type mockGetter struct {
@@ -461,6 +464,7 @@ func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 }
 
 func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	pc, err := NewParserCollection(
 		componenttest.NewNopTelemetrySettings(),
@@ -473,15 +477,17 @@ func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
 		mockGetter{[]string{
 			`set(attributes["foo"], "foo")`,
 			`set(attributes["bar"], "bar")`,
+			`set(attributes["bar"], Lambda((attributes) => attributes["bar"] != nil and name != nil))`,
 		}},
 		true,
 	)
 
 	require.NoError(t, err)
-	require.Len(t, result, 2)
+	require.Len(t, result, 3)
 	parsedStatements := result.([]*Statement[any])
 	assert.Equal(t, `set(dummy.attributes["foo"], "foo")`, parsedStatements[0].origText)
 	assert.Equal(t, `set(dummy.attributes["bar"], "bar")`, parsedStatements[1].origText)
+	assert.Equal(t, `set(dummy.attributes["bar"], Lambda((attributes) => attributes["bar"] != nil and dummy.name != nil))`, parsedStatements[2].origText)
 }
 
 func Test_NewStatementsGetter(t *testing.T) {
@@ -918,8 +924,13 @@ func mockParser(t *testing.T, options ...Option[any]) *Parser[any] {
 			}, nil
 		})
 
+	mockLambdaFactory := NewFactory("Lambda", &struct{ Expr LambdaExpression[any] }{},
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return nil, nil
+		})
+
 	ps, err := NewParser(
-		CreateFactoryMap[any](mockSetFactory),
+		CreateFactoryMap[any](mockSetFactory, mockLambdaFactory),
 		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		append([]Option[any]{

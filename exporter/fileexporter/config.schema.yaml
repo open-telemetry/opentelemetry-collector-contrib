@@ -36,6 +36,9 @@ properties:
   compression:
     description: Compression Codec used to export telemetry data Supported compression algorithms:`zstd`
     type: string
+  compression_params:
+    description: 'CompressionParams defines compression parameters. For zstd the following levels are supported: - SpeedFastest: 1 - SpeedDefault: 3 - SpeedBetterCompression: 6 - SpeedBestCompression: 11'
+    $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
   create_directory:
     description: CreateDirectory specifies that the parent directory of the output file should be created automatically on start.
     type: boolean
