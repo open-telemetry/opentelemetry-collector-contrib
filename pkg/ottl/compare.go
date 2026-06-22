@@ -149,15 +149,10 @@ func (p *ottlValueComparator) comparePValues(a, b pcommon.Value, op compareOp) b
 				return p.compareBools(a.Bool(), b.Bool(), op)
 			}
 		}
-		// Different types or Map/Slice: fall through to generic path.
-		switch b.Type() {
-		case pcommon.ValueTypeMap:
-			return p.comparePValue(a, b.Map(), op)
-		case pcommon.ValueTypeSlice:
-			return p.comparePValue(a, b.Slice(), op)
-		default:
-			return p.comparePValue(a, b.AsRaw(), op)
-		}
+		// Different types: fall through to generic path.
+		// This handles cross-numeric comparisons (int vs float).
+		// Map/Slice types will return invalidComparison since they don't support ordering.
+		return p.comparePValue(a, b.AsRaw(), op)
 	default:
 		return p.invalidComparison(op)
 	}
