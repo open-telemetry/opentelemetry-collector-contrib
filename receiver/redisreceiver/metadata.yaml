@@ -93,7 +93,7 @@ attributes:
     description: The type of pub/sub channel
     type: string
     requirement_level: recommended
-    # Redis versions < 7.4 only have active channel
+    # Redis versions < 7.0 only have active channel
     enum:
       - active
       - shard
