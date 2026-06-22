@@ -25,6 +25,25 @@ type fileWriter struct {
 	flushInterval time.Duration
 	flushTicker   *time.Ticker
 	stopTicker    chan struct{}
+
+	refCount    int
+	shouldClose bool
+}
+
+func (w *fileWriter) incrementRef() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.refCount++
+}
+
+func (w *fileWriter) decrementRef() error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.refCount--
+	if w.refCount == 0 && w.shouldClose {
+		return w.file.Close()
+	}
+	return nil
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -97,14 +116,24 @@ func (w *fileWriter) start() {
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (w *fileWriter) shutdown() error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if w.shouldClose {
+		return nil
+	}
+
 	// Stop the flush ticker.
 	if w.flushTicker != nil {
 		// Stop the go routine.
-		w.mutex.Lock()
 		close(w.stopTicker)
-		w.mutex.Unlock()
 	}
-	return w.file.Close()
+
+	w.shouldClose = true
+	if w.refCount == 0 {
+		return w.file.Close()
+	}
+	return nil
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {

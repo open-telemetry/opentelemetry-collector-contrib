@@ -194,6 +194,11 @@ func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf 
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if decErr := writer.decrementRef(); decErr != nil {
+			e.logger.Warn("Failed to close file", zap.Error(decErr), zap.String("path", writer.path))
+		}
+	}()
 
 	err = writer.export(buf)
 	if err != nil {
@@ -211,6 +216,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 
 	writer, ok := e.writers.Get(fullPath)
 	if ok {
+		writer.incrementRef()
 		return writer, nil
 	}
 
@@ -227,6 +233,8 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 	if err != nil {
 		return nil, err
 	}
+
+	writer.incrementRef()
 
 	e.writers.Add(fullPath, writer)
 

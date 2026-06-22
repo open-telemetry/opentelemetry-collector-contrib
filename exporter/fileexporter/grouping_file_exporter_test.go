@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/DeRuina/timberjack"
@@ -600,4 +601,51 @@ func TestGroupingFileExporterWithRotation(t *testing.T) {
 
 	// Verify total data written exceeds the rotation threshold
 	require.Greater(t, totalSize, int64(maxMegabytes*1024*1024), "Total data written should exceed rotation threshold")
+}
+
+func TestGroupingFileExporterEvictionRace(t *testing.T) {
+	conf := &Config{
+		FormatType: formatTypeJSON,
+		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupBy: &GroupBy{
+			Enabled:           true,
+			MaxOpenFiles:      1,
+			ResourceAttribute: "service.name",
+		},
+	}
+	tmpDir := t.TempDir()
+	conf.Path = tmpDir + "/*.log"
+	zapCore, _ := observer.New(zap.DebugLevel)
+	feI := newFileExporter(conf, zap.New(zapCore))
+	require.IsType(t, &groupingFileExporter{}, feI)
+	gfe := feI.(*groupingFileExporter)
+
+	assert.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, gfe.Shutdown(t.Context()))
+	}()
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+	iterations := 100
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < iterations; j++ {
+				td := ptrace.NewTraces()
+				rs := td.ResourceSpans().AppendEmpty()
+				segment := fmt.Sprintf("service-%d", id%2)
+				rs.Resource().Attributes().PutStr("service.name", segment)
+				span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetName("test-span")
+
+				err := gfe.consumeTraces(t.Context(), td)
+				assert.NoError(t, err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
 }
