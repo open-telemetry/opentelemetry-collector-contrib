@@ -18,5 +18,8 @@ properties:
       $ref: metric_config
   project_id:
     type: string
+  universe_domain:
+    description: UniverseDomain is the universe domain for the Google Cloud Monitoring service. Defaults to "googleapis.com". Set to support Sovereign Cloud regions. See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+    type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
