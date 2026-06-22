@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["CouchdbDatabaseOperations"] = mb.metricCouchdbDatabaseOperations.config.AggregationStrategy
-			aggMap["CouchdbHttpdRequests"] = mb.metricCouchdbHttpdRequests.config.AggregationStrategy
-			aggMap["CouchdbHttpdResponses"] = mb.metricCouchdbHttpdResponses.config.AggregationStrategy
-			aggMap["CouchdbHttpdViews"] = mb.metricCouchdbHttpdViews.config.AggregationStrategy
+			aggMap["couchdb.database.operations"] = mb.metricCouchdbDatabaseOperations.config.AggregationStrategy
+			aggMap["couchdb.httpd.requests"] = mb.metricCouchdbHttpdRequests.config.AggregationStrategy
+			aggMap["couchdb.httpd.responses"] = mb.metricCouchdbHttpdResponses.config.AggregationStrategy
+			aggMap["couchdb.httpd.views"] = mb.metricCouchdbHttpdViews.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -79,44 +79,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbAverageRequestTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOpenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 3, AttributeOperationReads)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdRequestsDataPoint(ts, 3, AttributeHTTPMethodDELETE)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdResponsesDataPoint(ts, 3, "http.status_code-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)

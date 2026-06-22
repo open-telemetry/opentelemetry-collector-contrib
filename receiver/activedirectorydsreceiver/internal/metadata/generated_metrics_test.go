@@ -58,14 +58,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ActiveDirectoryDsBindRate"] = mb.metricActiveDirectoryDsBindRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsOperationRate"] = mb.metricActiveDirectoryDsOperationRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationNetworkIo"] = mb.metricActiveDirectoryDsReplicationNetworkIo.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationObjectRate"] = mb.metricActiveDirectoryDsReplicationObjectRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationPropertyRate"] = mb.metricActiveDirectoryDsReplicationPropertyRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationSyncRequestCount"] = mb.metricActiveDirectoryDsReplicationSyncRequestCount.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationValueRate"] = mb.metricActiveDirectoryDsReplicationValueRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsSuboperationRate"] = mb.metricActiveDirectoryDsSuboperationRate.config.AggregationStrategy
+			aggMap["active_directory.ds.bind.rate"] = mb.metricActiveDirectoryDsBindRate.config.AggregationStrategy
+			aggMap["active_directory.ds.operation.rate"] = mb.metricActiveDirectoryDsOperationRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.network.io"] = mb.metricActiveDirectoryDsReplicationNetworkIo.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.object.rate"] = mb.metricActiveDirectoryDsReplicationObjectRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.property.rate"] = mb.metricActiveDirectoryDsReplicationPropertyRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.sync.request.count"] = mb.metricActiveDirectoryDsReplicationSyncRequestCount.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.value.rate"] = mb.metricActiveDirectoryDsReplicationValueRate.config.AggregationStrategy
+			aggMap["active_directory.ds.suboperation.rate"] = mb.metricActiveDirectoryDsSuboperationRate.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -74,99 +74,81 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 3, AttributeBindTypeClient)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 3, AttributeOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 3, AttributeDirectionReceived, AttributeNetworkDataTypeUncompressed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 3, AttributeDirectionReceived)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 3, AttributeDirectionReceived)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 3, AttributeSyncResultSchemaMismatch)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistinguishedNames)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 3, AttributeDirectionReceived, AttributeValueTypeOther)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 3, AttributeSuboperationTypeSearch)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)

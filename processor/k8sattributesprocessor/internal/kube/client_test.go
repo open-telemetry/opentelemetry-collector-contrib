@@ -57,6 +57,24 @@ func newPodIdentifier(from, name, value string) PodIdentifier {
 	}
 }
 
+func podWithContainerID(uid, containerID string, restartCount int32) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+			ContainerStatuses: []api_v1.ContainerStatus{{
+				Name:         "container",
+				ContainerID:  "containerd://" + containerID,
+				RestartCount: restartCount,
+			}},
+		},
+	}
+}
+
 func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Empty(t, c.Pods)
 
@@ -154,11 +172,11 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second, 0)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second)
 	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0)
+	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -169,7 +187,7 @@ func TestBadFilters(t *testing.T) {
 		newNamespaceInformer:  NewFakeNamespaceInformer,
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -209,7 +227,7 @@ func TestConstructorErrors(t *testing.T) {
 			newInformer:          NewFakeInformer,
 			newNamespaceInformer: NewFakeNamespaceInformer,
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second, 0)
+		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second, 0, 120*time.Second)
 		assert.Nil(t, c)
 		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
@@ -418,6 +436,43 @@ func TestPodUpdate(t *testing.T) {
 		// first argument (old pod) is not used right now
 		c.handlePodUpdate(&api_v1.Pod{}, obj)
 	})
+}
+
+func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{ContainerID: true}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "container.id",
+		}},
+	}}
+	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
+
+	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
+	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
+	pod := podWithContainerID("pod-uid", "old-container-id", 0)
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid"))
+
+	updatedPod := podWithContainerID("pod-uid", "new-container-id", 1)
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, oldID)
+	require.Contains(t, c.Pods, newID)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].podUID)
+
+	c.deleteLoopProcessing(time.Hour)
+	assert.Contains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+
+	c.deleteLoopProcessing(0)
+	assert.NotContains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
 }
 
 func TestNamespaceUpdate(t *testing.T) {
@@ -638,12 +693,13 @@ func TestExtractionRules(t *testing.T) {
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
+	jobCronSuffixMinutes := int64(27667920)
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
-			CreationTimestamp: meta_v1.Now(),
+			CreationTimestamp: meta_v1.NewTime(time.Unix(jobCronSuffixMinutes*60, 0)),
 			Labels: map[string]string{
 				"label1": "lv1",
 				"label2": "k1=v1 k5=v5 extra!",
@@ -3644,7 +3700,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
 
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
@@ -3692,7 +3748,7 @@ func TestWaitForMetadata(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second, 0)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second, 0, 120*time.Second)
 			require.NoError(t, err)
 
 			err = c.Start()
@@ -4019,9 +4075,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isNotController,
 				},
 			},
-			want: map[string]string{
-				"k8s.cronjob.name": "my-cronjob",
-			},
+			want: map[string]string{},
 		},
 		{
 			name: "multiple_owners_only_controller_counts",
@@ -4046,7 +4100,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.name": "cj-controller",
 				"k8s.cronjob.uid":  "cron-uid-222",
 			},
 		},
@@ -4065,9 +4119,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isController,
 				},
 			},
-			want: map[string]string{
-				"k8s.cronjob.name": "my-cronjob",
-			},
+			want: map[string]string{},
 		},
 	}
 
@@ -4097,6 +4149,51 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExtractCronJobNameFromJobOwner(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	const jobName = "ab-12345678"
+	const suffixMinutes int64 = 12345678
+	ref := meta_v1.OwnerReference{Name: jobName}
+
+	t.Run("match_when_pod_time_aligns_with_suffix", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
+			},
+		}
+		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("match_within_skew_boundary", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes)*60, 0)),
+			},
+		}
+		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("no_match_beyond_skew", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes+1)*60, 0)),
+			},
+		}
+		assert.Empty(t, c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("no_match_invalid_job_name_shape", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
+			},
+		}
+		badRef := meta_v1.OwnerReference{Name: "notenoughdigits"}
+		assert.Empty(t, c.extractCronJobNameFromJobOwner(badRef, pod))
+	})
 }
 
 func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
@@ -4264,7 +4361,7 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 				newReplicaSetInformer: newTrackableInformer,
 			}
 
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0, 120*time.Second)
 			require.NoError(t, err)
 			wc := c.(*WatchClient)
 
@@ -4669,6 +4766,7 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		false,
 		10*time.Second,
 		0,
+		120*time.Second,
 	)
 
 	// Assert that the client is nil and an error is returned
@@ -4697,6 +4795,7 @@ func TestMetadataNewForConfigFailure(t *testing.T) {
 		false,
 		10*time.Second,
 		0,
+		120*time.Second,
 	)
 	assert.Nil(t, c)
 	assert.Error(t, err)

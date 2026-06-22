@@ -1,0 +1,147 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: oracledb.instance.name
+          value:
+            stringValue: oraclehost:1521/ORCL
+        - key: host.name
+          value:
+            stringValue: ""
+        - key: service.instance.id
+          value:
+            stringValue: oraclehost:1521/ORCL
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.query.text
+                value:
+                  stringValue: UPDATE orders SET status = ? WHERE id = ?
+              - key: db.system.name
+                value:
+                  stringValue: oracle
+              - key: user.name
+                value:
+                  stringValue: DBA_USER
+              - key: db.namespace
+                value:
+                  stringValue: ORCLPDB1
+              - key: oracle.db.service
+                value:
+                  stringValue: ORCL
+              - key: client.address
+                value:
+                  stringValue: DBA-WORKSTATION
+              - key: client.port
+                value:
+                  intValue: "54442"
+              - key: network.peer.address
+                value:
+                  stringValue: DBA-WORKSTATION
+              - key: network.peer.port
+                value:
+                  intValue: "54442"
+              - key: oracledb.plan_hash_value
+                value:
+                  stringValue: "39383736353433323130"
+              - key: oracledb.sql_id
+                value:
+                  stringValue: 7abc123def456
+              - key: oracledb.child_number
+                value:
+                  stringValue: "0"
+              - key: oracledb.child_address
+                value:
+                  stringValue: DEADBEEF
+              - key: oracledb.sid
+                value:
+                  stringValue: "100"
+              - key: oracledb.serial
+                value:
+                  stringValue: "5678"
+              - key: oracledb.process
+                value:
+                  stringValue: "1234"
+              - key: oracledb.schemaname
+                value:
+                  stringValue: DBA_USER
+              - key: oracledb.program
+                value:
+                  stringValue: SQL*Plus
+              - key: oracledb.module
+                value:
+                  stringValue: ""
+              - key: oracledb.status
+                value:
+                  stringValue: INACTIVE
+              - key: oracledb.state
+                value:
+                  stringValue: WAITED KNOWN TIME
+              - key: oracledb.wait_class
+                value:
+                  stringValue: ""
+              - key: oracledb.event
+                value:
+                  stringValue: ""
+              - key: oracledb.query.wait_time
+                value:
+                  doubleValue: 0
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "0"
+              - key: oracledb.procedure_name
+                value:
+                  stringValue: ""
+              - key: oracledb.procedure_type
+                value:
+                  stringValue: ""
+              - key: oracledb.osuser
+                value:
+                  stringValue: dba
+              - key: oracledb.duration_sec
+                value:
+                  doubleValue: 120
+              - key: db.query.comment_tags
+                value:
+                  stringValue: ""
+              - key: oracledb.query.started
+                value:
+                  stringValue: ""
+              - key: oracledb.session.started
+                value:
+                  stringValue: ""
+              - key: oracledb.session.duration
+                value:
+                  doubleValue: 0
+              - key: oracledb.blocking.blocker.sid
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.blocker.root_sid
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.blocker.state
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.start_time
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.wait_duration
+                value:
+                  intValue: "0"
+              - key: oracledb.blocking.lock.mode
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.lock.type
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.object.owner
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.object.name
+                value:
+                  stringValue: ""
+            body: {}
+            eventName: db.server.query_sample
+            timeUnixNano: "1779182973082763000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest

@@ -42,14 +42,14 @@ components:
         - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -93,6 +93,7 @@ components:
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
         - sigv4auth
@@ -101,11 +102,13 @@ components:
         - zipkin_encoding
     processor:
         - attributes
+        - cardinality_guardian
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -120,7 +123,8 @@ components:
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
+        - schema
         - span
         - spanpruning
         - sumologic
@@ -134,9 +138,10 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
         - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
@@ -157,12 +162,12 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
         - file_stats
-        - flinkmetrics
+        - flink_metrics
         - fluent_forward
         - github
         - gitlab
@@ -197,7 +202,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -217,8 +222,8 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
         - sqlquery
         - sqlserver
         - ssh_check
@@ -232,10 +237,10 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
+        - windows_service
         - windowsperfcounters
-        - windowsservice
         - yang_grpc
         - zipkin
         - zookeeper

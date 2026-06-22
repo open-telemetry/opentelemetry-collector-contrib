@@ -67,26 +67,26 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["MongodbCacheOperations"] = mb.metricMongodbCacheOperations.config.AggregationStrategy
-			aggMap["MongodbCollectionCount"] = mb.metricMongodbCollectionCount.config.AggregationStrategy
-			aggMap["MongodbConnectionCount"] = mb.metricMongodbConnectionCount.config.AggregationStrategy
-			aggMap["MongodbDataSize"] = mb.metricMongodbDataSize.config.AggregationStrategy
-			aggMap["MongodbDocumentOperationCount"] = mb.metricMongodbDocumentOperationCount.config.AggregationStrategy
-			aggMap["MongodbExtentCount"] = mb.metricMongodbExtentCount.config.AggregationStrategy
-			aggMap["MongodbIndexAccessCount"] = mb.metricMongodbIndexAccessCount.config.AggregationStrategy
-			aggMap["MongodbIndexCount"] = mb.metricMongodbIndexCount.config.AggregationStrategy
-			aggMap["MongodbIndexSize"] = mb.metricMongodbIndexSize.config.AggregationStrategy
-			aggMap["MongodbLockAcquireCount"] = mb.metricMongodbLockAcquireCount.config.AggregationStrategy
-			aggMap["MongodbLockAcquireTime"] = mb.metricMongodbLockAcquireTime.config.AggregationStrategy
-			aggMap["MongodbLockAcquireWaitCount"] = mb.metricMongodbLockAcquireWaitCount.config.AggregationStrategy
-			aggMap["MongodbLockDeadlockCount"] = mb.metricMongodbLockDeadlockCount.config.AggregationStrategy
-			aggMap["MongodbMemoryUsage"] = mb.metricMongodbMemoryUsage.config.AggregationStrategy
-			aggMap["MongodbObjectCount"] = mb.metricMongodbObjectCount.config.AggregationStrategy
-			aggMap["MongodbOperationCount"] = mb.metricMongodbOperationCount.config.AggregationStrategy
-			aggMap["MongodbOperationLatencyTime"] = mb.metricMongodbOperationLatencyTime.config.AggregationStrategy
-			aggMap["MongodbOperationReplCount"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
-			aggMap["MongodbOperationTime"] = mb.metricMongodbOperationTime.config.AggregationStrategy
-			aggMap["MongodbStorageSize"] = mb.metricMongodbStorageSize.config.AggregationStrategy
+			aggMap["mongodb.cache.operations"] = mb.metricMongodbCacheOperations.config.AggregationStrategy
+			aggMap["mongodb.collection.count"] = mb.metricMongodbCollectionCount.config.AggregationStrategy
+			aggMap["mongodb.connection.count"] = mb.metricMongodbConnectionCount.config.AggregationStrategy
+			aggMap["mongodb.data.size"] = mb.metricMongodbDataSize.config.AggregationStrategy
+			aggMap["mongodb.document.operation.count"] = mb.metricMongodbDocumentOperationCount.config.AggregationStrategy
+			aggMap["mongodb.extent.count"] = mb.metricMongodbExtentCount.config.AggregationStrategy
+			aggMap["mongodb.index.access.count"] = mb.metricMongodbIndexAccessCount.config.AggregationStrategy
+			aggMap["mongodb.index.count"] = mb.metricMongodbIndexCount.config.AggregationStrategy
+			aggMap["mongodb.index.size"] = mb.metricMongodbIndexSize.config.AggregationStrategy
+			aggMap["mongodb.lock.acquire.count"] = mb.metricMongodbLockAcquireCount.config.AggregationStrategy
+			aggMap["mongodb.lock.acquire.time"] = mb.metricMongodbLockAcquireTime.config.AggregationStrategy
+			aggMap["mongodb.lock.acquire.wait_count"] = mb.metricMongodbLockAcquireWaitCount.config.AggregationStrategy
+			aggMap["mongodb.lock.deadlock.count"] = mb.metricMongodbLockDeadlockCount.config.AggregationStrategy
+			aggMap["mongodb.memory.usage"] = mb.metricMongodbMemoryUsage.config.AggregationStrategy
+			aggMap["mongodb.object.count"] = mb.metricMongodbObjectCount.config.AggregationStrategy
+			aggMap["mongodb.operation.count"] = mb.metricMongodbOperationCount.config.AggregationStrategy
+			aggMap["mongodb.operation.latency.time"] = mb.metricMongodbOperationLatencyTime.config.AggregationStrategy
+			aggMap["mongodb.operation.repl.count"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
+			aggMap["mongodb.operation.time"] = mb.metricMongodbOperationTime.config.AggregationStrategy
+			aggMap["mongodb.storage.size"] = mb.metricMongodbStorageSize.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -101,14 +101,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbActiveWritesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbCacheOperationsDataPoint(ts, 3, AttributeTypeMiss)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db.namespace-val")
@@ -118,43 +116,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbCommandsRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbConnectionCountDataPoint(ts, 3, AttributeConnectionTypeAvailable, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCursorCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCursorTimeoutCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDataSizeDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDatabaseCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbDeletesRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDocumentOperationCountDataPoint(ts, 3, AttributeOperationQuery, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db.namespace-val")
@@ -167,28 +158,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbGetmoresRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbHealthDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexAccessCountDataPoint(ts, 3, "collection-val-2", "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexCountDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db.namespace-val")
@@ -222,33 +209,27 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockDeadlockCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbMemoryUsageDataPoint(ts, 3, AttributeMemoryTypeVirtual, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkIoReceiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkIoTransmitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbObjectCountDataPoint(ts, 3, "db.namespace-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
@@ -267,7 +248,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationReplCountDataPoint(ts, 3, AttributeOperationQuery)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
@@ -298,11 +278,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbReplUpdatesPerSecDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbSessionCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db.namespace-val")

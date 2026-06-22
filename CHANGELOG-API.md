@@ -7,6 +7,128 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Split testbed/data{senders,receivers,connectors} into per-component sub-packages and move testbed.Components() to its own sub-package. (#48475)
+  Each component now lives in its own Go package so test binaries only
+  compile the senders, receivers, and connectors they actually exercise.
+  External consumers of the testbed module must update both their import
+  paths and the package qualifier on each call site.
+  
+  Top-level factory (was `testbed/testbed`, now `testbed/testbed/components`):
+  
+  - `testbed.Components` → `components.All`
+  
+  Senders (was `testbed/datasenders`, now `testbed/datasenders/<component>datasender`):
+  
+  - `datasenders.NewDatadogDataSender` → `datadogdatasender.NewDatadogDataSender`
+  - `datasenders.NewFluentLogsForwarder` → `fluentdatasender.NewFluentLogsForwarder`
+  - `datasenders.FluentLogsForwarder` → `fluentdatasender.FluentLogsForwarder`
+  - `datasenders.NewJaegerGRPCDataSender` → `jaegerdatasender.NewJaegerGRPCDataSender`
+  - `datasenders.NewFileLogK8sWriter` → `k8sdatasender.NewFileLogK8sWriter`
+  - `datasenders.NewKubernetesContainerWriter` → `k8sdatasender.NewKubernetesContainerWriter`
+  - `datasenders.NewKubernetesContainerParserWriter` → `k8sdatasender.NewKubernetesContainerParserWriter`
+  - `datasenders.NewKubernetesCRIContainerdWriter` → `k8sdatasender.NewKubernetesCRIContainerdWriter`
+  - `datasenders.NewKubernetesCRIContainerdNoAttributesOpsWriter` → `k8sdatasender.NewKubernetesCRIContainerdNoAttributesOpsWriter`
+  - `datasenders.NewCRIContainerdWriter` → `k8sdatasender.NewCRIContainerdWriter`
+  - `datasenders.FileLogK8sWriter` → `k8sdatasender.FileLogK8sWriter`
+  - `datasenders.NewOtelarrowDataSender` → `otelarrowdatasender.NewOtelarrowDataSender`
+  - `datasenders.NewPrometheusDataSender` → `prometheusdatasender.NewPrometheusDataSender`
+  - `datasenders.NewPrometheusStaticSender` → `prometheusstaticdatasender.NewPrometheusStaticSender`
+  - `datasenders.PrometheusStaticPayloadConfig` → `prometheusstaticdatasender.PrometheusStaticPayloadConfig`
+  - `datasenders.NewSFxMetricDataSender` → `signalfxdatasender.NewSFxMetricDataSender`
+  - `datasenders.SFxMetricsDataSender` → `signalfxdatasender.SFxMetricsDataSender`
+  - `datasenders.NewFileLogWriter` → `stanzadatasender.NewFileLogWriter`
+  - `datasenders.NewLocalFileStorageExtension` → `stanzadatasender.NewLocalFileStorageExtension`
+  - `datasenders.FileLogWriter` → `stanzadatasender.FileLogWriter`
+  - `datasenders.NewStefDataSender` → `stefdatasender.NewStefDataSender`
+  - `datasenders.StefDataSender` → `stefdatasender.StefDataSender`
+  - `datasenders.NewSyslogWriter` → `syslogdatasender.NewSyslogWriter`
+  - `datasenders.SyslogWriter` → `syslogdatasender.SyslogWriter`
+  - `datasenders.NewTCPUDPWriter` → `tcpudpdatasender.NewTCPUDPWriter`
+  - `datasenders.TCPUDPWriter` → `tcpudpdatasender.TCPUDPWriter`
+  - `datasenders.NewZipkinDataSender` → `zipkindatasender.NewZipkinDataSender`
+  
+  Receivers (was `testbed/datareceivers`, now `testbed/datareceivers/<component>datareceiver`):
+  
+  - `datareceivers.NewCarbonDataReceiver` → `carbondatareceiver.NewCarbonDataReceiver`
+  - `datareceivers.CarbonDataReceiver` → `carbondatareceiver.CarbonDataReceiver`
+  - `datareceivers.NewDataDogDataReceiver` → `datadogdatareceiver.NewDataDogDataReceiver`
+  - `datareceivers.NewJaegerDataReceiver` → `jaegerdatareceiver.NewJaegerDataReceiver`
+  - `datareceivers.NewOtelarrowDataReceiver` → `otelarrowdatareceiver.NewOtelarrowDataReceiver`
+  - `datareceivers.OtelarrowDataReceiver` → `otelarrowdatareceiver.OtelarrowDataReceiver`
+  - `datareceivers.NewPrometheusDataReceiver` → `prometheusdatareceiver.NewPrometheusDataReceiver`
+  - `datareceivers.NewSFxMetricsDataReceiver` → `signalfxdatareceiver.NewSFxMetricsDataReceiver`
+  - `datareceivers.SFxMetricsDataReceiver` → `signalfxdatareceiver.SFxMetricsDataReceiver`
+  - `datareceivers.NewSplunkHECDataReceiver` → `splunkdatareceiver.NewSplunkHECDataReceiver`
+  - `datareceivers.SplunkHECDataReceiver` → `splunkdatareceiver.SplunkHECDataReceiver`
+  - `datareceivers.NewStefDataReceiver` → `stefdatareceiver.NewStefDataReceiver`
+  - `datareceivers.StefDataReceiver` → `stefdatareceiver.StefDataReceiver`
+  - `datareceivers.NewSyslogDataReceiver` → `syslogdatareceiver.NewSyslogDataReceiver`
+  - `datareceivers.SyslogDataReceiver` → `syslogdatareceiver.SyslogDataReceiver`
+  - `datareceivers.NewZipkinDataReceiver` → `zipkindatareceiver.NewZipkinDataReceiver`
+  
+  Connectors (was `testbed/dataconnectors`, now `testbed/dataconnectors/<component>dataconnector`):
+  
+  - `dataconnectors.NewRoutingDataConnector` → `routingdataconnector.NewRoutingDataConnector`
+  - `dataconnectors.RoutingDataConnector` → `routingdataconnector.RoutingDataConnector`
+  - `dataconnectors.NewSpanMetricDataConnector` → `spanmetricsdataconnector.NewSpanMetricDataConnector`
+  - `dataconnectors.SpanMetricDataConnector` → `spanmetricsdataconnector.SpanMetricDataConnector`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottlexemplar` context exposing per-exemplar fields (`time`, `filtered_attributes`, `double_value`, `int_value`, `trace_id`, `span_id`) for use in OTTL statements. (#47490)
+- `pkg/pdatatest`: Add `/regex` attribute matcher support to `pmetricassert` (#48467)
+- `pkg/pdatatest`: Add pmetricassert number datapoint value assertions (#48468)
+- `pkg/pdatatest`: Update pmetrictest.ValidateMetrics to reject metrics sharing the same name (#48106)
+- `pkg/pdatatest`: Add check for duplicate ResourceMetrics to pmetrictest.ValidateMetrics (#48106)
+- `processor/tail_sampling`: Add error handling to tail storage extension interface (#48777)
+- `receiver/windows_event_log`: Add EVTX file support (#48047)
+
+<!-- previous-version -->
+
+## v0.153.0
+
+### 💡 Enhancements 💡
+
+- `extension/file_storage`: Implement `storage.Walker` interface to allow iterating over all stored keys with deferred operations (#47755)
+- `internal/kafka`: Remove the dependency on github.com/IBM/sarama from all Kafka components. (#48260)
+  The Kafka exporter, receiver, metrics receiver, and topics observer have all
+  been migrated to github.com/twmb/franz-go. The remaining sarama-based helpers
+  in internal/kafka are removed, and protocol_version validation in
+  pkg/kafka/configkafka now uses franz-go's kversion package.
+  
+- `pkg/pdatatest`: Add `/exists` operator support to `pmetricassert` (#48079)
+- `pkg/pdatatest`: Introduce `pmetricassert` package for MTS-focused YAML metric assertions (#48079)
+- `receiver/file_log`: Improves file-reading efficiency by evicting previously read data from the OS page cache. (#48273)
+  Clears the cache on Linux; acts as a no-op on unsupported platforms.
+- `receiver/http_check`: Enables dynamic metric reaggregation in the HTTP Check receiver. This does not break existing configuration files. (#46358)
+
+<!-- previous-version -->
+
+## v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/faro`: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload. (#47935)
+  Surfaces the k6 test run identifier that the Faro Web SDK already
+  forwards from `window.k6.testRunId`, alongside the existing
+  `k6_isK6Browser` key. The reverse (logs -> Faro) translator extracts
+  it back into `Meta.K6.TestRunID` for round-trip parity.
+  
+- `pkg/translator/pprof`: Expose the `ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error)` method (#48014)
+- `receiver/couchdb`: Enables dynamic metric reaggregation in the CouchDB receiver. This does not break existing configuration files. (#46351)
+- `receiver/kafka`: Add support for custom consumer-group partition-assignment strategies via extensions that implement `kgo.GroupBalancer`. Set `group_rebalance_strategy` to the component ID of a registered extension to use a custom balancer. (#48096)
+  The four built-in strategies (`range`, `roundrobin`, `sticky`, `cooperative-sticky`) continue to work unchanged.
+  Any other value for `group_rebalance_strategy` is now resolved as an extension component ID at runtime.
+  
+- `receiver/memcached`: Enables dynamic metric reaggregation in the Memcached receiver. This does not break existing configuration files. (#46364)
+
+<!-- previous-version -->
+
 ## v0.151.0
 
 ### 🛑 Breaking changes 🛑

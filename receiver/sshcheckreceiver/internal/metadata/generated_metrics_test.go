@@ -67,8 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SshcheckError"] = mb.metricSshcheckError.config.AggregationStrategy
-			aggMap["SshcheckSftpError"] = mb.metricSshcheckSftpError.config.AggregationStrategy
+			aggMap["sshcheck.error"] = mb.metricSshcheckError.config.AggregationStrategy
+			aggMap["sshcheck.sftp_error"] = mb.metricSshcheckSftpError.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -77,11 +77,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSshcheckDurationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
@@ -100,7 +98,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpStatusDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSshcheckStatusDataPoint(ts, 1)

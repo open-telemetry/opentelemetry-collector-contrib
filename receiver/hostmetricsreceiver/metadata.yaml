@@ -20,6 +20,7 @@ feature_gates:
     stage: beta
     from_version: "v0.98.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849
+    skip_strict_validation: true
   - id: receiver.hostmetricsreceiver.UseCPUTicks
     description: Use raw uint64 CPU tick counts from /proc/stat instead of gopsutil for improved precision in CPU time and utilization metrics.
     stage: alpha
@@ -30,6 +31,7 @@ feature_gates:
     stage: beta
     from_version: "v0.137.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221
+    skip_strict_validation: true
 
 tests:
   config:

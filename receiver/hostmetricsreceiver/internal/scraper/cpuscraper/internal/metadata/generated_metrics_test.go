@@ -58,9 +58,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemCPUFrequency"] = mb.metricSystemCPUFrequency.config.AggregationStrategy
-			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
-			aggMap["SystemCPUUtilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
+			aggMap["system.cpu.frequency"] = mb.metricSystemCPUFrequency.config.AggregationStrategy
+			aggMap["system.cpu.time"] = mb.metricSystemCPUTime.config.AggregationStrategy
+			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -81,7 +81,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemCPUPhysicalCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)

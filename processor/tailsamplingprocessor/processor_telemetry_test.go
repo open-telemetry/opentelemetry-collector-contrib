@@ -733,6 +733,152 @@ func TestMetricsCountSampled(t *testing.T) {
 	}
 }
 
+func TestMetricsCountBytesSampled(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.metricstatcountbytessampled", true)
+	require.NoError(t, err)
+
+	defer func() {
+		err = featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.metricstatcountbytessampled", false)
+		require.NoError(t, err)
+	}()
+
+	for _, tt := range []struct {
+		desc       string
+		policyCfgs []PolicyCfg
+		decision   string
+		sampled    string
+		policy     string
+	}{
+		{
+			desc: "sampled",
+			policyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "always",
+						Type: AlwaysSample,
+					},
+				},
+			},
+			decision: "sampled",
+			sampled:  "true",
+			policy:   "always",
+		},
+		{
+			desc: "not_sampled",
+			policyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "never",
+						Type: Probabilistic,
+						ProbabilisticCfg: ProbabilisticCfg{
+							SamplingPercentage: 0,
+						},
+					},
+				},
+			},
+			decision: "not_sampled",
+			sampled:  "false",
+			policy:   "never",
+		},
+		{
+			desc: "dropped",
+			policyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "drop",
+						Type: Drop,
+					},
+					DropCfg: DropCfg{
+						SubPolicyCfg: []AndSubPolicyCfg{
+							{
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "always",
+									Type: AlwaysSample,
+								},
+							},
+						},
+					},
+				},
+			},
+			decision: "dropped",
+			sampled:  "false",
+			policy:   "drop",
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			// prepare
+			s := setupTestTelemetry()
+			controller := newTestTSPController()
+
+			cfg := Config{
+				SamplingStrategy: samplingStrategyTraceComplete,
+				DecisionWait:     1,
+				NumTraces:        100,
+				PolicyCfgs:       tt.policyCfgs,
+				Options: []Option{
+					withTestController(controller),
+				},
+			}
+			cs := &consumertest.TracesSink{}
+			ct := s.newSettings()
+			proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err = proc.Shutdown(t.Context())
+				require.NoError(t, err)
+			})
+
+			err = proc.Start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			// Use a non-trivial trace so the byte count is > 0.
+			traces := ptrace.NewTraces()
+			rs := traces.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
+			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+			span.SetTraceID(uInt64ToTraceID(1))
+			span.SetSpanID(uInt64ToSpanID(1))
+			span.SetName("test-span")
+
+			expectedBytes := int64((&ptrace.ProtoMarshaler{}).ResourceSpansSize(rs))
+			require.Positive(t, expectedBytes)
+
+			err = proc.ConsumeTraces(t.Context(), traces)
+			require.NoError(t, err)
+
+			controller.waitForTick() // the first tick always gets an empty batch
+			controller.waitForTick()
+
+			// verify
+			var md metricdata.ResourceMetrics
+			require.NoError(t, s.reader.Collect(t.Context(), &md))
+
+			expected := metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_count_bytes_sampled",
+				Description: "Count of bytes that were sampled or not per sampling policy [Development]",
+				Unit:        "By",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String("policy", tt.policy),
+								attribute.String("sampled", tt.sampled),
+								attribute.String("decision", tt.decision),
+							),
+							Value: expectedBytes,
+						},
+					},
+				},
+			}
+
+			got := s.getMetric(expected.Name, md)
+			metricdatatest.AssertEqual(t, expected, got, metricdatatest.IgnoreTimestamp())
+		})
+	}
+}
+
 func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()

@@ -3,6 +3,11 @@ pkg/pdatautil
 pkg/golden
 pkg/pdatatest
 cmd/golden
+extension/internal/basicauth
+extension/internal/credentialsfile
+extension/basicauthextension
+extension/bearertokenauthextension
+extension/oauth2clientauthextension
 internal/coreinternal
 pkg/ottl
 connector/routingconnector
@@ -60,7 +65,6 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
-cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -117,7 +121,6 @@ exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
-exporter/googlesecopsexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 pkg/kafka/configkafka
@@ -143,9 +146,6 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
-extension/internal/credentialsfile
-extension/basicauthextension
-extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
@@ -170,7 +170,6 @@ extension/httpforwarderextension
 extension/jaegerremotesampling
 extension/k8sleaderelector
 extension/mcp
-extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
 internal/docker
@@ -215,6 +214,7 @@ pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/pprof
 processor/attributesprocessor
+processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -242,6 +242,7 @@ processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
+receiver/activedirectoryinvreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
