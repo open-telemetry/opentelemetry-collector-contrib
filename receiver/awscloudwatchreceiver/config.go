@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,6 +15,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
+
+// accountIDPattern matches an AWS account ID: exactly 12 digits.
+var accountIDPattern = regexp.MustCompile(`^[0-9]{12}$`)
 
 var (
 	defaultPollInterval         = time.Minute
@@ -141,6 +145,7 @@ var (
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errAccountIdentifiersWithoutLinked  = errors.New("metrics.discovery.account_identifiers requires include_linked_accounts to be true")
+	errInvalidAccountID                 = errors.New("account id must be a 12-digit number")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
@@ -205,6 +210,11 @@ func (c *Config) validateMetricsConfig() error {
 			(discovery.IncludeLinkedAccounts == nil || !*discovery.IncludeLinkedAccounts) {
 			return errAccountIdentifiersWithoutLinked
 		}
+		for j, id := range discovery.AccountIdentifiers {
+			if !accountIDPattern.MatchString(id) {
+				return fmt.Errorf("metrics.discovery.account_identifiers[%d] %q: %w", j, id, errInvalidAccountID)
+			}
+		}
 		for j, st := range discovery.Stats {
 			if st == "" {
 				return fmt.Errorf("metrics.discovery.stats[%d]: %w", j, errEmptyStatName)
@@ -224,6 +234,9 @@ func (c *Config) validateMetricsConfig() error {
 		}
 		if m.MetricName == "" {
 			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingName)
+		}
+		if m.AccountID != "" && !accountIDPattern.MatchString(m.AccountID) {
+			return fmt.Errorf("metrics[%d].account_id %q: %w", i, m.AccountID, errInvalidAccountID)
 		}
 		for j, st := range m.Stats {
 			if st == "" {

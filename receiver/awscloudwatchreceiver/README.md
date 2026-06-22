@@ -87,7 +87,7 @@ List every metric you want to collect. Each entry supports:
 | `metric_name` | String          | yes      | CloudWatch metric name, e.g. `CPUUtilization`. |
 | `dimensions`  | Map             | no       | CloudWatch dimension key/value pairs. Required for metrics that are scoped to a specific resource (e.g. a single EC2 instance or DynamoDB table). Original casing is preserved. |
 | `stats`       | List of strings | no       | Which CloudWatch statistics to fetch. See [Statistics](#statistics) below. |
-| `account_id`  | String          | no       | Source account the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. The receiver must run in a monitoring account with that source account linked; otherwise `GetMetricData` returns a `Forbidden` status and the metric is dropped (a warning is logged). See [Cross-account monitoring](#cross-account-monitoring). |
+| `account_id`  | String          | no       | Source account (a 12-digit account ID) the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. The receiver must run in a monitoring account with that source account linked; otherwise `GetMetricData` returns a `Forbidden` status and the metric is dropped (a warning is logged). See [Cross-account monitoring](#cross-account-monitoring). |
 
 #### Auto-discovery (`discovery`)
 
@@ -101,7 +101,7 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 | `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape, applied **per account** (in a cross-account setup, each source account may contribute up to `limit` metrics). |
 | `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
 | `include_linked_accounts` | Boolean      | false   | When running in a monitoring account, discover metrics from linked source accounts. See [Cross-account monitoring](#cross-account-monitoring). |
-| `account_identifiers`  | List of strings | —       | Restrict cross-account discovery to specific source account IDs. Requires `include_linked_accounts: true`. When omitted (with `include_linked_accounts: true`), metrics from all linked accounts are discovered. |
+| `account_identifiers`  | List of strings | —       | Restrict cross-account discovery to specific source account IDs (each a 12-digit account ID). Requires `include_linked_accounts: true`. When omitted (with `include_linked_accounts: true`), metrics from all linked accounts are discovered. |
 
 #### Cross-account monitoring
 
