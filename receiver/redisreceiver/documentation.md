@@ -230,11 +230,17 @@ The total number of bytes written to the network
 
 ### redis.pubsub.channels
 
-Number of active pub/sub channels
+Number of pub/sub channels
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {channel} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
 
 ### redis.pubsub.patterns
 
@@ -492,14 +498,6 @@ Number of clients subscribed to pub/sub channels or patterns (available in Redis
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {client} | Sum | Int | Cumulative | false | Development |
-
-### redis.pubsub.shard_channels
-
-Number of active pub/sub shard channels (available in Redis 7.0+)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {channel} | Sum | Int | Cumulative | false | Development |
 
 ### redis.replication.replica_offset
 

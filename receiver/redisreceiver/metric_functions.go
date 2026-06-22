@@ -62,10 +62,10 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"cluster_stats_messages_sent":       rs.mb.RecordRedisClusterStatsMessagesSentDataPoint,
 		"cluster_stats_messages_received":   rs.mb.RecordRedisClusterStatsMessagesReceivedDataPoint,
 		"links_buffer_limit_exceeded.count": rs.mb.RecordRedisClusterLinksBufferLimitExceededCountDataPoint,
-		"pubsub_channels":                   rs.mb.RecordRedisPubsubChannelsDataPoint,
+		"pubsub_channels":                   rs.recordPubsubChannels,
 		"pubsub_clients":                    rs.mb.RecordRedisPubsubClientsDataPoint,
 		"pubsub_patterns":                   rs.mb.RecordRedisPubsubPatternsDataPoint,
-		"pubsub_shardchannels":              rs.mb.RecordRedisPubsubShardChannelsDataPoint,
+		"pubsub_shardchannels":              rs.recordPubsubShardChannels,
 	}
 }
 
@@ -91,4 +91,12 @@ func (rs *redisScraper) recordUsedCPUUserChildren(now pcommon.Timestamp, val flo
 
 func (rs *redisScraper) recordUsedCPUUserMainThread(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, metadata.AttributeStateUserMainThread)
+}
+
+func (rs *redisScraper) recordPubsubChannels(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubChannelsDataPoint(now, val, metadata.AttributeTypeActive)
+}
+
+func (rs *redisScraper) recordPubsubShardChannels(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubChannelsDataPoint(now, val, metadata.AttributeTypeShard)
 }

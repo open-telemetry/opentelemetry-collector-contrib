@@ -100,11 +100,10 @@ all_set:
       enabled: true
     redis.pubsub.channels:
       enabled: true
+      attributes: ["type"]
     redis.pubsub.clients:
       enabled: true
     redis.pubsub.patterns:
-      enabled: true
-    redis.pubsub.shard_channels:
       enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
@@ -243,11 +242,10 @@ reaggregate_set:
       enabled: true
     redis.pubsub.channels:
       enabled: true
+      attributes: []
     redis.pubsub.clients:
       enabled: true
     redis.pubsub.patterns:
-      enabled: true
-    redis.pubsub.shard_channels:
       enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
@@ -386,11 +384,10 @@ none_set:
       enabled: false
     redis.pubsub.channels:
       enabled: false
+      attributes: ["type"]
     redis.pubsub.clients:
       enabled: false
     redis.pubsub.patterns:
-      enabled: false
-    redis.pubsub.shard_channels:
       enabled: false
     redis.rdb.changes_since_last_save:
       enabled: false

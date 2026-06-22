@@ -69,6 +69,7 @@ attributes:
     enum:
       - replica
       - primary
+
   state:
     description: Redis CPU usage state
     type: string
@@ -88,6 +89,14 @@ attributes:
       - user
       - user_children
       - user_main_thread
+  type:
+    description: The type of pub/sub channel
+    type: string
+    requirement_level: recommended
+    # Redis versions < 7.4 only have active channel
+    enum:
+      - active
+      - shard
 
 metrics:
   redis.clients.blocked:
@@ -493,13 +502,14 @@ metrics:
 
   redis.pubsub.channels:
     enabled: true
-    description: Number of active pub/sub channels
+    description: Number of pub/sub channels
     stability: development
     unit: "{channel}"
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [type]
 
   redis.pubsub.clients:
     enabled: false
@@ -516,16 +526,6 @@ metrics:
     description: Number of active pub/sub patterns
     stability: development
     unit: "{pattern}"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-
-  redis.pubsub.shard_channels:
-    enabled: false
-    description: Number of active pub/sub shard channels (available in Redis 7.0+)
-    stability: development
-    unit: "{channel}"
     sum:
       value_type: int
       monotonic: false
