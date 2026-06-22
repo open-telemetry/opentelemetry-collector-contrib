@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
@@ -54,7 +53,7 @@ func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
-	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
+	"deployment.environment": {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
 	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
@@ -101,12 +100,13 @@ var (
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		"exception.escaped": {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
 	spanAttrsConversionMap = map[string]conversionEntry{
-		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		"db.system":                                  {to: "span.db.type"},
+		string(conventions.DBSystemNameKey):           {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
