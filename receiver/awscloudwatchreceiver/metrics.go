@@ -258,9 +258,21 @@ func (s *cloudWatchMetricsScraper) discoverMetrics(ctx context.Context, owningAc
 		if err != nil {
 			return nil, err
 		}
+		dropped := 0
 		for i, met := range resp.Metrics {
-			account := owningAccount
-			if account == "" && i < len(resp.OwningAccounts) {
+			var account string
+			if singleAccount {
+				// Per-identifier discovery uses the requested account; same-account discovery
+				// leaves it empty so the receiver's own resolved account is used.
+				account = owningAccount
+			} else if i >= len(resp.OwningAccounts) || resp.OwningAccounts[i] == "" {
+				// Linked-account sweep where AWS did not return an aligned OwningAccounts entry:
+				// the metric cannot be attributed to a source account, so drop it rather than
+				// misattributing it to the monitoring account.
+				dropped++
+				continue
+			} else {
+				// Linked-account sweep: attribute the metric to its source account.
 				account = resp.OwningAccounts[i]
 			}
 			if perAccount[account] >= s.discovery.Limit {
@@ -277,6 +289,13 @@ func (s *cloudWatchMetricsScraper) discoverMetrics(ctx context.Context, owningAc
 				Stats:      s.discovery.Stats,
 				AccountID:  account,
 			})
+		}
+		if dropped > 0 {
+			s.settings.Logger.Warn("dropped discovered metrics that could not be attributed to a source "+
+				"account; ListMetrics OwningAccounts did not align 1:1 with the returned metrics",
+				zap.Int("dropped", dropped),
+				zap.Int("metrics", len(resp.Metrics)),
+				zap.Int("owning_accounts", len(resp.OwningAccounts)))
 		}
 		nextToken = resp.NextToken
 		if nextToken == nil {

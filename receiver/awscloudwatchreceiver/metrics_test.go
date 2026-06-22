@@ -640,6 +640,37 @@ func TestListMetrics_LimitIsPerAccountInSweep(t *testing.T) {
 	require.Equal(t, 1, perAccount["222222222222"])
 }
 
+func TestListMetrics_SweepDropsUnattributableMetrics(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// Contract violation: OwningAccounts is shorter than Metrics. The unmappable metric
+	// must be dropped, not misattributed to the receiver's own account.
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M1")},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M2")},
+			},
+			OwningAccounts: []string{"111111111111"}, // missing entry for M2
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit:                 100,
+			IncludeLinkedAccounts: aws.Bool(true),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.accountID = "999999999999" // the receiver's own account; must NOT leak onto M2
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Equal(t, "M1", out[0].MetricName)
+	require.Equal(t, "111111111111", out[0].AccountID)
+}
+
 // --- pollBatch tests ---
 
 func TestPollBatch_GeneratesFourSubQueries(t *testing.T) {
