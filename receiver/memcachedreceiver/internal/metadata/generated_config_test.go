@@ -132,6 +132,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestMemcachedCommandsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MemcachedCommands
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MemcachedCommandsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric memcached.commands doesn't have an attribute invalid, valid attributes: [command]")
+
+	cfg = DefaultMetricsConfig().MemcachedCommands
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMemcachedCPUUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MemcachedCPUUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MemcachedCPUUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric memcached.cpu.usage doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().MemcachedCPUUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMemcachedNetworkMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MemcachedNetwork
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MemcachedNetworkMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric memcached.network doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MemcachedNetwork
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMemcachedOperationHitRatioMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MemcachedOperationHitRatio
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MemcachedOperationHitRatioMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric memcached.operation_hit_ratio doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().MemcachedOperationHitRatio
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMemcachedOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MemcachedOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MemcachedOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric memcached.operations doesn't have an attribute invalid, valid attributes: [type, operation]")
+
+	cfg = DefaultMetricsConfig().MemcachedOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

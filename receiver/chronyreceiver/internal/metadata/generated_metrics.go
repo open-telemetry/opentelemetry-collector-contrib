@@ -55,7 +55,8 @@ var MapAttributeLeapStatus = map[string]AttributeLeapStatus{
 
 var MetricsInfo = metricsInfo{
 	NtpFrequencyOffset: metricInfo{
-		Name: "ntp.frequency.offset",
+		Name:       "ntp.frequency.offset",
+		Attributes: []string{"leap.status"},
 	},
 	NtpSkew: metricInfo{
 		Name: "ntp.skew",
@@ -64,16 +65,20 @@ var MetricsInfo = metricsInfo{
 		Name: "ntp.stratum",
 	},
 	NtpTimeCorrection: metricInfo{
-		Name: "ntp.time.correction",
+		Name:       "ntp.time.correction",
+		Attributes: []string{"leap.status"},
 	},
 	NtpTimeLastOffset: metricInfo{
-		Name: "ntp.time.last_offset",
+		Name:       "ntp.time.last_offset",
+		Attributes: []string{"leap.status"},
 	},
 	NtpTimeRmsOffset: metricInfo{
-		Name: "ntp.time.rms_offset",
+		Name:       "ntp.time.rms_offset",
+		Attributes: []string{"leap.status"},
 	},
 	NtpTimeRootDelay: metricInfo{
-		Name: "ntp.time.root_delay",
+		Name:       "ntp.time.root_delay",
+		Attributes: []string{"leap.status"},
 	},
 }
 
@@ -88,7 +93,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricNtpFrequencyOffset struct {

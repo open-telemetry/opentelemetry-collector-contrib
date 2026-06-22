@@ -58,7 +58,8 @@ var MapAttributeStartupMode = map[string]AttributeStartupMode{
 
 var MetricsInfo = metricsInfo{
 	WindowsServiceStatus: metricInfo{
-		Name: "windows.service.status",
+		Name:       "windows.service.status",
+		Attributes: []string{"name", "startup_mode"},
 	},
 }
 
@@ -67,7 +68,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricWindowsServiceStatus struct {

@@ -19,4 +19,6 @@ service:
   extensions: [opamp]
   telemetry:
     resource:
-      "service.instance.id": "{{.InstanceUid}}"
+      attributes:
+        - name: service.instance.id
+          value: "{{.InstanceUid}}"

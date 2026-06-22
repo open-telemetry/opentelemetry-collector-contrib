@@ -482,6 +482,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestK8sServiceEndpointCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sServiceEndpointCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sServiceEndpointCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.service.endpoint.count doesn't have an attribute invalid, valid attributes: [k8s.service.endpoint.address_type, k8s.service.endpoint.condition, k8s.service.endpoint.zone]")
+
+	cfg = DefaultMetricsConfig().K8sServiceEndpointCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOpenshiftAppliedclusterquotaLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OpenshiftAppliedclusterquotaLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OpenshiftAppliedclusterquotaLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric openshift.appliedclusterquota.limit doesn't have an attribute invalid, valid attributes: [k8s.namespace.name, resource]")
+
+	cfg = DefaultMetricsConfig().OpenshiftAppliedclusterquotaLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOpenshiftAppliedclusterquotaUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OpenshiftAppliedclusterquotaUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OpenshiftAppliedclusterquotaUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric openshift.appliedclusterquota.used doesn't have an attribute invalid, valid attributes: [k8s.namespace.name, resource]")
+
+	cfg = DefaultMetricsConfig().OpenshiftAppliedclusterquotaUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

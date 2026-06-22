@@ -53,6 +53,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sovereign"),
+			expected: &Config{
+				ProjectID:      "my-sovereign-project",
+				Subscription:   "projects/my-sovereign-project/subscriptions/otlp-subscription",
+				UniverseDomain: "apis.example.com",
+				FlowControlConfig: FlowControlConfig{
+					TriggerAckBatchDuration: 10 * time.Second,
+					StreamAckDeadline:       60 * time.Second,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
