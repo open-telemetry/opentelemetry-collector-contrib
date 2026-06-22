@@ -51,6 +51,23 @@ func (*ottlValueComparator) invalidComparison(op compareOp) bool {
 	return op == ne
 }
 
+// reverseOp returns the mirrored comparison operator, used when swapping
+// operands (e.g. a < b becomes b > a).
+func reverseOp(op compareOp) compareOp {
+	switch op {
+	case lt:
+		return gt
+	case lte:
+		return gte
+	case gt:
+		return lt
+	case gte:
+		return lte
+	default:
+		return op // eq and ne are symmetric
+	}
+}
+
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
 func comparePrimitives[T constraints.Ordered](a, b T, op compareOp) bool {
@@ -107,6 +124,42 @@ func (*ottlValueComparator) compareBytes(a, b []byte, op compareOp) bool {
 		return bytes.Compare(a, b) > 0
 	default:
 		return false
+	}
+}
+
+func (p *ottlValueComparator) comparePValues(a, b pcommon.Value, op compareOp) bool {
+	switch op {
+	case eq:
+		return a.Equal(b)
+	case ne:
+		return !a.Equal(b)
+	case lt, lte, gte, gt:
+		// Fast path: same type → compare typed values directly, avoid AsRaw() call.
+		if a.Type() == b.Type() {
+			switch a.Type() {
+			case pcommon.ValueTypeInt:
+				return comparePrimitives(a.Int(), b.Int(), op)
+			case pcommon.ValueTypeDouble:
+				return comparePrimitives(a.Double(), b.Double(), op)
+			case pcommon.ValueTypeStr:
+				return comparePrimitives(a.Str(), b.Str(), op)
+			case pcommon.ValueTypeBytes:
+				return p.compareBytes(a.Bytes().AsRaw(), b.Bytes().AsRaw(), op)
+			case pcommon.ValueTypeBool:
+				return p.compareBools(a.Bool(), b.Bool(), op)
+			}
+		}
+		// Different types or Map/Slice: fall through to generic path.
+		switch b.Type() {
+		case pcommon.ValueTypeMap:
+			return p.comparePValue(a, b.Map(), op)
+		case pcommon.ValueTypeSlice:
+			return p.comparePValue(a, b.Slice(), op)
+		default:
+			return p.comparePValue(a, b.AsRaw(), op)
+		}
+	default:
+		return p.invalidComparison(op)
 	}
 }
 
@@ -285,6 +338,33 @@ func (p *ottlValueComparator) comparePSlice(a pcommon.Slice, b any, op compareOp
 	}
 }
 
+func (p *ottlValueComparator) comparePValue(a pcommon.Value, b any, op compareOp) bool {
+	if v, ok := b.(pcommon.Value); ok {
+		return p.comparePValues(a, v, op)
+	}
+	// a is pcommon.Value, b is a raw type: use typed accessors for faster comparison.
+	switch a.Type() {
+	case pcommon.ValueTypeInt:
+		return p.compareInt64(a.Int(), b, op)
+	case pcommon.ValueTypeDouble:
+		return p.compareFloat64(a.Double(), b, op)
+	case pcommon.ValueTypeStr:
+		return p.compareString(a.Str(), b, op)
+	case pcommon.ValueTypeBool:
+		return p.compareBool(a.Bool(), b, op)
+	case pcommon.ValueTypeBytes:
+		return p.compareByte(a.Bytes().AsRaw(), b, op)
+	case pcommon.ValueTypeMap:
+		return p.comparePMap(a.Map(), b, op)
+	case pcommon.ValueTypeSlice:
+		return p.comparePSlice(a.Slice(), b, op)
+	case pcommon.ValueTypeEmpty:
+		return p.compare(b, nil, op)
+	default:
+		return p.invalidComparison(op)
+	}
+}
+
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
 func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
@@ -292,6 +372,13 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
 		return op == eq || op == lte || op == gte
+	}
+	// If b is a pcommon.Value but a is not, swap operands and reverse
+	// the operator so comparePValue always handles the unwrapping.
+	if _, aIsValue := a.(pcommon.Value); !aIsValue {
+		if _, ok := b.(pcommon.Value); ok {
+			return p.compare(b, a, reverseOp(op))
+		}
 	}
 	// Anything else, we switch on the left side first.
 	switch v := a.(type) {
@@ -324,6 +411,8 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 		return p.compareSlice(v, b, op)
 	case pcommon.Slice:
 		return p.comparePSlice(v, b, op)
+	case pcommon.Value:
+		return p.comparePValue(v, b, op)
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.

@@ -63,6 +63,20 @@ func Test_comparison(t *testing.T) {
 	psl2 := pcommon.NewSlice()
 	psl2.AppendEmpty().SetStr("value2")
 
+	// pcommon.Value test values (only those requiring multi-step setup)
+	pvBytes1 := pcommon.NewValueBytes()
+	pvBytes1.Bytes().FromRaw([]byte("1"))
+	pvBytes2 := pcommon.NewValueBytes()
+	pvBytes2.Bytes().FromRaw([]byte("2"))
+	pvMap1 := pcommon.NewValueMap()
+	pm1.CopyTo(pvMap1.Map())
+	pvMap2 := pcommon.NewValueMap()
+	pm2.CopyTo(pvMap2.Map())
+	pvSlice1 := pcommon.NewValueSlice()
+	psl1.CopyTo(pvSlice1.Slice())
+	pvSlice2 := pcommon.NewValueSlice()
+	psl2.CopyTo(pvSlice2.Slice())
+
 	tests := []struct {
 		name string
 		a    any
@@ -144,6 +158,68 @@ func Test_comparison(t *testing.T) {
 		{"mixed pslice same slice", psl1, sl1, []bool{true, false, false, false, false, false}},
 		{"slice and other type", sl1, sa, []bool{false, true, false, false, false, false}},
 		{"pslice and other type", psl1, sa, []bool{false, true, false, false, false, false}},
+
+		// pcommon.Value vs pcommon.Value (same underlying type)
+		{"pvalue int identity", pcommon.NewValueInt(1), pcommon.NewValueInt(1), []bool{true, false, false, true, true, false}},
+		{"pvalue int diff", pcommon.NewValueInt(1), pcommon.NewValueInt(2), []bool{false, true, true, true, false, false}},
+		{"pvalue float identity", pcommon.NewValueDouble(1), pcommon.NewValueDouble(1), []bool{true, false, false, true, true, false}},
+		{"pvalue float diff", pcommon.NewValueDouble(1), pcommon.NewValueDouble(2), []bool{false, true, true, true, false, false}},
+		{"pvalue string identity", pcommon.NewValueStr("1"), pcommon.NewValueStr("1"), []bool{true, false, false, true, true, false}},
+		{"pvalue string diff", pcommon.NewValueStr("1"), pcommon.NewValueStr("2"), []bool{false, true, true, true, false, false}},
+		{"pvalue bool false true", pcommon.NewValueBool(false), pcommon.NewValueBool(true), []bool{false, true, true, true, false, false}},
+		{"pvalue bool true false", pcommon.NewValueBool(true), pcommon.NewValueBool(false), []bool{false, true, false, false, true, true}},
+		{"pvalue bool identity", pcommon.NewValueBool(true), pcommon.NewValueBool(true), []bool{true, false, false, true, true, false}},
+		{"pvalue bytes identity", pvBytes1, pvBytes1, []bool{true, false, false, true, true, false}},
+		{"pvalue bytes diff", pvBytes1, pvBytes2, []bool{false, true, true, true, false, false}},
+		{"pvalue map same", pvMap1, pvMap1, []bool{true, false, false, false, false, false}},
+		{"pvalue map diff", pvMap1, pvMap2, []bool{false, true, false, false, false, false}},
+		{"pvalue slice same", pvSlice1, pvSlice1, []bool{true, false, false, false, false, false}},
+		{"pvalue slice diff", pvSlice1, pvSlice2, []bool{false, true, false, false, false, false}},
+		{"pvalue empty identity", pcommon.NewValueEmpty(), pcommon.NewValueEmpty(), []bool{true, false, false, true, true, false}},
+
+		// pcommon.Value vs pcommon.Value (cross-type)
+		{"pvalue int vs pvalue float", pcommon.NewValueInt(1), pcommon.NewValueDouble(2), []bool{false, true, true, true, false, false}},
+		{"pvalue int vs pvalue string", pcommon.NewValueInt(1), pcommon.NewValueStr("1"), []bool{false, true, false, false, false, false}},
+		{"pvalue string vs pvalue int", pcommon.NewValueStr("1"), pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+
+		// pcommon.Value vs raw type
+		{"pvalue int vs raw int64", pcommon.NewValueInt(1), i64a, []bool{true, false, false, true, true, false}},
+		{"pvalue int vs raw int64 diff", pcommon.NewValueInt(1), i64b, []bool{false, true, true, true, false, false}},
+		{"pvalue float vs raw float64", pcommon.NewValueDouble(1), f64a, []bool{true, false, false, true, true, false}},
+		{"pvalue float vs raw float64 diff", pcommon.NewValueDouble(1), f64b, []bool{false, true, true, true, false, false}},
+		{"pvalue int vs raw float64", pcommon.NewValueInt(1), f64b, []bool{false, true, true, true, false, false}},
+		{"pvalue string vs raw string", pcommon.NewValueStr("1"), sa, []bool{true, false, false, true, true, false}},
+		{"pvalue string vs raw string diff", pcommon.NewValueStr("1"), sb, []bool{false, true, true, true, false, false}},
+		{"pvalue bool vs raw bool", pcommon.NewValueBool(true), tb, []bool{true, false, false, true, true, false}},
+		{"pvalue bytes vs raw bytes", pvBytes1, ba, []bool{true, false, false, true, true, false}},
+		{"pvalue bytes vs raw bytes diff", pvBytes1, bb, []bool{false, true, true, true, false, false}},
+		{"pvalue map vs pcommon.Map same", pvMap1, pm1, []bool{true, false, false, false, false, false}},
+		{"pvalue map vs pcommon.Map diff", pvMap1, pm2, []bool{false, true, false, false, false, false}},
+		{"pvalue map vs raw map same", pvMap1, m1, []bool{true, false, false, false, false, false}},
+		{"pvalue map vs raw map diff", pvMap1, m2, []bool{false, true, false, false, false, false}},
+		{"pvalue slice vs pcommon.Slice same", pvSlice1, psl1, []bool{true, false, false, false, false, false}},
+		{"pvalue slice vs pcommon.Slice diff", pvSlice1, psl2, []bool{false, true, false, false, false, false}},
+		{"pvalue slice vs raw slice same", pvSlice1, sl1, []bool{true, false, false, false, false, false}},
+		{"pvalue slice vs raw slice diff", pvSlice1, sl2, []bool{false, true, false, false, false, false}},
+		{"pvalue empty vs nil", pcommon.NewValueEmpty(), nil, []bool{true, false, false, true, true, false}},
+		{"pvalue int vs nil", pcommon.NewValueInt(1), nil, []bool{false, true, false, false, false, false}},
+
+		// raw type vs pcommon.Value (swap direction)
+		{"raw int64 vs pvalue int", i64a, pcommon.NewValueInt(1), []bool{true, false, false, true, true, false}},
+		{"raw int64 vs pvalue int diff", i64b, pcommon.NewValueInt(1), []bool{false, true, false, false, true, true}},
+		{"raw float64 vs pvalue float", f64a, pcommon.NewValueDouble(1), []bool{true, false, false, true, true, false}},
+		{"raw string vs pvalue string", sa, pcommon.NewValueStr("1"), []bool{true, false, false, true, true, false}},
+		{"raw string vs pvalue string diff", sb, pcommon.NewValueStr("1"), []bool{false, true, false, false, true, true}},
+		{"raw bool vs pvalue bool", tb, pcommon.NewValueBool(true), []bool{true, false, false, true, true, false}},
+		{"raw bytes vs pvalue bytes", ba, pvBytes1, []bool{true, false, false, true, true, false}},
+		{"raw map vs pvalue map same", m1, pvMap1, []bool{true, false, false, false, false, false}},
+		{"raw map vs pvalue map diff", m2, pvMap1, []bool{false, true, false, false, false, false}},
+		{"pcommon.Map vs pvalue map same", pm1, pvMap1, []bool{true, false, false, false, false, false}},
+		{"pcommon.Map vs pvalue map diff", pm2, pvMap1, []bool{false, true, false, false, false, false}},
+		{"raw slice vs pvalue slice same", sl1, pvSlice1, []bool{true, false, false, false, false, false}},
+		{"pcommon.Slice vs pvalue slice same", psl1, pvSlice1, []bool{true, false, false, false, false, false}},
+		{"nil vs pvalue empty", nil, pcommon.NewValueEmpty(), []bool{true, false, false, true, true, false}},
+		{"nil vs pvalue int", nil, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	comp := NewValueComparator()
@@ -294,6 +370,90 @@ func BenchmarkCompareLTNil(b *testing.B) {
 
 	for b.Loop() {
 		c.compare(nil, nil, lt)
+	}
+}
+
+func BenchmarkComparePValueInt(b *testing.B) {
+	c := NewValueComparator()
+	pvInt1 := pcommon.NewValueInt(1)
+	pvInt2 := pcommon.NewValueInt(2)
+
+	benchmarks := []struct {
+		name string
+		a    any
+		b    any
+		op   compareOp
+	}{
+		{"EQ/PValue_vs_PValue", pvInt1, pvInt2, eq},
+		{"EQ/PValue_vs_Raw", pvInt1, i64b, eq},
+		{"EQ/Raw_vs_PValue", i64a, pvInt2, eq},
+		{"LT/PValue_vs_PValue", pvInt1, pvInt2, lt},
+		{"LT/PValue_vs_Raw", pvInt1, i64b, lt},
+		{"LT/Raw_vs_PValue", i64a, pvInt2, lt},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				c.compare(bm.a, bm.b, bm.op)
+			}
+		})
+	}
+}
+
+func BenchmarkComparePValueFloat(b *testing.B) {
+	c := NewValueComparator()
+	pvFloat1 := pcommon.NewValueDouble(1)
+	pvFloat2 := pcommon.NewValueDouble(2)
+
+	benchmarks := []struct {
+		name string
+		a    any
+		b    any
+		op   compareOp
+	}{
+		{"EQ/PValue_vs_PValue", pvFloat1, pvFloat2, eq},
+		{"EQ/PValue_vs_Raw", pvFloat1, f64b, eq},
+		{"EQ/Raw_vs_PValue", f64a, pvFloat2, eq},
+		{"LT/PValue_vs_PValue", pvFloat1, pvFloat2, lt},
+		{"LT/PValue_vs_Raw", pvFloat1, f64b, lt},
+		{"LT/Raw_vs_PValue", f64a, pvFloat2, lt},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				c.compare(bm.a, bm.b, bm.op)
+			}
+		})
+	}
+}
+
+func BenchmarkComparePValueString(b *testing.B) {
+	c := NewValueComparator()
+	pvStr1 := pcommon.NewValueStr("1")
+	pvStr2 := pcommon.NewValueStr("2")
+
+	benchmarks := []struct {
+		name string
+		a    any
+		b    any
+		op   compareOp
+	}{
+		{"EQ/PValue_vs_PValue", pvStr1, pvStr2, eq},
+		{"EQ/PValue_vs_Raw", pvStr1, sb, eq},
+		{"EQ/Raw_vs_PValue", sa, pvStr2, eq},
+		{"LT/PValue_vs_PValue", pvStr1, pvStr2, lt},
+		{"LT/PValue_vs_Raw", pvStr1, sb, lt},
+		{"LT/Raw_vs_PValue", sa, pvStr2, lt},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				c.compare(bm.a, bm.b, bm.op)
+			}
+		})
 	}
 }
 
