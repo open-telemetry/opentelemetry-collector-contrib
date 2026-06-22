@@ -1,4 +1,4 @@
 change_type: bug_fix
-component: exporter/syslogexporter
+component: exporter/syslog
 note: Sanitize control characters and validate fields in syslogexporter to prevent frame injection and field-shifting attacks.
 issues: [49234]
