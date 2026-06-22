@@ -220,28 +220,35 @@ var MapAttributeOracledbSortType = map[string]AttributeOracledbSortType{
 
 var MetricsInfo = metricsInfo{
 	OracledbBufferCacheUtilization: metricInfo{
-		Name: "oracledb.buffer_cache.utilization",
+		Name:       "oracledb.buffer_cache.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbConsistentGets: metricInfo{
-		Name: "oracledb.consistent_gets",
+		Name:       "oracledb.consistent_gets",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbCPUTime: metricInfo{
-		Name: "oracledb.cpu_time",
+		Name:       "oracledb.cpu_time",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbDataDictionaryHitRatio: metricInfo{
 		Name: "oracledb.data_dictionary.hit_ratio",
 	},
 	OracledbDatabaseCPUUtilization: metricInfo{
-		Name: "oracledb.database.cpu.utilization",
+		Name:       "oracledb.database.cpu.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbDatabaseWaitUtilization: metricInfo{
-		Name: "oracledb.database.wait.utilization",
+		Name:       "oracledb.database.wait.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbDbBlockGets: metricInfo{
-		Name: "oracledb.db_block_gets",
+		Name:       "oracledb.db_block_gets",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbDdlStatementsParallelized: metricInfo{
-		Name: "oracledb.ddl_statements_parallelized",
+		Name:       "oracledb.ddl_statements_parallelized",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbDmlLocksLimit: metricInfo{
 		Name: "oracledb.dml_locks.limit",
@@ -250,10 +257,12 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.dml_locks.usage",
 	},
 	OracledbDmlStatementsParallelized: metricInfo{
-		Name: "oracledb.dml_statements_parallelized",
+		Name:       "oracledb.dml_statements_parallelized",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbEnqueueDeadlocks: metricInfo{
-		Name: "oracledb.enqueue_deadlocks",
+		Name:       "oracledb.enqueue_deadlocks",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbEnqueueLocksLimit: metricInfo{
 		Name: "oracledb.enqueue_locks.limit",
@@ -268,85 +277,112 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.enqueue_resources.usage",
 	},
 	OracledbExchangeDeadlocks: metricInfo{
-		Name: "oracledb.exchange_deadlocks",
+		Name:       "oracledb.exchange_deadlocks",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbExecutionUtilization: metricInfo{
-		Name: "oracledb.execution.utilization",
+		Name:       "oracledb.execution.utilization",
+		Attributes: []string{"oracledb.parse.type", "oracle.db.pdb"},
 	},
 	OracledbExecutions: metricInfo{
-		Name: "oracledb.executions",
+		Name:       "oracledb.executions",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbHardParses: metricInfo{
-		Name: "oracledb.hard_parses",
+		Name:       "oracledb.hard_parses",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbHostCPUUtilization: metricInfo{
-		Name: "oracledb.host.cpu.utilization",
+		Name:       "oracledb.host.cpu.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbLibraryCacheUtilization: metricInfo{
-		Name: "oracledb.library_cache.utilization",
+		Name:       "oracledb.library_cache.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbLogicalReads: metricInfo{
-		Name: "oracledb.logical_reads",
+		Name:       "oracledb.logical_reads",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbLogons: metricInfo{
-		Name: "oracledb.logons",
+		Name:       "oracledb.logons",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsDowngraded1To25Pct: metricInfo{
-		Name: "oracledb.parallel_operations_downgraded_1_to_25_pct",
+		Name:       "oracledb.parallel_operations_downgraded_1_to_25_pct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsDowngraded25To50Pct: metricInfo{
-		Name: "oracledb.parallel_operations_downgraded_25_to_50_pct",
+		Name:       "oracledb.parallel_operations_downgraded_25_to_50_pct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsDowngraded50To75Pct: metricInfo{
-		Name: "oracledb.parallel_operations_downgraded_50_to_75_pct",
+		Name:       "oracledb.parallel_operations_downgraded_50_to_75_pct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsDowngraded75To99Pct: metricInfo{
-		Name: "oracledb.parallel_operations_downgraded_75_to_99_pct",
+		Name:       "oracledb.parallel_operations_downgraded_75_to_99_pct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsDowngradedToSerial: metricInfo{
-		Name: "oracledb.parallel_operations_downgraded_to_serial",
+		Name:       "oracledb.parallel_operations_downgraded_to_serial",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParallelOperationsNotDowngraded: metricInfo{
-		Name: "oracledb.parallel_operations_not_downgraded",
+		Name:       "oracledb.parallel_operations_not_downgraded",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParseRate: metricInfo{
-		Name: "oracledb.parse.rate",
+		Name:       "oracledb.parse.rate",
+		Attributes: []string{"oracledb.parse.result", "oracle.db.pdb"},
 	},
 	OracledbParseUtilization: metricInfo{
-		Name: "oracledb.parse.utilization",
+		Name:       "oracledb.parse.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbParseCalls: metricInfo{
-		Name: "oracledb.parse_calls",
+		Name:       "oracledb.parse_calls",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPgaMemory: metricInfo{
-		Name: "oracledb.pga_memory",
+		Name:       "oracledb.pga_memory",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalIoCacheWrites: metricInfo{
-		Name: "oracledb.physical_io.cache_writes",
+		Name:       "oracledb.physical_io.cache_writes",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalIoRequests: metricInfo{
-		Name: "oracledb.physical_io.requests",
+		Name:       "oracledb.physical_io.requests",
+		Attributes: []string{"disk.io.direction", "disk.io.block_size", "oracle.db.pdb"},
 	},
 	OracledbPhysicalIoTransferred: metricInfo{
-		Name: "oracledb.physical_io.transferred",
+		Name:       "oracledb.physical_io.transferred",
+		Attributes: []string{"disk.io.direction", "disk.io.type", "oracle.db.pdb"},
 	},
 	OracledbPhysicalReadIoRequests: metricInfo{
-		Name: "oracledb.physical_read_io_requests",
+		Name:       "oracledb.physical_read_io_requests",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalReads: metricInfo{
-		Name: "oracledb.physical_reads",
+		Name:       "oracledb.physical_reads",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalReadsDirect: metricInfo{
-		Name: "oracledb.physical_reads_direct",
+		Name:       "oracledb.physical_reads_direct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalWriteIoRequests: metricInfo{
-		Name: "oracledb.physical_write_io_requests",
+		Name:       "oracledb.physical_write_io_requests",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalWrites: metricInfo{
-		Name: "oracledb.physical_writes",
+		Name:       "oracledb.physical_writes",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbPhysicalWritesDirect: metricInfo{
-		Name: "oracledb.physical_writes_direct",
+		Name:       "oracledb.physical_writes_direct",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbProcessesLimit: metricInfo{
 		Name: "oracledb.processes.limit",
@@ -355,31 +391,38 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.processes.usage",
 	},
 	OracledbQueriesParallelized: metricInfo{
-		Name: "oracledb.queries_parallelized",
+		Name:       "oracledb.queries_parallelized",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbRecycleBinLimit: metricInfo{
 		Name: "oracledb.recycle_bin.limit",
 	},
 	OracledbRedoAllocationUtilization: metricInfo{
-		Name: "oracledb.redo_allocation.utilization",
+		Name:       "oracledb.redo_allocation.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
 	OracledbSessionsUsage: metricInfo{
-		Name: "oracledb.sessions.usage",
+		Name:       "oracledb.sessions.usage",
+		Attributes: []string{"session_type", "session_status", "oracle.db.pdb"},
 	},
 	OracledbSharedPoolUtilization: metricInfo{
-		Name: "oracledb.shared_pool.utilization",
+		Name:       "oracledb.shared_pool.utilization",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbSortRatio: metricInfo{
-		Name: "oracledb.sort.ratio",
+		Name:       "oracledb.sort.ratio",
+		Attributes: []string{"oracledb.sort.type", "oracle.db.pdb"},
 	},
 	OracledbSQLServiceResponseDuration: metricInfo{
-		Name: "oracledb.sql_service.response.duration",
+		Name:       "oracledb.sql_service.response.duration",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbSqlnetIoTransferred: metricInfo{
-		Name: "oracledb.sqlnet.io.transferred",
+		Name:       "oracledb.sqlnet.io.transferred",
+		Attributes: []string{"network.io.direction", "destination.type", "oracle.db.pdb"},
 	},
 	OracledbStorageUsage: metricInfo{
 		Name: "oracledb.storage.usage",
@@ -388,10 +431,12 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.storage.utilization",
 	},
 	OracledbTablespaceSizeLimit: metricInfo{
-		Name: "oracledb.tablespace_size.limit",
+		Name:       "oracledb.tablespace_size.limit",
+		Attributes: []string{"tablespace_name", "oracle.db.pdb"},
 	},
 	OracledbTablespaceSizeUsage: metricInfo{
-		Name: "oracledb.tablespace_size.usage",
+		Name:       "oracledb.tablespace_size.usage",
+		Attributes: []string{"tablespace_name", "oracle.db.pdb"},
 	},
 	OracledbTransactionsLimit: metricInfo{
 		Name: "oracledb.transactions.limit",
@@ -400,10 +445,12 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.transactions.usage",
 	},
 	OracledbUserCommits: metricInfo{
-		Name: "oracledb.user_commits",
+		Name:       "oracledb.user_commits",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 	OracledbUserRollbacks: metricInfo{
-		Name: "oracledb.user_rollbacks",
+		Name:       "oracledb.user_rollbacks",
+		Attributes: []string{"oracle.db.pdb"},
 	},
 }
 
@@ -473,7 +520,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricOracledbBufferCacheUtilization struct {

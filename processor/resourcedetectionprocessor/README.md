@@ -224,6 +224,16 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
 
+#### Cloud Run Worker Pools Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.instance (instance id)
+    * faas.name (worker pool name)
+    * faas.version (worker pool revision)
+
 #### Google Cloud Functions Metadata
 
     * cloud.provider ("gcp")
