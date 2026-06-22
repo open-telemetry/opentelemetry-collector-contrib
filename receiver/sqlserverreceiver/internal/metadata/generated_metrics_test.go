@@ -248,7 +248,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverPageCompressionRateDataPoint(ts, 1, AttributeSqlserverPageCompressionKindAttempted)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
@@ -270,7 +269,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverPageReadaheadRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)

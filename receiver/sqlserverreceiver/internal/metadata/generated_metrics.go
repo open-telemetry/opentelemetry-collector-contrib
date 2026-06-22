@@ -542,7 +542,8 @@ var MapAttributeTransitionDirection = map[string]AttributeTransitionDirection{
 
 var MetricsInfo = metricsInfo{
 	SqlserverAccessScanRate: metricInfo{
-		Name: "sqlserver.access.scan.rate",
+		Name:       "sqlserver.access.scan.rate",
+		Attributes: []string{"sqlserver.access.scan.kind"},
 	},
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
@@ -598,7 +599,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.deadlock.rate",
 	},
 	SqlserverExtentOperationRate: metricInfo{
-		Name: "sqlserver.extent.operation.rate",
+		Name:       "sqlserver.extent.operation.rate",
+		Attributes: []string{"sqlserver.extent.operation.kind"},
 	},
 	SqlserverGhostRecordSkippedRate: metricInfo{
 		Name: "sqlserver.ghost_record.skipped.rate",
@@ -663,7 +665,8 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"wait.category", "wait.type"},
 	},
 	SqlserverPageAllocationRate: metricInfo{
-		Name: "sqlserver.page.allocation.rate",
+		Name:       "sqlserver.page.allocation.rate",
+		Attributes: []string{"sqlserver.page.allocation.kind"},
 	},
 	SqlserverPageBufferCacheFreeListStallsRate: metricInfo{
 		Name: "sqlserver.page.buffer_cache.free_list.stalls.rate",
@@ -675,7 +678,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.page.checkpoint.flush.rate",
 	},
 	SqlserverPageCompressionRate: metricInfo{
-		Name: "sqlserver.page.compression.rate",
+		Name:       "sqlserver.page.compression.rate",
+		Attributes: []string{"sqlserver.page.compression.kind"},
 	},
 	SqlserverPageLazyWriteRate: metricInfo{
 		Name: "sqlserver.page.lazy_write.rate",
