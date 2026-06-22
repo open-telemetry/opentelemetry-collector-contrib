@@ -521,7 +521,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
-  redis.pubsub.patterns:
+  redis.pubsub.patterns.active:
     enabled: true
     description: Number of active pub/sub patterns
     stability: development

@@ -242,7 +242,7 @@ Number of pub/sub channels
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | type | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
 
-### redis.pubsub.patterns
+### redis.pubsub.patterns.active
 
 Number of active pub/sub patterns
 

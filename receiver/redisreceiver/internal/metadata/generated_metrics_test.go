@@ -282,7 +282,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisPubsubPatternsDataPoint(ts, 1)
+			mb.RecordRedisPubsubPatternsActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1266,9 +1266,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.pubsub.patterns":
-					assert.False(t, validatedMetrics["redis.pubsub.patterns"], "Found a duplicate in the metrics slice: redis.pubsub.patterns")
-					validatedMetrics["redis.pubsub.patterns"] = true
+				case "redis.pubsub.patterns.active":
+					assert.False(t, validatedMetrics["redis.pubsub.patterns.active"], "Found a duplicate in the metrics slice: redis.pubsub.patterns.active")
+					validatedMetrics["redis.pubsub.patterns.active"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of active pub/sub patterns", mi.Description())

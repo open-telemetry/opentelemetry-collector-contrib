@@ -339,8 +339,8 @@ var MetricsInfo = metricsInfo{
 	RedisPubsubClients: metricInfo{
 		Name: "redis.pubsub.clients",
 	},
-	RedisPubsubPatterns: metricInfo{
-		Name: "redis.pubsub.patterns",
+	RedisPubsubPatternsActive: metricInfo{
+		Name: "redis.pubsub.patterns.active",
 	},
 	RedisRdbChangesSinceLastSave: metricInfo{
 		Name: "redis.rdb.changes_since_last_save",
@@ -433,7 +433,7 @@ type metricsInfo struct {
 	RedisNetOutput                            metricInfo
 	RedisPubsubChannels                       metricInfo
 	RedisPubsubClients                        metricInfo
-	RedisPubsubPatterns                       metricInfo
+	RedisPubsubPatternsActive                 metricInfo
 	RedisRdbChangesSinceLastSave              metricInfo
 	RedisReplicationBacklogFirstByteOffset    metricInfo
 	RedisReplicationOffset                    metricInfo
@@ -3189,15 +3189,15 @@ func newMetricRedisPubsubClients(cfg RedisPubsubClientsMetricConfig) metricRedis
 	return m
 }
 
-type metricRedisPubsubPatterns struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RedisPubsubPatternsMetricConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+type metricRedisPubsubPatternsActive struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RedisPubsubPatternsActiveMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
-// init fills redis.pubsub.patterns metric with initial data.
-func (m *metricRedisPubsubPatterns) init() {
-	m.data.SetName("redis.pubsub.patterns")
+// init fills redis.pubsub.patterns.active metric with initial data.
+func (m *metricRedisPubsubPatternsActive) init() {
+	m.data.SetName("redis.pubsub.patterns.active")
 	m.data.SetDescription("Number of active pub/sub patterns")
 	m.data.SetUnit("{pattern}")
 	m.data.SetEmptySum()
@@ -3205,7 +3205,7 @@ func (m *metricRedisPubsubPatterns) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricRedisPubsubPatterns) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricRedisPubsubPatternsActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3216,14 +3216,14 @@ func (m *metricRedisPubsubPatterns) recordDataPoint(start pcommon.Timestamp, ts 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisPubsubPatterns) updateCapacity() {
+func (m *metricRedisPubsubPatternsActive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisPubsubPatterns) emit(metrics pmetric.MetricSlice) {
+func (m *metricRedisPubsubPatternsActive) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -3231,8 +3231,8 @@ func (m *metricRedisPubsubPatterns) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisPubsubPatterns(cfg RedisPubsubPatternsMetricConfig) metricRedisPubsubPatterns {
-	m := metricRedisPubsubPatterns{config: cfg}
+func newMetricRedisPubsubPatternsActive(cfg RedisPubsubPatternsActiveMetricConfig) metricRedisPubsubPatternsActive {
+	m := metricRedisPubsubPatternsActive{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4048,7 +4048,7 @@ type MetricsBuilder struct {
 	metricRedisNetOutput                            metricRedisNetOutput
 	metricRedisPubsubChannels                       metricRedisPubsubChannels
 	metricRedisPubsubClients                        metricRedisPubsubClients
-	metricRedisPubsubPatterns                       metricRedisPubsubPatterns
+	metricRedisPubsubPatternsActive                 metricRedisPubsubPatternsActive
 	metricRedisRdbChangesSinceLastSave              metricRedisRdbChangesSinceLastSave
 	metricRedisReplicationBacklogFirstByteOffset    metricRedisReplicationBacklogFirstByteOffset
 	metricRedisReplicationOffset                    metricRedisReplicationOffset
@@ -4134,7 +4134,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisNetOutput:                            newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
 		metricRedisPubsubChannels:                       newMetricRedisPubsubChannels(mbc.Metrics.RedisPubsubChannels),
 		metricRedisPubsubClients:                        newMetricRedisPubsubClients(mbc.Metrics.RedisPubsubClients),
-		metricRedisPubsubPatterns:                       newMetricRedisPubsubPatterns(mbc.Metrics.RedisPubsubPatterns),
+		metricRedisPubsubPatternsActive:                 newMetricRedisPubsubPatternsActive(mbc.Metrics.RedisPubsubPatternsActive),
 		metricRedisRdbChangesSinceLastSave:              newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
 		metricRedisReplicationBacklogFirstByteOffset:    newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
 		metricRedisReplicationOffset:                    newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
@@ -4285,7 +4285,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisNetOutput.emit(ils.Metrics())
 	mb.metricRedisPubsubChannels.emit(ils.Metrics())
 	mb.metricRedisPubsubClients.emit(ils.Metrics())
-	mb.metricRedisPubsubPatterns.emit(ils.Metrics())
+	mb.metricRedisPubsubPatternsActive.emit(ils.Metrics())
 	mb.metricRedisRdbChangesSinceLastSave.emit(ils.Metrics())
 	mb.metricRedisReplicationBacklogFirstByteOffset.emit(ils.Metrics())
 	mb.metricRedisReplicationOffset.emit(ils.Metrics())
@@ -4561,9 +4561,9 @@ func (mb *MetricsBuilder) RecordRedisPubsubClientsDataPoint(ts pcommon.Timestamp
 	mb.metricRedisPubsubClients.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordRedisPubsubPatternsDataPoint adds a data point to redis.pubsub.patterns metric.
-func (mb *MetricsBuilder) RecordRedisPubsubPatternsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisPubsubPatterns.recordDataPoint(mb.startTime, ts, val)
+// RecordRedisPubsubPatternsActiveDataPoint adds a data point to redis.pubsub.patterns.active metric.
+func (mb *MetricsBuilder) RecordRedisPubsubPatternsActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisPubsubPatternsActive.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisRdbChangesSinceLastSaveDataPoint adds a data point to redis.rdb.changes_since_last_save metric.

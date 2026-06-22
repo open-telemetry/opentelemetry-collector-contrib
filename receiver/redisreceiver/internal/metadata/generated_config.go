@@ -1210,13 +1210,13 @@ func (ms *RedisPubsubClientsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RedisPubsubPatternsMetricConfig provides config for the redis.pubsub.patterns metric.
-type RedisPubsubPatternsMetricConfig struct {
+// RedisPubsubPatternsActiveMetricConfig provides config for the redis.pubsub.patterns.active metric.
+type RedisPubsubPatternsActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RedisPubsubPatternsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RedisPubsubPatternsActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1586,7 +1586,7 @@ type MetricsConfig struct {
 	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
 	RedisPubsubChannels                       RedisPubsubChannelsMetricConfig                       `mapstructure:"redis.pubsub.channels"`
 	RedisPubsubClients                        RedisPubsubClientsMetricConfig                        `mapstructure:"redis.pubsub.clients"`
-	RedisPubsubPatterns                       RedisPubsubPatternsMetricConfig                       `mapstructure:"redis.pubsub.patterns"`
+	RedisPubsubPatternsActive                 RedisPubsubPatternsActiveMetricConfig                 `mapstructure:"redis.pubsub.patterns.active"`
 	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset    RedisReplicationBacklogFirstByteOffsetMetricConfig    `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                    RedisReplicationOffsetMetricConfig                    `mapstructure:"redis.replication.offset"`
@@ -1763,7 +1763,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisPubsubClients: RedisPubsubClientsMetricConfig{
 			Enabled: false,
 		},
-		RedisPubsubPatterns: RedisPubsubPatternsMetricConfig{
+		RedisPubsubPatternsActive: RedisPubsubPatternsActiveMetricConfig{
 			Enabled: true,
 		},
 		RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{

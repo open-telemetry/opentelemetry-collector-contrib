@@ -103,7 +103,7 @@ all_set:
       attributes: ["type"]
     redis.pubsub.clients:
       enabled: true
-    redis.pubsub.patterns:
+    redis.pubsub.patterns.active:
       enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
@@ -245,7 +245,7 @@ reaggregate_set:
       attributes: []
     redis.pubsub.clients:
       enabled: true
-    redis.pubsub.patterns:
+    redis.pubsub.patterns.active:
       enabled: true
     redis.rdb.changes_since_last_save:
       enabled: true
@@ -387,7 +387,7 @@ none_set:
       attributes: ["type"]
     redis.pubsub.clients:
       enabled: false
-    redis.pubsub.patterns:
+    redis.pubsub.patterns.active:
       enabled: false
     redis.rdb.changes_since_last_save:
       enabled: false
