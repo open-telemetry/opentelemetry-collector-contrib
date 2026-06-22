@@ -176,9 +176,9 @@ var reservedRemoteWriteHeaders = map[string]struct{}{
 	textproto.CanonicalMIMEHeaderKey("X-Prometheus-Remote-Write-Version"): {},
 }
 
-// ReservedMetadataKeys drops any include_metadata_keys entries that would
+// reservedMetadataKeys drops any include_metadata_keys entries that would
 // collide with headers required by the remote write protocol. Dropped keys are logged
-func ReservedMetadataKeys(keys []string, logger *zap.Logger) []string {
+func reservedMetadataKeys(keys []string, logger *zap.Logger) []string {
 	if len(keys) == 0 {
 		return keys
 	}
@@ -244,7 +244,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
-		includeMetadataKeys: ReservedMetadataKeys(cfg.IncludeMetadataKeys, set.Logger),
+		includeMetadataKeys: reservedMetadataKeys(cfg.IncludeMetadataKeys, set.Logger),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
