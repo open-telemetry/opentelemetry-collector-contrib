@@ -4,14 +4,14 @@
 The Datadog receiver enables translation between Datadog and OpenTelemetry-compatible backends. It currently has
 support for Datadog's APM traces, metrics, and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fdatadog) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_datadog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_datadog&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken), [@gouthamve](https://www.github.com/gouthamve), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
+| Emeritus      | [@gouthamve](https://www.github.com/gouthamve) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -23,10 +23,10 @@ Configuration wise is very simple, just need to specify where the Datadog receiv
 
 Then, the receiver must be configured in the pipeline where it will be used.
 
-The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to 
-reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is 
-initiated with a 128-bit trace id by a service that then calls a datadog instrumented one. Without this, spans from the
-datadog instrumented service will not correlate with the other spans.
+The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (enabled by default) makes the receiver reconstruct
+full 128-bit trace ids from spans coming from a datadog instrumented service, so they correlate with OpenTelemetry
+spans. Datadog splits a 128-bit trace id into a lower 64-bit part (`TraceID`) and an upper 64-bit part (`_dd.p.tid`);
+the receiver concatenates them. Disable the gate to fall back to 64-bit (zero-padded) trace ids.
 
 ```yaml
 receivers:
@@ -34,6 +34,8 @@ receivers:
     endpoint: localhost:8126
     read_timeout: 60s
     trace_id_cache_size: 100
+    idle_series_timeout: 60m
+    idle_series_cleanup_interval: 5m
 
 exporters:
   debug:
@@ -59,6 +61,44 @@ The size of the LRU cache used to cache 64-bit trace ids and their matching 128-
 when the feature gate `receiver.datadogreceiver.Enable128BitTraceID` is enabled.
 
 Default: 100
+
+### idle_series_timeout (Optional)
+The duration a specific series (metric name + unique tags) can be idle (not receive data) before being considered stale and removed from memory. This is useful to release memory in High Cardinality scenarios (e.g. ephemeral pods) where the number of series grows indefinitely.
+
+Recommendation: If enabled, ensure this value is significantly higher than the interval of your slowest emitting metric or cronjob. For example, if you have a job that runs every 30 minutes, set this to at least 60m to avoid resetting the start timestamp for those metrics.
+
+Default: 0s (Disabled - series are kept indefinitely)
+
+### idle_series_cleanup_interval (Optional)
+The duration between runs of the idle series cleanup task. This setting is only used when idle_series_timeout is enabled (greater than 0).
+The value must be a string with a unit (e.g. "5m", "60s").
+
+Default: "5m"
+
+### logs.decode_json_message (Optional)
+
+When `true`, log records whose `message` is itself a JSON object are expanded, mirroring Datadog's
+server-side "Preprocessing for JSON logs". The Datadog Agent forwards an application's JSON log as an
+opaque `message` string (JSON parsing normally happens in the Datadog backend), so without this the
+whole line becomes the log body. With it enabled, the inner reserved attributes take precedence over
+the agent envelope:
+
+- inner `message` → log body
+- `status`/`level`/`severity` → severity
+- `timestamp`/`@timestamp`/`date` → timestamp (the application's emit time, overriding the agent's collection time)
+- `hostname`/`host` → `host.name`, `service` → `service.name`
+- `dd.trace_id`/`dd.span_id` (decimal) → the record's `TraceID`/`SpanID`, enabling trace-log correlation
+- remaining inner keys → log attributes (with Datadog→OTel key translation)
+
+Default: `true`. Set to `false` to keep the raw JSON message as the log body.
+
+```yaml
+receivers:
+  datadog:
+    endpoint: localhost:8126
+    logs:
+      decode_json_message: true
+```
 
 ### HTTP Service Config
 
@@ -100,7 +140,7 @@ If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled,
 
 ### Optional Attributes
 
-- `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries. 
+- `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries.
 Format example can be found [here](./internal/translator/traces_translator_test.go).
 
 ### Datadog's API support

@@ -31,6 +31,7 @@ type Config struct {
 	Offset                   string         `mapstructure:"offset"`
 	StorageID                *component.ID  `mapstructure:"storage"`
 	Auth                     *component.ID  `mapstructure:"auth"`
+	Encoding                 *component.ID  `mapstructure:"encoding"`
 	Format                   string         `mapstructure:"format"`
 	ConsumerGroup            string         `mapstructure:"group"`
 	ApplySemanticConventions bool           `mapstructure:"apply_semantic_conventions"`
@@ -45,6 +46,15 @@ type Config struct {
 	// azeventhub lib specific
 	PollRate      int `mapstructure:"poll_rate"`
 	MaxPollEvents int `mapstructure:"max_poll_events"`
+
+	// PrefetchCount controls the size of the SDK's internal prefetch buffer per
+	// partition. The SDK uses this value to maintain an asynchronous cache of
+	// events so that ReceiveEvents calls return from a local buffer rather than
+	// waiting on the network.
+	//   0  - use the SDK default (300)
+	//  <0  - disable prefetch
+	//  >0  - use the explicit value
+	PrefetchCount int32 `mapstructure:"prefetch_count"`
 }
 
 // BlobCheckpointStoreConfig defines the configuration for Azure Blob Storage
@@ -93,10 +103,16 @@ func (config *Config) Validate() error {
 		}
 	}
 
-	switch logFormat(config.Format) {
-	case defaultLogFormat, rawLogFormat, azureLogFormat: // valid
-	default:
-		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
+	if config.Encoding != nil {
+		if config.Format != "" {
+			return errors.New("format and encoding are mutually exclusive")
+		}
+	} else {
+		switch logFormat(config.Format) {
+		case defaultLogFormat, rawLogFormat, azureLogFormat: // valid
+		default:
+			return fmt.Errorf("invalid format; must be one of %#v", validFormats)
+		}
 	}
 
 	if config.Partition == "" && config.Offset != "" {

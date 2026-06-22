@@ -16,7 +16,7 @@ func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
-	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
+	mb := NewMetricsBuilder(NewDefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	t.Run("k8s.namespace", func(t *testing.T) {
 		e := NewK8sNamespaceEntity("k8s.namespace.uid-val")
@@ -46,7 +46,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.namespace/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sNamespaceUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -70,7 +70,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.namespace/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -148,7 +148,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.deployment/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDeploymentUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -173,7 +173,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.deployment/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDeploymentName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -238,7 +238,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.replicaset/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicasetUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -263,7 +263,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.replicaset/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicasetName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -330,7 +330,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.statefulset/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sStatefulsetUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -357,7 +357,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.statefulset/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sStatefulsetName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -426,7 +426,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.daemonset/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDaemonsetUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -453,7 +453,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.daemonset/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDaemonsetName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -519,7 +519,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.cronjob/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sCronjobUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -543,7 +543,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.cronjob/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sCronjobName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -610,7 +610,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.job/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sJobUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -638,7 +638,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.job/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sJobName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -715,7 +715,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.pod/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sPodUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -741,7 +741,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.pod/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sPodName.Enabled = false
 		cfg.ResourceAttributes.K8sPodQosClass.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
@@ -853,7 +853,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.container/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.ContainerID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -895,7 +895,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.container/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sContainerName.Enabled = false
 		cfg.ResourceAttributes.ContainerImageName.Enabled = false
 		cfg.ResourceAttributes.ContainerImageTag.Enabled = false
@@ -994,7 +994,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.replicationcontroller/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicationcontrollerUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -1019,7 +1019,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.replicationcontroller/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicationcontrollerName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -1084,7 +1084,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.resourcequota/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sResourcequotaUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -1109,7 +1109,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.resourcequota/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sResourcequotaName.Enabled = false
 		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
@@ -1151,6 +1151,39 @@ func TestEntityBuilders(t *testing.T) {
 		eb := mb.ForK8sService(e)
 		eb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
 		eb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+		// All metrics for this entity are disabled by default.
+		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+	})
+
+	t.Run("k8s.persistentvolume", func(t *testing.T) {
+		e := NewK8sPersistentvolumeEntity("k8s.persistentvolume.uid-val")
+		require.NotNil(t, e)
+		e.SetK8sPersistentvolumeName("k8s.persistentvolume.name-val")
+		e.SetK8sStorageclassName("k8s.storageclass.name-val")
+		e.SetK8sPersistentvolumeReclaimPolicy("Delete")
+
+		eb := mb.ForK8sPersistentvolume(e)
+		eb.RecordK8sPersistentvolumeStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeStatusPhasePending)
+		eb.RecordK8sPersistentvolumeStorageCapacityDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+		// All metrics for this entity are disabled by default.
+		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+	})
+
+	t.Run("k8s.persistentvolumeclaim", func(t *testing.T) {
+		e := NewK8sPersistentvolumeclaimEntity("k8s.persistentvolumeclaim.uid-val")
+		require.NotNil(t, e)
+		e.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sStorageclassName("k8s.storageclass.name-val")
+
+		eb := mb.ForK8sPersistentvolumeclaim(e)
+		eb.RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeclaimStatusPhasePending)
+		eb.RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(ts, 1)
+		eb.RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts, 1)
 		eb.Emit()
 		metrics := mb.Emit()
 		// All metrics for this entity are disabled by default.
@@ -1203,7 +1236,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.hpa/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sHpaUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -1233,7 +1266,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("k8s.hpa/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sHpaName.Enabled = false
 		cfg.ResourceAttributes.K8sHpaScaletargetrefApiversion.Enabled = false
 		cfg.ResourceAttributes.K8sHpaScaletargetrefKind.Enabled = false
@@ -1308,7 +1341,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("openshift.clusterquota/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.OpenshiftClusterquotaUID.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -1335,7 +1368,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("openshift.clusterquota/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.OpenshiftClusterquotaName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 

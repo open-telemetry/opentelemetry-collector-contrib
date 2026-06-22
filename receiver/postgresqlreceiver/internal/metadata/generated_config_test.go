@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -320,12 +320,144 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestPostgresqlBgwriterBuffersWritesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlBgwriterBuffersWrites
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlBgwriterBuffersWritesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.bgwriter.buffers.writes doesn't have an attribute invalid, valid attributes: [source]")
+
+	cfg = DefaultMetricsConfig().PostgresqlBgwriterBuffersWrites
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlBgwriterCheckpointCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlBgwriterCheckpointCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlBgwriterCheckpointCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.bgwriter.checkpoint.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlBgwriterCheckpointCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlBgwriterDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlBgwriterDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlBgwriterDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.bgwriter.duration doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlBgwriterDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlBlocksReadMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlBlocksRead
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlBlocksReadMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.blocks_read doesn't have an attribute invalid, valid attributes: [source]")
+
+	cfg = DefaultMetricsConfig().PostgresqlBlocksRead
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlDatabaseLocksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlDatabaseLocks
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlDatabaseLocksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlDatabaseLocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlFunctionCallsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlFunctionCalls
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlFunctionCallsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.function.calls doesn't have an attribute invalid, valid attributes: [function]")
+
+	cfg = DefaultMetricsConfig().PostgresqlFunctionCalls
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().PostgresqlOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationDataDelayMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationDataDelay
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationDataDelayMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication.data_delay doesn't have an attribute invalid, valid attributes: [replication_client]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationDataDelay
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlRowsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlRows
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlRowsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.rows doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().PostgresqlRows
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlWalDelayMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlWalDelay
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlWalDelayMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.wal.delay doesn't have an attribute invalid, valid attributes: [operation, replication_client]")
+
+	cfg = DefaultMetricsConfig().PostgresqlWalDelay
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlWalLagMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlWalLag
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlWalLagMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.wal.lag doesn't have an attribute invalid, valid attributes: [operation, replication_client]")
+
+	cfg = DefaultMetricsConfig().PostgresqlWalLag
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

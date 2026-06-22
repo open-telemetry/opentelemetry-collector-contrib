@@ -20,32 +20,40 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization: MetricConfig{
+					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
+					},
+					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
+					},
+					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeFilesystemUsage: MetricConfig{
+					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeFilesystemUtilization: MetricConfig{
+					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeMemoryCacheUsage: MetricConfig{
-						Enabled: true,
+					NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 					},
-					NsxtNodeMemoryUsage: MetricConfig{
-						Enabled: true,
-					},
-					NsxtNodeNetworkIo: MetricConfig{
-						Enabled: true,
-					},
-					NsxtNodeNetworkPacketCount: MetricConfig{
-						Enabled: true,
+					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -60,26 +68,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization: MetricConfig{
+					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
+					},
+					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
+					},
+					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeFilesystemUsage: MetricConfig{
+					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeFilesystemUtilization: MetricConfig{
+					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeMemoryCacheUsage: MetricConfig{
-						Enabled: false,
+					NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 					},
-					NsxtNodeMemoryUsage: MetricConfig{
-						Enabled: false,
-					},
-					NsxtNodeNetworkIo: MetricConfig{
-						Enabled: false,
-					},
-					NsxtNodeNetworkPacketCount: MetricConfig{
-						Enabled: false,
+					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -94,10 +110,57 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NsxtNodeCPUUtilizationMetricConfig{}, NsxtNodeFilesystemUsageMetricConfig{}, NsxtNodeFilesystemUtilizationMetricConfig{}, NsxtNodeMemoryCacheUsageMetricConfig{}, NsxtNodeMemoryUsageMetricConfig{}, NsxtNodeNetworkIoMetricConfig{}, NsxtNodeNetworkPacketCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestNsxtNodeCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.cpu.utilization doesn't have an attribute invalid, valid attributes: [class]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeFilesystemUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeFilesystemUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeFilesystemUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.filesystem.usage doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeFilesystemUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.network.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNsxtNodeNetworkPacketCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NsxtNodeNetworkPacketCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NsxtNodeNetworkPacketCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nsxt.node.network.packet.count doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().NsxtNodeNetworkPacketCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -105,7 +168,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

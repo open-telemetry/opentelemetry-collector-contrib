@@ -16,6 +16,26 @@ func TestParseGoTimeBadLocation(t *testing.T) {
 	require.ErrorContains(t, err, "failed to load location BST")
 }
 
+// TestParseGotimeLocalPreserved verifies that when no timezone abbreviation is
+// present in the layout, the returned time.Time keeps time.Local as its location
+// regardless of what the system timezone name happens to be (e.g. "WET", "CET").
+func TestParseGotimeLocalPreserved(t *testing.T) {
+	result, err := ParseGotime("2006-01-02", "2023-02-15", time.Local)
+	require.NoError(t, err)
+	require.Equal(t, time.Local, result.Location(),
+		"location should be time.Local, not the system zone name")
+}
+
+// TestParseGotimeExplicitUTCAbbreviationPreserved verifies that when a timezone
+// abbreviation is present in the layout and the input contains "UTC", the
+// returned time.Time keeps time.UTC as its location, not time.Local.
+func TestParseGotimeExplicitUTCAbbreviationPreserved(t *testing.T) {
+	result, err := ParseGotime("Mon Jan 2 15:04:05 MST 2006", "Mon Jan 2 15:04:05 UTC 2006", time.Local)
+	require.NoError(t, err)
+	require.Equal(t, time.UTC, result.Location(),
+		"location should be time.UTC when input contains an explicit UTC abbreviation")
+}
+
 func Test_setTimestampYear(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		Now = func() time.Time {
@@ -151,7 +171,9 @@ func TestParseLocalizedStrptime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ParseLocalizedStrptime(tt.format, tt.value, tt.location, tt.language)
+			parser, err := NewStrptimeParser(tt.format)
+			require.NoError(t, err)
+			result, err := parser.ParseLocalized(tt.value, tt.location, tt.language)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.UnixNano())
 		})
@@ -160,7 +182,9 @@ func TestParseLocalizedStrptime(t *testing.T) {
 
 func TestParseLocalizedStrptimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
-	_, err := ParseLocalizedStrptime("%c", value, time.Local, "en")
+	parser, err := NewStrptimeParser("%c")
+	require.NoError(t, err)
+	_, err = parser.ParseLocalized(value, time.Local, "en")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
@@ -219,7 +243,7 @@ func TestParseLocalizedGotime(t *testing.T) {
 
 func TestParseLocalizedGotimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
-	_, err := ParseLocalizedStrptime("Mon", value, time.Local, "en")
+	_, err := ParseLocalizedGotime("Mon", value, time.Local, "en")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }

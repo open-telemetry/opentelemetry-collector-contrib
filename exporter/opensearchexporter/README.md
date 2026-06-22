@@ -40,7 +40,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
 - `logs_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)
 - `logs_index_time_format` - Time suffix format for logs
 - `traces_index` - Custom index name pattern for traces
-- `traces_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)  
+- `traces_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)
 - `traces_index_time_format` - Time suffix format for traces
 
 **Placeholder Syntax:**
@@ -58,7 +58,7 @@ Both logs and traces support time-formatted suffixes using `*_time_format` optio
 
 - **Valid tokens** (case-sensitive):
   - `yyyy` (4-digit year), `yy` (2-digit year)
-  - `MM` (2-digit month), `dd` (2-digit day) 
+  - `MM` (2-digit month), `dd` (2-digit day)
   - `HH` (2-digit hour, 24h), `mm` (2-digit minute), `ss` (2-digit second)
 - **Allowed separators**: `-`, `.`, `_`, `+`
 - **Examples:** `yyyy.MM.dd` → `2024.06.07`, `yyyy-MM` → `2024-06`, `yyMMdd` → `240607`
@@ -80,7 +80,7 @@ exporters:
     logs_index: "otel-logs-%{service.name}-%{env}"
     logs_index_fallback: "default"
     logs_index_time_format: "yyyy.MM.dd"
-    # Traces configuration  
+    # Traces configuration
     traces_index: "otel-traces-%{service.name}-%{deployment.environment}"
     traces_index_fallback: "unknown"
     traces_index_time_format: "yyyy.MM.dd"
@@ -99,7 +99,7 @@ If any placeholder key is missing, the fallback value is used e.g.:
 ### OpenSearch document mapping
 
 
-The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`. 
+The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`.
 
 The OpenSearch exporter supports several document schemas and preprocessing behaviors, which may be configured through the following settings:
 
@@ -109,6 +109,7 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `ecs`: Maps fields defined in the OpenTelemetry Semantic Conventions to the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html)
     - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
+    - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -160,6 +161,41 @@ The bodymap mapping mode only supports log records where the body is of type Map
 | Logs      | :white_check_mark:  |
 | Traces    | :no_entry_sign:     |
 
+#### OTel v1 mapping mode
+
+In `otel-v1` mapping mode, the OpenSearch exporter produces documents compatible with [Data Prepper's](https://github.com/opensearch-project/data-prepper) OTel v1 index schemas. This enables interoperability with OpenSearch Observability dashboards that consume Data Prepper indices.
+
+Default index names:
+- Traces: `otel-v1-apm-span`
+- Logs: `otel-v1-logs`
+
+These defaults can be overridden using `traces_index` and `logs_index` configuration options.
+
+| Signal    | `otel-v1`           |
+| --------- | ------------------- |
+| Logs      | :white_check_mark:  |
+| Traces    | :white_check_mark:  |
+
+Schema references:
+- [otel-v1-apm-span index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json)
+- [logs-otel-v1 index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json)
+
+> [!NOTE]
+> The exporter emits nanosecond-precision timestamps in the document body, but to materialize them as `date_nanos` (and apply the rest of the recommended field mappings) you must install the matching index templates before indexing begins. Without a template OpenSearch's dynamic mapping will infer `date` (millisecond precision) for timestamp fields. Install the templates out-of-band for now; see also the schema references above.
+
+##### Example Configuration
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    mapping:
+      mode: "otel-v1"
+    sending_queue:
+      batch:
+```
+
 ### HTTP Connection Options
 
 OpenSearch export supports standard [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
@@ -185,6 +221,7 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 ### Bulk Indexer Options
 
 - `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here.
+- `pipeline` (optional): the ID of an [ingest pipeline](https://opensearch.org/docs/latest/ingest-pipelines/) to apply when indexing documents. When set, all documents sent via the bulk API will be processed by the specified pipeline before being indexed. The ingest pipeline must exist in the cluster and there must be at least one node with the `ingest` node role assigned.
 
 ## Example
 

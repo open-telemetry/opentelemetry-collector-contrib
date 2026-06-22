@@ -7,6 +7,14 @@ all_set:
       enabled: true
     k8s.cluster.name:
       enabled: true
+reaggregate_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    k8s.cluster.name:
+      enabled: true
 none_set:
   resource_attributes:
     cloud.platform:

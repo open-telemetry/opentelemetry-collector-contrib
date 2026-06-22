@@ -22,97 +22,128 @@ const (
 
 var MetricsInfo = metricsInfo{
 	SnowflakeBillingCloudServiceTotal: metricInfo{
-		Name: "snowflake.billing.cloud_service.total",
+		Name:       "snowflake.billing.cloud_service.total",
+		Attributes: []string{"service_type"},
 	},
 	SnowflakeBillingTotalCreditTotal: metricInfo{
-		Name: "snowflake.billing.total_credit.total",
+		Name:       "snowflake.billing.total_credit.total",
+		Attributes: []string{"service_type"},
 	},
 	SnowflakeBillingVirtualWarehouseTotal: metricInfo{
-		Name: "snowflake.billing.virtual_warehouse.total",
+		Name:       "snowflake.billing.virtual_warehouse.total",
+		Attributes: []string{"service_type"},
 	},
 	SnowflakeBillingWarehouseCloudServiceTotal: metricInfo{
-		Name: "snowflake.billing.warehouse.cloud_service.total",
+		Name:       "snowflake.billing.warehouse.cloud_service.total",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeBillingWarehouseTotalCreditTotal: metricInfo{
-		Name: "snowflake.billing.warehouse.total_credit.total",
+		Name:       "snowflake.billing.warehouse.total_credit.total",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeBillingWarehouseVirtualWarehouseTotal: metricInfo{
-		Name: "snowflake.billing.warehouse.virtual_warehouse.total",
+		Name:       "snowflake.billing.warehouse.virtual_warehouse.total",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeDatabaseBytesScannedAvg: metricInfo{
-		Name: "snowflake.database.bytes_scanned.avg",
+		Name:       "snowflake.database.bytes_scanned.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeDatabaseQueryCount: metricInfo{
-		Name: "snowflake.database.query.count",
+		Name:       "snowflake.database.query.count",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeLoginsTotal: metricInfo{
-		Name: "snowflake.logins.total",
+		Name:       "snowflake.logins.total",
+		Attributes: []string{"error_message", "reported_client_type", "is_success"},
 	},
 	SnowflakePipeCreditsUsedTotal: metricInfo{
-		Name: "snowflake.pipe.credits_used.total",
+		Name:       "snowflake.pipe.credits_used.total",
+		Attributes: []string{"pipe_name"},
 	},
 	SnowflakeQueryBlocked: metricInfo{
-		Name: "snowflake.query.blocked",
+		Name:       "snowflake.query.blocked",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeQueryBytesDeletedAvg: metricInfo{
-		Name: "snowflake.query.bytes_deleted.avg",
+		Name:       "snowflake.query.bytes_deleted.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryBytesSpilledLocalAvg: metricInfo{
-		Name: "snowflake.query.bytes_spilled.local.avg",
+		Name:       "snowflake.query.bytes_spilled.local.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryBytesSpilledRemoteAvg: metricInfo{
-		Name: "snowflake.query.bytes_spilled.remote.avg",
+		Name:       "snowflake.query.bytes_spilled.remote.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryBytesWrittenAvg: metricInfo{
-		Name: "snowflake.query.bytes_written.avg",
+		Name:       "snowflake.query.bytes_written.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryCompilationTimeAvg: metricInfo{
-		Name: "snowflake.query.compilation_time.avg",
+		Name:       "snowflake.query.compilation_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryDataScannedCacheAvg: metricInfo{
-		Name: "snowflake.query.data_scanned_cache.avg",
+		Name:       "snowflake.query.data_scanned_cache.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryExecuted: metricInfo{
-		Name: "snowflake.query.executed",
+		Name:       "snowflake.query.executed",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeQueryExecutionTimeAvg: metricInfo{
-		Name: "snowflake.query.execution_time.avg",
+		Name:       "snowflake.query.execution_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryPartitionsScannedAvg: metricInfo{
-		Name: "snowflake.query.partitions_scanned.avg",
+		Name:       "snowflake.query.partitions_scanned.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueryQueuedOverload: metricInfo{
-		Name: "snowflake.query.queued_overload",
+		Name:       "snowflake.query.queued_overload",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeQueryQueuedProvision: metricInfo{
-		Name: "snowflake.query.queued_provision",
+		Name:       "snowflake.query.queued_provision",
+		Attributes: []string{"warehouse_name"},
 	},
 	SnowflakeQueuedOverloadTimeAvg: metricInfo{
-		Name: "snowflake.queued_overload_time.avg",
+		Name:       "snowflake.queued_overload_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueuedProvisioningTimeAvg: metricInfo{
-		Name: "snowflake.queued_provisioning_time.avg",
+		Name:       "snowflake.queued_provisioning_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeQueuedRepairTimeAvg: metricInfo{
-		Name: "snowflake.queued_repair_time.avg",
+		Name:       "snowflake.queued_repair_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeRowsDeletedAvg: metricInfo{
-		Name: "snowflake.rows_deleted.avg",
+		Name:       "snowflake.rows_deleted.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeRowsInsertedAvg: metricInfo{
-		Name: "snowflake.rows_inserted.avg",
+		Name:       "snowflake.rows_inserted.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeRowsProducedAvg: metricInfo{
-		Name: "snowflake.rows_produced.avg",
+		Name:       "snowflake.rows_produced.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeRowsUnloadedAvg: metricInfo{
-		Name: "snowflake.rows_unloaded.avg",
+		Name:       "snowflake.rows_unloaded.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeRowsUpdatedAvg: metricInfo{
-		Name: "snowflake.rows_updated.avg",
+		Name:       "snowflake.rows_updated.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 	SnowflakeSessionIDCount: metricInfo{
-		Name: "snowflake.session_id.count",
+		Name:       "snowflake.session_id.count",
+		Attributes: []string{"user_name"},
 	},
 	SnowflakeStorageFailsafeBytesTotal: metricInfo{
 		Name: "snowflake.storage.failsafe_bytes.total",
@@ -124,7 +155,8 @@ var MetricsInfo = metricsInfo{
 		Name: "snowflake.storage.storage_bytes.total",
 	},
 	SnowflakeTotalElapsedTimeAvg: metricInfo{
-		Name: "snowflake.total_elapsed_time.avg",
+		Name:       "snowflake.total_elapsed_time.avg",
+		Attributes: []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
 	},
 }
 
@@ -167,7 +199,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSnowflakeBillingCloudServiceTotal struct {

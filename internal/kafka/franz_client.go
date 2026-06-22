@@ -5,6 +5,7 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -69,6 +70,7 @@ func NewFranzSyncProducer(
 		kgo.ProducerBatchCompression(codec),
 		kgo.ProducerLinger(cfg.Linger),
 		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.BrokerMaxWriteBytes(int32(cfg.MaxBrokerWriteBytes)),
 		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
@@ -163,15 +165,19 @@ func NewFranzConsumerGroup(
 	}
 
 	// Configure rebalance strategy
-	switch consumerCfg.GroupRebalanceStrategy {
-	case "range":
-		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
-	case "roundrobin":
-		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
-	case "sticky":
-		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	case "cooperative-sticky":
-		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
+	if consumerCfg.GroupRebalanceStrategy != "" {
+		logger.Warn("group_rebalance_strategy is deprecated, use group_rebalance_strategies instead")
+	}
+	balancerOpt, err := balancerOptFromStrategies(
+		consumerCfg.GroupRebalanceStrategy,
+		consumerCfg.GroupRebalanceStrategies,
+		host,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if balancerOpt != nil {
+		opts = append(opts, balancerOpt)
 	}
 	return kgo.NewClient(opts...)
 }
@@ -204,6 +210,83 @@ func NewFranzClusterAdminClient(
 		return nil, nil, err
 	}
 	return kadm.NewClient(cl), cl, nil
+}
+
+// balancerOptFromStrategies returns a kgo.Opt that sets the group balancers, or
+// nil if no strategy is configured (franz-go default applies). The deprecated
+// singular strategy and the strategies list are mutually exclusive (enforced by
+// ConsumerConfig.Validate).
+func balancerOptFromStrategies(
+	strategy configkafka.GroupRebalanceStrategy,
+	strategies []configkafka.GroupRebalanceStrategy,
+	host component.Host,
+) (kgo.Opt, error) {
+	if strategy == "" && len(strategies) == 0 {
+		return nil, nil
+	}
+	if len(strategies) == 0 {
+		balancer, err := balancerFromStrategy(strategy, "group_rebalance_strategy", host)
+		if err != nil {
+			return nil, err
+		}
+		return kgo.Balancers(balancer), nil
+	}
+
+	balancers, err := balancersFromStrategies(strategies, host)
+	if err != nil {
+		return nil, err
+	}
+	return kgo.Balancers(balancers...), nil
+}
+
+func balancersFromStrategies(strategies []configkafka.GroupRebalanceStrategy, host component.Host) ([]kgo.GroupBalancer, error) {
+	balancers := make([]kgo.GroupBalancer, 0, len(strategies))
+	for i, strategy := range strategies {
+		field := fmt.Sprintf("group_rebalance_strategies[%d]", i)
+		balancer, err := balancerFromStrategy(strategy, field, host)
+		if err != nil {
+			return nil, err
+		}
+		if balancer != nil {
+			balancers = append(balancers, balancer)
+		}
+	}
+	if len(balancers) == 0 {
+		return nil, errors.New("group_rebalance_strategies has no valid group rebalance strategies")
+	}
+	return balancers, nil
+}
+
+func balancerFromStrategy(strategy configkafka.GroupRebalanceStrategy, field string, host component.Host) (kgo.GroupBalancer, error) {
+	switch strategy {
+	case "":
+		return nil, nil
+	case configkafka.RangeBalanceStrategy:
+		return kgo.RangeBalancer(), nil
+	case configkafka.RoundRobinBalanceStrategy:
+		return kgo.RoundRobinBalancer(), nil
+	case configkafka.StickyBalanceStrategy:
+		return kgo.StickyBalancer(), nil
+	case configkafka.CooperativeStickyBalanceStrategy:
+		return kgo.CooperativeStickyBalancer(), nil
+	default:
+		var id component.ID
+		if err := id.UnmarshalText([]byte(strategy)); err != nil {
+			return nil, fmt.Errorf(
+				"%s %q is not a built-in strategy or a valid extension ID: %w",
+				field, strategy, err,
+			)
+		}
+		ext, ok := host.GetExtensions()[id]
+		if !ok {
+			return nil, fmt.Errorf("%s extension %q not found", field, id)
+		}
+		balancer, ok := ext.(kgo.GroupBalancer)
+		if !ok {
+			return nil, fmt.Errorf("%s extension %q does not implement kgo.GroupBalancer", field, id)
+		}
+		return balancer, nil
+	}
 }
 
 func commonOpts(

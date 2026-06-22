@@ -13,18 +13,23 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadatatest"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -74,7 +79,7 @@ func TestHandleEvent(t *testing.T) {
 	recv := r.(*k8seventsReceiver)
 	recv.ctx = t.Context()
 	k8sEvent := getEvent("Normal")
-	recv.handleEvent(k8sEvent)
+	recv.handleEvent(k8sEvent, apiWatch.Added)
 
 	assert.Equal(t, 1, sink.LogRecordCount())
 }
@@ -93,7 +98,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	recv.ctx = t.Context()
 	k8sEvent := getEvent("Normal")
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
-	recv.handleEvent(k8sEvent)
+	recv.handleEvent(k8sEvent, apiWatch.Added)
 
 	assert.Equal(t, 0, sink.LogRecordCount())
 }
@@ -151,7 +156,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// Become leader: start processing events
 	le.InvokeOnLeading()
-	recv.handleEvent(getEvent("Normal"))
+	recv.handleEvent(getEvent("Normal"), apiWatch.Added)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == 1
@@ -166,7 +171,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// regain leadership
 	le.InvokeOnLeading()
-	recv.handleEvent(getEvent("Normal"))
+	recv.handleEvent(getEvent("Normal"), apiWatch.Added)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == 2
@@ -200,6 +205,8 @@ func getEvent(eventType string) *corev1.Event {
 			Component: "testComponent",
 			Host:      "testHost",
 		},
+		ReportingController: "some-controller",
+		ReportingInstance:   "some-instance",
 	}
 }
 
@@ -296,7 +303,7 @@ func TestHandleEventWithConsumerError(t *testing.T) {
 	recv.ctx = t.Context()
 
 	k8sEvent := getEvent("Normal")
-	recv.handleEvent(k8sEvent)
+	recv.handleEvent(k8sEvent, apiWatch.Added)
 }
 
 // TestAllowEventWithZeroTimestamp tests allowEvent with zero-value timestamp
@@ -318,6 +325,100 @@ func TestAllowEventWithZeroTimestamp(t *testing.T) {
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.False(t, shouldAllowEvent)
+}
+
+// TestReceiverStorageInitialization tests that storage client is initialized when storage is configured
+func TestReceiverStorageInitialization(t *testing.T) {
+	tests := []struct {
+		name                string
+		storageID           *component.ID
+		expectStorageClient bool
+	}{
+		{
+			name:                "storage configured",
+			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient: true,
+		},
+		{
+			name:                "no storage configured",
+			storageID:           nil,
+			expectStorageClient: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scheme := runtime.NewScheme()
+			_ = corev1.AddToScheme(scheme)
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.Storage = tt.storageID
+			rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+				return fake.NewClientset(), nil
+			}
+			rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+				return dynamicfake.NewSimpleDynamicClient(scheme), nil
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+
+			host := componenttest.NewNopHost()
+			if tt.storageID != nil {
+				host = storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+			}
+
+			err = r.Start(t.Context(), host)
+			require.NoError(t, err)
+
+			recv := r.(*k8seventsReceiver)
+			if tt.expectStorageClient {
+				assert.NotNil(t, recv.storageClient, "storage client should be initialized")
+			} else {
+				assert.Nil(t, recv.storageClient, "storage client should be nil when not configured")
+			}
+
+			require.NoError(t, r.Shutdown(t.Context()))
+		})
+	}
+}
+
+// TestStartWithStorageExtensionNotFound tests that Start returns an error when the storage extension is not found
+func TestStartWithStorageExtensionNotFound(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	storageID := ptr(storagetest.NewStorageID("file_storage"))
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.Storage = storageID
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	// Use a host without the storage extension
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get storage client")
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 // TestStartWatchersMultipleNamespaces tests watching multiple namespaces
@@ -353,4 +454,145 @@ func TestStartWatchersMultipleNamespaces(t *testing.T) {
 	// Should have at least 1 watcher started
 	assert.GreaterOrEqual(t, watcherCount, 1)
 	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestDedupIntervalZeroEmitsAllModified(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.DedupInterval = 0
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, sink)
+	require.NoError(t, err)
+	recv := r.(*k8seventsReceiver)
+	recv.ctx = t.Context()
+
+	ev := getEvent("Warning")
+	recv.handleEvent(ev, apiWatch.Added)
+	recv.handleEvent(ev, apiWatch.Modified)
+	recv.handleEvent(ev, apiWatch.Modified)
+
+	assert.Equal(t, 3, sink.LogRecordCount())
+}
+
+func TestDedupIntervalNegativeDropsAllModified(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.DedupInterval = -1 * time.Second
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, sink)
+	require.NoError(t, err)
+	recv := r.(*k8seventsReceiver)
+	recv.ctx = t.Context()
+
+	ev := getEvent("Warning")
+	recv.handleEvent(ev, apiWatch.Added)
+	recv.handleEvent(ev, apiWatch.Modified)
+	recv.handleEvent(ev, apiWatch.Modified)
+
+	assert.Equal(t, 1, sink.LogRecordCount(), "only ADDED should be emitted")
+}
+
+func TestDedupIntervalPositiveThrottlesModified(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.DedupInterval = 100 * time.Millisecond
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, sink)
+	require.NoError(t, err)
+
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, r.Shutdown(t.Context())) }()
+
+	recv := r.(*k8seventsReceiver)
+
+	ev := getEvent("Warning")
+	recv.handleEvent(ev, apiWatch.Added)
+	assert.Equal(t, 1, sink.LogRecordCount(), "ADDED always emitted")
+
+	recv.handleEvent(ev, apiWatch.Modified)
+	assert.Equal(t, 2, sink.LogRecordCount(), "first MODIFIED emitted (seeds cache)")
+
+	recv.handleEvent(ev, apiWatch.Modified)
+	assert.Equal(t, 2, sink.LogRecordCount(), "next MODIFIED dropped within interval")
+
+	time.Sleep(150 * time.Millisecond)
+	recv.handleEvent(ev, apiWatch.Modified)
+	assert.Equal(t, 3, sink.LogRecordCount(), "MODIFIED emitted after interval elapsed")
+
+	recv.handleEvent(ev, apiWatch.Modified)
+	assert.Equal(t, 3, sink.LogRecordCount(), "next MODIFIED dropped again")
+}
+
+// TestDedupCacheRecreatedAfterShutdown covers the leader-election regain path
+// (Shutdown nils the cache, the next startWatchers must rebuild it).
+func TestDedupCacheRecreatedAfterShutdown(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.DedupInterval = 5 * time.Minute
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+
+	recv := r.(*k8seventsReceiver)
+	require.NotNil(t, recv.dedupCache, "Start should seed the cache when dedup_interval > 0")
+
+	require.NoError(t, r.Shutdown(t.Context()))
+	require.Nil(t, recv.dedupCache, "Shutdown should release the cache")
+
+	// The leader-regain callback calls startWatchers, not Start.
+	recv.ctx = t.Context()
+	recv.startWatchers()
+	require.NotNil(t, recv.dedupCache, "startWatchers should rebuild the cache after Shutdown")
+
+	ev := getEvent("Warning")
+	assert.True(t, recv.shouldEmitModified(ev), "first MODIFIED on rebuilt cache should emit without panicking")
+
+	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+// TestDedupFilteredCounter verifies the otelcol.k8s.events.modified.filtered
+// counter is incremented only when MODIFIED events are dropped by dedup_interval.
+func TestDedupFilteredCounter(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.DedupInterval = 1 * time.Hour
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	tt := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tt.Shutdown(t.Context())) }()
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(set, rCfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, r.Shutdown(t.Context())) }()
+
+	recv := r.(*k8seventsReceiver)
+
+	ev := getEvent("Warning")
+	recv.handleEvent(ev, apiWatch.Added)
+	recv.handleEvent(ev, apiWatch.Modified)
+	recv.handleEvent(ev, apiWatch.Modified)
+	recv.handleEvent(ev, apiWatch.Modified)
+
+	require.Equal(t, 2, sink.LogRecordCount(), "ADDED + first MODIFIED emit; the next 2 MODIFIED are dropped")
+	metadatatest.AssertEqualK8sEventsModifiedFiltered(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
 }

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -232,6 +232,9 @@ func withOtelAnnotations(enabled bool) option {
 
 func withDeploymentNameFromReplicaSet(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
+		if !enabled && p.logger != nil {
+			p.logger.Warn("`deployment_name_from_replicaset: false` is deprecated and will be removed in future releases")
+		}
 		p.rules.DeploymentNameFromReplicaSet = enabled
 		return nil
 	}
@@ -420,6 +423,22 @@ func withWaitForMetadata(wait bool) option {
 func withWaitForMetadataTimeout(timeout time.Duration) option {
 	return func(p *kubernetesprocessor) error {
 		p.waitForMetadataTimeout = timeout
+		return nil
+	}
+}
+
+// withWatchSyncPeriod allows specifying the resync period for informer.
+func withWatchSyncPeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.watchSyncPeriod = duration
+		return nil
+	}
+}
+
+// withPodDeleteGracePeriod allows specifying the grace period for pod deletion.
+func withPodDeleteGracePeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.podDeleteGracePeriod = duration
 		return nil
 	}
 }

@@ -5,7 +5,6 @@ StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/b
 the OpenTelemetry Collector. Note: This receiver does not support horizontally scaled collector deployments. It is
 intended to run in agent mode, where a single collector instance receives StatsD input.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -28,13 +27,17 @@ The Following settings are optional:
 
 - `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/statsdreceiver/internal/transport/transport.go).
 
-- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket. 
+- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket.
+
+- `socket_buffer_size` (default = `0`): Sets `SO_RCVBUF` on the listening socket for `unixgram` transport. When `0`, the OS default is used. Increase this for high-throughput workloads to prevent dropped datagrams. The value is capped by the OS maximum (Linux: `net.core.rmem_max`, macOS: `kern.ipc.maxsockbuf`).
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
 - `enable_ip_only_aggregation` (default value is false): Enables metric aggregation on `Client+IP` only. Normally, aggregation is performed on `Client+IP+Port`. This setting is useful when the client sends metrics from a random ports or the receiver should aggregate metrics from the same client but different ports.
+
+- `ignore_host` (default value is false): Completely ignores source IP for aggregation. All metrics with the same name, type, and tags aggregate together regardless of the sender's IP address. This is useful when you want to aggregate metrics from multiple sources into a single metric. Takes precedence over `enable_ip_only_aggregation`.
 
 - `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
 

@@ -3,16 +3,12 @@
 
 package tailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 
-import "go.opentelemetry.io/collector/featuregate"
-
-const FeatureGateID = "processor.tailsamplingprocessor.tailstorageextension"
-
-var featureGate = featuregate.GlobalRegistry().MustRegister(
-	FeatureGateID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows configuring tail_storage to use a tail storage extension implementation."),
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
+var FeatureGateID = metadata.ProcessorTailsamplingprocessorTailstorageextensionFeatureGate.ID()
+
 func IsFeatureGateEnabled() bool {
-	return featureGate.IsEnabled()
+	return metadata.ProcessorTailsamplingprocessorTailstorageextensionFeatureGate.IsEnabled()
 }

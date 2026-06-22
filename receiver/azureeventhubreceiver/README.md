@@ -68,12 +68,14 @@ When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor]
 |-------|------|----------|---------|-------------|
 | `max_poll_events` | int | No | `100` | Maximum events to retrieve per poll. |
 | `poll_rate` | int | No | `5` | Maximum seconds to wait before returning fewer than `max_poll_events`. |
+| `prefetch_count` | int | No | `0` | Size of the SDK's per-partition prefetch buffer. The SDK fills this buffer asynchronously so `ReceiveEvents` calls return from a local cache instead of waiting on the network. `0` uses the SDK default (300). A negative value disables prefetch. Increase this when poll batches are draining the buffer faster than the SDK refills it. |
 
 ### Data Transformation Settings
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `format` | string | No | `azure` | Message format: `azure`, `raw`, or `""`. See [Format](#format) section. |
+| `format` | string | No | `azure` | Message format: `azure`, `raw`, or `""`. Mutually exclusive with `encoding`. See [Format](#format) section. |
+| `encoding` | string | No | | ID of an [encoding extension] used to unmarshal the message body. Mutually exclusive with `format`. See [Encoding](#encoding) section. |
 | `apply_semantic_conventions` | bool | No | `false` | Translate Azure Resource Logs using OpenTelemetry semantic convention attribute names. |
 | `time_formats.logs` | []string | No | | Custom time formats for logs. Uses [Go time layout](https://pkg.go.dev/time#Layout). Falls back to ISO8601. |
 | `time_formats.metrics` | []string | No | | Custom time formats for metrics. |
@@ -293,4 +295,26 @@ Traces based on Azure Application Insights array of records from `AppRequests` &
 | Id          | span.id                                               |
 | AppRoleName | service.name                                          |
 
+## Encoding
+
+As an alternative to the built-in `format`, the `encoding` option delegates
+unmarshaling of the message body to an [encoding extension]. This is mutually
+exclusive with `format`.
+
+```yaml
+extensions:
+  azure_encoding:
+
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://<namespace>.servicebus.windows.net/;SharedAccessKeyName=<key-name>;SharedAccessKey=<key>;EntityPath=<hub-name>
+    encoding: azure_encoding
+```
+
+> [!NOTE]
+> The encoding extension only receives the message body. AMQP properties and
+> enqueued time (which the `raw` format maps onto the LogRecord) are not applied
+> on the encoding path. Use `format: raw` if you need those.
+
 [storage extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage
+[encoding extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding

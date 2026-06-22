@@ -14,12 +14,15 @@ import (
 )
 
 // aggregationGroup captures the spans to aggregate along with execution
-// metadata (tree depth, preassigned summary ID).
+// metadata (tree depth, preassigned summary ID, and attribute loss info).
 type aggregationGroup struct {
-	nodes         []*spanNode    // nodes to aggregate (replaces []spanInfo for efficiency)
-	depth         int            // tree depth (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
-	templateNode  *spanNode      // node to use as summary template (longest duration)
+	nodes             []*spanNode            // nodes to aggregate (replaces []spanInfo for efficiency)
+	depth             int                    // tree depth (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID     pcommon.SpanID         // SpanID of the summary span (assigned before creation)
+	lossInfo          attributeLossSummary   // attribute loss info (diverse + missing)
+	templateNode      *spanNode              // node to use as summary template (longest duration)
+	outlierAnalysis   *outlierAnalysisResult // outlier analysis results
+	preservedOutliers []*spanNode            // outliers to keep as individual spans
 }
 
 // aggregationPlan orders aggregation groups for top-down execution and
@@ -77,52 +80,56 @@ func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationG
 	return aggregationPlan{groups: groupSlice}
 }
 
-// executeAggregations performs the top-down creation of summary spans, batch
-// removes originals, and returns the number of pruned spans.
-func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
-	// Track which parent SpanID should map to which summary SpanID
-	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
-
-	// Track spans to remove per ScopeSpans for batch removal
-	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{}, len(plan.groups))
+// executeAggregations performs the top-down creation of summary spans, removes
+// originals using the tree's markedForRemoval flags, and returns the number of
+// pruned spans.
+func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *traceTree) int {
 	prunedCount := 0
+	prefix := p.config.AggregationAttributePrefix
 
 	for i := range plan.groups {
 		group := &plan.groups[i]
 		// Calculate statistics and time range in single pass
 		data := p.calculateAggregationData(group.nodes)
 
-		// Determine the parent SpanID for the summary span
-		// Use the first node's parent as template
-		originalParentID := group.nodes[0].span.ParentSpanID()
-
-		// Check if the parent is being replaced by a summary span
-		summaryParentID := originalParentID
-		if replacementID, exists := parentReplacements[originalParentID]; exists {
-			summaryParentID = replacementID
+		// Determine the parent SpanID for the summary span.
+		// Walk the tree: if the parent node was already replaced by a summary
+		// span (from a higher-depth group), use that replacement ID.
+		summaryParentID := group.nodes[0].span.ParentSpanID()
+		if parentNode := group.nodes[0].parent; parentNode != nil && !parentNode.replacementSpanID.IsEmpty() {
+			summaryParentID = parentNode.replacementSpanID
 		}
 
 		// Create summary span with correct parent
 		p.createSummarySpanWithParent(*group, data, summaryParentID)
 
-		// Record that these original span IDs should be replaced by the summary span ID
+		// Mark preserved outliers with reference to summary span.
+		for _, outlier := range group.preservedOutliers {
+			// Outliers become siblings of the summary span.
+			outlier.span.SetParentSpanID(summaryParentID)
+			outlier.span.Attributes().PutBool(prefix+"is_preserved_outlier", true)
+			outlier.span.Attributes().PutStr(prefix+"summary_span_id", group.summarySpanID.String())
+		}
+
+		// Record replacement span ID on each node so child groups can find it
 		for _, node := range group.nodes {
-			spanID := node.span.SpanID()
-			parentReplacements[spanID] = group.summarySpanID
-			scopeSpans := node.scopeSpans
-			if spansToRemove[scopeSpans] == nil {
-				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{}, len(group.nodes))
-			}
-			spansToRemove[scopeSpans][spanID] = struct{}{}
+			node.replacementSpanID = group.summarySpanID
 		}
 		prunedCount += len(group.nodes)
 	}
 
-	// Batch remove all marked spans in a single pass per ScopeSpans
-	for scopeSpans, spanIDs := range spansToRemove {
+	// Collect unique ScopeSpans that contain marked nodes, then remove in a
+	// single pass per ScopeSpans using the tree's flags set during analysis.
+	seen := make(map[ptrace.ScopeSpans]struct{})
+	for _, node := range tree.nodeByID {
+		if node.markedForRemoval {
+			seen[node.scopeSpans] = struct{}{}
+		}
+	}
+	for scopeSpans := range seen {
 		scopeSpans.Spans().RemoveIf(func(span ptrace.Span) bool {
-			_, shouldRemove := spanIDs[span.SpanID()]
-			return shouldRemove
+			n, ok := tree.nodeByID[span.SpanID()]
+			return ok && n.markedForRemoval
 		})
 	}
 
@@ -130,7 +137,8 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 }
 
 // createSummarySpanWithParent builds the summary span for an aggregation
-// group, wiring it under the provided parent SpanID and attaching stats.
+// group, wiring it under the provided parent SpanID and attaching stats
+// and attribute-loss annotations.
 func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
 	// Use the template node (longest duration span) as a template
 	templateNode := group.templateNode
@@ -175,6 +183,26 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(data.sumDuration)/data.count)
 	}
 
+	// Add outlier analysis attributes when enabled.
+	if group.outlierAnalysis != nil {
+		newSpan.Attributes().PutInt(prefix+"duration_median_ns", int64(group.outlierAnalysis.median))
+
+		if len(group.outlierAnalysis.correlations) > 0 {
+			newSpan.Attributes().PutStr(prefix+"outlier_correlated_attributes", formatCorrelations(group.outlierAnalysis.correlations))
+		}
+
+		// Track preserved outliers.
+		if len(group.preservedOutliers) > 0 {
+			newSpan.Attributes().PutInt(prefix+"preserved_outlier_count", int64(len(group.preservedOutliers)))
+
+			// List preserved outlier span IDs.
+			outlierIDs := newSpan.Attributes().PutEmptySlice(prefix + "preserved_outlier_span_ids")
+			for _, outlier := range group.preservedOutliers {
+				outlierIDs.AppendEmpty().SetStr(outlier.span.SpanID().String())
+			}
+		}
+	}
+
 	// Add histogram attributes if enabled.
 	if len(p.config.AggregationHistogramBuckets) > 0 {
 		// Add bucket bounds in seconds.
@@ -188,6 +216,13 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 		for _, count := range data.bucketCounts {
 			bucketCountsSlice.AppendEmpty().SetInt(count)
 		}
+	}
+
+	if len(group.lossInfo.diverse) > 0 {
+		newSpan.Attributes().PutStr(prefix+"diverse_attributes", formatAttributeCardinality(group.lossInfo.diverse))
+	}
+	if len(group.lossInfo.missing) > 0 {
+		newSpan.Attributes().PutStr(prefix+"missing_attributes", formatAttributeCardinality(group.lossInfo.missing))
 	}
 
 	return newSpan

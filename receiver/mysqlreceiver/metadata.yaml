@@ -8,7 +8,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17]
+    active: [antonblock, ishleenk17, cjksplunk]
     seeking_new: true
     emeritus: [djaglowski]
 
@@ -145,6 +145,9 @@ attributes:
   mysql.events_statements_current.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+  mysql.events_statements_current.timer_wait:
+    description: Elapsed time the current statement has been executing, in seconds.
+    type: double
   mysql.events_statements_summary_by_digest.count_star:
     description: The number of times the statement was executed, report in delta value.
     type: int
@@ -293,11 +296,13 @@ events:
       - mysql.threads.processlist_state
       - db.query.text
       - mysql.events_statements_current.digest
+      - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.event_id
       - mysql.wait_type
       - mysql.session.status
       - mysql.session.id
+      - mysql.events_statements_current.timer_wait
       - mysql.events_waits_current.timer_wait
       - client.address
       - client.port
@@ -829,6 +834,10 @@ tests:
   config:
     tls:
       insecure: true
+    # Finite query_plan_cache_ttl starts a non-terminating goroutine in hashicorp
+    # expirable LRU v2; use 0 for component lifecycle tests so goleak passes.
+    top_query_collection:
+      query_plan_cache_ttl: 0s
   goleak:
     ignore:
       any:

@@ -50,7 +50,7 @@ func TestFactory(t *testing.T) {
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
 					},
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				}
 
@@ -262,7 +262,7 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 50, "Every time metrics are added or removed, the function `setupQueries` must "+
+	require.Len(t, metricsMetadata, 62, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
 }

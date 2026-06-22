@@ -11,7 +11,33 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [boostchicken, gouthamve, MovieStoreGuy]
+    active: [boostchicken, MovieStoreGuy]
+    emeritus: [gouthamve]
+
+feature_gates:
+  - id: receiver.datadogreceiver.DontEmitDeprecatedRPCServiceAttr
+    stage: alpha
+    description: >-
+      When enabled, the receiver no longer emits the deprecated rpc.service
+      attribute on gRPC spans or resource attributes. The service name is
+      already captured in the span name (service/method) and rpc.method.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+    skip_strict_validation: true
+
+  - id: receiver.datadogreceiver.Enable128BitTraceID
+    stage: beta
+    description: When enabled, reconstructs full 128-bit TraceIDs for spans coming from Datadog instrumented services so they correlate with OpenTelemetry spans. Enabled by default; disable to fall back to 64-bit (zero-padded) TraceIDs.
+    from_version: v0.125.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36926
+    skip_strict_validation: true
+
+  - id: receiver.datadogreceiver.EnableMultiTagParsing
+    stage: alpha
+    description: When enabled, parses `key:value` tags with duplicate keys into a slice attribute.
+    from_version: v0.142.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747
+    skip_strict_validation: true
 
 tests:
   skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port
