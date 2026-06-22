@@ -79,36 +79,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestGet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)

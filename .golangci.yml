@@ -136,16 +136,10 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: extension/encoding/awslogsencodingextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/datadogreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
