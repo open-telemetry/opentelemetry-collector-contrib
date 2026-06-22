@@ -219,13 +219,12 @@ Division by zero is gracefully handled with an error, but other arithmetic opera
 Division of integers results in an integer and follows Go's rules for division of integers.
 
 Since Math Expressions support `Path`s and `Converter`s as input, they are evaluated during data processing.
-__As a result, in order for a function to be able to accept an Math Expressions as a parameter it must use a `Getter`.__
+**As a result, in order for a function to be able to accept an Math Expressions as a parameter it must use a `Getter`.**
 
 Example Math Expressions
 - `1 + 1`
 - `end_time_unix_nano - end_time_unix_nano`
 - `sum([1, 2, 3, 4]) + (10 / 1) - 1`
-
 
 ### Boolean Expressions
 

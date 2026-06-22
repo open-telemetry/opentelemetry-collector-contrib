@@ -20,7 +20,6 @@ connect and collect.
 
 Aerospike versions 4.9, 5.x, and 6.x are supported.
 
-
 ## Configuration
 
 Configuration parameters:

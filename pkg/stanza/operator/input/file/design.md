@@ -52,7 +52,6 @@ As each log is read from the file, it is decoded according to the `encoding` fun
 
 The Reader's offset is updated accordingly whenever a log is emitted.
 
-
 ### Persistence
 
 Readers are always instantiated with an open file handle. Eventually, the file handle is closed, but the Reader is not immediately discarded. Rather, it is maintained for a fixed number of "poll cycles" (see Polling section below) as a reference to the file's metadata, which may be useful for detecting files that have been moved or copied, and for recalling metadata such as the file's previous path.
@@ -60,7 +59,6 @@ Readers are always instantiated with an open file handle. Eventually, the file h
 Readers are maintained for a fixed period of time, and then discarded.
 
 When the `file_input` operator makes use of a persistence mechanism to save and recall its state, it is simply Setting and Getting a slice of Readers. These Readers contain all the information necessary to pick up exactly where the operator left off.
-
 
 # Polling
 
@@ -129,8 +127,6 @@ Each poll cycle runs through a series of steps which are presented below.
 15. End Poll Cycle
     1. At this point, the operator sits idle until the poll timer fires again.
 
-
-
 # Additional Details
 
 ### Startup Logic
@@ -148,7 +144,6 @@ When the operator shuts down, the following occurs:
     - Once all Readers have stopped, the remainder of the poll cycle completes as usual, which includes the steps labeled `Closing`, `Archiving`, `Pruning`, and `Persistence`.
 
 The net effect of the shut down routine is that all files are checkpointed in a normal manner (i.e. not in the middle of a log entry), and all checkpoints are persisted.
-
 
 # Known Limitations
 

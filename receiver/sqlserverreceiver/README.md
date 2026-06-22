@@ -164,7 +164,6 @@ To enable it, pass the following argument to the Collector:
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
-
 ## Logs 
 
 Details about the logs produced by this receiver can be found in [logs-documentation.md](./logs-documentation.md)

@@ -6,7 +6,6 @@ For a detailed, step-by-step tutorial on how to run the files included in this d
 
 The tutorial includes instructions on how to set up a local Nomad environment using [HashiQube](https://github.com/avillela/hashiqube) (a fork of [servian/hashiqube](https://github.com/servian/hashiqube)). It spins up a Vagrant VM running [Nomad](https://nomadproject.io), [Consul](https://www.consul.io),  [Vault](https://www.vaultproject.io) and [Traefik](https://traefik.io). Detailed instructions can be found in the project [readme](https://github.com/avillela/hashiqube#readme).
 
-
 ## Additional Resources
 
 Check out the [OpenTelemetry Collector Nomad Pack](https://github.com/hashicorp/nomad-pack-community-registry/tree/main/packs/opentelemetry_collector) in the [Nomad Pack Community Registry](https://github.com/hashicorp/nomad-pack-community-registry).

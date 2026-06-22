@@ -20,7 +20,6 @@ record. This allows for better processing and analysis of structured log data th
 
 - Logs
 
-
 ## How it works
 
 The Unroll Processor processes log records through the following steps:
@@ -49,8 +48,6 @@ unroll:
 unroll:
   recursive: false
 ```
-
-
 
 ## Examples
 

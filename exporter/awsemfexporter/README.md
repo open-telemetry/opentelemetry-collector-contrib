@@ -77,7 +77,6 @@ A metric descriptor section allows the schema of a metric to be overwritten befo
 | `unit` | The overwritten value of unit. The [MetricDatum](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html) contains a full list of supported unit values. |         |
 | `overwrite` | `true` if the schema should be overwritten with the given specification, otherwise it will only be configured if empty. |   false   |
 
-
 ## AWS Credential Configuration
 
 This exporter follows default credential resolution for the 
@@ -96,7 +95,6 @@ The AWS EMF Exporter will interpret the following metric attributes to change ho
 | `aws.emf.storage_resolution` | This attribute should be set to an integer value of `1` or `60`. When sending the metric value to CloudWatch use the specified storage resolution value. CloudWatch currently supports a storage resolution of `1` or `60` to indicate 1 second or 60 second resolution. | `aws.emf.storage_resolution = 60` |
 
 ## Configuration Examples
-
 
 ### Resource Attributes to Metric Labels
 `resource_to_telemetry_conversion`  option can be enabled to convert all the resource attributes to metric labels. By default, this option is disabled. Users need to set `enabled=true` to opt-in. See the config example below.

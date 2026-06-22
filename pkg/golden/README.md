@@ -31,24 +31,24 @@ necessary to ensure the function is removed after the golden file is written.
 
 ```go
 func TestScraper(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	require.NoError(t, xconfmap.Validate(cfg))
+ cfg := createDefaultConfig().(*Config)
+ require.NoError(t, xconfmap.Validate(cfg))
 
-	scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+ scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
+ err := scraper.start(context.Background(), componenttest.NewNopHost())
+ require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
-	require.NoError(t, err)
+ actualMetrics, err := scraper.scrape(context.Background())
+ require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
+ expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 
-	golden.WriteMetrics(t, expectedFile, actualMetrics) // This line is temporary! TODO remove this!!
+ golden.WriteMetrics(t, expectedFile, actualMetrics) // This line is temporary! TODO remove this!!
 
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
+ expectedMetrics, err := golden.ReadMetrics(expectedFile)
+ require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+ require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```

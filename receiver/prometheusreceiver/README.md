@@ -211,7 +211,6 @@ receivers:
             - targets: ['localhost:8080']
 ```
 
-
 This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
@@ -295,7 +294,6 @@ The API server hosts the same paths as the Prometheus agent-mode API. These incl
 - /metrics
 
 More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
-
 
 ## Feature gates
 

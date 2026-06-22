@@ -24,7 +24,6 @@
 
 The `body` mode of the JSON encoding extension is used to marshal or unmarshal the JSON log body, ignoring other log fields.
 
-
 #### body_with_inline_attributes
 
 The `body_with_inline_attributes` mode within the JSON encoding extension grabs the resource and attributes and adds them as key value pairs to the JSON body. It iterates through all the logs and creates a JSON array like the following example:

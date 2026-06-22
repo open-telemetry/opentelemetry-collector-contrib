@@ -371,7 +371,6 @@ kubectl apply -f config.yaml
 |--------------------------------|-------|
 | service_number_of_running_pods | Count |
 
-
 <br/><br/> 
 | Resource Attribute |
 |--------------------|
@@ -383,7 +382,6 @@ kubectl apply -f config.yaml
 | Version            |
 | Sources            |
 | kubernete          |
-
 
 <br/><br/> 
 <br/><br/> 
@@ -468,8 +466,9 @@ kubectl apply -f config.yaml
 | Version              |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Node Filesystem
 | Metric                      | Unit    |
@@ -496,8 +495,9 @@ kubectl apply -f config.yaml
 | Version              |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Node Network
 | Metric                             | Unit         |
@@ -525,8 +525,9 @@ kubectl apply -f config.yaml
 | interface            |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Pod
 | Metric                                | Unit          |
@@ -617,9 +618,9 @@ kubectl apply -f config.yaml
 | Sources              |
 | kubernete            |
 | pod_status           |
-<br/><br/> 
-<br/><br/> 
 
+<br/><br/>
+<br/><br/>
 
 ### Container
 | Metric                                  | Unit          |
@@ -758,6 +759,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | instance_network_tx_errors              | Count/Second  |
 | instance_network_tx_packets             | Count/Second  |
 | instance_number_of_running_tasks        | Count         |
+
 <br/><br/>
 
 | Resource Attribute   |
@@ -827,6 +829,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ContainerInstanceId  |
 | InstanceId           |
 | EBSVolumeId          |
+
 <br/><br/>
 <br/><br/>
 
@@ -855,6 +858,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ContainerInstanceId  |
 | InstanceId           |
 | EBSVolumeId          |
+
 <br/><br/>
 <br/><br/>
 

@@ -18,59 +18,59 @@ This benchmark compares several Go libraries for deep copying the armresources.G
 
 ```go
 import (
-	"testing"
+ "testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/brunoga/deep"
-	"github.com/huandu/go-clone"
-	"github.com/mohae/deepcopy"
-	"github.com/mitchellh/copystructure"
-	"github.com/barkimedes/go-deepcopy"
+ "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+ "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+ "github.com/brunoga/deep"
+ "github.com/huandu/go-clone"
+ "github.com/mohae/deepcopy"
+ "github.com/mitchellh/copystructure"
+ "github.com/barkimedes/go-deepcopy"
 )
 
 func BenchmarkDeepCopyLibraries(b *testing.B) {
-	orig := armresources.GenericResourceExpanded{
-		ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
-		Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
-		Name:     to.Ptr("myResource"),
-		Location: to.Ptr("westeurope"),
-		Tags: map[string]*string{
-			"env": to.Ptr("prod"),
-		},
-	}
+ orig := armresources.GenericResourceExpanded{
+  ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
+  Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
+  Name:     to.Ptr("myResource"),
+  Location: to.Ptr("westeurope"),
+  Tags: map[string]*string{
+   "env": to.Ptr("prod"),
+  },
+ }
 
-	b.Run("brunoga/deep", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			clonedAny, _ := deep.Copy(orig)
-			_ = clonedAny
-		}
-	})
+ b.Run("brunoga/deep", func(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+   clonedAny, _ := deep.Copy(orig)
+   _ = clonedAny
+  }
+ })
 
-	b.Run("mohae/deepcopy", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = deepcopy.Copy(orig)
-		}
-	})
+ b.Run("mohae/deepcopy", func(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+   _ = deepcopy.Copy(orig)
+  }
+ })
 
-	b.Run("barkimedes/go-deepcopy", func(b *testing.B) {
-		b.Skip("barkimedes/go-deepcopy does not support armresources.GenericResourceExpanded (panic reflect.Value.Set)")
-		for i := 0; i < b.N; i++ {
-			_, _ = barkdeep.Anything(orig)
-		}
-	})
+ b.Run("barkimedes/go-deepcopy", func(b *testing.B) {
+  b.Skip("barkimedes/go-deepcopy does not support armresources.GenericResourceExpanded (panic reflect.Value.Set)")
+  for i := 0; i < b.N; i++ {
+   _, _ = barkdeep.Anything(orig)
+  }
+ })
 
-	b.Run("mitchellh/copystructure", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = copystructure.Copy(orig)
-		}
-	})
+ b.Run("mitchellh/copystructure", func(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+   _, _ = copystructure.Copy(orig)
+  }
+ })
 
-	b.Run("huandu/go-clone", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = clone.Clone(orig).(armresources.GenericResourceExpanded)
-		}
-	})
+ b.Run("huandu/go-clone", func(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+   _ = clone.Clone(orig).(armresources.GenericResourceExpanded)
+  }
+ })
 }
 ```
 

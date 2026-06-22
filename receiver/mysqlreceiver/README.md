@@ -48,7 +48,6 @@ GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 
 ## Configuration
 
-
 The following settings are optional:
 - `endpoint`: (default = `localhost:3306`)
 - `tls`: Defines the TLS configuration to use. If `tls` is not set, the default is to disable TLS connections.

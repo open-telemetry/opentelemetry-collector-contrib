@@ -17,7 +17,6 @@ The `container` operator parses logs in `docker`, `cri-o` and `containerd` forma
 | `if`                         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `severity`                   | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator.                                                                                                 |
 
-
 ### Embedded Operations
 
 The `container`  parser can be configured to embed certain operations such as the severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
@@ -242,7 +241,6 @@ Configuration:
 </td>
 </tr>
 </table>
-
 
 #### Parse multiline logs and recombine into a single one
 

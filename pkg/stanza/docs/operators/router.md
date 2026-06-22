@@ -24,7 +24,6 @@ An entry that does not match any of the routes is dropped and not processed furt
 | `expr`       | required | An [expression](../types/expression.md) that returns a boolean. The body of the routed entry is available as `$`. |
 | `attributes` | {}       | A map of `key: value` pairs to add to an entry that matches the route. |
 
-
 ### Examples
 
 #### Forward entries to different parsers based on content

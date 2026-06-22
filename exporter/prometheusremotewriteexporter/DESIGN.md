@@ -1,5 +1,4 @@
 
-
 # **OpenTelemetry Collector Prometheus Remote Write/Cortex Exporter Design**
 
 Authors: @huyan0, @danielbang907
@@ -23,7 +22,6 @@ The Prometheus remote write/Cortex exporter should write metrics to a remote URL
 ![Image of TimeSeries](img/timeseries.png)
 
 TimeSeries stores its metric name in its labels and does not describe metric types or start timestamps. To convert to TimeSeries data, buckets of a Histogram are broken down into individual TimeSeries with a bound label(`le`), and a similar process happens with quantiles in a Summary.
-
 
 More details of Prometheus remote write API can be found in Prometheus [documentation](https://prometheus.io/docs/prometheus/latest/storage/#overview) and Cortex [documentation](https://cortexmetrics.io/docs/api/).
 
@@ -56,14 +54,11 @@ To group data points by label set, the exporter should create a map with each Pu
 * the metric name
 * the set of labels that identify a unique TimeSeries
 
-
 The exporter should create a signature string as map key by concatenating metric type, metric name, and label names and label values at each data point. To ensure correctness, the label set at each data point should be sorted by label key before generating the signature string.  
 
 An alternative key type is in the exiting label.Set implementation from the OpenTelemetry Go API. It provides a Distinct type that guarantees the result will equal the equivalent Distinct value of any label set with the same elements as this,  where sets are made unique by choosing the last value in the input for any given key. If we allocate a Go API's kv.KeyValue for every label of a data point, then a label.Set from the API can be created, and its Distinct value can be used as map key.
 
-
 The value of the map should be Prometheus TimeSeries, and each data point’s value and timestamp should be inserted to its corresponding TimeSeries in the map as a Sample, each metric’s label set and metric name should be combined and translated to a Prometheus label set; a new TimeSeries should be created if the string signature is not in the map. 
-
 
 Pseudocode:
 
@@ -73,14 +68,14 @@ Pseudocode:
          map := make(map[String][]TimeSeries)
 
          for metric in metricsData:
-	         for point in metric:
-	           // Generate signature string
-	           sig := pointSignature(metric, point)
+          for point in metric:
+            // Generate signature string
+            sig := pointSignature(metric, point)
 
-	           // Find corresponding TimeSeries in map
-	           // Add to TimeSeries
+            // Find corresponding TimeSeries in map
+            // Add to TimeSeries
 
-	      // Sends TimeSeries to backend
+       // Sends TimeSeries to backend
           export(map)
        }
 
@@ -88,11 +83,9 @@ Pseudocode:
 
 Each Prometheus remote write TimeSeries represents less semantic information than an OTLP metric. The temporality property of a OTLP metric is ignored in a TimeSeries because it is always considered as cumulative for monotonic types and histogram, and the type property of a OTLP metric is translated by mapping each metric to one or multiple TimeSeries. The following sections explain how to map each OTLP metric type to Prometheus remote write TimeSeries.
 
-
 **INT64, MONOTONIC_INT64, DOUBLE, MONOTONIC_DOUBLE**
 
 Each unique label set within metrics of these types can be converted to exactly one TimeSeries. From the perspective of Prometheus client types, INT64 and DOUBLE correspond to gauge metrics, and MONOTONIC types correspond to counter metrics. In both cases, data points will be exported directly without aggregation. Any metric of the monotonic types that is not cumulative should be dropped; non-monotonic scalar types are assumed to represent gauge values, thus its temporality is not checked. Monotonic types need to have a `_total` suffix in its metric name when exporting; this is a requirement of Prometheus.
-
 
 **HISTOGRAM**
 
@@ -104,7 +97,6 @@ Each histogram data point can be converted to 2 + n + 1 Prometheus remote write 
 * 1 *TimeSeries* representing metric_name_bucket{le=“+Inf”} contains counts for the bucket with infinity as upper bound; its value is equivalent to metric_name_count.
 
 Prometheus bucket values are cumulative, meaning the count of each bucket should contain counts from buckets with lower bounds. In addition, Exemplars from a histogram data point are ignored. When adding a bucket of the histogram data point to the map, the string signature should also contain a `le` label that indicates the bound value. This label should also be exported. Any histogram metric that is not cumulative should be dropped.
-
 
 **SUMMARY**
 
@@ -120,24 +112,21 @@ When adding a quantile of the summary data point to the map, the string signatur
 
 The Prometheus remote write/Cortex exporter should call proto.Marshal() to convert multiple TimeSeries to a byte array. Then, the exporter should send the byte array to Prometheus remote storage in a HTTP request.
 
-
 Authentication credentials should be added to each request before sending to the backend. Basic auth and bearer token headers can be added using Golang http.Client’s default configuration options. Other authentication headers can be added by implementing a client interceptor.
-
 
 Pseudocode:
 
-
       func export(*map) error {
-        	// Stores timeseries
-        	arr := make([]TimeSeries)
+         // Stores timeseries
+         arr := make([]TimeSeries)
 
-        	for timeseries in map:
-        		arr = append(arr, timeseries)
+         for timeseries in map:
+          arr = append(arr, timeseries)
 
-        		// Converts arr to WriteRequest
-        		request := proto.Marshal(arr)
+          // Converts arr to WriteRequest
+          request := proto.Marshal(arr)
 
-        	// Sends HTTP request to endpoint
+         // Sends HTTP request to endpoint
         }
 
 ## **3. Other Components**
@@ -146,9 +135,7 @@ Pseudocode:
 
 This struct is based on an inputted YAML file at the beginning of the pipeline and defines the configurations for an Exporter build. Examples of configuration parameters are HTTP endpoint, compression type, backend program, etc.
 
-
 Converting YAML to a Go struct is done by the Collector, using [_the Viper package_](https://github.com/spf13/viper), which is an open-source library that seamlessly converts inputted YAML files into a usable, appropriate Config struct.
-
 
 An example of the exporter section of the Collector config.yml YAML file can be seen below:
 
@@ -209,9 +196,7 @@ An example of the exporter section of the Collector config.yml YAML file can be 
 
 This struct implements the ExporterFactory interface, and is used during collector’s pipeline initialization to create the Exporter instances as defined by the Config struct. The `exporterhelper` package will be used to create the exporter and the factory.
 
-
 Our Factory type will look very similar to other exporters’ factory implementation. For our implementation, our Factory instance will implement three methods
-
 
 **Methods**
 
@@ -222,12 +207,9 @@ This method will use the NewFactory method within the `exporterhelper` package t
 
 This method creates the default configuration for Prometheus remote write/Cortex exporter.
 
-
     createMetricsExporter
 
 This method constructs a new http.Client with interceptors that add headers to any request it sends. Then, this method initializes a new Prometheus remote write exporter/Cortex exporter with the http.Client. This method constructs a collector Prometheus remote write/Cortex exporter with the created SDK exporter 
-
-
 
 ## **4. Other Considerations**
 
@@ -245,14 +227,14 @@ Once the shutdown() function is called, the exporter should stop accepting incom
     }
 
     func PushMetrics() {
-	    select:
-	        case <- stopCh
-	               return error
-	        default:
-	               waitGroup.Add(1)
-	               defer waitGroup.Done()
-	               // export metrics
-		  ...
+     select:
+         case <- stopCh
+                return error
+         default:
+                waitGroup.Add(1)
+                defer waitGroup.Done()
+                // export metrics
+    ...
     }
 
 ### **4.3 Timeout Behavior**
@@ -271,18 +253,11 @@ Users should be able to pass in a time for the each http request as part of the 
 
 The PushMetricsData() function should return the number of dropped metrics. Any monotonic and histogram metrics that are not cumulative should be dropped. This can be done by checking the temporality of each received metric. Any error should be returned to the caller, and the error message should be descriptive. 
 
-
-
 ### **4.5 Test Strategy**
 
 We will follow test-driven development practices while completing this project. We’ll write unit tests before implementing production code. Tests will cover normal and abnormal inputs and test for edge cases. We will provide end-to-end tests using mock backend/client. Our target is to get 90% or more of code coverage.
-
-
 
 ## **Request for Feedback**
 We'd like to get some feedback on whether we made the appropriate assumptions in [this](#12-gaps-and-assumptions) section, and appreciate more comments, updates , and suggestions on the topic.
 
 Please let us know if there are any revisions, technical or informational, necessary for this document. Thank you!
-
-
-

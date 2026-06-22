@@ -12,7 +12,6 @@ Entry is the base representation of log data as it moves through a pipeline. All
 | `attributes`     | A map of key/value pairs that provide additional context to the log. This value is often used by a consumer to filter logs. |
 | `body`           | The contents of the log. This value is often modified and restructured in the pipeline. It may be a string, number, or object. |
 
-
 Represented in `json` format, an entry may look like the following:
 
 ```json

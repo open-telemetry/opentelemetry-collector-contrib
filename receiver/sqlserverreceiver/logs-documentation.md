@@ -51,4 +51,3 @@
 | sqlserver.query_plan_hash             | Hash value used to group similar query execution plans.                           | string |
 | sqlserver.context_info                | Optional context information for the query/session.                               | string |
 | sqlserver.username                    | Login name associated with the SQL Server session.                                | string |
-

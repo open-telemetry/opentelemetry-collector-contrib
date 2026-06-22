@@ -220,7 +220,6 @@ Age of the oldest WAL file.
 
 This metric requires WAL to be enabled with at least one replica.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
@@ -230,7 +229,6 @@ This metric requires WAL to be enabled with at least one replica.
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
 This metric requires WAL to be enabled with at least one replica.
-
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -376,7 +374,6 @@ Number of rows updated by queries in the database.
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
 This metric requires WAL to be enabled with at least one replica.
-
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

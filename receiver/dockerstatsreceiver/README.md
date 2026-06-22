@@ -123,7 +123,6 @@ For enhanced security, consider:
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
 
-
 ## Deprecations
 
 ### Transition to cpu utilization metric name aligned with OpenTelemetry specification

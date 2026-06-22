@@ -85,4 +85,3 @@ Brief description of configuration properties:
     - **instances** - list of Google Cloud Spanner instance for connection
         - **instance_id** - identifier of Google Cloud Spanner instance
         - **databases** - list of databases used from this instance
-

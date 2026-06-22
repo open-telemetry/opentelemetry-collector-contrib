@@ -20,7 +20,6 @@ the [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-
 
 > :information_source: Requires Podman API version 3.3.1+ and Windows is not supported.
 
-
 ## Configuration
 
 The following settings are required:
@@ -96,17 +95,17 @@ receivers:
 
 The receiver emits the following metrics:
 
-	container.memory.usage.limit
-	container.memory.usage.total
-	container.memory.percent
-	container.network.io.usage.tx_bytes
-	container.network.io.usage.rx_bytes
-	container.blockio.io_service_bytes_recursive.write
-	container.blockio.io_service_bytes_recursive.read
-	container.cpu.usage.system
-	container.cpu.usage.total
-	container.cpu.percent
-	container.cpu.usage.percpu
+ container.memory.usage.limit
+ container.memory.usage.total
+ container.memory.percent
+ container.network.io.usage.tx_bytes
+ container.network.io.usage.rx_bytes
+ container.blockio.io_service_bytes_recursive.write
+ container.blockio.io_service_bytes_recursive.read
+ container.cpu.usage.system
+ container.cpu.usage.total
+ container.cpu.percent
+ container.cpu.usage.percpu
 
 See [./documentation.md](./documentation.md) for full detail.
 
@@ -123,4 +122,3 @@ Recommended build tags to use when including this receiver in your build:
 - `containers_image_openpgp`
 - `exclude_graphdriver_btrfs`
 - `exclude_graphdriver_devicemapper`
-

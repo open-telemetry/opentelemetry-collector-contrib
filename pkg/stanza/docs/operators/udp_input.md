@@ -12,7 +12,7 @@ The `udp_input` operator listens for logs from UDP packets.
 | `attributes`                            | {}                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
 | `one_log_per_packet`                    | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance. |
 | `resource`                              | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
-| `add_attributes`                        | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/cee22ec91448808ebcfa53df689c800c7171c9e1/docs/general/attributes.md#other-network-attributes]. |
+| `add_attributes`                        | false                | Adds `net.*` attributes according to [semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/cee22ec91448808ebcfa53df689c800c7171c9e1/docs/general/attributes.md#other-network-attributes). |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details. |
 | `preserve_leading_whitespaces`          | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces`             | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
@@ -33,7 +33,7 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 #### Supported encodings
 
-| Key        | Description
+| Key        | Description |
 | ---        | ---                                                              |
 | `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`    | UTF-8 encoding                                                   |

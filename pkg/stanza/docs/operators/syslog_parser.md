@@ -26,7 +26,6 @@ The `syslog_parser` can be configured to embed certain operations such as timest
 
 ### Example Configurations
 
-
 #### Parse the field `message` as syslog
 
 Configuration:

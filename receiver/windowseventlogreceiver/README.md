@@ -34,7 +34,7 @@ This receiver tails and parses logs from windows event log API using the
 | `operators`                         | []           | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details                                                            |
 | `raw` | false | If false, the body of emitted log records will contain a structured representation of the event. Otherwise, the body will be the original XML string. |
 | `event_data_format` | `map` | Controls the structure of the `event_data` field when `raw` is false. `map` emits a flat map (named elements as direct keys, anonymous elements as `param1`, `param2`, etc.). `array` emits the legacy format with a nested `data` array of single-key maps. |
-| `include_log_record_original` | false | If false, no additional attributes are added. If true, `log.record.original` is added to the attributes, which stores the original XML string according to the configured `suppress_rendering_info` (see below). 
+| `include_log_record_original` | false | If false, no additional attributes are added. If true, `log.record.original` is added to the attributes, which stores the original XML string according to the configured `suppress_rendering_info` (see below). |
 | `suppress_rendering_info` | false | If false, [additional syscalls](https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage#remarks) may be made to retrieve detailed information about the event. Otherwise, some unresolved values may be present in the event. |
 | `exclude_providers`                 | []           | One or more event log providers to exclude from processing.                                                                                                                                                                                    |
 | `storage`                           | none         | The ID of a storage extension to be used to store bookmarks. Bookmarks allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage bookmarks in memory only. |
@@ -50,7 +50,6 @@ This receiver tails and parses logs from windows event log API using the
 | `resolve_sids.cache_size`           | `10000`      | Maximum number of SID-to-name mappings to cache in memory. Older entries are evicted using LRU policy.                                                                                                                         |
 | `resolve_sids.cache_ttl`            | `15m`        | Time-to-live for cached SID mappings. After this duration, SIDs will be re-resolved from the Windows LSA API.                                                                                                                  |
 | `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
-
 
 ### Feature Gates
 
@@ -175,7 +174,6 @@ If collection of the local event log is desired, a separate receiver needs to be
 
 - The remote computer must enable the "Remote Event Log Management" Windows Firewall exception. Otherwise, when you try to use the session handle, the call will error with `RPC_S_SERVER_UNAVAILABLE`.
 - The computer to which you are connecting must be running Windows Vista or later.
-
 
 Single server configuration:
 ```yaml

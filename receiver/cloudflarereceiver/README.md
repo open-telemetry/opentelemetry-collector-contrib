@@ -63,7 +63,6 @@ If the receiver will be handling TLS termination:
   - The separator used to join nested fields in the log message when setting attributes. For example, if the log message contains a field `"RequestHeaders": { "Content-Type": "application/json" }`, and the `separator` is set to `.`, the attribute will be set as `RequestHeaders.Content_Type`. If the separator is set to `_`, it will be set as `RequestHeaders_Content_Type`.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 
-
 ### Example:
 
 ```yaml

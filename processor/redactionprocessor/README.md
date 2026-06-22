@@ -157,7 +157,6 @@ processors:
 
 ```
 
-
 `blocked_key_patterns` applies to the values of the keys matching one of the patterns.
 The value is then masked according to the configuration.
 

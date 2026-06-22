@@ -210,7 +210,6 @@ attributes. The table below summarizes the mapping between the
 [Azure common log format](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema)
 and the OpenTelemetry attributes.
 
-
 | Azure                            | OpenTelemetry                          |
 |----------------------------------|----------------------------------------|
 | callerIpAddress (optional)       | network.peer.address (attribute)       |

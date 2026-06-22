@@ -27,7 +27,6 @@ A “Read Only” user assigned to a vSphere with permissions to the vCenter ser
 
 ## Configuration
 
-
 | Parameter           | Default | Type             | Notes                                                                                                                                                                                                                                           |
 | ------------------- | ------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | endpoint            |         | String           | Endpoint to the vCenter Server or ESXi host that has the sdk path enabled. Required. The expected format is `<protocol>://<hostname>` <br><br> i.e: `https://vcsa.hostname.localnet`                                                            |

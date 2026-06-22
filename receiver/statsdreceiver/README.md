@@ -45,7 +45,6 @@ The Following settings are optional:
 
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
-
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
@@ -126,11 +125,9 @@ It supports sample rate. When a sample rate is provided (between 0 and 1), the r
 
 **Note**: Currently, the sample rate is applied during aggregation and the adjusted value is exported. If OTLP adds native support for sample rate as a metric parameter in the future, the implementation may be updated to preserve the original sample rate information.
 
-
 ### Gauge
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
-
 
 ### Timer
 
@@ -138,7 +135,6 @@ It supports sample rate. When a sample rate is provided (between 0 and 1), the r
 `<name>:<value>|h|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 It supports sample rate.
-
 
 ## Testing
 

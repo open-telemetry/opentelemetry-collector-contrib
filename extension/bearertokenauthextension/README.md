@@ -34,7 +34,6 @@ Either one of `token` or `filename` field is required. If both are specified, th
 
 **Note**: bearertokenauth requires transport layer security enabled on the exporter.
 
-
 ```yaml
 extensions:
   bearertokenauth:
