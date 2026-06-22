@@ -1,0 +1,37 @@
+change_type: breaking
+component: exporter/signalfx
+note: "Remove `cpu.utilization_per_core` from the SignalFx exporter's default translations and default exclude list."
+issues: []
+subtext: |
+  The exporter still creates the aggregate `cpu.utilization` metric by default. To emit an equivalent `cpu.utilization_per_core` metric, enable `system.cpu.utilization` in the `hostmetrics` receiver, then copy and aggregate it with the transform processor:
+  ```yaml
+  receivers:
+    hostmetrics:
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.utilization:
+              enabled: true
+
+  processors:
+    transform/cpu_utilization_per_core:
+      error_mode: ignore
+      metric_statements:
+        - context: metric
+          statements:
+            - copy_metric(name="cpu.utilization_per_core") where metric.name == "system.cpu.utilization"
+        - context: datapoint
+          statements:
+            - set(datapoint.value_double, 0.0) where metric.name == "cpu.utilization_per_core" and datapoint.attributes["state"] == "idle"
+        - context: metric
+          statements:
+            - aggregate_on_attributes("sum", ["cpu"]) where metric.name == "cpu.utilization_per_core"
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [hostmetrics]
+        processors: [transform/cpu_utilization_per_core]
+        exporters: [signalfx]
+  ```
+change_logs: [user]
