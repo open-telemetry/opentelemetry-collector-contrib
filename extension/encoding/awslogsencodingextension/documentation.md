@@ -8,6 +8,8 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `extension.awslogsencoding.cloudtrail.enable.user.identity.prefix` | alpha | When enabled, CloudTrail log userIdentity attributes will use 'aws.user_identity' prefix. This helps to preserve the attribute origin. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459) |
+| `extension.awslogsencoding.vpcflow.start.iso8601` | alpha | When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer. | v0.138.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390) |
 | `extension.encoding.awslogsencoding.DontEmitV0RPCConventions` | alpha | When enabled, CloudTrail log unmarshaler no longer emits the deprecated semconv v1.38.0 attributes rpc.service and rpc.system. Requires extension.encoding.awslogsencoding.EmitV1RPCConventions to also be enabled. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549) |
 | `extension.encoding.awslogsencoding.EmitV1RPCConventions` | alpha | When enabled, CloudTrail log unmarshaler emits rpc.system.name (semconv v1.40.0) instead of the deprecated rpc.system (semconv v1.38.0). | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549) |
 
