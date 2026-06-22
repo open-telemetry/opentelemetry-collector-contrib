@@ -7,7 +7,7 @@ status:
     alpha: [extension]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [evan-bradley]
+    active: [evan-bradley, mwear]
     seeking_new: true
 
 feature_gates:
