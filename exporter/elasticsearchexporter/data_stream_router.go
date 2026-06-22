@@ -175,7 +175,7 @@ func routeRecord(
 	if esIndex, esIndexExists := getFromAttributes(elasticsearch.IndexAttributeName, "", recordAttr, scopeAttr, resourceAttr); esIndexExists {
 		// Advanced users can route documents by setting IndexAttributeName in a processor earlier in the pipeline.
 		// If `data_stream.*` needs to be set in the document, users should use `data_stream.*` attributes.
-		return elasticsearch.Index{Index: esIndex}, nil
+		return elasticsearch.Index{Index: sanitizeDataStreamField(esIndex, disallowedNamespaceRunes, "")}, nil
 	}
 
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)

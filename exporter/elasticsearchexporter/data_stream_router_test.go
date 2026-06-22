@@ -53,6 +53,17 @@ func createRouteTests(dsType string) []routeTestCase {
 			},
 		},
 		{
+			name:      "otel with elasticsearch.index containing uppercase and disallowed chars",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": "My/Index:Name",
+			},
+			want: elasticsearch.Index{
+				Index: "my_index_name",
+			},
+		},
+		{
 			name:      "otel with data_stream attrs",
 			mode:      MappingOTel,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
