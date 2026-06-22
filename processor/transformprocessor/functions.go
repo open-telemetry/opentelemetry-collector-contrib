@@ -51,12 +51,6 @@ func DefaultDataPointFunctionsNew() []ottl.Factory[*ottldatapoint.TransformConte
 func DefaultExemplarFunctions() []ottl.Factory[*ottlexemplar.TransformContext] {
 	return slices.Collect(maps.Values(defaultExemplarFunctionsMap()))
 }
-
-// Deprecated: [v0.152.0] Use DefaultExemplarFunctions.
-func DefaultExemplarFunctionsNew() []ottl.Factory[*ottlexemplar.TransformContext] {
-	return DefaultExemplarFunctions()
-}
-
 func DefaultSpanFunctions() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }

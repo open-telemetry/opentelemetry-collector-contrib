@@ -62,7 +62,6 @@ Within each `<signal_statements>` list, only certain OTTL Path prefixes can be u
 | profile_statements | `resource`, `scope`, and `profile`             |
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
-The `exemplar` context is available only under `metric_statements` and processes exemplars attached to Gauge, Sum, Histogram, and ExponentialHistogram datapoints.
 
 `error_mode`: determines how the processor treats errors that occur while processing a statement.
 If the top-level `error_mode` is not specified, `ignore` will be used.
@@ -206,13 +205,6 @@ metric_statements:
 
 In this configuration, the inferred Context value is `datapoint`, as it is the only Context
 that supports parsing both `datapoint` and `metric` Paths.
-
-Exemplar statements can also reference parent metric, scope, and resource paths. For example:
-
-```yaml
-metric_statements:
-  - set(exemplar.time, exemplar.time + Duration("2h")) where metric.name == "request.duration"
-```
 
 In the following example, the inferred Context is `metric`,
 as `metric` is the context capable of parsing both `metric` and `resource` data.
