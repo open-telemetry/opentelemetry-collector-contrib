@@ -1341,7 +1341,7 @@ func BenchmarkPushMetrics(b *testing.B) {
 }
 
 // TestIncludeMetadataKeys verifies that keys listed in
-// remote_write_queue.include_metadata_keys are read from the client metadata
+// include_metadata_keys are read from the client metadata
 // context and forwarded as HTTP headers on every outbound remote write request.
 func TestIncludeMetadataKeys(t *testing.T) {
 	// Capture headers received by the mock remote write server.
@@ -1360,13 +1360,11 @@ func TestIncludeMetadataKeys(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg := &Config{
-		ClientConfig: clientConfig,
-		RemoteWriteQueue: RemoteWriteQueue{
-			NumConsumers: 1,
-			IncludeMetadataKeys: []string{
-				"target-id",
-				"target-type",
-			},
+		ClientConfig:     clientConfig,
+		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+		IncludeMetadataKeys: []string{
+			"target-id",
+			"target-type",
 		},
 		TargetInfo:          TargetInfo{Enabled: true},
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),

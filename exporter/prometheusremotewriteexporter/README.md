@@ -52,12 +52,12 @@ The following settings can be optionally configured:
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true. **Deprecated**: Use `translation_strategy` instead.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Options are: `UnderscoreEscapingWithSuffixes` (default), `UnderscoreEscapingWithoutSuffixes`, `NoUTF8EscapingWithSuffixes`, and `NoTranslation`. When set, this takes precedence over `add_metric_suffixes`.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. This option is ignored when using PRW 2.0, which always includes metadata.
+- `include_metadata_keys`: list of client metadata keys whose values are forwarded as HTTP headers on every outbound remote write request.
+  - **Note**: When WAL is enabled, then this setting has no effect. The WAL persists only the raw protobuf bytes of each write request; the originating `client.Info` context is not serialized to disk so initial metadata are lost.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
-  - `include_metadata_keys`: list of client metadata keys whose values are forwarded as HTTP headers on every outbound remote write request.
-    - **Note**: When WAL is enabled, then this setting has no effect. The WAL persists only the raw protobuf bytes of each write request; the originating `client.Info` context is not serialized to disk so initial metadata are lost.
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
   - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace`  resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.

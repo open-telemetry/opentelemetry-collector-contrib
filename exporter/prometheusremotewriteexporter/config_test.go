@@ -173,13 +173,13 @@ func TestLoadConfig(t *testing.T) {
 					MaxElapsedTime:      5 * time.Minute,
 				},
 				RemoteWriteQueue: RemoteWriteQueue{
-					Enabled:             true,
-					QueueSize:           1000,
-					NumConsumers:        5,
-					IncludeMetadataKeys: []string{"target-id", "x-org-id"},
+					Enabled:      true,
+					QueueSize:    1000,
+					NumConsumers: 5,
 				},
-				ExternalLabels:    map[string]string{},
-				AddMetricSuffixes: true,
+				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
+				ExternalLabels:      map[string]string{},
+				AddMetricSuffixes:   true,
 				ClientConfig: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"

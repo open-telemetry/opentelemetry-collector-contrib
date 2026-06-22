@@ -72,6 +72,10 @@ type Config struct {
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent.
 	RemoteWriteProtoMsg remoteapi.WriteMessageType `mapstructure:"protobuf_message,omitempty"`
+
+	// IncludeMetadataKeys is a list of client metadata keys whose values are
+	// forwarded as HTTP request headers on every remote write call.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 }
 
 type translationStrategy string
@@ -111,10 +115,6 @@ type RemoteWriteQueue struct {
 	// NumWorkers configures the number of workers used by
 	// the collector to fan out remote write requests.
 	NumConsumers int `mapstructure:"num_consumers"`
-
-	// IncludeMetadataKeys is a list of client metadata keys whose values are
-	// forwarded as HTTP request headers on every remote write call.
-	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

@@ -6,11 +6,6 @@ $defs:
       enabled:
         description: Enabled if false the queue is not enabled, the export requests are executed synchronously.
         type: boolean
-      include_metadata_keys:
-        description: IncludeMetadataKeys is a list of client metadata keys whose values are forwarded as HTTP request headers on every remote write call.
-        type: array
-        items:
-          type: string
       num_consumers:
         description: NumWorkers configures the number of workers used by the collector to fan out remote write requests.
         type: integer
@@ -49,6 +44,11 @@ properties:
     description: ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
     type: object
     additionalProperties:
+      type: string
+  include_metadata_keys:
+    description: IncludeMetadataKeys is a list of client metadata keys whose values are forwarded as HTTP request headers on every remote write call.
+    type: array
+    items:
       type: string
   max_batch_request_parallelism:
     description: maximum amount of parallel requests to do when handling large batch request
