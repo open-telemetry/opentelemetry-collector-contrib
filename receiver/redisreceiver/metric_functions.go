@@ -64,7 +64,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"links_buffer_limit_exceeded.count": rs.mb.RecordRedisClusterLinksBufferLimitExceededCountDataPoint,
 		"pubsub_channels":                   rs.recordPubsubChannels,
 		"pubsub_clients":                    rs.mb.RecordRedisPubsubConnectionCountDataPoint,
-		"pubsub_patterns":                   rs.mb.RecordRedisPubsubPatternsActiveDataPoint,
+		"pubsub_patterns":                   rs.recordPubsubPatternsActive,
 		"pubsub_shardchannels":              rs.recordPubsubShardChannels,
 	}
 }
@@ -99,4 +99,8 @@ func (rs *redisScraper) recordPubsubChannels(now pcommon.Timestamp, val int64) {
 
 func (rs *redisScraper) recordPubsubShardChannels(now pcommon.Timestamp, val int64) {
 	rs.mb.RecordRedisPubsubChannelsDataPoint(now, val, metadata.AttributeTypeShard)
+}
+
+func (rs *redisScraper) recordPubsubPatternsActive(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubPatternStatusDataPoint(now, val, metadata.AttributeRedisPubsubPatternStateActive)
 }

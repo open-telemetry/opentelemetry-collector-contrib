@@ -62,6 +62,12 @@ attributes:
       - p50
       - p99
       - p99.9
+  redis.pubsub.pattern.state:
+    description: The state of pub/sub patterns
+    type: string
+    requirement_level: recommended
+    enum:
+      - active
   role:
     description: Redis node's role
     type: string
@@ -521,15 +527,16 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
-  redis.pubsub.patterns.active:
+  redis.pubsub.pattern.status:
     enabled: true
-    description: Number of active pub/sub patterns
+    description: Number of pub/sub patterns
     stability: development
     unit: "{pattern}"
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [redis.pubsub.pattern.state]
 
   redis.rdb.changes_since_last_save:
     enabled: true

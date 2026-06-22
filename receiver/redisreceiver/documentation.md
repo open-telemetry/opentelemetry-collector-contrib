@@ -242,13 +242,19 @@ Number of pub/sub channels
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | type | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
 
-### redis.pubsub.patterns.active
+### redis.pubsub.pattern.status
 
-Number of active pub/sub patterns
+Number of pub/sub patterns
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {pattern} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| redis.pubsub.pattern.state | The state of pub/sub patterns | Str: ``active`` | Recommended | - |
 
 ### redis.rdb.changes_since_last_save
 
