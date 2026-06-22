@@ -75,7 +75,11 @@ type xmlElement struct {
 
 // UnmarshalXML implements xml.Unmarshaler for xmlElement
 func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	if a.depth > maxXMLElementDepth {
+	return a.unmarshalXML(d, start, a.depth)
+}
+
+func (a *xmlElement) unmarshalXML(d *xml.Decoder, start xml.StartElement, depth int) error {
+	if depth > maxXMLElementDepth {
 		return fmt.Errorf("exceeded maximum XML nesting depth of %d", maxXMLElementDepth)
 	}
 	a.tag = start.Name.Local
@@ -89,8 +93,8 @@ func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 
 		switch t := tok.(type) {
 		case xml.StartElement:
-			child := xmlElement{depth: a.depth + 1}
-			err := d.DecodeElement(&child, &t)
+			child := xmlElement{}
+			err := child.unmarshalXML(d, t, depth+1)
 			if err != nil {
 				return err
 			}

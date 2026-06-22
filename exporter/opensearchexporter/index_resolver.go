@@ -103,13 +103,13 @@ func (r *indexResolver) resolveIndexName(indexPattern, fallback string, itemAttr
 	}
 	indexName := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
 		key := r.placeholderPattern.FindStringSubmatch(match)[1]
-		if val, ok := itemAttributes[key]; ok && val != "" {
+		if val, ok := itemAttributes[key]; ok && val != "" && isValidPlaceholderValue(val) {
 			return val
 		}
-		if val, ok := scopeAttributes[key]; ok && val != "" {
+		if val, ok := scopeAttributes[key]; ok && val != "" && isValidPlaceholderValue(val) {
 			return val
 		}
-		if val, ok := resourceAttributes[key]; ok && val != "" {
+		if val, ok := resourceAttributes[key]; ok && val != "" && isValidPlaceholderValue(val) {
 			return val
 		}
 		if fallback != "" {
@@ -142,3 +142,12 @@ func convertGoTimeFormat(format string) string {
 	f = strings.ReplaceAll(f, "ss", "05")
 	return f
 }
+
+var isValidPlaceholderPattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+
+func isValidPlaceholderValue(val string) bool {
+	return isValidPlaceholderPattern.MatchString(val) &&
+		!strings.Contains(val, "..") &&
+		!strings.HasPrefix(val, ".")
+}
+
