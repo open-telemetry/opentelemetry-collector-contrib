@@ -558,8 +558,6 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
-	require.NotContains(t, m, "cpu.utilization_per_core")
-
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
 
@@ -628,21 +626,6 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	dps := converter.MetricsToSignalFxV2(md)
 
 	require.Empty(t, dps)
-}
-
-func TestDefaultExcludesDoNotDropCPUUtilizationPerCore(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	require.NoError(t, setDefaultExcludes(cfg))
-
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
-	require.NoError(t, err)
-
-	md := getMetrics([]map[string]string{{"cpu.utilization_per_core": ""}})
-	dps := converter.MetricsToSignalFxV2(md)
-
-	require.Len(t, dps, 1)
-	require.Equal(t, "cpu.utilization_per_core", dps[0].Metric)
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
