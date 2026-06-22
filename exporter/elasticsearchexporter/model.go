@@ -120,7 +120,7 @@ var (
 		string(conventions.ExceptionTypeKey):        {to: "error.exception.type"},
 		string(conventions.ExceptionMessageKey):     {to: "error.exception.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stack_trace"},
-		string(conventionsv126.ExceptionEscapedKey): {skip: true}, // processor writes error.exception.handled
+		"exception.escaped": {skip: true}, // processor writes error.exception.handled
 		elasticsearch.DataStreamType:                {skip: true}, // routing only, written by addDataStreamAttributes
 		elasticsearch.DataStreamDataset:             {skip: true},
 		elasticsearch.DataStreamNamespace:           {skip: true},
