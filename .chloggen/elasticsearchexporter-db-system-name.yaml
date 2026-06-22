@@ -1,5 +1,5 @@
 change_type: enhancement
-component: exporter/elasticsearchexporter
+component: exporter/elasticsearch
 note: Add support for `db.system.name` semconv attribute in ECS mapping mode.
 issues: [49211]
 subtext: |
