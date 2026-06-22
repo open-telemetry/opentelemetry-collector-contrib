@@ -15,8 +15,6 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
-reaggregation_enabled: true
-
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
     description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.

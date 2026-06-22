@@ -1,6 +1,5 @@
 display_name: Chrony Receiver
 type: chrony
-reaggregation_enabled: true
 
 status:
   class: receiver

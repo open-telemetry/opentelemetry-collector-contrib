@@ -1,6 +1,5 @@
 display_name: NSX-T Receiver
 type: nsxt
-reaggregation_enabled: true
 
 description: |
   This receiver fetches metrics important to run virtual networking using NSX-T. The receiver ingests metrics via the
