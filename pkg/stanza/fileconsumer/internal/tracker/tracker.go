@@ -172,6 +172,25 @@ func (t *fileTracker) TotalReaders() int {
 	return total
 }
 
+func (t *fileTracker) EndConsume() (filesClosed int) {
+	spare := t.previousPollFiles
+	filesClosed = t.ClosePreviousFiles()
+
+	// t.currentPollFiles -> t.previousPollFiles
+	t.previousPollFiles = t.currentPollFiles
+	t.previousPollFiles.Reindex()
+	if spare == nil {
+		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
+	} else {
+		spare.Reset()
+		t.currentPollFiles = spare
+	}
+
+	t.unmatchedFiles = t.unmatchedFiles[:0]
+	t.unmatchedFps = t.unmatchedFps[:0]
+	return filesClosed
+}
+
 // noStateTracker only tracks the current polled files. Once the poll is
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.

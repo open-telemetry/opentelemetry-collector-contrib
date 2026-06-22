@@ -141,9 +141,6 @@ func TestMoveCreate(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -169,9 +166,6 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -200,6 +194,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
+	defer movedFile.Close()
 	filetest.WriteString(t, movedFile, "testlog2\n")
 	operator.poll(t.Context())
 
@@ -209,9 +204,6 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // Check if we read log lines from a rotated file before lines from the newly created file
 // Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
 func TestTrackRotatedFilesLogOrder(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -243,6 +235,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 
 	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
+	defer newFile.Close()
 	filetest.WriteString(t, newFile, "testlog3\n")
 
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
@@ -261,9 +254,6 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 // When a file it rotated out of pattern via move/create, we should
 // detect that our old handle is still valid attempt to read from it.
 func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -291,6 +281,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	require.NoError(t, os.Rename(originalFileName, originalFileName+".old"))
 
 	newFile := filetest.OpenFile(t, originalFileName)
+	defer newFile.Close()
 	_, err := newFile.WriteString("testlog4\ntestlog5\n")
 	require.NoError(t, err)
 
@@ -334,6 +325,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	operator.set.Logger = logger
 
 	originalFile := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
+	defer originalFile.Close()
 	filetest.WriteString(t, originalFile, "testlog1\n")
 	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog1"))
@@ -342,6 +334,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	filetest.WriteString(t, originalFile, "testlog2\n")
 	// copy the file to another file i.e. rotate, out of pattern
 	newFile := filetest.OpenTempWithPattern(t, tempDir, "*.log2")
+	defer newFile.Close()
 	_, err := originalFile.Seek(0, 0)
 	require.NoError(t, err)
 	_, err = io.Copy(newFile, originalFile)

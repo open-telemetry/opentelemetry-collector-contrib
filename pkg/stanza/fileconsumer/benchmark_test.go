@@ -160,7 +160,8 @@ func BenchmarkFileInput(b *testing.B) {
 	uniqueLines := 10
 	var severalLinesBuilder strings.Builder
 	for range uniqueLines {
-		severalLinesBuilder.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		severalLinesBuilder.Write(filetest.TokenWithLength(999))
+		severalLinesBuilder.WriteByte('\n')
 	}
 	severalLines := severalLinesBuilder.String()
 
@@ -281,7 +282,8 @@ func BenchmarkConsumeFiles(b *testing.B) {
 	uniqueLines := 10
 	var severalLines strings.Builder
 	for range uniqueLines {
-		severalLines.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		severalLines.Write(filetest.TokenWithLength(999))
+		severalLines.WriteByte('\n')
 	}
 
 	for _, bench := range cases {
