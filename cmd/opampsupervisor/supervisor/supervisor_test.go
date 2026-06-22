@@ -2856,7 +2856,9 @@ service:
                 - nop
     telemetry:
         resource:
-            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
