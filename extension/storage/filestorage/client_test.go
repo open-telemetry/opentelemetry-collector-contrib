@@ -269,8 +269,8 @@ func TestMaxSizeLimit(t *testing.T) {
 	require.NoError(t, err)
 	pageSize := int64(client.db.Info().PageSize)
 	freeAlloc := int64(client.db.Stats().FreeAlloc)
-	client.maxSize = totalSize + pageSize
-	client.db.MaxSize = int(client.maxSize)
+	client.dbOptions.MaxSize = int(totalSize + pageSize)
+	client.db.MaxSize = client.dbOptions.MaxSize
 
 	err = client.Set(ctx, "blocked", make([]byte, int(freeAlloc+(2*pageSize))))
 	require.ErrorIs(t, err, storage.ErrStorageFull)
@@ -279,7 +279,7 @@ func TestMaxSizeLimit(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, totalSize, totalAfterReject)
 
-	require.LessOrEqual(t, totalSize, client.maxSize)
+	require.LessOrEqual(t, totalSize, int64(client.dbOptions.MaxSize))
 
 	err = client.Delete(ctx, "seed-0")
 	require.NoError(t, err)
@@ -295,7 +295,7 @@ func TestMaxSizeLimit(t *testing.T) {
 
 	totalAfterAllow, _, err := client.getDbSize()
 	require.NoError(t, err)
-	require.LessOrEqual(t, totalAfterAllow, client.maxSize)
+	require.LessOrEqual(t, totalAfterAllow, int64(client.dbOptions.MaxSize))
 }
 
 func TestMaxSizeLimitAllowsDeleteAndSetInSameBatch(t *testing.T) {
@@ -312,7 +312,7 @@ func TestMaxSizeLimitAllowsDeleteAndSetInSameBatch(t *testing.T) {
 
 	totalSize, _, err := client.getDbSize()
 	require.NoError(t, err)
-	client.maxSize = totalSize
+	client.dbOptions.MaxSize = int(totalSize)
 	client.db.MaxSize = int(totalSize)
 
 	err = client.Batch(ctx,
@@ -361,7 +361,7 @@ func TestWalkMapsMaxSizeReachedToStorageFull(t *testing.T) {
 	require.NoError(t, client.Set(ctx, "seed", []byte("value")))
 	totalSize, _, err := client.getDbSize()
 	require.NoError(t, err)
-	client.maxSize = totalSize
+	client.dbOptions.MaxSize = int(totalSize)
 	client.db.MaxSize = int(totalSize)
 
 	err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
