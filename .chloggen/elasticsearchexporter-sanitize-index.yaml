@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: exporter/elasticsearchexporter
+note: "Sanitize `elasticsearch.index` attribute in dynamic router to prevent routing bypasses"
+issues: [49219]
