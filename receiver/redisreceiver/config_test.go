@@ -29,7 +29,8 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "localhost:6379",

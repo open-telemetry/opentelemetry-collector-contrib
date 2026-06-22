@@ -202,7 +202,8 @@ func TestOptions(t *testing.T) {
 
 	clientOptions := cfg.ClientOptions(false)
 	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
-	require.Equal(t,
+	require.Equal(
+		t,
 		clientOptions.ConnectTimeout.Milliseconds(),
 		(2 * time.Minute).Milliseconds(),
 	)
@@ -233,7 +234,8 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
 	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
 	require.Equal(t, clientOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
-	require.Equal(t,
+	require.Equal(
+		t,
 		clientOptions.ConnectTimeout.Milliseconds(),
 		(2 * time.Minute).Milliseconds(),
 	)

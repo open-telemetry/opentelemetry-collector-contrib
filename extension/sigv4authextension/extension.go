@@ -68,7 +68,8 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *sigv
 // getCredsProviderFromConfig() is a helper function that gets AWS credentials
 // from the Config.
 func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
-	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+	awscfg, err := awsconfig.LoadDefaultConfig(
+		context.Background(),
 		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
 	)
 	if err != nil {
@@ -98,7 +99,8 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 		return nil, fmt.Errorf("unable to retrieve token file: %w", err)
 	}
 
-	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+	awscfg, err := awsconfig.LoadDefaultConfig(
+		context.Background(),
 		awsconfig.WithWebIdentityRoleCredentialOptions(
 			func(options *stscreds.WebIdentityRoleOptions) {
 				options.TokenRetriever = tokenRetriever

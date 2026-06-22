@@ -666,7 +666,8 @@ func (m *customLogUnmarshaler) NewLogsDecoder(reader io.Reader, _ ...encoding.De
 				return m.makeLog(data), nil
 			}, func() int64 {
 				return 0
-			}),
+			},
+		),
 		nil
 }
 

@@ -22,7 +22,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {

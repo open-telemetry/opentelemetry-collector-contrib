@@ -44,7 +44,8 @@ func newMetricsConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		mr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "", "resource":
 			switch route.action {
 			case Copy:
-				pmetricutil.CopyResourcesIf(md, matched,
+				pmetricutil.CopyResourcesIf(
+					md, matched,
 					func(rs pmetric.ResourceMetrics) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
 						defer rtx.Close()
@@ -94,7 +96,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 					},
 				)
 			default:
-				pmetricutil.MoveResourcesIf(md, matched,
+				pmetricutil.MoveResourcesIf(
+					md, matched,
 					func(rs pmetric.ResourceMetrics) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
 						defer rtx.Close()
@@ -111,7 +114,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "metric":
 			switch route.action {
 			case Copy:
-				pmetricutil.CopyMetricsWithContextIf(md, matched,
+				pmetricutil.CopyMetricsWithContextIf(
+					md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 						mtx := ottlmetric.NewTransformContextPtr(rm, sm, m)
 						_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
@@ -125,7 +129,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 					},
 				)
 			default:
-				pmetricutil.MoveMetricsWithContextIf(md, matched,
+				pmetricutil.MoveMetricsWithContextIf(
+					md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 						mtx := ottlmetric.NewTransformContextPtr(rm, sm, m)
 						_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
@@ -142,7 +147,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "datapoint":
 			switch route.action {
 			case Copy:
-				pmetricutil.CopyDataPointsWithContextIf(md, matched,
+				pmetricutil.CopyDataPointsWithContextIf(
+					md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
 						dptx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 						_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
@@ -156,7 +162,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 					},
 				)
 			default:
-				pmetricutil.MoveDataPointsWithContextIf(md, matched,
+				pmetricutil.MoveDataPointsWithContextIf(
+					md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
 						dptx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 						_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)

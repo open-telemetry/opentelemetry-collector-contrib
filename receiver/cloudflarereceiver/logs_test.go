@@ -361,18 +361,19 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			r := newReceiver(t, &Config{
-				Logs: LogsConfig{
-					Endpoint:       "localhost:0",
-					Secret:         "abc123",
-					TimestampField: "MyTimestamp",
-					Attributes: map[string]string{
-						"ClientIP": "http_request.client_ip",
+			r := newReceiver(
+				t, &Config{
+					Logs: LogsConfig{
+						Endpoint:       "localhost:0",
+						Secret:         "abc123",
+						TimestampField: "MyTimestamp",
+						Attributes: map[string]string{
+							"ClientIP": "http_request.client_ip",
+						},
+						TLS:                &configtls.ServerConfig{},
+						MaxRequestBodySize: 1024,
 					},
-					TLS:                &configtls.ServerConfig{},
-					MaxRequestBodySize: 1024,
 				},
-			},
 				consumer,
 			)
 
@@ -454,16 +455,17 @@ func TestEmptyAttributes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			recv := newReceiver(t, &Config{
-				Logs: LogsConfig{
-					Endpoint:           "localhost:0",
-					TLS:                &configtls.ServerConfig{},
-					MaxRequestBodySize: 1024,
-					TimestampField:     "EdgeStartTimestamp",
-					Attributes:         tc.attributes,
-					Separator:          ".",
+			recv := newReceiver(
+				t, &Config{
+					Logs: LogsConfig{
+						Endpoint:           "localhost:0",
+						TLS:                &configtls.ServerConfig{},
+						MaxRequestBodySize: 1024,
+						TimestampField:     "EdgeStartTimestamp",
+						Attributes:         tc.attributes,
+						Separator:          ".",
+					},
 				},
-			},
 				&consumertest.LogsSink{},
 			)
 			var logs plog.Logs
@@ -543,16 +545,17 @@ func TestAttributesWithSeparator(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			recv := newReceiver(t, &Config{
-				Logs: LogsConfig{
-					Endpoint:           "localhost:0",
-					TLS:                &configtls.ServerConfig{},
-					MaxRequestBodySize: 1024,
-					TimestampField:     "EdgeStartTimestamp",
-					Attributes:         tc.attributes,
-					Separator:          tc.separator,
+			recv := newReceiver(
+				t, &Config{
+					Logs: LogsConfig{
+						Endpoint:           "localhost:0",
+						TLS:                &configtls.ServerConfig{},
+						MaxRequestBodySize: 1024,
+						TimestampField:     "EdgeStartTimestamp",
+						Attributes:         tc.attributes,
+						Separator:          tc.separator,
+					},
 				},
-			},
 				&consumertest.LogsSink{},
 			)
 			var logs plog.Logs
@@ -623,16 +626,17 @@ func TestMultipleMapAttributes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			recv := newReceiver(t, &Config{
-				Logs: LogsConfig{
-					Endpoint:           "localhost:0",
-					TLS:                &configtls.ServerConfig{},
-					MaxRequestBodySize: 1024,
-					TimestampField:     "EdgeStartTimestamp",
-					Attributes:         tc.attributes,
-					Separator:          ".",
+			recv := newReceiver(
+				t, &Config{
+					Logs: LogsConfig{
+						Endpoint:           "localhost:0",
+						TLS:                &configtls.ServerConfig{},
+						MaxRequestBodySize: 1024,
+						TimestampField:     "EdgeStartTimestamp",
+						Attributes:         tc.attributes,
+						Separator:          ".",
+					},
 				},
-			},
 				&consumertest.LogsSink{},
 			)
 			var logs plog.Logs

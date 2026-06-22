@@ -126,7 +126,8 @@ func TestGoldenFile(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile, m)
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, m,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
@@ -153,7 +154,8 @@ func TestGoldenFileOptionalAttrs(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile, m)
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, m,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
@@ -176,7 +178,8 @@ func TestGoldenFileNoCapacity(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile, m)
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, m,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
@@ -197,7 +200,8 @@ func TestRecordMetrics(t *testing.T) {
 	require.Equal(t, 1, m.ResourceMetrics().Len())
 	rm := m.ResourceMetrics().At(0)
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		map[string]any{
 			"k8s.persistentvolume.uid":  "test-pv-1-uid",
 			"k8s.persistentvolume.name": "test-pv-1",

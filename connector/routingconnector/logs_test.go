@@ -395,7 +395,8 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.Str())
-	assert.Empty(t, sink0.AllLogs(),
+	assert.Empty(
+		t, sink0.AllLogs(),
 		"metrics should not be routed to default pipeline",
 	)
 }
@@ -778,11 +779,13 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSink0: plogutiltest.NewLogs("B", "D", "EF"),
 			expectSink1: plog.Logs{},
 			expectSinkD: plogutiltest.NewLogsFromOpts(
-				plogutiltest.Resource("A",
+				plogutiltest.Resource(
+					"A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
-				plogutiltest.Resource("B",
+				plogutiltest.Resource(
+					"B",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 				),
 			),

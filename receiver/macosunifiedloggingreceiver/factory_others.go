@@ -20,7 +20,8 @@ func newFactoryAdapter() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiverOthers, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiverOthers, metadata.LogsStability),
+	)
 }
 
 func createLogsReceiverOthers(

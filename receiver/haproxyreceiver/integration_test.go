@@ -34,13 +34,15 @@ func TestIntegration(t *testing.T) {
 					ContainerFilePath: "/usr/local/etc/haproxy/haproxy.cfg",
 					FileMode:          700,
 				}},
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/stats", ci.Host(t), ci.MappedPort(t, haproxyPort))
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),

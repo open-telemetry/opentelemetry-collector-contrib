@@ -92,7 +92,8 @@ func TestPodEndpointsChanged(t *testing.T) {
 	th.OnUpdate(podWithNamedPorts, changedLabels)
 
 	endpoints := th.ListEndpoints()
-	require.ElementsMatch(t,
+	require.ElementsMatch(
+		t,
 		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/https(443)"},
 		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID, endpoints[2].ID},
 	)
@@ -185,7 +186,8 @@ func TestServiceEndpointsChanged(t *testing.T) {
 	th.OnUpdate(serviceWithClusterIP, changedLabels)
 
 	endpoints := th.ListEndpoints()
-	require.ElementsMatch(t,
+	require.ElementsMatch(
+		t,
 		[]observer.EndpointID{"test-1/service-1-UID"},
 		[]observer.EndpointID{endpoints[0].ID},
 	)
@@ -249,7 +251,8 @@ func TestIngressEndpointsChanged(t *testing.T) {
 	th.OnUpdate(ingress, changedLabels)
 
 	endpoints := th.ListEndpoints()
-	require.ElementsMatch(t,
+	require.ElementsMatch(
+		t,
 		[]observer.EndpointID{"test-1/ingress-1-UID/host-1/"},
 		[]observer.EndpointID{endpoints[0].ID},
 	)

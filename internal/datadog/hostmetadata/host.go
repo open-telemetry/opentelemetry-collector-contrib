@@ -33,7 +33,8 @@ func GetSourceProvider(set component.TelemetrySettings, configHostname string, t
 	}
 	gcpProvider := gcp.NewProvider()
 
-	clusterNameProvider, err := provider.ChainCluster(set.Logger,
+	clusterNameProvider, err := provider.ChainCluster(
+		set.Logger,
 		map[string]provider.ClusterNameProvider{
 			"azure": azureProvider,
 			"ec2":   ec2Provider,

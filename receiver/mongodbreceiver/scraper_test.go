@@ -132,7 +132,9 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
-			}, "; "))
+			}, "; ",
+		),
+	)
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
 			[]string{
@@ -141,7 +143,9 @@ var (
 				"failed to fetch server status metrics: some server status error",
 				"failed to fetch index stats metrics: some index stats error",
 				"failed to fetch index stats metrics: some index stats error",
-			}, "; "))
+			}, "; ",
+		),
+	)
 
 	errCollectionNames = errors.New(
 		strings.Join(
@@ -150,7 +154,9 @@ var (
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
 				"failed to fetch collection names: some collection names error",
-			}, "; "))
+			}, "; ",
+		),
+	)
 )
 
 func TestScraperScrape(t *testing.T) {

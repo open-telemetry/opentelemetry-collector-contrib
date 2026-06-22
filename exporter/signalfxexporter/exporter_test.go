@@ -211,7 +211,8 @@ func TestConsumeMetrics(t *testing.T) {
 				converter: c,
 			}
 
-			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+			errMsg := fmt.Sprintf(
+				"HTTP \"/v2/datapoint\" %d %q",
 				tt.wantStatusCode,
 				http.StatusText(tt.wantStatusCode),
 			)
@@ -1384,7 +1385,8 @@ func TestConsumeMetadata(t *testing.T) {
 					MaxBuffered:             10,
 					NonAlphanumericDimChars: cfg.NonAlphanumericDimensionChars,
 					ExcludeProperties:       tt.excludeProperties,
-				})
+				},
+			)
 			dimClient.Start()
 
 			se := &signalfxExporter{
@@ -1737,7 +1739,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					MaxBuffered:             10,
 					APITLSConfig:            apiTLSCfg,
 					NonAlphanumericDimChars: "",
-				})
+				},
+			)
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()
 
@@ -2037,7 +2040,8 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries, err := sfxClient.pushMetricsData(t.Context(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
-			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+			errMsg := fmt.Sprintf(
+				"HTTP \"/v2/datapoint\" %d %q",
 				tt.wantStatusCode,
 				http.StatusText(tt.wantStatusCode),
 			)

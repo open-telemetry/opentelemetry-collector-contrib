@@ -202,7 +202,8 @@ func renderInsertTracesSQL(cfg *Config) string {
 
 func renderCreateTracesTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sqltemplates.TracesCreateTable,
+	return fmt.Sprintf(
+		sqltemplates.TracesCreateTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
@@ -211,7 +212,8 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	return fmt.Sprintf(sqltemplates.TracesCreateTsTable,
+	return fmt.Sprintf(
+		sqltemplates.TracesCreateTsTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
@@ -220,7 +222,8 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	database := cfg.database()
-	return fmt.Sprintf(sqltemplates.TracesCreateTsView,
+	return fmt.Sprintf(
+		sqltemplates.TracesCreateTsView,
 		database, cfg.TracesTableName, cfg.clusterString(),
 		database, cfg.TracesTableName,
 		database, cfg.TracesTableName,

@@ -121,7 +121,8 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		clientCancel()
 		return err
 	}
-	e.producer = kafkaclient.NewFranzSyncProducer(producer,
+	e.producer = kafkaclient.NewFranzSyncProducer(
+		producer,
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
@@ -172,7 +173,8 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		})
 		if err != nil {
 			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
-			e.logger.Error("kafka records marshal data failed",
+			e.logger.Error(
+				"kafka records marshal data failed",
 				zap.String("topic", topic),
 				zap.Error(err),
 			)
@@ -188,13 +190,15 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	}
 	err := e.producer.ExportData(ctx, buf.pointers)
 	if err != nil {
-		e.logger.Error("kafka records export failed",
+		e.logger.Error(
+			"kafka records export failed",
 			zap.Int("records", len(buf.pointers)),
 			zap.Error(err),
 		)
 		var msgTooLarge *kafkaclient.MessageTooLargeError
 		if errors.As(err, &msgTooLarge) {
-			e.logger.Error("kafka record exceeds max message size",
+			e.logger.Error(
+				"kafka record exceeds max message size",
 				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
@@ -203,7 +207,8 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	}
 	// TODO move this logging to a kgo hook, so we capture topic and partition details.
 	if e.logger.Core().Enabled(zap.DebugLevel) {
-		e.logger.Debug("kafka records exported",
+		e.logger.Debug(
+			"kafka records exported",
 			zap.Int("records", len(buf.pointers)),
 		)
 	}

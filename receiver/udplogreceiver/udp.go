@@ -16,7 +16,8 @@ import (
 
 // NewFactory creates a factory for udp_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+	return adapter.NewFactory(
+		ReceiverType{}, metadata.LogsStability,
 		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }

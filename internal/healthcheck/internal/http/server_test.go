@@ -197,11 +197,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -417,11 +419,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -1074,11 +1078,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -1665,11 +1671,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -2261,11 +2269,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -2655,11 +2665,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusOK,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusOK,
 						)
@@ -2692,11 +2704,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusOK,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusOK,
 						)
@@ -2757,11 +2771,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
@@ -2880,11 +2896,13 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							traces.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)
-						testhelpers.SeedAggregator(server.aggregator,
+						testhelpers.SeedAggregator(
+							server.aggregator,
 							metrics.InstanceIDs(),
 							componentstatus.StatusStarting,
 						)

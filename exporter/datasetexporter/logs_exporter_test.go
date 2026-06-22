@@ -880,7 +880,8 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		return addRequests[i].Session < addRequests[j].Session
 	})
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		[]add_events.AddEventsRequest{
 			{
 				AuthParams: request.AuthParams{

@@ -484,7 +484,8 @@ func (rw *resourceWatcher) setupMetadataExporters(
 			return fmt.Errorf("%s exporter does not implement MetadataExporter", cfg.Name())
 		}
 		out = append(out, kme.ConsumeMetadata)
-		rw.logger.Info("Configured Kubernetes MetadataExporter",
+		rw.logger.Info(
+			"Configured Kubernetes MetadataExporter",
 			zap.String("exporter_name", cfg.String()),
 		)
 	}

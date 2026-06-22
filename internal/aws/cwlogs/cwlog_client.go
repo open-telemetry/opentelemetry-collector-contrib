@@ -95,7 +95,8 @@ func newCollectorUserAgent(buildInfo component.BuildInfo, logGroupName, componen
 
 // NewClient create Client
 func NewClient(logger *zap.Logger, awsConfig aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int32, tags map[string]string, componentName string, opts ...ClientOption) *Client {
-	client := cloudwatchlogs.NewFromConfig(awsConfig,
+	client := cloudwatchlogs.NewFromConfig(
+		awsConfig,
 		handler.WithStructuredLogHeader(middleware.After),
 		AddToUserAgentHeader("otel.collector.UserAgentHandler", newCollectorUserAgent(buildInfo, logGroupName, componentName, opts...), middleware.Before),
 	)

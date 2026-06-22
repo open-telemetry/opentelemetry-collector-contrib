@@ -88,7 +88,8 @@ func (c Config) validate() error {
 func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
-	args = append(args,
+	args = append(
+		args,
 		"--utc",         // Export logs in UTC time
 		"--output=json", // Export logs as JSON
 		"--follow",      // Continue watching logs until cancelled

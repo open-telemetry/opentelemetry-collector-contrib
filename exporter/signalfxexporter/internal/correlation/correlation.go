@@ -105,7 +105,8 @@ func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) err
 			map[string]string{
 				hostDimension: hostID.ID,
 			},
-			cor.cfg.SyncAttributes)
+			cor.cfg.SyncAttributes,
+		)
 
 		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
 		cor.pTicker.Start(cor.cfg.StaleServiceTimeout)

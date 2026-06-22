@@ -109,7 +109,8 @@ func newMetricsExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
@@ -127,7 +128,8 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to marshal sketches: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx,
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		exp.cfg.Metrics.Endpoint+sketches.SketchSeriesEndpoint,
 		bytes.NewBuffer(payload),

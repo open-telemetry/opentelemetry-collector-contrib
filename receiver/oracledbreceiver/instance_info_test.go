@@ -110,7 +110,8 @@ func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	// Version query fails: all fields stay at zero, detection stops.
 	core, logs := observer.New(zapcore.WarnLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		errClient(),
 		noopClient(t), noopClient(t), noopClient(t), noopClient(t), noopClient(t), noopClient(t),
 		zap.New(core),
@@ -127,7 +128,8 @@ func TestDetectInstanceInfo_Pre12c(t *testing.T) {
 	// Oracle 11g: version set; multitenant and hosting type detection skipped.
 	core, logs := observer.New(zapcore.InfoLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("11.2.0.4.0")),
 		noopClient(t), noopClient(t), noopClient(t),
 		noopClient(t), noopClient(t), noopClient(t),
@@ -144,7 +146,8 @@ func TestDetectInstanceInfo_Pre12c(t *testing.T) {
 
 func TestDetectInstanceInfo_NonCDB19c(t *testing.T) {
 	// Oracle 19c non-CDB: role and open_mode populated, hosting type detection runs.
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
 		noopClient(t), noopClient(t),
@@ -161,7 +164,8 @@ func TestDetectInstanceInfo_NonCDB19c(t *testing.T) {
 
 func TestDetectInstanceInfo_NonCDB12c(t *testing.T) {
 	// Oracle 12c non-CDB: hosting type detection skipped (requires ≥19c).
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("12.2.0.1.0")),
 		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
 		noopClient(t), noopClient(t),
@@ -180,7 +184,8 @@ func TestDetectInstanceInfo_CDBQueryFails(t *testing.T) {
 	// v$database query fails: isCDB stays false, hosting type not set.
 	core, logs := observer.New(zapcore.WarnLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		errClient(),
 		noopClient(t), noopClient(t),
@@ -198,7 +203,8 @@ func TestDetectInstanceInfo_CDBQueryFails(t *testing.T) {
 
 func TestDetectInstanceInfo_CDBRootConnection(t *testing.T) {
 	// CDB root connection: connectedToPDB=false, OCI probe skipped.
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("CDB")),
@@ -220,7 +226,8 @@ func TestDetectInstanceInfo_ConnTypeQueryFails(t *testing.T) {
 	// USERENV CON_ID query fails: connectedToPDB stays false, conNameClient not called.
 	core, logs := observer.New(zapcore.WarnLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		errClient(),
@@ -240,7 +247,8 @@ func TestDetectInstanceInfo_PDBConnection(t *testing.T) {
 	// All steps succeed: all fields populated.
 	core, logs := observer.New(zapcore.InfoLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("PDB")),
@@ -262,7 +270,8 @@ func TestDetectInstanceInfo_PDBNameQueryFails(t *testing.T) {
 	// CON_NAME query fails: connectedToPDB=true but pdbName stays empty.
 	core, logs := observer.New(zapcore.WarnLevel)
 
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("PDB")),
@@ -282,7 +291,8 @@ func TestDetectInstanceInfo_CDBFlagCaseInsensitive(t *testing.T) {
 	// Oracle may return "YES", "Yes", or "yes" — all must set isCDB=true.
 	for _, cdbVal := range []string{"YES", "Yes", "yes"} {
 		t.Run("cdb="+cdbVal, func(t *testing.T) {
-			info := detectInstanceInfo(t.Context(),
+			info := detectInstanceInfo(
+				t.Context(),
 				rowClient(versionRow("19.0.0.0.0")),
 				rowClient(cdbRow(cdbVal, "PRIMARY", "READ WRITE")),
 				rowClient(conTypeRow("CDB")),
@@ -297,7 +307,8 @@ func TestDetectInstanceInfo_CDBFlagCaseInsensitive(t *testing.T) {
 
 func TestDetectInstanceInfo_Oracle12c(t *testing.T) {
 	// Oracle 12c: multitenant detection runs, but hosting type skipped (requires ≥19c).
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("12.2.0.1.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("PDB")),
@@ -316,7 +327,8 @@ func TestDetectInstanceInfo_Oracle12c(t *testing.T) {
 // -- detectHostingType tests --------------------------------------------------
 
 func TestDetectHostingType_SelfManaged(t *testing.T) {
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(), emptyClient(), emptyClient(),
 		false, zap.NewNop(),
 	)
@@ -324,7 +336,8 @@ func TestDetectHostingType_SelfManaged(t *testing.T) {
 }
 
 func TestDetectHostingType_RDS(t *testing.T) {
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		rowClient(rdsRow("/rdsdbdata")),
 		emptyClient(), emptyClient(),
 		false, zap.NewNop(),
@@ -334,7 +347,8 @@ func TestDetectHostingType_RDS(t *testing.T) {
 
 func TestDetectHostingType_RDSQueryFails(t *testing.T) {
 	core, logs := observer.New(zapcore.WarnLevel)
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		errClient(), emptyClient(), emptyClient(),
 		false, zap.New(core),
 	)
@@ -344,7 +358,8 @@ func TestDetectHostingType_RDSQueryFails(t *testing.T) {
 
 func TestDetectHostingType_OCI(t *testing.T) {
 	// OCI cloud_identity match + cdb_services confirmation → OCI.
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(),
 		rowClient(ociRow()),
 		rowClient(cdbServicesRow()),
@@ -354,7 +369,8 @@ func TestDetectHostingType_OCI(t *testing.T) {
 }
 
 func TestDetectHostingType_OCISkippedWhenNotConnectedToPDB(t *testing.T) {
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(),
 		&fakeDbClient{Err: errors.New("oci client must not be called")},
 		&fakeDbClient{Err: errors.New("cdb_services client must not be called")},
@@ -366,7 +382,8 @@ func TestDetectHostingType_OCISkippedWhenNotConnectedToPDB(t *testing.T) {
 func TestDetectHostingType_OCIFirstQueryFails(t *testing.T) {
 	// v$pdbs errors → self-managed, cdb_services not called.
 	core, logs := observer.New(zapcore.WarnLevel)
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(),
 		errClient(),
 		&fakeDbClient{Err: errors.New("cdb_services client must not be called")},
@@ -379,7 +396,8 @@ func TestDetectHostingType_OCIFirstQueryFails(t *testing.T) {
 func TestDetectHostingType_OCIFirstMatchButCDBServicesFails(t *testing.T) {
 	// v$pdbs matches but cdb_services errors → self-managed (both must confirm).
 	core, logs := observer.New(zapcore.WarnLevel)
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(),
 		rowClient(ociRow()),
 		errClient(),
@@ -391,7 +409,8 @@ func TestDetectHostingType_OCIFirstMatchButCDBServicesFails(t *testing.T) {
 
 func TestDetectHostingType_OCIFirstMatchButCDBServicesEmpty(t *testing.T) {
 	// v$pdbs matches but cdb_services returns no rows → self-managed (both must confirm).
-	result := detectHostingType(t.Context(),
+	result := detectHostingType(
+		t.Context(),
 		emptyClient(),
 		rowClient(ociRow()),
 		emptyClient(),
@@ -401,7 +420,8 @@ func TestDetectHostingType_OCIFirstMatchButCDBServicesEmpty(t *testing.T) {
 }
 
 func TestDetectInstanceInfo_HostingTypeRDS(t *testing.T) {
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
 		noopClient(t), noopClient(t),
@@ -414,7 +434,8 @@ func TestDetectInstanceInfo_HostingTypeRDS(t *testing.T) {
 
 func TestDetectInstanceInfo_HostingTypeOCI(t *testing.T) {
 	// 19c CDB connected to PDB on OCI (both v$pdbs and cdb_services confirm).
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("PDB")),
@@ -429,7 +450,8 @@ func TestDetectInstanceInfo_HostingTypeOCI(t *testing.T) {
 
 func TestDetectInstanceInfo_HostingTypeOCISkippedForCDBRoot(t *testing.T) {
 	// CDB root: OCI probe skipped because connectedToPDB=false.
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("CDB")),
@@ -444,7 +466,8 @@ func TestDetectInstanceInfo_HostingTypeOCISkippedForCDBRoot(t *testing.T) {
 
 func TestDetectInstanceInfo_HostingTypeOCISkippedFor12c(t *testing.T) {
 	// 12c: hosting type detection skipped entirely (requires ≥19c).
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("12.2.0.1.0")),
 		rowClient(cdbRow("YES", "PRIMARY", "READ WRITE")),
 		rowClient(conTypeRow("PDB")),
@@ -457,7 +480,8 @@ func TestDetectInstanceInfo_HostingTypeOCISkippedFor12c(t *testing.T) {
 
 func TestDetectInstanceInfo_PhysicalStandby(t *testing.T) {
 	// Data Guard standby: role is PHYSICAL STANDBY, open_mode is READ ONLY WITH APPLY.
-	info := detectInstanceInfo(t.Context(),
+	info := detectInstanceInfo(
+		t.Context(),
 		rowClient(versionRow("19.0.0.0.0")),
 		rowClient(cdbRow("NO", "PHYSICAL STANDBY", "READ ONLY WITH APPLY")),
 		noopClient(t), noopClient(t),

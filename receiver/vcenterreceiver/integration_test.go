@@ -109,7 +109,8 @@ func TestIntegration(t *testing.T) {
 					rCfg.ClientConfig = configtls.ClientConfig{
 						Insecure: true,
 					}
-				}),
+				},
+			),
 			scraperinttest.WithCompareOptions(
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),

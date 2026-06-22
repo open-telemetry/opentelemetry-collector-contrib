@@ -576,7 +576,8 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 			metric.DataPoints(),
 		}
 	default:
-		logger.Warn("Unhandled metric data type.",
+		logger.Warn(
+			"Unhandled metric data type.",
 			zap.String("DataType", pmd.Type().String()),
 			zap.String("Name", pmd.Name()),
 			zap.String("Unit", pmd.Unit()),

@@ -62,7 +62,8 @@ func newEmfExporter(ctx context.Context, config *Config, set exporter.Settings) 
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger,
+	svcStructuredLog := cwlogs.NewClient(
+		set.Logger,
 		awsConfig,
 		set.BuildInfo,
 		config.LogGroupName,

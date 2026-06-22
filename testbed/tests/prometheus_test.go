@@ -147,7 +147,8 @@ func scenarioPrometheusScrape(
 // scrape benchmark. We can't reuse createConfigYaml from scenarios.go because
 // the sender is not a MetricDataSender (it's pull-based, not push-based).
 func createPromConfigYaml(sender testbed.DataSender, receiver testbed.DataReceiver, resultDir string) string {
-	return fmt.Sprintf(`
+	return fmt.Sprintf(
+		`
 receivers:%s
 exporters:%s
 extensions:

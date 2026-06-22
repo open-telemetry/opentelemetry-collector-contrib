@@ -32,13 +32,15 @@ func TestIntegration(t *testing.T) {
 				},
 				ExposedPorts: []string{sparkPort},
 				WaitingFor:   wait.ForListeningPort(sparkPort).WithStartupTimeout(2 * time.Minute),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 3 * time.Second
 				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", ci.Host(t), ci.MappedPort(t, sparkPort))
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),

@@ -118,7 +118,8 @@ func TestGoldenFile(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile, m)
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, m,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
@@ -143,7 +144,8 @@ func TestGoldenFilePending(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile, m)
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected, m,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
@@ -164,7 +166,8 @@ func TestRecordMetrics(t *testing.T) {
 	require.Equal(t, 1, m.ResourceMetrics().Len())
 	rm := m.ResourceMetrics().At(0)
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		map[string]any{
 			"k8s.persistentvolumeclaim.uid":  "test-pvc-1-uid",
 			"k8s.persistentvolumeclaim.name": "test-pvc-1",

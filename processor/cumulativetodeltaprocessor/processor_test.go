@@ -661,7 +661,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_include_histogram_metrics",
@@ -712,7 +713,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_unsupported_include_metric_type",

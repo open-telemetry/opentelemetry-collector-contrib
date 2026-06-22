@@ -43,7 +43,8 @@ func viewsFromLevel(level configtelemetry.Level) []metric.View {
 	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
 	if level < configtelemetry.LevelNormal {
 		scope := instrumentation.Scope{Name: "otel-arrow/pkg/otel/arrow_record"}
-		views = append(views,
+		views = append(
+			views,
 			dropView(metric.Instrument{
 				Name:  "arrow_batch_records",
 				Scope: scope,

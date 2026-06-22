@@ -24,7 +24,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -68,5 +69,6 @@ func createMetricsProcessor(
 		nextConsumer,
 		metricsProcessor.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(metricsProcessor.shutdown))
+		processorhelper.WithShutdown(metricsProcessor.shutdown),
+	)
 }

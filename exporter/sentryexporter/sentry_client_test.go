@@ -165,7 +165,8 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 		_, err := c.GetAllProjects(t.Context(), "../../evil")
 		require.NoError(t, err)
 
-		assert.Equal(t,
+		assert.Equal(
+			t,
 			[]string{"api", "0", "organizations", "..%2F..%2Fevil", "projects"},
 			segments(*seen),
 			"orgSlug must be a single path segment after escaping; got %s", *seen,
@@ -198,7 +199,8 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 		_, err := c.GetOrgProjectKeys(t.Context(), "../escape")
 		require.NoError(t, err)
 
-		assert.Equal(t,
+		assert.Equal(
+			t,
 			[]string{"api", "0", "organizations", "..%2Fescape", "project-keys"},
 			segments(*seen),
 			"orgSlug must be a single path segment after escaping; got %s", *seen,

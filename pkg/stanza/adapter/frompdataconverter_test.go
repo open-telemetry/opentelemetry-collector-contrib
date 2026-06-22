@@ -146,7 +146,8 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 					n += len(entries)
 				}
 
-				assert.Equal(b, entryCount, n,
+				assert.Equal(
+					b, entryCount, n,
 					"didn't receive expected number of entries after conversion",
 				)
 			}

@@ -95,7 +95,8 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 
 	res := &InfrastructureAPIResponse{}
 	if err := json.Unmarshal(data, res); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal response, err: %w, response: %s",
+		return nil, fmt.Errorf(
+			"unable to unmarshal response, err: %w, response: %s",
 			err, string(data),
 		)
 	}

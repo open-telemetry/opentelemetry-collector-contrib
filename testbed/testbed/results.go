@@ -105,7 +105,8 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(r.resultsFile,
+	_, _ = fmt.Fprintf(
+		r.resultsFile,
 		"%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%8.1f|%11d|%11d|%11d|%10d|%14d|%s\n",
 		testResult.testName,
 		testResult.result,
@@ -253,7 +254,8 @@ func (r *CorrectnessResults) Add(_ string, result any) {
 		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
 			af.actualValue, af.sumCount)
 	}
-	_, _ = fmt.Fprintf(r.resultsFile, "%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
+	_, _ = fmt.Fprintf(
+		r.resultsFile, "%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
 		testResult.testName,
 		testResult.result,
 		testResult.duration.Seconds(),

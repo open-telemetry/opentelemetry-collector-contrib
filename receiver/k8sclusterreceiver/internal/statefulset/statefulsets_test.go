@@ -31,7 +31,8 @@ func TestStatefulsetMetrics(t *testing.T) {
 	require.Equal(t, 4, m.MetricCount())
 
 	rm := m.ResourceMetrics().At(0)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		map[string]any{
 			"k8s.statefulset.uid":  "test-statefulset-1-uid",
 			"k8s.statefulset.name": "test-statefulset-1",
@@ -58,7 +59,8 @@ func TestStatefulsetMetadata(t *testing.T) {
 
 	require.Len(t, actualMetadata, 1)
 
-	require.Equal(t,
+	require.Equal(
+		t,
 		metadata.KubernetesMetadata{
 			EntityType:    "k8s.statefulset",
 			ResourceIDKey: "k8s.statefulset.uid",

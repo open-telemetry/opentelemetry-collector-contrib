@@ -66,7 +66,8 @@ func (u *udpServer) ListenAndServe(
 			u.reporter.OnDebugf(
 				"UDP Transport (%s) - ReadFrom error: %v",
 				u.packetConn.LocalAddr(),
-				err)
+				err,
+			)
 			var netErr net.Error
 			if errors.As(err, &netErr) {
 				if netErr.Timeout() {

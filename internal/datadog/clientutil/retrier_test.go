@@ -27,7 +27,8 @@ func TestDoWithRetries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), retryNum)
 
-	retrier = NewRetrier(zap.NewNop(),
+	retrier = NewRetrier(
+		zap.NewNop(),
 		configretry.BackOffConfig{
 			Enabled:         true,
 			InitialInterval: 5 * time.Millisecond,

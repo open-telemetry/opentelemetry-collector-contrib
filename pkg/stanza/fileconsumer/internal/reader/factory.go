@@ -114,7 +114,8 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 			newFileType = gzipExtension
 		}
 		if newFileType != m.FileType {
-			r.set.Logger.Debug("File format changed",
+			r.set.Logger.Debug(
+				"File format changed",
 				zap.String("old_file_type", m.FileType),
 				zap.String("new_file_type", newFileType),
 				zap.Int64("old_offset", m.Offset),

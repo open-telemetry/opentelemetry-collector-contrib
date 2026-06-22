@@ -786,7 +786,8 @@ func Test_PushMetrics(t *testing.T) {
 								sdkmetric.Stream{
 									Aggregation: sdkmetric.AggregationDrop{},
 								},
-							))),
+							),
+						)),
 					)
 					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
@@ -1209,14 +1210,15 @@ func TestRetries(t *testing.T) {
 	for _, tt := range tts {
 		t.Run(tt.name, func(t *testing.T) {
 			totalAttempts := 0
-			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				if totalAttempts < tt.serverErrorCount {
-					http.Error(w, http.StatusText(tt.httpStatus), tt.httpStatus)
-				} else {
-					w.WriteHeader(http.StatusOK)
-				}
-				totalAttempts++
-			},
+			mockServer := httptest.NewServer(http.HandlerFunc(
+				func(w http.ResponseWriter, _ *http.Request) {
+					if totalAttempts < tt.serverErrorCount {
+						http.Error(w, http.StatusText(tt.httpStatus), tt.httpStatus)
+					} else {
+						w.WriteHeader(http.StatusOK)
+					}
+					totalAttempts++
+				},
 			))
 			defer mockServer.Close()
 

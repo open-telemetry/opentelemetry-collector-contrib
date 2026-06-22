@@ -347,7 +347,8 @@ func (r *Receiver) recoverErr(retErr *error) {
 		// When this happens, the stacktrace is
 		// important and lost if we don't capture it
 		// here.
-		r.telemetry.Logger.Error("panic detail in otel-arrow-adapter",
+		r.telemetry.Logger.Error(
+			"panic detail in otel-arrow-adapter",
 			zap.Reflect("recovered", err),
 			zap.Stack("stacktrace"),
 		)

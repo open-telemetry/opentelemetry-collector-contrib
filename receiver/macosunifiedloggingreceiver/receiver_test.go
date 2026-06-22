@@ -502,7 +502,8 @@ func TestReadFromMultipleArchives(t *testing.T) {
 
 func TestRunLogCommandSkipsHeaderAndCompletionLines(t *testing.T) {
 	setupFakeLogBinary(t)
-	outputPath := writeFakeLogOutput(t,
+	outputPath := writeFakeLogOutput(
+		t,
 		"Timestamp               Thread     Type        Activity             PID",
 		"** Processed 10 entries, done. **",
 		"2024-01-01 12:00:00.000000-0700  localhost app[123]: Final log line",

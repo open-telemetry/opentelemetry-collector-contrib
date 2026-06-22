@@ -30,7 +30,8 @@ type datasetExporter struct {
 
 func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*datasetExporter, error) {
 	logger := set.Logger
-	logger.Info("Creating new DataSetExporter",
+	logger.Info(
+		"Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
 		zap.String("id.string", set.ID.String()),

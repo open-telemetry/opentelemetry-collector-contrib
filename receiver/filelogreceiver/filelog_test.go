@@ -116,13 +116,15 @@ func TestReadStaticFile(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("Working Directory: %s", dir)
 
-	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
+	require.Eventually(
+		t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
 		"expected %d but got %d logs",
 		3, sink.LogRecordCount(),
 	)
 
 	for i, expectedLog := range expectedLogs {
-		require.NoError(t,
+		require.NoError(
+			t,
 			plogtest.CompareLogs(
 				expectedLog,
 				sink.AllLogs()[i],
@@ -231,7 +233,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
+	require.Eventually(
+		t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
 		numLogs, sink.LogRecordCount(),
 	)
@@ -442,7 +445,8 @@ func TestMultilineWithUTF16Encoding(t *testing.T) {
 
 	// We expect 5 log records since we have 5 records in the file
 	// The last record will be flushed after the flush period
-	require.Eventually(t, expectNLogs(sink, 5), 5*time.Second, 50*time.Millisecond,
+	require.Eventually(
+		t, expectNLogs(sink, 5), 5*time.Second, 50*time.Millisecond,
 		"expected %d but got %d logs",
 		5, sink.LogRecordCount(),
 	)

@@ -101,7 +101,8 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		t.log.Debug("Creating new entry",
+		t.log.Debug(
+			"Creating new entry",
 			zap.Stringer("version", version),
 		)
 		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions, *rev)
@@ -154,7 +155,8 @@ func newTranslatorFromV2Resolved(log *zap.Logger, targetSchemaURL string, resolv
 		revisions:       []RevisionV1{*rev},
 		singleHop:       true,
 	}
-	log.Debug("loaded v2 resolved registry",
+	log.Debug(
+		"loaded v2 resolved registry",
 		zap.Int("attribute_catalog_size", len(resolved.AttributeCatalog)),
 		zap.Int("metric_signals", len(resolved.Registry.Metrics)),
 		zap.Int("span_signals", len(resolved.Registry.Spans)),

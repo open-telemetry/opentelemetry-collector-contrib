@@ -85,7 +85,8 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg,
+			if diff := cmp.Diff(
+				tt.expected, cfg,
 				cmpopts.IgnoreUnexported(
 					metadata.ProcessRuntimeMemstatsBuckHashSysMetricConfig{},
 					metadata.ProcessRuntimeMemstatsFreesMetricConfig{},

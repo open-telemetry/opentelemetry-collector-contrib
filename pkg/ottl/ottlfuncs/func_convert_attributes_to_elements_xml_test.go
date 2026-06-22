@@ -111,7 +111,8 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
@@ -119,7 +120,8 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)

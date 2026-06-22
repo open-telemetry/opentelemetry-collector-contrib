@@ -221,7 +221,8 @@ func (f *filterProcessorFactory) createMetricsProcessor(
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
 	if f.defaultResourceFunctionsOverridden || f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"filter\" processor",
+		set.Logger.Debug(
+			"non-default OTTL metric functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
 			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
 			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
@@ -237,7 +238,8 @@ func (f *filterProcessorFactory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		fp.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createLogsProcessor(
@@ -247,7 +249,8 @@ func (f *filterProcessorFactory) createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	if f.defaultResourceFunctionsOverridden || f.defaultLogFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL log functions have been registered in the \"filter\" processor",
+		set.Logger.Debug(
+			"non-default OTTL log functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
 			zap.Bool("log", f.defaultLogFunctionsOverridden),
 		)
@@ -262,7 +265,8 @@ func (f *filterProcessorFactory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		fp.processLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createTracesProcessor(
@@ -272,7 +276,8 @@ func (f *filterProcessorFactory) createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	if f.defaultResourceFunctionsOverridden || f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"filter\" processor",
+		set.Logger.Debug(
+			"non-default OTTL trace functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
 			zap.Bool("span", f.defaultSpanFunctionsOverridden),
 			zap.Bool("spanevent", f.defaultSpanEventFunctionsOverridden),
@@ -288,7 +293,8 @@ func (f *filterProcessorFactory) createTracesProcessor(
 		cfg,
 		nextConsumer,
 		fp.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *filterProcessorFactory) createProfilesProcessor(
@@ -298,7 +304,8 @@ func (f *filterProcessorFactory) createProfilesProcessor(
 	nextConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
 	if f.defaultResourceFunctionsOverridden || f.defaultProfileFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"filter\" processor",
+		set.Logger.Debug(
+			"non-default OTTL profile functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
 			zap.Bool("profile", f.defaultProfileFunctionsOverridden),
 		)
@@ -313,5 +320,6 @@ func (f *filterProcessorFactory) createProfilesProcessor(
 		cfg,
 		nextConsumer,
 		fp.processProfiles,
-		xprocessorhelper.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+	)
 }

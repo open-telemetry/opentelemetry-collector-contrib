@@ -121,7 +121,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				spanAttr := attributesToMap(r.Attributes().AsRaw())
 				status := r.Status()
 
-				insertSpanError := e.client.Query(fmt.Sprintf(insertSpanSQL, e.cfg.Keyspace, e.cfg.TraceTable), r.StartTimestamp().AsTime(),
+				insertSpanError := e.client.Query(
+					fmt.Sprintf(insertSpanSQL, e.cfg.Keyspace, e.cfg.TraceTable), r.StartTimestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 					traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),

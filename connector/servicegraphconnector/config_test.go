@@ -27,7 +27,8 @@ func TestLoadConfig(t *testing.T) {
 	// Verify
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		&Config{
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},

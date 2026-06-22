@@ -161,12 +161,13 @@ func TestE2E(t *testing.T) {
 
 			// golden.WriteLogs(t, expectedFile, logsConsumer.AllLogs()[0])
 
-			require.NoErrorf(t, plogtest.CompareLogs(expected, logsConsumer.AllLogs()[0],
-				plogtest.IgnoreObservedTimestamp(),
-				plogtest.IgnoreResourceLogsOrder(),
-				plogtest.IgnoreScopeLogsOrder(),
-				plogtest.IgnoreLogRecordsOrder(),
-				plogtest.IgnoreScopeLogsVersion()),
+			require.NoErrorf(
+				t, plogtest.CompareLogs(expected, logsConsumer.AllLogs()[0],
+					plogtest.IgnoreObservedTimestamp(),
+					plogtest.IgnoreResourceLogsOrder(),
+					plogtest.IgnoreScopeLogsOrder(),
+					plogtest.IgnoreLogRecordsOrder(),
+					plogtest.IgnoreScopeLogsVersion()),
 				"Received logs did not match log records in file %s", expectedFile,
 			)
 		})

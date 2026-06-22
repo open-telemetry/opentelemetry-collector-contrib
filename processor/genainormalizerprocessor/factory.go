@@ -42,7 +42,8 @@ func createTracesProcessor(
 		return nil, err
 	}
 	p := newGenaiNormalizerProcessor(c)
-	return processorhelper.NewTraces(ctx, set, cfg, next, p.processTraces,
+	return processorhelper.NewTraces(
+		ctx, set, cfg, next, p.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }

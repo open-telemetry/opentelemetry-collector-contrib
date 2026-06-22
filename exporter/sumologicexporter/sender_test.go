@@ -224,7 +224,8 @@ func TestSendLogs(t *testing.T) {
 	logsRecords2 := slgs.AppendEmpty().LogRecords()
 	logsRecords2.AppendEmpty().Body().SetStr("Another example log")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key1": "value", "key2": "value2"}),
 	)
@@ -250,7 +251,8 @@ func TestSendLogsWithEmptyField(t *testing.T) {
 	logsRecords2 := slgs.AppendEmpty().LogRecords()
 	logsRecords2.AppendEmpty().Body().SetStr("Another example log")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key1": "value", "key2": "value2", "service": ""}),
 	)
@@ -289,7 +291,8 @@ func TestSendLogsMultitype(t *testing.T) {
 	intVal.CopyTo(attArr.AppendEmpty())
 	attVal.CopyTo(logsRecords.AppendEmpty().Body())
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key1": "value", "key2": "value2"}),
 	)
@@ -318,7 +321,8 @@ func TestSendLogsSplit(t *testing.T) {
 	logsRecords2 := slgs.AppendEmpty().LogRecords()
 	logsRecords2.AppendEmpty().Body().SetStr("Another example log")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fields{},
 	)
@@ -356,7 +360,8 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 	logsRecords2 := slgs.AppendEmpty().LogRecords()
 	logsRecords2.AppendEmpty().Body().SetStr("Another example log")
 
-	dropped, err := test.s.sendNonOTLPLogs(t.Context(),
+	dropped, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fields{},
 	)
@@ -502,7 +507,8 @@ func TestSendLogsJsonConfig(t *testing.T) {
 
 			test.s.config.LogFormat = JSONFormat
 
-			_, err := test.s.sendNonOTLPLogs(t.Context(),
+			_, err := test.s.sendNonOTLPLogs(
+				t.Context(),
 				tc.logsFunc(),
 				fields{},
 			)
@@ -543,7 +549,8 @@ func TestSendLogsJson(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key": "value"}),
 	)
@@ -582,7 +589,8 @@ func TestSendLogsJsonHTLM(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key": "value"}),
 	)
@@ -636,7 +644,8 @@ func TestSendLogsJsonMultitype(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key": "value"}),
 	)
@@ -676,7 +685,8 @@ func TestSendLogsJsonSplit(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	_, err := test.s.sendNonOTLPLogs(t.Context(),
+	_, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key": "value"}),
 	)
@@ -720,7 +730,8 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	dropped, err := test.s.sendNonOTLPLogs(t.Context(),
+	dropped, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fieldsFromMap(map[string]string{"key": "value"}),
 	)
@@ -767,7 +778,8 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	log.Attributes().PutStr("key1", "value1")
 	log.Attributes().PutStr("key2", "value2")
 
-	dropped, err := test.s.sendNonOTLPLogs(t.Context(),
+	dropped, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fields{},
 	)
@@ -794,7 +806,8 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 	log := slgs.LogRecords().AppendEmpty()
 	log.Body().SetStr("Example log")
 
-	dropped, err := test.s.sendNonOTLPLogs(t.Context(),
+	dropped, err := test.s.sendNonOTLPLogs(
+		t.Context(),
 		rls,
 		fields{},
 	)
@@ -825,16 +838,20 @@ func TestSendLogsOTLP(t *testing.T) {
 			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
 			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
 
-			assert.Empty(t, req.Header.Get("X-Sumo-Fields"),
+			assert.Empty(
+				t, req.Header.Get("X-Sumo-Fields"),
 				"We should not get X-Sumo-Fields header when sending data with OTLP",
 			)
-			assert.Empty(t, req.Header.Get("X-Sumo-Category"),
+			assert.Empty(
+				t, req.Header.Get("X-Sumo-Category"),
 				"We should not get X-Sumo-Category header when sending data with OTLP",
 			)
-			assert.Empty(t, req.Header.Get("X-Sumo-Name"),
+			assert.Empty(
+				t, req.Header.Get("X-Sumo-Name"),
 				"We should not get X-Sumo-Name header when sending data with OTLP",
 			)
-			assert.Empty(t, req.Header.Get("X-Sumo-Host"),
+			assert.Empty(
+				t, req.Header.Get("X-Sumo-Host"),
 				"We should not get X-Sumo-Host header when sending data with OTLP",
 			)
 		},
@@ -875,7 +892,8 @@ func TestLogsHandlesReceiverResponses(t *testing.T) {
 			),
 		)
 
-		_, err := test.s.sendNonOTLPLogs(t.Context(),
+		_, err := test.s.sendNonOTLPLogs(
+			t.Context(),
 			rls,
 			fieldsFromMap(
 				map[string]string{
@@ -927,13 +945,15 @@ func TestLogsHandlesReceiverResponses(t *testing.T) {
 					"_sourceName":     "test_source_name",
 					"_sourceHost":     "test_source_host",
 					"_sourceCategory": "test_source_category",
-				}),
+				},
+			),
 		)
 		assert.NoError(t, writer.Flush())
 		assert.NoError(t, err)
 		assert.EqualValues(t, 1, *test.reqCounter)
 
-		assert.Contains(t,
+		assert.Contains(
+			t,
 			buffer.String(),
 			`There was an issue sending data	{`+
 				`"status": "200 OK", `+

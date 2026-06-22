@@ -27,7 +27,8 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType))
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -57,7 +58,8 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(consumerCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities),
+	)
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor

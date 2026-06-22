@@ -628,7 +628,8 @@ func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
 // and excludes logs-a and logs-b using ^logs-(a|b)$, expecting only logs-c to be consumed.
 func TestExcludeTopicWithRegex(t *testing.T) {
 	// Create three topics: logs-a, logs-b, logs-c
-	kafkaClient, cfg := mustNewFakeCluster(t,
+	kafkaClient, cfg := mustNewFakeCluster(
+		t,
 		kfake.SeedTopics(1, "logs-a"),
 		kfake.SeedTopics(1, "logs-b"),
 		kfake.SeedTopics(1, "logs-c"),

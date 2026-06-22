@@ -77,7 +77,8 @@ func CanonicalImageRef(image string) (string, error) {
 }
 
 func LogParseError(err error, image string, logger *zap.Logger) {
-	logger.Debug(err.Error(),
+	logger.Debug(
+		err.Error(),
 		zap.String("image", image),
 	)
 }

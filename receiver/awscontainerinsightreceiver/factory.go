@@ -52,7 +52,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		componentType,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig returns a default config for the receiver.

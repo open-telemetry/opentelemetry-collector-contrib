@@ -234,7 +234,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors,
@@ -281,11 +282,13 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}
@@ -313,14 +316,16 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			}
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+			))
 			return iterState{
 				record: i + 1,
 				done:   i+1 != len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-				"error writing the event: %w", err)))
+				"error writing the event: %w", err,
+			)))
 		}
 	}
 
@@ -359,11 +364,13 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}

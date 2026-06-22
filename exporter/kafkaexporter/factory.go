@@ -88,7 +88,7 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newTracesExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,
@@ -108,7 +108,7 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newMetricsExporter(oCfg, set)
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -128,7 +128,7 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newLogsExporter(oCfg, set)
 	return exporterhelper.NewLogs(
 		ctx,
@@ -148,7 +148,7 @@ func createProfilesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (xexporter.Profiles, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newProfilesExporter(oCfg, set)
 	return xexporterhelper.NewProfiles(
 		ctx,

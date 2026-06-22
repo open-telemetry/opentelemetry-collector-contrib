@@ -53,7 +53,8 @@ func TestLogsQueryReceiver_Collect(t *testing.T) {
 	assert.Equal(t, "63", logRecord.Body().Str())
 	assert.GreaterOrEqual(t, logRecord.ObservedTimestamp(), pcommon.NewTimestampFromTime(now))
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).ObservedTimestamp(),
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).ObservedTimestamp(),
 		"Observed timestamps of all log records collected in a single scrape should be equal",

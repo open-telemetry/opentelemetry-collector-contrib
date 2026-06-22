@@ -216,7 +216,8 @@ func TestReceiver_ConsumeError(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(t.Context(),
+				results := kafkaClient.ProduceSync(
+					t.Context(),
 					&kgo.Record{Topic: "otlp_spans", Value: data},
 				)
 				require.NoError(t, results.FirstErr())
@@ -261,7 +262,8 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		traces := testdata.GenerateTraces(1)
 		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(t.Context(),
+		results := kafkaClient.ProduceSync(
+			t.Context(),
 			&kgo.Record{Topic: "otlp_spans", Value: data},
 			&kgo.Record{Topic: "otlp_spans", Value: data},
 			&kgo.Record{Topic: "otlp_spans", Value: data},
@@ -459,7 +461,8 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				traces := testdata.GenerateTraces(1)
 				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 				require.NoError(t, err)
-				results := kafkaClient.ProduceSync(t.Context(),
+				results := kafkaClient.ProduceSync(
+					t.Context(),
 					&kgo.Record{Topic: "otlp_spans", Value: []byte("junk")},
 					&kgo.Record{Topic: "otlp_spans", Value: data},
 				)
@@ -537,7 +540,8 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					logEntries := observedErrorLogs.All()
 					require.Len(t, logEntries, 2)
 					assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
-					assert.Equal(t,
+					assert.Equal(
+						t,
 						"failed to consume message, skipping due to message_marking config",
 						logEntries[1].Message,
 					)
@@ -562,7 +566,8 @@ func TestNewLogsReceiver(t *testing.T) {
 		logs := testdata.GenerateLogs(1)
 		data, err := (&plog.ProtoMarshaler{}).MarshalLogs(logs)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(t.Context(),
+		results := kafkaClient.ProduceSync(
+			t.Context(),
 			&kgo.Record{
 				Topic: "otlp_logs",
 				Value: data,
@@ -616,7 +621,8 @@ func TestNewMetricsReceiver(t *testing.T) {
 		metrics := testdata.GenerateMetrics(1)
 		data, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(t.Context(),
+		results := kafkaClient.ProduceSync(
+			t.Context(),
 			&kgo.Record{
 				Topic: "otlp_metrics",
 				Value: data,
@@ -670,7 +676,8 @@ func TestNewProfilesReceiver(t *testing.T) {
 		profiles := testdata.GenerateProfiles(1)
 		data, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
 		require.NoError(t, err)
-		results := kafkaClient.ProduceSync(t.Context(),
+		results := kafkaClient.ProduceSync(
+			t.Context(),
 			&kgo.Record{
 				Topic: "otlp_profiles",
 				Value: data,

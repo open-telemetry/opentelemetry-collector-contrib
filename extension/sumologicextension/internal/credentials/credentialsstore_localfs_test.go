@@ -47,8 +47,10 @@ func TestCredentialsStoreLocalFs(t *testing.T) {
 	require.NoError(t, sut.Delete(key))
 	// Make sure the file got deleted and there is nothing in the credentials store dir.
 	var fileCounter int
-	require.NoError(t,
-		filepath.WalkDir(dir,
+	require.NoError(
+		t,
+		filepath.WalkDir(
+			dir,
 			func(_ string, d fs.DirEntry, _ error) error {
 				if d.IsDir() {
 					return nil

@@ -32,19 +32,20 @@ func Test_DataPointFunctions(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			expected := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
-			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
-			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
-			expected["merge_histogram_buckets"] = newMergeHistogramBucketsFactory()
+		t.Run(
+			tt.name, func(t *testing.T) {
+				expected := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
+				expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
+				expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
+				expected["merge_histogram_buckets"] = newMergeHistogramBucketsFactory()
 
-			actual := DataPointFunctions()
+				actual := DataPointFunctions()
 
-			require.Len(t, actual, len(expected))
-			for k := range actual {
-				assert.Contains(t, expected, k)
-			}
-		},
+				require.Len(t, actual, len(expected))
+				for k := range actual {
+					assert.Contains(t, expected, k)
+				}
+			},
 		)
 	}
 }

@@ -146,7 +146,8 @@ func generateBatchBenchmarks(backends map[string]storage.Extension) []testBatchB
 	for d := range backends {
 		for _, n := range []int{2, 10, 100, 200, 500, 1000} {
 			for _, bt := range []string{"MultiQuery", "SingleQuery"} {
-				benchmarks = append(benchmarks,
+				benchmarks = append(
+					benchmarks,
 					testBatchBenchmark{
 						name:        bt,
 						backend:     d,

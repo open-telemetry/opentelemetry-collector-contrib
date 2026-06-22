@@ -94,7 +94,8 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 		numPartitions = 3
 		numBrokers    = 2
 	)
-	_, clientCfg := kafkatest.NewCluster(t,
+	_, clientCfg := kafkatest.NewCluster(
+		t,
 		kfake.SeedTopics(numPartitions, topic),
 		kfake.NumBrokers(numBrokers),
 	)
@@ -210,7 +211,8 @@ func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
 
 func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
 	const topic = "topic-a"
-	_, clientCfg := kafkatest.NewCluster(t,
+	_, clientCfg := kafkatest.NewCluster(
+		t,
 		kfake.SeedTopics(2, topic),
 		// kfake propagates min.insync.replicas from broker config into the topic config.
 		kfake.BrokerConfigs(map[string]string{

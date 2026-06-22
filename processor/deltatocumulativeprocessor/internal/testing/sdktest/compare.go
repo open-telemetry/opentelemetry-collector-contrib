@@ -27,7 +27,8 @@ func Test(spec Spec, mr *metric.ManualReader, opts ...Option) error {
 	got := Flatten(rm)
 	want := Metrics(spec)
 
-	diff := Diff(want, got,
+	diff := Diff(
+		want, got,
 		IgnoreUnspec(spec),
 		IgnoreTime(),
 		IgnoreMetadata(),
@@ -110,7 +111,8 @@ func Transform() Option {
 }
 
 func transform[N int64 | float64]() Option {
-	return cmpopts.AcyclicTransformer(fmt.Sprintf("sdktest.Transform.%T", *new(N)),
+	return cmpopts.AcyclicTransformer(
+		fmt.Sprintf("sdktest.Transform.%T", *new(N)),
 		func(dps []sdk.DataPoint[N]) []DataPoint[N] {
 			out := make([]DataPoint[N], len(dps))
 			for i, dp := range dps {

@@ -148,7 +148,8 @@ func (es *esDataReceiver) Stop() error {
 
 func (es *esDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	cfgFormat := fmt.Sprintf(`
+	cfgFormat := fmt.Sprintf(
+		`
   elasticsearch:
     endpoints: [%s]
     logs_index: %s

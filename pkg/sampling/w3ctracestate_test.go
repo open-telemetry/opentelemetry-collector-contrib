@@ -135,7 +135,8 @@ func TestParseW3CTraceState(t *testing.T) {
 			w3c, err := NewW3CTraceState(test.in)
 
 			if test.expectErr != nil {
-				require.ErrorIs(t, err, test.expectErr,
+				require.ErrorIs(
+					t, err, test.expectErr,
 					"%q: not expecting %v wanted %v", test.in, err, test.expectErr,
 				)
 			} else {

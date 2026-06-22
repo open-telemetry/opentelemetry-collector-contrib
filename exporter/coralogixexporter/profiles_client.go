@@ -65,7 +65,8 @@ func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profile
 
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
-		e.settings.Logger.Error("Partial success response from Coralogix",
+		e.settings.Logger.Error(
+			"Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_profiles", partialSuccess.RejectedProfiles()),
 		)

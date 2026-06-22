@@ -27,12 +27,14 @@ func TestIntegration(t *testing.T) {
 				Image:        "docker.io/library/memcached:1.6-alpine",
 				ExposedPorts: []string{memcachedPort},
 				WaitingFor:   wait.ForListeningPort(memcachedPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, memcachedPort))
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),

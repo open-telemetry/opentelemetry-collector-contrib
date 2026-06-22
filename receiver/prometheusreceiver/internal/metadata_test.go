@@ -26,13 +26,14 @@ func TestMetadataForMetric_Internal(t *testing.T) {
 }
 
 func TestMetadataForMetric_ExternalExactHit(t *testing.T) {
-	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
-		"http_requests_total": {
-			MetricFamily: "http_requests_total",
-			Type:         model.MetricTypeCounter,
-			Help:         "Total HTTP requests",
+	store := newFakeMetadataStore(
+		map[string]scrape.MetricMetadata{
+			"http_requests_total": {
+				MetricFamily: "http_requests_total",
+				Type:         model.MetricTypeCounter,
+				Help:         "Total HTTP requests",
+			},
 		},
-	},
 	)
 	metadata, resolved := metadataForMetric("http_requests_total", store)
 	if resolved != "http_requests_total" {
@@ -67,13 +68,14 @@ func TestMetadataForMetric_NormalizedFallback_Gauge(t *testing.T) {
 
 func TestMetadataForMetric_NormalizedFallback_CounterKeepsOriginal(t *testing.T) {
 	// If normalized metadata type is Counter, resolved should stay the original name.
-	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
-		"requests": {
-			MetricFamily: "requests",
-			Type:         model.MetricTypeCounter,
-			Help:         "Requests counter",
+	store := newFakeMetadataStore(
+		map[string]scrape.MetricMetadata{
+			"requests": {
+				MetricFamily: "requests",
+				Type:         model.MetricTypeCounter,
+				Help:         "Requests counter",
+			},
 		},
-	},
 	)
 	metadata, resolved := metadataForMetric("requests_total", store)
 	if resolved != "requests_total" {
@@ -105,13 +107,14 @@ func TestMetadataForMetric_Unknown(t *testing.T) {
 
 func TestMetadataForMetric_PrefersInternalOverExternal(t *testing.T) {
 	// Ensure internal metric metadata is used even if external store provides a conflicting entry.
-	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
-		scrapeUpMetricName: {
-			MetricFamily: "up_external",
-			Type:         model.MetricTypeCounter,
-			Help:         "External override attempt",
+	store := newFakeMetadataStore(
+		map[string]scrape.MetricMetadata{
+			scrapeUpMetricName: {
+				MetricFamily: "up_external",
+				Type:         model.MetricTypeCounter,
+				Help:         "External override attempt",
+			},
 		},
-	},
 	)
 	m, resolved := metadataForMetric(scrapeUpMetricName, store)
 	if resolved != scrapeUpMetricName {

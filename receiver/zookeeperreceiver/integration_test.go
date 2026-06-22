@@ -38,14 +38,17 @@ func integrationTest(name, image string, standalone bool) func(*testing.T) {
 				},
 				ExposedPorts: []string{zookeeperPort},
 				WaitingFor:   wait.ForListeningPort(zookeeperPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, zookeeperPort))
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
-			filepath.Join("testdata", "integration", fmt.Sprintf("expected-%s.yaml", name))),
+			filepath.Join("testdata", "integration", fmt.Sprintf("expected-%s.yaml", name)),
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),

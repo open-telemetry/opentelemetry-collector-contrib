@@ -87,7 +87,8 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 	m.log.Debug("Requesting translation for schemaURL", zap.String("schema-url", schemaURL))
 	family, version, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
-		m.log.Error("No valid schema url was provided",
+		m.log.Error(
+			"No valid schema url was provided",
 			zap.String("schema-url", schemaURL), zap.Error(err),
 		)
 		return nil, err
@@ -95,7 +96,8 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 
 	targetTranslation, match := m.match[family]
 	if !match {
-		m.log.Warn("Not a known target translation",
+		m.log.Warn(
+			"Not a known target translation",
 			zap.String("schema-url", schemaURL),
 		)
 		return nil, fmt.Errorf("not a known targetTranslation: %s", family)
@@ -127,7 +129,8 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 	for _, p := range m.providers {
 		content, err := p.Retrieve(ctx, fetchURL)
 		if err != nil {
-			m.log.Error("Failed to lookup schemaURL",
+			m.log.Error(
+				"Failed to lookup schemaURL",
 				zap.Error(err),
 				zap.String("schemaURL", fetchURL),
 			)
@@ -147,7 +150,8 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 			resolvedURI := parsed.V2Manifest.ResolvedRegistryURI
 			parsed, err = m.followManifest(ctx, parsed.V2Manifest)
 			if err != nil {
-				m.log.Error("Failed to resolve v2 manifest",
+				m.log.Error(
+					"Failed to resolve v2 manifest",
 					zap.Error(err),
 					zap.String("manifestURL", fetchURL),
 					zap.String("resolvedURL", resolvedURI),

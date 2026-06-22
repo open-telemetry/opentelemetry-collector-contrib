@@ -30,7 +30,8 @@ func newTranslator(t *testing.T, logger *zap.Logger) metrics.Provider {
 	set.Logger = logger
 	attributesTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
-	tr, err := metrics.NewDefaultTranslator(set,
+	tr, err := metrics.NewDefaultTranslator(
+		set,
 		attributesTranslator,
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
@@ -84,7 +85,8 @@ func TestRunningMetrics(t *testing.T) {
 		}
 	}
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)

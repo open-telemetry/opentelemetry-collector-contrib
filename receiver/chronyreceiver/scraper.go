@@ -22,7 +22,8 @@ type chronyScraper struct {
 
 func newScraper(ctx context.Context, cfg *Config, set receiver.Settings) *chronyScraper {
 	return &chronyScraper{
-		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set,
+		mb: metadata.NewMetricsBuilder(
+			cfg.MetricsBuilderConfig, set,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clockwork.FromContext(ctx).Now())),
 		),
 	}

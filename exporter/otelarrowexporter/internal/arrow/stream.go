@@ -213,7 +213,8 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 			// This is a special case because we reset s.client,
 			// which sets up a downgrade after the streams return.
 			s.client = nil
-			s.telemetry.Logger.Info("arrow is not supported",
+			s.telemetry.Logger.Info(
+				"arrow is not supported",
 				zap.String("message", status.Message()),
 			)
 		} else {
@@ -448,7 +449,8 @@ func (s *Stream) encode(records any) (_ *arrowpb.BatchArrowRecords, retErr error
 			// When this happens, the stacktrace is
 			// important and lost if we don't capture it
 			// here.
-			s.telemetry.Logger.Debug("panic detail in otel-arrow-adapter",
+			s.telemetry.Logger.Debug(
+				"panic detail in otel-arrow-adapter",
 				zap.Reflect("recovered", err),
 				zap.Stack("stacktrace"),
 			)

@@ -221,7 +221,8 @@ func (f *transformProcessorFactory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createTracesProcessor(
@@ -232,7 +233,8 @@ func (f *transformProcessorFactory) createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 	if f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"transform\" processor",
+		set.Logger.Debug(
+			"non-default OTTL trace functions have been registered in the \"transform\" processor",
 			zap.Bool("span", f.defaultSpanFunctionsOverridden),
 			zap.Bool("spanevent", f.defaultSpanEventFunctionsOverridden),
 		)
@@ -247,7 +249,8 @@ func (f *transformProcessorFactory) createTracesProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createMetricsProcessor(
@@ -259,7 +262,8 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
 	if f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"transform\" processor",
+		set.Logger.Debug(
+			"non-default OTTL metric functions have been registered in the \"transform\" processor",
 			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
 			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
 		)
@@ -274,7 +278,8 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createProfilesProcessor(
@@ -299,5 +304,6 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessProfiles,
-		xprocessorhelper.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+	)
 }

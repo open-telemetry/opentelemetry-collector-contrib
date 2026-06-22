@@ -63,32 +63,32 @@ func TestLoadConfig(t *testing.T) {
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("cpu"):  cpuscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("disk"): diskscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("load"): (func() component.Config {
+					component.MustNewType("load"): func() component.Config {
 						cfg := loadscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*loadscraper.Config).CPUAverage = true
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("filesystem"): filesystemscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("memory"):     memoryscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("network"): (func() component.Config {
+					component.MustNewType("network"): func() component.Config {
 						cfg := networkscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 							Interfaces: []string{"test1"},
 							Config:     filterset.Config{MatchType: "strict"},
 						}
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("nfs"):       nfsscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("processes"): processesscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("paging"):    pagingscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("process"): (func() component.Config {
+					component.MustNewType("process"): func() component.Config {
 						cfg := processscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 							Names:  []string{"test2", "test3"},
 							Config: filterset.Config{MatchType: "regexp"},
 						}
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
 				},
 			},
@@ -146,32 +146,32 @@ func TestLoadDeprecatedConfig(t *testing.T) {
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("cpu"):  cpuscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("disk"): diskscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("load"): (func() component.Config {
+					component.MustNewType("load"): func() component.Config {
 						cfg := loadscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*loadscraper.Config).CPUAverage = true
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("filesystem"): filesystemscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("memory"):     memoryscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("network"): (func() component.Config {
+					component.MustNewType("network"): func() component.Config {
 						cfg := networkscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 							Interfaces: []string{"test1"},
 							Config:     filterset.Config{MatchType: "strict"},
 						}
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("nfs"):       nfsscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("processes"): processesscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("paging"):    pagingscraper.NewFactory().CreateDefaultConfig(),
-					component.MustNewType("process"): (func() component.Config {
+					component.MustNewType("process"): func() component.Config {
 						cfg := processscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 							Names:  []string{"test2", "test3"},
 							Config: filterset.Config{MatchType: "regexp"},
 						}
 						return cfg
-					})(),
+					}(),
 					component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
 				},
 			},

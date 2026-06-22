@@ -28,7 +28,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -57,7 +58,8 @@ func createMetricsReceiver(
 	s, err := scraper.NewMetrics(
 		ms.scrape,
 		scraper.WithStart(ms.start),
-		scraper.WithShutdown(ms.shutdown))
+		scraper.WithShutdown(ms.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -136,11 +136,14 @@ func mockArrowProducer(ctc *commonTestCase) func() arrowRecord.ProducerAPI {
 		prod := arrowRecord.NewProducer()
 
 		mock.EXPECT().BatchArrowRecordsFromTraces(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromTraces))
+			copyBatch(prod.BatchArrowRecordsFromTraces),
+		)
 		mock.EXPECT().BatchArrowRecordsFromLogs(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromLogs))
+			copyBatch(prod.BatchArrowRecordsFromLogs),
+		)
 		mock.EXPECT().BatchArrowRecordsFromMetrics(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromMetrics))
+			copyBatch(prod.BatchArrowRecordsFromMetrics),
+		)
 		mock.EXPECT().Close().Times(1).Return(nil)
 		return mock
 	}
@@ -698,7 +701,8 @@ func TestArrowExporterIsTraced(t *testing.T) {
 				callCtx := t.Context()
 
 				if times%2 == 1 {
-					callCtx = trace.ContextWithSpanContext(callCtx,
+					callCtx = trace.ContextWithSpanContext(
+						callCtx,
 						trace.NewSpanContext(trace.SpanContextConfig{
 							TraceID: [16]byte{byte(times), 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
 							SpanID:  [8]byte{byte(times), 1, 2, 3, 4, 5, 6, 7},

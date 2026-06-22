@@ -94,8 +94,10 @@ func addHandlerFunc[T any](
 		defer func() {
 			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
-			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
+			tb.HTTPServerRequestDuration.Record(
+				handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
+					attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code)),
+				),
 			)
 		}()
 
@@ -306,8 +308,10 @@ func handlePubSubPushRequest[T any](
 			// this field is empty if the log is sent directly to Pub/Sub
 			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
 		}
-		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			metricAttr),
+		tb.GcpPubsubInputUncompressedSize.Record(
+			ctx, float64(incomingSize), metric.WithAttributeSet(
+				metricAttr,
+			),
 		)
 	}
 	unmarshalled, err := unmarshal(unmarshalData)

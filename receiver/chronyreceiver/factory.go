@@ -37,7 +37,8 @@ func newMetricsReceiver(
 	}
 
 	s := newScraper(ctx, cfg, set)
-	sc, err := scraper.NewMetrics(s.scrape,
+	sc, err := scraper.NewMetrics(
+		s.scrape,
 		scraper.WithStart(func(_ context.Context, _ component.Host) error {
 			var chronyc chrony.Client
 			var err error

@@ -95,7 +95,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRe
 		v1 := r.metadata.Get("key1")
 		v2 := r.metadata.Get("key2")
 		hashKey := fmt.Sprintf("%s|%s", v1, v2)
-		r.spanCountByMetadata[hashKey] += (td.SpanCount())
+		r.spanCountByMetadata[hashKey] += td.SpanCount()
 	}
 	r.lastRequest = td
 	return r.exportResponse(), r.exportError
@@ -351,7 +351,8 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	newCallerContext := func(value string) context.Context {
-		return client.NewContext(t.Context(),
+		return client.NewContext(
+			t.Context(),
 			client.Info{
 				Metadata: client.NewMetadata(map[string][]string{
 					"in_callerid": {value},

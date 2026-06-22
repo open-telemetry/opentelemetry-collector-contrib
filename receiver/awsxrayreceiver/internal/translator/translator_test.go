@@ -1011,7 +1011,8 @@ func TestTranslation(t *testing.T) {
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
 				assert.NoError(t, err, "failed to unmarshal raw segment")
-				expectedRs = initResourceSpans(t,
+				expectedRs = initResourceSpans(
+					t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
 					tc.propsPerSpan(t, tc.testCase, &actualSeg),
@@ -1021,7 +1022,8 @@ func TestTranslation(t *testing.T) {
 			recorder := telemetry.NewRecorder()
 			traces, totalSpanCount, err := ToTraces(content, recorder)
 			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
-				assert.Equal(t, totalSpanCount,
+				assert.Equal(
+					t, totalSpanCount,
 					expectedRs.ScopeSpans().At(0).Spans().Len(),
 					"generated span count is different from the expected",
 				)

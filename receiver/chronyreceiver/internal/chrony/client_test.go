@@ -124,7 +124,8 @@ func TestNewReturnsErrorWhenSocketNameGenerationFails(t *testing.T) {
 	sockDir := t.TempDir()
 	wantErr := errors.New("entropy unavailable")
 
-	_, err := New("unix://"+sockDir, 10*time.Second,
+	_, err := New(
+		"unix://"+sockDir, 10*time.Second,
 		WithFileMountPath(sockDir),
 		func(c *client) {
 			setter, ok := any(c).(localAddrGeneratorSetter)
@@ -241,13 +242,15 @@ func TestGetTrackingDataRemovesGeneratedSocketOnSuccess(t *testing.T) {
 
 	tracking := newTrackingPayload(t)
 
-	c, err := New("unix://"+sockDir, 10*time.Second,
+	c, err := New(
+		"unix://"+sockDir, 10*time.Second,
 		WithFileMountPath(sockDir),
 		func(c *client) {
 			c.dialer = func(context.Context, string, string) (net.Conn, error) {
 				// Create a mock socket file to simulate dialer binding
 				_ = os.WriteFile(c.localAddr, []byte(""), 0o600)
-				conn := newMockConn(t,
+				conn := newMockConn(
+					t,
 					nil,
 					func(conn net.Conn) error {
 						_, writeErr := conn.Write(tracking)
@@ -308,7 +311,8 @@ func TestDialErrorCleansUpLocalSocket(t *testing.T) {
 	tracking := newTrackingPayload(t)
 	attempts := 0
 
-	chronyClient, err := New("unix://"+sockDir, 10*time.Second,
+	chronyClient, err := New(
+		"unix://"+sockDir, 10*time.Second,
 		WithFileMountPath(sockDir),
 		func(c *client) {
 			c.dialer = func(context.Context, string, string) (net.Conn, error) {
@@ -317,7 +321,8 @@ func TestDialErrorCleansUpLocalSocket(t *testing.T) {
 					require.NoError(t, os.WriteFile(c.localAddr, []byte(""), 0o600))
 					return nil, os.ErrPermission
 				}
-				return newMockConn(t,
+				return newMockConn(
+					t,
 					nil,
 					func(conn net.Conn) error {
 						_, writeErr := conn.Write(tracking)
@@ -351,7 +356,8 @@ func TestReadErrorCleansUpGeneratedSocket(t *testing.T) {
 	sockDir := newShortSocketDir(t)
 	readConn := newScriptedConn()
 
-	chronyClient, err := New("unix://"+sockDir, 10*time.Second,
+	chronyClient, err := New(
+		"unix://"+sockDir, 10*time.Second,
 		WithFileMountPath(sockDir),
 		func(c *client) {
 			c.dialer = func(context.Context, string, string) (net.Conn, error) {

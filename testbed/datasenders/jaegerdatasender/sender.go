@@ -155,7 +155,8 @@ func (s *protoGRPCSender) pushTraces(
 	for _, batch := range batches {
 		_, err := s.client.PostSpans(
 			ctx,
-			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
+			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady),
+		)
 		if err != nil {
 			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)

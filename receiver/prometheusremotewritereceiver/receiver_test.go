@@ -3389,7 +3389,8 @@ func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 			scopeVersion := sm.Scope().Version()
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
-				metricID := fmt.Sprintf("%s:%s:%s:%s:%s",
+				metricID := fmt.Sprintf(
+					"%s:%s:%s:%s:%s",
 					resourceID,
 					scopeName,
 					scopeVersion,
@@ -3692,7 +3693,8 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 					{
 						Attributes: otelattr.NewSet(
 							otelattr.String("receiver", receiverID.String()),
-							otelattr.String("transport", "http")),
+							otelattr.String("transport", "http"),
+						),
 						Value: 3, // 3 data points, not 1 (resource count)
 					},
 				},

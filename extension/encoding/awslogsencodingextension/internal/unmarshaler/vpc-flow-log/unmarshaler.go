@@ -383,7 +383,8 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 			return err
 		}
 		if !found {
-			v.logger.Warn("field is not an available field for a flow log record",
+			v.logger.Warn(
+				"field is not an available field for a flow log record",
 				zap.String("field", field),
 				zap.String("documentation", "https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html"),
 			)
@@ -547,7 +548,8 @@ func (v *VPCFlowLogUnmarshaler) warnUnknownParquetColumns(fields []string) {
 		foundStr, _ := v.handleStringField(field, "", scratchResLogs, scratchRecord, &scratchAddr)
 		foundInt, _ := v.handleInt64Field(field, 0, scratchResLogs, scratchRecord, &scratchAddr)
 		if !foundStr && !foundInt {
-			v.logger.Warn("field is not an available field for a flow log record",
+			v.logger.Warn(
+				"field is not an available field for a flow log record",
 				zap.String("field", field),
 				zap.String("documentation", "https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html"),
 			)

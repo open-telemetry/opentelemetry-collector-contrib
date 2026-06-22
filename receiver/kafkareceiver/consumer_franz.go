@@ -263,7 +263,8 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// simply be logged and keep fetching.
 	var hasError bool
 	fetch.EachError(func(topic string, partition int32, err error) {
-		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
+		c.settings.Logger.Error(
+			"consumer fetch error", zap.Error(err),
 			zap.String("topic", topic),
 			zap.Int64("partition", int64(partition)),
 		)
@@ -312,7 +313,8 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			return
 		}
 		wg.Add(1)
-		assign.logger.Debug("processing fetched records",
+		assign.logger.Debug(
+			"processing fetched records",
 			zap.Int("count", count),
 			zap.Int64("start_offset", p.Records[0].Offset),
 			zap.Int64("end_offset", p.Records[count-1].Offset),
@@ -332,12 +334,14 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 					// Log at DEBUG level for shutdown/rebalance interruptions
 					// (context cancellation), ERROR for real processing failures.
 					if pc.ctx.Err() != nil {
-						pc.logger.Debug("message processing interrupted",
+						pc.logger.Debug(
+							"message processing interrupted",
 							zap.Error(err),
 							zap.Int64("offset", msg.Offset),
 						)
 					} else {
-						pc.logger.Error("unable to process message",
+						pc.logger.Error(
+							"unable to process message",
 							zap.Error(err),
 							zap.Int64("offset", msg.Offset),
 						)
@@ -385,20 +389,23 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 								Offset: fatalRecord.Offset,
 							}},
 						})
-						pc.logger.Info("rewinding partition to retry failed record on next poll",
+						pc.logger.Info(
+							"rewinding partition to retry failed record on next poll",
 							zap.Int64("offset", fatalRecord.Offset),
 						)
 					}
 				case fatalIsPermanent:
 					tp := map[string][]int32{p.Topic: {p.Partition}}
 					c.client.PauseFetchPartitions(tp)
-					pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
+					pc.logger.Error(
+						"pausing partition due to permanent processing error, partition will remain paused until rebalance",
 						zap.Int64("offset", fatalRecord.Offset),
 					)
 				default:
 					tp := map[string][]int32{p.Topic: {p.Partition}}
 					c.client.PauseFetchPartitions(tp)
-					pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
+					pc.logger.Error(
+						"pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
 						zap.Int64("offset", fatalRecord.Offset),
 					)
 				}
@@ -409,7 +416,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			// Otherwise, publish consumer lag.
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
 				context.Background(),
-				(p.HighWatermark-1)-(lastProcessed.Offset),
+				(p.HighWatermark-1)-lastProcessed.Offset,
 				metric.WithAttributeSet(pc.attrs),
 			)
 			if c.config.MessageMarking.After {
@@ -585,7 +592,8 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 		if pc.backOff != nil && !consumererror.IsPermanent(err) {
 			backOffDelay := pc.backOff.NextBackOff()
 			if backOffDelay != backoff.Stop {
-				pc.logger.Info("Backing off due to error from the next consumer.",
+				pc.logger.Info(
+					"Backing off due to error from the next consumer.",
 					zap.Error(err),
 					zap.Duration("delay", backOffDelay),
 				)
@@ -596,7 +604,8 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 					continue
 				}
 			}
-			pc.logger.Warn("Stop error backoff because the configured max_elapsed_time is reached",
+			pc.logger.Warn(
+				"Stop error backoff because the configured max_elapsed_time is reached",
 				zap.Duration("max_elapsed_time", pc.backOff.MaxElapsedTime),
 			)
 		}
@@ -608,7 +617,8 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 			// Only return an error if messages are marked after successful processing.
 			return err
 		}
-		pc.logger.Error("failed to consume message, skipping due to message_marking config",
+		pc.logger.Error(
+			"failed to consume message, skipping due to message_marking config",
 			zap.Error(err),
 			zap.Int64("offset", record.Offset),
 		)

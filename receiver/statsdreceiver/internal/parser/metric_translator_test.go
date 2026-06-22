@@ -166,11 +166,13 @@ func TestSetTimestampsForCounterMetric(t *testing.T) {
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		metric.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
 		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
 	)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 	)

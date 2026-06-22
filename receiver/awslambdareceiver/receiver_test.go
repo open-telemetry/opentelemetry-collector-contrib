@@ -685,7 +685,8 @@ func (mockExtensionWithPLogUnmarshaler) NewLogsDecoder(_ io.Reader, _ ...encodin
 			},
 			func() int64 {
 				return 0
-			}),
+			},
+		),
 		nil
 }
 
@@ -722,7 +723,8 @@ func (mockExtensionWithPMetricUnmarshaler) NewMetricsDecoder(_ io.Reader, _ ...e
 			},
 			func() int64 {
 				return 0
-			}),
+			},
+		),
 		nil
 }
 

@@ -133,7 +133,8 @@ func Test_InsertXML(t *testing.T) {
 							return tt.subdoc, nil
 						},
 					},
-				})
+				},
+			)
 			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
@@ -160,7 +161,8 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &InsertXMLArguments[any]{
 			XPath: "!",
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
@@ -169,7 +171,8 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 		fCtx, &InsertXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
@@ -185,7 +188,8 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 			},
 			XPath:       "/",
 			SubDocument: invalidXMLGetter(),
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)

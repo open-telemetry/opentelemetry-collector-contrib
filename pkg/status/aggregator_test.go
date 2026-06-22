@@ -44,7 +44,8 @@ func TestAggregateStatus(t *testing.T) {
 	t.Run("pipeline with recoverable error", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st,
@@ -59,7 +60,8 @@ func TestAggregateStatus(t *testing.T) {
 	t.Run("pipeline with permanent error", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusPermanentError,
 			assert.AnError,
 			st,
@@ -90,7 +92,8 @@ func TestAggregateStatusVerbose(t *testing.T) {
 		assertEventsMatch(t, componentstatus.StatusOK, st, st.ComponentStatusMap[tracesKey])
 
 		// Component statuses match
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			collectStatuses(st.ComponentStatusMap[tracesKey], traces.InstanceIDs()...)...,
 		)
@@ -115,13 +118,15 @@ func TestAggregateStatusVerbose(t *testing.T) {
 		)
 
 		// Component statuses match
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			collectStatuses(
 				st.ComponentStatusMap[tracesKey], traces.ReceiverID, traces.ProcessorID,
 			)...,
 		)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
@@ -149,7 +154,8 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 	t.Run("pipeline with permanent error", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusPermanentError,
 			assert.AnError,
 			st,
@@ -164,7 +170,8 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 	t.Run("pipeline with recoverable error", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st,
@@ -241,11 +248,13 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 		assertErrorEventsMatch(t, componentstatus.StatusRecoverableError, assert.AnError, st)
 
 		// Component statuses match
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			collectStatuses(st, traces.ReceiverID, traces.ProcessorID)...,
 		)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st.ComponentStatusMap[toComponentKey(traces.ExporterID)],
@@ -276,7 +285,8 @@ func TestAggregateStatusExtensions(t *testing.T) {
 	t.Run("extension with recoverable error", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeExtensions, status.Concise)
 		require.True(t, ok)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st,
@@ -291,7 +301,8 @@ func TestAggregateStatusExtensions(t *testing.T) {
 	t.Run("extensions recovered", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeExtensions, status.Concise)
 		require.True(t, ok)
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			st,
 		)
@@ -334,7 +345,8 @@ func TestStreaming(t *testing.T) {
 
 	// Traces Pipeline RecoverableError
 	agg.RecordStatus(traces.ExporterID, componentstatus.NewRecoverableErrorEvent(assert.AnError))
-	assertErrorEventsRecvdMatch(t,
+	assertErrorEventsRecvdMatch(
+		t,
 		componentstatus.StatusRecoverableError,
 		assert.AnError,
 		traceEvents,
@@ -384,7 +396,8 @@ func TestStreamingVerbose(t *testing.T) {
 		assertEventsMatch(t, componentstatus.StatusOK, st, st.ComponentStatusMap[tracesKey])
 
 		// Component statuses match
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			collectStatuses(st.ComponentStatusMap[tracesKey], traces.InstanceIDs()...)...,
 		)
@@ -397,7 +410,8 @@ func TestStreamingVerbose(t *testing.T) {
 		st := <-allEvents
 
 		// The top-level status and pipeline status match.
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st,
@@ -405,13 +419,15 @@ func TestStreamingVerbose(t *testing.T) {
 		)
 
 		// Component statuses match
-		assertEventsMatch(t,
+		assertEventsMatch(
+			t,
 			componentstatus.StatusOK,
 			collectStatuses(
 				st.ComponentStatusMap[tracesKey], traces.ReceiverID, traces.ProcessorID,
 			)...,
 		)
-		assertErrorEventsMatch(t,
+		assertErrorEventsMatch(
+			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],

@@ -48,7 +48,8 @@ func createTracesProcessor(
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	set.Logger.Info("Creating isolation forest traces processor",
+	set.Logger.Info(
+		"Creating isolation forest traces processor",
 		zap.String("processor_id", set.ID.String()),
 		zap.Int("forest_size", processorCfg.ForestSize),
 		zap.String("mode", processorCfg.Mode),
@@ -82,7 +83,8 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	set.Logger.Info("Creating isolation forest metrics processor",
+	set.Logger.Info(
+		"Creating isolation forest metrics processor",
 		zap.String("processor_id", set.ID.String()),
 		zap.Int("forest_size", processorCfg.ForestSize),
 		zap.String("mode", processorCfg.Mode),
@@ -115,7 +117,8 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	set.Logger.Info("Creating isolation forest logs processor",
+	set.Logger.Info(
+		"Creating isolation forest logs processor",
 		zap.String("processor_id", set.ID.String()),
 		zap.Int("forest_size", processorCfg.ForestSize),
 		zap.String("mode", processorCfg.Mode),

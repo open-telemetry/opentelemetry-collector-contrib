@@ -15,7 +15,8 @@ import (
 )
 
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(metadata.Type,
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),

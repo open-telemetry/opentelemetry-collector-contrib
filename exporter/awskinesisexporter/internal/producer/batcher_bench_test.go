@@ -15,7 +15,8 @@ import (
 )
 
 func benchXEmptyMessages(b *testing.B, msgCount int) {
-	producer, err := producer.NewBatcher(SetPutRecordsOperation(SuccessfulPutRecordsOperation), "benchmark-stream",
+	producer, err := producer.NewBatcher(
+		SetPutRecordsOperation(SuccessfulPutRecordsOperation), "benchmark-stream",
 		producer.WithLogger(zaptest.NewLogger(b)),
 	)
 

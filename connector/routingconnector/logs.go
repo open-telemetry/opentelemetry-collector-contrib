@@ -43,7 +43,8 @@ func newLogsConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		lr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		case "", "resource":
 			switch route.action {
 			case Copy:
-				plogutil.CopyResourcesIf(ld, matched,
+				plogutil.CopyResourcesIf(
+					ld, matched,
 					func(rl plog.ResourceLogs) bool {
 						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
 						defer rtx.Close()
@@ -93,7 +95,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 					},
 				)
 			default:
-				plogutil.MoveResourcesIf(ld, matched,
+				plogutil.MoveResourcesIf(
+					ld, matched,
 					func(rl plog.ResourceLogs) bool {
 						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
 						defer rtx.Close()
@@ -110,7 +113,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		case "log":
 			switch route.action {
 			case Copy:
-				plogutil.CopyRecordsWithContextIf(ld, matched,
+				plogutil.CopyRecordsWithContextIf(
+					ld, matched,
 					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
 						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
 						defer ltx.Close()
@@ -124,7 +128,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 					},
 				)
 			default:
-				plogutil.MoveRecordsWithContextIf(ld, matched,
+				plogutil.MoveRecordsWithContextIf(
+					ld, matched,
 					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
 						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
 						defer ltx.Close()

@@ -76,7 +76,8 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 
 	var errRecv *recvErr.ErrRecoverable
 	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
-	assert.ErrorContains(t, err,
+	assert.ErrorContains(
+		t, err,
 		fmt.Sprintf("invalid header %+v", Header{
 			Format:  "json",
 			Version: 20,

@@ -98,7 +98,8 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 			logFields = append(logFields, zap.Strings("metric_names", metricNames))
 		}
 
-		e.settings.Logger.Error("Partial success response from Coralogix",
+		e.settings.Logger.Error(
+			"Partial success response from Coralogix",
 			logFields...,
 		)
 	}

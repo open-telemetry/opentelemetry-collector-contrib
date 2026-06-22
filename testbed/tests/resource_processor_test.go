@@ -158,7 +158,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 			require.Equal(t, 1, rm.Len())
 
 			expectidMD := test.expectedMetrics
-			require.Equal(t,
+			require.Equal(
+				t,
 				expectidMD.ResourceMetrics().At(0).Resource().Attributes().AsRaw(),
 				rm.At(0).Resource().Attributes().AsRaw(),
 			)

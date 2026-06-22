@@ -24,13 +24,15 @@ func TestPdataLogsMarshaler(t *testing.T) {
 	input := testdata.GenerateLogs(2)
 	compare := func(expected, actual plog.Logs) error { return plogtest.CompareLogs(expected, actual) }
 	t.Run("protobuf", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataLogsMarshaler(&plog.ProtoMarshaler{}).MarshalLogs,
 			(&plog.ProtoUnmarshaler{}).UnmarshalLogs,
 		)
 	})
 	t.Run("json", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataLogsMarshaler(&plog.JSONMarshaler{}).MarshalLogs,
 			(&plog.JSONUnmarshaler{}).UnmarshalLogs,
 		)
@@ -41,13 +43,15 @@ func TestPdataMetricsMarshaler(t *testing.T) {
 	input := testdata.GenerateMetrics(2)
 	compare := func(expected, actual pmetric.Metrics) error { return pmetrictest.CompareMetrics(expected, actual) }
 	t.Run("protobuf", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}).MarshalMetrics,
 			(&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics,
 		)
 	})
 	t.Run("json", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataMetricsMarshaler(&pmetric.JSONMarshaler{}).MarshalMetrics,
 			(&pmetric.JSONUnmarshaler{}).UnmarshalMetrics,
 		)
@@ -58,13 +62,15 @@ func TestPdataTracesMarshaler(t *testing.T) {
 	input := testdata.GenerateTraces(2)
 	compare := func(expected, actual ptrace.Traces) error { return ptracetest.CompareTraces(expected, actual) }
 	t.Run("protobuf", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataTracesMarshaler(&ptrace.ProtoMarshaler{}).MarshalTraces,
 			(&ptrace.ProtoUnmarshaler{}).UnmarshalTraces,
 		)
 	})
 	t.Run("json", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataTracesMarshaler(&ptrace.JSONMarshaler{}).MarshalTraces,
 			(&ptrace.JSONUnmarshaler{}).UnmarshalTraces,
 		)
@@ -75,13 +81,15 @@ func TestPdataProfilesMarshaler(t *testing.T) {
 	input := testdata.GenerateProfiles(2)
 	compare := func(expected, actual pprofile.Profiles) error { return pprofiletest.CompareProfiles(expected, actual) }
 	t.Run("protobuf", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataProfilesMarshaler(&pprofile.ProtoMarshaler{}).MarshalProfiles,
 			(&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles,
 		)
 	})
 	t.Run("json", func(t *testing.T) {
-		testPdataMarshaler(t, input, compare,
+		testPdataMarshaler(
+			t, input, compare,
 			NewPdataProfilesMarshaler(&pprofile.JSONMarshaler{}).MarshalProfiles,
 			(&pprofile.JSONUnmarshaler{}).UnmarshalProfiles,
 		)

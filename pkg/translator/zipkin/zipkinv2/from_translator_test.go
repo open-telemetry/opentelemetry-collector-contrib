@@ -203,7 +203,8 @@ func TestExtractScopeTags(t *testing.T) {
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
 		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+	)
 	assert.NoError(t, err)
 	for _, td := range tds {
 		zipkinSpans, err := FromTranslator{}.FromTraces(td)

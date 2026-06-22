@@ -157,7 +157,8 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		expCfg)
+		expCfg,
+	)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
@@ -451,7 +452,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 }
 
 func Test_sfxReceiver_handleEventReq(t *testing.T) {
-	config := (NewFactory()).CreateDefaultConfig().(*Config)
+	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3

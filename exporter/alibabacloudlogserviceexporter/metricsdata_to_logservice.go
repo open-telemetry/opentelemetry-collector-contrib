@@ -156,16 +156,20 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 		}
 		switch dataPoint.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			logs = append(logs,
-				newMetricLogFromRaw(name,
+			logs = append(
+				logs,
+				newMetricLogFromRaw(
+					name,
 					labels,
 					int64(dataPoint.Timestamp()),
 					float64(dataPoint.IntValue()),
 				),
 			)
 		case pmetric.NumberDataPointValueTypeDouble:
-			logs = append(logs,
-				newMetricLogFromRaw(name,
+			logs = append(
+				logs,
+				newMetricLogFromRaw(
+					name,
 					labels,
 					int64(dataPoint.Timestamp()),
 					dataPoint.DoubleValue(),
@@ -217,7 +221,8 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 					bucketLabels,
 					int64(dataPoint.Timestamp()),
 					float64(bucket),
-				))
+				),
+			)
 		}
 	}
 	return logs

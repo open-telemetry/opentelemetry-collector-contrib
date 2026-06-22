@@ -118,7 +118,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: (ottltest.Strp("SHA256")),
+							String: ottltest.Strp("SHA256"),
 						},
 					},
 				},

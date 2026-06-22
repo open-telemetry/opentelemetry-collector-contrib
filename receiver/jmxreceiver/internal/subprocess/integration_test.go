@@ -113,7 +113,7 @@ func TestHappyPath(t *testing.T) {
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		procInfo := findProcessInfo(collect)
 		require.NotNil(collect, procInfo)
-		cmdline, err := (procInfo).Cmdline()
+		cmdline, err := procInfo.Cmdline()
 		assert.NoError(t, err)
 		assert.Equal(collect, "/bin/sh "+subprocess.config.ExecutablePath, cmdline)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -140,7 +140,7 @@ func TestWithArgs(t *testing.T) {
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		procInfo := findProcessInfo(collect)
 		require.NotNil(collect, procInfo)
-		cmdline, err := (procInfo).Cmdline()
+		cmdline, err := procInfo.Cmdline()
 		require.NoError(collect, err)
 		require.Equal(collect, fmt.Sprintf("/bin/sh %v myArgs", subprocess.config.ExecutablePath), cmdline)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -203,14 +203,14 @@ func TestWithAutoRestart(t *testing.T) {
 		require.NoError(collect, err)
 		require.Equal(collect, "/bin/sh "+subprocess.config.ExecutablePath, cmdline)
 
-		oldProcPid = (procInfo).Pid
-		require.NoError(collect, (procInfo).Kill())
+		oldProcPid = procInfo.Pid
+		require.NoError(collect, procInfo.Kill())
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Should be restarted
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		procInfo := findProcessInfo(collect)
-		assert.True(collect, procInfo != nil && (procInfo).Pid != oldProcPid)
+		assert.True(collect, procInfo != nil && procInfo.Pid != oldProcPid)
 	}, restartDelay+5*time.Second, 10*time.Millisecond)
 }
 

@@ -88,7 +88,8 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
 		prometheus.Labels{"receiver": set.ID.String()},
-		registry)
+		registry,
+	)
 	pr := &pReceiver{
 		cfg:          cfg,
 		consumer:     next,
@@ -292,7 +293,8 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	var appV2 storage.AppendableV2
 	logger := promslog.NewNopLogger()
 
-	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, appV2, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+	apiV1 := api_v1.NewAPI(
+		o.QueryEngine, o.Storage, app, appV2, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 
 		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
 		func() promconfig.Config {

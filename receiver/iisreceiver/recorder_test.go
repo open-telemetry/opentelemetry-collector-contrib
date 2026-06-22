@@ -66,7 +66,8 @@ func TestBuildSitePerfCounterRecordersFromConfig(t *testing.T) {
 		require.Len(t, recorders, 1)
 		require.Equal(t, "Web Service", recorders[0].object)
 		require.Equal(t, "*", recorders[0].instance)
-		require.Equal(t,
+		require.Equal(
+			t,
 			[]string{"Total Bytes Received", "Total Bytes Sent", "Total Files Received", "Total Files Sent"},
 			sortedRecorderNames(recorders[0].recorders),
 		)

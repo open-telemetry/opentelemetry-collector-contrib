@@ -168,7 +168,8 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 				}
 
 				columnValues := make([]any, 0, 24)
-				columnValues = append(columnValues,
+				columnValues = append(
+					columnValues,
 					span.StartTimestamp().AsTime(),
 					span.TraceID().String(),
 					span.SpanID().String(),
@@ -291,7 +292,8 @@ func (e *tracesJSONExporter) renderInsertTracesJSONSQL() {
 
 func renderCreateTracesJSONTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sqltemplates.TracesJSONCreateTable,
+	return fmt.Sprintf(
+		sqltemplates.TracesJSONCreateTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,

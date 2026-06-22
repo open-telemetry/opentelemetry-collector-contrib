@@ -27,7 +27,8 @@ func newCountValidator(tb testing.TB, provider testbed.DataProvider) *countValid
 
 func (v *countValidator) Validate(tc *testbed.TestCase) {
 	itemsSent := int64(tc.LoadGenerator.DataItemsSent()) - int64(tc.LoadGenerator.PermanentErrors())
-	assert.Equal(v.t,
+	assert.Equal(
+		v.t,
 		itemsSent,
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.",

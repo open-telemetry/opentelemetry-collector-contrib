@@ -78,7 +78,8 @@ func TestNewLogs(t *testing.T) {
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("A", "BC", "D")))
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
-			plogutiltest.Resource("A",
+			plogutiltest.Resource(
+				"A",
 				plogutiltest.Scope("B", plogutiltest.LogRecord("D")),
 				plogutiltest.Scope("C", plogutiltest.LogRecord("D")),
 			),
@@ -128,11 +129,13 @@ func TestNewLogs(t *testing.T) {
 			return ld
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
-			plogutiltest.Resource("A",
+			plogutiltest.Resource(
+				"A",
 				plogutiltest.Scope("C", plogutiltest.LogRecord("E")),
 				plogutiltest.Scope("D", plogutiltest.LogRecord("E")),
 			),
-			plogutiltest.Resource("B",
+			plogutiltest.Resource(
+				"B",
 				plogutiltest.Scope("D", plogutiltest.LogRecord("F"), plogutiltest.LogRecord("G")),
 			),
 		)))

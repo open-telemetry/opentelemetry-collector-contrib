@@ -89,7 +89,8 @@ func composeWriteURL(config *Config) (string, error) {
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
 			basicAuth := base64.StdEncoding.EncodeToString(
-				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
+				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)),
+			)
 			config.Headers.Set("Authorization", configopaque.String("Basic "+basicAuth))
 		}
 	} else {

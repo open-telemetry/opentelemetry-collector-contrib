@@ -317,7 +317,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		ctx,
 		metadata.Type.String(),
 		len(msg.Events),
-		err)
+		err,
+	)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -337,7 +338,8 @@ func (r *sfxReceiver) failRequest(
 			r.settings.Logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
-				zap.String("receiver", r.settings.ID.String()))
+				zap.String("receiver", r.settings.ID.String()),
+			)
 		}
 	}
 

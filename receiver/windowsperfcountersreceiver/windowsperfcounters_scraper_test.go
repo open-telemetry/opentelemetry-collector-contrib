@@ -246,7 +246,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
 			require.NoError(t, err)
 
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			require.NoError(t, pmetrictest.CompareMetrics(
+				expectedMetrics, actualMetrics,
 				// Scraping test host means static values, timestamps and instance counts are unreliable. ScopeMetrics order is also unpredictable.
 				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
 				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),

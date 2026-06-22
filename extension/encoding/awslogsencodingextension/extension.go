@@ -61,7 +61,8 @@ func init() {
 		constants.CloudTrailEnableUserIdentityPrefixID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, CloudTrail log userIdentity attributes will use 'aws.user_identity' prefix. This helps to preserve the attribute origin."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"))
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"),
+	)
 }
 
 type encodingExtension struct {
@@ -121,7 +122,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(
 				settings.BuildInfo,
-				cloudTrailUserIdentityPrefixFeatureGate.IsEnabled()),
+				cloudTrailUserIdentityPrefixFeatureGate.IsEnabled(),
+			),
 			format: constants.FormatCloudTrailLog,
 			logger: settings.Logger,
 		}, nil
