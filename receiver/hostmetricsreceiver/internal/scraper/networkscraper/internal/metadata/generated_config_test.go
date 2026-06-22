@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -107,13 +107,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSystemNetworkConnectionsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkConnections
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkConnectionsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.connections doesn't have an attribute invalid, valid attributes: [protocol, state]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkConnections
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkDroppedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkDropped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkDroppedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.dropped doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkDropped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.errors doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.io doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkPacketsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkPackets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkPacketsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.packets doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkPackets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

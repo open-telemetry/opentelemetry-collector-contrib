@@ -112,6 +112,9 @@ type CompositeSubPolicyCfg struct {
 // AndSubPolicyCfg holds the common configuration to all policies under and policy.
 type AndSubPolicyCfg struct {
 	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configs for defining not policy under and policy.
+	NotCfg NotCfg `mapstructure:"not"`
 }
 
 // NotSubPolicyCfg holds the common configuration to the policy under the not policy.
@@ -250,6 +253,10 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+	// BurstCapacity sets the maximum burst capacity in spans. If not specified, defaults to 2x SpansPerSecond.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a
+	// limit for individual trace span counts, a single trace with more spans than the burst size will not pass.
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

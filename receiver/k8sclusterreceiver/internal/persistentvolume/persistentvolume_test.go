@@ -109,7 +109,7 @@ func TestTransformWithoutClaimRef(t *testing.T) {
 }
 
 func newPVMetricsBuilder() *metadata.MetricsBuilder {
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
 	mbc.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
 	return metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
@@ -140,7 +140,7 @@ func TestGoldenFileOptionalAttrs(t *testing.T) {
 	pv := testutils.NewPersistentVolume("1")
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
 	mbc.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
 	mbc.ResourceAttributes.K8sPersistentvolumeReclaimPolicy.Enabled = true

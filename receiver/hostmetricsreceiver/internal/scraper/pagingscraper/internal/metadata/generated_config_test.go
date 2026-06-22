@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -85,13 +85,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSystemPagingFaultsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingFaults
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingFaultsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.faults doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SystemPagingFaults
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.operations doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().SystemPagingOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.usage doesn't have an attribute invalid, valid attributes: [device, state]")
+
+	cfg = DefaultMetricsConfig().SystemPagingUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.utilization doesn't have an attribute invalid, valid attributes: [device, state]")
+
+	cfg = DefaultMetricsConfig().SystemPagingUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

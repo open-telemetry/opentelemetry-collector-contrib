@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -673,13 +673,636 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestMongodbatlasDbCountsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDbCounts
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDbCountsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.db.counts doesn't have an attribute invalid, valid attributes: [object_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDbCounts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDbSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDbSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDbSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.db.size doesn't have an attribute invalid, valid attributes: [object_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDbSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionIopsAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionIopsAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionIopsAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.iops.average doesn't have an attribute invalid, valid attributes: [disk_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionIopsAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionIopsMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionIopsMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionIopsMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.iops.max doesn't have an attribute invalid, valid attributes: [disk_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionIopsMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionLatencyAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionLatencyAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.latency.average doesn't have an attribute invalid, valid attributes: [disk_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionLatencyAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionLatencyMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionLatencyMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.latency.max doesn't have an attribute invalid, valid attributes: [disk_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionLatencyMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionSpaceAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionSpaceAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.space.average doesn't have an attribute invalid, valid attributes: [disk_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionSpaceAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionSpaceMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionSpaceMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.space.max doesn't have an attribute invalid, valid attributes: [disk_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionSpaceMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.throughput doesn't have an attribute invalid, valid attributes: [disk_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.usage.average doesn't have an attribute invalid, valid attributes: [disk_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasDiskPartitionUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasDiskPartitionUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasDiskPartitionUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.disk.partition.usage.max doesn't have an attribute invalid, valid attributes: [disk_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasDiskPartitionUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessAssertsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessAsserts
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessAssertsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.asserts doesn't have an attribute invalid, valid attributes: [assert_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessAsserts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCacheIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCacheIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCacheIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cache.io doesn't have an attribute invalid, valid attributes: [cache_direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCacheIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCacheRatioMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCacheRatio
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCacheRatioMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cache.ratio doesn't have an attribute invalid, valid attributes: [cache_ratio_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCacheRatio
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCacheSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCacheSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCacheSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cache.size doesn't have an attribute invalid, valid attributes: [cache_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCacheSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUChildrenNormalizedUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.children.normalized.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUChildrenNormalizedUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUChildrenNormalizedUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.children.normalized.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUChildrenNormalizedUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUChildrenUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUChildrenUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.children.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUChildrenUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUChildrenUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUChildrenUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.children.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUChildrenUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUNormalizedUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUNormalizedUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.normalized.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUNormalizedUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUNormalizedUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUNormalizedUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.normalized.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUNormalizedUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCPUUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCPUUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCPUUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cpu.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCPUUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessCursorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessCursors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessCursorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.cursors doesn't have an attribute invalid, valid attributes: [cursor_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessCursors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbDocumentRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbDocumentRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbDocumentRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.document.rate doesn't have an attribute invalid, valid attributes: [document_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbDocumentRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbOperationsRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbOperationsRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbOperationsRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.operations.rate doesn't have an attribute invalid, valid attributes: [operation, cluster_role]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbOperationsRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbOperationsTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbOperationsTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbOperationsTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.operations.time doesn't have an attribute invalid, valid attributes: [execution_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbOperationsTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbQueryExecutorScannedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbQueryExecutorScanned
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.query_executor.scanned doesn't have an attribute invalid, valid attributes: [scanned_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbQueryExecutorScanned
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbQueryTargetingScannedPerReturned
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.query_targeting.scanned_per_returned doesn't have an attribute invalid, valid attributes: [scanned_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbQueryTargetingScannedPerReturned
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessDbStorageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessDbStorage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessDbStorageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.db.storage doesn't have an attribute invalid, valid attributes: [storage_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessDbStorage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessGlobalLockMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessGlobalLock
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessGlobalLockMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.global_lock doesn't have an attribute invalid, valid attributes: [global_lock_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessGlobalLock
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessIndexCountersMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessIndexCounters
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessIndexCountersMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.index.counters doesn't have an attribute invalid, valid attributes: [btree_counter_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessIndexCounters
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.memory.usage doesn't have an attribute invalid, valid attributes: [memory_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.network.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessOplogTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessOplogTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessOplogTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.oplog.time doesn't have an attribute invalid, valid attributes: [oplog_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessOplogTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessPageFaultsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessPageFaults
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessPageFaultsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.page_faults doesn't have an attribute invalid, valid attributes: [memory_issue_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessPageFaults
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasProcessTicketsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasProcessTickets
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasProcessTicketsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.process.tickets doesn't have an attribute invalid, valid attributes: [ticket_type]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasProcessTickets
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemCPUNormalizedUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemCPUNormalizedUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.cpu.normalized.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemCPUNormalizedUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemCPUNormalizedUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemCPUNormalizedUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.cpu.normalized.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemCPUNormalizedUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemCPUUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemCPUUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemCPUUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.cpu.usage.average doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemCPUUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemCPUUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemCPUUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemCPUUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.cpu.usage.max doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemCPUUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemFtsCPUNormalizedUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemFtsCPUNormalizedUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.fts.cpu.normalized.usage doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemFtsCPUNormalizedUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemFtsCPUUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemFtsCPUUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemFtsCPUUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.fts.cpu.usage doesn't have an attribute invalid, valid attributes: [cpu_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemFtsCPUUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemFtsMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemFtsMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemFtsMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.fts.memory.usage doesn't have an attribute invalid, valid attributes: [memory_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemFtsMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemMemoryUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemMemoryUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemMemoryUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.memory.usage.average doesn't have an attribute invalid, valid attributes: [memory_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemMemoryUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemMemoryUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemMemoryUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemMemoryUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.memory.usage.max doesn't have an attribute invalid, valid attributes: [memory_status]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemMemoryUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemNetworkIoAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemNetworkIoAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemNetworkIoAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.network.io.average doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemNetworkIoAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemNetworkIoMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemNetworkIoMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemNetworkIoMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.network.io.max doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemNetworkIoMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemPagingIoAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemPagingIoAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemPagingIoAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.paging.io.average doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemPagingIoAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemPagingIoMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemPagingIoMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemPagingIoMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.paging.io.max doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemPagingIoMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemPagingUsageAverageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemPagingUsageAverage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemPagingUsageAverageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.paging.usage.average doesn't have an attribute invalid, valid attributes: [memory_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemPagingUsageAverage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbatlasSystemPagingUsageMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbatlasSystemPagingUsageMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbatlasSystemPagingUsageMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodbatlas.system.paging.usage.max doesn't have an attribute invalid, valid attributes: [memory_state]")
+
+	cfg = DefaultMetricsConfig().MongodbatlasSystemPagingUsageMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

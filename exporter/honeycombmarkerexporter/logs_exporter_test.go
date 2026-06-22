@@ -116,6 +116,31 @@ func TestExportMarkers(t *testing.T) {
 			},
 			expectedURL: "/1/markers/__all__",
 		},
+		{
+			name: "path context syntax",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type:        "test-type",
+						MessageKey:  "message",
+						URLKey:      "url",
+						DatasetSlug: "test-dataset",
+						Rules: Rules{
+							LogConditions: []string{
+								`log.body == "test"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"message": "this is a test message",
+				"url":     "https://api.testhost.io",
+				"type":    "test-type",
+			},
+			expectedURL: "/1/markers/test-dataset",
+		},
 	}
 
 	for _, tt := range tests {

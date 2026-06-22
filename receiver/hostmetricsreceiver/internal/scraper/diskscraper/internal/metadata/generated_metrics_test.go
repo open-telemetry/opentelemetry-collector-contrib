@@ -58,13 +58,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemDiskIo"] = mb.metricSystemDiskIo.config.AggregationStrategy
-			aggMap["SystemDiskIoTime"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
-			aggMap["SystemDiskMerged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
-			aggMap["SystemDiskOperationTime"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
-			aggMap["SystemDiskOperations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
-			aggMap["SystemDiskPendingOperations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
-			aggMap["SystemDiskWeightedIoTime"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
+			aggMap["system.disk.io"] = mb.metricSystemDiskIo.config.AggregationStrategy
+			aggMap["system.disk.io_time"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
+			aggMap["system.disk.merged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
+			aggMap["system.disk.operation_time"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
+			aggMap["system.disk.operations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
+			aggMap["system.disk.pending_operations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
+			aggMap["system.disk.weighted_io_time"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -73,49 +73,42 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskIoDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskIoTimeDataPoint(ts, 3, "device-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskMergedDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskOperationTimeDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskOperationsDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskPendingOperationsDataPoint(ts, 3, "device-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")

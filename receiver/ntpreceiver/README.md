@@ -3,7 +3,6 @@
 
 This receiver periodically retrieves the clock offset from a NTP server.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

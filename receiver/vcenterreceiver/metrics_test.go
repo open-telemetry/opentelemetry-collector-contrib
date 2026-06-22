@@ -18,7 +18,7 @@ import (
 
 func TestRecordVMStats_IncompleteDataDoesNotPanic(t *testing.T) {
 	scraper := &vcenterMetricScraper{
-		mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		mb: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
 	ts := pcommon.NewTimestampFromTime(time.Now())
 

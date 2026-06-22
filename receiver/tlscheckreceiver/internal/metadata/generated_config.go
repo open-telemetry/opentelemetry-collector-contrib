@@ -3,17 +3,31 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// TlscheckTimeLeftMetricAttributeKey specifies the key of an attribute for the tlscheck.time_left metric.
+type TlscheckTimeLeftMetricAttributeKey string
+
+const (
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.issuer"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn     TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.cn"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509San    TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.san"
+)
+
+// TlscheckTimeLeftMetricConfig provides config for the tlscheck.time_left metric.
+type TlscheckTimeLeftMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []TlscheckTimeLeftMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *TlscheckTimeLeftMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,15 +41,35 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *TlscheckTimeLeftMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San:
+		default:
+			return fmt.Errorf("metric tlscheck.time_left doesn't have an attribute %v, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for tls_check metrics.
 type MetricsConfig struct {
-	TlscheckTimeLeft MetricConfig `mapstructure:"tlscheck.time_left"`
+	TlscheckTimeLeft TlscheckTimeLeftMetricConfig `mapstructure:"tlscheck.time_left"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		TlscheckTimeLeft: MetricConfig{
-			Enabled: true,
+		TlscheckTimeLeft: TlscheckTimeLeftMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []TlscheckTimeLeftMetricAttributeKey{TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn},
 		},
 	}
 }
@@ -85,9 +119,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

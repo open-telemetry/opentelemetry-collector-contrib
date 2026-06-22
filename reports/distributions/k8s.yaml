@@ -6,13 +6,13 @@ components:
         - count
         - exceptions
         - failover
-        - otlpjson
-        - roundrobin
+        - otlp_json
+        - round_robin
         - routing
-        - servicegraph
+        - service_graph
     exporter:
         - file
-        - loadbalancing
+        - load_balancing
         - otelarrow
     extension:
         - ack
@@ -34,31 +34,32 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - groupbyattrs
         - groupbytrace
         - interval
         - k8s_attributes
-        - logdedup
-        - metricstransform
+        - log_dedup
+        - metrics_transform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
         - tail_sampling
         - transform
     receiver:
         - file_log
-        - fluentforward
+        - fluent_forward
         - host_metrics
         - http_check
         - jaeger
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
-        - kubeletstats
+        - k8s_objects
+        - kubelet_stats
         - otelarrow
         - prometheus
         - receiver_creator

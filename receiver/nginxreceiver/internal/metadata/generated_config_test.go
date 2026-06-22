@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -74,12 +74,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestNginxConnectionsCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NginxConnectionsCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NginxConnectionsCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric nginx.connections_current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().NginxConnectionsCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

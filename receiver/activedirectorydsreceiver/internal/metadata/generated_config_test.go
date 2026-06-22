@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -185,13 +185,108 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestActiveDirectoryDsBindRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsBindRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsBindRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.bind.rate doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsBindRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsOperationRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsOperationRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsOperationRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.operation.rate doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsOperationRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsReplicationNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsReplicationNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsReplicationNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.replication.network.io doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsReplicationNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsReplicationObjectRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsReplicationObjectRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsReplicationObjectRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.replication.object.rate doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsReplicationObjectRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsReplicationPropertyRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsReplicationPropertyRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsReplicationPropertyRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.replication.property.rate doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsReplicationPropertyRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsReplicationSyncRequestCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsReplicationSyncRequestCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsReplicationSyncRequestCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.replication.sync.request.count doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsReplicationSyncRequestCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsReplicationValueRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsReplicationValueRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsReplicationValueRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.replication.value.rate doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsReplicationValueRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestActiveDirectoryDsSuboperationRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ActiveDirectoryDsSuboperationRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ActiveDirectoryDsSuboperationRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric active_directory.ds.suboperation.rate doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().ActiveDirectoryDsSuboperationRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

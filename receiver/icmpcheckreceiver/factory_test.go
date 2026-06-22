@@ -30,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	config, ok := cfg.(*Config)
 	require.True(t, ok)
 	assert.Empty(t, config.Targets)
-	assert.Equal(t, metadata.DefaultMetricsBuilderConfig(), config.MetricsBuilderConfig)
+	assert.Equal(t, metadata.NewDefaultMetricsBuilderConfig(), config.MetricsBuilderConfig)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
