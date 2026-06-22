@@ -7,11 +7,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+// AWSOptions holds configuration overrides for AWS SDK when accessing S3 data.
+type AWSOptions struct {
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	SessionToken    string `mapstructure:"session_token"`
+}
 
 // s3API abstracts out the S3 APIs allowing mocking for tests
 type s3API interface {
@@ -30,19 +39,38 @@ type S3Service interface {
 
 // S3Provider expose contract to get S3Service
 type S3Provider interface {
-	GetService(ctx context.Context) (S3Service, error)
+	GetService(ctx context.Context, options AWSOptions) (S3Service, error)
 }
 
 // S3ServiceProvider provides S3Service instances.
-type S3ServiceProvider struct{}
+type S3ServiceProvider struct {
+	service S3Service
+	err     error
 
-func (*S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
-	}
+	once sync.Once
+}
 
-	return &s3ServiceClient{api: s3.NewFromConfig(cfg)}, nil
+func (s *S3ServiceProvider) GetService(ctx context.Context, awsOptions AWSOptions) (S3Service, error) {
+	s.once.Do(func() {
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			s.err = fmt.Errorf("unable to load AWS SDK config: %w", err)
+			return
+		}
+
+		// Use static creds if provided
+		if awsOptions.AccessKeyID != "" && awsOptions.SecretAccessKey != "" {
+			cfg.Credentials = credentials.NewStaticCredentialsProvider(
+				awsOptions.AccessKeyID,
+				awsOptions.SecretAccessKey,
+				awsOptions.SessionToken,
+			)
+		}
+
+		s.service = &s3ServiceClient{api: s3.NewFromConfig(cfg)}
+	})
+
+	return s.service, s.err
 }
 
 // s3ServiceClient implements the S3Service
