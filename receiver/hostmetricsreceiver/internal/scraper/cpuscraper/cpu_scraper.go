@@ -30,12 +30,11 @@ type cpuScraper struct {
 	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
-	ucal     *ucal.CPUUtilizationCalculator
 
 	// for mocking
-	bootTime func(context.Context) (uint64, error)
-	times    func(context.Context, bool) ([]cpu.TimesStat, error)
-	now      func() time.Time
+	bootTime       func(context.Context) (uint64, error)
+	emitCPUMetrics func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error
+	now            func() time.Time
 }
 
 type cpuInfo struct {
@@ -45,7 +44,29 @@ type cpuInfo struct {
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *cpuScraper {
-	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+	return &cpuScraper{
+		settings:       settings,
+		config:         cfg,
+		bootTime:       host.BootTimeWithContext,
+		emitCPUMetrics: newCPUEmitter(cfg),
+		now:            time.Now,
+	}
+}
+
+func newGopsutilEmitter(times func(context.Context, bool) ([]cpu.TimesStat, error)) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
+	calc := &ucal.CPUUtilizationCalculator{}
+	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
+		cpuTimes, err := times(ctx, true /*percpu=*/)
+		if err != nil {
+			return err
+		}
+		for _, cpuTime := range cpuTimes {
+			recordCPUTimeStateDataPoints(now, cpuTime, mb)
+		}
+		return calc.CalculateAndRecord(now, cpuTimes, func(now pcommon.Timestamp, u ucal.CPUUtilization) {
+			recordCPUUtilization(now, u, mb)
+		})
+	}
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
@@ -59,17 +80,8 @@ func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
 
 func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(s.now())
-	cpuTimes, err := s.times(ctx, true /*percpu=*/)
-	if err != nil {
-		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
-	}
 
-	for _, cpuTime := range cpuTimes {
-		s.recordCPUTimeStateDataPoints(now, cpuTime)
-	}
-
-	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
-	if err != nil {
+	if err := s.emitCPUMetrics(ctx, now, s.mb); err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
