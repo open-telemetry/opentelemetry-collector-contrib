@@ -495,7 +495,7 @@ func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 	require.NoError(t, err)
 
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.SetLinger(0) // forces RST instead of FIN on close
+		_ = tcpConn.SetLinger(0) // forces RST instead of FIN on close
 	}
 	conn.Close()
 	select {
