@@ -1,3 +1,8 @@
+# DefaultExcludeMetricsYaml holds the list of hard-coded metrics that will be added to the
+# exclude list from the config. It includes non-default metrics collected by
+# receivers. This list is determined by categorization of metrics in the SignalFx
+# Agent. Metrics in the OpenTelemetry convention, that have equivalents in the
+# SignalFx Agent that are categorized as non-default are also included in this list.
 exclude_metrics:
 
 # Metrics in SignalFx Agent Format.
