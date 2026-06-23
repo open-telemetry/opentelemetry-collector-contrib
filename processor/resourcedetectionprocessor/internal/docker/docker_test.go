@@ -67,3 +67,22 @@ func TestDetect(t *testing.T) {
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
+
+func TestDetectSkipsContainerInfoByDefault(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("Hostname").Return("hostname", nil)
+	md.On("OSType").Return("darwin", nil)
+
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	require.NoError(t, err)
+	detector.(*Detector).provider = md
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	md.AssertNotCalled(t, "ContainerInfo")
+
+	expected := map[string]any{
+		"host.name": "hostname",
+		"os.type":   "darwin",
+	}
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
