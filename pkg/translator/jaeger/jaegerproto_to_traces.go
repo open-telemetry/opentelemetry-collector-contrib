@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/internal/metadata"
 )
 
 var blankJaegerProtoSpan = new(model.Span)
@@ -230,19 +231,32 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 
 func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	for _, tag := range tags {
-		switch tag.GetVType() {
-		case model.ValueType_STRING:
-			dest.PutStr(tag.Key, tag.GetVStr())
-		case model.ValueType_BOOL:
-			dest.PutBool(tag.Key, tag.GetVBool())
-		case model.ValueType_INT64:
-			dest.PutInt(tag.Key, tag.GetVInt64())
-		case model.ValueType_FLOAT64:
-			dest.PutDouble(tag.Key, tag.GetVFloat64())
-		case model.ValueType_BINARY:
-			dest.PutEmptyBytes(tag.Key).FromRaw(tag.GetVBinary())
-		default:
-			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+		keys := []string{tag.Key}
+		if tag.Key == string(conventionsv125.HTTPStatusCodeKey) || tag.Key == string(conventions.HTTPResponseStatusCodeKey) {
+			keys = nil
+			if !metadata.PkgTranslatorJaegerDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventionsv125.HTTPStatusCodeKey))
+			}
+			if metadata.PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventions.HTTPResponseStatusCodeKey))
+			}
+		}
+
+		for _, key := range keys {
+			switch tag.GetVType() {
+			case model.ValueType_STRING:
+				dest.PutStr(key, tag.GetVStr())
+			case model.ValueType_BOOL:
+				dest.PutBool(key, tag.GetVBool())
+			case model.ValueType_INT64:
+				dest.PutInt(key, tag.GetVInt64())
+			case model.ValueType_FLOAT64:
+				dest.PutDouble(key, tag.GetVFloat64())
+			case model.ValueType_BINARY:
+				dest.PutEmptyBytes(key).FromRaw(tag.GetVBinary())
+			default:
+				dest.PutStr(key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			}
 		}
 	}
 }
