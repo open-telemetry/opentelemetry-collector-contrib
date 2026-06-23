@@ -1,12 +1,3 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-
-// DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
-// config.TranslationRules not specified explicitly.
-// Keep it in YAML format to be able to easily copy and paste it in config if modifications needed.
-const DefaultTranslationRulesYaml = `
 translation_rules:
 - action: copy_metrics
   mapping:
@@ -434,4 +425,3 @@ translation_rules:
     sf_temp.system.paging.operations: true
     sf_temp.system.paging.operations.page_in: true
     sf_temp.system.paging.operations.page_out: true
-`
