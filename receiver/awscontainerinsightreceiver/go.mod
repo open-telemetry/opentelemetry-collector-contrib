@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.29
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.307.0
-	github.com/google/cadvisor v0.57.0
+	github.com/google/cadvisor v0.60.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.154.0
