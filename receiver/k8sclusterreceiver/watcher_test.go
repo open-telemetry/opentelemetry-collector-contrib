@@ -344,8 +344,6 @@ func TestConditionalInformerSetup(t *testing.T) {
 }
 
 func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
-	setEntityEventsSpecificationFeatureGate(t, false)
-
 	client := newFakeClientWithAllResources()
 
 	logsConsumer := new(consumertest.LogsSink)
@@ -398,7 +396,6 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", "k8s.node.name": "test-node"},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
@@ -406,13 +403,11 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs := expected["otel.entity.attributes"].(map[string]any)
 	attrs["k8s.pod.label.key"] = "value"
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 
 	// Event 3 should be identical to the previous one since pod state didn't change.
 	lr = logsConsumer.AllLogs()[2].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step3, step4)
 
@@ -420,7 +415,6 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr = logsConsumer.AllLogs()[3].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs = expected["otel.entity.attributes"].(map[string]any)
 	delete(attrs, "k8s.pod.label.key")
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
 
@@ -431,7 +425,6 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }
@@ -479,8 +472,6 @@ func TestSyncMetadataAndEmitEntityEventsWithEntityEventsSpecificationFeatureGate
 }
 
 func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
-	setEntityEventsSpecificationFeatureGate(t, false)
-
 	logsConsumer := new(consumertest.LogsSink)
 
 	pv := testutils.NewPersistentVolume("1")
@@ -514,7 +505,6 @@ func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
 			"k8s.persistentvolume.creation_timestamp": "0001-01-01T00:00:00Z",
 		},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
@@ -525,14 +515,11 @@ func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
 		"otel.entity.type":       "k8s.persistentvolume",
 		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
 
 func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
-	setEntityEventsSpecificationFeatureGate(t, false)
-
 	logsConsumer := new(consumertest.LogsSink)
 
 	pvc := testutils.NewPersistentVolumeClaim("1")
@@ -568,7 +555,6 @@ func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
 			"k8s.persistentvolumeclaim.creation_timestamp": "0001-01-01T00:00:00Z",
 		},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
@@ -579,7 +565,6 @@ func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
 		"otel.entity.type":       "k8s.persistentvolumeclaim",
 		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
 	}
-	assert.Empty(t, lr.EventName())
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }

@@ -462,6 +462,128 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{}, "")
+
+	t.Cleanup(func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	})
+
+	namespaceObj, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "entities-test", "testobjects"))
+	require.NoErrorf(t, err, "failed to create test k8s objects")
+
+	entityType := "k8s.namespace"
+	entityNameKey := "k8s.namespace.name"
+	entityName := "test-entities-ns"
+	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
+
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns.yaml")
+	require.NoError(t, err)
+
+	commonReplacements := map[string]map[string]string{
+		"otel.entity.attributes": {
+			"k8s.namespace.creation_timestamp": "2025-01-01T00:00:00Z",
+		},
+		"otel.entity.id": {
+			"k8s.namespace.uid": "entity-id",
+		},
+	}
+
+	replaceLogValues(t, namespaceLogs[0], commonReplacements)
+
+	require.NoError(t, plogtest.CompareLogs(expected, namespaceLogs[0],
+		plogtest.IgnoreTimestamp(),
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	))
+
+	logsConsumer.Reset()
+
+	// Delete test namespace object to trigger terminating phase and check if new event log is generated with the correct phase
+	require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, namespaceObj), "failed to delete test k8s objects")
+
+	namespaceLogs = waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
+
+	replaceLogValues(t, namespaceLogs[0], commonReplacements)
+
+	// update the phase in expected log to terminating
+	replaceLogValues(t, expected, map[string]map[string]string{
+		"otel.entity.attributes": {
+			"k8s.namespace.phase": "terminating",
+		},
+	})
+
+	require.NoError(t, plogtest.CompareLogs(expected, namespaceLogs[0],
+		plogtest.IgnoreTimestamp(),
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	))
+}
+
+// TestE2EPVCEntity tests the k8s cluster receiver's exporting of PVC entities in a real k8s cluster
+func TestE2EPVCEntity(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	logsConsumer := new(consumertest.LogsSink)
+	shutdownSink := startUpSink(t, logsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{}, "")
+
+	t.Cleanup(func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	})
+
+	pvcObjs, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "entities-test", "testobjects-pvc"))
+	require.NoErrorf(t, err, "failed to create PVC test objects")
+	t.Cleanup(func() {
+		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, pvcObjs), "failed to delete PVC test objects")
+	})
+
+	entityType := "k8s.persistentvolumeclaim"
+	entityNameKey := "k8s.persistentvolumeclaim.name"
+	entityName := "test-entities-pvc"
+	pvcLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
+
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc.yaml")
+	require.NoError(t, err)
+
+	commonReplacements := map[string]map[string]string{
+		"otel.entity.attributes": {
+			"k8s.persistentvolumeclaim.creation_timestamp": "2025-01-01T00:00:00Z",
+		},
+		"otel.entity.id": {
+			"k8s.persistentvolumeclaim.uid": "entity-id",
+		},
+	}
+
+	replaceLogValues(t, pvcLogs[0], commonReplacements)
+
+	require.NoError(t, plogtest.CompareLogs(expected, pvcLogs[0],
+		plogtest.IgnoreTimestamp(),
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	))
+}
+
+// TestE2ENamespaceMetadataWithEntityEventsSpecificationFeatureGate tests entity event exporting using the entity events specification.
+func TestE2ENamespaceMetadataWithEntityEventsSpecificationFeatureGate(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	logsConsumer := new(consumertest.LogsSink)
+	shutdownSink := startUpSink(t, logsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{
 		"FeatureGates": entityEventsSpecificationFeatureGate,
 	}, "")
@@ -480,7 +602,7 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	entityName := "test-entities-ns"
 	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
-	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns.yaml")
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns-entity-events-spec.yaml")
 	require.NoError(t, err)
 
 	commonReplacements := map[string]map[string]string{
@@ -525,8 +647,8 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	))
 }
 
-// TestE2EPVCEntity tests the k8s cluster receiver's exporting of PVC entities in a real k8s cluster
-func TestE2EPVCEntity(t *testing.T) {
+// TestE2EPVCEntityWithEntityEventsSpecificationFeatureGate tests PVC entity exporting using the entity events specification.
+func TestE2EPVCEntityWithEntityEventsSpecificationFeatureGate(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
@@ -556,7 +678,7 @@ func TestE2EPVCEntity(t *testing.T) {
 	entityName := "test-entities-pvc"
 	pvcLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
-	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc.yaml")
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc-entity-events-spec.yaml")
 	require.NoError(t, err)
 
 	commonReplacements := map[string]map[string]string{
@@ -571,57 +693,6 @@ func TestE2EPVCEntity(t *testing.T) {
 	replaceLogValues(t, pvcLogs[0], commonReplacements)
 
 	require.NoError(t, plogtest.CompareLogs(expected, pvcLogs[0],
-		plogtest.IgnoreTimestamp(),
-		plogtest.IgnoreObservedTimestamp(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
-	))
-}
-
-// TestE2ENamespaceMetadataLegacy tests legacy entity event exporting when the entity events specification feature gate is disabled.
-func TestE2ENamespaceMetadataLegacy(t *testing.T) {
-	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
-	require.NoError(t, err)
-
-	logsConsumer := new(consumertest.LogsSink)
-	shutdownSink := startUpSink(t, logsConsumer)
-	defer shutdownSink()
-
-	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{
-		"FeatureGates": "-" + entityEventsSpecificationFeatureGate,
-	}, "")
-
-	t.Cleanup(func() {
-		for _, obj := range collectorObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
-		}
-	})
-
-	namespaceObj, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "entities-test", "testobjects-legacy"))
-	require.NoErrorf(t, err, "failed to create test k8s objects")
-	t.Cleanup(func() {
-		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, namespaceObj), "failed to delete test k8s objects")
-	})
-
-	entityType := "k8s.namespace"
-	entityNameKey := "k8s.namespace.name"
-	entityName := "test-entities-ns-legacy"
-	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
-
-	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns-legacy.yaml")
-	require.NoError(t, err)
-
-	replaceLogValues(t, namespaceLogs[0], map[string]map[string]string{
-		"otel.entity.attributes": {
-			"k8s.namespace.creation_timestamp": "2025-01-01T00:00:00Z",
-		},
-		"otel.entity.id": {
-			"k8s.namespace.uid": "entity-id",
-		},
-	})
-
-	require.NoError(t, plogtest.CompareLogs(expected, namespaceLogs[0],
 		plogtest.IgnoreTimestamp(),
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
