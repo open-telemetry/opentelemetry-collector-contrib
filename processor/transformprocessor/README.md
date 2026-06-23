@@ -275,6 +275,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
+- [ParseCEF](#parsecef)
 - [ParseCLF](#parseclf)
 - [ParseLEEF](#parseleef)
 
@@ -710,6 +711,32 @@ Examples:
 # bounds: [0.2, 1.0, 5.0, 30.0]
 # counts: [84, 126, 5, 50, 1]
 ```
+
+### ParseCEF
+
+`ParseCEF(target)`
+
+The `ParseCEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Event Format (CEF)](https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.4/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CEF, an error will be returned.
+
+`ParseCEF` is tolerant of an optional syslog header preceding the `CEF:` token; parsing begins at the first occurrence of `CEF:` in the input.
+
+The returned map has the following top-level fields:
+
+- `version` — the CEF version (the integer following `CEF:`).
+- `device_vendor`, `device_product`, `device_version`, `device_event_class_id`, `name`, `severity` — the six CEF header fields.
+- `extensions` — a map of the parsed key/value extension pairs.
+
+Within the header fields, the escape sequences `\|` (pipe) and `\\` (backslash) are unescaped. Within extension values, the escape sequences `\\` (backslash), `\=` (equals), `\n` (newline), and `\r` (carriage return) are unescaped.
+
+Extension parsing uses the position of the next `key=` token as the end of the current value, so values may contain spaces. All extension values are returned as strings.
+
+Examples:
+
+- `ParseCEF(body)`
+
+- `ParseCEF("CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232")`
 
 ### ParseCLF
 
