@@ -110,13 +110,14 @@ and `db.server.session.wait_sample` events.
 
 ```sql
 GRANT SELECT ON V_$SQL TO <username>;
-GRANT SELECT ON V_$SQL_PLAN TO <username>;
+GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO <username>;
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;
 GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
+ALTER SYSTEM SET statistics_level = ALL;
 ```
 
 ## Enabling metrics.
