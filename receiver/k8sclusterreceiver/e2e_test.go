@@ -42,6 +42,7 @@ const (
 	testObjectsDirNamespaceScoped                   = "./testdata/e2e/namespace-scoped/testobjects"
 	testObjectsDirNamespaceScopedMultipleNamespaces = "./testdata/e2e/namespace-scoped-multiple-namespaces/testobjects"
 	testKubeConfig                                  = "/tmp/kube-config-otelcol-e2e-testing"
+	entityEventsSpecificationFeatureGate            = "pkg.experimentalmetricmetadata.useEntityEventsSpecification"
 )
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
@@ -461,7 +462,9 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{}, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{
+		"FeatureGates": entityEventsSpecificationFeatureGate,
+	}, "")
 
 	t.Cleanup(func() {
 		for _, obj := range collectorObjs {
@@ -481,10 +484,10 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	commonReplacements := map[string]map[string]string{
-		"otel.entity.attributes": {
+		"entity.description": {
 			"k8s.namespace.creation_timestamp": "2025-01-01T00:00:00Z",
 		},
-		"otel.entity.id": {
+		"entity.id": {
 			"k8s.namespace.uid": "entity-id",
 		},
 	}
@@ -509,7 +512,7 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 
 	// update the phase in expected log to terminating
 	replaceLogValues(t, expected, map[string]map[string]string{
-		"otel.entity.attributes": {
+		"entity.description": {
 			"k8s.namespace.phase": "terminating",
 		},
 	})
@@ -532,7 +535,9 @@ func TestE2EPVCEntity(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{}, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{
+		"FeatureGates": entityEventsSpecificationFeatureGate,
+	}, "")
 
 	t.Cleanup(func() {
 		for _, obj := range collectorObjs {
@@ -555,10 +560,10 @@ func TestE2EPVCEntity(t *testing.T) {
 	require.NoError(t, err)
 
 	commonReplacements := map[string]map[string]string{
-		"otel.entity.attributes": {
+		"entity.description": {
 			"k8s.persistentvolumeclaim.creation_timestamp": "2025-01-01T00:00:00Z",
 		},
-		"otel.entity.id": {
+		"entity.id": {
 			"k8s.persistentvolumeclaim.uid": "entity-id",
 		},
 	}
@@ -566,6 +571,57 @@ func TestE2EPVCEntity(t *testing.T) {
 	replaceLogValues(t, pvcLogs[0], commonReplacements)
 
 	require.NoError(t, plogtest.CompareLogs(expected, pvcLogs[0],
+		plogtest.IgnoreTimestamp(),
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	))
+}
+
+// TestE2ENamespaceMetadataLegacy tests legacy entity event exporting when the entity events specification feature gate is disabled.
+func TestE2ENamespaceMetadataLegacy(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	logsConsumer := new(consumertest.LogsSink)
+	shutdownSink := startUpSink(t, logsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{
+		"FeatureGates": "-" + entityEventsSpecificationFeatureGate,
+	}, "")
+
+	t.Cleanup(func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	})
+
+	namespaceObj, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "entities-test", "testobjects-legacy"))
+	require.NoErrorf(t, err, "failed to create test k8s objects")
+	t.Cleanup(func() {
+		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, namespaceObj), "failed to delete test k8s objects")
+	})
+
+	entityType := "k8s.namespace"
+	entityNameKey := "k8s.namespace.name"
+	entityName := "test-entities-ns-legacy"
+	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
+
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns-legacy.yaml")
+	require.NoError(t, err)
+
+	replaceLogValues(t, namespaceLogs[0], map[string]map[string]string{
+		"otel.entity.attributes": {
+			"k8s.namespace.creation_timestamp": "2025-01-01T00:00:00Z",
+		},
+		"otel.entity.id": {
+			"k8s.namespace.uid": "entity-id",
+		},
+	})
+
+	require.NoError(t, plogtest.CompareLogs(expected, namespaceLogs[0],
 		plogtest.IgnoreTimestamp(),
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
@@ -595,19 +651,30 @@ func filterEntityLogs(logs []plog.Logs, entityType, entityNameKey, entityName st
 func containsEntity(scopeLog plog.ScopeLogs, entityType, entityNameKey, entityName string) bool {
 	for k := 0; k < scopeLog.LogRecords().Len(); k++ {
 		logRecord := scopeLog.LogRecords().At(k)
-		entityTypeAttr, exists := logRecord.Attributes().Get("otel.entity.type")
-		if exists && entityTypeAttr.Type() == pcommon.ValueTypeStr && entityTypeAttr.Str() == entityType {
-			entityAttributesAttr, exists := logRecord.Attributes().Get("otel.entity.attributes")
-			if exists && entityAttributesAttr.Type() == pcommon.ValueTypeMap {
-				entityAttributes := entityAttributesAttr.Map()
-				entityNameValue, exists := entityAttributes.Get(entityNameKey)
-				if exists && entityNameValue.Type() == pcommon.ValueTypeStr && entityNameValue.Str() == entityName {
-					return true
-				}
-			}
+		if containsEntityWithAttributes(logRecord, "entity.type", "entity.description", entityType, entityNameKey, entityName) {
+			return true
+		}
+		if containsEntityWithAttributes(logRecord, "otel.entity.type", "otel.entity.attributes", entityType, entityNameKey, entityName) {
+			return true
 		}
 	}
 	return false
+}
+
+func containsEntityWithAttributes(logRecord plog.LogRecord, entityTypeAttrName, entityDescriptionAttrName, entityType, entityNameKey, entityName string) bool {
+	entityTypeAttr, exists := logRecord.Attributes().Get(entityTypeAttrName)
+	if !exists || entityTypeAttr.Type() != pcommon.ValueTypeStr || entityTypeAttr.Str() != entityType {
+		return false
+	}
+
+	entityDescriptionAttr, exists := logRecord.Attributes().Get(entityDescriptionAttrName)
+	if !exists || entityDescriptionAttr.Type() != pcommon.ValueTypeMap {
+		return false
+	}
+
+	entityDescription := entityDescriptionAttr.Map()
+	entityNameValue, exists := entityDescription.Get(entityNameKey)
+	return exists && entityNameValue.Type() == pcommon.ValueTypeStr && entityNameValue.Str() == entityName
 }
 
 func waitForEntityLogs(t *testing.T, entityType, entityNameKey, entityName string, consumer *consumertest.LogsSink) []plog.Logs {

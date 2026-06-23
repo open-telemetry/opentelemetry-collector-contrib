@@ -8,7 +8,7 @@ import (
 
 var PkgExperimentalmetricmetadataUseEntityEventsSpecificationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.experimentalmetricmetadata.useEntityEventsSpecification",
-	featuregate.StageBeta,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, emit entity events using the OpenTelemetry entity events specification log record format."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4836"),
 	featuregate.WithRegisterFromVersion("v0.155.0"),

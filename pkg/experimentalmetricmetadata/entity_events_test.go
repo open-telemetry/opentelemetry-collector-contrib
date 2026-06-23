@@ -89,6 +89,8 @@ func Test_EntityEventsSlice(t *testing.T) {
 }
 
 func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
+	setEntityEventsSpecificationGate(t, true)
+
 	// Prepare an event slice.
 	slice := NewEntityEventsSlice()
 	event := slice.AppendEmpty()
@@ -169,9 +171,14 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs_LegacyFeatureGate(t *testing.T)
 	state.SetInterval(1 * time.Hour)
 	state.Attributes().PutStr("label1", "value1")
 
+	event = slice.AppendEmpty()
+	event.ID().PutStr("k8s.node.uid", "abc")
+	deleteEvent := event.SetEntityDelete()
+	deleteEvent.SetEntityType("k8s.node")
+
 	logs := slice.ConvertAndMoveToLogs()
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	require.Equal(t, 1, records.Len())
+	require.Equal(t, 2, records.Len())
 
 	assert.Empty(t, records.At(0).EventName())
 	attrs := records.At(0).Attributes().AsRaw()
@@ -189,6 +196,20 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs_LegacyFeatureGate(t *testing.T)
 	assert.Equal(t, EventTypeState, actual.EventType())
 	assert.Equal(t, "k8s.pod", actual.EntityStateDetails().EntityType())
 	assert.Equal(t, 1*time.Hour, actual.EntityStateDetails().Interval())
+
+	assert.Empty(t, records.At(1).EventName())
+	attrs = records.At(1).Attributes().AsRaw()
+	assert.Equal(
+		t, map[string]any{
+			legacySemconvOtelEntityEventName: legacySemconvEventEntityEventDelete,
+			legacySemconvOtelEntityType:      "k8s.node",
+			legacySemconvOtelEntityID:        map[string]any{"k8s.node.uid": "abc"},
+		}, attrs,
+	)
+
+	actual = NewEntityEventsSliceFromLogs(records).At(1)
+	assert.Equal(t, EventTypeDelete, actual.EventType())
+	assert.Equal(t, "k8s.node", actual.EntityDeleteDetails().EntityType())
 }
 
 func Test_EntityEventType(t *testing.T) {

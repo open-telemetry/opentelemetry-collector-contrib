@@ -7,25 +7,23 @@ resourceLogs:
                 boolValue: true
         logRecords:
           - timeUnixNano: "1738160303151735394"
+            eventName: entity.state
             body: {}
             attributes:
-              - key: otel.entity.id
+              - key: entity.id
                 value:
                   kvlistValue:
                     values:
                       - key: k8s.persistentvolumeclaim.uid
                         value:
                           stringValue: entity-id
-              - key: otel.entity.event.type
-                value:
-                  stringValue: entity_state
-              - key: otel.entity.type
+              - key: entity.type
                 value:
                   stringValue: k8s.persistentvolumeclaim
-              - key: otel.entity.interval
+              - key: entity.report.interval
                 value:
-                  intValue: "300000"
-              - key: otel.entity.attributes
+                  intValue: "300"
+              - key: entity.description
                 value:
                   kvlistValue:
                     values:

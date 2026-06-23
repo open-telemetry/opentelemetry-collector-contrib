@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.experimentalmetricmetadata.useEntityEventsSpecification` | beta | When enabled, emit entity events using the OpenTelemetry entity events specification log record format. | v0.155.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-specification/pull/4836) |
+| `pkg.experimentalmetricmetadata.useEntityEventsSpecification` | alpha | When enabled, emit entity events using the OpenTelemetry entity events specification log record format. | v0.155.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-specification/pull/4836) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
