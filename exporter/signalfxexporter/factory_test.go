@@ -257,6 +257,12 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 	require.True(t, found, `missing dimension: %s`, key)
 }
 
+func requireNoDimension(t *testing.T, dims []*sfxpb.Dimension, key string) {
+	for _, dim := range dims {
+		require.NotEqual(t, key, dim.Key)
+	}
+}
+
 func testMetricsData(addHistogram bool) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
@@ -558,17 +564,28 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
-	cpuUtilPerCore := m["cpu.utilization_per_core"]
-	require.Len(t, cpuUtilPerCore, 8)
-
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+
+	cpuIdle := m["cpu.idle"]
+	require.Len(t, cpuIdle, 1)
 
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.Truef(t, ok, "%s metrics not found", metric)
-		require.Len(t, dps, 9)
+		require.Len(t, dps, 1)
+	}
+
+	for metric, dps := range m {
+		switch metric {
+		case "cpu.num_processors", "cpu.utilization", "cpu.idle", "cpu.interrupt", "cpu.nice",
+			"cpu.softirq", "cpu.steal", "cpu.system", "cpu.user", "cpu.wait":
+			require.Len(t, dps, 1)
+			for _, dp := range dps {
+				requireNoDimension(t, dp.Dimensions, "cpu")
+			}
+		}
 	}
 }
 
@@ -625,13 +642,10 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 9, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 8, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
-	// the default cpu.utilization metric is added after applying the default translations
-	// (because cpu.utilization_per_core is supplied) and should not be excluded
-	require.Len(t, dps, 1)
-	require.Equal(t, "cpu.utilization", dps[0].Metric)
+	require.Empty(t, dps)
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {

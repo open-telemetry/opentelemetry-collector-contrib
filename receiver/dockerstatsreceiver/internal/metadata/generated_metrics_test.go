@@ -104,7 +104,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
@@ -159,7 +158,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
@@ -172,15 +170,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
@@ -202,7 +197,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryFailsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryFileDataPoint(ts, 1)
@@ -221,7 +215,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
@@ -249,7 +242,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
@@ -292,28 +284,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
@@ -332,14 +320,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")

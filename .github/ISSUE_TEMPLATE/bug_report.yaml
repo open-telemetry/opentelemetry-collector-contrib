@@ -23,7 +23,6 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
-      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -246,6 +245,7 @@ body:
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
+      - receiver/activedirectoryinv
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark

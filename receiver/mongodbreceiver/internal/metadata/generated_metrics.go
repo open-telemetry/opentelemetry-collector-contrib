@@ -266,16 +266,19 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.active.writes",
 	},
 	MongodbCacheOperations: metricInfo{
-		Name: "mongodb.cache.operations",
+		Name:       "mongodb.cache.operations",
+		Attributes: []string{"type"},
 	},
 	MongodbCollectionCount: metricInfo{
-		Name: "mongodb.collection.count",
+		Name:       "mongodb.collection.count",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbCommandsRate: metricInfo{
 		Name: "mongodb.commands.rate",
 	},
 	MongodbConnectionCount: metricInfo{
-		Name: "mongodb.connection.count",
+		Name:       "mongodb.connection.count",
+		Attributes: []string{"connection_type", "db.namespace"},
 	},
 	MongodbCursorCount: metricInfo{
 		Name: "mongodb.cursor.count",
@@ -284,7 +287,8 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.cursor.timeout.count",
 	},
 	MongodbDataSize: metricInfo{
-		Name: "mongodb.data.size",
+		Name:       "mongodb.data.size",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbDatabaseCount: metricInfo{
 		Name: "mongodb.database.count",
@@ -293,10 +297,12 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.deletes.rate",
 	},
 	MongodbDocumentOperationCount: metricInfo{
-		Name: "mongodb.document.operation.count",
+		Name:       "mongodb.document.operation.count",
+		Attributes: []string{"operation", "db.namespace"},
 	},
 	MongodbExtentCount: metricInfo{
-		Name: "mongodb.extent.count",
+		Name:       "mongodb.extent.count",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbFlushesRate: metricInfo{
 		Name: "mongodb.flushes.rate",
@@ -311,31 +317,39 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.health",
 	},
 	MongodbIndexAccessCount: metricInfo{
-		Name: "mongodb.index.access.count",
+		Name:       "mongodb.index.access.count",
+		Attributes: []string{"collection", "db.namespace"},
 	},
 	MongodbIndexCount: metricInfo{
-		Name: "mongodb.index.count",
+		Name:       "mongodb.index.count",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbIndexSize: metricInfo{
-		Name: "mongodb.index.size",
+		Name:       "mongodb.index.size",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbInsertsRate: metricInfo{
 		Name: "mongodb.inserts.rate",
 	},
 	MongodbLockAcquireCount: metricInfo{
-		Name: "mongodb.lock.acquire.count",
+		Name:       "mongodb.lock.acquire.count",
+		Attributes: []string{"lock_type", "lock_mode", "db.namespace"},
 	},
 	MongodbLockAcquireTime: metricInfo{
-		Name: "mongodb.lock.acquire.time",
+		Name:       "mongodb.lock.acquire.time",
+		Attributes: []string{"lock_type", "lock_mode", "db.namespace"},
 	},
 	MongodbLockAcquireWaitCount: metricInfo{
-		Name: "mongodb.lock.acquire.wait_count",
+		Name:       "mongodb.lock.acquire.wait_count",
+		Attributes: []string{"lock_type", "lock_mode", "db.namespace"},
 	},
 	MongodbLockDeadlockCount: metricInfo{
-		Name: "mongodb.lock.deadlock.count",
+		Name:       "mongodb.lock.deadlock.count",
+		Attributes: []string{"lock_type", "lock_mode", "db.namespace"},
 	},
 	MongodbMemoryUsage: metricInfo{
-		Name: "mongodb.memory.usage",
+		Name:       "mongodb.memory.usage",
+		Attributes: []string{"memory_type", "db.namespace"},
 	},
 	MongodbNetworkIoReceive: metricInfo{
 		Name: "mongodb.network.io.receive",
@@ -347,19 +361,24 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.network.request.count",
 	},
 	MongodbObjectCount: metricInfo{
-		Name: "mongodb.object.count",
+		Name:       "mongodb.object.count",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbOperationCount: metricInfo{
-		Name: "mongodb.operation.count",
+		Name:       "mongodb.operation.count",
+		Attributes: []string{"operation"},
 	},
 	MongodbOperationLatencyTime: metricInfo{
-		Name: "mongodb.operation.latency.time",
+		Name:       "mongodb.operation.latency.time",
+		Attributes: []string{"operation_latency"},
 	},
 	MongodbOperationReplCount: metricInfo{
-		Name: "mongodb.operation.repl.count",
+		Name:       "mongodb.operation.repl.count",
+		Attributes: []string{"operation"},
 	},
 	MongodbOperationTime: metricInfo{
-		Name: "mongodb.operation.time",
+		Name:       "mongodb.operation.time",
+		Attributes: []string{"operation"},
 	},
 	MongodbPageFaults: metricInfo{
 		Name: "mongodb.page_faults",
@@ -389,7 +408,8 @@ var MetricsInfo = metricsInfo{
 		Name: "mongodb.session.count",
 	},
 	MongodbStorageSize: metricInfo{
-		Name: "mongodb.storage.size",
+		Name:       "mongodb.storage.size",
+		Attributes: []string{"db.namespace"},
 	},
 	MongodbUpdatesRate: metricInfo{
 		Name: "mongodb.updates.rate",
@@ -453,7 +473,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricMongodbActiveReads struct {
