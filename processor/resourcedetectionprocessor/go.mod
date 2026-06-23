@@ -15,7 +15,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hetznercloud/hcloud-go/v2 v2.43.0
+	github.com/hetznercloud/hcloud-go/v2 v2.44.0
 	github.com/linode/go-metadata v0.2.4
 	github.com/moby/moby/api v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.154.0
