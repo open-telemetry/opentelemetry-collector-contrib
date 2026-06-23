@@ -402,8 +402,18 @@ func TestFullPath(t *testing.T) {
 		{prefix: "/dir", pathSegment: "dirsuffix/../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
 		{prefix: "/dir", pathSegment: "dirsuffix/../../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
 		{prefix: "/dir", pathSegment: "dirsuffix/../../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
-		{prefix: "/dir", pathSegment: "..\\etc\\attack", suffix: ".json", want: "/dir/etc/attack.json"},
-		{prefix: "/dir", pathSegment: "dirsuffix\\..\\..\\etc\\attack", suffix: ".json", want: "/dir/etc/attack.json"},
+		{prefix: "/dir", pathSegment: "..\\etc\\attack", suffix: ".json", want: func() string {
+			if filepath.Separator == '\\' {
+				return "/dir/etc/attack.json"
+			}
+			return "/dir..\\etc\\attack.json"
+		}()},
+		{prefix: "/dir", pathSegment: "dirsuffix\\..\\..\\etc\\attack", suffix: ".json", want: func() string {
+			if filepath.Separator == '\\' {
+				return "/dir/etc/attack.json"
+			}
+			return "/dirdirsuffix\\..\\..\\etc\\attack.json"
+		}()},
 	}
 
 	for _, tc := range tests {
