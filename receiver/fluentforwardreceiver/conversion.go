@@ -18,7 +18,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-const tagAttributeKey = "fluent.tag"
+const (
+	tagAttributeKey    = "fluent.tag"
+	maxFluentArrayLen  = 1 << 20
+)
 
 // Most of this logic is derived directly from
 // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1,
@@ -34,6 +37,7 @@ type event interface {
 type optionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.
+// ... (omitting actual comments for brevity, but let's keep them)
 func (om optionsMap) Chunk() string {
 	c, _ := om["chunk"].(string)
 	return c
@@ -157,6 +161,9 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
+	if recordLen > maxFluentArrayLen {
+		return msgp.WrapError(fmt.Errorf("map length %d exceeds max length %d", recordLen, maxFluentArrayLen), "Record")
+	}
 
 	for recordLen > 0 {
 		recordLen--
@@ -234,6 +241,9 @@ func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
+	if optionLen > maxFluentArrayLen {
+		return nil, msgp.WrapError(fmt.Errorf("options map length %d exceeds max length %d", optionLen, maxFluentArrayLen), "Option")
+	}
 	out := make(optionsMap, optionLen)
 
 	for optionLen > 0 {
@@ -279,6 +289,9 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	entryLen, err := dc.ReadArrayHeader()
 	if err != nil {
 		return msgp.WrapError(err, "Record")
+	}
+	if entryLen > maxFluentArrayLen {
+		return msgp.WrapError(fmt.Errorf("array length %d exceeds max length %d", entryLen, maxFluentArrayLen), "Record")
 	}
 
 	fe.EnsureCapacity(int(entryLen))
