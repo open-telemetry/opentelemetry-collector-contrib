@@ -75,6 +75,29 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 	assert.Equal(t, batch, gotBatch)
 }
 
+func TestThriftHTTPBodyDecode_ExcessiveSize(t *testing.T) {
+	jr := jReceiver{}
+	// Malicious payload declaring 33,554,432 spans in a 20-byte payload.
+	// hex: 0c0001 0b0001 00000001 78 00 0f0002 0c 02000000
+	payload := []byte{
+		0x0c, 0x00, 0x01, // Process struct start
+		0x0b, 0x00, 0x01, // serviceName string start
+		0x00, 0x00, 0x00, 0x01, // string length 1
+		0x78,             // 'x'
+		0x00,             // Process struct end
+		0x0f, 0x00, 0x02, // Spans list start
+		0x0c,             // element type struct
+		0x02, 0x00, 0x00, 0x00, // list size 33,554,432
+	}
+	r := httptest.NewRequest(http.MethodPost, "/api/traces", bytes.NewReader(payload))
+	r.Header.Add("content-type", "application/x-thrift")
+
+	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
+	require.NotNil(t, hErr, "expected error due to excessive list size")
+	assert.Nil(t, gotBatch)
+	assert.Contains(t, hErr.msg, "exceeds remaining bytes")
+}
+
 func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"

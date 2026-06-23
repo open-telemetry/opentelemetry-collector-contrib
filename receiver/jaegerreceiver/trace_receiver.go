@@ -290,7 +290,13 @@ func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpErr
 		}
 	}
 
-	tdes := apacheThrift.NewTDeserializer()
+	trans := apacheThrift.NewTMemoryBufferLen(len(bodyBytes))
+	protocol := apacheThrift.NewTBinaryProtocolTransport(trans)
+	customProto := udpserver.WrapProtocol(protocol)
+	tdes := &apacheThrift.TDeserializer{
+		Transport: trans,
+		Protocol:  customProto,
+	}
 	batch := &jaeger.Batch{}
 	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
 		return nil, &httpError{

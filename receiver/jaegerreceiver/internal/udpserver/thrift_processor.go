@@ -47,7 +47,7 @@ func NewThriftProcessor(
 	protocolPool := &sync.Pool{
 		New: func() any {
 			trans := &TBufferedReadTransport{}
-			return factory.GetProtocol(trans)
+			return WrapProtocol(factory.GetProtocol(trans))
 		},
 	}
 
