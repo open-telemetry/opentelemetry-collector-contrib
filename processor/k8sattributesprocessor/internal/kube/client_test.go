@@ -769,13 +769,13 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name                  string
-		rules                 ExtractionRules
-		additionalAnnotations map[string]string
-		additionalLabels      map[string]string
-		attributes            map[string]string
-		singularFeatureGate   bool
-		v0FeatureGate         bool
+		name                   string
+		rules                  ExtractionRules
+		additionalAnnotations  map[string]string
+		additionalLabels       map[string]string
+		attributes             map[string]string
+		singularFeatureGate    bool
+		v0FeatureGate          bool
 		bothSchemasFeatureGate bool
 	}{
 		{
