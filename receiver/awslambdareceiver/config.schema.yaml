@@ -34,6 +34,13 @@ properties:
       encoding:
         description: Encoding defines the encoding to decode incoming Lambda invocation data.
         type: string
+  custom:
+    description: Custom defines configurations for custom trigger
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data.
+        type: string
   failure_bucket_arn:
     description: FailureBucketARN is the ARN of the S3 bucket used to store failed Lambda event records.
     type: string
