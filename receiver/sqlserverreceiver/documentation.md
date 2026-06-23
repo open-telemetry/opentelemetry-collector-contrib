@@ -230,7 +230,7 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 
 ### sqlserver.clr.execution.time
 
-Cumulative time spent executing in the CLR.
+Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -720,7 +720,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.stored_procedure.invocation.rate
 
-Rate of stored procedure invocations per second.
+Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -745,7 +745,7 @@ The number of tables.
 
 ### sqlserver.task.count
 
-Number of tasks by state (running or limit_reached).
+Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -761,7 +761,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.task.rate
 
-Rate of tasks by type (started or aborted) per second.
+Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

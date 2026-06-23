@@ -585,6 +585,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSqlserverCursorCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverCursorCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverCursorCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.cursor.count doesn't have an attribute invalid, valid attributes: [cursor.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverCursorCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestSqlserverDatabaseCountMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().SqlserverDatabaseCount
 	require.NoError(t, cfg.Validate())
@@ -785,6 +797,42 @@ func TestSqlserverTableCountMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.table.count doesn't have an attribute invalid, valid attributes: [table.state, table.status]")
 
 	cfg = DefaultMetricsConfig().SqlserverTableCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverTaskCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverTaskCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverTaskCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.task.count doesn't have an attribute invalid, valid attributes: [task.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverTaskCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverTaskRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverTaskRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverTaskRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.task.rate doesn't have an attribute invalid, valid attributes: [task.type]")
+
+	cfg = DefaultMetricsConfig().SqlserverTaskRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverWorkerThreadCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverWorkerThreadCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverWorkerThreadCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.worker.thread.count doesn't have an attribute invalid, valid attributes: [worker.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverWorkerThreadCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

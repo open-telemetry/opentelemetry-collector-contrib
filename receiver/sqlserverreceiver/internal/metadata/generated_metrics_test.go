@@ -490,7 +490,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.clr.execution.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative time spent executing in the CLR.", mi.Description())
+					assert.Equal(t, "Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.", mi.Description())
 					assert.Equal(t, "ms", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1658,7 +1658,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.stored_procedure.invocation.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of stored procedure invocations per second.", mi.Description())
+					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
 					assert.Equal(t, "{invocation}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1720,7 +1720,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of tasks by state (running or limit_reached).", mi.Description())
+						assert.Equal(t, "Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
 						assert.Equal(t, "“{task}”", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1735,7 +1735,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of tasks by state (running or limit_reached).", mi.Description())
+						assert.Equal(t, "Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
 						assert.Equal(t, "“{task}”", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1760,7 +1760,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate of tasks by type (started or aborted) per second.", mi.Description())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
 						assert.Equal(t, "“{task}/s”", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1775,7 +1775,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.task.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Rate of tasks by type (started or aborted) per second.", mi.Description())
+						assert.Equal(t, "Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
 						assert.Equal(t, "“{task}/s”", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

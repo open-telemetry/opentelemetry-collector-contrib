@@ -563,7 +563,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.cpu.count",
 	},
 	SqlserverCursorCount: metricInfo{
-		Name: "sqlserver.cursor.count",
+		Name:       "sqlserver.cursor.count",
+		Attributes: []string{"cursor.state"},
 	},
 	SqlserverCursorMemory: metricInfo{
 		Name: "sqlserver.cursor.memory",
@@ -730,10 +731,12 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"table.state", "table.status"},
 	},
 	SqlserverTaskCount: metricInfo{
-		Name: "sqlserver.task.count",
+		Name:       "sqlserver.task.count",
+		Attributes: []string{"task.state"},
 	},
 	SqlserverTaskRate: metricInfo{
-		Name: "sqlserver.task.rate",
+		Name:       "sqlserver.task.rate",
+		Attributes: []string{"task.type"},
 	},
 	SqlserverTransactionDelay: metricInfo{
 		Name: "sqlserver.transaction.delay",
@@ -772,7 +775,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.worker.request.waiting",
 	},
 	SqlserverWorkerThreadCount: metricInfo{
-		Name: "sqlserver.worker.thread.count",
+		Name:       "sqlserver.worker.thread.count",
+		Attributes: []string{"worker.state"},
 	},
 }
 
@@ -1065,7 +1069,7 @@ type metricSqlserverClrExecutionTime struct {
 // init fills sqlserver.clr.execution.time metric with initial data.
 func (m *metricSqlserverClrExecutionTime) init() {
 	m.data.SetName("sqlserver.clr.execution.time")
-	m.data.SetDescription("Cumulative time spent executing in the CLR.")
+	m.data.SetDescription("Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -4328,7 +4332,7 @@ type metricSqlserverStoredProcedureInvocationRate struct {
 // init fills sqlserver.stored_procedure.invocation.rate metric with initial data.
 func (m *metricSqlserverStoredProcedureInvocationRate) init() {
 	m.data.SetName("sqlserver.stored_procedure.invocation.rate")
-	m.data.SetDescription("Rate of stored procedure invocations per second.")
+	m.data.SetDescription("Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.")
 	m.data.SetUnit("{invocation}/s")
 	m.data.SetEmptyGauge()
 }
@@ -4473,7 +4477,7 @@ type metricSqlserverTaskCount struct {
 // init fills sqlserver.task.count metric with initial data.
 func (m *metricSqlserverTaskCount) init() {
 	m.data.SetName("sqlserver.task.count")
-	m.data.SetDescription("Number of tasks by state (running or limit_reached).")
+	m.data.SetDescription("Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.")
 	m.data.SetUnit("“{task}”")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -4562,7 +4566,7 @@ type metricSqlserverTaskRate struct {
 // init fills sqlserver.task.rate metric with initial data.
 func (m *metricSqlserverTaskRate) init() {
 	m.data.SetName("sqlserver.task.rate")
-	m.data.SetDescription("Rate of tasks by type (started or aborted) per second.")
+	m.data.SetDescription("Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.")
 	m.data.SetUnit("“{task}/s”")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
