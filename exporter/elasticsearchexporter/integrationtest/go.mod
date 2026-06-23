@@ -95,7 +95,7 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.elastic.co/fastjson v1.5.1 // indirect
-	go.etcd.io/bbolt v1.4.3 // indirect
+	go.etcd.io/bbolt v1.5.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
 	go.opentelemetry.io/collector/client v1.60.1-0.20260622163853-d3d6e34700b7 // indirect
