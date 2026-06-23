@@ -130,9 +130,6 @@ linters:
         path: exporter/awsxrayexporter/
       - linters:
           - forbidigo
-        path: exporter/clickhouseexporter/
-      - linters:
-          - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
