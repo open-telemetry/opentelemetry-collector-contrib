@@ -30,7 +30,7 @@ resourceLogs:
                   stringValue: "SELECT COUNT(*) AS TotalHighRateEmployees FROM ADMIN.\"Employee\" e \nJOIN ADMIN.\"Person\" p ON e.\"BusinessEntityID\" = \"BusId1234\" \nJOIN ADMIN.\"EmployeePayHistory\" eph ON e.\"BusinessEntityID\" = eph.\"BusinessEntityID\" WHERE eph.\"Rate\" > \n(SELECT AVG(\"Rate\") FROM ADMIN.\"EmployeePayHistory\")"
               - key: oracledb.query_plan
                 value:
-                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","FILTER_PREDICATES":"","ID":"0","IO_COST":"","OBJECT_NAME":"","OBJECT_TYPE":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","PARTITION_START":"","PARTITION_STOP":"","POSITION":"1","PROJECTION":""}]'
+                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","FILTER_PREDICATES":"","ID":"0","IO_COST":"","LAST_CR_BUFFER_GETS":"1","LAST_CU_BUFFER_GETS":"1","LAST_ELAPSED_TIME":"1","LAST_OUTPUT_ROWS":"1","LAST_STARTS":"1","OBJECT_NAME":"","OBJECT_TYPE":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","OUTPUT_ROWS":"1","PARENT_ID":"","PARTITION_START":"","PARTITION_STOP":"","POSITION":"1","PROJECTION":"","STARTS":"1"}]'
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
@@ -111,13 +111,13 @@ resourceLogs:
                   stringValue: "33313233343536373839"
               - key: oracledb.plan.first_load
                 value:
-                  stringValue: "2025-12-31/23:00:00"
+                  stringValue: 2025-12-31/23:00:00
               - key: oracledb.plan.last_load
                 value:
-                  stringValue: "2026-01-01/12:00:00"
+                  stringValue: 2026-01-01/12:00:00
             body: {}
             eventName: db.server.top_query
-            timeUnixNano: "1759142512777891000"
+            timeUnixNano: "1782224561254214000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
