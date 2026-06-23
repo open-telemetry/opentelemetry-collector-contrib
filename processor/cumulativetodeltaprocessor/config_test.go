@@ -4,7 +4,9 @@
 package cumulativetodeltaprocessor
 
 import (
+	"maps"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -18,6 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
+
+func TestValidMetricTypeListMatchesMap(t *testing.T) {
+	fromMap := slices.Collect(maps.Keys(validMetricTypes))
+	slices.Sort(fromMap)
+	assert.Equal(t, fromMap, validMetricTypeList)
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
