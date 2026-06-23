@@ -99,6 +99,7 @@ aws_cloudwatch/metrics-discovery-gauge:
         namespace: AWS/EC2
       limit: 100
       stats: [Sum, Average]
+      recently_active: true
 
 aws_cloudwatch/metrics-discovery-no-namespace:
   region: us-west-2

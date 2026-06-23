@@ -419,6 +419,58 @@ func TestListMetrics_SinglePage(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
+func TestListMetrics_RecentlyActive(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// When recently_active is enabled, ListMetrics must be called with RecentlyActive=PT3H.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == types.RecentlyActivePt3h
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: true},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveUnsetByDefault(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// Without recently_active, RecentlyActive must be left at its zero value so AWS
+	// applies the default two-week discovery window.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == ""
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
 func TestListMetrics_Paginated(t *testing.T) {
 	token := "next-page"
 	mc := &mockMetricsClient{}
