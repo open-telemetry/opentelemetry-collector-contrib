@@ -1652,7 +1652,9 @@ func TestECSSpanEventEncoder(t *testing.T) {
 				assert.Equal(t, "at com.example.Foo.bar(Foo.java:42)", gjson.Get(body, "error.stack_trace").String())
 				assert.Equal(t, "abcdef1234567890abcdef1234567890", gjson.Get(body, "error.id").String())
 				assert.Equal(t, "abcdef1234567890", gjson.Get(body, "error.grouping_key").String())
-				assert.Equal(t, "null pointer", gjson.Get(body, "error.grouping_name").String())
+				// error.grouping_name is a scripted field in the logs-apm.error index template and
+				// cannot be indexed directly; the conversion map skips it.
+				assert.False(t, gjson.Get(body, "error.grouping_name").Exists())
 				assert.Equal(t, txnID, gjson.Get(body, "parent.id").String())
 				assert.Equal(t, txnID, gjson.Get(body, "span.id").String())
 				assert.Equal(t, txnID, gjson.Get(body, "transaction.id").String())
