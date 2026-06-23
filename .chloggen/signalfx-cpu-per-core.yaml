@@ -10,7 +10,6 @@ subtext: |
     hostmetrics:
       scrapers:
         cpu:
-
   processors:
     transform/cpu_idle_per_core:
       error_mode: ignore
@@ -28,7 +27,6 @@ subtext: |
         - context: datapoint
           statements:
             - set(datapoint.value_int, Int(datapoint.value_double)) where metric.name == "cpu.idle"
-
   service:
     pipelines:
       metrics:
