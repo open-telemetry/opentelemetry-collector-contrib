@@ -192,14 +192,12 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		newConfigs = append(newConfigs, scrapeConfig)
 	}
 
-	// Hold the write lock only for the config swap and apply.
+	// Hold the write lock only for the config swap for the shared pointer.
 	m.promCfg.Mutate(func(cfg *promconfig.Config) {
 		cfg.ScrapeConfigs = newConfigs
-		if innerErr := m.applyCfg(cfg); innerErr != nil {
-			err = innerErr
-		}
 	})
-	if err != nil {
+	cfgSnapshot := m.promCfg.Get()
+	if err = m.applyCfg(&cfgSnapshot); err != nil {
 		m.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return 0, err
 	}
