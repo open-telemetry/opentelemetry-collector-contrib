@@ -50,14 +50,8 @@ type cloudWatchMetricsScraper struct {
 	discovery          *MetricsDiscoveryConfig
 	client             metricsClient
 	stsClient          stsClient
-	// accountID is the resolved AWS account ID reported as cloud.account.id.
-	// It is empty until resolution succeeds.
-	accountID string
-	// accountIDResolved is set once the account ID has been resolved successfully. Until
-	// then resolution is retried on each scrape, so a transient STS failure on the first
-	// attempt does not permanently leave cloud.account.id unset. Resolution runs lazily on
-	// scrape (not in start()) so that start() performs no network calls.
-	accountIDResolved bool
+	accountID          string
+	accountIDResolved  bool
 }
 
 type metricsClient interface {
@@ -104,21 +98,16 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 		return err
 	}
 	s.client = cloudwatch.NewFromConfig(cfg)
-	// Build the STS client from the same cfg AFTER the credentials override so that
-	// GetCallerIdentity resolves the effective (possibly assumed-role) account that the
-	// CloudWatch client also uses, rather than the base credentials' account.
+
+	// Ensure to always construct the STS client after credentials are resolved.
 	if s.stsClient == nil {
 		s.stsClient = sts.NewFromConfig(cfg)
 	}
 	return nil
 }
 
-// resolveAccountID resolves the AWS account ID of the active credentials via STS
-// GetCallerIdentity and stores it in s.accountID, to be reported as the cloud.account.id
-// resource attribute. It runs lazily on scrape (not in start(), which performs no network
-// calls) and retries on each scrape until it succeeds: a transient failure logs a warning
-// and leaves s.accountID empty for that cycle rather than latching the empty value, so
-// metrics are emitted without the attribute only until resolution succeeds.
+// resolveAccountID resolves the account ID of the active credentials via STS GetCallerIdentity.
+// Will try once per call until resolution succeeds, then stores the result for subsequent scrapes.
 func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
 	if s.accountIDResolved || s.stsClient == nil {
 		return
@@ -393,11 +382,8 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 		if len(r.Values) > 0 {
 			withData++
 		}
-		// Surface non-complete statuses that would otherwise be dropped as empty data.
-		// Forbidden in particular signals the metric's account is not accessible (the
-		// receiver is not a monitoring account, or the source account is not linked),
-		// which is the common cross-account misconfiguration. Deduplicate per metric so
-		// a metric's sub-queries do not each emit an identical warning.
+		// Warn about non-complete statuses (Forbidden, InternalError) so that cross-account misconfigurations are visible.
+		// Deduplicate per metric so that a metric's sub-queries do not each emit an identical warning.
 		if r.StatusCode == types.StatusCodeForbidden || r.StatusCode == types.StatusCodeInternalError {
 			if mi, _, err := parseQueryID(aws.ToString(r.Id)); err == nil && mi >= 0 && mi < len(batch) && !warned[mi] {
 				warned[mi] = true
@@ -424,8 +410,7 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 	return md, nil
 }
 
-// logResultStatus emits a warning describing a non-complete GetMetricData result so that
-// silently-dropped metrics (e.g. a Forbidden cross-account query) are diagnosable.
+// logResultStatus emits a warning describing a non-complete GetMetricData result.
 func (s *cloudWatchMetricsScraper) logResultStatus(q MetricQuery, r types.MetricDataResult) {
 	fields := []zap.Field{
 		zap.String("status", string(r.StatusCode)),
@@ -454,10 +439,9 @@ func dimensionsFromMap(d map[string]string) []types.Dimension {
 	return out
 }
 
-// setResourceAttributes sets the resource-level attributes that identify the AWS source.
-// Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: cloud.provider,
-// cloud.account.id, and cloud.region are set on the resource; namespace and dimensions go
-// on data points. cloud.account.id is omitted when accountID is empty.
+// setResourceAttributes sets the resource-level attributes that identify the AWS source. Aligned
+// with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: cloud.provider, cloud.account.id,
+// and cloud.region are set on the resource; namespace and dimensions go on data points.
 func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource, accountID string) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())

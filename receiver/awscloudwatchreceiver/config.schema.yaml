@@ -50,7 +50,7 @@ $defs:
     type: object
     properties:
       account_id:
-        description: AccountID optionally identifies the AWS account the metric is located in (its source account). In a cross-account monitoring setup it selects which account to retrieve the metric from via GetMetricData and is reported as the cloud.account.id resource attribute. When empty, the receiver's own resolved account ID is used.
+        description: AccountID optionally identifies the metric's source account in a cross-account monitoring setup.
         type: string
       dimensions:
         type: object
@@ -90,7 +90,7 @@ $defs:
     type: object
     properties:
       account_identifiers:
-        description: AccountIdentifiers optionally narrows cross-account discovery to specific source accounts. ListMetrics filters one owning account at a time, so each identifier is queried separately. Requires IncludeLinkedAccounts to be true.
+        description: AccountIdentifiers optionally narrows cross-account discovery to specific source accounts. Requires IncludeLinkedAccounts to be true.
         type: array
         items:
           type: string
@@ -102,7 +102,7 @@ $defs:
         x-pointer: true
         type: boolean
       limit:
-        description: Limit is the maximum number of metrics to discover and scrape per account (default 100). In a cross-account setup it applies independently to each source account.
+        description: Limit is the maximum number of metric queries to generate during discovery. Each combination of namespace, metric name, and dimensions counts as a single metric query (e.g. EC2/CPUUtilization for 10 unique instances counts as 10 metrics). Defaults to 100. In a cross-account setup `Limit` applies independently to each source account.
         type: integer
       stats:
         description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.

@@ -98,7 +98,7 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 | `filters`              | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
 | `filters.namespace`    | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
 | `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
-| `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape, applied **per account** (in a cross-account setup, each source account may contribute up to `limit` metrics). |
+| `limit`                | Integer         | 100     | Maximum number of metric queries to generate during discovery. Each combination of namespace, metric name, and dimensions counts as a single metric query (e.g. `AWS/EC2` `CPUUtilization` for 10 unique instances counts as 10). Applied **per account** (in a cross-account setup, each source account may contribute up to `limit` metric queries). |
 | `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
 | `include_linked_accounts` | Boolean      | false   | When running in a monitoring account, discover metrics from linked source accounts. See [Cross-account monitoring](#cross-account-monitoring). |
 | `account_identifiers`  | List of strings | —       | Restrict cross-account discovery to specific source account IDs (each a 12-digit account ID). Requires `include_linked_accounts: true`. When omitted (with `include_linked_accounts: true`), metrics from all linked accounts are discovered. |
