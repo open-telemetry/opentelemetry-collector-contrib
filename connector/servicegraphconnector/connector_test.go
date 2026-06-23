@@ -258,10 +258,6 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func verifyUnit(t *testing.T, expected, actual string) {
-	assert.Equal(t, expected, actual)
-}
-
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	// client: 1s
