@@ -76,6 +76,7 @@ func Test_replacePattern(t *testing.T) {
 
 	tests := []struct {
 		name              string
+		input             string
 		target            ottl.GetSetter[pcommon.Value]
 		pattern           string
 		replacement       ottl.StringGetter[pcommon.Value]
@@ -230,10 +231,59 @@ func Test_replacePattern(t *testing.T) {
 				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
 			},
 		},
+		{
+			name:    "function replaces at match position not by text",
+			input:   "user_id=42 parent_user_id=423",
+			target:  target,
+			pattern: `\d+`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("user_id=hash(42) parent_user_id=hash(423)")
+			},
+		},
+		{
+			name:    "function preserves prefix and suffix around match",
+			input:   "abc",
+			target:  target,
+			pattern: `b`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("ahash(b)c")
+			},
+		},
+		{
+			name:    "function with adjacent submatches and zero gap",
+			input:   "aaaa",
+			target:  target,
+			pattern: `a`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("hash(a)hash(a)hash(a)hash(a)")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueStr(input.Str())
+			scenarioInput := input.Str()
+			if tt.input != "" {
+				scenarioInput = tt.input
+			}
+			scenarioValue := pcommon.NewValueStr(scenarioInput)
 			pattern := &ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return tt.pattern, nil
