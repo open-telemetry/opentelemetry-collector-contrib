@@ -231,7 +231,6 @@ The default rules will create the following aggregated metrics from the [`hostme
 * cpu.system
 * cpu.user
 * cpu.utilization
-* cpu.utilization_per_core
 * cpu.wait
 * disk.summary_utilization
 * disk.utilization
