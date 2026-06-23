@@ -20,7 +20,6 @@ exclude_metrics:
   - cpu.steal
   - cpu.system
   - cpu.user
-  - cpu.utilization_per_core
   - cpu.wait
 
   # Disk-IO metrics.

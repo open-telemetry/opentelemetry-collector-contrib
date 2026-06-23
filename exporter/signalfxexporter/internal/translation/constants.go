@@ -13,7 +13,7 @@ translation_rules:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization
 
-# compute cpu utilization metrics: cpu.utilization_per_core (excluded by default) and cpu.utilization
+# compute cpu.utilization metric
 - action: delta_metric
   mapping:
     system.cpu.time: sf_temp.system.cpu.delta
@@ -43,13 +43,10 @@ translation_rules:
   without_dimensions:
   - state
 - action: calculate_new_metric
-  metric_name: cpu.utilization_per_core
+  metric_name: sf_temp.cpu.utilization
   operand1_metric: sf_temp.system.cpu.usage
   operand2_metric: sf_temp.system.cpu.total
   operator: /
-- action: copy_metrics
-  mapping:
-    cpu.utilization_per_core: sf_temp.cpu.utilization
 - action: aggregate_metric
   metric_name: sf_temp.cpu.utilization
   aggregation_method: avg

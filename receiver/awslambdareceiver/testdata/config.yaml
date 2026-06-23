@@ -22,3 +22,7 @@ aws_lambda/s3_multi_encoding:
         encoding: awslogs_encoding/cloudtrail
       - name: catchall
         path_pattern: "*"
+
+aws_lambda/custom_event:
+  custom:
+    encoding: custom_encoding
