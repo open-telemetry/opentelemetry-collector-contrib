@@ -11,9 +11,9 @@ require (
 	github.com/twmb/franz-go/pkg/kadm v1.18.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	go.opentelemetry.io/collector/component v1.57.0
-	go.opentelemetry.io/collector/component/componenttest v0.154.1-0.20260622163853-d3d6e34700b7
+	go.opentelemetry.io/collector/component/componenttest v0.151.0
 	go.opentelemetry.io/collector/confmap v1.57.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.154.1-0.20260622163853-d3d6e34700b7
+	go.opentelemetry.io/collector/confmap/xconfmap v0.151.0
 	go.opentelemetry.io/collector/extension v1.57.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.57.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.57.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.57.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.151.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.57.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect

@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/component v1.57.0 // indirect
 	go.opentelemetry.io/collector/extension v1.57.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.57.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.1-0.20260622163853-d3d6e34700b7 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.151.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.151.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
