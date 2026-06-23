@@ -61,9 +61,8 @@ func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	}
 }
 
-// maxXMLElementDepth mirrors encoding/xml maxUnmarshalDepth to bound the
-// recursion depth of XML parsing input.
-const maxXMLElementDepth = 10_000
+// maxXMLElementDepth limits the recursion depth of XML parsing input to prevent stack overflow.
+const maxXMLElementDepth = 1000
 
 type xmlElement struct {
 	depth      int
