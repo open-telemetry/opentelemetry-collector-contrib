@@ -88,15 +88,10 @@ translation_rules:
     sf_temp.cpu.softirq: int
     sf_temp.cpu.nice: int
 
-# compute cpu.num_processors
+# convert cpu.num_processors metric
 - action: copy_metrics
   mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.num_processors
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.num_processors
-  aggregation_method: count
-  without_dimensions:
-  - cpu
+    system.cpu.logical.count: sf_temp.cpu.num_processors
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle

@@ -1647,6 +1647,12 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 			dp.Attributes().PutStr("state", state)
 		}
 	}
+	cpuCount := sm.Metrics().AppendEmpty()
+	cpuCount.SetName("system.cpu.logical.count")
+	cpuCountSum := cpuCount.SetEmptySum()
+	cpuCountSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	cpuCountSum.DataPoints().AppendEmpty().SetIntValue(32)
+
 	dps := converter.MetricsToSignalFxV2(md)
 	found := map[string]int64{}
 	for _, dp := range dps {
