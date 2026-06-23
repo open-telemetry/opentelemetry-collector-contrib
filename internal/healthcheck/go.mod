@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/health
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.155.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.0
 	go.opentelemetry.io/collector/component/componentstatus v0.155.0

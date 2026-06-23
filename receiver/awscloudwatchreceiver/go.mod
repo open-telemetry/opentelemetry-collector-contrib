@@ -8,9 +8,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.59.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.78.0
 	github.com/goccy/go-json v0.10.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.155.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.0
@@ -66,8 +66,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.154.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.154.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.155.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect

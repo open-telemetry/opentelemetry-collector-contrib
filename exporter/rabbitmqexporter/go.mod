@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/moby/moby/client v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq v0.155.0
 	github.com/rabbitmq/amqp091-go v1.12.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0

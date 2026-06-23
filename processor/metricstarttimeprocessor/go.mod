@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/metri
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.155.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.0
