@@ -20,7 +20,6 @@ exclude_metrics:
   - cpu.steal
   - cpu.system
   - cpu.user
-  - cpu.utilization_per_core
   - cpu.wait
 
   # Disk-IO metrics.
@@ -37,10 +36,6 @@ exclude_metrics:
 - metric_name: system.cpu.time
   dimensions:
     state: [idle, interrupt, nice, softirq, steal, system, user, wait]
-
-- metric_name: cpu.idle
-  dimensions:
-    cpu: ["*"]
 
 # Memory metrics.
 - metric_name: system.memory.usage
