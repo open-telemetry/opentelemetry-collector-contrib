@@ -551,7 +551,7 @@ func TestGroupingFileExporterWithRotation(t *testing.T) {
 	require.NoError(t, gfe.consumeTraces(t.Context(), td))
 
 	gfe.mutex.Lock()
-	writer, ok := gfe.writers.Get(tmpDir + "/test-service.log")
+	writer, ok := gfe.writers.Get(filepath.ToSlash(tmpDir + "/test-service.log"))
 	gfe.mutex.Unlock()
 
 	require.True(t, ok, "Writer should exist")
