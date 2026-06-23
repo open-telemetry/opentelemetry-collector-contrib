@@ -132,18 +132,25 @@ func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
 	_, err = otherConn.ExecContext(ctx, "LOCK TABLE other_database_lock_test IN ACCESS EXCLUSIVE MODE")
 	require.NoError(t, err)
 
-	var expectedCount, nullPIDCount int64
-	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock'`).Scan(&expectedCount)
+	var expectedCount, nullPIDCount, otherDatabaseTransactionIDCount, preparedRelationLockCount int64
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock' AND (database = (SELECT oid FROM pg_database WHERE datname = current_database()) OR database IS NULL)`).Scan(&expectedCount)
 	require.NoError(t, err)
 	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock' AND pid IS NULL`).Scan(&nullPIDCount)
 	require.NoError(t, err)
 	require.Positive(t, nullPIDCount)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid WHERE pg_locks.locktype = 'transactionid' AND pg_locks.mode = 'ExclusiveLock' AND pg_stat_activity.datname = 'other_database'`).Scan(&otherDatabaseTransactionIDCount)
+	require.NoError(t, err)
+	require.Positive(t, otherDatabaseTransactionIDCount)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'relation' AND mode = 'RowExclusiveLock' AND relation = 'prepared_lock_test'::regclass AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`).Scan(&preparedRelationLockCount)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), preparedRelationLockCount)
 
 	client := &postgreSQLClient{client: db}
 	locks, err := client.getDatabaseLocks(ctx)
 	require.NoError(t, err)
 
-	found := false
+	foundTransactionID := false
+	foundPreparedRelation := false
 	for _, lock := range locks {
 		require.False(t,
 			lock.relation == "" && lock.lockType == "relation" && lock.mode == "AccessExclusiveLock",
@@ -152,11 +159,17 @@ func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
 		if lock.lockType == "transactionid" && lock.mode == "ExclusiveLock" {
 			require.Empty(t, lock.relation)
 			require.Equal(t, expectedCount, lock.locks)
-			found = true
-			break
+			require.Equal(t, nullPIDCount, lock.locks, "transactionid lock group should exclude active transactions from other databases")
+			require.Greater(t, expectedCount, nullPIDCount, "current query still observes transactionid locks from other databases")
+			foundTransactionID = true
+		}
+		if lock.relation == "prepared_lock_test" && lock.lockType == "relation" && lock.mode == "RowExclusiveLock" {
+			require.Equal(t, preparedRelationLockCount, lock.locks)
+			foundPreparedRelation = true
 		}
 	}
-	require.True(t, found, "expected transactionid lock group")
+	require.True(t, foundTransactionID, "expected transactionid lock group")
+	require.True(t, foundPreparedRelation, "expected prepared transaction relation lock group")
 }
 
 func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
