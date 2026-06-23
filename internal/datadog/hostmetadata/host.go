@@ -20,7 +20,13 @@ import (
 )
 
 // GetSourceProvider builds the hostname resolution chain.
+// If configHostname is non-empty the chain is skipped entirely and a fixed config provider is returned,
+// avoiding unnecessary cloud metadata probes on non-matching cloud environments.
 func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
+	if configHostname != "" {
+		return provider.Config(configHostname), nil
+	}
+
 	ecsProvider, err := ecs.NewProvider(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)

@@ -72,20 +72,6 @@ func TestNewExtension(t *testing.T) {
 		assert.Equal(t, "host error", err.Error())
 	})
 
-	t.Run("config hostname skips source provider", func(t *testing.T) {
-		cfgWithHostname := &Config{
-			API:      datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
-			Hostname: "my-configured-host",
-		}
-		// Provider returns an error; if it were called the test would fail.
-		hostProvider := &mockSourceProvider{err: errors.New("provider should not be called")}
-		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
-		ext, err := newExtension(t.Context(), cfgWithHostname, set, hostProvider, uuidProvider)
-		require.NoError(t, err)
-		assert.False(t, hostProvider.called, "source provider must not be called when hostname is set in config")
-		assert.Equal(t, "my-configured-host", ext.info.host.Identifier)
-		assert.Equal(t, "config", ext.info.hostnameSource)
-	})
 }
 
 func TestExtensionLifecycle(t *testing.T) {
@@ -835,11 +821,9 @@ var _ source.Provider = (*mockSourceProvider)(nil)
 type mockSourceProvider struct {
 	source source.Source
 	err    error
-	called bool
 }
 
 func (m *mockSourceProvider) Source(_ context.Context) (source.Source, error) {
-	m.called = true
 	if m.err != nil {
 		return source.Source{}, m.err
 	}

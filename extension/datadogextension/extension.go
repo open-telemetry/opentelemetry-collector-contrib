@@ -386,20 +386,15 @@ func newExtension(
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
 ) (*datadogExtension, error) {
-	var host source.Source
+	host, err := hostProvider.Source(context.Background())
+	if err != nil {
+		return nil, err
+	}
 	var hostnameSource string
 	if cfg.Hostname != "" {
-		// Hostname is already known from config; skip the source provider to avoid
-		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
-		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname}
 	} else {
 		hostnameSource = "inferred"
-		var err error
-		host, err = hostProvider.Source(context.Background())
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Create agent components

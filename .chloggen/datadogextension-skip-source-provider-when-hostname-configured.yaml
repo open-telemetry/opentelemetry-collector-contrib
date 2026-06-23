@@ -1,10 +1,10 @@
 change_type: bug_fix
 
-component: extension/datadog
+component: internal/datadog/hostmetadata
 
-note: Skip cloud metadata source provider probe when hostname is already set in config, avoiding spurious GCP metadata server requests on non-GCP hosts.
+note: Skip building the cloud metadata provider chain when hostname is already set in config, avoiding spurious GCP metadata server requests on non-GCP hosts.
 
-issues: [OTAGENT-1062]
+issues: [49241]
 
 subtext:
 
