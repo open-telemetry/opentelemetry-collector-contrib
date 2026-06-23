@@ -6,7 +6,7 @@ description: |
   Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
   are only available when running on Windows.
 
-reaggregation_enabled: true
+override_value_enabled: true
 
 status:
   class: receiver
@@ -15,7 +15,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sincejune, crobert-1]
+    active: [sincejune, crobert-1, sv-splunk]
     emeritus: [StefanKurek]
     seeking_new: true
 
@@ -35,6 +35,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
   sqlserver.computer.name:
     description: The name of the SQL Server instance being monitored.

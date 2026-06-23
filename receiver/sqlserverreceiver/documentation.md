@@ -925,6 +925,8 @@ top query
 | server.address | Name of the database host. | Any Str | false | - |
 | server.port | Server port number. | Any Int | false | - |
 | service.instance.id | A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server. | Any Str | true | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - |
