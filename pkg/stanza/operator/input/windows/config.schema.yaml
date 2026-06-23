@@ -48,12 +48,28 @@ $defs:
   event_data_format:
     description: EventDataFormat controls the structure of the event_data field in the log body.
     type: string
+  host_group_config:
+    description: HostGroupConfig defines a group of remote hosts that share the same credentials.
+    type: object
+    properties:
+      hosts:
+        type: array
+        items:
+          type: string
+      password:
+        type: string
+      username:
+        type: string
   remote_config:
     description: RemoteConfig is the configuration for a remote server.
     type: object
     properties:
       domain:
         type: string
+      hosts:
+        type: array
+        items:
+          $ref: host_group_config
       password:
         type: string
       server:

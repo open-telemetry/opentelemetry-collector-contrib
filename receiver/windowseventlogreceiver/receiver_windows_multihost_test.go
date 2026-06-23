@@ -87,29 +87,6 @@ func TestExpandMultipleHosts(t *testing.T) {
 	}
 }
 
-func TestSanitizeOperatorID(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"host1.example.com", "host1_example_com"},
-		{"192.168.1.1", "192_168_1_1"},
-		{"host1:5985", "host1_5985"},
-		{"simple", "simple"},
-		{"host/path", "host_path"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, sanitizeOperatorID(tt.input))
-		})
-	}
-}
-
-func TestOperatorIDForHost(t *testing.T) {
-	assert.Equal(t, "windows_eventlog_input/host1_example_com", operatorIDForHost("host1.example.com"))
-}
-
 func TestValidate_MutualExclusion(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {

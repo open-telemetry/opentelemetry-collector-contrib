@@ -73,10 +73,10 @@ type Config struct {
 
 // RemoteConfig is the configuration for a remote server.
 type RemoteConfig struct {
-	Server   string `mapstructure:"server"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Domain   string `mapstructure:"domain,omitempty"`
+	Server   string            `mapstructure:"server"`
+	Username string            `mapstructure:"username"`
+	Password string            `mapstructure:"password"`
+	Domain   string            `mapstructure:"domain,omitempty"`
 	Hosts    []HostGroupConfig `mapstructure:"hosts,omitempty"`
 }
 
