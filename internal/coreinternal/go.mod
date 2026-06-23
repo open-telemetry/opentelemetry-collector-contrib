@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/elastic/lunes v0.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.155.0

@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.201
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.155.0
@@ -27,7 +28,6 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.10.0 // indirect
