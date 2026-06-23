@@ -228,15 +228,15 @@ func parseCEFExtensions(extension string) map[string]any {
 func buildCEFResult(header cefHeader, extensions map[string]any) (pcommon.Map, error) {
 	result := pcommon.NewMap()
 
-	result.PutStr("version", header.version)
-	result.PutStr("device_vendor", header.deviceVendor)
-	result.PutStr("device_product", header.deviceProduct)
-	result.PutStr("device_version", header.deviceVersion)
-	result.PutStr("device_event_class_id", header.deviceEventClassID)
-	result.PutStr("name", header.name)
-	result.PutStr("severity", header.severity)
+	result.PutStr("cef.version", header.version)
+	result.PutStr("cef.device_vendor", header.deviceVendor)
+	result.PutStr("cef.device_product", header.deviceProduct)
+	result.PutStr("cef.device_version", header.deviceVersion)
+	result.PutStr("cef.device_event_class_id", header.deviceEventClassID)
+	result.PutStr("cef.name", header.name)
+	result.PutStr("cef.severity", header.severity)
 
-	extensionsMap := result.PutEmptyMap("extensions")
+	extensionsMap := result.PutEmptyMap("cef.extensions")
 	if extensions != nil {
 		if err := extensionsMap.FromRaw(extensions); err != nil {
 			return pcommon.Map{}, fmt.Errorf("failed to convert extensions: %w", err)

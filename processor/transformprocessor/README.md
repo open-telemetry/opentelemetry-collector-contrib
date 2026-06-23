@@ -724,9 +724,9 @@ The `ParseCEF` function returns a `pcommon.Map` that is the result of parsing th
 
 The returned map has the following top-level fields:
 
-- `version` — the CEF version (the integer following `CEF:`).
-- `device_vendor`, `device_product`, `device_version`, `device_event_class_id`, `name`, `severity` — the six CEF header fields.
-- `extensions` — a map of the parsed key/value extension pairs.
+- `cef.version` — the CEF version (the integer following `CEF:`).
+- `cef.device_vendor`, `cef.device_product`, `cef.device_version`, `cef.device_event_class_id`, `cef.name`, `cef.severity` — the six CEF header fields.
+- `cef.extensions` — a map of the parsed key/value extension pairs.
 
 Within the header fields, the escape sequences `\|` (pipe) and `\\` (backslash) are unescaped. Within extension values, the escape sequences `\\` (backslash), `\=` (equals), `\n` (newline), and `\r` (carriage return) are unescaped.
 
