@@ -59,8 +59,8 @@ type MetricsDiscoveryConfig struct {
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
 	// RecentlyActive restricts discovery to metrics that have published data
-	// in the past three hours. By default this receiver returns every metric that reported data in the 
-	// past two weeks, which includes metrics from terminated resources. 
+	// in the past three hours. By default this receiver returns every metric that reported data in the
+	// past two weeks, which includes metrics from terminated resources.
 	// Enabling this dramatically reduces the number of discovered metrics high resource churn.
 	RecentlyActive bool `mapstructure:"recently_active"`
 }
