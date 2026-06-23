@@ -19,12 +19,18 @@ resourceLogs:
               - key: db.server.name
                 value:
                   stringValue: oraclehost:1521
+              - key: db.namespace
+                value:
+                  stringValue: ORCLPDB1
+              - key: oracle.db.service
+                value:
+                  stringValue: ORCL
               - key: db.query.text
                 value:
-                  stringValue: SELECT COUNT ( * ) FROM ADMIN. Employee e JOIN ADMIN. Person p ON e. BusinessEntityID = ? JOIN ADMIN. EmployeePayHistory eph ON e. BusinessEntityID = eph. BusinessEntityID WHERE eph. Rate > ( SELECT AVG ( Rate ) FROM ADMIN. EmployeePayHistory )
+                  stringValue: "SELECT COUNT(*) AS TotalHighRateEmployees FROM ADMIN.\"Employee\" e \nJOIN ADMIN.\"Person\" p ON e.\"BusinessEntityID\" = \"BusId1234\" \nJOIN ADMIN.\"EmployeePayHistory\" eph ON e.\"BusinessEntityID\" = eph.\"BusinessEntityID\" WHERE eph.\"Rate\" > \n(SELECT AVG(\"Rate\") FROM ADMIN.\"EmployeePayHistory\")"
               - key: oracledb.query_plan
                 value:
-                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
+                  stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","FILTER_PREDICATES":"","ID":"0","IO_COST":"","OBJECT_NAME":"","OBJECT_TYPE":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","PARTITION_START":"","PARTITION_STOP":"","POSITION":"1","PROJECTION":""}]'
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
@@ -97,9 +103,15 @@ resourceLogs:
               - key: oracledb.procedure_type
                 value:
                   stringValue: PROCEDURE
+              - key: db.query.comment_tags
+                value:
+                  stringValue: ""
               - key: oracledb.plan_hash_value
                 value:
                   stringValue: "33313233343536373839"
+              - key: oracledb.plan.first_load
+                value:
+                  stringValue: "2025-12-31/23:00:00"
               - key: oracledb.plan.last_load
                 value:
                   stringValue: "2026-01-01/12:00:00"

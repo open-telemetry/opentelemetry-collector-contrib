@@ -74,6 +74,15 @@ func TestLoadConfig(t *testing.T) {
 				CloudWatch: sharedConfig{},
 			},
 		},
+		{
+			name:              "Config with custom trigger encoding",
+			componentIDToLoad: component.NewIDWithName(metadata.Type, "custom_event"),
+			expected: &Config{
+				S3:         S3Config{},
+				CloudWatch: sharedConfig{},
+				Custom:     sharedConfig{Encoding: "custom_encoding"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

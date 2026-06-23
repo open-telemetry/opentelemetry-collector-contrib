@@ -4,8 +4,6 @@ type: oracledb
 description: |
   This receiver periodically queries an Oracle Database host to collect metrics.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:
@@ -59,6 +57,9 @@ attributes:
   db.namespace:
     description: The database name.
     type: string
+  db.query.comment_tags:
+    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces.
+    type: string
   db.query.text:
     description: The text of the database query being executed.
     type: string
@@ -94,6 +95,9 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  oracle.db.service:
+    description: The Oracle service name associated with the database connection.
+    type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
@@ -193,6 +197,9 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+  oracledb.plan.first_load:
+    description: "Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
+    type: string
   oracledb.plan.last_load:
     description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
@@ -296,6 +303,7 @@ events:
       - db.system.name
       - user.name
       - db.namespace
+      - oracle.db.service
       - client.address
       - client.port
       - network.peer.address
@@ -320,6 +328,7 @@ events:
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
+      - db.query.comment_tags
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
@@ -348,6 +357,8 @@ events:
     attributes:
       - db.system.name
       - db.server.name
+      - db.namespace
+      - oracle.db.service
       - db.query.text
       - oracledb.query_plan
       - oracledb.sql_id
@@ -374,7 +385,9 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
+      - db.query.comment_tags
       - oracledb.plan_hash_value
+      - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
   oracledb.buffer_cache.utilization:

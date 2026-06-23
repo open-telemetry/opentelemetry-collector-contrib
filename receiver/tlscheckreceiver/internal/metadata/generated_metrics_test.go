@@ -76,7 +76,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
