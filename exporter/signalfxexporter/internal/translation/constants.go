@@ -13,7 +13,7 @@ translation_rules:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization
 
-# compute cpu utilization metrics: cpu.utilization_per_core (excluded by default) and cpu.utilization
+# compute cpu.utilization metric
 - action: delta_metric
   mapping:
     system.cpu.time: sf_temp.system.cpu.delta
@@ -43,13 +43,10 @@ translation_rules:
   without_dimensions:
   - state
 - action: calculate_new_metric
-  metric_name: cpu.utilization_per_core
+  metric_name: sf_temp.cpu.utilization
   operand1_metric: sf_temp.system.cpu.usage
   operand2_metric: sf_temp.system.cpu.total
   operator: /
-- action: copy_metrics
-  mapping:
-    cpu.utilization_per_core: sf_temp.cpu.utilization
 - action: aggregate_metric
   metric_name: sf_temp.cpu.utilization
   aggregation_method: avg
@@ -107,17 +104,6 @@ translation_rules:
   aggregation_method: count
   without_dimensions:
   - cpu
-
-- action: copy_metrics
-  mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.idle_per_core
-    sf_temp.cpu.interrupt: sf_temp.cpu.interrupt_per_core
-    sf_temp.cpu.system: sf_temp.cpu.system_per_core
-    sf_temp.cpu.user: sf_temp.cpu.user_per_core
-    sf_temp.cpu.wait: sf_temp.cpu.wait_per_core
-    sf_temp.cpu.steal: sf_temp.cpu.steal_per_core
-    sf_temp.cpu.softirq: sf_temp.cpu.softirq_per_core
-    sf_temp.cpu.nice: sf_temp.cpu.nice_per_core
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle
@@ -410,23 +396,15 @@ translation_rules:
   mapping:
     sf_temp.container_cpu_utilization: container_cpu_utilization
     sf_temp.cpu.idle: cpu.idle
-    sf_temp.cpu.idle_per_core: cpu.idle
     sf_temp.cpu.interrupt: cpu.interrupt
-    sf_temp.cpu.interrupt_per_core: cpu.interrupt
     sf_temp.cpu.nice: cpu.nice
-    sf_temp.cpu.nice_per_core: cpu.nice
     sf_temp.cpu.num_processors: cpu.num_processors
     sf_temp.cpu.softirq: cpu.softirq
-    sf_temp.cpu.softirq_per_core: cpu.softirq
     sf_temp.cpu.steal: cpu.steal
-    sf_temp.cpu.steal_per_core: cpu.steal
     sf_temp.cpu.system: cpu.system
-    sf_temp.cpu.system_per_core: cpu.system
     sf_temp.cpu.user: cpu.user
-    sf_temp.cpu.user_per_core: cpu.user
     sf_temp.cpu.utilization: cpu.utilization
     sf_temp.cpu.wait: cpu.wait
-    sf_temp.cpu.wait_per_core: cpu.wait
     sf_temp.disk.summary_utilization: disk.summary_utilization
     sf_temp.disk.utilization: disk.utilization
     sf_temp.memory.total: memory.total
