@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: receiver/jaegerreceiver
+component: receiver/jaeger
 note: "Fix memory amplification DoS in Thrift deserialization"
 issues: [49218]
 change_logs: [user]
