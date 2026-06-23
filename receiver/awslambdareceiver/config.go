@@ -78,7 +78,7 @@ type sharedConfig struct {
 type S3Config struct {
 	sharedConfig `mapstructure:",squash"`
 
-	internal.AWSOptions `mapstructure:",squash"`
+	AWSOptions internal.AWSOptions `mapstructure:",squash"`
 
 	// Encodings defines multiple encoding entries for S3 path-based routing (multi-format mode).
 	// Each entry maps a path_pattern prefix to an encoding extension.
@@ -95,7 +95,7 @@ func (c *S3Config) Validate() error {
 	}
 
 	// Make sure static credential overrides are provided correctly
-	if (c.AccessKeyID == "") != (c.SecretAccessKey == "") {
+	if (c.AWSOptions.AccessKeyID == "") != (c.AWSOptions.SecretAccessKey == "") {
 		return errors.New("both 'access_key_id' and 'secret_access_key' must be provided together")
 	}
 

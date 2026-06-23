@@ -12,14 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // AWSOptions holds configuration overrides for AWS SDK when accessing S3 data.
 type AWSOptions struct {
-	AccessKeyID     string `mapstructure:"access_key_id"`
-	SecretAccessKey string `mapstructure:"secret_access_key"`
-	SessionToken    string `mapstructure:"session_token"`
+	AccessKeyID     string              `mapstructure:"access_key_id"`
+	SecretAccessKey configopaque.String `mapstructure:"secret_access_key"`
+	SessionToken    configopaque.String `mapstructure:"session_token"`
 }
 
 // s3API abstracts out the S3 APIs allowing mocking for tests
@@ -62,8 +63,8 @@ func (s *S3ServiceProvider) GetService(ctx context.Context, awsOptions AWSOption
 		if awsOptions.AccessKeyID != "" && awsOptions.SecretAccessKey != "" {
 			cfg.Credentials = credentials.NewStaticCredentialsProvider(
 				awsOptions.AccessKeyID,
-				awsOptions.SecretAccessKey,
-				awsOptions.SessionToken,
+				string(awsOptions.SecretAccessKey),
+				string(awsOptions.SessionToken),
 			)
 		}
 
