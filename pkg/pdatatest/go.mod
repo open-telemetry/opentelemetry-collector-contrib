@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.154.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.57.0
+	go.opentelemetry.io/collector/pdata v1.61.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.151.0
 	go.opentelemetry.io/collector/pdata/testdata v0.151.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.151.0
@@ -23,7 +23,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.57.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.61.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pdatautil
