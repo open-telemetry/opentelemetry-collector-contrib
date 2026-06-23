@@ -1124,7 +1124,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   Previously:
   - the `service.instance.id` reported in the AgentDescription was based on the OpAMP instance UID
   - the instance UID was typically set based on the `service.instance.id` from the Collector resource attributes
-  - it could be overriden using the `instance_uid` configuration of the OpAMP extension
+  - it could be overridden using the `instance_uid` configuration of the OpAMP extension
   
   This meant that the reported `service.instance.id` did not always match the Collector resource attributes,
   which is a problem for correlation, and that server implementations got used to the typical case of
