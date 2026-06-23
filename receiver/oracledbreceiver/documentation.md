@@ -523,20 +523,6 @@ Number of writes directly to disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.process.cpu.time
-
-Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu.mode | The mode in which the CPU time was consumed, as accounted by Oracle. | Str: ``system``, ``user`` | Recommended | - |
-
 ### oracledb.queries_parallelized
 
 Number of SELECT statements executed in parallel

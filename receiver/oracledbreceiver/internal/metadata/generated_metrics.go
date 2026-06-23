@@ -22,32 +22,6 @@ const (
 	AggregationStrategyMax = "max"
 )
 
-// AttributeCPUMode specifies the value cpu.mode attribute.
-type AttributeCPUMode int
-
-const (
-	_ AttributeCPUMode = iota
-	AttributeCPUModeSystem
-	AttributeCPUModeUser
-)
-
-// String returns the string representation of the AttributeCPUMode.
-func (av AttributeCPUMode) String() string {
-	switch av {
-	case AttributeCPUModeSystem:
-		return "system"
-	case AttributeCPUModeUser:
-		return "user"
-	}
-	return ""
-}
-
-// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
-var MapAttributeCPUMode = map[string]AttributeCPUMode{
-	"system": AttributeCPUModeSystem,
-	"user":   AttributeCPUModeUser,
-}
-
 // AttributeDestinationType specifies the value destination.type attribute.
 type AttributeDestinationType int
 
@@ -412,10 +386,6 @@ var MetricsInfo = metricsInfo{
 	OracledbPhysicalWritesDirect: metricInfo{
 		Name: "oracledb.physical_writes_direct",
 	},
-	OracledbProcessCPUTime: metricInfo{
-		Name:       "oracledb.process.cpu.time",
-		Attributes: []string{"cpu.mode"},
-	},
 	OracledbProcessesLimit: metricInfo{
 		Name: "oracledb.processes.limit",
 	},
@@ -539,7 +509,6 @@ type metricsInfo struct {
 	OracledbPhysicalWriteIoRequests               metricInfo
 	OracledbPhysicalWrites                        metricInfo
 	OracledbPhysicalWritesDirect                  metricInfo
-	OracledbProcessCPUTime                        metricInfo
 	OracledbProcessesLimit                        metricInfo
 	OracledbProcessesUsage                        metricInfo
 	OracledbQueriesParallelized                   metricInfo
@@ -3139,97 +3108,6 @@ func newMetricOracledbPhysicalWritesDirect(cfg OracledbPhysicalWritesDirectMetri
 	return m
 }
 
-type metricOracledbProcessCPUTime struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        OracledbProcessCPUTimeMetricConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
-}
-
-// init fills oracledb.process.cpu.time metric with initial data.
-func (m *metricOracledbProcessCPUTime) init() {
-	m.data.SetName("oracledb.process.cpu.time")
-	m.data.SetDescription("Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricOracledbProcessCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuModeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbProcessCPUTimeMetricAttributeKeyCPUMode) {
-		dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbProcessCPUTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbProcessCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbProcessCPUTime(cfg OracledbProcessCPUTimeMetricConfig) metricOracledbProcessCPUTime {
-	m := metricOracledbProcessCPUTime{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbProcessesLimit struct {
 	data     pmetric.Metric                     // data buffer for generated metric.
 	config   OracledbProcessesLimitMetricConfig // metric config provided by user.
@@ -4678,7 +4556,6 @@ type MetricsBuilder struct {
 	metricOracledbPhysicalWriteIoRequests               metricOracledbPhysicalWriteIoRequests
 	metricOracledbPhysicalWrites                        metricOracledbPhysicalWrites
 	metricOracledbPhysicalWritesDirect                  metricOracledbPhysicalWritesDirect
-	metricOracledbProcessCPUTime                        metricOracledbProcessCPUTime
 	metricOracledbProcessesLimit                        metricOracledbProcessesLimit
 	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
 	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
@@ -4773,7 +4650,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbPhysicalWriteIoRequests:               newMetricOracledbPhysicalWriteIoRequests(mbc.Metrics.OracledbPhysicalWriteIoRequests),
 		metricOracledbPhysicalWrites:                        newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
 		metricOracledbPhysicalWritesDirect:                  newMetricOracledbPhysicalWritesDirect(mbc.Metrics.OracledbPhysicalWritesDirect),
-		metricOracledbProcessCPUTime:                        newMetricOracledbProcessCPUTime(mbc.Metrics.OracledbProcessCPUTime),
 		metricOracledbProcessesLimit:                        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
 		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
@@ -4963,7 +4839,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbPhysicalWriteIoRequests.emit(ils.Metrics())
 	mb.metricOracledbPhysicalWrites.emit(ils.Metrics())
 	mb.metricOracledbPhysicalWritesDirect.emit(ils.Metrics())
-	mb.metricOracledbProcessCPUTime.emit(ils.Metrics())
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
@@ -5435,11 +5310,6 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDirectDataPoint(ts pcommon
 	}
 	mb.metricOracledbPhysicalWritesDirect.recordDataPoint(mb.startTime, ts, val)
 	return nil
-}
-
-// RecordOracledbProcessCPUTimeDataPoint adds a data point to oracledb.process.cpu.time metric.
-func (mb *MetricsBuilder) RecordOracledbProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuModeAttributeValue AttributeCPUMode) {
-	mb.metricOracledbProcessCPUTime.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String())
 }
 
 // RecordOracledbProcessesLimitDataPoint adds a data point to oracledb.processes.limit metric.

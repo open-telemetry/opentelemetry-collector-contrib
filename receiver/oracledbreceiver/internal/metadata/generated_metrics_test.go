@@ -71,7 +71,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
-			aggMap["oracledb.process.cpu.time"] = mb.metricOracledbProcessCPUTime.config.AggregationStrategy
 			aggMap["oracledb.session.wait.time"] = mb.metricOracledbSessionWaitTime.config.AggregationStrategy
 			aggMap["oracledb.session.waits"] = mb.metricOracledbSessionWaits.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
@@ -240,12 +239,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbProcessCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
-			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbProcessCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
-			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
@@ -350,7 +343,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbProcessCPUTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionWaitTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionWaits.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
@@ -1133,50 +1125,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.process.cpu.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.process.cpu.time"], "Found a duplicate in the metrics slice: oracledb.process.cpu.time")
-						validatedMetrics["oracledb.process.cpu.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						cpuModeAttrVal, ok := dp.Attributes().Get("cpu.mode")
-						assert.True(t, ok)
-						assert.Equal(t, "system", cpuModeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["oracledb.process.cpu.time"], "Found a duplicate in the metrics slice: oracledb.process.cpu.time")
-						validatedMetrics["oracledb.process.cpu.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["oracledb.process.cpu.time"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("cpu.mode")
-						assert.False(t, ok)
-					}
 				case "oracledb.processes.limit":
 					assert.False(t, validatedMetrics["oracledb.processes.limit"], "Found a duplicate in the metrics slice: oracledb.processes.limit")
 					validatedMetrics["oracledb.processes.limit"] = true

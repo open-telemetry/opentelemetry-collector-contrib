@@ -18,8 +18,8 @@ issues: [49065]
 subtext: |
   Adds oracledb.session.waits and oracledb.session.wait.time (attribute oracledb.session.wait.state),
   oracledb.session.stored_procedure.usage, oracledb.jvm.memory.used, oracledb.jvm.memory.committed,
-  oracledb.jvm.memory.live, oracledb.process.cpu.time (attribute cpu.mode), and oracledb.os.swaps.
-  All are disabled by default and add no new database queries.
+  oracledb.jvm.memory.live, and oracledb.os.swaps. All are disabled by default and add no new
+  database queries.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

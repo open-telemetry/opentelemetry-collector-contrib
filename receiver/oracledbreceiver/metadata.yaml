@@ -56,10 +56,6 @@ attributes:
   client.port:
     description: TCP port used by the client.
     type: int
-  cpu.mode:
-    description: The mode in which the CPU time was consumed, as accounted by Oracle.
-    type: string
-    enum: [system, user]
   db.namespace:
     description: The database name.
     type: string
@@ -830,17 +826,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{writes}"
-  oracledb.process.cpu.time:
-    attributes:
-      - cpu.mode
-    description: Cumulative CPU time consumed by the Oracle server and background processes, in seconds (converted from centiseconds), as accounted by Oracle. Sourced from v$sysstat names OS System time used (cpu.mode=system) and OS User time used (cpu.mode=user). Mirrors semconv process.cpu.time; reported from Oracle's own process accounting rather than a host/process collector.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true

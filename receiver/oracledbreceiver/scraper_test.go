@@ -81,8 +81,6 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": javaCallHeapLiveSize, "VALUE": "1048576"},
 		{"NAME": javaCallHeapTotalSize, "VALUE": "4194304"},
 		{"NAME": javaCallHeapUsedSize, "VALUE": "2097152"},
-		{"NAME": osSystemTimeUsed, "VALUE": "900"}, // cs -> 9 s
-		{"NAME": osUserTimeUsed, "VALUE": "3300"},  // cs -> 33 s
 		{"NAME": osSwaps, "VALUE": "17"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
@@ -416,7 +414,6 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
-	cfg.Metrics.OracledbProcessCPUTime.Enabled = true
 	cfg.Metrics.OracledbOsSwaps.Enabled = true
 
 	scrpr := oracleScraper{
@@ -445,8 +442,6 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	assert.InDelta(t, float64(1048576), got["oracledb.jvm.memory.live"][""], 1e-9)
 	assert.InDelta(t, float64(4194304), got["oracledb.jvm.memory.committed"][""], 1e-9)
 	assert.InDelta(t, float64(2097152), got["oracledb.jvm.memory.used"][""], 1e-9)
-	assert.InDelta(t, 9.0, got["oracledb.process.cpu.time"]["cpu.mode=system"], 1e-9)
-	assert.InDelta(t, 33.0, got["oracledb.process.cpu.time"]["cpu.mode=user"], 1e-9)
 	assert.InDelta(t, float64(17), got["oracledb.os.swaps"][""], 1e-9)
 }
 

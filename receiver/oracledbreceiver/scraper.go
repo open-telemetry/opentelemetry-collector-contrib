@@ -104,8 +104,6 @@ const (
 	javaCallHeapLiveSize        = "java call heap live size"
 	javaCallHeapTotalSize       = "java call heap total size"
 	javaCallHeapUsedSize        = "java call heap used size"
-	osSystemTimeUsed            = "OS System time used"
-	osUserTimeUsed              = "OS User time used"
 	osSwaps                     = "OS Swaps"
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
@@ -329,7 +327,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryUsed.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryCommitted.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbJvmMemoryLive.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbProcessCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbOsSwaps.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
@@ -564,22 +561,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			case javaCallHeapUsedSize:
 				if err := s.mb.RecordOracledbJvmMemoryUsedDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
-				}
-			case osSystemTimeUsed:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
-				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osSystemTimeUsed, row["VALUE"], err))
-				} else {
-					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbProcessCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeSystem)
-				}
-			case osUserTimeUsed:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
-				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", osUserTimeUsed, row["VALUE"], err))
-				} else {
-					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbProcessCPUTimeDataPoint(now, value/100, metadata.AttributeCPUModeUser)
 				}
 			case osSwaps:
 				if err := s.mb.RecordOracledbOsSwapsDataPoint(now, row["VALUE"]); err != nil {

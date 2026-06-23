@@ -99,9 +99,6 @@ all_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
-    oracledb.process.cpu.time:
-      enabled: true
-      attributes: ["cpu.mode"]
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -277,9 +274,6 @@ reaggregate_set:
       enabled: true
     oracledb.physical_writes_direct:
       enabled: true
-    oracledb.process.cpu.time:
-      enabled: true
-      attributes: []
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -455,9 +449,6 @@ none_set:
       enabled: false
     oracledb.physical_writes_direct:
       enabled: false
-    oracledb.process.cpu.time:
-      enabled: false
-      attributes: ["cpu.mode"]
     oracledb.processes.limit:
       enabled: false
     oracledb.processes.usage:
