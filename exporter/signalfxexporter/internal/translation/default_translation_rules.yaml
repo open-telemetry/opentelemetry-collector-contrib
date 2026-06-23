@@ -1,5 +1,5 @@
-# DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
-# config.TranslationRules is not specified explicitly.
+# translation_rules defines default translation rules that will be applied to metrics if
+# disable_default_translation_rules is not explicitly set to true.
 translation_rules:
 - action: copy_metrics
   mapping:
