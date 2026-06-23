@@ -1,4 +1,0 @@
-change_type: deprecation
-component: connector/service_graph
-note: Deprecate the legacy servicegraph connector latency metric names and millisecond latency unit feature gates, and mark the virtual node feature gate as stable.
-issues: [49215]

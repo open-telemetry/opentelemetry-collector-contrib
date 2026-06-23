@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: extension/google_cloud_logentry_encoding
-note: "Accept short ALPN protocol tokens (e.g. `h2`, `h3`) in `httpRequest.protocol` that do not contain a `/`; previously any protocol string without a slash was rejected with an error, causing log entries from Google Cloud Load Balancers that switched to reporting `h2` for HTTP/2 to be silently dropped."
-issues: [45214]
-change_logs: [user]
