@@ -84,6 +84,19 @@ func TestEnabledAttributesV0Gates(t *testing.T) {
 	assert.NotContains(t, attrs, "container.image.tags", "container.image.tags should not be present when EmitV1K8sConventions is disabled")
 }
 
+func TestEnabledAttributesBothSchemas(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+	}()
+
+	attrs := enabledAttributes()
+	assert.Contains(t, attrs, containerImageTag, "container.image.tag should be present when DontEmitV0K8sConventions is disabled")
+	assert.Contains(t, attrs, "container.image.tags", "container.image.tags should be present when EmitV1K8sConventions is enabled")
+}
+
 func TestWithExtractAnnotations(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -776,6 +776,7 @@ func TestExtractionRules(t *testing.T) {
 		attributes            map[string]string
 		singularFeatureGate   bool
 		v0FeatureGate         bool
+		bothSchemasFeatureGate bool
 	}{
 		{
 			name:       "no-rules",
@@ -1115,6 +1116,59 @@ func TestExtractionRules(t *testing.T) {
 			singularFeatureGate: true,
 		},
 		{
+			name: "all-labels both schemas",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1":  "lv1",
+				"k8s.pod.label.label2":  "k1=v1 k5=v5 extra!",
+			},
+			bothSchemasFeatureGate: true,
+		},
+		{
+			name: "all-annotations both schemas",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.annotations.annotation1": "av1",
+				"k8s.pod.annotation.annotation1":  "av1",
+			},
+			bothSchemasFeatureGate: true,
+		},
+		{
+			name: "captured-groups-no-tag-name both schemas",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1":  "lv1",
+				"k8s.pod.label.label2":  "k1=v1 k5=v5 extra!",
+			},
+			bothSchemasFeatureGate: true,
+		},
+		{
 			name:  "service-name",
 			rules: serviceRules,
 			attributes: map[string]string{
@@ -1192,6 +1246,14 @@ func TestExtractionRules(t *testing.T) {
 			}
 			if tc.v0FeatureGate {
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+				}()
+			}
+			if tc.bothSchemasFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				defer func() {
 					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
@@ -1449,11 +1511,12 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name                string
-		rules               ExtractionRules
-		attributes          map[string]string
-		singularFeatureGate bool
-		v0FeatureGate       bool
+		name                   string
+		rules                  ExtractionRules
+		attributes             map[string]string
+		singularFeatureGate    bool
+		v0FeatureGate          bool
+		bothSchemasFeatureGate bool
 	}{
 		{
 			name:       "no-rules",
@@ -1575,6 +1638,38 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "all-labels both schemas",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.labels.label1": "lv1",
+				"k8s.namespace.label.label1":  "lv1",
+			},
+			bothSchemasFeatureGate: true,
+		},
+		{
+			name: "all-annotations both schemas",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.annotations.annotation1": "av1",
+				"k8s.namespace.annotation.annotation1":  "av1",
+			},
+			bothSchemasFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1588,6 +1683,14 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			}
 			if tc.v0FeatureGate {
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+				}()
+			}
+			if tc.bothSchemasFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				defer func() {
 					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
@@ -1752,11 +1855,12 @@ func TestNodeExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name                string
-		rules               ExtractionRules
-		attributes          map[string]string
-		singularFeatureGate bool
-		v0FeatureGate       bool
+		name                   string
+		rules                  ExtractionRules
+		attributes             map[string]string
+		singularFeatureGate    bool
+		v0FeatureGate          bool
+		bothSchemasFeatureGate bool
 	}{
 		{
 			name:       "no-rules",
@@ -1878,6 +1982,38 @@ func TestNodeExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "all-labels both schemas",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.labels.label1": "lv1",
+				"k8s.node.label.label1":  "lv1",
+			},
+			bothSchemasFeatureGate: true,
+		},
+		{
+			name: "all-annotations both schemas",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.annotations.annotation1": "av1",
+				"k8s.node.annotation.annotation1":  "av1",
+			},
+			bothSchemasFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1891,6 +2027,14 @@ func TestNodeExtractionRules(t *testing.T) {
 			}
 			if tc.v0FeatureGate {
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+				}()
+			}
+			if tc.bothSchemasFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				defer func() {
 					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))

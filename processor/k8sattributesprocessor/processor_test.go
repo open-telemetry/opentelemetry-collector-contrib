@@ -1585,6 +1585,44 @@ func TestProcessorAddContainerAttributesV1Gates(t *testing.T) {
 			assertResourceHasStringSlice(t, r, "container.image.tags", []string{"preexisting"})
 		})
 	})
+
+	t.Run("both-schemas-emit-string-and-slice", func(t *testing.T) {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+		}()
+
+		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil,
+			withExtractMetadata(containerImageTag, "container.image.tags"),
+		)
+		m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+			kp.podAssociations = []kube.Association{{
+				Sources: []kube.AssociationSource{{From: "resource_attribute", Name: "k8s.pod.uid"}},
+			}}
+			kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", podUID)] = &kube.Pod{
+				Containers: kube.PodContainers{
+					ByName: map[string]*kube.Container{
+						"app": {Name: "app", ImageTag: "1.0.1", ImageTags: []string{"1.0.1"}},
+					},
+				},
+			}
+		})
+		m.testConsume(t.Context(),
+			generateTraces(withPodUID(podUID), withContainerName("app")),
+			generateMetrics(withPodUID(podUID), withContainerName("app")),
+			generateLogs(withPodUID(podUID), withContainerName("app")),
+			generateProfiles(withPodUID(podUID), withContainerName("app")),
+			nil,
+		)
+
+		m.assertBatchesLen(1)
+		m.assertResource(0, func(r pcommon.Resource) {
+			assertResourceHasStringAttribute(t, r, containerImageTag, "1.0.1")
+			assertResourceHasStringSlice(t, r, "container.image.tags", []string{"1.0.1"})
+		})
+	})
 }
 
 func TestProcessorAddContainerAttributesV0Gates(t *testing.T) {
