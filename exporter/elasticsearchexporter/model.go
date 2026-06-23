@@ -124,6 +124,7 @@ var (
 		elasticsearch.DataStreamType:                {skip: true}, // routing only, written by addDataStreamAttributes
 		elasticsearch.DataStreamDataset:             {skip: true},
 		elasticsearch.DataStreamNamespace:           {skip: true},
+		"error.grouping_name":                       {skip: true}, // scripted field in logs-apm.error; cannot be indexed directly
 	}
 
 	// Precomputed protected fields for performance
