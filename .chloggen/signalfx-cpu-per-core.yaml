@@ -10,6 +10,10 @@ subtext: |
     hostmetrics:
       scrapers:
         cpu:
+          metrics:
+            system.cpu.time:
+              enabled: true
+              attributes: [cpu, state]
   processors:
     transform/cpu_idle_per_core:
       error_mode: ignore
