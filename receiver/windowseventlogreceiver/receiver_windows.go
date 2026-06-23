@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -75,9 +76,26 @@ func createLogsReceiver(
 				Password: rc.Password,
 				Domain:   rc.Domain,
 			}
+			dcCfg.InputConfig.SetID(operatorIDForHost(rc.Server))
 			r, err := stanzaFactory.CreateLogs(ctx, set, &dcCfg, enrichedConsumer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create receiver for domain controller %q: %w", rc.Server, err)
+			}
+			receivers = append(receivers, r)
+		}
+		return &multiLogsReceiver{receivers: receivers}, nil
+	}
+
+	if metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Hosts) > 0 {
+		remoteConfigs := expandMultipleHosts(receiverCfg.InputConfig.Remote)
+		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
+		for _, rc := range remoteConfigs {
+			hostCfg := *receiverCfg
+			hostCfg.InputConfig.Remote = rc
+			hostCfg.InputConfig.SetID(operatorIDForHost(rc.Server))
+			r, err := stanzaFactory.CreateLogs(ctx, set, &hostCfg, enrichedConsumer)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create receiver for remote host %q: %w", rc.Server, err)
 			}
 			receivers = append(receivers, r)
 		}
@@ -118,6 +136,43 @@ func (m *multiLogsReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// expandMultipleHosts flattens a RemoteConfig with host groups into individual
+// RemoteConfig entries, one per host, with credential inheritance applied.
+func expandMultipleHosts(remote windows.RemoteConfig) []windows.RemoteConfig {
+	var result []windows.RemoteConfig
+	for _, group := range remote.Hosts {
+		username := remote.Username
+		if group.Username != "" {
+			username = group.Username
+		}
+		password := remote.Password
+		if group.Password != "" {
+			password = group.Password
+		}
+		for _, host := range group.Hosts {
+			result = append(result, windows.RemoteConfig{
+				Server:   host,
+				Username: username,
+				Password: password,
+				Domain:   remote.Domain,
+			})
+		}
+	}
+	return result
+}
+
+// operatorIDForHost returns a unique operator ID for a given remote host,
+// used to scope bookmark persistence keys per host.
+func operatorIDForHost(server string) string {
+	return "windows_eventlog_input/" + sanitizeOperatorID(server)
+}
+
+// sanitizeOperatorID replaces characters that are not suitable for operator IDs.
+func sanitizeOperatorID(s string) string {
+	replacer := strings.NewReplacer(".", "_", ":", "_", "/", "_")
+	return replacer.Replace(s)
 }
 
 // receiverType implements adapter.LogReceiverType

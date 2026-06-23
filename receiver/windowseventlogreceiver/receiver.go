@@ -4,6 +4,7 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
 // createDefaultConfig creates a config with type and version
@@ -60,5 +62,44 @@ func (c *ResolveSIDsConfig) Validate() error {
 	if c.CacheTTL < 0 {
 		return fmt.Errorf("cache_ttl must not be negative, got: %s", c.CacheTTL)
 	}
+	return nil
+}
+
+// Validate checks if the receiver configuration is valid.
+func (c *WindowsLogConfig) Validate() error {
+	if err := c.ResolveSIDs.Validate(); err != nil {
+		return err
+	}
+
+	hosts := c.InputConfig.Remote.Hosts
+	if len(hosts) == 0 {
+		return nil
+	}
+
+	if !metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() {
+		return errors.New("remote.hosts requires the receiver.windowseventlog.multipleRemoteHosts feature gate to be enabled")
+	}
+
+	if c.InputConfig.Remote.Server != "" {
+		return errors.New("remote.server and remote.hosts are mutually exclusive; use one or the other")
+	}
+
+	for i, group := range hosts {
+		if len(group.Hosts) == 0 {
+			return fmt.Errorf("remote.hosts[%d] must contain at least one host", i)
+		}
+		username := c.InputConfig.Remote.Username
+		if group.Username != "" {
+			username = group.Username
+		}
+		password := c.InputConfig.Remote.Password
+		if group.Password != "" {
+			password = group.Password
+		}
+		if username == "" || password == "" {
+			return fmt.Errorf("remote.hosts[%d]: each host group must have non-empty credentials (either shared or per-group override)", i)
+		}
+	}
+
 	return nil
 }

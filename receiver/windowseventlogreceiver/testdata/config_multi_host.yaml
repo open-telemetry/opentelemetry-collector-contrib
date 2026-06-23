@@ -1,0 +1,11 @@
+windows_event_log:
+  channel: security
+  start_at: end
+  remote:
+    username: admin
+    password: secret
+    hosts:
+      - hosts: [host1, host3]
+      - hosts: [host2, host4]
+        username: root
+        password: rootsecret

@@ -9,7 +9,15 @@ import (
 var DomainControllersAutodiscoveryFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"domainControllers.autodiscovery",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled and is remote automatically discover domain controllers through joined controllers and  start collecting logs from specified channel."),
+	featuregate.WithRegisterDescription("When enabled and is remote automatically discover domain controllers through joined controllers and start collecting logs from specified channel."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),
+)
+
+var ReceiverWindowseventlogMultipleRemoteHostsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.windowseventlog.multipleRemoteHosts",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows configuring multiple remote hosts in a single receiver instance via the remote.hosts configuration block."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933"),
+	featuregate.WithRegisterFromVersion("v0.121.0"),
 )

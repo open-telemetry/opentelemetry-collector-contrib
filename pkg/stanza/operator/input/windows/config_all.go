@@ -77,4 +77,12 @@ type RemoteConfig struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	Domain   string `mapstructure:"domain,omitempty"`
+	Hosts    []HostGroupConfig `mapstructure:"hosts,omitempty"`
+}
+
+// HostGroupConfig defines a group of remote hosts that share the same credentials.
+type HostGroupConfig struct {
+	Hosts    []string `mapstructure:"hosts"`
+	Username string   `mapstructure:"username,omitempty"`
+	Password string   `mapstructure:"password,omitempty"`
 }
