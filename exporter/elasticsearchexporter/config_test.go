@@ -317,7 +317,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -325,7 +324,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -335,7 +333,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "none"
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -345,7 +342,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "gzip"
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -355,7 +351,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -365,7 +360,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -375,7 +369,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -393,7 +386,6 @@ func TestConfig(t *testing.T) {
 						MaxSize:      5000,
 					},
 				)
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -413,7 +405,6 @@ func TestConfig(t *testing.T) {
 				qbCfg.FlushTimeout = 111 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -433,7 +424,6 @@ func TestConfig(t *testing.T) {
 				qbCfg.FlushTimeout = 11 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -443,7 +433,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.SuppressConflictErrors = true
-				cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 			}),
 		},
 		{
@@ -639,6 +628,7 @@ func TestParseCloudID(t *testing.T) {
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 	for _, fn := range fns {
 		fn(cfg)
 	}
