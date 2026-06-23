@@ -35,10 +35,10 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.155.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.155.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.155.0
-	go.opentelemetry.io/otel v1.44.0
-	go.opentelemetry.io/otel/metric v1.44.0
-	go.opentelemetry.io/otel/sdk/metric v1.44.0
-	go.opentelemetry.io/otel/trace v1.44.0
+	go.opentelemetry.io/otel v1.44.1-0.20260622141720-fbe3d073ba93
+	go.opentelemetry.io/otel/metric v1.44.1-0.20260622141720-fbe3d073ba93
+	go.opentelemetry.io/otel/sdk/metric v1.44.1-0.20260622141720-fbe3d073ba93
+	go.opentelemetry.io/otel/trace v1.44.1-0.20260622141720-fbe3d073ba93
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
