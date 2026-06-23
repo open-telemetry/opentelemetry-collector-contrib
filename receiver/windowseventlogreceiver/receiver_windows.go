@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -76,7 +75,6 @@ func createLogsReceiver(
 				Password: rc.Password,
 				Domain:   rc.Domain,
 			}
-			dcCfg.InputConfig.SetID(operatorIDForHost(rc.Server))
 			r, err := stanzaFactory.CreateLogs(ctx, set, &dcCfg, enrichedConsumer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create receiver for domain controller %q: %w", rc.Server, err)
@@ -92,7 +90,6 @@ func createLogsReceiver(
 		for _, rc := range remoteConfigs {
 			hostCfg := *receiverCfg
 			hostCfg.InputConfig.Remote = rc
-			hostCfg.InputConfig.SetID(operatorIDForHost(rc.Server))
 			r, err := stanzaFactory.CreateLogs(ctx, set, &hostCfg, enrichedConsumer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create receiver for remote host %q: %w", rc.Server, err)
@@ -161,18 +158,6 @@ func expandMultipleHosts(remote windows.RemoteConfig) []windows.RemoteConfig {
 		}
 	}
 	return result
-}
-
-// operatorIDForHost returns a unique operator ID for a given remote host,
-// used to scope bookmark persistence keys per host.
-func operatorIDForHost(server string) string {
-	return "windows_eventlog_input/" + sanitizeOperatorID(server)
-}
-
-// sanitizeOperatorID replaces characters that are not suitable for operator IDs.
-func sanitizeOperatorID(s string) string {
-	replacer := strings.NewReplacer(".", "_", ":", "_", "/", "_")
-	return replacer.Replace(s)
 }
 
 // receiverType implements adapter.LogReceiverType
