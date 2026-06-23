@@ -43,3 +43,15 @@ func TestGenerateTracesInvalidDatabaseFeatureGateCombination(t *testing.T) {
 	_, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
 	require.ErrorContains(t, err, "internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1DatabaseConventions")
 }
+
+func TestGenerateTracesInvalidMessagingFeatureGateCombination(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), false))
+	})
+
+	_, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
+	require.ErrorContains(t, err, "internal.coreinternal.goldendataset.DontEmitV0MessagingConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1MessagingConventions")
+}
