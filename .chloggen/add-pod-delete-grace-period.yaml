@@ -1,6 +1,0 @@
-change_type: enhancement
-component: processor/k8s_attributes
-note: Add `pod_delete_grace_period` config option to configure pod metadata cache deletion grace period.
-issues: [48127]
-subtext: The `pod_delete_grace_period` config option defaults to `120s` to match the previously hardcoded behavior.
-change_logs: [user]

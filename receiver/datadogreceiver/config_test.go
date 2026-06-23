@@ -12,5 +12,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+
 	assert.NotNil(t, cfg, "failed to create default config")
+	assert.True(t, cfg.(*Config).Logs.DecodeJSONMessage, "decode_json_message should default to true")
 }
