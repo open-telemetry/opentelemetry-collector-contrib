@@ -17,6 +17,9 @@ storage:
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
   description:
+    {{- if .include_resource_attributes }}
+    include_resource_attributes: {{ .include_resource_attributes }}
+    {{- end }}
     identifying_attributes:
       client.id: "my-client-id"
     non_identifying_attributes:

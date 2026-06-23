@@ -540,6 +540,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestRabbitmqMessageCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RabbitmqMessageCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RabbitmqMessageCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric rabbitmq.message.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().RabbitmqMessageCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

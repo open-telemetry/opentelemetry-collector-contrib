@@ -33,10 +33,12 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+	AllowedCommentKeys  []string      `mapstructure:"allowed_comment_keys"`
 }
 
 type QuerySample struct {
-	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+	MaxRowsPerQuery    uint64   `mapstructure:"max_rows_per_query"`
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

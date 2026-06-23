@@ -10,8 +10,6 @@ status:
 
 sem_conv_version: 1.9.0
 
-reaggregation_enabled: true
-
 resource_attributes:
   process.cgroup:
     description: cgroup associated with the process (Linux only).

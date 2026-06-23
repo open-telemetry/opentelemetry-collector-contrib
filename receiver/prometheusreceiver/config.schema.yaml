@@ -704,6 +704,16 @@ properties:
   config:
     $ref: prom_config
     x-pointer: true
+  discovery_reload_on_startup:
+    description: DiscoveryReloadOnStartup enables discovering targets immediately on start up as opposed to waiting for the configured interval before initializing the scrape pools.
+    type: boolean
+  initial_scrape_offset:
+    description: InitialScrapeOffset adds a fixed delay before the initial scrape of targets. This duration is applied on top of the receiver's internal load balancing offset. It avoids readiness races and backend rate limits immediately after startup.
+    format: duration
+    type: string
+  scrape_on_shutdown:
+    description: 'ScrapeOnShutdown enables a final scrape before the receiver closes. NOTE: This final scrape ignores the configured scrape interval.'
+    type: boolean
   target_allocator:
     $ref: ./internal/targetallocator.config
     x-optional: true

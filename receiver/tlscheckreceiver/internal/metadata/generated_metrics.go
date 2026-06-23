@@ -22,7 +22,8 @@ const (
 
 var MetricsInfo = metricsInfo{
 	TlscheckTimeLeft: metricInfo{
-		Name: "tlscheck.time_left",
+		Name:       "tlscheck.time_left",
+		Attributes: []string{"tlscheck.x509.issuer", "tlscheck.x509.cn", "tlscheck.x509.san"},
 	},
 }
 
@@ -31,7 +32,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricTlscheckTimeLeft struct {
