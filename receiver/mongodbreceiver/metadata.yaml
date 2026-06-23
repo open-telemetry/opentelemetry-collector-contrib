@@ -1,6 +1,5 @@
 display_name: MongoDB Receiver
 type: mongodb
-reaggregation_enabled: true
 
 description: |
   This receiver fetches stats from a MongoDB instance using the 
