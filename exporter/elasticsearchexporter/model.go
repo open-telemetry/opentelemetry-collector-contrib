@@ -121,9 +121,10 @@ var (
 		string(conventions.ExceptionMessageKey):    {to: "error.exception.message"},
 		string(conventions.ExceptionStacktraceKey): {to: "error.stack_trace"},
 		"exception.escaped":                        {skip: true}, // processor writes error.exception.handled
-		elasticsearch.DataStreamType:               {skip: true}, // routing only, written by addDataStreamAttributes
-		elasticsearch.DataStreamDataset:            {skip: true},
-		elasticsearch.DataStreamNamespace:          {skip: true},
+		elasticsearch.DataStreamType:                {skip: true}, // routing only, written by addDataStreamAttributes
+		elasticsearch.DataStreamDataset:             {skip: true},
+		elasticsearch.DataStreamNamespace:           {skip: true},
+		"error.grouping_name":                       {skip: true}, // scripted field in logs-apm.error; cannot be indexed directly
 	}
 
 	// Precomputed protected fields for performance
