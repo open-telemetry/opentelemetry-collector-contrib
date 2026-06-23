@@ -12,8 +12,6 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
-reaggregation_enabled: true
-
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
