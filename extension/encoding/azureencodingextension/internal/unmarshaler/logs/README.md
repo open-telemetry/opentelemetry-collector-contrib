@@ -574,6 +574,8 @@ For log categories where the identity structure is not known, the entire identit
 | `statusText`              | `http.response.status_text`                   | Log Attribute |
 | `uri`                     | `url.full` with parsed `url.scheme`, `url.domain`, `url.fragment`, `url.query`, `url.path` and `url.port`. If unparsable - only `url.original`                   | Log Attribute |
 | `protocol`                | `network.protocol.name`                       | Log Attribute |
+| `schemaVersion`           | `azure.storage.schema_version`                | Log Attribute |
+| `resourceType`            | `azure.resource.type`                         | Log Attribute |
 | `accountName`             | `azure.storage.namespace`                     | Log Attribute |
 | `userAgentHeader`         | `user_agent.original`                         | Log Attribute |
 | `clientRequestId`         | `azure.service.request.id`                    | Log Attribute |
@@ -599,6 +601,33 @@ Activity Logs are a type of Azure platform log that provides insight into subscr
 | `entity`                  | `azure.administrative.entity`       | Log Attribute |
 | `message`                 | `azure.administrative.message`      | Log Attribute |
 | `hierarchy`               | `azure.administrative.hierarchy`    | Log Attribute |
+| `statusMessage`           | `azure.administrative.status_message`| Log Attribute |
+
+#### Administrative — PIM (Privileged Identity Management)
+
+PIM events share the `Administrative` category but are identified by `ResourceProviderName: azurerbac`.
+They carry a different `properties` payload; the following fields are additive and do not affect standard
+Administrative events. Microsoft does not publish a formal schema for this payload; fields are derived
+from real event samples.
+
+| Azure "properties" Field  | OpenTelemetry                              | OpenTelemetry Scope | Notes |
+|---------------------------|--------------------------------------------|---------------------|-------|
+| `SubscriptionID`          | `cloud.account.id`                         | Log Attribute | `null` when resource-scoped |
+| `ResourceGroupName`       | `azure.resource.group.name`                | Log Attribute | |
+| `ResourceProviderName`    | `azure.resource.provider.name`             | Log Attribute | Always `azurerbac` for PIM events |
+| `ResourceType`            | `azure.resource.type`                      | Log Attribute | |
+| `TenantID`                | `azure.tenant.id`                          | Log Attribute | |
+| `EventName`               | `azure.pim.event.name`                     | Log Attribute | e.g. `ActivateRole`, `CreateRequestRoleActivation`, `RemoveActivatedRole` |
+| `EventID`                 | `azure.pim.event.id`                       | Log Attribute | |
+| `RoleAssignmentRequestId` | `azure.pim.role.assignment.request.id`     | Log Attribute | Links request and completion events |
+| `RoleDefinition`          | `azure.pim.role.definition.name`           | Log Attribute | Human-readable role name |
+| `RoleDefinitionOriginId`  | `azure.pim.role.definition.origin.id`      | Log Attribute | Full ARM resource ID of the role definition |
+| `CallerInfo` (JSON array) | `azure.pim.caller.<identity_type>`         | Log Attribute | One attribute per entry; key is the lowercased snake_case `CallerIdentityType` (e.g. `azure.pim.caller.upn`, `azure.pim.caller.object_id`) |
+| `Justification`           | `azure.pim.justification`                  | Log Attribute | Absent on system-driven revocations |
+| `SubjectID`               | `azure.pim.subject.id`                     | Log Attribute | |
+| `SubjectName`             | `azure.pim.subject.name`                   | Log Attribute | |
+| `ActionType`              | `azure.pim.action.type`                    | Log Attribute | `Grant` or `Revoke`; absent on request events |
+| `OriginRoleAssignmentId`  | `azure.pim.role.assignment.origin.id`      | Log Attribute | Absent on request events |
 
 ### Alert
 

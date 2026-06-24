@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -752,10 +752,10 @@ func TestGetContributors(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer func() { server.Close() }()
 
-			client := github.NewClient(nil)
 			url, _ := url.Parse(server.URL + "/api-v3" + "/")
-			client.BaseURL = url
-			client.UploadURL = url
+			urlString := url.String()
+			client, err := github.NewClient(github.WithURLs(&urlString, &urlString))
+			assert.NoError(t, err)
 
 			contribs, err := ghs.getContributorCount(t.Context(), client, tc.repo)
 			assert.NoError(t, err)

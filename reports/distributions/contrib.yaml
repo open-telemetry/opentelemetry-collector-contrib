@@ -93,6 +93,7 @@ components:
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
         - sigv4auth
@@ -101,11 +102,13 @@ components:
         - zipkin_encoding
     processor:
         - attributes
+        - cardinality_guardian
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -135,6 +138,7 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
         - apache_spark
@@ -158,12 +162,12 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
         - file_stats
-        - flinkmetrics
+        - flink_metrics
         - fluent_forward
         - github
         - gitlab
@@ -198,7 +202,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -218,8 +222,8 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
         - sqlquery
         - sqlserver
         - ssh_check
@@ -233,10 +237,10 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
+        - windows_service
         - windowsperfcounters
-        - windowsservice
         - yang_grpc
         - zipkin
         - zookeeper

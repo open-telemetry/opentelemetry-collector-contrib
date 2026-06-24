@@ -23,28 +23,36 @@ const (
 
 var MetricsInfo = metricsInfo{
 	ContainerBlockioIoMergedRecursive: metricInfo{
-		Name: "container.blockio.io_merged_recursive",
+		Name:       "container.blockio.io_merged_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoQueuedRecursive: metricInfo{
-		Name: "container.blockio.io_queued_recursive",
+		Name:       "container.blockio.io_queued_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServiceBytesRecursive: metricInfo{
-		Name: "container.blockio.io_service_bytes_recursive",
+		Name:       "container.blockio.io_service_bytes_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServiceTimeRecursive: metricInfo{
-		Name: "container.blockio.io_service_time_recursive",
+		Name:       "container.blockio.io_service_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoServicedRecursive: metricInfo{
-		Name: "container.blockio.io_serviced_recursive",
+		Name:       "container.blockio.io_serviced_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoTimeRecursive: metricInfo{
-		Name: "container.blockio.io_time_recursive",
+		Name:       "container.blockio.io_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioIoWaitTimeRecursive: metricInfo{
-		Name: "container.blockio.io_wait_time_recursive",
+		Name:       "container.blockio.io_wait_time_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerBlockioSectorsRecursive: metricInfo{
-		Name: "container.blockio.sectors_recursive",
+		Name:       "container.blockio.sectors_recursive",
+		Attributes: []string{"device_major", "device_minor", "operation"},
 	},
 	ContainerCPULimit: metricInfo{
 		Name: "container.cpu.limit",
@@ -68,7 +76,8 @@ var MetricsInfo = metricsInfo{
 		Name: "container.cpu.usage.kernelmode",
 	},
 	ContainerCPUUsagePercpu: metricInfo{
-		Name: "container.cpu.usage.percpu",
+		Name:       "container.cpu.usage.percpu",
+		Attributes: []string{"core"},
 	},
 	ContainerCPUUsageSystem: metricInfo{
 		Name: "container.cpu.usage.system",
@@ -200,28 +209,36 @@ var MetricsInfo = metricsInfo{
 		Name: "container.memory.writeback",
 	},
 	ContainerNetworkIoUsageRxBytes: metricInfo{
-		Name: "container.network.io.usage.rx_bytes",
+		Name:       "container.network.io.usage.rx_bytes",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxDropped: metricInfo{
-		Name: "container.network.io.usage.rx_dropped",
+		Name:       "container.network.io.usage.rx_dropped",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxErrors: metricInfo{
-		Name: "container.network.io.usage.rx_errors",
+		Name:       "container.network.io.usage.rx_errors",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageRxPackets: metricInfo{
-		Name: "container.network.io.usage.rx_packets",
+		Name:       "container.network.io.usage.rx_packets",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxBytes: metricInfo{
-		Name: "container.network.io.usage.tx_bytes",
+		Name:       "container.network.io.usage.tx_bytes",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxDropped: metricInfo{
-		Name: "container.network.io.usage.tx_dropped",
+		Name:       "container.network.io.usage.tx_dropped",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxErrors: metricInfo{
-		Name: "container.network.io.usage.tx_errors",
+		Name:       "container.network.io.usage.tx_errors",
+		Attributes: []string{"interface"},
 	},
 	ContainerNetworkIoUsageTxPackets: metricInfo{
-		Name: "container.network.io.usage.tx_packets",
+		Name:       "container.network.io.usage.tx_packets",
+		Attributes: []string{"interface"},
 	},
 	ContainerPidsCount: metricInfo{
 		Name: "container.pids.count",
@@ -312,7 +329,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricContainerBlockioIoMergedRecursive struct {
