@@ -235,6 +235,9 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 
 	// Step 2: Create mock Datadog agent components
 
+	// Isolate from DD_API_KEY env var; nodetreemodel skips empty-string env vars.
+	t.Setenv("DD_API_KEY", "")
+
 	// Extract the backend URL to configure components to use our mock
 	backendURL := mockBackend.URL
 
