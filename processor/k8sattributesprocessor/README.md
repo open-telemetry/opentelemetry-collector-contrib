@@ -3,7 +3,6 @@
 
 The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
@@ -12,8 +11,8 @@ The Kubernetes Attributes Processor allows adding k8s metadata to resource attri
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
-| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@fatsheep9146](https://www.github.com/fatsheep9146) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -233,6 +232,12 @@ Reprocessing the informer cache periodically (resyncing) enqueues all cached K8s
 Because resource state modifications are already pushed immediately via Kubernetes watch events, a resync period is almost entirely unnecessary.
 
 - `watch_sync_period` (`default: 5m`): The resync period for K8s informers. You may set this to `0s` to disable resyncing completely (recommended for large clusters).
+
+## Pod Deletion Grace Period
+
+After receiving a pod deletion event, the processor can keep the pod's metadata in its lookup cache for a short period before eviction. This grace window ensures that delayed spans, metrics, or logs that belong to the deleted pod can still be correctly enriched.
+
+- `pod_delete_grace_period` (`default: 120s`): The grace period to wait before deleting a pod's metadata from the lookup cache after a deletion event.
 
 
 ## Extracting attributes from pod labels and annotations
@@ -719,6 +724,10 @@ k8s_attributes:
   # Default: 5m
   watch_sync_period: 5m
   
+  # Grace period to wait before removing deleted pods from the cache.
+  # Default: 120s
+  pod_delete_grace_period: 120s
+  
   # Extract configuration - defines what metadata to extract
   extract:
     # Metadata fields to extract as resource attributes
@@ -891,6 +900,7 @@ k8s_attributes:
 | `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
 | `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
+| `pod_delete_grace_period` | duration | `120s` | Grace period to wait before deleting pod metadata from the cache on deletion |
 
 #### Extract Options
 

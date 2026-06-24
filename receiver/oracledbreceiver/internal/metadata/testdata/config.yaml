@@ -1,11 +1,17 @@
 default:
 all_set:
   metrics:
+    oracledb.buffer_cache.utilization:
+      enabled: true
     oracledb.consistent_gets:
       enabled: true
     oracledb.cpu_time:
       enabled: true
     oracledb.data_dictionary.hit_ratio:
+      enabled: true
+    oracledb.database.cpu.utilization:
+      enabled: true
+    oracledb.database.wait.utilization:
       enabled: true
     oracledb.db_block_gets:
       enabled: true
@@ -29,9 +35,16 @@ all_set:
       enabled: true
     oracledb.exchange_deadlocks:
       enabled: true
+    oracledb.execution.utilization:
+      enabled: true
+      attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: true
     oracledb.hard_parses:
+      enabled: true
+    oracledb.host.cpu.utilization:
+      enabled: true
+    oracledb.library_cache.utilization:
       enabled: true
     oracledb.logical_reads:
       enabled: true
@@ -49,10 +62,23 @@ all_set:
       enabled: true
     oracledb.parallel_operations_not_downgraded:
       enabled: true
+    oracledb.parse.rate:
+      enabled: true
+      attributes: ["oracledb.parse.result"]
+    oracledb.parse.utilization:
+      enabled: true
     oracledb.parse_calls:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_io.cache_writes:
+      enabled: true
+    oracledb.physical_io.requests:
+      enabled: true
+      attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.transferred:
+      enabled: true
+      attributes: ["disk.io.direction","disk.io.type"]
     oracledb.physical_read_io_requests:
       enabled: true
     oracledb.physical_reads:
@@ -73,11 +99,23 @@ all_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo_allocation.utilization:
+      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.shared_pool.utilization:
+      enabled: true
+    oracledb.sort.ratio:
+      enabled: true
+      attributes: ["oracledb.sort.type"]
+    oracledb.sql_service.response.duration:
+      enabled: true
+    oracledb.sqlnet.io.transferred:
+      enabled: true
+      attributes: ["network.io.direction","destination.type"]
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
@@ -99,10 +137,22 @@ all_set:
   events:
     db.server.query_sample:
       enabled: true
+    db.server.session.wait_sample:
+      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
     host.name:
+      enabled: true
+    oracle.db.hosting_type:
+      enabled: true
+    oracle.db.open_mode:
+      enabled: true
+    oracle.db.pdb:
+      enabled: true
+    oracle.db.role:
+      enabled: true
+    oracle.db.version:
       enabled: true
     oracledb.instance.name:
       enabled: true
@@ -114,11 +164,17 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.buffer_cache.utilization:
+      enabled: true
     oracledb.consistent_gets:
       enabled: true
     oracledb.cpu_time:
       enabled: true
     oracledb.data_dictionary.hit_ratio:
+      enabled: true
+    oracledb.database.cpu.utilization:
+      enabled: true
+    oracledb.database.wait.utilization:
       enabled: true
     oracledb.db_block_gets:
       enabled: true
@@ -142,9 +198,16 @@ reaggregate_set:
       enabled: true
     oracledb.exchange_deadlocks:
       enabled: true
+    oracledb.execution.utilization:
+      enabled: true
+      attributes: []
     oracledb.executions:
       enabled: true
     oracledb.hard_parses:
+      enabled: true
+    oracledb.host.cpu.utilization:
+      enabled: true
+    oracledb.library_cache.utilization:
       enabled: true
     oracledb.logical_reads:
       enabled: true
@@ -162,10 +225,23 @@ reaggregate_set:
       enabled: true
     oracledb.parallel_operations_not_downgraded:
       enabled: true
+    oracledb.parse.rate:
+      enabled: true
+      attributes: []
+    oracledb.parse.utilization:
+      enabled: true
     oracledb.parse_calls:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_io.cache_writes:
+      enabled: true
+    oracledb.physical_io.requests:
+      enabled: true
+      attributes: []
+    oracledb.physical_io.transferred:
+      enabled: true
+      attributes: []
     oracledb.physical_read_io_requests:
       enabled: true
     oracledb.physical_reads:
@@ -186,9 +262,21 @@ reaggregate_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo_allocation.utilization:
+      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
+      enabled: true
+      attributes: []
+    oracledb.shared_pool.utilization:
+      enabled: true
+    oracledb.sort.ratio:
+      enabled: true
+      attributes: []
+    oracledb.sql_service.response.duration:
+      enabled: true
+    oracledb.sqlnet.io.transferred:
       enabled: true
       attributes: []
     oracledb.storage.usage:
@@ -212,10 +300,22 @@ reaggregate_set:
   events:
     db.server.query_sample:
       enabled: true
+    db.server.session.wait_sample:
+      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
     host.name:
+      enabled: true
+    oracle.db.hosting_type:
+      enabled: true
+    oracle.db.open_mode:
+      enabled: true
+    oracle.db.pdb:
+      enabled: true
+    oracle.db.role:
+      enabled: true
+    oracle.db.version:
       enabled: true
     oracledb.instance.name:
       enabled: true
@@ -227,11 +327,17 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.buffer_cache.utilization:
+      enabled: false
     oracledb.consistent_gets:
       enabled: false
     oracledb.cpu_time:
       enabled: false
     oracledb.data_dictionary.hit_ratio:
+      enabled: false
+    oracledb.database.cpu.utilization:
+      enabled: false
+    oracledb.database.wait.utilization:
       enabled: false
     oracledb.db_block_gets:
       enabled: false
@@ -255,9 +361,16 @@ none_set:
       enabled: false
     oracledb.exchange_deadlocks:
       enabled: false
+    oracledb.execution.utilization:
+      enabled: false
+      attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: false
     oracledb.hard_parses:
+      enabled: false
+    oracledb.host.cpu.utilization:
+      enabled: false
+    oracledb.library_cache.utilization:
       enabled: false
     oracledb.logical_reads:
       enabled: false
@@ -275,10 +388,23 @@ none_set:
       enabled: false
     oracledb.parallel_operations_not_downgraded:
       enabled: false
+    oracledb.parse.rate:
+      enabled: false
+      attributes: ["oracledb.parse.result"]
+    oracledb.parse.utilization:
+      enabled: false
     oracledb.parse_calls:
       enabled: false
     oracledb.pga_memory:
       enabled: false
+    oracledb.physical_io.cache_writes:
+      enabled: false
+    oracledb.physical_io.requests:
+      enabled: false
+      attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.transferred:
+      enabled: false
+      attributes: ["disk.io.direction","disk.io.type"]
     oracledb.physical_read_io_requests:
       enabled: false
     oracledb.physical_reads:
@@ -299,11 +425,23 @@ none_set:
       enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
+    oracledb.redo_allocation.utilization:
+      enabled: false
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.shared_pool.utilization:
+      enabled: false
+    oracledb.sort.ratio:
+      enabled: false
+      attributes: ["oracledb.sort.type"]
+    oracledb.sql_service.response.duration:
+      enabled: false
+    oracledb.sqlnet.io.transferred:
+      enabled: false
+      attributes: ["network.io.direction","destination.type"]
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:
@@ -325,10 +463,22 @@ none_set:
   events:
     db.server.query_sample:
       enabled: false
+    db.server.session.wait_sample:
+      enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:
     host.name:
+      enabled: false
+    oracle.db.hosting_type:
+      enabled: false
+    oracle.db.open_mode:
+      enabled: false
+    oracle.db.pdb:
+      enabled: false
+    oracle.db.role:
+      enabled: false
+    oracle.db.version:
       enabled: false
     oracledb.instance.name:
       enabled: false
@@ -341,6 +491,36 @@ none_set:
 filter_set_include:
   resource_attributes:
     host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    oracle.db.hosting_type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    oracle.db.open_mode:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    oracle.db.pdb:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    oracle.db.role:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    oracle.db.version:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -378,6 +558,36 @@ filter_set_exclude:
         - strict: "host.name-val"
       events_exclude:
         - strict: "host.name-val"
+    oracle.db.hosting_type:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.hosting_type-val"
+      events_exclude:
+        - strict: "oracle.db.hosting_type-val"
+    oracle.db.open_mode:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.open_mode-val"
+      events_exclude:
+        - strict: "oracle.db.open_mode-val"
+    oracle.db.pdb:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.pdb-val"
+      events_exclude:
+        - strict: "oracle.db.pdb-val"
+    oracle.db.role:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.role-val"
+      events_exclude:
+        - strict: "oracle.db.role-val"
+    oracle.db.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.version-val"
+      events_exclude:
+        - strict: "oracle.db.version-val"
     oracledb.instance.name:
       enabled: true
       metrics_exclude:
