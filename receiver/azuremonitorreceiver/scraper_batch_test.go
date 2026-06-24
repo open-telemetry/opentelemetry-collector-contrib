@@ -12,6 +12,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -25,7 +26,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId3",
-				metricNamespace: "type1",
+				metricNamespace: "namespace2",
 				metricNames:     []string{"metric7"},
 				resourceIDs:     []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"},
 			},
@@ -59,7 +60,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric1", "metric2"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
@@ -106,7 +107,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric3"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
@@ -317,4 +318,108 @@ func TestAzureScraperBatchScrape_NoDuplicateOnRescrape(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, second.DataPointCount(),
 		"second scrape must not re-emit Azure data points (would cause 409 duplicate sample for timestamp on Prometheus remote write backends)")
+}
+
+// TestAzureScraperBatchScrapeCustomNamespaceMetrics verifies that the batch scraper discovers and
+// collects metrics from custom metric namespaces (e.g. "azure.vm.linux.guestmetrics" published by
+// Azure Monitor Agent / MetricsExtension). The MetricDefinitions API only returns such metrics when
+// the metricnamespace query parameter is explicitly provided; without it only platform metrics are
+// returned. The batch scraper must also pass compositeKey.namespace (not resourceType) to
+// QueryResources so that the correct namespace is used in the values API call.
+func TestAzureScraperBatchScrapeCustomNamespaceMetrics(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	vmType := "Microsoft.Compute/virtualMachines"
+	customNamespace := "azure.vm.linux.guestmetrics"
+	metricName := "disk/free_percent"
+	timeGrain := "PT1M"
+	diskFreePercent := 92.5
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{vmType}
+	cfg.Metrics = NestedListAlias{
+		customNamespace: {
+			metricName: {"Average"},
+		},
+	}
+
+	vmName := "my-vm"
+	vmID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + vmType + "/" + vmName
+	location := "eastus"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{{ID: &vmID, Location: &location, Name: &vmName, Type: &vmType}},
+		},
+	})
+
+	// Default definition call returns empty (no key in map).
+	// Namespace-filtered call for customNamespace returns the custom metric.
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		vmID + "::" + customNamespace: {
+			{namespace: customNamespace, name: metricName, timeGrain: timeGrain},
+		},
+	})
+
+	metricsQueryResponseMockData := []queryResourcesResponseMock{
+		{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  fakeSubID,
+				metricNamespace: customNamespace,
+				metricNames:     []string{metricName},
+				resourceIDs:     []string{vmID},
+			},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: vmID,
+					Metrics: []metricMockInput{
+						{
+							Name: metricName,
+							Unit: azmetrics.MetricUnitPercent,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{{
+									TimeStamp: to.Ptr(time.Now()),
+									Average:   to.Ptr(diskFreePercent),
+								}},
+							}},
+						},
+					},
+				},
+			}),
+		},
+	}
+
+	optionsResolver := newMockClientOptionsResolver(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		nil,
+		metricsQueryResponseMockData,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, metrics.DataPointCount(),
+		"batch scraper should collect custom namespace metric (disk/free_percent from azure.vm.linux.guestmetrics)")
 }
