@@ -21,10 +21,10 @@ import (
 
 func setSkipTimestampValidation(tb testing.TB, value bool) {
 	tb.Helper()
-	prev := skipTimestampValidationFeatureGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), value))
+	prev := metadata.ExporterAwsxraySkiptimestampvalidationFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ExporterAwsxraySkiptimestampvalidationFeatureGate.ID(), value))
 	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), prev))
+		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ExporterAwsxraySkiptimestampvalidationFeatureGate.ID(), prev))
 	})
 }
 
