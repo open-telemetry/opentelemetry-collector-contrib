@@ -24,6 +24,17 @@ import (
 type localFileStorage struct {
 	cfg    *Config
 	logger *zap.Logger
+
+	// precheckFn runs the corruption pre-check for a bbolt database file when
+	// Recreate is enabled. It is a struct field so tests can substitute a fake
+	// implementation that does not spawn a subprocess.
+	precheckFn func(ctx context.Context, path string, timeout time.Duration) error
+
+	// newClientFn opens (or creates) the underlying bbolt client. It is a
+	// struct field so tests can substitute a fake that simulates a panic on
+	// the first call, allowing the defer/recover path in openClient to be
+	// exercised without constructing a real corrupt bbolt file.
+	newClientFn func(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error)
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -44,8 +55,10 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 		}
 	}
 	return &localFileStorage{
-		cfg:    config,
-		logger: logger,
+		cfg:         config,
+		logger:      logger,
+		precheckFn:  runPrecheck,
+		newClientFn: newClient,
 	}, nil
 }
 
@@ -65,7 +78,7 @@ func (*localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
 	if name == "" {
 		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
@@ -76,15 +89,14 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 
-	// Try to create client, handling panics if recreate is enabled
-	client, err := lfs.createClientWithPanicRecovery(absoluteName)
+	client, err := lfs.openClient(ctx, absoluteName)
 
 	// If the error is due to filename being too long, truncate and try again
 	if errors.Is(err, syscall.ENAMETOOLONG) {
 		hashedName := filepath.Join(lfs.cfg.Directory, hash(rawName))
 		lfs.logger.Warn("filename too long, using hashed filename instead",
 			zap.String("originalFile", absoluteName), zap.String("component", rawName), zap.String("hashedFileName", hashedName))
-		client, err = lfs.createClientWithPanicRecovery(hashedName)
+		client, err = lfs.openClient(ctx, hashedName)
 	}
 
 	// return error if still not successful
@@ -92,7 +104,6 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 		return nil, err
 	}
 
-	// return if compaction is not required
 	if lfs.cfg.Compaction.OnStart {
 		compactionErr := client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
 		if compactionErr != nil {
@@ -103,43 +114,69 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	return client, nil
 }
 
-// createClientWithPanicRecovery attempts to create a client, and if recreate is enabled
-// and a panic occurs (typically due to database corruption), it will rename the file
-// and try again with a fresh database
-func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) (client *fileStorageClient, err error) {
-	// First attempt: try to create client normally
-	if !lfs.cfg.Recreate {
-		// If recreate is disabled, just try once
-		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+// openClient opens (or creates) the bbolt database for a single client.
+//
+// When Recreate is enabled and the database file already exists, corruption
+// recovery is performed in two layers:
+//
+//  1. Subprocess pre-check: catches panics raised inside goroutines spawned by
+//     bbolt.Open (e.g. the freepages "multiple references" panic), which the
+//     in-process defer/recover below cannot catch because Go's recover() only
+//     catches panics in its own goroutine.
+//  2. In-process defer/recover around bbolt.Open: catches panics raised in the
+//     main goroutine (e.g. freepages' "failed to open read only tx" or "failed
+//     to rollback tx" panics, or panics from tx.recursivelyCheckBucket itself
+//     prior to the spawned goroutine reading from the error channel).
+//
+// On either signal of corruption, the file is renamed aside and a fresh
+// database is opened in its place.
+func (lfs *localFileStorage) openClient(ctx context.Context, absoluteName string) (client *fileStorageClient, err error) {
+	if lfs.cfg.Recreate {
+		if _, statErr := os.Stat(absoluteName); statErr == nil {
+			precheckErr := lfs.precheckFn(ctx, absoluteName, lfs.cfg.Timeout)
+			switch {
+			case precheckErr == nil:
+				// Database opened cleanly in the subprocess; safe to open here.
+			case errors.Is(precheckErr, errDBCorruption):
+				if renameErr := lfs.renameCorruptDB(absoluteName); renameErr != nil {
+					return nil, renameErr
+				}
+			default:
+				lfs.logger.Warn("Database pre-check returned non-corruption error; proceeding with open",
+					zap.String("file", absoluteName),
+					zap.Error(precheckErr))
+			}
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				lfs.logger.Warn("bbolt.Open panicked in main goroutine; recreating database",
+					zap.String("file", absoluteName),
+					zap.Any("panic", r))
+				if renameErr := lfs.renameCorruptDB(absoluteName); renameErr != nil {
+					err = renameErr
+					return
+				}
+				client, err = lfs.newClientFn(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+			}
+		}()
 	}
 
-	// If recreate is enabled, handle potential panics during database opening
-	defer func() {
-		if r := recover(); r != nil {
-			lfs.logger.Warn("Database corruption detected, recreating database file",
-				zap.String("file", absoluteName),
-				zap.Any("panic", r))
+	return lfs.newClientFn(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+}
 
-			// Rename the corrupted file with ISO 8601 timestamp
-			timestamp := time.Now().Format("2006-01-02T15:04:05.000")
-			backupName := absoluteName + "." + timestamp + ".backup"
-			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
-				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
-				return
-			}
-
-			lfs.logger.Info("Corrupted database file renamed",
-				zap.String("original", absoluteName),
-				zap.String("backup", backupName))
-
-			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
-		}
-	}()
-
-	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
-	return client, err
+// renameCorruptDB moves a corrupt bbolt database file aside with a timestamped
+// suffix so that a fresh database can be created in its place.
+func (lfs *localFileStorage) renameCorruptDB(path string) error {
+	timestamp := time.Now().Format("2006-01-02T15:04:05.000")
+	backup := path + "." + timestamp + ".backup"
+	if err := os.Rename(path, backup); err != nil {
+		return fmt.Errorf("rename corrupt database %s -> %s (please remove manually): %w", path, backup, err)
+	}
+	lfs.logger.Warn("Renamed corrupt bbolt database; a fresh database will be created",
+		zap.String("original", path),
+		zap.String("backup", backup))
+	return nil
 }
 
 func kindString(k component.Kind) string {

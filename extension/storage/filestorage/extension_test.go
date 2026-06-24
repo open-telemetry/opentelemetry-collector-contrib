@@ -4,6 +4,7 @@
 package filestorage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -667,13 +669,20 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, ext.Shutdown(ctx))
 	}
 
-	// step 3: re-create the extension, but with Recreate=true and make sure that the data still exists
-	// (since recreate now only happens on panic, not always when recreate=true)
+	// step 3: re-create the extension with Recreate=true and make sure that
+	// the data still exists (the precheck must not trigger a rename on a
+	// healthy database). A fake precheck is injected so this test does not
+	// spawn a real subprocess.
 	{
 		config.Recreate = true
 		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
 		require.NoError(t, err)
 		require.NotNil(t, ext)
+
+		lfs, ok := ext.(*localFileStorage)
+		require.True(t, ok)
+		lfs.precheckFn = func(context.Context, string, time.Duration) error { return nil }
+
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
@@ -681,12 +690,10 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
-		// The data should still exist since no panic occurred
 		val, err := client.Get(ctx, "key")
 		require.Equal(t, val, []byte("val"))
 		require.NoError(t, err)
 
-		// close the extension
 		require.NoError(t, client.Close(ctx))
 		require.NoError(t, ext.Shutdown(ctx))
 	}
