@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -105,6 +106,11 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
 	client := &mockXRayClient{}
