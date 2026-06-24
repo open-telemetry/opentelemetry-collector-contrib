@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 var (
@@ -21,8 +22,8 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	HTTPServerConfig *confighttp.ServerConfig `mapstructure:"http"`
-	GRPCServerConfig *configgrpc.ServerConfig `mapstructure:"grpc"`
+	HTTPServerConfig configoptional.Optional[confighttp.ServerConfig] `mapstructure:"http"`
+	GRPCServerConfig configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
 
 	// Source configures the source for the strategies file. One of `remote` or `file` has to be specified.
 	Source Source `mapstructure:"source"`
@@ -43,10 +44,12 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.HTTPServerConfig == nil && cfg.GRPCServerConfig == nil {
+	// Validate the protocol configuration. At least one protocol should be configured to serve the strategies.
+	if !cfg.HTTPServerConfig.HasValue() && !cfg.GRPCServerConfig.HasValue() {
 		return errAtLeastOneProtocol
 	}
 
+	// Validate source configuration
 	if cfg.Source.File != "" && cfg.Source.Remote != nil {
 		return errTooManySources
 	}
