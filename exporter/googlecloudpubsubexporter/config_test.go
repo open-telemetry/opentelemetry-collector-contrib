@@ -49,6 +49,17 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig.Ordering.FromResourceAttribute = "ordering_key"
 	expectedConfig.Ordering.RemoveResourceAttribute = true
 	assert.Equal(t, expectedConfig, cfg)
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "sovereign").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	sovereignConfig := factory.CreateDefaultConfig().(*Config)
+	sovereignConfig.ProjectID = "my-sovereign-project"
+	sovereignConfig.Topic = "projects/my-sovereign-project/topics/otlp-topic"
+	sovereignConfig.UniverseDomain = "apis.example.com"
+	assert.Equal(t, sovereignConfig, cfg)
 }
 
 func TestTopicConfigValidation(t *testing.T) {
