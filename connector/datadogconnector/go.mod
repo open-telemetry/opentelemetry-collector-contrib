@@ -124,7 +124,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.80.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.82.0-devel.0.20260624113434-509b872045c2 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.80.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.60.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
