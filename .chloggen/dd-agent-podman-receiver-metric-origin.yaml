@@ -1,6 +1,6 @@
 change_type: bug_fix
 component: exporter/datadog
 note: Metrics from the Podman stats receiver now report the correct Datadog metric origin (`opentelemetry_collector_podmanreceiver`) instead of falling through to `opentelemetry_collector_unknown`.
-issues: [0]
+issues: [49320]
 subtext: See [DataDog/datadog-agent#52594](https://github.com/DataDog/datadog-agent/pull/52594).
 change_logs: [user]

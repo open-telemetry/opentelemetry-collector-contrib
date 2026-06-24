@@ -1,7 +1,7 @@
 change_type: bug_fix
 component: exporter/datadog
 note: Fix CPU core count fields (`cpu_cores`, `cpu_logical_processors`) missing from host metadata payloads for remote hosts in OTel gateway topologies.
-issues: [0]
+issues: [49320]
 subtext: |
   CPU data arrives via `system.cpu.physical.count` / `system.cpu.logical.count` metrics and was never
   forwarded to the host metadata reporter in the serializer exporter path.

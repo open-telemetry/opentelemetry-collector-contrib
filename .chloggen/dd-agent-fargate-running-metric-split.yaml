@@ -1,7 +1,7 @@
 change_type: enhancement
 component: exporter/datadog
 note: "Fargate workloads now emit a dedicated `otel.datadog_exporter.metrics.running.fargate` metric tagged with `task_arn` instead of sharing `otel.datadog_exporter.metrics.running` with host-based workloads."
-issues: [0]
+issues: [49320]
 subtext: |
   Host-based workloads continue to emit `otel.datadog_exporter.metrics.running{host}` unchanged.
   See [DataDog/datadog-agent#52203](https://github.com/DataDog/datadog-agent/pull/52203).
