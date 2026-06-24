@@ -157,6 +157,7 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
+    - pkg/jaeger
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
@@ -171,7 +172,6 @@ components:
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
     - pkg/translator/prometheusremotewrite
