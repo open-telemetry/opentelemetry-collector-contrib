@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/faro
+component: receiver/aws_cloudwatch
 
-# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Migrate deployment.environment (v1.26.0) semantic convention to deployment.environment.name (v1.40.0)
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: rename to `aws_cloudwatch` with deprecated alias `awscloudwatch`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [45074]
+issues: [45339]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
