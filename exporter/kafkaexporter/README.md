@@ -166,8 +166,7 @@ exporters:
 ### SASL/OAUTHBEARER (OAuth2 token source)
 
 The `OAUTHBEARER` mechanism delegates token acquisition and refresh to an authenticator
-extension referenced by `oauthbearer_token_source`. Any extension that implements the
-`Token(context.Context) (*oauth2.Token, error)` interface works, such as
+extension referenced by `oauthbearer_token_source`, such as
 [`oauth2clientauth`](../../extension/oauth2clientauthextension/README.md):
 
 ```yaml
