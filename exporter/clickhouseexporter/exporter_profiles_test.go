@@ -104,8 +104,9 @@ func TestResolveStackIsDeterministicAndDistinct(t *testing.T) {
 	dic := profiles.Dictionary()
 	buildTestDictionary(dic)
 
-	// Same stack hashes identically across calls
-	assert.Equal(t, resolveStack(dic, 1).hash, resolveStack(dic, 1).hash)
+	firstHash := resolveStack(dic, 1).hash
+	secondHash := resolveStack(dic, 1).hash
+	assert.Equal(t, firstHash, secondHash)
 	// The empty stack (index 0) differs from a populated one
 	assert.NotEqual(t, resolveStack(dic, 0).hash, resolveStack(dic, 1).hash)
 }
