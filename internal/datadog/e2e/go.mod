@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.154.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.155.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.155.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/connector v0.155.0
 	go.opentelemetry.io/collector/exporter v1.61.0
@@ -329,7 +329,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.154.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.155.0 // indirect
@@ -338,7 +338,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.155.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.154.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.155.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.155.0 // indirect
