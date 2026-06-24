@@ -144,6 +144,9 @@ type Config struct {
 	// CloudWatch defines configuration for the CloudWatch Logs Lambda trigger.
 	CloudWatch sharedConfig `mapstructure:"cloudwatch"`
 
+	// Custom defines configurations for custom trigger
+	Custom sharedConfig `mapstructure:"custom"`
+
 	// FailureBucketARN is the ARN of the S3 bucket used to store failed Lambda event records.
 	FailureBucketARN string `mapstructure:"failure_bucket_arn"`
 
