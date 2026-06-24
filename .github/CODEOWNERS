@@ -203,7 +203,7 @@ processor/cumulativetodeltaprocessor/                            @open-telemetry
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/drainprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @atoulme @martinjt
-processor/dynamicsamplingprocessor/                              @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ
+processor/dynamicsamplingprocessor/                              @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/genainormalizerprocessor/                              @open-telemetry/collector-contrib-approvers @TylerHelmuth @kylehounslow
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll

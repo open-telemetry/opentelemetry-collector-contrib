@@ -11,8 +11,7 @@ status:
     development: [traces]
   distributions: []
   codeowners:
-    active: [MikeGoldsmith, VinozzZ]
-    seeking_new: true
+    active: [MikeGoldsmith, VinozzZ, jmacd]
 
 tests:
   config:
