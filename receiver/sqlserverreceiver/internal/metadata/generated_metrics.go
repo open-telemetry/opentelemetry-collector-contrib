@@ -690,7 +690,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.lock.wait_time.avg",
 	},
 	SqlserverLogDataIoRate: metricInfo{
-		Name: "sqlserver.log_data.io.rate",
+		Name:       "sqlserver.log_data.io.rate",
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name", "sqlserver.replica.direction"},
 	},
 	SqlserverLoginRate: metricInfo{
 		Name: "sqlserver.login.rate",
@@ -773,13 +774,15 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverReplicaDataRate: metricInfo{
 		Name:       "sqlserver.replica.data.rate",
-		Attributes: []string{"replica.direction"},
+		Attributes: []string{"sqlserver.replica.direction"},
 	},
 	SqlserverReplicaFlowControlTime: metricInfo{
-		Name: "sqlserver.replica.flow_control.time",
+		Name:       "sqlserver.replica.flow_control.time",
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverReplicaQueueSize: metricInfo{
-		Name: "sqlserver.replica.queue.size",
+		Name:       "sqlserver.replica.queue.size",
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name", "sqlserver.replica.queue.type"},
 	},
 	SqlserverResourcePoolDiskOperations: metricInfo{
 		Name:       "sqlserver.resource_pool.disk.operations",

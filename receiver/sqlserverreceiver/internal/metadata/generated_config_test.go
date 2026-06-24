@@ -659,6 +659,18 @@ func TestSqlserverLatchSuperlatchTransitionRateMetricsConfig_Validate(t *testing
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestSqlserverLogDataIoRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverLogDataIoRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverLogDataIoRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.log_data.io.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverLogDataIoRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestSqlserverMemoryAreaMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().SqlserverMemoryArea
 	require.NoError(t, cfg.Validate())
@@ -763,6 +775,30 @@ func TestSqlserverReplicaDataRateMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.replica.data.rate doesn't have an attribute invalid, valid attributes: [sqlserver.replica.direction]")
 
 	cfg = DefaultMetricsConfig().SqlserverReplicaDataRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverReplicaFlowControlTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverReplicaFlowControlTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverReplicaFlowControlTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.replica.flow_control.time doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+
+	cfg = DefaultMetricsConfig().SqlserverReplicaFlowControlTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverReplicaQueueSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverReplicaQueueSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverReplicaQueueSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.replica.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]")
+
+	cfg = DefaultMetricsConfig().SqlserverReplicaQueueSize
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
