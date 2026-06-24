@@ -1,0 +1,10 @@
+change_type: breaking
+
+component: receiver/hostmetrics
+
+note: Enable the `system.cpu.logical.count` metric by default in the CPU scraper.
+
+issues: [49162]
+
+subtext: |
+  The logical CPU count is recommended by the System CPU semantic conventions and preserves host CPU cardinality information when per-CPU attributes are disabled.

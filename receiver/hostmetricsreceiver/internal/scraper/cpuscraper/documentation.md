@@ -12,6 +12,14 @@ metrics:
     enabled: false
 ```
 
+### system.cpu.logical.count
+
+Number of available logical CPUs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cpu} | Sum | Int | Cumulative | false | Development |
+
 ### system.cpu.time
 
 Total seconds each logical CPU spent on each mode.
@@ -50,14 +58,6 @@ Current frequency of the CPU core in Hz.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
-
-### system.cpu.logical.count
-
-Number of available logical CPUs.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | Development |
 
 ### system.cpu.physical.count
 
