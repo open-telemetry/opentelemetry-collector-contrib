@@ -11,7 +11,7 @@ var ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate = fe
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver no longer emits the deprecated semconv v1.21.0 attribute container.image.tag. Requires receiver.awsecscontainermetrics.EmitV1ContainerConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087"),
-	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
 )
 
 var ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -19,5 +19,5 @@ var ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate = featur
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver emits container.image.tags (semconv v1.40.0) instead of the deprecated container.image.tag (semconv v1.21.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087"),
-	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
 )
