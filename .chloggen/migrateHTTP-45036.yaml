@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/translator/jaeger
+component: pkg/jaeger
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Migrate http.status_code (v1.25.0) semantic convention to http.response.status_code (v1.40.0)
