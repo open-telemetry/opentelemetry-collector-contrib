@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 const s3ARNPrefix = "arn:aws:s3:::"
@@ -76,6 +78,8 @@ type sharedConfig struct {
 type S3Config struct {
 	sharedConfig `mapstructure:",squash"`
 
+	AWSOptions internal.AWSOptions `mapstructure:",squash"`
+
 	// Encodings defines multiple encoding entries for S3 path-based routing (multi-format mode).
 	// Each entry maps a path_pattern prefix to an encoding extension.
 	// Mutually exclusive with sharedConfig.Encoding.
@@ -89,6 +93,12 @@ func (c *S3Config) Validate() error {
 	if c.Encoding != "" && len(c.Encodings) > 0 {
 		return errors.New("'encoding' and 'encodings' are mutually exclusive; use 'encodings' for multi-format support")
 	}
+
+	// Make sure static credential overrides are provided correctly
+	if (c.AWSOptions.AccessKeyID == "") != (c.AWSOptions.SecretAccessKey == "") {
+		return errors.New("both 'access_key_id' and 'secret_access_key' must be provided together")
+	}
+
 	seen := make(map[string]bool, len(c.Encodings))
 	for i, e := range c.Encodings {
 		if err := e.Validate(); err != nil {
