@@ -118,6 +118,48 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
 
+func TestOIDCAuthenticationSucceededES256(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServerWithAlg(jose.ES256)
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:            oidcServer.URL,
+				Audience:             "unit-test",
+				SupportedSigningAlgs: []string{"ES256"},
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub":  "jdoe@example.com",
+		"name": "jdoe",
+		"iss":  oidcServer.URL,
+		"aud":  "unit-test",
+		"exp":  time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
 func TestOIDCAuthenticationSucceededMultipleProviders(t *testing.T) {
 	// prepare
 	oidcServer1, err := newOIDCServer()
@@ -448,7 +490,8 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	e := &oidcExtension{
 		providerContainers: make(map[string]*providerContainer),
 	}
-	err = e.processProviderConfig(t.Context(), config.getProviderConfigs()[0])
+	providers := config.getProviderConfigs()
+	err = e.processProviderConfig(t.Context(), &providers[0])
 
 	// verify
 	assert.NoError(t, err)
@@ -527,7 +570,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	e := &oidcExtension{
 		providerContainers: make(map[string]*providerContainer),
 	}
-	err = e.processProviderConfig(t.Context(), *config.getLegacyProviderConfig())
+	err = e.processProviderConfig(t.Context(), config.getLegacyProviderConfig())
 
 	// verify
 	assert.Error(t, err)

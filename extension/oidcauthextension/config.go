@@ -55,6 +55,10 @@ type Config struct {
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
 
+	// List of signing algorithms the ID token is expected to be signed with.
+	// Optional.
+	SupportedSigningAlgs []string `mapstructure:"supported_signing_algs"`
+
 	// Providers allows configuring multiple OIDC providers.
 	// Use the getProviderConfigs() method to get the full list of providers, including the legacy configuration.
 	Providers []ProviderCfg `mapstructure:"providers"`
@@ -66,14 +70,16 @@ func (cfg *Config) getLegacyProviderConfig() *ProviderCfg {
 		cfg.IgnoreAudience ||
 		cfg.IssuerCAPath != "" ||
 		cfg.UsernameClaim != "" ||
-		cfg.GroupsClaim != "" {
+		cfg.GroupsClaim != "" ||
+		(len(cfg.SupportedSigningAlgs) > 0 && !slices.Equal(cfg.SupportedSigningAlgs, []string{"RS256"})) {
 		return &ProviderCfg{
-			IssuerURL:      cfg.IssuerURL,
-			Audience:       cfg.Audience,
-			IgnoreAudience: cfg.IgnoreAudience,
-			IssuerCAPath:   cfg.IssuerCAPath,
-			UsernameClaim:  cfg.UsernameClaim,
-			GroupsClaim:    cfg.GroupsClaim,
+			IssuerURL:            cfg.IssuerURL,
+			Audience:             cfg.Audience,
+			IgnoreAudience:       cfg.IgnoreAudience,
+			IssuerCAPath:         cfg.IssuerCAPath,
+			UsernameClaim:        cfg.UsernameClaim,
+			GroupsClaim:          cfg.GroupsClaim,
+			SupportedSigningAlgs: cfg.SupportedSigningAlgs,
 		}
 	}
 	return nil
@@ -127,6 +133,10 @@ type ProviderCfg struct {
 	// The claim that holds the subject's group membership information.
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
+
+	// List of signing algorithms the ID token is expected to be signed with.
+	// Optional.
+	SupportedSigningAlgs []string `mapstructure:"supported_signing_algs"`
 
 	// Path to a local JWKS file containing public keys for token verification.
 	// When provided, only keys from this file will be used - no remote key discovery will happen.
