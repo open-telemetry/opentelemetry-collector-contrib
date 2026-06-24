@@ -27,7 +27,8 @@ func TestPushTraceData(t *testing.T) {
 	config.CreateSchema = false
 	require.NoError(t, config.Validate())
 
-	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
+	exporter, err := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 
 	ctx := t.Context()
 

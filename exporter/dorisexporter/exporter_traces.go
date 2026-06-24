@@ -72,10 +72,14 @@ type tracesExporter struct {
 	*commonExporter
 }
 
-func newTracesExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *tracesExporter {
-	return &tracesExporter{
-		commonExporter: newExporter(logger, cfg, set, "TRACE"),
+func newTracesExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) (*tracesExporter, error) {
+	commonExporter, err := newExporter(logger, cfg, set, "TRACE")
+	if err != nil {
+		return nil, err
 	}
+	return &tracesExporter{
+		commonExporter: commonExporter,
+	}, nil
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
@@ -258,6 +262,8 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 		if response.duplication() {
 			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(traces)))
 		}
+
+		e.reportFilteredRows(ctx, &response, label)
 
 		if e.cfg.LogResponse {
 			e.logger.Info("trace response:\n" + string(body))
