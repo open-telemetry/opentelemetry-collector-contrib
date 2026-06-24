@@ -96,6 +96,7 @@ type oidcExtension struct {
 var (
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
+	errIgnoreIssuerMultiProvider         = errors.New("ignore_issuer cannot be true when multiple providers are configured")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the OIDC provider")
 	errClaimNotFound                     = errors.New("username claim from the OIDC configuration not found on the token returned by the OIDC provider")

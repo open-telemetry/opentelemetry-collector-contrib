@@ -9,7 +9,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -96,7 +95,7 @@ func (cfg *Config) Validate() (errs error) {
 
 	for _, provider := range providerConfigs {
 		if len(providerConfigs) > 1 && provider.IgnoreIssuer {
-			errs = multierr.Append(errs, errors.New("invalid configuration: ignore_issuer cannot be true when multiple providers are configured"))
+			errs = multierr.Append(errs, errIgnoreIssuerMultiProvider)
 		}
 		if _, exists := seenIssuers[provider.IssuerURL]; exists {
 			errs = multierr.Append(errs, fmt.Errorf("duplicate issuer URL found: %s", provider.IssuerURL))
