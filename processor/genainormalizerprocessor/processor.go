@@ -9,10 +9,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/crewai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/custom"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/langchain"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/pydanticai"
 )
 
 // valueTransformer applies source-specific value-level normalization into
@@ -43,6 +46,12 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
 		sn.transformValue = openllmetry.Transform
+	case SourceLangChain:
+		sn.lookupTable = langchain.LookupTable
+	case SourceCrewAI:
+		sn.lookupTable = crewai.LookupTable
+	case SourcePydanticAI:
+		sn.lookupTable = pydanticai.LookupTable
 	default:
 		sn.lookupTable = src.Mappings
 		if len(src.ValueMappings) > 0 {

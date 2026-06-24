@@ -44,6 +44,28 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "all built-in sources",
+			cfg: Config{
+				Sources: []Source{
+					{Name: SourceOpenInference},
+					{Name: SourceOpenLLMetry},
+					{Name: SourceLangChain},
+					{Name: SourceCrewAI},
+					{Name: SourcePydanticAI},
+				},
+			},
+		},
+		{
+			name: "built-in source with mappings set (crewai)",
+			cfg: Config{
+				Sources: []Source{{
+					Name:     SourceCrewAI,
+					Mappings: map[string]string{"foo": "gen_ai.agent.name"},
+				}},
+			},
+			wantErr: `sources[0]: "mappings" is not valid on built-in source "crewai"`,
+		},
+		{
 			name:    "no sources",
 			cfg:     Config{Sources: []Source{}},
 			wantErr: "at least one source",
@@ -89,14 +111,14 @@ func TestValidate(t *testing.T) {
 			cfg: Config{
 				Sources: []Source{{Name: "my_vendor"}},
 			},
-			wantErr: `sources[0]: user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
+			wantErr: `sources[0]: user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: crewai, langchain, openinference, openllmetry, pydanticai)`,
 		},
 		{
 			name: "typo on built-in source name surfaces built-in list",
 			cfg: Config{
 				Sources: []Source{{Name: "openllllmetry"}},
 			},
-			wantErr: `built-in sources, which do not require mappings: openinference, openllmetry`,
+			wantErr: `built-in sources, which do not require mappings: crewai, langchain, openinference, openllmetry, pydanticai`,
 		},
 		{
 			name: "built-in source with mappings set",
@@ -275,11 +297,21 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "user_defined_empty_mappings"),
-			errorMessage: `user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
+			errorMessage: `user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: crewai, langchain, openinference, openllmetry, pydanticai)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "openinference_with_mappings"),
 			errorMessage: `"mappings" is not valid on built-in source "openinference"`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "new_builtin_sources"),
+			expected: &Config{
+				Sources: []Source{
+					{Name: SourceLangChain, RemoveOriginals: true},
+					{Name: SourceCrewAI},
+					{Name: SourcePydanticAI},
+				},
+			},
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "user_defined_unreachable_value_mapping"),
