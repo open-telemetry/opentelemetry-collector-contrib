@@ -2708,3 +2708,92 @@ func createTraceWithSameNamedParentsAtDifferentDepths(t *testing.T) ptrace.Trace
 
 	return td
 }
+
+// TestParentReparentingDeterministicAcrossSiblings is a regression test for
+// same-named parents at the same depth under different-named parents. The
+// parent group key excludes the grandparent, so two "handler" spans at depth 2
+// (one under "auth-mw", one under "log-mw") merge into a single summary. The
+// summary anchors to nodes[0]'s parent; parent candidates derive from leaf
+// groups visited in map order, so without a stable sort the anchor — auth-mw vs
+// log-mw — varied run to run. The auth-mw handler starts earliest, so the
+// summary must consistently anchor there.
+func TestParentReparentingDeterministicAcrossSiblings(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.GroupByAttributes = []string{"db.operation"}
+
+	authMwID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+
+	observedParents := make(map[pcommon.SpanID]bool)
+	const iterations = 50
+	for range iterations {
+		tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+
+		td := createTraceWithSameNamedParentsUnderDifferentGrandparents(t)
+		require.NoError(t, tp.ConsumeTraces(t.Context(), td))
+
+		summary, found := findSummarySpanByName(td, "handler")
+		require.True(t, found, "the two handlers should aggregate into one summary")
+		observedParents[summary.ParentSpanID()] = true
+	}
+
+	require.Len(t, observedParents, 1, "handler summary parent must be stable across runs; got %v", observedParents)
+	assert.Contains(t, observedParents, authMwID, "summary should anchor to the earliest-starting handler's parent (auth-mw)")
+}
+
+// createTraceWithSameNamedParentsUnderDifferentGrandparents builds a trace with
+// two "handler" spans at depth 2 under different-named middlewares. Their SELECT
+// children use distinct db.operation values so they form two leaf groups (the
+// source of map-order non-determinism feeding parent candidates).
+func createTraceWithSameNamedParentsUnderDifferentGrandparents(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	authMwID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	logMwID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+	authHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+	logHandlerID := pcommon.SpanID([8]byte{5, 0, 0, 0, 0, 0, 0, 0})
+
+	baseNs := int64(1_000_000_000)
+	ms := int64(1_000_000)
+
+	add := func(id, parentID pcommon.SpanID, name string, startNs, durMs int64, dbOp string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(id)
+		s.SetParentSpanID(parentID)
+		s.SetName(name)
+		s.SetStartTimestamp(pcommon.Timestamp(startNs))
+		s.SetEndTimestamp(pcommon.Timestamp(startNs + durMs*ms))
+		if dbOp != "" {
+			s.Attributes().PutStr("db.operation", dbOp)
+		}
+	}
+
+	add(rootID, pcommon.SpanID{}, "root", baseNs, 700, "")
+	add(authMwID, rootID, "auth-mw", baseNs, 300, "")
+	add(logMwID, rootID, "log-mw", baseNs, 300, "")
+	// auth-mw's handler starts earliest so it sorts first and wins the anchor.
+	add(authHandlerID, authMwID, "handler", baseNs, 200, "")
+	add(logHandlerID, logMwID, "handler", baseNs+ms, 200, "")
+
+	leafID := byte(10)
+	addLeaves := func(parentID pcommon.SpanID, dbOp string) {
+		for i := range 5 {
+			id := [8]byte{leafID}
+			leafID++
+			add(pcommon.SpanID(id), parentID, "SELECT", baseNs, int64(5+i), dbOp)
+		}
+	}
+	addLeaves(authHandlerID, "A")
+	addLeaves(logHandlerID, "B")
+
+	return td
+}

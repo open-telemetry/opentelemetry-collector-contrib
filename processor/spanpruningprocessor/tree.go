@@ -91,12 +91,7 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		}
 	}
 	sort.Slice(tree.leaves, func(i, j int) bool {
-		a, b := tree.leaves[i].span, tree.leaves[j].span
-		if a.StartTimestamp() != b.StartTimestamp() {
-			return a.StartTimestamp() < b.StartTimestamp()
-		}
-		aID, bID := a.SpanID(), b.SpanID()
-		return bytes.Compare(aID[:], bID[:]) < 0
+		return nodeOrderLess(tree.leaves[i], tree.leaves[j])
 	})
 
 	// Log warnings for incomplete traces
@@ -118,6 +113,18 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
 func (t *traceTree) getLeaves() []*spanNode {
 	return t.leaves
+}
+
+// nodeOrderLess orders span nodes by start time, then span ID. It gives a
+// stable order that does not depend on map iteration, so leaf grouping, parent
+// candidate grouping, and summary anchoring are deterministic across runs.
+func nodeOrderLess(a, b *spanNode) bool {
+	sa, sb := a.span, b.span
+	if sa.StartTimestamp() != sb.StartTimestamp() {
+		return sa.StartTimestamp() < sb.StartTimestamp()
+	}
+	aID, bID := sa.SpanID(), sb.SpanID()
+	return bytes.Compare(aID[:], bID[:]) < 0
 }
 
 // depth returns the node's depth in the trace tree (root spans and orphans are

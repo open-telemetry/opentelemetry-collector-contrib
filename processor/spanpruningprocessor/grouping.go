@@ -171,8 +171,7 @@ func (p *spanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 	// Include parent span name plus tree depth to separate groups by parent.
 	// Depth is required so that same-named parents at different depths (e.g. a
 	// "handler" at depth 1 and another "handler" nested at depth 2) do not
-	// collapse into one group, which would anchor the summary — and reparent any
-	// preserved outliers — to a non-deterministic depth.
+	// collapse into one group.
 	if node.parent != nil {
 		builder.WriteString("parent=")
 		builder.WriteString(node.parent.span.Name())
