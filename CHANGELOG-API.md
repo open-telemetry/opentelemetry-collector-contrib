@@ -7,6 +7,205 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.155.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.LambdaExpression` API so OTTL functions can support Lambda expressions as arguments (#48227)
+- `pkg/pdatatest`: Add pmetricassert histogram datapoint assertions (#48473)
+- `pkg/pdatatest`: Add duplicate ScopeMetrics check to ValidateMetrics (#48106)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/pdatatest`: Keep pmetricassert normalization from returning validation errors for duplicate datapoints (#48775)
+
+<!-- previous-version -->
+
+## v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Split testbed/data{senders,receivers,connectors} into per-component sub-packages and move testbed.Components() to its own sub-package. (#48475)
+  Each component now lives in its own Go package so test binaries only
+  compile the senders, receivers, and connectors they actually exercise.
+  External consumers of the testbed module must update both their import
+  paths and the package qualifier on each call site.
+  
+  Top-level factory (was `testbed/testbed`, now `testbed/testbed/components`):
+  
+  - `testbed.Components` → `components.All`
+  
+  Senders (was `testbed/datasenders`, now `testbed/datasenders/<component>datasender`):
+  
+  - `datasenders.NewDatadogDataSender` → `datadogdatasender.NewDatadogDataSender`
+  - `datasenders.NewFluentLogsForwarder` → `fluentdatasender.NewFluentLogsForwarder`
+  - `datasenders.FluentLogsForwarder` → `fluentdatasender.FluentLogsForwarder`
+  - `datasenders.NewJaegerGRPCDataSender` → `jaegerdatasender.NewJaegerGRPCDataSender`
+  - `datasenders.NewFileLogK8sWriter` → `k8sdatasender.NewFileLogK8sWriter`
+  - `datasenders.NewKubernetesContainerWriter` → `k8sdatasender.NewKubernetesContainerWriter`
+  - `datasenders.NewKubernetesContainerParserWriter` → `k8sdatasender.NewKubernetesContainerParserWriter`
+  - `datasenders.NewKubernetesCRIContainerdWriter` → `k8sdatasender.NewKubernetesCRIContainerdWriter`
+  - `datasenders.NewKubernetesCRIContainerdNoAttributesOpsWriter` → `k8sdatasender.NewKubernetesCRIContainerdNoAttributesOpsWriter`
+  - `datasenders.NewCRIContainerdWriter` → `k8sdatasender.NewCRIContainerdWriter`
+  - `datasenders.FileLogK8sWriter` → `k8sdatasender.FileLogK8sWriter`
+  - `datasenders.NewOtelarrowDataSender` → `otelarrowdatasender.NewOtelarrowDataSender`
+  - `datasenders.NewPrometheusDataSender` → `prometheusdatasender.NewPrometheusDataSender`
+  - `datasenders.NewPrometheusStaticSender` → `prometheusstaticdatasender.NewPrometheusStaticSender`
+  - `datasenders.PrometheusStaticPayloadConfig` → `prometheusstaticdatasender.PrometheusStaticPayloadConfig`
+  - `datasenders.NewSFxMetricDataSender` → `signalfxdatasender.NewSFxMetricDataSender`
+  - `datasenders.SFxMetricsDataSender` → `signalfxdatasender.SFxMetricsDataSender`
+  - `datasenders.NewFileLogWriter` → `stanzadatasender.NewFileLogWriter`
+  - `datasenders.NewLocalFileStorageExtension` → `stanzadatasender.NewLocalFileStorageExtension`
+  - `datasenders.FileLogWriter` → `stanzadatasender.FileLogWriter`
+  - `datasenders.NewStefDataSender` → `stefdatasender.NewStefDataSender`
+  - `datasenders.StefDataSender` → `stefdatasender.StefDataSender`
+  - `datasenders.NewSyslogWriter` → `syslogdatasender.NewSyslogWriter`
+  - `datasenders.SyslogWriter` → `syslogdatasender.SyslogWriter`
+  - `datasenders.NewTCPUDPWriter` → `tcpudpdatasender.NewTCPUDPWriter`
+  - `datasenders.TCPUDPWriter` → `tcpudpdatasender.TCPUDPWriter`
+  - `datasenders.NewZipkinDataSender` → `zipkindatasender.NewZipkinDataSender`
+  
+  Receivers (was `testbed/datareceivers`, now `testbed/datareceivers/<component>datareceiver`):
+  
+  - `datareceivers.NewCarbonDataReceiver` → `carbondatareceiver.NewCarbonDataReceiver`
+  - `datareceivers.CarbonDataReceiver` → `carbondatareceiver.CarbonDataReceiver`
+  - `datareceivers.NewDataDogDataReceiver` → `datadogdatareceiver.NewDataDogDataReceiver`
+  - `datareceivers.NewJaegerDataReceiver` → `jaegerdatareceiver.NewJaegerDataReceiver`
+  - `datareceivers.NewOtelarrowDataReceiver` → `otelarrowdatareceiver.NewOtelarrowDataReceiver`
+  - `datareceivers.OtelarrowDataReceiver` → `otelarrowdatareceiver.OtelarrowDataReceiver`
+  - `datareceivers.NewPrometheusDataReceiver` → `prometheusdatareceiver.NewPrometheusDataReceiver`
+  - `datareceivers.NewSFxMetricsDataReceiver` → `signalfxdatareceiver.NewSFxMetricsDataReceiver`
+  - `datareceivers.SFxMetricsDataReceiver` → `signalfxdatareceiver.SFxMetricsDataReceiver`
+  - `datareceivers.NewSplunkHECDataReceiver` → `splunkdatareceiver.NewSplunkHECDataReceiver`
+  - `datareceivers.SplunkHECDataReceiver` → `splunkdatareceiver.SplunkHECDataReceiver`
+  - `datareceivers.NewStefDataReceiver` → `stefdatareceiver.NewStefDataReceiver`
+  - `datareceivers.StefDataReceiver` → `stefdatareceiver.StefDataReceiver`
+  - `datareceivers.NewSyslogDataReceiver` → `syslogdatareceiver.NewSyslogDataReceiver`
+  - `datareceivers.SyslogDataReceiver` → `syslogdatareceiver.SyslogDataReceiver`
+  - `datareceivers.NewZipkinDataReceiver` → `zipkindatareceiver.NewZipkinDataReceiver`
+  
+  Connectors (was `testbed/dataconnectors`, now `testbed/dataconnectors/<component>dataconnector`):
+  
+  - `dataconnectors.NewRoutingDataConnector` → `routingdataconnector.NewRoutingDataConnector`
+  - `dataconnectors.RoutingDataConnector` → `routingdataconnector.RoutingDataConnector`
+  - `dataconnectors.NewSpanMetricDataConnector` → `spanmetricsdataconnector.NewSpanMetricDataConnector`
+  - `dataconnectors.SpanMetricDataConnector` → `spanmetricsdataconnector.SpanMetricDataConnector`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottlexemplar` context exposing per-exemplar fields (`time`, `filtered_attributes`, `double_value`, `int_value`, `trace_id`, `span_id`) for use in OTTL statements. (#47490)
+- `pkg/pdatatest`: Add `/regex` attribute matcher support to `pmetricassert` (#48467)
+- `pkg/pdatatest`: Add pmetricassert number datapoint value assertions (#48468)
+- `pkg/pdatatest`: Update pmetrictest.ValidateMetrics to reject metrics sharing the same name (#48106)
+- `pkg/pdatatest`: Add check for duplicate ResourceMetrics to pmetrictest.ValidateMetrics (#48106)
+- `processor/tail_sampling`: Add error handling to tail storage extension interface (#48777)
+- `receiver/windows_event_log`: Add EVTX file support (#48047)
+
+<!-- previous-version -->
+
+## v0.153.0
+
+### 💡 Enhancements 💡
+
+- `extension/file_storage`: Implement `storage.Walker` interface to allow iterating over all stored keys with deferred operations (#47755)
+- `internal/kafka`: Remove the dependency on github.com/IBM/sarama from all Kafka components. (#48260)
+  The Kafka exporter, receiver, metrics receiver, and topics observer have all
+  been migrated to github.com/twmb/franz-go. The remaining sarama-based helpers
+  in internal/kafka are removed, and protocol_version validation in
+  pkg/kafka/configkafka now uses franz-go's kversion package.
+  
+- `pkg/pdatatest`: Add `/exists` operator support to `pmetricassert` (#48079)
+- `pkg/pdatatest`: Introduce `pmetricassert` package for MTS-focused YAML metric assertions (#48079)
+- `receiver/file_log`: Improves file-reading efficiency by evicting previously read data from the OS page cache. (#48273)
+  Clears the cache on Linux; acts as a no-op on unsupported platforms.
+- `receiver/http_check`: Enables dynamic metric reaggregation in the HTTP Check receiver. This does not break existing configuration files. (#46358)
+
+<!-- previous-version -->
+
+## v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/faro`: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload. (#47935)
+  Surfaces the k6 test run identifier that the Faro Web SDK already
+  forwards from `window.k6.testRunId`, alongside the existing
+  `k6_isK6Browser` key. The reverse (logs -> Faro) translator extracts
+  it back into `Meta.K6.TestRunID` for round-trip parity.
+  
+- `pkg/translator/pprof`: Expose the `ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error)` method (#48014)
+- `receiver/couchdb`: Enables dynamic metric reaggregation in the CouchDB receiver. This does not break existing configuration files. (#46351)
+- `receiver/kafka`: Add support for custom consumer-group partition-assignment strategies via extensions that implement `kgo.GroupBalancer`. Set `group_rebalance_strategy` to the component ID of a registered extension to use a custom balancer. (#48096)
+  The four built-in strategies (`range`, `roundrobin`, `sticky`, `cooperative-sticky`) continue to work unchanged.
+  Any other value for `group_rebalance_strategy` is now resolved as an extension component ID at runtime.
+  
+- `receiver/memcached`: Enables dynamic metric reaggregation in the Memcached receiver. This does not break existing configuration files. (#46364)
+
+<!-- previous-version -->
+
+## v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/splunk_hec`: Remove deprecated `batcher` config field. Use `sending_queue::batch` instead. (#47737)
+- `pkg/ottl`: OTTL API breaking change in `ottlscope.NewTransformContextPtr`: the function signature now requires schema URL items for scope and resource. (#47784)
+  What changed:
+  - Old: NewTransformContextPtr(instrumentationScope, resource, schemaURLItem, options...)
+  - New: NewTransformContextPtr(instrumentationScope, resource, scopeSchemaURLItem, resourceSchemaURLItem, options...)
+  
+  Migration:
+  - If you previously passed one shared schema URL item, pass it to both new parameters.
+  - If scope and resource schema URLs differ, pass distinct items for each.
+  
+  Example migration:
+  - Before:
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, schemaURLItem)
+  - After (independent items):
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, scopeSchemaURLItem, resourceSchemaURLItem)
+  
+- `pkg/stanza`: Remove deprecated packages `pkg/stanza/errors`, `pkg/stanza/operator/parser/json` and `pkg/stanza/operator/parser/time`. (#45006)
+  These packages were renamed to `pkg/stanza/stanzaerrors`, `pkg/stanza/operator/parser/jsonparser` and `pkg/stanza/operator/parser/timeparser`.
+- `processor/filter`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47975)
+  The filter processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `processor/transform`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47970)
+  The transform processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `receiver/prometheus`: Remove `receiver.prometheusreceiver.EnableNativeHistograms`, `receiver.prometheusreceiver.RemoveStartTimeAdjustment` and `receiver.prometheusreceiver.UseCreatedMetric` feature gates. (#40606)
+
+### 🚩 Deprecations 🚩
+
+- `processor/filter`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47975)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom filter processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+- `processor/transform`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47970)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom transform processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/awss3`: Add support for retry_on_failure (#47592)
+- `internal/aws`: Migrate internal AWS proxy module from AWS SDK Go v1 to v2 (#40461, #37728)
+  This removes the dependency on the deprecated `github.com/aws/aws-sdk-go` (v1)
+  and migrates to `github.com/aws/aws-sdk-go-v2`.
+  
+- `pkg/batchperresourceattr`: Add `WithMetadataInjection()` option to inject batched resource attribute values as `client.Metadata` into the context passed to the next consumer. (#47695)
+- `receiver/chrony`: Enables dynamic metric reaggregation in the Chrony receiver. This does not break existing configuration files. (#46350)
+- `receiver/redfish`: Enables dynamic metric reaggregation in the Redfish receiver. This does not break existing configuration files. (#46375)
+- `receiver/ssh_check`: Enables dynamic metric reaggregation in the SSH Check receiver. This does not break existing configuration files. (#46380)
+
+<!-- previous-version -->
+
 ## v0.150.0
 
 ### 🛑 Breaking changes 🛑

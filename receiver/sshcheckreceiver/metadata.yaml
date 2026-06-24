@@ -22,6 +22,7 @@ resource_attributes:
 attributes:
   error.message:
     description: Error message recorded during check
+    requirement_level: recommended
     type: string
 
 metrics:

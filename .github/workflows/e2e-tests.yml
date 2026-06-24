@@ -26,7 +26,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: collector-build
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -61,11 +61,25 @@ jobs:
           make e2e-test
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
+  datadog-examples-test:
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Validate Datadog example configs
+        run: |
+          cd internal/datadog/e2e
+          go test -v -tags=e2e -timeout 10m ./...
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   docker-build:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -98,12 +112,13 @@ jobs:
           - processor/k8sattributesprocessor
           - processor/resourcedetectionprocessor
           - receiver/kubeletstatsreceiver
+          - receiver/k8seventsreceiver
           - receiver/k8sobjectsreceiver
           - extension/observer/k8sobserver
     runs-on: ubuntu-24.04
     needs: docker-build
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -131,7 +146,7 @@ jobs:
       - name: Run e2e tests
         run: |
           cd ${{ matrix.component }}
-          go test -v --tags=e2e
+          go test -v --tags=e2e -timeout 20m
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   kubernetes-test:

@@ -442,7 +442,44 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 		return
 	}
 
-	pager := clientMetricsDefinitions.NewListPager(resourceIDs[0], nil)
+	discoveredNamespaces := map[string]struct{}{}
+
+	s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, nil, discoveredNamespaces)
+
+	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
+	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
+	// when the metricnamespace query parameter is set explicitly. Make additional calls
+	// for each namespace configured in the metrics filter that was not already returned
+	// by the default call above.
+	for configNamespace := range s.cfg.Metrics {
+		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
+			continue
+		}
+		opts := &armmonitor.MetricDefinitionsClientListOptions{
+			Metricnamespace: to.Ptr(configNamespace),
+		}
+		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, nil)
+	}
+
+	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
+	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
+		zap.Int("metrics_definitions_count", len(s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)),
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
+}
+
+// collectMetricDefinitionsByType pages through a MetricDefinitions pager and registers each
+// metric definition into the resourceType's metricsByCompositeKey map.
+// discoveredNamespaces, when non-nil, is populated with the lowercased namespaces seen in this call.
+// TODO: Partially duplicate of collectMetricDefinitions in scraper.go
+func (s *azureBatchScraper) collectMetricDefinitionsByType(
+	ctx context.Context,
+	subscriptionID, resourceType, resourceID string,
+	clientMetricsDefinitions *armmonitor.MetricDefinitionsClient,
+	opts *armmonitor.MetricDefinitionsClientListOptions,
+	discoveredNamespaces map[string]struct{},
+) {
+	pager := clientMetricsDefinitions.NewListPager(resourceID, opts)
 	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
@@ -462,7 +499,13 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
+			metricNamespace := *v.Namespace
+
+			if discoveredNamespaces != nil {
+				discoveredNamespaces[strings.ToLower(metricNamespace)] = struct{}{}
+			}
+
+			metricAggregations := getMetricAggregations(metricNamespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}
@@ -470,6 +513,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
 			compositeKey := metricsCompositeKey{
+				namespace:    metricNamespace,
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
@@ -477,11 +521,6 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 			s.loadMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
 		}
 	}
-	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
-	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
-		zap.Int("metrics_definitions_count", len(s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)),
-		zap.String("resource_type", resourceType),
-		zap.String("subscription_id", subscriptionID))
 }
 
 // TODO: duplicate
@@ -518,6 +557,19 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
 		now := time.Now().UTC()
+
+		// Anti-duplicate guard: do not re-scrape a (resourceType, compositeKey) pair more often
+		// than its Azure timeGrain. The batch scraper emits points using the original Azure
+		// timestamp (cf. processQueryTimeseriesData), so re-scraping the same window would
+		// republish identical (labels, timestamp) tuples and trigger 409 "duplicate sample
+		// for timestamp" errors on Prometheus-compatible backends (Thanos, Mimir, Cortex…).
+		// This mirrors the guard already present in the non-batch scraper (scraper.go).
+		// Note: the guard is best-effort. metricsByCompositeKey is reset whenever the
+		// metrics definitions cache (CacheResourcesDefinitions, default 24h) expires,
+		// so at most one duplicating scrape may happen right after each expiration and on restarts.
+		if now.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+			continue
+		}
 		metricsByGrain.metricsValuesUpdated = now
 
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
@@ -567,7 +619,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 					response, err := clientMetrics.QueryResources(
 						ctx,
 						subscriptionID,
-						resourceType,
+						compositeKey.namespace,
 						metricsByGrain.metrics[start:end],
 						azmetrics.ResourceIDList{ResourceIDs: resType.resourceIDs[startResources:endResources]},
 						&opts,

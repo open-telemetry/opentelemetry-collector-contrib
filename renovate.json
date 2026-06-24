@@ -241,6 +241,22 @@
       ]
     },
     {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/twmb/franz-go packages",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go{/,}**"
+      ]
+    },
+    {
+      "groupName": "github.com/twmb/franz-go/pkg/kmsg package",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "allowedVersions": "<2.0.0"
+    },
+    {
       "matchPackageNames": [
         "github.com/vmware/govmomi"
       ],

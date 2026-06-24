@@ -67,8 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["FlinkOperatorRecordCount"] = mb.metricFlinkOperatorRecordCount.config.AggregationStrategy
-			aggMap["FlinkOperatorWatermarkOutput"] = mb.metricFlinkOperatorWatermarkOutput.config.AggregationStrategy
+			aggMap["flink.operator.record.count"] = mb.metricFlinkOperatorRecordCount.config.AggregationStrategy
+			aggMap["flink.operator.watermark.output"] = mb.metricFlinkOperatorWatermarkOutput.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -77,125 +77,96 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpointCompleted)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobCheckpointInProgressDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobLastCheckpointSizeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobRestartCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmClassLoaderClassesLoadedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmCPULoadDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmCPUTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryDirectTotalCapacityDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryDirectUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMappedTotalCapacityDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMappedUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmThreadsCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkMemoryManagedTotalDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkMemoryManagedUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "operator_name-val", AttributeRecordIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordFlinkOperatorRecordCountDataPoint(ts, "3", "operator_name-val-2", AttributeRecordIn)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "operator_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "3", "operator_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)

@@ -35,12 +35,14 @@ resource_attributes:
 attributes:
   class:
     description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
+    requirement_level: recommended
     type: string
     enum:
       - datapath
       - services
   direction:
     description: The direction of network flow.
+    requirement_level: recommended
     type: string
     enum:
       - received
@@ -48,6 +50,7 @@ attributes:
   disk_state:
     name_override: state
     description: The state of storage space.
+    requirement_level: recommended
     type: string
     enum:
       - used
@@ -55,6 +58,7 @@ attributes:
   packet.type:
     name_override: type
     description: The type of packet counter.
+    requirement_level: recommended
     type: string
     enum:
       - dropped

@@ -67,12 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["AerospikeNamespaceMemoryUsage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
-			aggMap["AerospikeNamespaceQueryCount"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceScanCount"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceTransactionCount"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionCount"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionOpen"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
+			aggMap["aerospike.namespace.memory.usage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
+			aggMap["aerospike.namespace.query.count"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.scan.count"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.transaction.count"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.count"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.open"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -81,77 +81,63 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "3", AttributeNamespaceComponentIndex)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "3", AttributeQueryTypeBasic, AttributeIndexTypeSecondary, AttributeQueryResultComplete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "3", AttributeScanTypeBasic, AttributeScanResultComplete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "3", AttributeTransactionTypeRead, AttributeTransactionResultFilteredOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "3", AttributeConnectionTypeFabric, AttributeConnectionOpOpen)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "3", AttributeConnectionTypeFabric)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")

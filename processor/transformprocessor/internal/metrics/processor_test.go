@@ -1022,6 +1022,57 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_MergeHistogramBucketsLimitBuckets(t *testing.T) {
+	td := pmetric.NewMetrics()
+	metric := td.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("test_histogram")
+	dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dp.SetCount(17)
+	dp.SetSum(25.5)
+	dp.ExplicitBounds().FromRaw([]float64{0.1, 0.5, 1.0})
+	dp.BucketCounts().FromRaw([]uint64{5, 8, 3, 1})
+
+	processor, err := NewProcessor(
+		[]common.ContextStatements{
+			{
+				Context:    "datapoint",
+				Statements: []string{`merge_histogram_buckets(3, method="limit_buckets") where metric.name == "test_histogram"`},
+			},
+		},
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		DefaultMetricFunctions,
+		DefaultDataPointFunctions,
+	)
+	require.NoError(t, err)
+
+	_, err = processor.ProcessMetrics(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, []float64{0.5}, dp.ExplicitBounds().AsRaw())
+	assert.Equal(t, []uint64{13, 4}, dp.BucketCounts().AsRaw())
+	assert.Equal(t, uint64(17), dp.Count())
+	assert.Equal(t, 25.5, dp.Sum())
+}
+
+func Test_ProcessMetrics_MergeHistogramBucketsLimitBucketsInvalidLiteralTargetValue(t *testing.T) {
+	processor, err := NewProcessor(
+		[]common.ContextStatements{
+			{
+				Context:    "datapoint",
+				Statements: []string{`merge_histogram_buckets(2.5, method="limit_buckets") where metric.name == "test_histogram"`},
+			},
+		},
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		DefaultMetricFunctions,
+		DefaultDataPointFunctions,
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `target_value must be a positive integer when method is "limit_buckets"`)
+	assert.Nil(t, processor)
+}
+
 func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 	tests := []struct {
 		statements []string
@@ -2133,6 +2184,62 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+		})
+	}
+}
+
+// Test_ProcessMetrics_RelaxedMetricNames verifies that OTTL statements can
+// match against and assign instrument names that are disallowed by the
+// current OpenTelemetry instrument-name syntax (`:`, `\`, leading `-`, etc.,
+// and arbitrary UTF-8). It exercises the full statement pipeline: parsing,
+// where-clause comparison, and `set(name, ...)` assignment.
+//
+// This test exists to demonstrate that relaxing the instrument-name
+// restrictions in the OpenTelemetry specification does not require any
+// change to OTTL itself — string literals and the `metric.name` path
+// already accept any UTF-8.
+//
+// See https://github.com/open-telemetry/opentelemetry-specification/issues/4371
+// and https://github.com/open-telemetry/opentelemetry-specification/issues/4736.
+func Test_ProcessMetrics_RelaxedMetricNames(t *testing.T) {
+	tests := []struct {
+		original string
+		renamed  string
+	}{
+		{original: "with:colon", renamed: "renamed:1"},
+		{original: `with\backslash`, renamed: `renamed\backslash`},
+		{original: "with space", renamed: "renamed space"},
+		{original: "-leadingDash", renamed: "renamed-leadingDash"},
+		{original: ".leadingDot", renamed: "renamed.leadingDot"},
+		{original: "with🦀utf8", renamed: "renamed🦀utf8"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.original, func(t *testing.T) {
+			td := pmetric.NewMetrics()
+			m := td.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			m.SetName(tt.original)
+			m.SetEmptySum().SetIsMonotonic(true)
+
+			// Build a statement that both matches on the original (relaxed)
+			// name and assigns a relaxed name. Use Sprintf with %q to
+			// produce correctly-escaped OTTL string literals.
+			statement := fmt.Sprintf(`set(metric.name, %q) where metric.name == %q`, tt.renamed, tt.original)
+
+			processor, err := NewProcessor(
+				[]common.ContextStatements{{Context: "metric", Statements: []string{statement}}},
+				ottl.PropagateError,
+				componenttest.NewNopTelemetrySettings(),
+				DefaultMetricFunctions,
+				DefaultDataPointFunctions,
+			)
+			require.NoError(t, err, "OTTL must accept string literals containing arbitrary UTF-8 characters: %s", statement)
+
+			_, err = processor.ProcessMetrics(t.Context(), td)
+			require.NoError(t, err)
+
+			gotName := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name()
+			assert.Equal(t, tt.renamed, gotName, "OTTL must assign the new name byte-identically; statement was: %s", statement)
 		})
 	}
 }

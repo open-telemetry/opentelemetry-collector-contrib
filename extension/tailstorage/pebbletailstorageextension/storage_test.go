@@ -1,0 +1,148 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package pebbletailstorageextension
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+)
+
+func newStartedTailStorage(t *testing.T) TailStorage {
+	t.Helper()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = t.TempDir()
+
+	ext, err := f.Create(
+		t.Context(),
+		extensiontest.NewNopSettings(f.Type()),
+		cfg,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ext.Shutdown(t.Context()))
+	})
+
+	storage, ok := ext.(TailStorage)
+	require.True(t, ok)
+	return storage
+}
+
+func appendTraceSpan(storage TailStorage, traceID pcommon.TraceID, spanID pcommon.SpanID, name string) {
+	td := ptrace.NewTraces()
+	rss := td.ResourceSpans().AppendEmpty()
+	span := rss.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	if spanID != (pcommon.SpanID{}) {
+		span.SetSpanID(spanID)
+	}
+	if name != "" {
+		span.SetName(name)
+	}
+	_ = storage.Append(traceID, td)
+}
+
+func TestAppendThenTake(t *testing.T) {
+	storage := newStartedTailStorage(t)
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	appendTraceSpan(storage, traceID, pcommon.SpanID{}, "")
+
+	out, err := storage.Take(traceID)
+	require.NoError(t, err)
+	require.Equal(t, 1, out.SpanCount())
+}
+
+func TestDeleteRemovesOnlyTargetTrace(t *testing.T) {
+	storage := newStartedTailStorage(t)
+
+	traceID1 := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	traceID2 := pcommon.TraceID([16]byte{1, 2, 3, 5})
+
+	// Append multiple entries for traceID1 to exercise range deletion.
+	for i := range 3 {
+		appendTraceSpan(storage, traceID1, pcommon.SpanID([8]byte{byte(i + 1)}), "trace1-span")
+	}
+
+	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
+
+	err := storage.Delete(traceID1)
+	require.NoError(t, err)
+
+	out, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
+
+	out2, err := storage.Take(traceID2)
+	require.NoError(t, err)
+	require.Equal(t, 1, out2.SpanCount())
+}
+
+func TestTakeRemovesOnlyTargetTrace(t *testing.T) {
+	storage := newStartedTailStorage(t)
+
+	traceID1 := pcommon.TraceID([16]byte{9, 9, 9, 1})
+	traceID2 := pcommon.TraceID([16]byte{9, 9, 9, 2})
+
+	for i := range 3 {
+		appendTraceSpan(storage, traceID1, pcommon.SpanID([8]byte{byte(i + 1)}), "")
+	}
+
+	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
+
+	out1, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 3, out1.SpanCount())
+
+	out2, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out2.SpanCount())
+
+	out3, err := storage.Take(traceID2)
+	require.NoError(t, err)
+	require.Equal(t, 1, out3.SpanCount())
+}
+
+func TestDropOnStart(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = t.TempDir()
+
+	zc, logs := observer.New(zap.InfoLevel)
+	set := extensiontest.NewNopSettings(f.Type())
+	set.Logger = zap.New(zc)
+
+	first, err := f.Create(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, first.Start(t.Context(), componenttest.NewNopHost()))
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	appendTraceSpan(first.(TailStorage), traceID, pcommon.SpanID{}, "")
+
+	require.NoError(t, first.Shutdown(t.Context()))
+
+	second, err := f.Create(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, second.Start(t.Context(), componenttest.NewNopHost()))
+
+	out, err := second.(TailStorage).Take(traceID)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
+
+	require.NoError(t, second.Shutdown(t.Context()))
+
+	assert.Equal(t, 1, logs.FilterMessage("existing database found; dropping all data as persistence across restarts is not supported").Len())
+}

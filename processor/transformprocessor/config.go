@@ -32,7 +32,7 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The current default value is `propagate`, which will change to `ignore` when the `processor.transform.defaultErrorModeIgnore` feature gate is stable.
+	// The default value is `ignore`, which can be changed back to `propagate` by disabling the `processor.transform.defaultErrorModeIgnore` feature gate.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
@@ -99,6 +99,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		statementsConfigs := make([]any, 0, len(values))
 		var basicStatements []any
 		for _, value := range values {
+			if value == nil {
+				return fmt.Errorf("invalid %s item: empty statement list items are not supported", fieldName)
+			}
 			// Array of strings means it's a basic configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
 				basicStatements = append(basicStatements, value)

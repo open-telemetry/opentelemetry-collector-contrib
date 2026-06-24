@@ -4,7 +4,11 @@
 package drainprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor"
 
 import (
+	"errors"
 	"fmt"
+	"time"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config defines configuration for the drain processor.
@@ -59,6 +63,20 @@ type Config struct {
 	// emitting unstabilised templates. 0 (default) disables warmup suppression and
 	// annotates from the first record.
 	WarmupMinClusters int `mapstructure:"warmup_min_clusters"`
+
+	// Storage is the ID of a storage extension to use for persisting the Drain
+	// tree across restarts. When set, the tree is loaded on startup and saved on
+	// shutdown (and optionally at a periodic interval; see SaveInterval). When a
+	// snapshot is loaded successfully, seed_templates and seed_logs are skipped.
+	// With a shared storage backend (Redis, database), periodic saves let new
+	// instances in a scaled deployment inherit a trained tree from existing
+	// instances. Optional — when unset the processor is stateless.
+	Storage *component.ID `mapstructure:"storage"`
+
+	// SaveInterval is the interval between periodic snapshot saves to storage.
+	// 0 (default) disables periodic saves — the tree is only saved on shutdown.
+	// Requires storage to be set.
+	SaveInterval time.Duration `mapstructure:"save_interval"`
 }
 
 // Validate checks the Config for invalid values.
@@ -71,6 +89,12 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.WarmupMinClusters < 0 {
 		return fmt.Errorf("warmup_min_clusters must be >= 0, got %d", cfg.WarmupMinClusters)
+	}
+	if cfg.SaveInterval < 0 {
+		return fmt.Errorf("save_interval must be >= 0, got %s", cfg.SaveInterval)
+	}
+	if cfg.SaveInterval > 0 && cfg.Storage == nil {
+		return errors.New("save_interval requires storage to be set")
 	}
 	return nil
 }
