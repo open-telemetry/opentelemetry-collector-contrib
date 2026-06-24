@@ -26,9 +26,6 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: idle
@@ -36,9 +33,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: interrupt
@@ -46,9 +40,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: nice
@@ -56,9 +47,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: softirq
@@ -66,9 +54,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: steal
@@ -76,9 +61,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: system
@@ -86,9 +68,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: user
@@ -96,9 +75,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 1.0
                   attributes:
-                    - key: cpu
-                      value:
-                        stringValue: cpu0
                     - key: state
                       value:
                         stringValue: wait
