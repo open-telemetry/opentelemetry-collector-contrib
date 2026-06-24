@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: receiver/mysqlreceiver
+
+note: Remove cjksplunk as a codeowner for the mysqlreceiver
+
+issues: []
+
+change_logs: [user]
