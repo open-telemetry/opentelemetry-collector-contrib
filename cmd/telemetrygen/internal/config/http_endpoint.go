@@ -4,10 +4,9 @@
 package config
 
 import (
+	"net/url"
 	"path"
 	"strings"
-
-	"net/url"
 )
 
 // EndpointHasScheme reports whether endpoint can be passed to WithEndpointURL.
