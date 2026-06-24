@@ -103,9 +103,10 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
-    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -214,6 +215,41 @@ receivers:
         password: "secret"
         mechanism: "SCRAM-SHA-512"
 ```
+
+#### SASL/OAUTHBEARER (OAuth2 token source)
+
+The `OAUTHBEARER` mechanism delegates token acquisition and refresh to an authenticator
+extension referenced by `oauthbearer_token_source`. Any extension that implements the
+`Token(context.Context) (*oauth2.Token, error)` interface works, such as
+[`oauth2clientauth`](../../extension/oauth2clientauthextension/README.md):
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+
+receivers:
+  kafka:
+    tls:
+      insecure: false
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: oauth2client
+
+service:
+  extensions: [oauth2client]
+  pipelines:
+    logs:
+      receivers: [kafka]
+      exporters: [debug]
+```
+
+The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
+as a token source, which supports managed identity, workload identity, and service principal
+for authenticating against Azure Event Hubs.
 
 #### Header extraction
 
