@@ -99,7 +99,7 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 | `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
 | `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
 | `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
-| `recently_active`      | Boolean         | false   | When `true`, only discover metrics that published data in the **last three hours** (the `ListMetrics` `RecentlyActive=PT3H` filter) instead of the default two-week window. In accounts with high resource churn (e.g. autoscaling) this can reduce the number of discovered metrics — and therefore GetMetricData cost — by an order of magnitude, by excluding metrics from terminated resources. `PT3H` is the only window AWS supports for this filter. |
+| `recently_active`      | Boolean         | false   | When `true` restricts discovery to metrics that have published data in the past three hours. By default this receiver returns every metric that reported data in the past two weeks, which includes metrics from terminated resources. Enabling this dramatically reduces the number of discovered metrics high resource churn. |
 
 #### Statistics
 
