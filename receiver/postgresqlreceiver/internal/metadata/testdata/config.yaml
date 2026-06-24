@@ -27,6 +27,9 @@ all_set:
       enabled: true
     postgresql.connection.max:
       enabled: true
+    postgresql.database.conflicts:
+      enabled: true
+      attributes: ["type"]
     postgresql.database.count:
       enabled: true
     postgresql.database.locks:
@@ -128,6 +131,9 @@ reaggregate_set:
       enabled: true
     postgresql.connection.max:
       enabled: true
+    postgresql.database.conflicts:
+      enabled: true
+      attributes: []
     postgresql.database.count:
       enabled: true
     postgresql.database.locks:
@@ -229,6 +235,9 @@ none_set:
       enabled: false
     postgresql.connection.max:
       enabled: false
+    postgresql.database.conflicts:
+      enabled: false
+      attributes: ["type"]
     postgresql.database.count:
       enabled: false
     postgresql.database.locks:

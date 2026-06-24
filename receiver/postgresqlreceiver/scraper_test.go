@@ -69,6 +69,7 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 
@@ -123,6 +124,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlDatabaseConflicts.Enabled)
+		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err := scraper.scrape(t.Context())
@@ -148,6 +151,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = false
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = false
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
+		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = false
 
 		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err = scraper.scrape(t.Context())
@@ -361,6 +365,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlDatabaseConflicts.Enabled)
+		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
 		actualMetrics, err := scraper.scrape(t.Context())
@@ -1023,6 +1029,11 @@ func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (ma
 	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
 }
 
+func (m *mockClient) getDatabaseConflicts(_ context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]databaseConflictStats), args.Error(1)
+}
+
 func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]databaseLocks), args.Error(1)
@@ -1117,6 +1128,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		m.On("listDatabases").Return(databases, nil)
 
 		dbStats := map[databaseName]databaseStats{}
+		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
 
@@ -1135,11 +1147,19 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				blksRead:             int64(idx + 11),
 				tempIo:               int64(idx + 12),
 			}
+			dbConflictStats[databaseName(db)] = databaseConflictStats{
+				conflTablespace: int64(idx + 13),
+				conflLock:       int64(idx + 14),
+				conflSnapshot:   int64(idx + 15),
+				conflBufferpin:  int64(idx + 16),
+				conflDeadlock:   int64(idx + 17),
+			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
 		}
 
 		m.On("getDatabaseStats", databases).Return(dbStats, nil)
+		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{

@@ -106,6 +106,44 @@ var MapAttributeBgDurationType = map[string]AttributeBgDurationType{
 	"write": AttributeBgDurationTypeWrite,
 }
 
+// AttributeConflictType specifies the value conflict_type attribute.
+type AttributeConflictType int
+
+const (
+	_ AttributeConflictType = iota
+	AttributeConflictTypeTablespace
+	AttributeConflictTypeLock
+	AttributeConflictTypeSnapshot
+	AttributeConflictTypeBufferpin
+	AttributeConflictTypeDeadlock
+)
+
+// String returns the string representation of the AttributeConflictType.
+func (av AttributeConflictType) String() string {
+	switch av {
+	case AttributeConflictTypeTablespace:
+		return "tablespace"
+	case AttributeConflictTypeLock:
+		return "lock"
+	case AttributeConflictTypeSnapshot:
+		return "snapshot"
+	case AttributeConflictTypeBufferpin:
+		return "bufferpin"
+	case AttributeConflictTypeDeadlock:
+		return "deadlock"
+	}
+	return ""
+}
+
+// MapAttributeConflictType is a helper map of string to AttributeConflictType attribute value.
+var MapAttributeConflictType = map[string]AttributeConflictType{
+	"tablespace": AttributeConflictTypeTablespace,
+	"lock":       AttributeConflictTypeLock,
+	"snapshot":   AttributeConflictTypeSnapshot,
+	"bufferpin":  AttributeConflictTypeBufferpin,
+	"deadlock":   AttributeConflictTypeDeadlock,
+}
+
 // AttributeDbSystemName specifies the value db.system.name attribute.
 type AttributeDbSystemName int
 
@@ -306,6 +344,9 @@ var MetricsInfo = metricsInfo{
 	PostgresqlConnectionMax: metricInfo{
 		Name: "postgresql.connection.max",
 	},
+	PostgresqlDatabaseConflicts: metricInfo{
+		Name: "postgresql.database.conflicts",
+	},
 	PostgresqlDatabaseCount: metricInfo{
 		Name: "postgresql.database.count",
 	},
@@ -402,6 +443,7 @@ type metricsInfo struct {
 	PostgresqlBlocksRead               metricInfo
 	PostgresqlCommits                  metricInfo
 	PostgresqlConnectionMax            metricInfo
+	PostgresqlDatabaseConflicts        metricInfo
 	PostgresqlDatabaseCount            metricInfo
 	PostgresqlDatabaseLocks            metricInfo
 	PostgresqlDbSize                   metricInfo
@@ -1152,6 +1194,97 @@ func (m *metricPostgresqlConnectionMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlConnectionMax(cfg PostgresqlConnectionMaxMetricConfig) metricPostgresqlConnectionMax {
 	m := metricPostgresqlConnectionMax{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlDatabaseConflicts struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        PostgresqlDatabaseConflictsMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills postgresql.database.conflicts metric with initial data.
+func (m *metricPostgresqlDatabaseConflicts) init() {
+	m.data.SetName("postgresql.database.conflicts")
+	m.data.SetDescription("Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.")
+	m.data.SetUnit("{conflict}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricPostgresqlDatabaseConflicts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, conflictTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseConflictsMetricAttributeKeyConflictType) {
+		dp.Attributes().PutStr("type", conflictTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlDatabaseConflicts) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlDatabaseConflicts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlDatabaseConflicts(cfg PostgresqlDatabaseConflictsMetricConfig) metricPostgresqlDatabaseConflicts {
+	m := metricPostgresqlDatabaseConflicts{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2754,6 +2887,7 @@ type MetricsBuilder struct {
 	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
 	metricPostgresqlCommits                  metricPostgresqlCommits
 	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
+	metricPostgresqlDatabaseConflicts        metricPostgresqlDatabaseConflicts
 	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
 	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
 	metricPostgresqlDbSize                   metricPostgresqlDbSize
@@ -2815,6 +2949,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
 		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
 		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseConflicts:        newMetricPostgresqlDatabaseConflicts(mbc.Metrics.PostgresqlDatabaseConflicts),
 		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
 		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
 		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
@@ -2953,6 +3088,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
 	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
+	mb.metricPostgresqlDatabaseConflicts.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseLocks.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
@@ -3062,6 +3198,11 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp,
 // RecordPostgresqlConnectionMaxDataPoint adds a data point to postgresql.connection.max metric.
 func (mb *MetricsBuilder) RecordPostgresqlConnectionMaxDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlConnectionMax.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlDatabaseConflictsDataPoint adds a data point to postgresql.database.conflicts metric.
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseConflictsDataPoint(ts pcommon.Timestamp, val int64, conflictTypeAttributeValue AttributeConflictType) {
+	mb.metricPostgresqlDatabaseConflicts.recordDataPoint(mb.startTime, ts, val, conflictTypeAttributeValue.String())
 }
 
 // RecordPostgresqlDatabaseCountDataPoint adds a data point to postgresql.database.count metric.

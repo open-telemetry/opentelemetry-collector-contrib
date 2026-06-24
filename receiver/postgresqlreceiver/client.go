@@ -53,6 +53,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error)
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -301,6 +302,54 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 		}
 	}
 	return dbStats, errs
+}
+
+// databaseConflictStats holds the per-database query cancellation counters from
+// pg_stat_database_conflicts. These counters are only incremented on standby
+// servers, where queries can be canceled due to conflicts with recovery.
+type databaseConflictStats struct {
+	conflTablespace int64
+	conflLock       int64
+	conflSnapshot   int64
+	conflBufferpin  int64
+	conflDeadlock   int64
+}
+
+func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases []string) (map[databaseName]databaseConflictStats, error) {
+	query := filterQueryByDatabases(
+		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
+		databases,
+		false,
+	)
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs error
+	conflictStats := map[databaseName]databaseConflictStats{}
+
+	for rows.Next() {
+		var datname string
+		var conflTablespace, conflLock, conflSnapshot, conflBufferpin, conflDeadlock int64
+		err = rows.Scan(&datname, &conflTablespace, &conflLock, &conflSnapshot, &conflBufferpin, &conflDeadlock)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			conflictStats[databaseName(datname)] = databaseConflictStats{
+				conflTablespace: conflTablespace,
+				conflLock:       conflLock,
+				conflSnapshot:   conflSnapshot,
+				conflBufferpin:  conflBufferpin,
+				conflDeadlock:   conflDeadlock,
+			}
+		}
+	}
+	return conflictStats, multierr.Append(errs, rows.Err())
 }
 
 type databaseLocks struct {

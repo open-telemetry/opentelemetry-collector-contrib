@@ -108,9 +108,10 @@ func newPostgreSQLScraper(
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap map[databaseName]int64
-	dbSizeMap   map[databaseName]int64
-	dbStats     map[databaseName]databaseStats
+	activityMap     map[databaseName]int64
+	dbSizeMap       map[databaseName]int64
+	dbStats         map[databaseName]databaseStats
+	dbConflictStats map[databaseName]databaseConflictStats
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -143,9 +144,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		activityMap: make(map[databaseName]int64),
-		dbSizeMap:   make(map[databaseName]int64),
-		dbStats:     make(map[databaseName]databaseStats),
+		activityMap:     make(map[databaseName]int64),
+		dbSizeMap:       make(map[databaseName]int64),
+		dbStats:         make(map[databaseName]databaseStats),
+		dbConflictStats: make(map[databaseName]databaseConflictStats),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -420,6 +422,14 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
 	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
 
+	// pg_stat_database_conflicts is queried separately and only when the metric is
+	// enabled, since the counters are only populated on standby servers and would
+	// otherwise add an unnecessary query on every scrape.
+	if p.config.Metrics.PostgresqlDatabaseConflicts.Enabled {
+		wg.Add(1)
+		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
+	}
+
 	wg.Wait()
 }
 
@@ -445,6 +455,13 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted)
 		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit)
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
+	}
+	if conflicts, ok := r.dbConflictStats[dbName]; ok {
+		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributeConflictTypeTablespace)
+		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflLock, metadata.AttributeConflictTypeLock)
+		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflSnapshot, metadata.AttributeConflictTypeSnapshot)
+		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributeConflictTypeBufferpin)
+		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributeConflictTypeDeadlock)
 	}
 	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -689,6 +706,26 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	}
 	r.Lock()
 	r.dbStats = dbStats
+	r.Unlock()
+}
+
+func (p *postgreSQLScraper) retrieveDatabaseConflicts(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	client client,
+	databases []string,
+	r *dbRetrieval,
+	errs *errsMux,
+) {
+	defer wg.Done()
+	dbConflictStats, err := client.getDatabaseConflicts(ctx, databases)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching database recovery conflicts", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	r.Lock()
+	r.dbConflictStats = dbConflictStats
 	r.Unlock()
 }
 

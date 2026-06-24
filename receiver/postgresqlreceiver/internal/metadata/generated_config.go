@@ -341,6 +341,54 @@ func (ms *PostgresqlConnectionMaxMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// PostgresqlDatabaseConflictsMetricAttributeKey specifies the key of an attribute for the postgresql.database.conflicts metric.
+type PostgresqlDatabaseConflictsMetricAttributeKey string
+
+const (
+	PostgresqlDatabaseConflictsMetricAttributeKeyConflictType PostgresqlDatabaseConflictsMetricAttributeKey = "type"
+)
+
+// PostgresqlDatabaseConflictsMetricConfig provides config for the postgresql.database.conflicts metric.
+type PostgresqlDatabaseConflictsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlDatabaseConflictsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlDatabaseConflictsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlDatabaseConflictsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlDatabaseConflictsMetricAttributeKeyConflictType:
+		default:
+			return fmt.Errorf("metric postgresql.database.conflicts doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlDatabaseCountMetricConfig provides config for the postgresql.database.count metric.
 type PostgresqlDatabaseCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1054,6 +1102,7 @@ type MetricsConfig struct {
 	PostgresqlBlocksRead               PostgresqlBlocksReadMetricConfig               `mapstructure:"postgresql.blocks_read"`
 	PostgresqlCommits                  PostgresqlCommitsMetricConfig                  `mapstructure:"postgresql.commits"`
 	PostgresqlConnectionMax            PostgresqlConnectionMaxMetricConfig            `mapstructure:"postgresql.connection.max"`
+	PostgresqlDatabaseConflicts        PostgresqlDatabaseConflictsMetricConfig        `mapstructure:"postgresql.database.conflicts"`
 	PostgresqlDatabaseCount            PostgresqlDatabaseCountMetricConfig            `mapstructure:"postgresql.database.count"`
 	PostgresqlDatabaseLocks            PostgresqlDatabaseLocksMetricConfig            `mapstructure:"postgresql.database.locks"`
 	PostgresqlDbSize                   PostgresqlDbSizeMetricConfig                   `mapstructure:"postgresql.db_size"`
@@ -1123,6 +1172,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlConnectionMax: PostgresqlConnectionMaxMetricConfig{
 			Enabled: true,
+		},
+		PostgresqlDatabaseConflicts: PostgresqlDatabaseConflictsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlDatabaseConflictsMetricAttributeKey{PostgresqlDatabaseConflictsMetricAttributeKeyConflictType},
 		},
 		PostgresqlDatabaseCount: PostgresqlDatabaseCountMetricConfig{
 			Enabled: true,
