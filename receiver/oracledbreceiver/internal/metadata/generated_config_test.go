@@ -474,6 +474,114 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestOracledbExecutionUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbExecutionUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbExecutionUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.execution.utilization doesn't have an attribute invalid, valid attributes: [oracledb.parse.type]")
+
+	cfg = DefaultMetricsConfig().OracledbExecutionUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbParseRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbParseRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbParseRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.parse.rate doesn't have an attribute invalid, valid attributes: [oracledb.parse.result]")
+
+	cfg = DefaultMetricsConfig().OracledbParseRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalIoRequestsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalIoRequests
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalIoRequestsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.requests doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.block_size]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalIoRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbPhysicalIoTransferredMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbPhysicalIoTransferred
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbPhysicalIoTransferredMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.physical_io.transferred doesn't have an attribute invalid, valid attributes: [disk.io.direction, disk.io.type]")
+
+	cfg = DefaultMetricsConfig().OracledbPhysicalIoTransferred
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSessionsUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSessionsUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSessionsUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sessions.usage doesn't have an attribute invalid, valid attributes: [session_type, session_status]")
+
+	cfg = DefaultMetricsConfig().OracledbSessionsUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSortRatioMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSortRatio
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSortRatioMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sort.ratio doesn't have an attribute invalid, valid attributes: [oracledb.sort.type]")
+
+	cfg = DefaultMetricsConfig().OracledbSortRatio
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbSqlnetIoTransferredMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbSqlnetIoTransferred
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbSqlnetIoTransferredMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.sqlnet.io.transferred doesn't have an attribute invalid, valid attributes: [network.io.direction, destination.type]")
+
+	cfg = DefaultMetricsConfig().OracledbSqlnetIoTransferred
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbTablespaceSizeLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbTablespaceSizeLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbTablespaceSizeLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.limit doesn't have an attribute invalid, valid attributes: [tablespace_name]")
+
+	cfg = DefaultMetricsConfig().OracledbTablespaceSizeLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOracledbTablespaceSizeUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbTablespaceSizeUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbTablespaceSizeUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.tablespace_size.usage doesn't have an attribute invalid, valid attributes: [tablespace_name]")
+
+	cfg = DefaultMetricsConfig().OracledbTablespaceSizeUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
