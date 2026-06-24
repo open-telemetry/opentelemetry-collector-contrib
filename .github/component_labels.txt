@@ -4,7 +4,6 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
-cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
@@ -227,6 +226,7 @@ processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
+receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
@@ -324,7 +324,6 @@ receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
 receiver/signalfxreceiver receiver/signalfx
-receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
 receiver/snowflakereceiver receiver/snowflake
@@ -359,3 +358,4 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+receiver/simpleprometheusreceiver receiver/simpleprometheus

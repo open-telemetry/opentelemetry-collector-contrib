@@ -110,285 +110,240 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaAlertCountDataPoint(ts, "3", "alert_rating-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaBackupLatestDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "3", AttributeColumnMemoryTypeDelta, AttributeColumnMemorySubtypeDict)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "3", "component-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaConnectionCountDataPoint(ts, "3", AttributeConnectionStatusIdle)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaCPUUsedDataPoint(ts, "3", AttributeCPUTypeSystem)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeDiskStateUsedFreeFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "3", AttributeHostSwapStateFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceCodeSizeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "system-val", "product-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicensePeakDataPoint(ts, "1", "system-val", "product-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "3", AttributeActivePendingRequestStatePending)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "3", AttributeInternalExternalRequestTypeExternal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "3", AttributeRowMemoryTypeVariable)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "3", "schema-val-2", AttributeSchemaMemoryTypeDelta)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "3", "schema-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "3", "schema-val-2", AttributeSchemaOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "3", "schema-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "3", "schema-val-2", AttributeSchemaRecordTypeDelta)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceCountDataPoint(ts, "3", AttributeServiceStatusInactive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "3", "service-val-2", AttributeServiceMemoryUsedTypeLogical)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceStackSizeDataPoint(ts, "3", "service-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceThreadCountDataPoint(ts, "3", AttributeThreadStatusInactive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaTransactionBlockedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaTransactionCountDataPoint(ts, "3", AttributeTransactionTypeCommit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaUptimeDataPoint(ts, "1", "system-val", "database-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
