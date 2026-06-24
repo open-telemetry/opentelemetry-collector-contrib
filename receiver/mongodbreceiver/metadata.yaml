@@ -59,8 +59,8 @@ attributes:
     description: The name of a database.
     type: string
     requirement_level: recommended
-  db.operation.id:
-    description: Identifier of the MongoDB operation.
+  db.operation.name:
+    description: The name of the MongoDB command being executed (e.g. find, aggregate, insert).
     type: string
   db.query.text:
     description: The obfuscated MongoDB command statement.
@@ -133,6 +133,9 @@ attributes:
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
+  mongodb.operation.id:
+    description: Identifier of the MongoDB operation.
+    type: string
   mongodb.operation.plan.summary:
     description: Summary of the execution plan for the MongoDB operation.
     type: string
@@ -209,7 +212,7 @@ events:
       - db.system.name
       - db.namespace
       - db.collection.name
-      - db.operation.id
+      - db.operation.name
       - db.query.text
       - mongodb.query.truncated
       - user.name
@@ -222,6 +225,7 @@ events:
       - mongodb.cursor.returned_documents
       - mongodb.cursor.tailable
       - mongodb.lsid.id
+      - mongodb.operation.id
       - mongodb.operation.plan.summary
       - mongodb.query.framework
       - mongodb.operation.state

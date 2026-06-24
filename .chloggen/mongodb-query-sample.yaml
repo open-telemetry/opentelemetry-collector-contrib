@@ -16,15 +16,10 @@ issues: [48573]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Samples are sourced from the `$currentOp` aggregation pipeline, filtered to exclude idle
-  connections and noisy administrative commands (`hello`, `ping`, `isMaster` on the `admin`/`local`
-  namespaces). Each event carries the obfuscated query text plus operation metadata such as
-  `db.operation.id`, `mongodb.operation.type`, `mongodb.operation.comment`, plan summary, wait
-  details, cursor statistics, client application info, and effective user. See `documentation.md`
-  for the full attribute list.
-  The `logs` signal is at `development` stability; the event schema and attribute names may change
-  in backwards-incompatible ways as this functionality matures and as OpenTelemetry semantic
-  conventions for `db.server.query_sample` stabilize. The `metrics` signal remains at `beta`.
+  Samples are collected via `$currentOp`, with idle connections and administrative commands
+  filtered out. Each event includes obfuscated query text and operation metadata.
+  The `logs` signal is at `development` stability; attribute names may change until OTel
+  `db.server.query_sample` conventions stabilize. The `metrics` signal remains at `beta`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

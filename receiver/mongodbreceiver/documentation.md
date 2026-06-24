@@ -567,7 +567,7 @@ query sample
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
 | db.namespace | The name of a database. | Any Str | - |
 | db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
-| db.operation.id | Identifier of the MongoDB operation. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed (e.g. find, aggregate, insert). | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
 | mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
@@ -580,6 +580,7 @@ query sample
 | mongodb.cursor.returned_documents | The cumulative number of documents returned by the cursor. | Any Int | - |
 | mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
 | mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
+| mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | mongodb.operation.plan.summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
 | mongodb.query.framework | The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
  | Any Str | - |

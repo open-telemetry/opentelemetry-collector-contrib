@@ -74,6 +74,10 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
+	if c.QuerySampleCollection.MaxRowsPerQuery == 0 {
+		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
+	}
+
 	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
