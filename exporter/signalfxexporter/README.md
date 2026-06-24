@@ -64,12 +64,12 @@ The following configuration options can also be configured:
   excluded from sending to Signalfx backend. The filtering is applied after the default 
   translations controlled by `disable_default_translation_rules` option.
   See in [testdata/config.yaml](./testdata/config.yaml) for examples. Apart from the values explicitly
-  provided via this option, by default, [default metrics](./internal/translation/default_metrics.go) are
+  provided via this option, by default, [default metrics](./internal/translation/default_metrics.yaml) are
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
-  default. See [default metrics](./internal/translation/default_metrics.go) for a list of metrics
+  default. See [default metrics](./internal/translation/default_metrics.yaml) for a list of metrics
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
   ```yaml
@@ -87,7 +87,7 @@ The following configuration options can also be configured:
   updates.
 - `disable_default_translation_rules` (default = `false`): Disable default translation
   of the OTel metrics to a SignalFx compatible format. The default translation rules are
-  defined in [`internal/translation/constants.go`](./internal/translation/constants.go).
+  defined in [`internal/translation/default_translation_rules.yaml`](./internal/translation/default_translation_rules.yaml).
 - `timeout` (default = 10s): Amount of time to wait for a send operation to
   complete.
 - `http2_read_idle_timeout` (default = 10s): Send a ping frame for a health check if the connection has been idle for the configured value.
@@ -190,9 +190,9 @@ One of `realm` and `api_url` are required.
   - `sync_attributes` (default = `{"k8s.pod.uid": "k8s.pod.uid", "container.id": "container.id"}`) Map containing key of the attribute to read from spans to sync to dimensions specified as the value.
 
 ## Default Metric Filters
-[List of metrics excluded by default](./internal/translation/default_metrics.go)
+[List of metrics excluded by default](./internal/translation/default_metrics.yaml)
 
-Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.go). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If the default translation rules are enabled and match an exclusion rule, the exclusion takes precedence. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
+Some OpenTelemetry receivers may send metrics that SignalFx considers to be categorized as custom metrics. In order to prevent unwanted overage usage due to custom metrics from these receivers, the SignalFx exporter has a [set of metrics excluded by default](./internal/translation/default_metrics.yaml). Some exclusion rules use regex to exclude multiple metric names. Some metrics are only excluded if specific resource labels (dimensions) are present. If the default translation rules are enabled and match an exclusion rule, the exclusion takes precedence. Users may configure the SignalFx exporter's `include_metrics` config option to override the any of the default exclusions, as `include_metrics` will always take precedence over any exclusions. An example of `include_metrics` is shown below.
 
 ```
 exporters:
@@ -204,21 +204,9 @@ exporters:
           state: [interrupt, user, system]
 ```
 
-The following `include_metrics` example would instruct the exporter to send only `cpu.interrupt` metrics with a `cpu` dimension value ("per core" datapoints), and both "per core" and aggregate `cpu.idle` metrics:
-
-```
-exporters:
-  signalfx:
-    include_metrics:
-      - metric_name: "cpu.idle"
-      - metric_name: "cpu.interrupt"
-        dimensions:
-          cpu: ["*"]
-```
-
 ## Translation Rules and Metric Transformations
 
-The default translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by the SignalFx exporter
+The default translation rules defined in [`translation/default_translation_rules.yaml`](./internal/translation/default_translation_rules.yaml) are used by the SignalFx exporter
 to help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector.
 The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md):
 
@@ -231,7 +219,6 @@ The default rules will create the following aggregated metrics from the [`hostme
 * cpu.system
 * cpu.user
 * cpu.utilization
-* cpu.utilization_per_core
 * cpu.wait
 * disk.summary_utilization
 * disk.utilization
@@ -249,19 +236,6 @@ The default rules will create the following aggregated metrics from the [`hostme
 * vmpage_io.memory.out
 * vmpage_io.swap.in
 * vmpage_io.swap.out
-
-In addition to the aggregated metrics, the default translation rules make available the following "per core" custom hostmetrics.
-The CPU number is assigned to the dimension `cpu` 
-
-* cpu.interrupt
-* cpu.nice
-* cpu.softirq
-* cpu.steal
-* cpu.system
-* cpu.user
-* cpu.wait
-
-These metrics are intended to be reported directly to Splunk IM by the SignalFx exporter.  Any desired changes to their attributes or values should be made via their constituent host metrics.
 
 ## Example Config
 
