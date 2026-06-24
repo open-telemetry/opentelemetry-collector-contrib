@@ -94,11 +94,11 @@ func (rs *redisScraper) recordUsedCPUUserMainThread(now pcommon.Timestamp, val f
 }
 
 func (rs *redisScraper) recordPubsubChannels(now pcommon.Timestamp, val int64) {
-	rs.mb.RecordRedisPubsubChannelsDataPoint(now, val, metadata.AttributeTypeActive)
+	rs.mb.RecordRedisPubsubChannelStatusDataPoint(now, val, metadata.AttributeRedisPubsubChannelStateActive)
 }
 
 func (rs *redisScraper) recordPubsubShardChannels(now pcommon.Timestamp, val int64) {
-	rs.mb.RecordRedisPubsubChannelsDataPoint(now, val, metadata.AttributeTypeShard)
+	rs.mb.RecordRedisPubsubChannelStatusDataPoint(now, val, metadata.AttributeRedisPubsubChannelStateShard)
 }
 
 func (rs *redisScraper) recordPubsubPatternsActive(now pcommon.Timestamp, val int64) {

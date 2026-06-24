@@ -228,7 +228,7 @@ The total number of bytes written to the network
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
-### redis.pubsub.channels
+### redis.pubsub.channel.status
 
 Number of pub/sub channels
 
@@ -240,7 +240,7 @@ Number of pub/sub channels
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| type | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
+| redis.pubsub.channel.state | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
 
 ### redis.pubsub.pattern.status
 

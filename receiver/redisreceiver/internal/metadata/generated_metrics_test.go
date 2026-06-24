@@ -76,7 +76,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["redis.db.expires"] = mb.metricRedisDbExpires.config.AggregationStrategy
 			aggMap["redis.db.keys"] = mb.metricRedisDbKeys.config.AggregationStrategy
 			aggMap["redis.mode"] = mb.metricRedisMode.config.AggregationStrategy
-			aggMap["redis.pubsub.channels"] = mb.metricRedisPubsubChannels.config.AggregationStrategy
+			aggMap["redis.pubsub.channel.status"] = mb.metricRedisPubsubChannelStatus.config.AggregationStrategy
 			aggMap["redis.pubsub.pattern.status"] = mb.metricRedisPubsubPatternStatus.config.AggregationStrategy
 			aggMap["redis.role"] = mb.metricRedisRole.config.AggregationStrategy
 
@@ -273,9 +273,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisPubsubChannelsDataPoint(ts, 1, AttributeTypeActive)
+			mb.RecordRedisPubsubChannelStatusDataPoint(ts, 1, AttributeRedisPubsubChannelStateActive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordRedisPubsubChannelsDataPoint(ts, 3, AttributeTypeShard)
+				mb.RecordRedisPubsubChannelStatusDataPoint(ts, 3, AttributeRedisPubsubChannelStateShard)
 			}
 
 			allMetricsCount++
@@ -354,7 +354,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricRedisDbExpires.aggDataPoints)
 				assert.Empty(t, mb.metricRedisDbKeys.aggDataPoints)
 				assert.Empty(t, mb.metricRedisMode.aggDataPoints)
-				assert.Empty(t, mb.metricRedisPubsubChannels.aggDataPoints)
+				assert.Empty(t, mb.metricRedisPubsubChannelStatus.aggDataPoints)
 				assert.Empty(t, mb.metricRedisPubsubPatternStatus.aggDataPoints)
 				assert.Empty(t, mb.metricRedisRole.aggDataPoints)
 			}
@@ -1213,10 +1213,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.pubsub.channels":
+				case "redis.pubsub.channel.status":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["redis.pubsub.channels"], "Found a duplicate in the metrics slice: redis.pubsub.channels")
-						validatedMetrics["redis.pubsub.channels"] = true
+						assert.False(t, validatedMetrics["redis.pubsub.channel.status"], "Found a duplicate in the metrics slice: redis.pubsub.channel.status")
+						validatedMetrics["redis.pubsub.channel.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Number of pub/sub channels", mi.Description())
@@ -1228,12 +1228,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						typeAttrVal, ok := dp.Attributes().Get("type")
+						redisPubsubChannelStateAttrVal, ok := dp.Attributes().Get("redis.pubsub.channel.state")
 						assert.True(t, ok)
-						assert.Equal(t, "active", typeAttrVal.Str())
+						assert.Equal(t, "active", redisPubsubChannelStateAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["redis.pubsub.channels"], "Found a duplicate in the metrics slice: redis.pubsub.channels")
-						validatedMetrics["redis.pubsub.channels"] = true
+						assert.False(t, validatedMetrics["redis.pubsub.channel.status"], "Found a duplicate in the metrics slice: redis.pubsub.channel.status")
+						validatedMetrics["redis.pubsub.channel.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Number of pub/sub channels", mi.Description())
@@ -1244,7 +1244,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["redis.pubsub.channels"] {
+						switch aggMap["redis.pubsub.channel.status"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1254,7 +1254,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("type")
+						_, ok := dp.Attributes().Get("redis.pubsub.channel.state")
 						assert.False(t, ok)
 					}
 				case "redis.pubsub.connection.count":

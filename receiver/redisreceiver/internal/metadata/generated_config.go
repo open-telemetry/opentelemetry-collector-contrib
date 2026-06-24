@@ -1142,23 +1142,23 @@ func (ms *RedisNetOutputMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RedisPubsubChannelsMetricAttributeKey specifies the key of an attribute for the redis.pubsub.channels metric.
-type RedisPubsubChannelsMetricAttributeKey string
+// RedisPubsubChannelStatusMetricAttributeKey specifies the key of an attribute for the redis.pubsub.channel.status metric.
+type RedisPubsubChannelStatusMetricAttributeKey string
 
 const (
-	RedisPubsubChannelsMetricAttributeKeyType RedisPubsubChannelsMetricAttributeKey = "type"
+	RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState RedisPubsubChannelStatusMetricAttributeKey = "redis.pubsub.channel.state"
 )
 
-// RedisPubsubChannelsMetricConfig provides config for the redis.pubsub.channels metric.
-type RedisPubsubChannelsMetricConfig struct {
+// RedisPubsubChannelStatusMetricConfig provides config for the redis.pubsub.channel.status metric.
+type RedisPubsubChannelStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []RedisPubsubChannelsMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisPubsubChannelStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *RedisPubsubChannelsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RedisPubsubChannelStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1172,12 +1172,12 @@ func (ms *RedisPubsubChannelsMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *RedisPubsubChannelsMetricConfig) Validate() error {
+func (ms *RedisPubsubChannelStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case RedisPubsubChannelsMetricAttributeKeyType:
+		case RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState:
 		default:
-			return fmt.Errorf("metric redis.pubsub.channels doesn't have an attribute %v, valid attributes: [type]", val)
+			return fmt.Errorf("metric redis.pubsub.channel.status doesn't have an attribute %v, valid attributes: [redis.pubsub.channel.state]", val)
 		}
 	}
 
@@ -1612,7 +1612,7 @@ type MetricsConfig struct {
 	RedisMode                                 RedisModeMetricConfig                                 `mapstructure:"redis.mode"`
 	RedisNetInput                             RedisNetInputMetricConfig                             `mapstructure:"redis.net.input"`
 	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
-	RedisPubsubChannels                       RedisPubsubChannelsMetricConfig                       `mapstructure:"redis.pubsub.channels"`
+	RedisPubsubChannelStatus                  RedisPubsubChannelStatusMetricConfig                  `mapstructure:"redis.pubsub.channel.status"`
 	RedisPubsubConnectionCount                RedisPubsubConnectionCountMetricConfig                `mapstructure:"redis.pubsub.connection.count"`
 	RedisPubsubPatternStatus                  RedisPubsubPatternStatusMetricConfig                  `mapstructure:"redis.pubsub.pattern.status"`
 	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
@@ -1783,10 +1783,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisNetOutput: RedisNetOutputMetricConfig{
 			Enabled: true,
 		},
-		RedisPubsubChannels: RedisPubsubChannelsMetricConfig{
+		RedisPubsubChannelStatus: RedisPubsubChannelStatusMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []RedisPubsubChannelsMetricAttributeKey{RedisPubsubChannelsMetricAttributeKeyType},
+			EnabledAttributes:   []RedisPubsubChannelStatusMetricAttributeKey{RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState},
 		},
 		RedisPubsubConnectionCount: RedisPubsubConnectionCountMetricConfig{
 			Enabled: false,

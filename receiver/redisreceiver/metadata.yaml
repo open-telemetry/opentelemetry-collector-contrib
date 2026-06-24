@@ -62,6 +62,14 @@ attributes:
       - p50
       - p99
       - p99.9
+  redis.pubsub.channel.state:
+    description: The type of pub/sub channel
+    type: string
+    requirement_level: recommended
+    # Redis versions < 7.0 only have active channel
+    enum:
+      - active
+      - shard
   redis.pubsub.pattern.state:
     description: The state of pub/sub patterns
     type: string
@@ -95,14 +103,6 @@ attributes:
       - user
       - user_children
       - user_main_thread
-  type:
-    description: The type of pub/sub channel
-    type: string
-    requirement_level: recommended
-    # Redis versions < 7.0 only have active channel
-    enum:
-      - active
-      - shard
 
 metrics:
   redis.clients.blocked:
@@ -506,7 +506,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
-  redis.pubsub.channels:
+  redis.pubsub.channel.status:
     enabled: true
     description: Number of pub/sub channels
     stability: development
@@ -515,7 +515,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [type]
+    attributes: [redis.pubsub.channel.state]
 
   redis.pubsub.connection.count:
     enabled: false

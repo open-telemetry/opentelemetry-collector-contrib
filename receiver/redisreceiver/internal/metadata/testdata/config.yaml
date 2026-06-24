@@ -98,9 +98,9 @@ all_set:
       enabled: true
     redis.net.output:
       enabled: true
-    redis.pubsub.channels:
+    redis.pubsub.channel.status:
       enabled: true
-      attributes: ["type"]
+      attributes: ["redis.pubsub.channel.state"]
     redis.pubsub.connection.count:
       enabled: true
     redis.pubsub.pattern.status:
@@ -241,7 +241,7 @@ reaggregate_set:
       enabled: true
     redis.net.output:
       enabled: true
-    redis.pubsub.channels:
+    redis.pubsub.channel.status:
       enabled: true
       attributes: []
     redis.pubsub.connection.count:
@@ -384,9 +384,9 @@ none_set:
       enabled: false
     redis.net.output:
       enabled: false
-    redis.pubsub.channels:
+    redis.pubsub.channel.status:
       enabled: false
-      attributes: ["type"]
+      attributes: ["redis.pubsub.channel.state"]
     redis.pubsub.connection.count:
       enabled: false
     redis.pubsub.pattern.status:
