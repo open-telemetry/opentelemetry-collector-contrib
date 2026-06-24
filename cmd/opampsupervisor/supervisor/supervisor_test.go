@@ -316,11 +316,10 @@ service:
 			require.Equal(t, tt.wantChanged, changed)
 			got := s.cfgState.Load().(*configState).mergedConfig
 
-			k := koanf.New("::")
-			err = k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+			wantConf, err := config.NewConfFromYAML(tt.wantConfig)
 			require.NoError(t, err)
 
-			gotParsed, err := k.Marshal(yaml.Parser())
+			gotParsed, err := config.MarshalConfToYAML(wantConf)
 
 			require.NoError(t, err)
 			require.Equal(t, string(gotParsed), got)
@@ -874,8 +873,8 @@ func TestComposeExtraTelemetryConfigTemplateError(t *testing.T) {
 	assert.Nil(t, s.composeExtraTelemetryConfig())
 }
 
-func TestConfigMergeFuncMergesResourceAttributes(t *testing.T) {
-	src := map[string]any{
+func TestMergeConfMergesResourceAttributes(t *testing.T) {
+	incoming := collectorconfmap.NewFromStringMap(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
@@ -886,8 +885,8 @@ func TestConfigMergeFuncMergesResourceAttributes(t *testing.T) {
 				},
 			},
 		},
-	}
-	dest := map[string]any{
+	})
+	base := collectorconfmap.NewFromStringMap(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
@@ -898,12 +897,11 @@ func TestConfigMergeFuncMergesResourceAttributes(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
 
-	require.NoError(t, configMergeFunc(src, dest))
+	require.NoError(t, config.MergeConf(base, incoming))
 
-	resource := dest["service"].(map[string]any)["telemetry"].(map[string]any)["resource"].(map[string]any)
-	attrs, ok := resource["attributes"].([]any)
+	attrs, ok := base.Get("service::telemetry::resource::attributes").([]any)
 	require.True(t, ok)
 	assert.Equal(t, []any{
 		map[string]any{"name": "service.name", "value": "src"},
@@ -3560,8 +3558,8 @@ service:
 
 	t.Run("multiple fallback configs are merged in order", func(t *testing.T) {
 		// Base config defines exporters list as [nop], override changes it to [logging].
-		// Koanf overrides lists by default (except service.extensions via configMergeFunc),
-		// so this validates later fallback configs override earlier ones.
+		// Confmap overrides lists by default except service.extensions, so this
+		// validates later fallback configs override earlier ones.
 		basePath := filepath.Join(t.TempDir(), "fallback_base.yaml")
 		overridePath := filepath.Join(t.TempDir(), "fallback_override.yaml")
 		require.NoError(t, os.WriteFile(basePath, []byte(fallbackBaseConfigInput), 0o600))
