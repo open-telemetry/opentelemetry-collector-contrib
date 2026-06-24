@@ -30,8 +30,10 @@ var selfTelemetryScopeNames = map[string]bool{
 
 const (
 	maxDataStreamBytes          = 100
+	maxIndexBytes               = 255
 	disallowedNamespaceRunes    = "\\/*?\"<>| ,#:"
 	disallowedDatasetRunes      = "-\\/*?\"<>| ,#:"
+	disallowedIndexRunes        = "\\/*?\"<>| ,#:"
 	encodingFormatAttributeName = "encoding.format"
 )
 
@@ -52,6 +54,29 @@ func sanitizeDataStreamField(field, disallowed, appendSuffix string) string {
 	field += appendSuffix
 
 	return field
+}
+
+// Sanitize the index name to apply restrictions
+// as outlined in Elasticsearch index naming rules.
+func sanitizeIndexName(index string) string {
+	index = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(disallowedIndexRunes, r) {
+			return '_'
+		}
+		return unicode.ToLower(r)
+	}, index)
+
+	if len(index) > maxIndexBytes {
+		index = index[:maxIndexBytes]
+	}
+
+	index = strings.TrimLeft(index, "-_+")
+
+	if index == "." || index == ".." {
+		return ""
+	}
+
+	return index
 }
 
 // documentRouter is an interface for routing records to the appropriate
@@ -175,7 +200,7 @@ func routeRecord(
 	if esIndex, esIndexExists := getFromAttributes(elasticsearch.IndexAttributeName, "", recordAttr, scopeAttr, resourceAttr); esIndexExists {
 		// Advanced users can route documents by setting IndexAttributeName in a processor earlier in the pipeline.
 		// If `data_stream.*` needs to be set in the document, users should use `data_stream.*` attributes.
-		return elasticsearch.Index{Index: sanitizeDataStreamField(esIndex, disallowedNamespaceRunes, "")}, nil
+		return elasticsearch.Index{Index: sanitizeIndexName(esIndex)}, nil
 	}
 
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
