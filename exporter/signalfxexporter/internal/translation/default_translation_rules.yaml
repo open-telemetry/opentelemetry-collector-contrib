@@ -1,12 +1,5 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-
-// DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
-// config.TranslationRules not specified explicitly.
-// Keep it in YAML format to be able to easily copy and paste it in config if modifications needed.
-const DefaultTranslationRulesYaml = `
+# translation_rules defines default translation rules that will be applied to metrics if
+# disable_default_translation_rules is not explicitly set to true.
 translation_rules:
 - action: copy_metrics
   mapping:
@@ -104,17 +97,6 @@ translation_rules:
   aggregation_method: count
   without_dimensions:
   - cpu
-
-- action: copy_metrics
-  mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.idle_per_core
-    sf_temp.cpu.interrupt: sf_temp.cpu.interrupt_per_core
-    sf_temp.cpu.system: sf_temp.cpu.system_per_core
-    sf_temp.cpu.user: sf_temp.cpu.user_per_core
-    sf_temp.cpu.wait: sf_temp.cpu.wait_per_core
-    sf_temp.cpu.steal: sf_temp.cpu.steal_per_core
-    sf_temp.cpu.softirq: sf_temp.cpu.softirq_per_core
-    sf_temp.cpu.nice: sf_temp.cpu.nice_per_core
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle
@@ -407,23 +389,15 @@ translation_rules:
   mapping:
     sf_temp.container_cpu_utilization: container_cpu_utilization
     sf_temp.cpu.idle: cpu.idle
-    sf_temp.cpu.idle_per_core: cpu.idle
     sf_temp.cpu.interrupt: cpu.interrupt
-    sf_temp.cpu.interrupt_per_core: cpu.interrupt
     sf_temp.cpu.nice: cpu.nice
-    sf_temp.cpu.nice_per_core: cpu.nice
     sf_temp.cpu.num_processors: cpu.num_processors
     sf_temp.cpu.softirq: cpu.softirq
-    sf_temp.cpu.softirq_per_core: cpu.softirq
     sf_temp.cpu.steal: cpu.steal
-    sf_temp.cpu.steal_per_core: cpu.steal
     sf_temp.cpu.system: cpu.system
-    sf_temp.cpu.system_per_core: cpu.system
     sf_temp.cpu.user: cpu.user
-    sf_temp.cpu.user_per_core: cpu.user
     sf_temp.cpu.utilization: cpu.utilization
     sf_temp.cpu.wait: cpu.wait
-    sf_temp.cpu.wait_per_core: cpu.wait
     sf_temp.disk.summary_utilization: disk.summary_utilization
     sf_temp.disk.utilization: disk.utilization
     sf_temp.memory.total: memory.total
@@ -453,4 +427,3 @@ translation_rules:
     sf_temp.system.paging.operations: true
     sf_temp.system.paging.operations.page_in: true
     sf_temp.system.paging.operations.page_out: true
-`

@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: processor/transform
-note: Fix transform processor config unmarshaling to return an error for empty statement list items instead of panicking.
-issues: [49245]
-change_logs: [user]
