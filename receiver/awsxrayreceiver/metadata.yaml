@@ -18,11 +18,11 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, semconv legacy HTTP attributes are disabled.
-    from_version: v0.155.0
+    from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
   - id: receiver.awsxray.EmitV1HttpConventions
     stage: alpha
     description: >-
       When enabled, semconv stable HTTP attributes are enabled.
-    from_version: v0.155.0
+    from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
