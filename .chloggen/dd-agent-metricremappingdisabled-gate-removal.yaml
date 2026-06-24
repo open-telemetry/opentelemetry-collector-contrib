@@ -1,0 +1,6 @@
+change_type: deprecation
+component: exporter/datadog
+note: The `exporter.datadogexporter.metricremappingdisabled` feature gate no longer has any effect when the serializer exporter path is active (the default). Use `exporter.datadogexporter.DisableAllMetricRemapping` to disable metric remapping.
+issues: [0]
+subtext: See [DataDog/datadog-agent#51232](https://github.com/DataDog/datadog-agent/pull/51232).
+change_logs: [user]
