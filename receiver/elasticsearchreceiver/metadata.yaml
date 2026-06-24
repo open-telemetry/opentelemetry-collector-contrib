@@ -7,8 +7,6 @@ description: |
   [index stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html) endpoints in order
   to scrape metrics from a running Elasticsearch cluster.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:

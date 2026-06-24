@@ -15,8 +15,6 @@ status:
     active: [pjanotti, shalper2]
   unsupported_platforms: [darwin, linux]
 
-reaggregation_enabled: true
-
 attributes:
   name:
     description: The name of the windows Service being reported.
