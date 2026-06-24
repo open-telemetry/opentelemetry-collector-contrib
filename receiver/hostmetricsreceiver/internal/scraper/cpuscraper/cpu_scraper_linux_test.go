@@ -30,14 +30,12 @@ func TestScrape_CpuFrequency(t *testing.T) {
 		{
 			name:             "System CPU Frequency enabled",
 			enabledFrequency: true,
+			expectCPUAttr:    true,
 		},
 		{
-			name:             "System CPU Frequency enabled with CPU attribute",
-			enabledFrequency: true,
-			enabledAttributes: []metadata.SystemCPUFrequencyMetricAttributeKey{
-				metadata.SystemCPUFrequencyMetricAttributeKeyCPU,
-			},
-			expectCPUAttr: true,
+			name:              "System CPU Frequency enabled without CPU attribute",
+			enabledFrequency:  true,
+			enabledAttributes: []metadata.SystemCPUFrequencyMetricAttributeKey{},
 		},
 		{
 			name:             "System CPU Frequency disabled",
@@ -52,7 +50,9 @@ func TestScrape_CpuFrequency(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.SystemCPUTime.Enabled = false
 			cfg.Metrics.SystemCPUFrequency.Enabled = test.enabledFrequency
-			cfg.Metrics.SystemCPUFrequency.EnabledAttributes = test.enabledAttributes
+			if test.enabledAttributes != nil {
+				cfg.Metrics.SystemCPUFrequency.EnabledAttributes = test.enabledAttributes
+			}
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 				&Config{MetricsBuilderConfig: cfg})

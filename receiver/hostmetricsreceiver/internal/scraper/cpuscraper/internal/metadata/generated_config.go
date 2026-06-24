@@ -12,7 +12,7 @@ import (
 type SystemCPUFrequencyMetricAttributeKey string
 
 const (
-	SystemCPUFrequencyMetricAttributeKeyCPU SystemCPUFrequencyMetricAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyCPUFrequency SystemCPUFrequencyMetricAttributeKey = "cpu"
 )
 
 // SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric.
@@ -41,7 +41,7 @@ func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUFrequencyMetricAttributeKeyCPU:
+		case SystemCPUFrequencyMetricAttributeKeyCPUFrequency:
 		default:
 			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu]", val)
 		}
@@ -208,7 +208,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{},
+			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
 		},
 		SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 			Enabled: false,
