@@ -57,12 +57,12 @@ func TestIgnoreIssuers(t *testing.T) {
 				Attribute: "authorization",
 				Providers: []ProviderCfg{
 					{
-						IssuerURL:    "https://example.com",
+						IssuerURL:    "https://issuer1.example.com",
 						Audience:     "https://example.com",
 						IgnoreIssuer: true,
 					},
 					{
-						IssuerURL:    "https://example.com",
+						IssuerURL:    "https://issuer2.example.com",
 						Audience:     "https://example.com",
 						IgnoreIssuer: false,
 					},
@@ -76,12 +76,12 @@ func TestIgnoreIssuers(t *testing.T) {
 				Attribute: "authorization",
 				Providers: []ProviderCfg{
 					{
-						IssuerURL:    "https://example.com",
+						IssuerURL:    "https://issuer1.example.com",
 						Audience:     "https://example.com",
 						IgnoreIssuer: true,
 					},
 					{
-						IssuerURL:    "https://example.com",
+						IssuerURL:    "https://issuer2.example.com",
 						Audience:     "https://example.com",
 						IgnoreIssuer: true,
 					},
@@ -93,7 +93,7 @@ func TestIgnoreIssuers(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.expectErr {
-				require.Error(t, tc.config.Validate())
+				require.ErrorIs(t, tc.config.Validate(), errIgnoreIssuerMultiProvider)
 			} else {
 				require.NoError(t, tc.config.Validate())
 			}
