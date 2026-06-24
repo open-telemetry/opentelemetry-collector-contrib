@@ -2547,3 +2547,164 @@ func findAllSummarySpans(td ptrace.Traces) []ptrace.Span {
 	}
 	return result
 }
+
+// TestOutlierReparentingDeterministicAcrossDepths is a regression test for
+// same-named parents at different depths. Previously the leaf group key used
+// only the parent's name, so SELECT children of a "handler" at depth 1 and a
+// "handler" at depth 2 collapsed into one group; the summary (and any preserved
+// outliers) then anchored to whichever parent map iteration visited first,
+// producing a non-deterministic outlier depth. With depth in the leaf key the
+// two depths form separate groups, so the deep-handler outliers stay at depth 3
+// on every run and carry provenance recording their original position.
+func TestOutlierReparentingDeterministicAcrossDepths(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           0,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0.1,
+	}
+
+	deepHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+
+	observedDepths := make(map[int]bool)
+	const iterations = 50
+	for range iterations {
+		tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+
+		td := createTraceWithSameNamedParentsAtDifferentDepths(t)
+		require.NoError(t, tp.ConsumeTraces(t.Context(), td))
+
+		// The two depths must form separate groups (not one merged summary),
+		// so we get one summary per handler.
+		require.Len(t, findAllSummarySpans(td), 2, "shallow and deep handlers must aggregate separately")
+
+		outliers := findPreservedOutlierSpans(td)
+		require.Len(t, outliers, 2, "both deep-handler outliers should be preserved")
+
+		for _, o := range outliers {
+			observedDepths[spanDepthInTrace(td, o)] = true
+			// Outliers stay anchored under their real parent (the deep handler).
+			assert.Equal(t, deepHandlerID, o.ParentSpanID())
+		}
+	}
+
+	assert.Equal(t, map[int]bool{3: true}, observedDepths,
+		"preserved-outlier depth must be stable at 3 across runs; got %v", observedDepths)
+}
+
+// findPreservedOutlierSpans returns all spans tagged as preserved outliers.
+func findPreservedOutlierSpans(td ptrace.Traces) []ptrace.Span {
+	var out []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				s := spans.At(k)
+				if v, ok := s.Attributes().Get("aggregation.is_preserved_outlier"); ok && v.Bool() {
+					out = append(out, s)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// spanDepthInTrace counts ancestor hops from span to the root within td.
+func spanDepthInTrace(td ptrace.Traces, span ptrace.Span) int {
+	byID := make(map[pcommon.SpanID]ptrace.Span)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				s := spans.At(k)
+				byID[s.SpanID()] = s
+			}
+		}
+	}
+	depth := 0
+	for current := span; ; {
+		parentID := current.ParentSpanID()
+		if parentID.IsEmpty() {
+			break
+		}
+		parent, ok := byID[parentID]
+		if !ok {
+			break
+		}
+		depth++
+		current = parent
+	}
+	return depth
+}
+
+// createTraceWithSameNamedParentsAtDifferentDepths builds a trace with two
+// "handler" spans — one at depth 1 (under root) and one at depth 2 (under
+// middleware). The deep handler has 7 normal + 2 outlier SELECT children so its
+// leaf group alone satisfies MinGroupSize for outlier detection.
+func createTraceWithSameNamedParentsAtDifferentDepths(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	shallowHandlerID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	middlewareID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+	deepHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+
+	baseNs := int64(1_000_000_000)
+	ms := int64(1_000_000)
+
+	nextID := func() pcommon.SpanID {
+		var id [8]byte
+		id[0] = byte(ss.Spans().Len() + 10)
+		return pcommon.SpanID(id)
+	}
+
+	addSpan := func(id, parentID pcommon.SpanID, name string, durationMs int64, cacheHit string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(id)
+		s.SetParentSpanID(parentID)
+		s.SetName(name)
+		s.SetStartTimestamp(pcommon.Timestamp(baseNs))
+		s.SetEndTimestamp(pcommon.Timestamp(baseNs + durationMs*ms))
+		if cacheHit != "" {
+			s.Attributes().PutStr("cache_hit", cacheHit)
+		}
+	}
+
+	addSpan(rootID, pcommon.SpanID{}, "root", 700, "")
+	addSpan(shallowHandlerID, rootID, "handler", 10, "")     // depth 1
+	addSpan(middlewareID, rootID, "middleware", 650, "")     // depth 1
+	addSpan(deepHandlerID, middlewareID, "handler", 600, "") // depth 2
+
+	// Shallow handler: 5 normal SELECTs (depth 2) — aggregates, no outliers.
+	for _, dur := range []int64{5, 6, 7, 8, 9} {
+		addSpan(nextID(), shallowHandlerID, "SELECT", dur, "true")
+	}
+
+	// Deep handler: 7 normal + 2 outlier SELECTs (depth 3).
+	for _, dur := range []int64{5, 6, 7, 8, 9, 10, 11} {
+		addSpan(nextID(), deepHandlerID, "SELECT", dur, "true")
+	}
+	for _, dur := range []int64{500, 600} {
+		addSpan(nextID(), deepHandlerID, "SELECT", dur, "false")
+	}
+
+	return td
+}

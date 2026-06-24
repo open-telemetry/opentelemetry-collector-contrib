@@ -4,6 +4,9 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
+	"bytes"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -77,13 +80,24 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		}
 	}
 
-	// Third pass: collect leaves (nodes still marked as leaf)
+	// Third pass: collect leaves (nodes still marked as leaf). nodeByID is a
+	// map, so iteration order is random; sort the leaves into a stable order
+	// (start time, then span ID) so downstream grouping, summary anchoring, and
+	// outlier reparenting are deterministic across runs.
 	tree.leaves = make([]*spanNode, 0, len(spans)/4)
 	for _, node := range tree.nodeByID {
 		if node.isLeaf {
 			tree.leaves = append(tree.leaves, node)
 		}
 	}
+	sort.Slice(tree.leaves, func(i, j int) bool {
+		a, b := tree.leaves[i].span, tree.leaves[j].span
+		if a.StartTimestamp() != b.StartTimestamp() {
+			return a.StartTimestamp() < b.StartTimestamp()
+		}
+		aID, bID := a.SpanID(), b.SpanID()
+		return bytes.Compare(aID[:], bID[:]) < 0
+	})
 
 	// Log warnings for incomplete traces
 	if rootCount > 1 {
@@ -104,6 +118,17 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
 func (t *traceTree) getLeaves() []*spanNode {
 	return t.leaves
+}
+
+// depth returns the node's depth in the trace tree (root spans and orphans are
+// depth 0). It walks the cached parent chain, so cost is proportional to tree
+// height.
+func (n *spanNode) depth() int {
+	d := 0
+	for p := n.parent; p != nil; p = p.parent {
+		d++
+	}
+	return d
 }
 
 // findEligibleParentNodesFromCandidates filters candidate parents to those

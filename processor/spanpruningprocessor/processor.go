@@ -303,10 +303,14 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			break
 		}
 
-		// Group parent candidates by name + status
+		// Group parent candidates by name + status, keyed on the node's tree
+		// depth (not the loop iteration). Branches of unequal height can make
+		// same-named ancestors at different tree depths eligible in the same
+		// round; keying on iteration depth would merge them and anchor the
+		// summary at a non-deterministic depth.
 		parentGroups := make(map[string][]*spanNode)
 		for _, node := range eligibleParents {
-			parentKey := p.buildParentGroupKey(node.span, depth)
+			parentKey := p.buildParentGroupKey(node.span, node.depth())
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
