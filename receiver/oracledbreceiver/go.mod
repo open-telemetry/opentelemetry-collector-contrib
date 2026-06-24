@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/component v1.61.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.0
 	go.opentelemetry.io/collector/confmap v1.61.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.155.0
 	go.opentelemetry.io/collector/consumer v1.61.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.155.0
 	go.opentelemetry.io/collector/filter v0.155.0

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -89,5 +91,272 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
 			}
 		})
+	}
+}
+
+func TestResourceBuilderOverrideValue(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+	rb.SetHostName("host.name-val")
+	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
+	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
+	rb.SetOracleDbPdb("oracle.db.pdb-val")
+	rb.SetOracleDbRole("oracle.db.role-val")
+	rb.SetOracleDbVersion("oracle.db.version-val")
+	rb.SetOracledbInstanceName("oracledb.instance.name-val")
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("host.name")
+		assert.True(t, ok, "host.name should be present")
+		if ok {
+			assert.Equal(t, "override-host.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.hosting_type")
+		assert.True(t, ok, "oracle.db.hosting_type should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.hosting_type", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.open_mode")
+		assert.True(t, ok, "oracle.db.open_mode should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.open_mode", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.pdb")
+		assert.True(t, ok, "oracle.db.pdb should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.pdb", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.role")
+		assert.True(t, ok, "oracle.db.role should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.role", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.version")
+		assert.True(t, ok, "oracle.db.version should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.version", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracledb.instance.name")
+		assert.True(t, ok, "oracledb.instance.name should be present")
+		if ok {
+			assert.Equal(t, "override-oracledb.instance.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
+func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("host.name")
+		assert.True(t, ok, "host.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-host.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.hosting_type")
+		assert.True(t, ok, "oracle.db.hosting_type should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.hosting_type", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.open_mode")
+		assert.True(t, ok, "oracle.db.open_mode should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.open_mode", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.pdb")
+		assert.True(t, ok, "oracle.db.pdb should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.pdb", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.role")
+		assert.True(t, ok, "oracle.db.role should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.role", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.version")
+		assert.True(t, ok, "oracle.db.version should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.version", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracledb.instance.name")
+		assert.True(t, ok, "oracledb.instance.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracledb.instance.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.HostName.Enabled = false
+	cfg.OracleDbHostingType.Enabled = false
+	cfg.OracleDbOpenMode.Enabled = false
+	cfg.OracleDbPdb.Enabled = false
+	cfg.OracleDbRole.Enabled = false
+	cfg.OracleDbVersion.Enabled = false
+	cfg.OracledbInstanceName.Enabled = false
+	cfg.ServiceInstanceID.Enabled = false
+	cfg.ServiceName.Enabled = false
+	cfg.ServiceNamespace.Enabled = false
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+// TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
+	assert.Nil(t, cfg.OracleDbHostingType.OverrideValue, "OverrideValue should be nil for oracle.db.hosting_type")
+	assert.Nil(t, cfg.OracleDbOpenMode.OverrideValue, "OverrideValue should be nil for oracle.db.open_mode")
+	assert.Nil(t, cfg.OracleDbPdb.OverrideValue, "OverrideValue should be nil for oracle.db.pdb")
+	assert.Nil(t, cfg.OracleDbRole.OverrideValue, "OverrideValue should be nil for oracle.db.role")
+	assert.Nil(t, cfg.OracleDbVersion.OverrideValue, "OverrideValue should be nil for oracle.db.version")
+	assert.Nil(t, cfg.OracledbInstanceName.OverrideValue, "OverrideValue should be nil for oracledb.instance.name")
+	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
+	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
+	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
+	rb := NewResourceBuilder(cfg)
+	rb.SetHostName("host.name-val")
+	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
+	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
+	rb.SetOracleDbPdb("oracle.db.pdb-val")
+	rb.SetOracleDbRole("oracle.db.role-val")
+	rb.SetOracleDbVersion("oracle.db.version-val")
+	rb.SetOracledbInstanceName("oracledb.instance.name-val")
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+
+	res := rb.Emit()
+	assert.Equal(t, 10, res.Attributes().Len())
+	hostNameAttrVal, ok := res.Attributes().Get("host.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+	}
+	oracleDbHostingTypeAttrVal, ok := res.Attributes().Get("oracle.db.hosting_type")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.hosting_type-val", oracleDbHostingTypeAttrVal.Str())
+	}
+	oracleDbOpenModeAttrVal, ok := res.Attributes().Get("oracle.db.open_mode")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.open_mode-val", oracleDbOpenModeAttrVal.Str())
+	}
+	oracleDbPdbAttrVal, ok := res.Attributes().Get("oracle.db.pdb")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.pdb-val", oracleDbPdbAttrVal.Str())
+	}
+	oracleDbRoleAttrVal, ok := res.Attributes().Get("oracle.db.role")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.role-val", oracleDbRoleAttrVal.Str())
+	}
+	oracleDbVersionAttrVal, ok := res.Attributes().Get("oracle.db.version")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.version-val", oracleDbVersionAttrVal.Str())
+	}
+	oracledbInstanceNameAttrVal, ok := res.Attributes().Get("oracledb.instance.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracledb.instance.name-val", oracledbInstanceNameAttrVal.Str())
+	}
+	serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+	}
+	serviceNameAttrVal, ok := res.Attributes().Get("service.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
+	}
+	serviceNamespaceAttrVal, ok := res.Attributes().Get("service.namespace")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
 	}
 }

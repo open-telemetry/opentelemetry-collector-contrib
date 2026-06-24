@@ -1282,7 +1282,10 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	if _, serviceName, found := strings.Cut(s.instanceName, "/"); found && serviceName != "" {
 		rb.SetServiceName(serviceName)
+	} else {
+		rb.SetServiceName("unknown_service:oracle")
 	}
+	rb.SetServiceNamespace("")
 
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)

@@ -4,6 +4,8 @@ type: oracledb
 description: |
   This receiver periodically queries an Oracle Database host to collect metrics.
 
+override_value_enabled: true
+
 status:
   class: receiver
   stability:
@@ -47,11 +49,11 @@ resource_attributes:
     enabled: true
     type: string
   service.name:
-    description: Name of the database service.
+    description: "Logical name of the service. When enabled, defaults to unknown_service:oracle."
     enabled: false
     type: string
   service.namespace:
-    description: Logical grouping (e.g., team, business unit).
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
     enabled: false
     type: string
 

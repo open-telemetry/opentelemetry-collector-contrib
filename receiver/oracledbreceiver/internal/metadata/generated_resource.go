@@ -93,6 +93,7 @@ func (rb *ResourceBuilder) SetServiceNamespace(val string) {
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	rb.config.applyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r
