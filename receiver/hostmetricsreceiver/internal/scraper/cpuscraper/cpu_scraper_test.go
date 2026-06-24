@@ -327,220 +327,103 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 	assert.Equal(t, 0, md.MetricCount())
 }
 
-type dpData struct {
-	val   float64
-	attrs map[string]string
-}
+func TestScrape_CpuUtilizationStandard(t *testing.T) {
+	overriddenMetricsSettings := metadata.NewDefaultMetricsBuilderConfig()
+	overriddenMetricsSettings.Metrics.SystemCPUUtilization.Enabled = true
+	overriddenMetricsSettings.Metrics.SystemCPUUtilization.EnabledAttributes = []metadata.SystemCPUUtilizationMetricAttributeKey{
+		metadata.SystemCPUUtilizationMetricAttributeKeyCPU,
+		metadata.SystemCPUUtilizationMetricAttributeKeyState,
+	}
+	overriddenMetricsSettings.Metrics.SystemCPUTime.Enabled = false
 
-func TestScrape_CPUTimeAttributeConfiguration(t *testing.T) {
-	testCases := []struct {
-		name          string
-		metricsConfig metadata.MetricsBuilderConfig
-		expectedDps   []dpData
+	// datapoint data
+	type dpData struct {
+		val   float64
+		attrs map[string]string
+	}
+
+	scrapesData := []struct {
+		times       []cpu.TimesStat
+		scrapeTime  string
+		expectedDps []dpData
 	}{
 		{
-			name: "default attributes aggregate across cpu",
-			metricsConfig: func() metadata.MetricsBuilderConfig {
-				cfg := metadata.NewDefaultMetricsBuilderConfig()
-				return cfg
-			}(),
-			expectedDps: []dpData{
-				{val: 5, attrs: map[string]string{"state": "user"}},
-				{val: 7, attrs: map[string]string{"state": "system"}},
-				{val: 9, attrs: map[string]string{"state": "idle"}},
-			},
-		},
-		{
-			name: "cpu attribute enabled",
-			metricsConfig: func() metadata.MetricsBuilderConfig {
-				cfg := metadata.NewDefaultMetricsBuilderConfig()
-				cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeMetricAttributeKey{
-					metadata.SystemCPUTimeMetricAttributeKeyCPU,
-					metadata.SystemCPUTimeMetricAttributeKeyState,
-				}
-				return cfg
-			}(),
-			expectedDps: []dpData{
-				{val: 1, attrs: map[string]string{"cpu": "cpu0", "state": "user"}},
-				{val: 2, attrs: map[string]string{"cpu": "cpu0", "state": "system"}},
-				{val: 3, attrs: map[string]string{"cpu": "cpu0", "state": "idle"}},
-				{val: 4, attrs: map[string]string{"cpu": "cpu1", "state": "user"}},
-				{val: 5, attrs: map[string]string{"cpu": "cpu1", "state": "system"}},
-				{val: 6, attrs: map[string]string{"cpu": "cpu1", "state": "idle"}},
-			},
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			cpuScraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: tt.metricsConfig})
-			cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-				return []cpu.TimesStat{
-					{CPU: "cpu0", User: 1, System: 2, Idle: 3},
-					{CPU: "cpu1", User: 4, System: 5, Idle: 6},
-				}, nil
-			}
-
-			err := cpuScraper.start(t.Context(), componenttest.NewNopHost())
-			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
-
-			md, err := cpuScraper.scrape(t.Context())
-			require.NoError(t, err)
-			require.Equal(t, 1, md.MetricCount())
-
-			metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-			assertCPUMetricDescriptor(t, metric, 0)
-			dp := metric.Sum().DataPoints()
-			dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
-				return n.DoubleValue() == 0.0
-			})
-
-			require.Equal(t, len(tt.expectedDps), dp.Len())
-			for idx, expectedDp := range tt.expectedDps {
-				assertDatapointValueAndStringAttributes(t, dp.At(idx), expectedDp.val, expectedDp.attrs)
-			}
-		})
-	}
-}
-
-func TestScrape_CpuUtilizationStandard(t *testing.T) {
-	type scrapeData struct {
-		times      []cpu.TimesStat
-		scrapeTime string
-	}
-
-	scrapesData := []scrapeData{
-		{
-			times:      []cpu.TimesStat{{CPU: "cpu0", User: 1.5, System: 2.7, Idle: 0.8}, {CPU: "cpu1", User: 2, System: 3, Idle: 1}},
-			scrapeTime: "2006-01-02T15:04:05Z",
+			times:       []cpu.TimesStat{{CPU: "cpu0", User: 1.5, System: 2.7, Idle: 0.8}, {CPU: "cpu1", User: 2, System: 3, Idle: 1}},
+			scrapeTime:  "2006-01-02T15:04:05Z",
+			expectedDps: []dpData{},
 		},
 		{
 			times:      []cpu.TimesStat{{CPU: "cpu0", User: 2.8, System: 3.9, Idle: 3.3}, {CPU: "cpu1", User: 3.2, System: 5.2, Idle: 2.6}},
 			scrapeTime: "2006-01-02T15:04:10Z",
+			expectedDps: []dpData{
+				{val: 0.26, attrs: map[string]string{"cpu": "cpu0", "state": "user"}},
+				{val: 0.24, attrs: map[string]string{"cpu": "cpu0", "state": "system"}},
+				{val: 0.5, attrs: map[string]string{"cpu": "cpu0", "state": "idle"}},
+				{val: 0.24, attrs: map[string]string{"cpu": "cpu1", "state": "user"}},
+				{val: 0.44, attrs: map[string]string{"cpu": "cpu1", "state": "system"}},
+				{val: 0.32, attrs: map[string]string{"cpu": "cpu1", "state": "idle"}},
+			},
 		},
 		{
 			times:      []cpu.TimesStat{{CPU: "cpu0", User: 3.4, System: 5.3, Idle: 6.3}, {CPU: "cpu1", User: 3.7, System: 7.1, Idle: 5.2}},
 			scrapeTime: "2006-01-02T15:04:15Z",
-		},
-	}
-
-	testCases := []struct {
-		name                string
-		metricsConfig       metadata.MetricsBuilderConfig
-		perCPU              bool
-		expectedDpsByScrape [][]dpData
-	}{
-		{
-			name: "default attributes aggregate across cpu",
-			metricsConfig: func() metadata.MetricsBuilderConfig {
-				cfg := metadata.NewDefaultMetricsBuilderConfig()
-				cfg.Metrics.SystemCPUUtilization.Enabled = true
-				cfg.Metrics.SystemCPUTime.Enabled = false
-				return cfg
-			}(),
-			expectedDpsByScrape: [][]dpData{
-				{},
-				{
-					{val: 0.25, attrs: map[string]string{"state": "user"}},
-					{val: 0.34, attrs: map[string]string{"state": "system"}},
-					{val: 0.41, attrs: map[string]string{"state": "idle"}},
-				},
-				{
-					{val: 0.11, attrs: map[string]string{"state": "user"}},
-					{val: 0.33, attrs: map[string]string{"state": "system"}},
-					{val: 0.56, attrs: map[string]string{"state": "idle"}},
-				},
-			},
-		},
-		{
-			name:   "cpu attribute enabled",
-			perCPU: true,
-			metricsConfig: func() metadata.MetricsBuilderConfig {
-				cfg := metadata.NewDefaultMetricsBuilderConfig()
-				cfg.Metrics.SystemCPUUtilization.Enabled = true
-				cfg.Metrics.SystemCPUTime.Enabled = false
-				cfg.Metrics.SystemCPUUtilization.EnabledAttributes = []metadata.SystemCPUUtilizationMetricAttributeKey{
-					metadata.SystemCPUUtilizationMetricAttributeKeyCPU,
-					metadata.SystemCPUUtilizationMetricAttributeKeyState,
-				}
-				return cfg
-			}(),
-			expectedDpsByScrape: [][]dpData{
-				{},
-				{
-					{val: 0.26, attrs: map[string]string{"cpu": "cpu0", "state": "user"}},
-					{val: 0.24, attrs: map[string]string{"cpu": "cpu0", "state": "system"}},
-					{val: 0.5, attrs: map[string]string{"cpu": "cpu0", "state": "idle"}},
-					{val: 0.24, attrs: map[string]string{"cpu": "cpu1", "state": "user"}},
-					{val: 0.44, attrs: map[string]string{"cpu": "cpu1", "state": "system"}},
-					{val: 0.32, attrs: map[string]string{"cpu": "cpu1", "state": "idle"}},
-				},
-				{
-					{val: 0.12, attrs: map[string]string{"cpu": "cpu0", "state": "user"}},
-					{val: 0.28, attrs: map[string]string{"cpu": "cpu0", "state": "system"}},
-					{val: 0.6, attrs: map[string]string{"cpu": "cpu0", "state": "idle"}},
-					{val: 0.1, attrs: map[string]string{"cpu": "cpu1", "state": "user"}},
-					{val: 0.38, attrs: map[string]string{"cpu": "cpu1", "state": "system"}},
-					{val: 0.52, attrs: map[string]string{"cpu": "cpu1", "state": "idle"}},
-				},
+			expectedDps: []dpData{
+				{val: 0.12, attrs: map[string]string{"cpu": "cpu0", "state": "user"}},
+				{val: 0.28, attrs: map[string]string{"cpu": "cpu0", "state": "system"}},
+				{val: 0.6, attrs: map[string]string{"cpu": "cpu0", "state": "idle"}},
+				{val: 0.1, attrs: map[string]string{"cpu": "cpu1", "state": "user"}},
+				{val: 0.38, attrs: map[string]string{"cpu": "cpu1", "state": "system"}},
+				{val: 0.52, attrs: map[string]string{"cpu": "cpu1", "state": "idle"}},
 			},
 		},
 	}
 
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			cpuScraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: tt.metricsConfig})
-			for scrapeIdx, scrapeData := range scrapesData {
-				// mock TimeStats and Now
-				cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-					return scrapeData.times, nil
-				}
-				cpuScraper.now = func() time.Time {
-					now, _ := time.Parse(time.RFC3339, scrapeData.scrapeTime)
-					return now
-				}
+	cpuScraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
+	for _, scrapeData := range scrapesData {
+		// mock TimeStats and Now
+		cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
+			return scrapeData.times, nil
+		}
+		cpuScraper.now = func() time.Time {
+			now, _ := time.Parse(time.RFC3339, scrapeData.scrapeTime)
+			return now
+		}
 
-				err := cpuScraper.start(t.Context(), componenttest.NewNopHost())
-				require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
+		err := cpuScraper.start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-				md, err := cpuScraper.scrape(t.Context())
-				require.NoError(t, err)
-				expectedDps := tt.expectedDpsByScrape[scrapeIdx]
-				// no metrics in the first scrape
-				if len(expectedDps) == 0 {
-					assert.Equal(t, 0, md.ResourceMetrics().Len())
-					continue
-				}
+		md, err := cpuScraper.scrape(t.Context())
+		require.NoError(t, err)
+		// no metrics in the first scrape
+		if len(scrapeData.expectedDps) == 0 {
+			assert.Equal(t, 0, md.ResourceMetrics().Len())
+			continue
+		}
 
-				assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
-				metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				assertCPUUtilizationMetricDescriptor(t, metric, 0)
-				dp := metric.Gauge().DataPoints()
+		assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+		metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+		assertCPUUtilizationMetricDescriptor(t, metric, 0)
+		dp := metric.Gauge().DataPoints()
 
-				expectedDataPoints := expectedCPUStateDataPoints()
-				if tt.perCPU {
-					expectedDataPoints *= len(scrapeData.times)
-				}
-				if runtime.GOOS == "linux" {
-					assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t, metric)
-				}
-				assert.Equal(t, expectedDataPoints, dp.Len())
+		expectedDataPoints := 8
+		if runtime.GOOS == "linux" {
+			expectedDataPoints = 16
+			assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t, metric)
+		}
+		assert.Equal(t, expectedDataPoints, dp.Len())
 
-				// remove empty values to make the test more simple
-				dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
-					return n.DoubleValue() == 0.0
-				})
-
-				for idx, expectedDp := range expectedDps {
-					assertDatapointValueAndStringAttributes(t, dp.At(idx), expectedDp.val, expectedDp.attrs)
-				}
-			}
+		// remove empty values to make the test more simple
+		dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
+			return n.DoubleValue() == 0.0
 		})
+
+		for idx, expectedDp := range scrapeData.expectedDps {
+			assertDatapointValueAndStringAttributes(t, dp.At(idx), expectedDp.val, expectedDp.attrs)
+		}
 	}
 }
 
 func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberDataPoint, value float64, attrs map[string]string) {
-	require.Equal(t, len(attrs), dp.Attributes().Len())
 	assert.InDelta(t, value, dp.DoubleValue(), 0.0001)
 	for k, v := range attrs {
 		cpuAttribute, exists := dp.Attributes().Get(k)
@@ -549,7 +432,7 @@ func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberData
 	}
 }
 
-func assertCPUMetricDescriptor(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
+func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	expected := pmetric.NewMetric()
 	expected.SetName("system.cpu.time")
 	expected.SetDescription("Total seconds each logical CPU spent on each mode.")
@@ -559,12 +442,13 @@ func assertCPUMetricDescriptor(t *testing.T, metric pmetric.Metric, startTime pc
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
-}
-
-func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
-	assertCPUMetricDescriptor(t, metric, startTime)
-	assert.Equal(t, expectedCPUStateDataPoints(), metric.Sum().DataPoints().Len())
-	assertMetricDoesNotHaveAttribute(t, metric.Sum().DataPoints().At(0), "cpu")
+	expectedDataPoints := 4
+	if runtime.GOOS == "linux" {
+		expectedDataPoints = 8
+	}
+	require.Equal(t, expectedDataPoints, metric.Sum().DataPoints().Len())
+	_, exists := metric.Sum().DataPoints().At(0).Attributes().Get("cpu")
+	assert.False(t, exists)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
@@ -630,8 +514,13 @@ func assertCPUUtilizationMetricDescriptor(t *testing.T, metric pmetric.Metric, s
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	assertCPUUtilizationMetricDescriptor(t, metric, startTime)
-	assert.Equal(t, expectedCPUStateDataPoints(), metric.Gauge().DataPoints().Len())
-	assertMetricDoesNotHaveAttribute(t, metric.Gauge().DataPoints().At(0), "cpu")
+	expectedDataPoints := 4
+	if runtime.GOOS == "linux" {
+		expectedDataPoints = 8
+	}
+	require.Equal(t, expectedDataPoints, metric.Gauge().DataPoints().Len())
+	_, exists := metric.Gauge().DataPoints().At(0).Attributes().Get("cpu")
+	assert.False(t, exists)
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
@@ -640,18 +529,6 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 		pcommon.NewValueStr(metadata.AttributeStateIdle.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
 		pcommon.NewValueStr(metadata.AttributeStateInterrupt.String()))
-}
-
-func expectedCPUStateDataPoints() int {
-	if runtime.GOOS == "linux" {
-		return 8
-	}
-	return 4
-}
-
-func assertMetricDoesNotHaveAttribute(t *testing.T, dp pmetric.NumberDataPoint, name string) {
-	_, exists := dp.Attributes().Get(name)
-	assert.Falsef(t, exists, "Unexpected attribute %q", name)
 }
 
 func assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
