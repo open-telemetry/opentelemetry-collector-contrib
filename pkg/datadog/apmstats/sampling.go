@@ -21,7 +21,7 @@ const keySamplingRateGlobal = "_sample_rate"
 
 // samplingProbsFromTraces returns a map of DD span ID (uint64) to sampling
 // probability for each OTel span whose W3C tracestate contains a supported
-// sampling probability encoding (ot=th: or ot=p:). Spans without a recognised
+// sampling probability encoding (ot=th: or ot=p:). Spans without a recognized
 // encoding are omitted; the Concentrator defaults their weight to 1.
 func samplingProbsFromTraces(traces ptrace.Traces, logger *zap.Logger) map[uint64]float64 {
 	result := make(map[uint64]float64)
