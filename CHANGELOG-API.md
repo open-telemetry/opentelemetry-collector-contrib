@@ -7,6 +7,20 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.155.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.LambdaExpression` API so OTTL functions can support Lambda expressions as arguments (#48227)
+- `pkg/pdatatest`: Add pmetricassert histogram datapoint assertions (#48473)
+- `pkg/pdatatest`: Add duplicate ScopeMetrics check to ValidateMetrics (#48106)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/pdatatest`: Keep pmetricassert normalization from returning validation errors for duplicate datapoints (#48775)
+
+<!-- previous-version -->
+
 ## v0.154.0
 
 ### 🛑 Breaking changes 🛑
