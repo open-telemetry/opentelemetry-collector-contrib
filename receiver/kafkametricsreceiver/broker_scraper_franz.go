@@ -87,7 +87,12 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 		scrapeErrs.Add(err)
 		return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 	}
-	rb.SetKafkaClusterID(meta.Cluster)
+	// Guard against an empty cluster ID: a non-conformant broker/proxy that omits
+	// cluster_id in its MetadataResponse would otherwise emit an empty-string
+	// resource attribute, which is worse than omitting it entirely.
+	if meta.Cluster != "" {
+		rb.SetKafkaClusterID(meta.Cluster)
+	}
 	brokerIDs := meta.Brokers.NodeIDs()
 	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokerIDs)))
 

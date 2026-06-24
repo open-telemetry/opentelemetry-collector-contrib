@@ -80,12 +80,18 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	scrapeErrs := scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// 1) list topics (with metadata details)
-	td, err := s.adm.ListTopics(ctx)
+	// 1) cluster metadata + topic list (single request)
+	// Metadata carries both the topic list and the cluster ID in one response, so
+	// we reuse it for the kafka.cluster.id resource attribute below instead of
+	// issuing a separate BrokerMetadata request. FilterInternal reproduces the
+	// behavior of ListTopics, which drops internal topics when none are named.
+	meta, err := s.adm.Metadata(ctx)
 	if err != nil {
-		s.settings.Logger.Error("franz-go: ListTopics failed", zap.Error(err))
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListTopics failed: %w", err)
+		s.settings.Logger.Error("franz-go: Metadata failed", zap.Error(err))
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: Metadata failed: %w", err)
 	}
+	td := meta.Topics
+	td.FilterInternal()
 
 	// filter topic names first
 	var matched []string
@@ -209,15 +215,12 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
-	// Cluster ID is carried in the broker metadata response (topics excluded).
-	// Only issue the extra request when the attribute is enabled. Failure here
-	// should not fail the whole scrape; record it as partial.
-	if s.config.ResourceAttributes.KafkaClusterID.Enabled {
-		if meta, merr := s.adm.BrokerMetadata(ctx); merr != nil {
-			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: BrokerMetadata failed: %w", merr))
-		} else {
-			rb.SetKafkaClusterID(meta.Cluster)
-		}
+	// Cluster ID comes from the metadata response fetched above (no extra
+	// request). Skip an empty cluster ID so we never emit an empty-string
+	// attribute; SetKafkaClusterID is itself a no-op unless the attribute is
+	// enabled.
+	if meta.Cluster != "" {
+		rb.SetKafkaClusterID(meta.Cluster)
 	}
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }

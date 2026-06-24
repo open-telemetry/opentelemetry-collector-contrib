@@ -137,7 +137,8 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 	if s.config.ResourceAttributes.KafkaClusterID.Enabled {
 		if meta, merr := s.adm.BrokerMetadata(ctx); merr != nil {
 			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: BrokerMetadata failed: %w", merr))
-		} else {
+		} else if meta.Cluster != "" {
+			// Skip an empty cluster ID so we never emit an empty-string attribute.
 			rb.SetKafkaClusterID(meta.Cluster)
 		}
 	}
