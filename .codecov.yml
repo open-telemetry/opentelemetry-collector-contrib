@@ -589,6 +589,10 @@ component_management:
     name: receiver_activedirectoryds
     paths:
     - receiver/activedirectorydsreceiver/**
+  - component_id: receiver_activedirectoryinv
+    name: receiver_activedirectoryinv
+    paths:
+    - receiver/activedirectoryinvreceiver/**
   - component_id: receiver_aerospike
     name: receiver_aerospike
     paths:

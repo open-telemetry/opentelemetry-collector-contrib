@@ -6,7 +6,7 @@ description: |
   Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
   are only available when running on Windows.
 
-reaggregation_enabled: true
+override_value_enabled: true
 
 status:
   class: receiver
@@ -15,7 +15,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sincejune, crobert-1]
+    active: [sincejune, crobert-1, sv-splunk]
     emeritus: [StefanKurek]
     seeking_new: true
 
@@ -35,6 +35,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
   sqlserver.computer.name:
     description: The name of the SQL Server instance being monitored.
@@ -219,6 +227,10 @@ attributes:
     description: Timestamp of when the SQL query last started executing (ISO 8601 format).
     type: string
     requirement_level: recommended
+  sqlserver.query.plan.creation_time:
+    description: Timestamp of when the SQL query execution plan was compiled (ISO 8601 format).
+    type: string
+    requirement_level: recommended
   sqlserver.query_hash:
     description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
     type: string
@@ -392,7 +404,6 @@ events:
       - sqlserver.wait.resource.type
       - sqlserver.row_count
       - sqlserver.session.duration
-
       - sqlserver.session.start_time
       - sqlserver.session_id
       - sqlserver.session_status
@@ -431,6 +442,7 @@ events:
       - sqlserver.procedure_id
       - sqlserver.procedure_name
       - sqlserver.query.last_started
+      - sqlserver.query.plan.creation_time
 
 metrics:
   sqlserver.attention.rate:
