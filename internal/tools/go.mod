@@ -134,6 +134,7 @@ require (
 	github.com/google/addlicense v1.2.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
+	github.com/google/go-github/v85 v85.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
@@ -226,7 +227,7 @@ require (
 	github.com/rhysd/actionlint v1.7.12 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/rogpeppe/go-internal v1.15.0 // indirect
 	github.com/ryancurrah/gomodguard v1.4.1 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
@@ -276,7 +277,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/chloggen v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/crosslink v0.30.0 // indirect
-	go.opentelemetry.io/build-tools/githubgen v0.30.0 // indirect
+	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260609000124-eb92bc360a35 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
 	go.opentelemetry.io/collector/cmd/builder v0.155.0 // indirect
