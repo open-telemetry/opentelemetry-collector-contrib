@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add buffer cache and Database Writer (DBWR) metrics sourced from v$sysstat
+note: Add buffer cache and Database Writer (DBWR) metrics to the oracledb receiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49061]
@@ -15,14 +15,7 @@ issues: [49061]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Adds 6 new metrics, all disabled by default: `oracledb.buffer_cache.block.changes`,
-  `oracledb.buffer_cache.block.gets`, `oracledb.buffer.requests`,
-  `oracledb.buffer.inspected` (attribute `oracledb.buffer.state`: free/dirty),
-  `oracledb.checkpoint.buffers`, and `oracledb.checkpoint.completed`. Note that
-  `oracledb.buffer_cache.block.gets` (v$sysstat 'db block gets from cache') is distinct from the
-  existing `oracledb.db_block_gets` (v$sysstat 'db block gets'). These are read from the existing
-  `SELECT * FROM v$sysstat` query, so no additional database round-trips are introduced.
+subtext: ""
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

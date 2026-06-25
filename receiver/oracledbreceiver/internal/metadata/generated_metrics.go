@@ -547,8 +547,8 @@ type metricOracledbBufferInspected struct {
 // init fills oracledb.buffer.inspected metric with initial data.
 func (m *metricOracledbBufferInspected) init() {
 	m.data.SetName("oracledb.buffer.inspected")
-	m.data.SetDescription("Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state. state=free counts reusable buffers skipped (v$sysstat 'free buffer inspected'); state=dirty counts dirty buffers found (v$sysstat 'dirty buffers inspected'). A rising dirty share indicates the cache fills with dirty blocks faster than DBWR can flush them.")
-	m.data.SetUnit("{buffers}")
+	m.data.SetDescription("Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.")
+	m.data.SetUnit("{buffer}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -637,8 +637,8 @@ type metricOracledbBufferRequests struct {
 // init fills oracledb.buffer.requests metric with initial data.
 func (m *metricOracledbBufferRequests) init() {
 	m.data.SetName("oracledb.buffer.requests")
-	m.data.SetDescription("Number of times a reusable or free buffer was requested to create or load a block (v$sysstat 'free buffer requested').")
-	m.data.SetUnit("{requests}")
+	m.data.SetDescription("Number of times a reusable or free buffer was requested to create or load a block.")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -689,8 +689,8 @@ type metricOracledbBufferCacheBlockChanges struct {
 // init fills oracledb.buffer_cache.block.changes metric with initial data.
 func (m *metricOracledbBufferCacheBlockChanges) init() {
 	m.data.SetName("oracledb.buffer_cache.block.changes")
-	m.data.SetDescription("Number of changes that were part of an update or delete operation made to blocks in the buffer cache (v$sysstat 'db block changes'). A primary indicator of buffer-cache write activity and redo generation.")
-	m.data.SetUnit("{changes}")
+	m.data.SetDescription("Number of changes that were part of an update or delete operation made to blocks in the buffer cache.")
+	m.data.SetUnit("{change}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -741,8 +741,8 @@ type metricOracledbBufferCacheBlockGets struct {
 // init fills oracledb.buffer_cache.block.gets metric with initial data.
 func (m *metricOracledbBufferCacheBlockGets) init() {
 	m.data.SetName("oracledb.buffer_cache.block.gets")
-	m.data.SetDescription("Number of current-mode block gets satisfied from the buffer cache (v$sysstat 'db block gets from cache'). Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested from the buffer cache regardless of where they are satisfied.")
-	m.data.SetUnit("{gets}")
+	m.data.SetDescription("Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.")
+	m.data.SetUnit("{get}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -843,8 +843,8 @@ type metricOracledbCheckpointBuffers struct {
 // init fills oracledb.checkpoint.buffers metric with initial data.
 func (m *metricOracledbCheckpointBuffers) init() {
 	m.data.SetName("oracledb.checkpoint.buffers")
-	m.data.SetDescription("Number of buffers written by the Database Writer (DBWR) for checkpoints (v$sysstat 'DBWR checkpoint buffers written').")
-	m.data.SetUnit("{buffers}")
+	m.data.SetDescription("Number of buffers written by the Database Writer (DBWR) for checkpoints.")
+	m.data.SetUnit("{buffer}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -895,8 +895,8 @@ type metricOracledbCheckpointCompleted struct {
 // init fills oracledb.checkpoint.completed metric with initial data.
 func (m *metricOracledbCheckpointCompleted) init() {
 	m.data.SetName("oracledb.checkpoint.completed")
-	m.data.SetDescription("Number of checkpoints completed by the Database Writer (DBWR) (v$sysstat 'DBWR checkpoints'). Reflects whether checkpoint configuration is tuned for the workload.")
-	m.data.SetUnit("{checkpoints}")
+	m.data.SetDescription("Number of checkpoints completed by the Database Writer (DBWR).")
+	m.data.SetUnit("{checkpoint}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

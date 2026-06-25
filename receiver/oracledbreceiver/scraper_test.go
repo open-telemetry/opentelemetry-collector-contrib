@@ -459,15 +459,15 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	}
 
 	// Standalone counters (no attributes).
-	assert.Equal(t, int64(8800000), got["oracledb.buffer_cache.block.changes"][""])
-	assert.Equal(t, int64(7700000), got["oracledb.buffer_cache.block.gets"][""])
-	assert.Equal(t, int64(12000), got["oracledb.checkpoint.buffers"][""])
-	assert.Equal(t, int64(320), got["oracledb.checkpoint.completed"][""])
+	assert.Equal(t, int64(8800000), got[metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name][""])
+	assert.Equal(t, int64(7700000), got[metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name][""])
+	assert.Equal(t, int64(12000), got[metadata.MetricsInfo.OracledbCheckpointBuffers.Name][""])
+	assert.Equal(t, int64(320), got[metadata.MetricsInfo.OracledbCheckpointCompleted.Name][""])
 
 	// buffer.requests has no attributes; buffer.inspected is keyed by buffer state.
-	assert.Equal(t, int64(6100), got["oracledb.buffer.requests"][""])
-	assert.Equal(t, int64(55000), got["oracledb.buffer.inspected"]["oracledb.buffer.state=free"])
-	assert.Equal(t, int64(1200), got["oracledb.buffer.inspected"]["oracledb.buffer.state=dirty"])
+	assert.Equal(t, int64(6100), got[metadata.MetricsInfo.OracledbBufferRequests.Name][""])
+	assert.Equal(t, int64(55000), got[metadata.MetricsInfo.OracledbBufferInspected.Name]["oracledb.buffer.state=free"])
+	assert.Equal(t, int64(1200), got[metadata.MetricsInfo.OracledbBufferInspected.Name]["oracledb.buffer.state=dirty"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
