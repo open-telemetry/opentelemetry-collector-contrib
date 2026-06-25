@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
 
@@ -69,6 +70,23 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "vpcflow", Encoding: "awslogs_encoding/vpcflow"},
 						{Name: "cloudtrail", Encoding: "awslogs_encoding/cloudtrail"},
 						{Name: "catchall", PathPattern: "*"},
+					},
+				},
+				CloudWatch: sharedConfig{},
+			},
+		},
+		{
+			name:              "Config with S3 and AWS options",
+			componentIDToLoad: component.NewIDWithName(metadata.Type, "s3_with_aws_options"),
+			expected: &Config{
+				S3: S3Config{
+					sharedConfig: sharedConfig{
+						Encoding: "aws_logs_encoding",
+					},
+					AWSOptions: internal.AWSOptions{
+						AccessKeyID:     "key",
+						SecretAccessKey: "accessKey",
+						SessionToken:    "session",
 					},
 				},
 				CloudWatch: sharedConfig{},
