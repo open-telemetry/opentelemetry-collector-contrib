@@ -610,7 +610,7 @@ func ecsSpanEventDataset(ec encodingContext, event ptrace.SpanEvent) string {
 
 func ecsSpanEventNamespace(ec encodingContext, event ptrace.SpanEvent) string {
 	ns, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace,
-		event.Attributes(), ec.resource.Attributes())
+		event.Attributes(), ec.scope.Attributes(), ec.resource.Attributes())
 	return sanitizeDataStreamField(ns, disallowedNamespaceRunes, "")
 }
 
