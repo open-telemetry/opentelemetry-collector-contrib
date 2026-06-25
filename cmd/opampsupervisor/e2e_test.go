@@ -858,6 +858,94 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 	}
 }
 
+func TestSupervisorRestoresLastWorkingRemoteConfigAtRuntimeAfterFailedConfig(t *testing.T) {
+	storageDir := t.TempDir()
+	var remoteConfigStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s, supervisorCfg := newSupervisor(t, "basic", map[string]string{
+		"url":                       server.addr,
+		"storage_dir":               storageDir,
+		"automatic_config_rollback": "true",
+	})
+	require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	workingCfg, workingHash, healthcheckPort := createHealthCheckCollectorConf(t, true)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: workingCfg.Bytes()},
+				},
+			},
+			ConfigHash: workingHash,
+		},
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			c.Errorf("failed healthcheck: %v", err)
+			return
+		}
+		require.NoError(c, resp.Body.Close())
+		require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+	}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
+	}, 15*time.Second, 100*time.Millisecond, "Working remote config was not reported as applied")
+
+	badCfg, badHash := createBadCollectorConf(t)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED && bytes.Equal(status.LastRemoteConfigHash, badHash)
+	}, 15*time.Second, 100*time.Millisecond, "Failed remote config status was not reported")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			c.Errorf("failed healthcheck: %v", err)
+			return
+		}
+		require.NoError(c, resp.Body.Close())
+		require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
+	}, 10*time.Second, 100*time.Millisecond, "Collector did not restore the last working config at runtime")
+
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
+	}, 15*time.Second, 100*time.Millisecond, "Restored last working remote config was not reported as applied")
+}
+
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	storageDir := t.TempDir()
 
