@@ -6,6 +6,7 @@ with qstats as (
 		MAX(qs.plan_handle) AS query_plan_handle,
 		MAX(qs.last_elapsed_time) AS last_elapsed_time,
         CONVERT(NVARCHAR, TODATETIMEOFFSET(MAX(qs.last_execution_time), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS last_execution_time,
+        CONVERT(NVARCHAR, TODATETIMEOFFSET(MAX(qs.creation_time), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS plan_creation_time,
 		qs.query_hash AS query_hash,
 		qs.query_plan_hash AS query_plan_hash,
 		SUM(qs.execution_count) AS execution_count,

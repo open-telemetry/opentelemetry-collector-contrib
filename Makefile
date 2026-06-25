@@ -402,10 +402,12 @@ docker-golden:
 
 GITHUBGEN_ARGS ?= -skipgithub
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gengithub
 gengithub:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates distribution component lists and data in reports/distributions
 .PHONY: gendistributions
 gendistributions:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) distributions
@@ -414,18 +416,22 @@ gendistributions:
 gencodecov:
 	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
+# Regenerates all code, then updates CODEOWNERS, issue templates and component labels in .github
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
 
+# Updates CODEOWNERS and issue template component lists in .github
 .PHONY: gencodeowners
 gencodeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
+# Updates CODEOWNERS in .github
 .PHONY: codeowners
 codeowners:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) codeowners
 
+# Updates chloggen component lists in .chloggen/config.yaml
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) $(GITHUBGEN_ARGS) chloggen-components
@@ -718,7 +724,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:

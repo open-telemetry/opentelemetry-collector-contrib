@@ -5,7 +5,6 @@ This receiver fetches stats from a MongoDB instance using the
 [golang mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected via MongoDB's `dbStats` and
 `serverStatus` commands.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -26,7 +25,7 @@ The purpose of this receiver is to allow users to monitor metrics from standalon
 
 This receiver supports MongoDB versions:
 
-- 4.0+
+- 4.4+
 - 5.0
 - 6.0
 - 7.0
