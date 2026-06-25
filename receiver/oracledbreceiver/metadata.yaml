@@ -4,8 +4,6 @@ type: oracledb
 description: |
   This receiver periodically queries an Oracle Database host to collect metrics.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:
