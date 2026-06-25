@@ -124,6 +124,7 @@ var (
 		elasticsearch.DataStreamType:                {skip: true}, // routing only, written by addDataStreamAttributes
 		elasticsearch.DataStreamDataset:             {skip: true},
 		elasticsearch.DataStreamNamespace:           {skip: true},
+		"error.grouping_name":                       {skip: true}, // scripted field in logs-apm.error; cannot be indexed directly
 	}
 
 	// Precomputed protected fields for performance
@@ -609,7 +610,7 @@ func ecsSpanEventDataset(ec encodingContext, event ptrace.SpanEvent) string {
 
 func ecsSpanEventNamespace(ec encodingContext, event ptrace.SpanEvent) string {
 	ns, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace,
-		event.Attributes(), ec.resource.Attributes())
+		event.Attributes(), ec.scope.Attributes(), ec.resource.Attributes())
 	return sanitizeDataStreamField(ns, disallowedNamespaceRunes, "")
 }
 
