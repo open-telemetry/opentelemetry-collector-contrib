@@ -101,6 +101,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		statementsConfigs := make([]any, 0, len(values))
 		var basicStatements []any
 		for _, value := range values {
+			if value == nil {
+				return fmt.Errorf("invalid %s item: empty statement list items are not supported", fieldName)
+			}
 			// Array of strings means it's a basic configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
 				basicStatements = append(basicStatements, value)
