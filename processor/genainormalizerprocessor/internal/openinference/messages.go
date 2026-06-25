@@ -289,9 +289,10 @@ var validRoles = map[string]bool{
 	roleTool:      true,
 }
 
-// inferRole derives the GenAI semconv role for a message. Output messages
-// (gen_ai.output.messages) only allow assistant/system/user; "tool" is only
-// valid on input messages.
+// inferRole derives the GenAI semconv role for a message. The schema permits
+// the same role enum (system/user/assistant/tool) on both input and output
+// messages, but a model-generated output turn is never a tool response, so
+// "tool" is suppressed on output and falls through to assistant.
 func inferRole(mf *messageFields, isOutput bool) string {
 	if mf.toolCallID != "" && !isOutput {
 		return roleTool
