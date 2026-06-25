@@ -134,7 +134,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				objectKey:  "test-file.txt",
 				data:       []byte("Some log in S3 object"),
 			},
-			extension:     internal.NewDefaultS3LogsDecoder(),
+			extension:     internal.NewDefaultBlobDecoder(),
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_string.yaml")},
 		},
 		{
@@ -160,7 +160,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				objectKey:  "test-file.txt.gz",
 				data:       compressData(t, []byte("Logs in Gzip S3 object")),
 			},
-			extension:     internal.NewDefaultS3LogsDecoder(),
+			extension:     internal.NewDefaultBlobDecoder(),
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_gzip.yaml")},
 		},
 		{
@@ -384,6 +384,52 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 			handler := newCWLogsSubscriptionHandler(test.extension, test.eventConsumer)
 
 			err = handler.handle(t.Context(), lambdaEvent)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestHandleCustomEvent(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		event         string
+		extension     encoding.LogsDecoderFactory
+		eventConsumer consumer.Logs
+		expectedErr   string
+	}{
+		{
+			name:          "Valid custom event is decoded and consumed",
+			event:         `{"custom":"payload"}`,
+			extension:     &customLogUnmarshaler{},
+			eventConsumer: &noOpLogsConsumer{},
+		},
+		{
+			name:          "Decoder error is propagated",
+			event:         `{"custom":"payload"}`,
+			extension:     &customLogUnmarshaler{error: errors.New("failed to build decoder")},
+			eventConsumer: &noOpLogsConsumer{},
+			expectedErr:   "failed to build decoder",
+		},
+		{
+			name:          "Consumer error is propagated",
+			event:         `{"custom":"payload"}`,
+			extension:     &customLogUnmarshaler{},
+			eventConsumer: &noOpLogsConsumer{err: errors.New("failed to consume")},
+			expectedErr:   "failed to consume",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			handler := newCustomHandler(test.extension, test.eventConsumer)
+
+			err := handler.handle(t.Context(), json.RawMessage(test.event))
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -700,10 +746,6 @@ type mockPlogEventHandler struct {
 	event       eventType
 }
 
-func (n *mockPlogEventHandler) handlerType() eventType {
-	return n.event
-}
-
 func (n *mockPlogEventHandler) handle(context.Context, json.RawMessage) error {
 	n.handleCount++
 	return nil
@@ -834,7 +876,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			},
 			decoders: map[string]encoding.LogsDecoderFactory{
 				"vpcflow":  &customLogUnmarshaler{},
-				"catchall": internal.NewDefaultS3LogsDecoder(),
+				"catchall": internal.NewDefaultBlobDecoder(),
 			},
 		},
 		{
