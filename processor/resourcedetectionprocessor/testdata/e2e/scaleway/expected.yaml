@@ -34,6 +34,16 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
+          - description: Number of available logical CPUs.
+            name: system.cpu.logical.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: false
+            unit: "{cpu}"
           - description: Total seconds each logical CPU spent on each mode.
             name: system.cpu.time
             sum:
