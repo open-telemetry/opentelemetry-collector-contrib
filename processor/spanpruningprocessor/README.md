@@ -28,7 +28,7 @@ Spans are grouped by:
 
 Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name, kind, and status code, and they are not root spans.
 
-Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier spans** as individual spans for debugging while still aggregating normal spans.
+Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier subtrees** for debugging while still aggregating normal spans. Detection runs at every aggregation level, so a slow interior span (for example one slow `handler` among many) is caught and its whole subtree is kept intact.
 
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
@@ -130,13 +130,15 @@ processors:
       # Default: 5
       max_correlated_attributes: 5
 
-      # Preserve outlier spans as individual spans instead of aggregating
-      # When true, only normal spans are aggregated; outliers remain in the trace
+      # Preserve outlier subtrees instead of aggregating them
+      # When true, each detected outlier and its whole subtree are kept; only
+      # normal spans are aggregated. Detection runs at every level, so slow
+      # interior spans (not just leaves) are preserved with their subtree.
       # Default: false
       preserve_outliers: false
 
-      # Maximum number of outlier spans to preserve per aggregation group
-      # Spans are selected by most extreme duration first
+      # Maximum number of outlier subtrees to preserve per aggregation group
+      # Outliers are selected by most extreme duration first
       # 0 = preserve all detected outliers
       # Default: 2
       max_preserved_outliers: 2
@@ -172,8 +174,8 @@ processors:
 | `outlier_analysis.correlation_min_occurrence` | float64 | 0.75 | Minimum outlier occurrence fraction for correlation |
 | `outlier_analysis.correlation_max_normal_occurrence` | float64 | 0.25 | Maximum normal occurrence fraction for correlation |
 | `outlier_analysis.max_correlated_attributes` | int | 5 | Maximum correlated attributes to report |
-| `outlier_analysis.preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
-| `outlier_analysis.max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all) |
+| `outlier_analysis.preserve_outliers` | bool | false | Keep outlier subtrees instead of aggregating |
+| `outlier_analysis.max_preserved_outliers` | int | 2 | Max outlier subtrees to preserve per group (0=preserve all) |
 | `outlier_analysis.preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong correlation is found |
 | `outlier_analysis.min_outlier_threshold_percent` | float64 | 0.1 | Minimum percentage above median required before a span is considered an outlier |
 
@@ -284,10 +286,10 @@ Preserved outlier spans are annotated with:
 | `<prefix>is_preserved_outlier` | bool | Identifies span as a preserved outlier |
 | `<prefix>summary_span_id` | string | SpanID of the associated summary span |
 
-A preserved outlier becomes a sibling of its summary span. Grouping is
-depth-aware — leaves and parents are never grouped with same-named ancestors at
-a different depth — so an outlier stays at its original depth and the summary it
-links to (via `summary_span_id`) sits where its group was.
+A preserved outlier (the root of its subtree) becomes a sibling of its summary
+span, and its whole subtree moves with it. The outlier keeps everything beneath it,
+but its aggregated ancestors are replaced by the summary it now hangs from
+(linked via `summary_span_id`).
 
 ### Histogram Buckets
 
@@ -389,13 +391,15 @@ This helps identify root causes of latency issues:
 - **Minimal when disabled**: Zero overhead (no sorting or calculations)
 - **Recommended**: Use `min_group_size: 7` or higher to skip analysis on small groups
 
-### Preserving Outlier Spans (Optional)
+### Preserving Outlier Subtrees (Optional)
 
-When `outlier_analysis.preserve_outliers: true`, detected outlier spans are **kept as individual spans** instead of being aggregated. This provides:
+When `outlier_analysis.preserve_outliers: true`, each detected outlier is **kept along with its whole subtree** instead of being aggregated. A leaf outlier (e.g. a slow query) is the degenerate single-span case; an interior outlier (e.g. a slow `handler`) keeps every span beneath it. This provides:
 
-- **Full visibility** into slow operations for debugging
-- **Preserved context**: Original attributes, events, and links remain intact
-- **Selective aggregation**: Only prune repetitive normal spans
+- **Full visibility** into slow operations for debugging, including everything the slow span did
+- **Preserved context**: original attributes, events, links, and tree structure remain intact
+- **Selective aggregation**: only prune repetitive normal spans
+
+Preservation keeps everything **beneath** an outlier, not above it: the outlier's subtree is kept, but its ancestors still aggregate normally. The preserved subtree is reparented as a sibling of its summary span (the whole subtree moves with its root), so a slow leaf ends up under the same summary its normal siblings collapsed into, and a slow interior span hangs off the summary that replaced its peers.
 
 #### Configuration
 
@@ -413,8 +417,8 @@ processors:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
-| `max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all detected) |
+| `preserve_outliers` | bool | false | Keep outlier subtrees instead of aggregating |
+| `max_preserved_outliers` | int | 2 | Max outlier subtrees to preserve per group (0=preserve all detected) |
 | `preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong attribute correlation is found |
 
 #### Example Output
@@ -452,9 +456,11 @@ handler
 
 #### Behavior Notes
 
-- **Parent aggregation**: Parents can still be aggregated if all their children are either aggregated or preserved as outliers
-- **Skip aggregation**: If preserving outliers leaves too few normal spans (below `min_spans_to_aggregate`), the entire group is left unchanged
-- **Selection order**: Outliers are preserved starting with the most extreme (longest duration) first
+- **Multi-level detection**: outliers are detected within each sibling group at every level (leaf groups and eligible parent groups) that meets `min_group_size`.
+- **Subtree, not ancestors**: a preserved outlier keeps everything beneath it (its whole subtree), but its ancestors still aggregate; the subtree is reparented as a sibling of its summary.
+- **Nested outliers**: an outlier already inside a preserved subtree is not preserved (or counted) again, since the enclosing subtree already keeps it.
+- **Skip aggregation**: if protection leaves a group below `min_spans_to_aggregate`, that group is left unchanged.
+- **Selection order**: outliers are preserved starting with the most extreme (longest duration) first, capped by `max_preserved_outliers` subtrees per group.
 
 ## Pipeline Placement
 
@@ -605,7 +611,7 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
-| `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept as individual spans (when `preserve_outliers: true`) |
+| `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
 
 ### Histograms

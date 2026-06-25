@@ -2797,3 +2797,129 @@ func createTraceWithSameNamedParentsUnderDifferentGrandparents(t *testing.T) ptr
 
 	return td
 }
+
+// TestOutlierInteriorSubtreePreserved verifies that a duration outlier at an
+// interior level (a slow "handler" among many) has its entire subtree preserved
+// while the normal handlers aggregate.
+func TestOutlierInteriorSubtreePreserved(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           0,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0.1,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, slowHandlerID := createTraceWithSlowHandler(t)
+	require.NoError(t, tp.ConsumeTraces(t.Context(), td))
+
+	// The slow handler is preserved as an outlier subtree root and stays put.
+	slow, found := findSpanByID(td, slowHandlerID)
+	require.True(t, found, "slow handler should be preserved, not aggregated")
+	v, ok := slow.Attributes().Get("aggregation.is_preserved_outlier")
+	require.True(t, ok, "slow handler should be tagged as a preserved outlier")
+	assert.True(t, v.Bool())
+
+	// Its whole subtree is intact: all 5 SELECT children remain under it.
+	assert.Equal(t, 5, countChildren(td, slowHandlerID), "slow handler subtree should be preserved intact")
+
+	// The 7 normal handlers aggregate into a single handler summary.
+	summary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "normal handlers should aggregate into a summary")
+	sc, ok := summary.Attributes().Get("aggregation.span_count")
+	require.True(t, ok)
+	assert.Equal(t, int64(7), sc.Int(), "summary should aggregate the 7 normal handlers")
+}
+
+func findSpanByID(td ptrace.Traces, id pcommon.SpanID) (ptrace.Span, bool) {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				if spans.At(k).SpanID() == id {
+					return spans.At(k), true
+				}
+			}
+		}
+	}
+	return ptrace.Span{}, false
+}
+
+func countChildren(td ptrace.Traces, parentID pcommon.SpanID) int {
+	count := 0
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				if spans.At(k).ParentSpanID() == parentID {
+					count++
+				}
+			}
+		}
+	}
+	return count
+}
+
+// createTraceWithSlowHandler builds a trace with 7 normal "handler" spans and
+// one slow "handler" (a duration outlier among the handlers), each with 5
+// normal-duration SELECT children.
+func createTraceWithSlowHandler(t *testing.T) (ptrace.Traces, pcommon.SpanID) {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	baseNs := int64(1_000_000_000)
+	ms := int64(1_000_000)
+
+	idCounter := byte(2)
+	nextID := func() pcommon.SpanID {
+		var id [8]byte
+		id[0] = idCounter
+		idCounter++
+		return pcommon.SpanID(id)
+	}
+
+	add := func(id, parentID pcommon.SpanID, name string, durMs int64) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(id)
+		s.SetParentSpanID(parentID)
+		s.SetName(name)
+		s.SetStartTimestamp(pcommon.Timestamp(baseNs))
+		s.SetEndTimestamp(pcommon.Timestamp(baseNs + durMs*ms))
+	}
+
+	add(rootID, pcommon.SpanID{}, "root", 1000)
+
+	addHandler := func(durMs int64) pcommon.SpanID {
+		hid := nextID()
+		add(hid, rootID, "handler", durMs)
+		for range 5 {
+			add(nextID(), hid, "SELECT", 5)
+		}
+		return hid
+	}
+
+	for range 7 {
+		addHandler(10)
+	}
+	slowID := addHandler(500)
+	return td, slowID
+}
