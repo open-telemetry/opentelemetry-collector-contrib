@@ -152,7 +152,7 @@ attributes:
   sqlserver.block.type:
     description: The type of lock block tracked by the lock manager.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum: [allocated, blocks, owner, owner_allocated]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
@@ -195,8 +195,8 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
-  sqlserver.lock.timeout.kind:
-    description: The kind of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
+  sqlserver.lock.timeout.type:
+    description: The type of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
     type: string
     requirement_level: required
     enum: [all, nonzero]
@@ -717,7 +717,7 @@ metrics:
     unit: "{timeout}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.lock.timeout.kind]
+    attributes: [sqlserver.lock.timeout.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.count:
     enabled: false

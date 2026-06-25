@@ -58,7 +58,6 @@ all_set:
       enabled: true
     sqlserver.lock.block.count:
       enabled: true
-      attributes: ["sqlserver.block.type"]
     sqlserver.lock.escalation.rate:
       enabled: true
     sqlserver.lock.memory:
@@ -241,7 +240,6 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.block.count:
       enabled: true
-      attributes: []
     sqlserver.lock.escalation.rate:
       enabled: true
     sqlserver.lock.memory:
@@ -424,7 +422,6 @@ none_set:
       enabled: false
     sqlserver.lock.block.count:
       enabled: false
-      attributes: ["sqlserver.block.type"]
     sqlserver.lock.escalation.rate:
       enabled: false
     sqlserver.lock.memory:

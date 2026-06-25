@@ -74,7 +74,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
 			aggMap["sqlserver.error.rate"] = mb.metricSqlserverErrorRate.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
-			aggMap["sqlserver.lock.block.count"] = mb.metricSqlserverLockBlockCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
@@ -193,9 +192,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeSqlserverBlockTypeAllocated)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverLockBlockCountDataPoint(ts, 3, AttributeSqlserverBlockTypeBlocks)
-			}
 
 			allMetricsCount++
 			mb.RecordSqlserverLockEscalationRateDataPoint(ts, 1)
@@ -207,7 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLockRequestRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1, AttributeSqlserverLockTimeoutKindAll)
+			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1, AttributeSqlserverLockTimeoutTypeAll)
 
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1)
@@ -399,7 +395,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverErrorRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverLockBlockCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
@@ -986,45 +981,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.lock.block.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.lock.block.count"], "Found a duplicate in the metrics slice: sqlserver.lock.block.count")
-						validatedMetrics["sqlserver.lock.block.count"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
-						assert.Equal(t, "{block}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						sqlserverBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.block.type")
-						assert.True(t, ok)
-						assert.Equal(t, "allocated", sqlserverBlockTypeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.lock.block.count"], "Found a duplicate in the metrics slice: sqlserver.lock.block.count")
-						validatedMetrics["sqlserver.lock.block.count"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
-						assert.Equal(t, "{block}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.lock.block.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("sqlserver.block.type")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["sqlserver.lock.block.count"], "Found a duplicate in the metrics slice: sqlserver.lock.block.count")
+					validatedMetrics["sqlserver.lock.block.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lock blocks tracked by the lock manager.", mi.Description())
+					assert.Equal(t, "{block}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.block.type")
+					assert.True(t, ok)
+					assert.Equal(t, "allocated", sqlserverBlockTypeAttrVal.Str())
 				case "sqlserver.lock.escalation.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.escalation.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.escalation.rate")
 					validatedMetrics["sqlserver.lock.escalation.rate"] = true
@@ -1073,9 +1043,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					sqlserverLockTimeoutKindAttrVal, ok := dp.Attributes().Get("sqlserver.lock.timeout.kind")
+					sqlserverLockTimeoutTypeAttrVal, ok := dp.Attributes().Get("sqlserver.lock.timeout.type")
 					assert.True(t, ok)
-					assert.Equal(t, "all", sqlserverLockTimeoutKindAttrVal.Str())
+					assert.Equal(t, "all", sqlserverLockTimeoutTypeAttrVal.Str())
 				case "sqlserver.lock.wait.count":
 					assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
 					validatedMetrics["sqlserver.lock.wait.count"] = true

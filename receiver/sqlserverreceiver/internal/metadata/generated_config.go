@@ -695,20 +695,10 @@ func (ms *SqlserverLatchWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// SqlserverLockBlockCountMetricAttributeKey specifies the key of an attribute for the sqlserver.lock.block.count metric.
-type SqlserverLockBlockCountMetricAttributeKey string
-
-const (
-	SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType SqlserverLockBlockCountMetricAttributeKey = "sqlserver.block.type"
-)
-
 // SqlserverLockBlockCountMetricConfig provides config for the sqlserver.lock.block.count metric.
 type SqlserverLockBlockCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverLockBlockCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverLockBlockCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -722,24 +712,6 @@ func (ms *SqlserverLockBlockCountMetricConfig) Unmarshal(parser *confmap.Conf) e
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverLockBlockCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType:
-		default:
-			return fmt.Errorf("metric sqlserver.lock.block.count doesn't have an attribute %v, valid attributes: [sqlserver.block.type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -2095,9 +2067,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverLockBlockCount: SqlserverLockBlockCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverLockBlockCountMetricAttributeKey{SqlserverLockBlockCountMetricAttributeKeySqlserverBlockType},
+			Enabled: false,
 		},
 		SqlserverLockEscalationRate: SqlserverLockEscalationRateMetricConfig{
 			Enabled: false,

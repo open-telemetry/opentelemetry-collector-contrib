@@ -1296,7 +1296,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0
                   attributes:
-                    - key: sqlserver.lock.timeout.kind
+                    - key: sqlserver.lock.timeout.type
                       value:
                         stringValue: nonzero
                   startTimeUnixNano: "1000000"
@@ -1336,7 +1336,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0
                   attributes:
-                    - key: sqlserver.lock.timeout.kind
+                    - key: sqlserver.lock.timeout.type
                       value:
                         stringValue: all
                   startTimeUnixNano: "1000000"
