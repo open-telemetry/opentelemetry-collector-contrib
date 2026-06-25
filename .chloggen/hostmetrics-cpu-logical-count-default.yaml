@@ -1,6 +1,6 @@
 change_type: breaking
 
-component: receiver/hostmetrics
+component: receiver/host_metrics
 
 note: Enable the `system.cpu.logical.count` metric by default in the CPU scraper.
 
