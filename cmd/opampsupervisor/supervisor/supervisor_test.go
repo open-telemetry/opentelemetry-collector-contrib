@@ -1615,6 +1615,76 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 	require.Equal(t, remoteConfig.ConfigHash, lastRemoteConfigStatus.LastRemoteConfigHash)
 }
 
+func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
+	workingRemoteConfig := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {
+					Body: []byte("receivers:\n  debug/working: null\n"),
+				},
+			},
+		},
+		ConfigHash: []byte("working-hash"),
+	}
+	failedHash := []byte("failed-hash")
+
+	persistentState, err := loadOrCreatePersistentState(
+		filepath.Join(t.TempDir(), persistentStateFileName),
+		"018fee23-4a51-7303-a441-73faed7d9deb",
+		zap.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, persistentState.SetLastRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: failedHash,
+		Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+		ErrorMessage:         "boom",
+	}))
+
+	var reportedStatus *protobufs.RemoteConfigStatus
+	s := Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		config: config.Supervisor{
+			Capabilities: config.Capabilities{
+				ReportsRemoteConfig: true,
+			},
+		},
+		persistentState: persistentState,
+		opampClient: &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+				reportedStatus = rcs
+				return nil
+			},
+		},
+	}
+	s.lastWorkingRemoteConfig.Store(workingRemoteConfig)
+
+	s.reportLastWorkingRemoteConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+
+	require.NotNil(t, reportedStatus)
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, reportedStatus.Status)
+	require.Equal(t, workingRemoteConfig.ConfigHash, reportedStatus.LastRemoteConfigHash)
+
+	lastRemoteConfigStatus := s.persistentState.GetLastRemoteConfigStatus()
+	require.NotNil(t, lastRemoteConfigStatus)
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastRemoteConfigStatus.Status)
+	require.Equal(t, failedHash, lastRemoteConfigStatus.LastRemoteConfigHash)
+	require.Equal(t, "boom", lastRemoteConfigStatus.ErrorMessage)
+
+	reportedStatus = nil
+	s.reportLastWorkingRemoteConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+
+	require.NotNil(t, reportedStatus)
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, reportedStatus.Status)
+	require.Equal(t, workingRemoteConfig.ConfigHash, reportedStatus.LastRemoteConfigHash)
+	require.Equal(t, "Config apply timeout exceeded", reportedStatus.ErrorMessage)
+
+	lastRemoteConfigStatus = s.persistentState.GetLastRemoteConfigStatus()
+	require.NotNil(t, lastRemoteConfigStatus)
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastRemoteConfigStatus.Status)
+	require.Equal(t, failedHash, lastRemoteConfigStatus.LastRemoteConfigHash)
+	require.Equal(t, "boom", lastRemoteConfigStatus.ErrorMessage)
+}
+
 func TestSupervisor_setAgentDescription(t *testing.T) {
 	s := &Supervisor{
 		agentDescription: &atomic.Value{},
