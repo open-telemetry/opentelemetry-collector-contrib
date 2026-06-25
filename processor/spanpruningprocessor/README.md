@@ -284,6 +284,11 @@ Preserved outlier spans are annotated with:
 | `<prefix>is_preserved_outlier` | bool | Identifies span as a preserved outlier |
 | `<prefix>summary_span_id` | string | SpanID of the associated summary span |
 
+A preserved outlier becomes a sibling of its summary span. Grouping is
+depth-aware — leaves and parents are never grouped with same-named ancestors at
+a different depth — so an outlier stays at its original depth and the summary it
+links to (via `summary_span_id`) sits where its group was.
+
 ### Histogram Buckets
 
 When `aggregation_histogram_buckets` is configured, summary spans include latency distribution data as cumulative histogram buckets. Cumulative means each bucket count includes all spans with duration less than or equal to that bucket boundary.
