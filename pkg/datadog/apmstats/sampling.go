@@ -4,7 +4,6 @@
 package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
-	"math"
 	"strconv"
 
 	traceutilotel "github.com/DataDog/datadog-agent/pkg/trace/otel/traceutil"
@@ -19,12 +18,16 @@ import (
 // Must stay in sync: the Concentrator reads this key to compute span weight.
 const keySamplingRateGlobal = "_sample_rate"
 
-// samplingProbsFromTraces returns a map of DD span ID (uint64) to sampling
-// probability for each OTel span whose W3C tracestate contains a supported
-// sampling probability encoding (ot=th: or ot=p:). Spans without a recognized
-// encoding are omitted; the Concentrator defaults their weight to 1.
-func samplingProbsFromTraces(traces ptrace.Traces, logger *zap.Logger) map[uint64]float64 {
-	result := make(map[uint64]float64)
+// pValueNotSampled is the reserved p-value sentinel meaning "not sampled"
+// in the consistent-probability sampling encoding (p:63 has no probability).
+const pValueNotSampled = 63
+
+// rawTracestatesBySpanID returns a map of DD span ID (uint64) to the raw W3C
+// tracestate string for each OTel span that has a non-empty tracestate. No
+// parsing happens here; the tracestate is only parsed later for spans that
+// are actually chunk roots (see samplingProbFromTracestate).
+func rawTracestatesBySpanID(traces ptrace.Traces) map[uint64]string {
+	result := make(map[uint64]string)
 	rss := traces.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		sss := rss.At(i).ScopeSpans()
@@ -32,10 +35,11 @@ func samplingProbsFromTraces(traces ptrace.Traces, logger *zap.Logger) map[uint6
 			spans := sss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				prob, ok := samplingProbFromSpan(span, logger)
-				if ok {
-					result[traceutilotel.OTelSpanIDToUint64(span.SpanID())] = prob
+				raw := span.TraceState().AsRaw()
+				if raw == "" {
+					continue
 				}
+				result[traceutilotel.OTelSpanIDToUint64(span.SpanID())] = raw
 			}
 		}
 	}
@@ -51,7 +55,13 @@ func samplingProbsFromTraces(traces ptrace.Traces, logger *zap.Logger) map[uint6
 //   - p (power-of-two): go.opentelemetry.io/contrib/samplers/probability/consistent.
 //     e.g. "ot=p:1;r:1" → probability 2^-1 = 0.5
 func samplingProbFromSpan(span ptrace.Span, logger *zap.Logger) (float64, bool) {
-	raw := span.TraceState().AsRaw()
+	return samplingProbFromTracestate(span.TraceState().AsRaw(), logger)
+}
+
+// samplingProbFromTracestate extracts the sampling probability from a raw W3C
+// tracestate string. Returns (probability, true) on success, (0, false)
+// otherwise. See samplingProbFromSpan for the supported encodings.
+func samplingProbFromTracestate(raw string, logger *zap.Logger) (float64, bool) {
 	if raw == "" {
 		return 0, false
 	}
@@ -84,17 +94,14 @@ func samplingProbFromSpan(span ptrace.Span, logger *zap.Logger) (float64, bool) 
 		if err != nil {
 			break
 		}
-		if pVal == 63 {
+		if pVal >= pValueNotSampled {
 			// Sentinel value meaning "not sampled"; no probability to extract.
-			break
-		}
-		if pVal > 63 {
 			break
 		}
 		if pVal == 0 {
 			return 1.0, true
 		}
-		return math.Pow(2, -float64(pVal)), true
+		return 1.0 / float64(uint64(1)<<pVal), true
 	}
 
 	return 0, false

@@ -102,7 +102,7 @@ func TestSamplingProbFromSpan_MalformedTracestate(t *testing.T) {
 	})
 }
 
-func TestSamplingProbsFromTraces(t *testing.T) {
+func TestRawTracestatesBySpanID(t *testing.T) {
 	spanID1 := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	spanID2 := [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
 
@@ -110,7 +110,7 @@ func TestSamplingProbsFromTraces(t *testing.T) {
 	rs := td.ResourceSpans().AppendEmpty()
 	ss := rs.ScopeSpans().AppendEmpty()
 
-	// Span 1: 50% sampling via th:8
+	// Span 1: has a tracestate
 	s1 := ss.Spans().AppendEmpty()
 	s1.SetSpanID(pcommon.SpanID(spanID1))
 	s1.TraceState().FromRaw("ot=th:8")
@@ -119,15 +119,15 @@ func TestSamplingProbsFromTraces(t *testing.T) {
 	s2 := ss.Spans().AppendEmpty()
 	s2.SetSpanID(pcommon.SpanID(spanID2))
 
-	result := samplingProbsFromTraces(td, nil)
+	result := rawTracestatesBySpanID(td)
 
 	require.Len(t, result, 1)
 
 	// The key must match the DD uint64 span ID used by OtelSpanToDDSpanMinimal.
 	expectedKey := traceutilotel.OTelSpanIDToUint64(pcommon.SpanID(spanID1))
-	prob, ok := result[expectedKey]
+	raw, ok := result[expectedKey]
 	require.True(t, ok)
-	assert.InDelta(t, 0.5, prob, 1e-9)
+	assert.Equal(t, "ot=th:8", raw)
 
 	// Span 2 must not appear.
 	_, ok = result[traceutilotel.OTelSpanIDToUint64(pcommon.SpanID(spanID2))]

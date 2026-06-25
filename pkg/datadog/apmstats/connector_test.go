@@ -625,11 +625,12 @@ func TestSamplingWeightFromTracestate(t *testing.T) {
 	assert.Equal(t, uint64(1), hitsByResource["unsampled-op"], "span with no tracestate should have Hits=1 (weight=1)")
 }
 
-// TestSampleRateInjectedOnRoot checks that ConsumeTraces injects _sample_rate
-// onto the root DD span for both the th (threshold) and p (power-of-two)
-// tracestate encodings so the Concentrator computes the correct weight.
-// This exercises the full path: OTel tracestate → sampleProbs map → DD span
-// Metrics → Root.Metrics, without requiring the Concentrator to flush.
+// TestSampleRateInjectedOnRoot checks that injectSampleRates (the same helper
+// ConsumeTraces uses) injects _sample_rate onto the root DD span for both the
+// th (threshold) and p (power-of-two) tracestate encodings so the Concentrator
+// computes the correct weight. This exercises the full path: OTel tracestate →
+// raw tracestate map → DD span Metrics → Root.Metrics, without requiring the
+// Concentrator to flush.
 func TestSampleRateInjectedOnRoot(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -660,8 +661,8 @@ func TestSampleRateInjectedOnRoot(t *testing.T) {
 
 			connector, _ := createConnector(t)
 
-			sampleProbs := samplingProbsFromTraces(td, nil)
-			require.NotEmpty(t, sampleProbs, "sampleProbs must contain an entry for tracestate %q", tt.traceState)
+			rawTracestates := rawTracestatesBySpanID(td)
+			require.NotEmpty(t, rawTracestates, "rawTracestates must contain an entry for tracestate %q", tt.traceState)
 
 			inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(
 				td, connector.tcfg, connector.ctagKeys, connector.peerTagKeys, connector.obfuscator,
@@ -669,17 +670,8 @@ func TestSampleRateInjectedOnRoot(t *testing.T) {
 			require.Len(t, inputs, 1)
 			require.Len(t, inputs[0].Traces, 1)
 
-			// Run the injection logic from ConsumeTraces.
-			for _, ddSpan := range inputs[0].Traces[0].TraceChunk.Spans {
-				prob, ok := sampleProbs[ddSpan.SpanID]
-				if !ok {
-					continue
-				}
-				if ddSpan.Metrics == nil {
-					ddSpan.Metrics = make(map[string]float64)
-				}
-				ddSpan.Metrics[keySamplingRateGlobal] = prob
-			}
+			injected := injectSampleRates(inputs, rawTracestates, nil)
+			assert.Equal(t, 1, injected)
 
 			root := inputs[0].Traces[0].Root
 			require.NotNil(t, root)
@@ -688,6 +680,103 @@ func TestSampleRateInjectedOnRoot(t *testing.T) {
 			assert.InDelta(t, tt.wantRate, rate, 1e-9)
 		})
 	}
+}
+
+// TestSampleRatePreservesUpstreamValue verifies that injectSampleRates does not
+// overwrite an explicitly set upstream _sample_rate on the root span.
+func TestSampleRatePreservesUpstreamValue(t *testing.T) {
+	rootID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	traceID := pcommon.TraceID([16]byte{1})
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "svc")
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(rootID)
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(spanStartTimestamp)
+	span.SetEndTimestamp(spanEndTimestamp)
+	span.TraceState().FromRaw("ot=th:8") // 50% → 0.5
+
+	connector, _ := createConnector(t)
+
+	rawTracestates := rawTracestatesBySpanID(td)
+	require.NotEmpty(t, rawTracestates)
+
+	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(
+		td, connector.tcfg, connector.ctagKeys, connector.peerTagKeys, connector.obfuscator,
+	)
+	require.Len(t, inputs, 1)
+	require.Len(t, inputs[0].Traces, 1)
+
+	root := inputs[0].Traces[0].Root
+	require.NotNil(t, root)
+	if root.Metrics == nil {
+		root.Metrics = make(map[string]float64)
+	}
+	root.Metrics[keySamplingRateGlobal] = 0.25 // pre-existing upstream value
+
+	injected := injectSampleRates(inputs, rawTracestates, nil)
+	assert.Equal(t, 0, injected)
+
+	rate, ok := root.Metrics[keySamplingRateGlobal]
+	require.True(t, ok)
+	assert.InDelta(t, 0.25, rate, 1e-9, "upstream _sample_rate must be preserved")
+}
+
+// TestSampleRateIgnoresNonRootTracestate verifies that a tracestate on a child
+// span does not cause any _sample_rate injection. Only the root span's weight
+// matters to the Concentrator.
+func TestSampleRateIgnoresNonRootTracestate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1})
+	rootID := pcommon.SpanID(testSpanID1)
+	childID := pcommon.SpanID(testSpanID2)
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "svc")
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	// Root span: no tracestate.
+	root := ss.Spans().AppendEmpty()
+	root.SetName("parent")
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootID)
+	root.SetKind(ptrace.SpanKindServer)
+	root.SetStartTimestamp(spanStartTimestamp)
+	root.SetEndTimestamp(spanEndTimestamp)
+
+	// Child span: has a tracestate that should be ignored.
+	child := ss.Spans().AppendEmpty()
+	child.SetName("child")
+	child.SetTraceID(traceID)
+	child.SetSpanID(childID)
+	child.SetParentSpanID(rootID)
+	child.SetKind(ptrace.SpanKindClient)
+	child.SetStartTimestamp(spanStartTimestamp)
+	child.SetEndTimestamp(spanEndTimestamp)
+	child.TraceState().FromRaw("ot=th:8")
+
+	connector, _ := createConnector(t)
+
+	rawTracestates := rawTracestatesBySpanID(td)
+	require.NotEmpty(t, rawTracestates, "child tracestate should be collected into the map")
+
+	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(
+		td, connector.tcfg, connector.ctagKeys, connector.peerTagKeys, connector.obfuscator,
+	)
+	require.Len(t, inputs, 1)
+	require.Len(t, inputs[0].Traces, 1)
+
+	injected := injectSampleRates(inputs, rawTracestates, nil)
+	assert.Equal(t, 0, injected)
+
+	ddRoot := inputs[0].Traces[0].Root
+	require.NotNil(t, ddRoot)
+	_, ok := ddRoot.Metrics[keySamplingRateGlobal]
+	assert.False(t, ok, "root must not have _sample_rate set from a child tracestate")
 }
 
 func TestError(t *testing.T) {

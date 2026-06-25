@@ -194,35 +194,17 @@ func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	// Build a spanID→probability map from W3C tracestate values so we can
-	// inject _sample_rate into DD spans for correct Concentrator weighting.
-	sampleProbs := samplingProbsFromTraces(traces, c.logger)
-
-	c.logger.Debug("sampling probs from tracestate", zap.Int("span_count", len(sampleProbs)))
+	// Collect raw W3C tracestate strings keyed by span ID. No parsing happens
+	// here; tracestates are only parsed for spans that turn out to be chunk
+	// roots (see injectSampleRates).
+	rawTracestates := rawTracestatesBySpanID(traces)
 
 	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
 
-	// Inject _sample_rate onto the root DD span of each trace chunk.
-	// The Concentrator reads weight only from pt.Root, so child spans are irrelevant.
-	if len(sampleProbs) > 0 {
-		for i := range inputs {
-			for j := range inputs[i].Traces {
-				root := inputs[i].Traces[j].Root
-				if root == nil {
-					continue
-				}
-				prob, ok := sampleProbs[root.SpanID]
-				if !ok {
-					continue
-				}
-				if _, exists := root.Metrics[keySamplingRateGlobal]; exists {
-					continue // preserve an explicitly set value from upstream
-				}
-				if root.Metrics == nil {
-					root.Metrics = make(map[string]float64)
-				}
-				root.Metrics[keySamplingRateGlobal] = prob
-			}
+	if len(rawTracestates) > 0 {
+		injected := injectSampleRates(inputs, rawTracestates, c.logger)
+		if injected > 0 {
+			c.logger.Debug("injected sampling probs from tracestate", zap.Int("root_count", injected))
 		}
 	}
 
@@ -230,6 +212,39 @@ func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.
 		c.concentrator.Add(input)
 	}
 	return nil
+}
+
+// injectSampleRates injects _sample_rate onto the root DD span of each trace
+// chunk whose root has a supported W3C tracestate sampling encoding. The
+// Concentrator reads weight only from pt.Root, so child spans are irrelevant
+// and only root tracestates are parsed. Returns the number of roots injected.
+func injectSampleRates(inputs []stats.Input, rawTracestates map[uint64]string, logger *zap.Logger) int {
+	injected := 0
+	for i := range inputs {
+		for j := range inputs[i].Traces {
+			root := inputs[i].Traces[j].Root
+			if root == nil {
+				continue
+			}
+			raw, ok := rawTracestates[root.SpanID]
+			if !ok {
+				continue
+			}
+			prob, ok := samplingProbFromTracestate(raw, logger)
+			if !ok {
+				continue
+			}
+			if _, exists := root.Metrics[keySamplingRateGlobal]; exists {
+				continue // preserve an explicitly set value from upstream
+			}
+			if root.Metrics == nil {
+				root.Metrics = make(map[string]float64)
+			}
+			root.Metrics[keySamplingRateGlobal] = prob
+			injected++
+		}
+	}
+	return injected
 }
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
