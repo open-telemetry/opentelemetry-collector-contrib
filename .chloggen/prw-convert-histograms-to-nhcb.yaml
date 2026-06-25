@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/prometheusremotewrite
+component: exporter/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `convert_histograms_to_nhcb` to convert explicit-bucket (classic) histograms into Native Histograms with Custom Buckets (NHCB) on export, with `keep_classic_histograms` to emit both representations during migration.

@@ -140,6 +140,42 @@ func TestExplicitToNHCBHistogram_CountBelowBucketSum(t *testing.T) {
 	assert.Equal(t, uint64(10), h.GetCountInt(), "count derived from bucket sum")
 }
 
+// TestExplicitToNHCBHistogram_CountAboveBucketSum is the converse case: when a
+// source's Count exceeds its bucket sum, the reported count is preserved (the
+// surplus lands in the +Inf bucket) rather than truncated to the bucket total.
+func TestExplicitToNHCBHistogram_CountAboveBucketSum(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_hist")
+	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	pt := metric.Histogram().DataPoints().AppendEmpty()
+	pt.SetTimestamp(testHistTimestamp)
+	pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4}) // bucket sum 10
+	pt.SetCount(20)                                 // inconsistent: above bucket sum
+	pt.SetSum(42.5)
+
+	h, err := explicitToNHCBHistogram(pt)
+	require.NoError(t, err)
+
+	ih := h.ToIntHistogram()
+	require.NotNil(t, ih)
+	require.NoError(t, ih.Validate(), "converted histogram must be valid")
+
+	type bucket struct {
+		upper float64
+		cum   uint64
+	}
+	var got []bucket
+	for it := ih.CumulativeBucketIterator(); it.Next(); {
+		b := it.At()
+		got = append(got, bucket{b.Upper, b.Count})
+	}
+	// Reported count (20) preserved; the surplus over the bucket sum lands in +Inf.
+	want := []bucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 20}}
+	assert.Equal(t, want, got)
+	assert.Equal(t, uint64(20), h.GetCountInt(), "reported count preserved")
+}
+
 func TestExplicitToNHCBHistogram_NoSum(t *testing.T) {
 	ts := pcommon.Timestamp(1_700_000_000_000_000_000)
 	metric := pmetric.NewMetric()

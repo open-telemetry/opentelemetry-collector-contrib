@@ -35,12 +35,16 @@ func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histo
 			return nil, nil, err
 		}
 	}
-	// Total from the bucket counts, not pt.Count(): Convert derives the +Inf bucket
-	// as total - last cumulative, so a pt.Count() below the bucket sum (some sources
-	// emit this) would make it negative and remote write would reject it.
+	// Reconcile the total with the buckets. Convert derives the +Inf bucket as
+	// total - last cumulative, so clamp up to the bucket sum to keep it non-negative
+	// (some sources report a Count below their buckets), but preserve a larger
+	// pt.Count() when the source reports more observations than its buckets account for.
 	total := cumulative
 	if counts.Len() > bounds.Len() { // +Inf overflow bucket
 		total += counts.At(counts.Len() - 1)
+	}
+	if pt.Count() > total {
+		total = pt.Count()
 	}
 	if err := th.SetCount(float64(total)); err != nil {
 		return nil, nil, err
