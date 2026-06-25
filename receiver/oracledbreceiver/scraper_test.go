@@ -82,7 +82,7 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL: {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
 	sgaInfoSQL: {
 		{"NAME": "Fixed SGA Size", "BYTES": "9292416"},
 		{"NAME": "Redo Buffers", "BYTES": "14598144"},
