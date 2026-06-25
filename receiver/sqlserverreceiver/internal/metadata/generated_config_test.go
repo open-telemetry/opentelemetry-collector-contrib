@@ -555,6 +555,210 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSqlserverDatabaseCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverDatabaseCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverDatabaseCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.count doesn't have an attribute invalid, valid attributes: [database.status]")
+
+	cfg = DefaultMetricsConfig().SqlserverDatabaseCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverDatabaseIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverDatabaseIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverDatabaseIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.io doesn't have an attribute invalid, valid attributes: [physical_filename, logical_filename, file_type, direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverDatabaseIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverDatabaseLatencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverDatabaseLatency
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverDatabaseLatencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.latency doesn't have an attribute invalid, valid attributes: [physical_filename, logical_filename, file_type, direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverDatabaseLatency
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverDatabaseOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverDatabaseOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverDatabaseOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.operations doesn't have an attribute invalid, valid attributes: [physical_filename, logical_filename, file_type, direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverDatabaseOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverDatabaseTempdbSpaceMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverDatabaseTempdbSpace
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverDatabaseTempdbSpaceMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.tempdb.space doesn't have an attribute invalid, valid attributes: [tempdb.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverDatabaseTempdbSpace
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverLatchSuperlatchTransitionRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverLatchSuperlatchTransitionRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverLatchSuperlatchTransitionRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.latch.superlatch.transition.rate doesn't have an attribute invalid, valid attributes: [transition.direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverLatchSuperlatchTransitionRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverMemoryAreaMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverMemoryArea
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverMemoryAreaMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.memory.area doesn't have an attribute invalid, valid attributes: [memory.pool]")
+
+	cfg = DefaultMetricsConfig().SqlserverMemoryArea
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverMemoryCacheObjectCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverMemoryCacheObjectCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverMemoryCacheObjectCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.memory.cache.object.count doesn't have an attribute invalid, valid attributes: [cache.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverMemoryCacheObjectCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverMemoryPageCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverMemoryPageCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverMemoryPageCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.memory.page.count doesn't have an attribute invalid, valid attributes: [page.pool]")
+
+	cfg = DefaultMetricsConfig().SqlserverMemoryPageCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverOsWaitDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverOsWaitDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverOsWaitDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.os.wait.duration doesn't have an attribute invalid, valid attributes: [wait.category, wait.type]")
+
+	cfg = DefaultMetricsConfig().SqlserverOsWaitDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverPageLifeExpectancyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverPageLifeExpectancy
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverPageLifeExpectancyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.page.life_expectancy doesn't have an attribute invalid, valid attributes: [performance_counter.object_name]")
+
+	cfg = DefaultMetricsConfig().SqlserverPageLifeExpectancy
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverPageOperationRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverPageOperationRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverPageOperationRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.page.operation.rate doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SqlserverPageOperationRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverParameterizationRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverParameterizationRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverParameterizationRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.parameterization.rate doesn't have an attribute invalid, valid attributes: [sqlserver.parameterization.result]")
+
+	cfg = DefaultMetricsConfig().SqlserverParameterizationRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverPlanExecutionRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverPlanExecutionRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverPlanExecutionRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.plan.execution.rate doesn't have an attribute invalid, valid attributes: [sqlserver.plan.guidance.result]")
+
+	cfg = DefaultMetricsConfig().SqlserverPlanExecutionRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverReplicaDataRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverReplicaDataRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverReplicaDataRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.replica.data.rate doesn't have an attribute invalid, valid attributes: [replica.direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverReplicaDataRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverResourcePoolDiskOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverResourcePoolDiskOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverResourcePoolDiskOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.resource_pool.disk.operations doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().SqlserverResourcePoolDiskOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverTableCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverTableCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverTableCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.table.count doesn't have an attribute invalid, valid attributes: [table.state, table.status]")
+
+	cfg = DefaultMetricsConfig().SqlserverTableCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

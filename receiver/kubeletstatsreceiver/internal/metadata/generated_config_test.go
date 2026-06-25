@@ -480,6 +480,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestK8sContainerEphemeralStorageUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sContainerEphemeralStorageUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sContainerEphemeralStorageUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.container.ephemeral_storage.usage doesn't have an attribute invalid, valid attributes: [fs.type]")
+
+	cfg = DefaultMetricsConfig().K8sContainerEphemeralStorageUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestK8sNodeNetworkErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sNodeNetworkErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sNodeNetworkErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.network.errors doesn't have an attribute invalid, valid attributes: [interface, direction]")
+
+	cfg = DefaultMetricsConfig().K8sNodeNetworkErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestK8sNodeNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sNodeNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sNodeNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.network.io doesn't have an attribute invalid, valid attributes: [interface, direction]")
+
+	cfg = DefaultMetricsConfig().K8sNodeNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestK8sPodNetworkErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodNetworkErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sPodNetworkErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.network.errors doesn't have an attribute invalid, valid attributes: [interface, direction]")
+
+	cfg = DefaultMetricsConfig().K8sPodNetworkErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestK8sPodNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sPodNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.network.io doesn't have an attribute invalid, valid attributes: [interface, direction]")
+
+	cfg = DefaultMetricsConfig().K8sPodNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
