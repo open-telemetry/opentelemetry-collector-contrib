@@ -120,6 +120,8 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;
 ALTER SYSTEM SET statistics_level = ALL;
 ```
 
+In the SQL query plan details the LAST_* / OUTPUT_ROWS / STARTS columns are only populated when STATISTICS_LEVEL=ALL or GATHER_PLAN_STATISTICS hint is used; otherwise they'll be NULL/empty.
+
 ## Enabling metrics.
 
 See [documentation](./documentation.md).

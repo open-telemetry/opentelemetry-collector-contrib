@@ -111,13 +111,13 @@ resourceLogs:
                   stringValue: "33313233343536373839"
               - key: oracledb.plan.first_load
                 value:
-                  stringValue: 2025-12-31/23:00:00
+                  stringValue: "2025-12-31/23:00:00"
               - key: oracledb.plan.last_load
                 value:
-                  stringValue: 2026-01-01/12:00:00
+                  stringValue: "2026-01-01/12:00:00"
             body: {}
             eventName: db.server.top_query
-            timeUnixNano: "1782224561254214000"
+            timeUnixNano: "1759142512777891000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
