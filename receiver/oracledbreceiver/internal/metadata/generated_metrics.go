@@ -5740,12 +5740,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.OracleDbOpenMode.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbOpenMode.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OracleDbPdb.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbPdb.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.OracleDbPdb.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbPdb.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.OracleDbRole.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbRole.MetricsInclude)
 	}

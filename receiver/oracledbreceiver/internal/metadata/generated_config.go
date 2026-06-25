@@ -3007,7 +3007,6 @@ type ResourceAttributesConfig struct {
 	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
 	OracleDbHostingType  ResourceAttributeConfig `mapstructure:"oracle.db.hosting_type"`
 	OracleDbOpenMode     ResourceAttributeConfig `mapstructure:"oracle.db.open_mode"`
-	OracleDbPdb          ResourceAttributeConfig `mapstructure:"oracle.db.pdb"`
 	OracleDbRole         ResourceAttributeConfig `mapstructure:"oracle.db.role"`
 	OracleDbVersion      ResourceAttributeConfig `mapstructure:"oracle.db.version"`
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
@@ -3023,9 +3022,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OracleDbOpenMode: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		OracleDbPdb: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OracleDbRole: ResourceAttributeConfig{

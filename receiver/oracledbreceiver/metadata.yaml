@@ -26,10 +26,6 @@ resource_attributes:
     description: The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
     enabled: true
     type: string
-  oracle.db.pdb:
-    description: The pluggable database (PDB) name associated with the connection.
-    enabled: true
-    type: string
   oracle.db.role:
     description: The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY").
     enabled: true
@@ -96,7 +92,7 @@ attributes:
     description: TCP port used by the peer client.
     type: int
   oracle.db.pdb:
-    description: The name of the pluggable database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB.
+    description: The name of the pluggable database (PDB) the data point belongs to. Populated for per-PDB rows from CDB-root queries and for direct-PDB connections. Empty for non-CDB instances and for CDB-wide aggregate metrics that have no per-PDB dimension.
     type: string
     requirement_level: opt_in
   oracle.db.service:

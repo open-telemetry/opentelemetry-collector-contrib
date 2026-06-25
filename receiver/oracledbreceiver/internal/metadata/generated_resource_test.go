@@ -16,7 +16,6 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
-			rb.SetOracleDbPdb("oracle.db.pdb-val")
 			rb.SetOracleDbRole("oracle.db.role-val")
 			rb.SetOracleDbVersion("oracle.db.version-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
@@ -27,9 +26,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -50,11 +49,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "oracle.db.open_mode-val", oracleDbOpenModeAttrVal.Str())
-			}
-			oracleDbPdbAttrVal, ok := res.Attributes().Get("oracle.db.pdb")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "oracle.db.pdb-val", oracleDbPdbAttrVal.Str())
 			}
 			oracleDbRoleAttrVal, ok := res.Attributes().Get("oracle.db.role")
 			assert.True(t, ok)

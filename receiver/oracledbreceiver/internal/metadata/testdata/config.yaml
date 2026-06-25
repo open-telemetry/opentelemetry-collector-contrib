@@ -186,8 +186,6 @@ all_set:
       enabled: true
     oracle.db.open_mode:
       enabled: true
-    oracle.db.pdb:
-      enabled: true
     oracle.db.role:
       enabled: true
     oracle.db.version:
@@ -382,8 +380,6 @@ reaggregate_set:
     oracle.db.hosting_type:
       enabled: true
     oracle.db.open_mode:
-      enabled: true
-    oracle.db.pdb:
       enabled: true
     oracle.db.role:
       enabled: true
@@ -580,8 +576,6 @@ none_set:
       enabled: false
     oracle.db.open_mode:
       enabled: false
-    oracle.db.pdb:
-      enabled: false
     oracle.db.role:
       enabled: false
     oracle.db.version:
@@ -605,12 +599,6 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     oracle.db.open_mode:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    oracle.db.pdb:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -660,12 +648,6 @@ filter_set_exclude:
         - strict: "oracle.db.open_mode-val"
       events_exclude:
         - strict: "oracle.db.open_mode-val"
-    oracle.db.pdb:
-      enabled: true
-      metrics_exclude:
-        - strict: "oracle.db.pdb-val"
-      events_exclude:
-        - strict: "oracle.db.pdb-val"
     oracle.db.role:
       enabled: true
       metrics_exclude:

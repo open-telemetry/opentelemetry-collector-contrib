@@ -17,8 +17,10 @@ issues: [48643]
 # Use pipe (|) for multiline entries.
 subtext: |
   When connected to an Oracle CDB root (Oracle 12c+), the receiver automatically detects all PDBs
-  and tags sysstat, session, and tablespace metrics with the `oracle.db.pdb` attribute (opt-in,
-  per OTel semantic conventions). Non-CDB, direct PDB connections, and Oracle <12c are unaffected.
+  and tags sysstat, session, sysmetric, and tablespace metrics with the `oracle.db.pdb` data point
+  attribute (opt-in, per OTel semantic conventions). The attribute is also populated for direct-PDB
+  connections so the metric hierarchy is consistent regardless of how the collector connects.
+  Non-CDB instances and Oracle <12c are unaffected (the attribute is left empty).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -39,7 +39,7 @@ const (
 	statsSQL     = "select * from v$sysstat"
 	sysmetricSQL = "SELECT metric_name, value FROM v$sysmetric WHERE group_id = 2"
 	// sysmetricCDBSQL queries V$CON_SYSMETRIC for per-PDB sysmetric values.
-	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+)"
+	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+) AND s.group_id = 2"
 
 	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
 	sysmetricBufferCacheHitRatio      = "Buffer Cache Hit Ratio"
@@ -354,8 +354,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 
 		for _, row := range rows {
-			// pdbName is set for CDB-root queries; empty for non-CDB or direct-PDB connections.
-			pdbName := row["PDB_NAME"]
+			pdbName := s.pdbNameForRow(row)
 			switch row["NAME"] {
 			case enqueueDeadlocks:
 				err := s.mb.RecordOracledbEnqueueDeadlocksDataPoint(now, row["VALUE"], pdbName)
@@ -567,9 +566,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", sessionQueryName, err))
 		}
 		for _, row := range rows {
-			// pdbName is populated from PDB_NAME in CDB-root queries; empty for non-CDB.
 			err := s.mb.RecordOracledbSessionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"],
-				row["TYPE"], row["STATUS"], row["PDB_NAME"])
+				row["TYPE"], row["STATUS"], s.pdbNameForRow(row))
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
@@ -658,8 +656,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
 				tablespaceName := row["TABLESPACE_NAME"]
-				// pdbName is set for CDB-root queries; empty for non-CDB or direct-PDB connections.
-				pdbName := row["PDB_NAME"]
+				pdbName := s.pdbNameForRow(row)
 				usedSpaceBlockCount, err := strconv.ParseInt(row["USED_SPACE"], 10, 64)
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeUsage, value was %s: %w", row["USED_SPACE"], err))
@@ -813,7 +810,7 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 			for _, row := range rows {
 				metricName := row["METRIC_NAME"]
 				rawVal := row["VALUE"]
-				pdbName := row["PDB_NAME"]
+				pdbName := s.pdbNameForRow(row)
 				val, parseErr := strconv.ParseFloat(rawVal, 64)
 				if parseErr != nil {
 					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
@@ -843,8 +840,23 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
 			continue
 		}
-		s.recordSysmetric(now, metricName, val, "")
+		s.recordSysmetric(now, metricName, val, s.pdbNameForRow(row))
 	}
+}
+
+// pdbNameForRow resolves the PDB name to attach to a data point. For CDB-root queries
+// (V$CON_SYSSTAT / CDB_TABLESPACE_USAGE_METRICS / V$CON_SYSMETRIC) the row already
+// carries PDB_NAME. For direct-PDB connections the row has no PDB column, so fall
+// back to the connection's PDB name. Returns empty string for non-CDB instances and
+// for CDB-wide aggregate metrics.
+func (s *oracleScraper) pdbNameForRow(row map[string]string) string {
+	if name := row["PDB_NAME"]; name != "" {
+		return name
+	}
+	if s.instanceInfo.connectedToPDB {
+		return s.instanceInfo.pdbName
+	}
+	return ""
 }
 
 // recordSysmetric records a single sysmetric data point based on the Oracle metric name.
@@ -1370,9 +1382,6 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	}
 	if s.instanceInfo.hostingType != "" {
 		rb.SetOracleDbHostingType(s.instanceInfo.hostingType)
-	}
-	if s.instanceInfo.connectedToPDB && s.instanceInfo.pdbName != "" {
-		rb.SetOracleDbPdb(s.instanceInfo.pdbName)
 	}
 	return rb
 }
