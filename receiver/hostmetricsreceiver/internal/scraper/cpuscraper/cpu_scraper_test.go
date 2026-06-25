@@ -36,24 +36,20 @@ func TestScrape(t *testing.T) {
 		expectedErr         string
 	}
 
-	defaultMetrics := metadata.NewDefaultMetricsBuilderConfig()
-	defaultMetrics.Metrics.SystemCPULogicalCount.Enabled = false
-
 	disabledMetric := metadata.NewDefaultMetricsBuilderConfig()
 	disabledMetric.Metrics.SystemCPUTime.Enabled = false
-	disabledMetric.Metrics.SystemCPULogicalCount.Enabled = false
 
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       defaultMetrics,
-			expectedMetricCount: 1,
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
+			expectedMetricCount: 2,
 		},
 		{
 			name:                "Validate Start Time",
 			bootTimeFunc:        func(context.Context) (uint64, error) { return 100, nil },
-			metricsConfig:       defaultMetrics,
-			expectedMetricCount: 1,
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
+			expectedMetricCount: 2,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
@@ -66,14 +62,14 @@ func TestScrape(t *testing.T) {
 		{
 			name:                "Times Error",
 			timesFunc:           func(context.Context, bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
-			metricsConfig:       defaultMetrics,
-			expectedMetricCount: 1,
+			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
+			expectedMetricCount: 2,
 			expectedErr:         "err2",
 		},
 		{
 			name:                "SystemCPUTime metric is disabled ",
 			metricsConfig:       disabledMetric,
-			expectedMetricCount: 0,
+			expectedMetricCount: 1,
 		},
 	}
 
@@ -114,10 +110,14 @@ func TestScrape(t *testing.T) {
 
 			if test.expectedMetricCount > 0 {
 				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-				assertCPUMetricValid(t, metrics.At(0), test.expectedStartTime)
+				assertCPULogicalCountMetricValid(t, metrics.At(0))
 
-				if runtime.GOOS == "linux" {
-					assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+				if test.metricsConfig.Metrics.SystemCPUTime.Enabled {
+					cpuTimeMetric := metrics.At(1)
+					assertCPUMetricValid(t, cpuTimeMetric, test.expectedStartTime)
+					if runtime.GOOS == "linux" {
+						assertCPUMetricHasLinuxSpecificStateLabels(t, cpuTimeMetric)
+					}
 				}
 
 				internal.AssertSameTimeStampForAllMetrics(t, metrics)
