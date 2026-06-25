@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: receiver/oracledb
@@ -18,6 +18,8 @@ issues: [49329]
 subtext: |
   The Oracle DB collector now retrieves SQL execution plan details from V$SQL_PLAN_STATISTICS_ALL instead of V$SQL_PLAN,enabling collection of additional runtime execution statistics
   including OUTPUT_ROWS, LAST_OUTPUT_ROWS, LAST_ELAPSED_TIME, LAST_CR_BUFFER_GETS, LAST_CU_BUFFER_GETS, STARTS, and LAST_STARTS.
+  This change is backward compatible in terms of emitted plan detail fields because V$SQL_PLAN_STATISTICS_ALL is a superset of V$SQL_PLAN; however, it may require additional database privileges.
+  Users must ensure the collector user has access to V$SQL_PLAN_STATISTICS_ALL, otherwise query plan collection may fail.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
