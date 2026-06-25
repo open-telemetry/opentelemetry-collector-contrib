@@ -307,7 +307,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled ||
-		metrics.SqlserverWorktableCachePercent.Enabled
+		metrics.SqlserverWorktableCacheHitRatio.Enabled
 }
 
 func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {

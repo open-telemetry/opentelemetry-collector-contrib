@@ -149,8 +149,8 @@ attributes:
     description: The port number on which the server is listening.
     type: int
     requirement_level: recommended
-  sqlserver.access.scan.kind:
-    description: The kind of access method scan being performed.
+  sqlserver.access.scan.type:
+    description: The type of access method scan being performed.
     type: string
     requirement_level: required
     enum: [free_space, probe, range]
@@ -190,8 +190,8 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
-  sqlserver.extent.operation.kind:
-    description: The kind of extent allocation operation.
+  sqlserver.extent.operation.type:
+    description: The type of extent allocation operation.
     type: string
     requirement_level: required
     enum: [allocated, deallocated]
@@ -207,13 +207,13 @@ attributes:
     description: Number of transactions currently open in the session.
     type: int
     requirement_level: recommended
-  sqlserver.page.allocation.kind:
-    description: The kind of page allocation operation.
+  sqlserver.page.allocation.type:
+    description: The type of page allocation operation.
     type: string
     requirement_level: required
     enum: [allocated, deallocated, mixed]
-  sqlserver.page.compression.kind:
-    description: The kind of page compression operation.
+  sqlserver.page.compression.type:
+    description: The type of page compression operation.
     type: string
     requirement_level: required
     enum: [attempted, compressed]
@@ -468,12 +468,12 @@ events:
 metrics:
   sqlserver.access.scan.rate:
     enabled: false
-    description: Number of access method scans, by kind.
+    description: Rate of access method scans, by type.
     stability: development
-    unit: "{scans}/s"
+    unit: "{scan}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.access.scan.kind]
+    attributes: [sqlserver.access.scan.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.attention.rate:
     enabled: false
@@ -617,18 +617,18 @@ metrics:
     attributes: []
   sqlserver.extent.operation.rate:
     enabled: false
-    description: Number of extent allocation/deallocation operations, by kind.
+    description: Rate of extent allocation/deallocation operations, by type.
     stability: development
-    unit: "{extents}/s"
+    unit: "{extent}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.extent.operation.kind]
+    attributes: [sqlserver.extent.operation.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.ghost_record.skipped.rate:
     enabled: false
-    description: Number of ghosted records skipped during scans.
+    description: Rate of ghosted records skipped during scans.
     stability: development
-    unit: "{records}/s"
+    unit: "{record}/s"
     gauge:
       value_type: double
     attributes: []
@@ -797,12 +797,12 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.allocation.rate:
     enabled: false
-    description: Number of page allocation/deallocation operations, by kind.
+    description: Rate of page allocation/deallocation operations, by type.
     stability: development
-    unit: "{pages}/s"
+    unit: "{page}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.page.allocation.kind]
+    attributes: [sqlserver.page.allocation.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.buffer_cache.free_list.stalls.rate:
     enabled: false
@@ -829,12 +829,12 @@ metrics:
     extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.compression.rate:
     enabled: false
-    description: Number of page compression operations, by kind.
+    description: Rate of page compression operations, by type.
     stability: development
-    unit: "{pages}/s"
+    unit: "{page}/s"
     gauge:
       value_type: double
-    attributes: [sqlserver.page.compression.kind]
+    attributes: [sqlserver.page.compression.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.lazy_write.rate:
     enabled: true
@@ -871,9 +871,9 @@ metrics:
     extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.readahead.rate:
     enabled: false
-    description: Number of pages read from disk by the read-ahead manager.
+    description: Rate of pages read from disk by the read-ahead manager.
     stability: development
-    unit: "{pages}/s"
+    unit: "{page}/s"
     gauge:
       value_type: double
     attributes: []
@@ -959,9 +959,9 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.scan_point.revalidation.rate:
     enabled: false
-    description: Number of times scan points needed to be revalidated.
+    description: Rate at which scan points needed to be revalidated.
     stability: development
-    unit: "{revalidations}/s"
+    unit: "{revalidation}/s"
     gauge:
       value_type: double
     attributes: []
@@ -1069,7 +1069,7 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-  sqlserver.worktable.cache.percent:
+  sqlserver.worktable.cache.hit_ratio:
     enabled: false
     description: Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
     stability: development

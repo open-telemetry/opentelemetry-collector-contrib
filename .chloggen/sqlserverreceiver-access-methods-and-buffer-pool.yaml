@@ -17,14 +17,14 @@ issues: [49182]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds the following metrics, all disabled by default:
-    - `sqlserver.access.scan.rate` (with `sqlserver.access.scan.kind` attribute: free_space, probe, range)
-    - `sqlserver.extent.operation.rate` (with `sqlserver.extent.operation.kind` attribute: allocated, deallocated)
+    - `sqlserver.access.scan.rate` (with `sqlserver.access.scan.type` attribute: free_space, probe, range)
+    - `sqlserver.extent.operation.rate` (with `sqlserver.extent.operation.type` attribute: allocated, deallocated)
     - `sqlserver.ghost_record.skipped.rate`
-    - `sqlserver.page.allocation.rate` (with `sqlserver.page.allocation.kind` attribute: allocated, deallocated, mixed)
-    - `sqlserver.page.compression.rate` (with `sqlserver.page.compression.kind` attribute: attempted, compressed)
+    - `sqlserver.page.allocation.rate` (with `sqlserver.page.allocation.type` attribute: allocated, deallocated, mixed)
+    - `sqlserver.page.compression.rate` (with `sqlserver.page.compression.type` attribute: attempted, compressed)
     - `sqlserver.page.readahead.rate`
     - `sqlserver.scan_point.revalidation.rate`
-    - `sqlserver.worktable.cache.percent`
+    - `sqlserver.worktable.cache.hit_ratio`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

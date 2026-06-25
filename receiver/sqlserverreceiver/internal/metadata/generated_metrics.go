@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -260,116 +259,116 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
-// AttributeSqlserverAccessScanKind specifies the value sqlserver.access.scan.kind attribute.
-type AttributeSqlserverAccessScanKind int
+// AttributeSqlserverAccessScanType specifies the value sqlserver.access.scan.type attribute.
+type AttributeSqlserverAccessScanType int
 
 const (
-	_ AttributeSqlserverAccessScanKind = iota
-	AttributeSqlserverAccessScanKindFreeSpace
-	AttributeSqlserverAccessScanKindProbe
-	AttributeSqlserverAccessScanKindRange
+	_ AttributeSqlserverAccessScanType = iota
+	AttributeSqlserverAccessScanTypeFreeSpace
+	AttributeSqlserverAccessScanTypeProbe
+	AttributeSqlserverAccessScanTypeRange
 )
 
-// String returns the string representation of the AttributeSqlserverAccessScanKind.
-func (av AttributeSqlserverAccessScanKind) String() string {
+// String returns the string representation of the AttributeSqlserverAccessScanType.
+func (av AttributeSqlserverAccessScanType) String() string {
 	switch av {
-	case AttributeSqlserverAccessScanKindFreeSpace:
+	case AttributeSqlserverAccessScanTypeFreeSpace:
 		return "free_space"
-	case AttributeSqlserverAccessScanKindProbe:
+	case AttributeSqlserverAccessScanTypeProbe:
 		return "probe"
-	case AttributeSqlserverAccessScanKindRange:
+	case AttributeSqlserverAccessScanTypeRange:
 		return "range"
 	}
 	return ""
 }
 
-// MapAttributeSqlserverAccessScanKind is a helper map of string to AttributeSqlserverAccessScanKind attribute value.
-var MapAttributeSqlserverAccessScanKind = map[string]AttributeSqlserverAccessScanKind{
-	"free_space": AttributeSqlserverAccessScanKindFreeSpace,
-	"probe":      AttributeSqlserverAccessScanKindProbe,
-	"range":      AttributeSqlserverAccessScanKindRange,
+// MapAttributeSqlserverAccessScanType is a helper map of string to AttributeSqlserverAccessScanType attribute value.
+var MapAttributeSqlserverAccessScanType = map[string]AttributeSqlserverAccessScanType{
+	"free_space": AttributeSqlserverAccessScanTypeFreeSpace,
+	"probe":      AttributeSqlserverAccessScanTypeProbe,
+	"range":      AttributeSqlserverAccessScanTypeRange,
 }
 
-// AttributeSqlserverExtentOperationKind specifies the value sqlserver.extent.operation.kind attribute.
-type AttributeSqlserverExtentOperationKind int
+// AttributeSqlserverExtentOperationType specifies the value sqlserver.extent.operation.type attribute.
+type AttributeSqlserverExtentOperationType int
 
 const (
-	_ AttributeSqlserverExtentOperationKind = iota
-	AttributeSqlserverExtentOperationKindAllocated
-	AttributeSqlserverExtentOperationKindDeallocated
+	_ AttributeSqlserverExtentOperationType = iota
+	AttributeSqlserverExtentOperationTypeAllocated
+	AttributeSqlserverExtentOperationTypeDeallocated
 )
 
-// String returns the string representation of the AttributeSqlserverExtentOperationKind.
-func (av AttributeSqlserverExtentOperationKind) String() string {
+// String returns the string representation of the AttributeSqlserverExtentOperationType.
+func (av AttributeSqlserverExtentOperationType) String() string {
 	switch av {
-	case AttributeSqlserverExtentOperationKindAllocated:
+	case AttributeSqlserverExtentOperationTypeAllocated:
 		return "allocated"
-	case AttributeSqlserverExtentOperationKindDeallocated:
+	case AttributeSqlserverExtentOperationTypeDeallocated:
 		return "deallocated"
 	}
 	return ""
 }
 
-// MapAttributeSqlserverExtentOperationKind is a helper map of string to AttributeSqlserverExtentOperationKind attribute value.
-var MapAttributeSqlserverExtentOperationKind = map[string]AttributeSqlserverExtentOperationKind{
-	"allocated":   AttributeSqlserverExtentOperationKindAllocated,
-	"deallocated": AttributeSqlserverExtentOperationKindDeallocated,
+// MapAttributeSqlserverExtentOperationType is a helper map of string to AttributeSqlserverExtentOperationType attribute value.
+var MapAttributeSqlserverExtentOperationType = map[string]AttributeSqlserverExtentOperationType{
+	"allocated":   AttributeSqlserverExtentOperationTypeAllocated,
+	"deallocated": AttributeSqlserverExtentOperationTypeDeallocated,
 }
 
-// AttributeSqlserverPageAllocationKind specifies the value sqlserver.page.allocation.kind attribute.
-type AttributeSqlserverPageAllocationKind int
+// AttributeSqlserverPageAllocationType specifies the value sqlserver.page.allocation.type attribute.
+type AttributeSqlserverPageAllocationType int
 
 const (
-	_ AttributeSqlserverPageAllocationKind = iota
-	AttributeSqlserverPageAllocationKindAllocated
-	AttributeSqlserverPageAllocationKindDeallocated
-	AttributeSqlserverPageAllocationKindMixed
+	_ AttributeSqlserverPageAllocationType = iota
+	AttributeSqlserverPageAllocationTypeAllocated
+	AttributeSqlserverPageAllocationTypeDeallocated
+	AttributeSqlserverPageAllocationTypeMixed
 )
 
-// String returns the string representation of the AttributeSqlserverPageAllocationKind.
-func (av AttributeSqlserverPageAllocationKind) String() string {
+// String returns the string representation of the AttributeSqlserverPageAllocationType.
+func (av AttributeSqlserverPageAllocationType) String() string {
 	switch av {
-	case AttributeSqlserverPageAllocationKindAllocated:
+	case AttributeSqlserverPageAllocationTypeAllocated:
 		return "allocated"
-	case AttributeSqlserverPageAllocationKindDeallocated:
+	case AttributeSqlserverPageAllocationTypeDeallocated:
 		return "deallocated"
-	case AttributeSqlserverPageAllocationKindMixed:
+	case AttributeSqlserverPageAllocationTypeMixed:
 		return "mixed"
 	}
 	return ""
 }
 
-// MapAttributeSqlserverPageAllocationKind is a helper map of string to AttributeSqlserverPageAllocationKind attribute value.
-var MapAttributeSqlserverPageAllocationKind = map[string]AttributeSqlserverPageAllocationKind{
-	"allocated":   AttributeSqlserverPageAllocationKindAllocated,
-	"deallocated": AttributeSqlserverPageAllocationKindDeallocated,
-	"mixed":       AttributeSqlserverPageAllocationKindMixed,
+// MapAttributeSqlserverPageAllocationType is a helper map of string to AttributeSqlserverPageAllocationType attribute value.
+var MapAttributeSqlserverPageAllocationType = map[string]AttributeSqlserverPageAllocationType{
+	"allocated":   AttributeSqlserverPageAllocationTypeAllocated,
+	"deallocated": AttributeSqlserverPageAllocationTypeDeallocated,
+	"mixed":       AttributeSqlserverPageAllocationTypeMixed,
 }
 
-// AttributeSqlserverPageCompressionKind specifies the value sqlserver.page.compression.kind attribute.
-type AttributeSqlserverPageCompressionKind int
+// AttributeSqlserverPageCompressionType specifies the value sqlserver.page.compression.type attribute.
+type AttributeSqlserverPageCompressionType int
 
 const (
-	_ AttributeSqlserverPageCompressionKind = iota
-	AttributeSqlserverPageCompressionKindAttempted
-	AttributeSqlserverPageCompressionKindCompressed
+	_ AttributeSqlserverPageCompressionType = iota
+	AttributeSqlserverPageCompressionTypeAttempted
+	AttributeSqlserverPageCompressionTypeCompressed
 )
 
-// String returns the string representation of the AttributeSqlserverPageCompressionKind.
-func (av AttributeSqlserverPageCompressionKind) String() string {
+// String returns the string representation of the AttributeSqlserverPageCompressionType.
+func (av AttributeSqlserverPageCompressionType) String() string {
 	switch av {
-	case AttributeSqlserverPageCompressionKindAttempted:
+	case AttributeSqlserverPageCompressionTypeAttempted:
 		return "attempted"
-	case AttributeSqlserverPageCompressionKindCompressed:
+	case AttributeSqlserverPageCompressionTypeCompressed:
 		return "compressed"
 	}
 	return ""
 }
 
-// MapAttributeSqlserverPageCompressionKind is a helper map of string to AttributeSqlserverPageCompressionKind attribute value.
-var MapAttributeSqlserverPageCompressionKind = map[string]AttributeSqlserverPageCompressionKind{
-	"attempted":  AttributeSqlserverPageCompressionKindAttempted,
-	"compressed": AttributeSqlserverPageCompressionKindCompressed,
+// MapAttributeSqlserverPageCompressionType is a helper map of string to AttributeSqlserverPageCompressionType attribute value.
+var MapAttributeSqlserverPageCompressionType = map[string]AttributeSqlserverPageCompressionType{
+	"attempted":  AttributeSqlserverPageCompressionTypeAttempted,
+	"compressed": AttributeSqlserverPageCompressionTypeCompressed,
 }
 
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
@@ -543,7 +542,7 @@ var MapAttributeTransitionDirection = map[string]AttributeTransitionDirection{
 var MetricsInfo = metricsInfo{
 	SqlserverAccessScanRate: metricInfo{
 		Name:       "sqlserver.access.scan.rate",
-		Attributes: []string{"sqlserver.access.scan.kind"},
+		Attributes: []string{"sqlserver.access.scan.type"},
 	},
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
@@ -600,7 +599,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverExtentOperationRate: metricInfo{
 		Name:       "sqlserver.extent.operation.rate",
-		Attributes: []string{"sqlserver.extent.operation.kind"},
+		Attributes: []string{"sqlserver.extent.operation.type"},
 	},
 	SqlserverGhostRecordSkippedRate: metricInfo{
 		Name: "sqlserver.ghost_record.skipped.rate",
@@ -666,7 +665,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverPageAllocationRate: metricInfo{
 		Name:       "sqlserver.page.allocation.rate",
-		Attributes: []string{"sqlserver.page.allocation.kind"},
+		Attributes: []string{"sqlserver.page.allocation.type"},
 	},
 	SqlserverPageBufferCacheFreeListStallsRate: metricInfo{
 		Name: "sqlserver.page.buffer_cache.free_list.stalls.rate",
@@ -679,7 +678,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverPageCompressionRate: metricInfo{
 		Name:       "sqlserver.page.compression.rate",
-		Attributes: []string{"sqlserver.page.compression.kind"},
+		Attributes: []string{"sqlserver.page.compression.type"},
 	},
 	SqlserverPageLazyWriteRate: metricInfo{
 		Name: "sqlserver.page.lazy_write.rate",
@@ -769,8 +768,8 @@ var MetricsInfo = metricsInfo{
 	SqlserverUserConnectionCount: metricInfo{
 		Name: "sqlserver.user.connection.count",
 	},
-	SqlserverWorktableCachePercent: metricInfo{
-		Name: "sqlserver.worktable.cache.percent",
+	SqlserverWorktableCacheHitRatio: metricInfo{
+		Name: "sqlserver.worktable.cache.hit_ratio",
 	},
 }
 
@@ -844,7 +843,7 @@ type metricsInfo struct {
 	SqlserverTransactionLogShrinkCount          metricInfo
 	SqlserverTransactionLogUsage                metricInfo
 	SqlserverUserConnectionCount                metricInfo
-	SqlserverWorktableCachePercent              metricInfo
+	SqlserverWorktableCacheHitRatio             metricInfo
 }
 
 type metricInfo struct {
@@ -861,13 +860,13 @@ type metricSqlserverAccessScanRate struct {
 // init fills sqlserver.access.scan.rate metric with initial data.
 func (m *metricSqlserverAccessScanRate) init() {
 	m.data.SetName("sqlserver.access.scan.rate")
-	m.data.SetDescription("Number of access method scans, by kind.")
-	m.data.SetUnit("{scans}/s")
+	m.data.SetDescription("Rate of access method scans, by type.")
+	m.data.SetUnit("{scan}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverAccessScanRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAccessScanKindAttributeValue string) {
+func (m *metricSqlserverAccessScanRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAccessScanTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -875,7 +874,7 @@ func (m *metricSqlserverAccessScanRate) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("sqlserver.access.scan.kind", sqlserverAccessScanKindAttributeValue)
+	dp.Attributes().PutStr("sqlserver.access.scan.type", sqlserverAccessScanTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1943,13 +1942,13 @@ type metricSqlserverExtentOperationRate struct {
 // init fills sqlserver.extent.operation.rate metric with initial data.
 func (m *metricSqlserverExtentOperationRate) init() {
 	m.data.SetName("sqlserver.extent.operation.rate")
-	m.data.SetDescription("Number of extent allocation/deallocation operations, by kind.")
-	m.data.SetUnit("{extents}/s")
+	m.data.SetDescription("Rate of extent allocation/deallocation operations, by type.")
+	m.data.SetUnit("{extent}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverExtentOperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverExtentOperationKindAttributeValue string) {
+func (m *metricSqlserverExtentOperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverExtentOperationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1957,7 +1956,7 @@ func (m *metricSqlserverExtentOperationRate) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("sqlserver.extent.operation.kind", sqlserverExtentOperationKindAttributeValue)
+	dp.Attributes().PutStr("sqlserver.extent.operation.type", sqlserverExtentOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1995,8 +1994,8 @@ type metricSqlserverGhostRecordSkippedRate struct {
 // init fills sqlserver.ghost_record.skipped.rate metric with initial data.
 func (m *metricSqlserverGhostRecordSkippedRate) init() {
 	m.data.SetName("sqlserver.ghost_record.skipped.rate")
-	m.data.SetDescription("Number of ghosted records skipped during scans.")
-	m.data.SetUnit("{records}/s")
+	m.data.SetDescription("Rate of ghosted records skipped during scans.")
+	m.data.SetUnit("{record}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -3153,13 +3152,13 @@ type metricSqlserverPageAllocationRate struct {
 // init fills sqlserver.page.allocation.rate metric with initial data.
 func (m *metricSqlserverPageAllocationRate) init() {
 	m.data.SetName("sqlserver.page.allocation.rate")
-	m.data.SetDescription("Number of page allocation/deallocation operations, by kind.")
-	m.data.SetUnit("{pages}/s")
+	m.data.SetDescription("Rate of page allocation/deallocation operations, by type.")
+	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverPageAllocationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverPageAllocationKindAttributeValue string) {
+func (m *metricSqlserverPageAllocationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverPageAllocationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3167,7 +3166,7 @@ func (m *metricSqlserverPageAllocationRate) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("sqlserver.page.allocation.kind", sqlserverPageAllocationKindAttributeValue)
+	dp.Attributes().PutStr("sqlserver.page.allocation.type", sqlserverPageAllocationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3355,13 +3354,13 @@ type metricSqlserverPageCompressionRate struct {
 // init fills sqlserver.page.compression.rate metric with initial data.
 func (m *metricSqlserverPageCompressionRate) init() {
 	m.data.SetName("sqlserver.page.compression.rate")
-	m.data.SetDescription("Number of page compression operations, by kind.")
-	m.data.SetUnit("{pages}/s")
+	m.data.SetDescription("Rate of page compression operations, by type.")
+	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverPageCompressionRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverPageCompressionKindAttributeValue string) {
+func (m *metricSqlserverPageCompressionRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverPageCompressionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3369,7 +3368,7 @@ func (m *metricSqlserverPageCompressionRate) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("sqlserver.page.compression.kind", sqlserverPageCompressionKindAttributeValue)
+	dp.Attributes().PutStr("sqlserver.page.compression.type", sqlserverPageCompressionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3685,8 +3684,8 @@ type metricSqlserverPageReadaheadRate struct {
 // init fills sqlserver.page.readahead.rate metric with initial data.
 func (m *metricSqlserverPageReadaheadRate) init() {
 	m.data.SetName("sqlserver.page.readahead.rate")
-	m.data.SetDescription("Number of pages read from disk by the read-ahead manager.")
-	m.data.SetUnit("{pages}/s")
+	m.data.SetDescription("Rate of pages read from disk by the read-ahead manager.")
+	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -4341,8 +4340,8 @@ type metricSqlserverScanPointRevalidationRate struct {
 // init fills sqlserver.scan_point.revalidation.rate metric with initial data.
 func (m *metricSqlserverScanPointRevalidationRate) init() {
 	m.data.SetName("sqlserver.scan_point.revalidation.rate")
-	m.data.SetDescription("Number of times scan points needed to be revalidated.")
-	m.data.SetUnit("{revalidations}/s")
+	m.data.SetDescription("Rate at which scan points needed to be revalidated.")
+	m.data.SetUnit("{revalidation}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -5032,21 +5031,21 @@ func newMetricSqlserverUserConnectionCount(cfg SqlserverUserConnectionCountMetri
 	return m
 }
 
-type metricSqlserverWorktableCachePercent struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   SqlserverWorktableCachePercentMetricConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+type metricSqlserverWorktableCacheHitRatio struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   SqlserverWorktableCacheHitRatioMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
-// init fills sqlserver.worktable.cache.percent metric with initial data.
-func (m *metricSqlserverWorktableCachePercent) init() {
-	m.data.SetName("sqlserver.worktable.cache.percent")
+// init fills sqlserver.worktable.cache.hit_ratio metric with initial data.
+func (m *metricSqlserverWorktableCacheHitRatio) init() {
+	m.data.SetName("sqlserver.worktable.cache.hit_ratio")
 	m.data.SetDescription("Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverWorktableCachePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverWorktableCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5057,14 +5056,14 @@ func (m *metricSqlserverWorktableCachePercent) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverWorktableCachePercent) updateCapacity() {
+func (m *metricSqlserverWorktableCacheHitRatio) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverWorktableCachePercent) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverWorktableCacheHitRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -5072,8 +5071,8 @@ func (m *metricSqlserverWorktableCachePercent) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSqlserverWorktableCachePercent(cfg SqlserverWorktableCachePercentMetricConfig) metricSqlserverWorktableCachePercent {
-	m := metricSqlserverWorktableCachePercent{config: cfg}
+func newMetricSqlserverWorktableCacheHitRatio(cfg SqlserverWorktableCacheHitRatioMetricConfig) metricSqlserverWorktableCacheHitRatio {
+	m := metricSqlserverWorktableCacheHitRatio{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5161,7 +5160,7 @@ type MetricsBuilder struct {
 	metricSqlserverTransactionLogShrinkCount          metricSqlserverTransactionLogShrinkCount
 	metricSqlserverTransactionLogUsage                metricSqlserverTransactionLogUsage
 	metricSqlserverUserConnectionCount                metricSqlserverUserConnectionCount
-	metricSqlserverWorktableCachePercent              metricSqlserverWorktableCachePercent
+	metricSqlserverWorktableCacheHitRatio             metricSqlserverWorktableCacheHitRatio
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -5256,7 +5255,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTransactionLogShrinkCount:          newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:                newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
 		metricSqlserverUserConnectionCount:                newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
-		metricSqlserverWorktableCachePercent:              newMetricSqlserverWorktableCachePercent(mbc.Metrics.SqlserverWorktableCachePercent),
+		metricSqlserverWorktableCacheHitRatio:             newMetricSqlserverWorktableCacheHitRatio(mbc.Metrics.SqlserverWorktableCacheHitRatio),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
@@ -5452,7 +5451,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
-	mb.metricSqlserverWorktableCachePercent.emit(ils.Metrics())
+	mb.metricSqlserverWorktableCacheHitRatio.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -5485,8 +5484,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSqlserverAccessScanRateDataPoint adds a data point to sqlserver.access.scan.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAccessScanKindAttributeValue AttributeSqlserverAccessScanKind) {
-	mb.metricSqlserverAccessScanRate.recordDataPoint(mb.startTime, ts, val, sqlserverAccessScanKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAccessScanTypeAttributeValue AttributeSqlserverAccessScanType) {
+	mb.metricSqlserverAccessScanRate.recordDataPoint(mb.startTime, ts, val, sqlserverAccessScanTypeAttributeValue.String())
 }
 
 // RecordSqlserverAttentionRateDataPoint adds a data point to sqlserver.attention.rate metric.
@@ -5595,8 +5594,8 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 }
 
 // RecordSqlserverExtentOperationRateDataPoint adds a data point to sqlserver.extent.operation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverExtentOperationRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverExtentOperationKindAttributeValue AttributeSqlserverExtentOperationKind) {
-	mb.metricSqlserverExtentOperationRate.recordDataPoint(mb.startTime, ts, val, sqlserverExtentOperationKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverExtentOperationRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverExtentOperationTypeAttributeValue AttributeSqlserverExtentOperationType) {
+	mb.metricSqlserverExtentOperationRate.recordDataPoint(mb.startTime, ts, val, sqlserverExtentOperationTypeAttributeValue.String())
 }
 
 // RecordSqlserverGhostRecordSkippedRateDataPoint adds a data point to sqlserver.ghost_record.skipped.rate metric.
@@ -5695,8 +5694,8 @@ func (mb *MetricsBuilder) RecordSqlserverOsWaitDurationDataPoint(ts pcommon.Time
 }
 
 // RecordSqlserverPageAllocationRateDataPoint adds a data point to sqlserver.page.allocation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageAllocationRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverPageAllocationKindAttributeValue AttributeSqlserverPageAllocationKind) {
-	mb.metricSqlserverPageAllocationRate.recordDataPoint(mb.startTime, ts, val, sqlserverPageAllocationKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverPageAllocationRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverPageAllocationTypeAttributeValue AttributeSqlserverPageAllocationType) {
+	mb.metricSqlserverPageAllocationRate.recordDataPoint(mb.startTime, ts, val, sqlserverPageAllocationTypeAttributeValue.String())
 }
 
 // RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint adds a data point to sqlserver.page.buffer_cache.free_list.stalls.rate metric.
@@ -5715,8 +5714,8 @@ func (mb *MetricsBuilder) RecordSqlserverPageCheckpointFlushRateDataPoint(ts pco
 }
 
 // RecordSqlserverPageCompressionRateDataPoint adds a data point to sqlserver.page.compression.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageCompressionRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverPageCompressionKindAttributeValue AttributeSqlserverPageCompressionKind) {
-	mb.metricSqlserverPageCompressionRate.recordDataPoint(mb.startTime, ts, val, sqlserverPageCompressionKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverPageCompressionRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverPageCompressionTypeAttributeValue AttributeSqlserverPageCompressionType) {
+	mb.metricSqlserverPageCompressionRate.recordDataPoint(mb.startTime, ts, val, sqlserverPageCompressionTypeAttributeValue.String())
 }
 
 // RecordSqlserverPageLazyWriteRateDataPoint adds a data point to sqlserver.page.lazy_write.rate metric.
@@ -5869,9 +5868,9 @@ func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverWorktableCachePercentDataPoint adds a data point to sqlserver.worktable.cache.percent metric.
-func (mb *MetricsBuilder) RecordSqlserverWorktableCachePercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverWorktableCachePercent.recordDataPoint(mb.startTime, ts, val)
+// RecordSqlserverWorktableCacheHitRatioDataPoint adds a data point to sqlserver.worktable.cache.hit_ratio metric.
+func (mb *MetricsBuilder) RecordSqlserverWorktableCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverWorktableCacheHitRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

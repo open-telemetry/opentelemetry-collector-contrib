@@ -103,7 +103,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-	cfg.Metrics.SqlserverWorktableCachePercent.Enabled = enabled
+	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled

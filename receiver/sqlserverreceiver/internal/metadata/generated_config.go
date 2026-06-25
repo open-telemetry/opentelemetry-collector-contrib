@@ -1877,13 +1877,13 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// SqlserverWorktableCachePercentMetricConfig provides config for the sqlserver.worktable.cache.percent metric.
-type SqlserverWorktableCachePercentMetricConfig struct {
+// SqlserverWorktableCacheHitRatioMetricConfig provides config for the sqlserver.worktable.cache.hit_ratio metric.
+type SqlserverWorktableCacheHitRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverWorktableCachePercentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1968,7 +1968,7 @@ type MetricsConfig struct {
 	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
 	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
-	SqlserverWorktableCachePercent              SqlserverWorktableCachePercentMetricConfig              `mapstructure:"sqlserver.worktable.cache.percent"`
+	SqlserverWorktableCacheHitRatio             SqlserverWorktableCacheHitRatioMetricConfig             `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2214,7 +2214,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 			Enabled: true,
 		},
-		SqlserverWorktableCachePercent: SqlserverWorktableCachePercentMetricConfig{
+		SqlserverWorktableCacheHitRatio: SqlserverWorktableCacheHitRatioMetricConfig{
 			Enabled: false,
 		},
 	}

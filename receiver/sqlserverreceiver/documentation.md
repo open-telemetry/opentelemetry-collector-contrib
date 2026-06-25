@@ -222,19 +222,19 @@ metrics:
 
 ### sqlserver.access.scan.rate
 
-Number of access method scans, by kind.
+Rate of access method scans, by type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {scans}/s | Gauge | Double | Development |
+| {scan}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.access.scan.kind | The kind of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
+| sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
 
 ### sqlserver.attention.rate
 
@@ -389,29 +389,29 @@ Total number of deadlocks.
 
 ### sqlserver.extent.operation.rate
 
-Number of extent allocation/deallocation operations, by kind.
+Rate of extent allocation/deallocation operations, by type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {extents}/s | Gauge | Double | Development |
+| {extent}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.extent.operation.kind | The kind of extent allocation operation. | Str: ``allocated``, ``deallocated`` | Required | - |
+| sqlserver.extent.operation.type | The type of extent allocation operation. | Str: ``allocated``, ``deallocated`` | Required | - |
 
 ### sqlserver.ghost_record.skipped.rate
 
-Number of ghosted records skipped during scans.
+Rate of ghosted records skipped during scans.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {records}/s | Gauge | Double | Development |
+| {record}/s | Gauge | Double | Development |
 
 ### sqlserver.index.search.rate
 
@@ -594,19 +594,19 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.page.allocation.rate
 
-Number of page allocation/deallocation operations, by kind.
+Rate of page allocation/deallocation operations, by type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages}/s | Gauge | Double | Development |
+| {page}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.page.allocation.kind | The kind of page allocation operation. | Str: ``allocated``, ``deallocated``, ``mixed`` | Required | - |
+| sqlserver.page.allocation.type | The type of page allocation operation. | Str: ``allocated``, ``deallocated``, ``mixed`` | Required | - |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -618,19 +618,19 @@ Number of free list stalls.
 
 ### sqlserver.page.compression.rate
 
-Number of page compression operations, by kind.
+Rate of page compression operations, by type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages}/s | Gauge | Double | Development |
+| {page}/s | Gauge | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.page.compression.kind | The kind of page compression operation. | Str: ``attempted``, ``compressed`` | Required | - |
+| sqlserver.page.compression.type | The type of page compression operation. | Str: ``attempted``, ``compressed`` | Required | - |
 
 ### sqlserver.page.lookup.rate
 
@@ -642,13 +642,13 @@ Total number of page lookups.
 
 ### sqlserver.page.readahead.rate
 
-Number of pages read from disk by the read-ahead manager.
+Rate of pages read from disk by the read-ahead manager.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages}/s | Gauge | Double | Development |
+| {page}/s | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 
@@ -748,13 +748,13 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.scan_point.revalidation.rate
 
-Number of times scan points needed to be revalidated.
+Rate at which scan points needed to be revalidated.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {revalidations}/s | Gauge | Double | Development |
+| {revalidation}/s | Gauge | Double | Development |
 
 ### sqlserver.table.count
 
@@ -787,7 +787,7 @@ Total number of mirror write transactions.
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
 
-### sqlserver.worktable.cache.percent
+### sqlserver.worktable.cache.hit_ratio
 
 Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
 
