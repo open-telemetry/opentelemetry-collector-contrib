@@ -438,8 +438,7 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg.Metrics.OracledbParseElapsedTime.Enabled = true
 	cfg.Metrics.OracledbRecursiveCallCount.Enabled = true
 	cfg.Metrics.OracledbRecursiveCallCPUTime.Enabled = true
-	cfg.Metrics.OracledbScanIndexFastFull.Enabled = true
-	cfg.Metrics.OracledbScanTableOperations.Enabled = true
+	cfg.Metrics.OracledbScanCount.Enabled = true
 	cfg.Metrics.OracledbScanTableRows.Enabled = true
 	cfg.Metrics.OracledbSortOperations.Enabled = true
 	cfg.Metrics.OracledbSortRows.Enabled = true
@@ -520,6 +519,59 @@ func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 		assert.Equal(t, int64(165), dp.IntValue(), "data points should reaggregate by sum (11+22+33+44+55)")
 	}
 	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
+}
+
+// TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled verifies that, for a
+// metric with more than one attribute, disabling a single attribute reaggregates
+// correctly across the remaining one. With oracledb.scan.type disabled but
+// oracledb.scan.kind kept, oracledb.scan.count collapses to one data point per
+// kind: table = 100+200+50 = 350, index_fast_full = 10+20+5 = 35.
+func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbScanCount.Enabled = true
+	cfg.Metrics.OracledbScanCount.EnabledAttributes = []metadata.OracledbScanCountMetricAttributeKey{
+		metadata.OracledbScanCountMetricAttributeKeyOracledbScanKind,
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]int64{"table": 350, "index_fast_full": 35}
+	got := map[string]int64{}
+	var found bool
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Name() != "oracledb.scan.count" {
+			continue
+		}
+		found = true
+		dps := me.Sum().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			require.Equal(t, 1, dp.Attributes().Len(), "only oracledb.scan.kind should remain")
+			kind, ok := dp.Attributes().Get("oracledb.scan.kind")
+			require.True(t, ok, "oracledb.scan.kind should be present")
+			got[kind.Str()] = dp.IntValue()
+		}
+	}
+	require.True(t, found, "oracledb.scan.count not found in scrape output")
+	assert.Equal(t, want, got, "access methods should reaggregate by sum within each scan kind")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

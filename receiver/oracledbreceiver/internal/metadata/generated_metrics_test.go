@@ -73,8 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.parse.rate"] = mb.metricOracledbParseRate.config.AggregationStrategy
 			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
-			aggMap["oracledb.scan.index_fast_full"] = mb.metricOracledbScanIndexFastFull.config.AggregationStrategy
-			aggMap["oracledb.scan.table.operations"] = mb.metricOracledbScanTableOperations.config.AggregationStrategy
+			aggMap["oracledb.scan.count"] = mb.metricOracledbScanCount.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
 			aggMap["oracledb.sort.operations"] = mb.metricOracledbSortOperations.config.AggregationStrategy
 			aggMap["oracledb.sort.ratio"] = mb.metricOracledbSortRatio.config.AggregationStrategy
@@ -283,15 +282,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbScanIndexFastFullDataPoint(ts, "1", AttributeOracledbScanTypeDirectRead)
+			mb.RecordOracledbScanCountDataPoint(ts, "1", AttributeOracledbScanKindIndexFastFull, AttributeOracledbScanTypeDirectRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbScanIndexFastFullDataPoint(ts, "3", AttributeOracledbScanTypeFull)
-			}
-
-			allMetricsCount++
-			mb.RecordOracledbScanTableOperationsDataPoint(ts, "1", AttributeOracledbScanTypeDirectRead)
-			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbScanTableOperationsDataPoint(ts, "3", AttributeOracledbScanTypeFull)
+				mb.RecordOracledbScanCountDataPoint(ts, "3", AttributeOracledbScanKindTable, AttributeOracledbScanTypeFull)
 			}
 
 			allMetricsCount++
@@ -384,8 +377,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbParseRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbScanIndexFastFull.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbScanTableOperations.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbScanCount.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSortOperations.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSortRatio.aggDataPoints)
@@ -1375,13 +1367,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.scan.index_fast_full":
+				case "oracledb.scan.count":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.scan.index_fast_full"], "Found a duplicate in the metrics slice: oracledb.scan.index_fast_full")
-						validatedMetrics["oracledb.scan.index_fast_full"] = true
+						assert.False(t, validatedMetrics["oracledb.scan.count"], "Found a duplicate in the metrics slice: oracledb.scan.count")
+						validatedMetrics["oracledb.scan.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of index fast full scans.", mi.Description())
+						assert.Equal(t, "Total count of scan operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1390,15 +1382,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
+						oracledbScanKindAttrVal, ok := dp.Attributes().Get("oracledb.scan.kind")
+						assert.True(t, ok)
+						assert.Equal(t, "index_fast_full", oracledbScanKindAttrVal.Str())
 						oracledbScanTypeAttrVal, ok := dp.Attributes().Get("oracledb.scan.type")
 						assert.True(t, ok)
 						assert.Equal(t, "direct_read", oracledbScanTypeAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.scan.index_fast_full"], "Found a duplicate in the metrics slice: oracledb.scan.index_fast_full")
-						validatedMetrics["oracledb.scan.index_fast_full"] = true
+						assert.False(t, validatedMetrics["oracledb.scan.count"], "Found a duplicate in the metrics slice: oracledb.scan.count")
+						validatedMetrics["oracledb.scan.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of index fast full scans.", mi.Description())
+						assert.Equal(t, "Total count of scan operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1406,7 +1401,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.scan.index_fast_full"] {
+						switch aggMap["oracledb.scan.count"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1416,51 +1411,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.scan.type")
+						_, ok := dp.Attributes().Get("oracledb.scan.kind")
 						assert.False(t, ok)
-					}
-				case "oracledb.scan.table.operations":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.scan.table.operations"], "Found a duplicate in the metrics slice: oracledb.scan.table.operations")
-						validatedMetrics["oracledb.scan.table.operations"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of full-table scans.", mi.Description())
-						assert.Equal(t, "{operation}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbScanTypeAttrVal, ok := dp.Attributes().Get("oracledb.scan.type")
-						assert.True(t, ok)
-						assert.Equal(t, "direct_read", oracledbScanTypeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["oracledb.scan.table.operations"], "Found a duplicate in the metrics slice: oracledb.scan.table.operations")
-						validatedMetrics["oracledb.scan.table.operations"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of full-table scans.", mi.Description())
-						assert.Equal(t, "{operation}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.scan.table.operations"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("oracledb.scan.type")
+						_, ok = dp.Attributes().Get("oracledb.scan.type")
 						assert.False(t, ok)
 					}
 				case "oracledb.scan.table.rows":

@@ -242,8 +242,12 @@ attributes:
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
+  oracledb.scan.kind:
+    description: Family of scan reported by Oracle.
+    type: string
+    enum: [index_fast_full, table]
   oracledb.scan.type:
-    description: Kind of table or index scan reported by Oracle.
+    description: Access method used by the scan reported by Oracle.
     type: string
     enum: [direct_read, full, long_tables, rowid_ranges]
   oracledb.schemaname:
@@ -930,8 +934,8 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.scan.index_fast_full:
-    description: Total count of index fast full scans.
+  oracledb.scan.count:
+    description: Total count of scan operations.
     enabled: false
     stability: development
     sum:
@@ -940,18 +944,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
-    attributes: [oracledb.scan.type]
-  oracledb.scan.table.operations:
-    description: Total count of full-table scans.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{operation}"
-    attributes: [oracledb.scan.type]
+    attributes: [oracledb.scan.kind, oracledb.scan.type]
   oracledb.scan.table.rows:
     description: Total number of rows returned by full-table scans.
     enabled: false

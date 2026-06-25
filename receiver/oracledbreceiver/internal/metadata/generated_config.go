@@ -1339,23 +1339,24 @@ func (ms *OracledbRedoAllocationUtilizationMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// OracledbScanIndexFastFullMetricAttributeKey specifies the key of an attribute for the oracledb.scan.index_fast_full metric.
-type OracledbScanIndexFastFullMetricAttributeKey string
+// OracledbScanCountMetricAttributeKey specifies the key of an attribute for the oracledb.scan.count metric.
+type OracledbScanCountMetricAttributeKey string
 
 const (
-	OracledbScanIndexFastFullMetricAttributeKeyOracledbScanType OracledbScanIndexFastFullMetricAttributeKey = "oracledb.scan.type"
+	OracledbScanCountMetricAttributeKeyOracledbScanKind OracledbScanCountMetricAttributeKey = "oracledb.scan.kind"
+	OracledbScanCountMetricAttributeKeyOracledbScanType OracledbScanCountMetricAttributeKey = "oracledb.scan.type"
 )
 
-// OracledbScanIndexFastFullMetricConfig provides config for the oracledb.scan.index_fast_full metric.
-type OracledbScanIndexFastFullMetricConfig struct {
+// OracledbScanCountMetricConfig provides config for the oracledb.scan.count metric.
+type OracledbScanCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbScanIndexFastFullMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbScanCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbScanIndexFastFullMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1369,60 +1370,12 @@ func (ms *OracledbScanIndexFastFullMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *OracledbScanIndexFastFullMetricConfig) Validate() error {
+func (ms *OracledbScanCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbScanIndexFastFullMetricAttributeKeyOracledbScanType:
+		case OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType:
 		default:
-			return fmt.Errorf("metric oracledb.scan.index_fast_full doesn't have an attribute %v, valid attributes: [oracledb.scan.type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbScanTableOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.scan.table.operations metric.
-type OracledbScanTableOperationsMetricAttributeKey string
-
-const (
-	OracledbScanTableOperationsMetricAttributeKeyOracledbScanType OracledbScanTableOperationsMetricAttributeKey = "oracledb.scan.type"
-)
-
-// OracledbScanTableOperationsMetricConfig provides config for the oracledb.scan.table.operations metric.
-type OracledbScanTableOperationsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbScanTableOperationsMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *OracledbScanTableOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *OracledbScanTableOperationsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbScanTableOperationsMetricAttributeKeyOracledbScanType:
-		default:
-			return fmt.Errorf("metric oracledb.scan.table.operations doesn't have an attribute %v, valid attributes: [oracledb.scan.type]", val)
+			return fmt.Errorf("metric oracledb.scan.count doesn't have an attribute %v, valid attributes: [oracledb.scan.kind, oracledb.scan.type]", val)
 		}
 	}
 
@@ -2025,8 +1978,7 @@ type MetricsConfig struct {
 	OracledbRecursiveCallCPUTime                  OracledbRecursiveCallCPUTimeMetricConfig                  `mapstructure:"oracledb.recursive_call.cpu.time"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
-	OracledbScanIndexFastFull                     OracledbScanIndexFastFullMetricConfig                     `mapstructure:"oracledb.scan.index_fast_full"`
-	OracledbScanTableOperations                   OracledbScanTableOperationsMetricConfig                   `mapstructure:"oracledb.scan.table.operations"`
+	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
@@ -2235,15 +2187,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbScanIndexFastFull: OracledbScanIndexFastFullMetricConfig{
+		OracledbScanCount: OracledbScanCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbScanIndexFastFullMetricAttributeKey{OracledbScanIndexFastFullMetricAttributeKeyOracledbScanType},
-		},
-		OracledbScanTableOperations: OracledbScanTableOperationsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbScanTableOperationsMetricAttributeKey{OracledbScanTableOperationsMetricAttributeKeyOracledbScanType},
+			EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType},
 		},
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,

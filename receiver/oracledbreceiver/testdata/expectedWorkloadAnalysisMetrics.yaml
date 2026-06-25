@@ -257,13 +257,16 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Total count of index fast full scans.
-            name: oracledb.scan.index_fast_full
+          - description: Total count of scan operations.
+            name: oracledb.scan.count
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "10"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: index_fast_full
                     - key: oracledb.scan.type
                       value:
                         stringValue: direct_read
@@ -271,6 +274,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "20"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: index_fast_full
                     - key: oracledb.scan.type
                       value:
                         stringValue: full
@@ -278,20 +284,19 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: index_fast_full
                     - key: oracledb.scan.type
                       value:
                         stringValue: rowid_ranges
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{operation}'
-          - description: Total count of full-table scans.
-            name: oracledb.scan.table.operations
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asInt: "100"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: table
                     - key: oracledb.scan.type
                       value:
                         stringValue: direct_read
@@ -299,6 +304,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "200"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: table
                     - key: oracledb.scan.type
                       value:
                         stringValue: long_tables
@@ -306,6 +314,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "50"
                   attributes:
+                    - key: oracledb.scan.kind
+                      value:
+                        stringValue: table
                     - key: oracledb.scan.type
                       value:
                         stringValue: rowid_ranges

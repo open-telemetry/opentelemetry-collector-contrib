@@ -234,6 +234,32 @@ var MapAttributeOracledbParseType = map[string]AttributeOracledbParseType{
 	"soft": AttributeOracledbParseTypeSoft,
 }
 
+// AttributeOracledbScanKind specifies the value oracledb.scan.kind attribute.
+type AttributeOracledbScanKind int
+
+const (
+	_ AttributeOracledbScanKind = iota
+	AttributeOracledbScanKindIndexFastFull
+	AttributeOracledbScanKindTable
+)
+
+// String returns the string representation of the AttributeOracledbScanKind.
+func (av AttributeOracledbScanKind) String() string {
+	switch av {
+	case AttributeOracledbScanKindIndexFastFull:
+		return "index_fast_full"
+	case AttributeOracledbScanKindTable:
+		return "table"
+	}
+	return ""
+}
+
+// MapAttributeOracledbScanKind is a helper map of string to AttributeOracledbScanKind attribute value.
+var MapAttributeOracledbScanKind = map[string]AttributeOracledbScanKind{
+	"index_fast_full": AttributeOracledbScanKindIndexFastFull,
+	"table":           AttributeOracledbScanKindTable,
+}
+
 // AttributeOracledbScanType specifies the value oracledb.scan.type attribute.
 type AttributeOracledbScanType int
 
@@ -475,13 +501,9 @@ var MetricsInfo = metricsInfo{
 	OracledbRedoAllocationUtilization: metricInfo{
 		Name: "oracledb.redo_allocation.utilization",
 	},
-	OracledbScanIndexFastFull: metricInfo{
-		Name:       "oracledb.scan.index_fast_full",
-		Attributes: []string{"oracledb.scan.type"},
-	},
-	OracledbScanTableOperations: metricInfo{
-		Name:       "oracledb.scan.table.operations",
-		Attributes: []string{"oracledb.scan.type"},
+	OracledbScanCount: metricInfo{
+		Name:       "oracledb.scan.count",
+		Attributes: []string{"oracledb.scan.kind", "oracledb.scan.type"},
 	},
 	OracledbScanTableRows: metricInfo{
 		Name: "oracledb.scan.table.rows",
@@ -604,8 +626,7 @@ type metricsInfo struct {
 	OracledbRecursiveCallCPUTime                  metricInfo
 	OracledbRecycleBinLimit                       metricInfo
 	OracledbRedoAllocationUtilization             metricInfo
-	OracledbScanIndexFastFull                     metricInfo
-	OracledbScanTableOperations                   metricInfo
+	OracledbScanCount                             metricInfo
 	OracledbScanTableRows                         metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
@@ -3845,17 +3866,17 @@ func newMetricOracledbRedoAllocationUtilization(cfg OracledbRedoAllocationUtiliz
 	return m
 }
 
-type metricOracledbScanIndexFastFull struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        OracledbScanIndexFastFullMetricConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+type metricOracledbScanCount struct {
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        OracledbScanCountMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.scan.index_fast_full metric with initial data.
-func (m *metricOracledbScanIndexFastFull) init() {
-	m.data.SetName("oracledb.scan.index_fast_full")
-	m.data.SetDescription("Total count of index fast full scans.")
+// init fills oracledb.scan.count metric with initial data.
+func (m *metricOracledbScanCount) init() {
+	m.data.SetName("oracledb.scan.count")
+	m.data.SetDescription("Total count of scan operations.")
 	m.data.SetUnit("{operation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3864,7 +3885,7 @@ func (m *metricOracledbScanIndexFastFull) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbScanIndexFastFull) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanTypeAttributeValue string) {
+func (m *metricOracledbScanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanKindAttributeValue string, oracledbScanTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3872,7 +3893,10 @@ func (m *metricOracledbScanIndexFastFull) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbScanIndexFastFullMetricAttributeKeyOracledbScanType) {
+	if slices.Contains(m.config.EnabledAttributes, OracledbScanCountMetricAttributeKeyOracledbScanKind) {
+		dp.Attributes().PutStr("oracledb.scan.kind", oracledbScanKindAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbScanCountMetricAttributeKeyOracledbScanType) {
 		dp.Attributes().PutStr("oracledb.scan.type", oracledbScanTypeAttributeValue)
 	}
 
@@ -3906,14 +3930,14 @@ func (m *metricOracledbScanIndexFastFull) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbScanIndexFastFull) updateCapacity() {
+func (m *metricOracledbScanCount) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbScanIndexFastFull) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbScanCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -3926,99 +3950,8 @@ func (m *metricOracledbScanIndexFastFull) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbScanIndexFastFull(cfg OracledbScanIndexFastFullMetricConfig) metricOracledbScanIndexFastFull {
-	m := metricOracledbScanIndexFastFull{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbScanTableOperations struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        OracledbScanTableOperationsMetricConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
-}
-
-// init fills oracledb.scan.table.operations metric with initial data.
-func (m *metricOracledbScanTableOperations) init() {
-	m.data.SetName("oracledb.scan.table.operations")
-	m.data.SetDescription("Total count of full-table scans.")
-	m.data.SetUnit("{operation}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricOracledbScanTableOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbScanTableOperationsMetricAttributeKeyOracledbScanType) {
-		dp.Attributes().PutStr("oracledb.scan.type", oracledbScanTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbScanTableOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbScanTableOperations) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbScanTableOperations(cfg OracledbScanTableOperationsMetricConfig) metricOracledbScanTableOperations {
-	m := metricOracledbScanTableOperations{config: cfg}
+func newMetricOracledbScanCount(cfg OracledbScanCountMetricConfig) metricOracledbScanCount {
+	m := metricOracledbScanCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5249,8 +5182,7 @@ type MetricsBuilder struct {
 	metricOracledbRecursiveCallCPUTime                  metricOracledbRecursiveCallCPUTime
 	metricOracledbRecycleBinLimit                       metricOracledbRecycleBinLimit
 	metricOracledbRedoAllocationUtilization             metricOracledbRedoAllocationUtilization
-	metricOracledbScanIndexFastFull                     metricOracledbScanIndexFastFull
-	metricOracledbScanTableOperations                   metricOracledbScanTableOperations
+	metricOracledbScanCount                             metricOracledbScanCount
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
@@ -5352,8 +5284,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbRecursiveCallCPUTime:                  newMetricOracledbRecursiveCallCPUTime(mbc.Metrics.OracledbRecursiveCallCPUTime),
 		metricOracledbRecycleBinLimit:                       newMetricOracledbRecycleBinLimit(mbc.Metrics.OracledbRecycleBinLimit),
 		metricOracledbRedoAllocationUtilization:             newMetricOracledbRedoAllocationUtilization(mbc.Metrics.OracledbRedoAllocationUtilization),
-		metricOracledbScanIndexFastFull:                     newMetricOracledbScanIndexFastFull(mbc.Metrics.OracledbScanIndexFastFull),
-		metricOracledbScanTableOperations:                   newMetricOracledbScanTableOperations(mbc.Metrics.OracledbScanTableOperations),
+		metricOracledbScanCount:                             newMetricOracledbScanCount(mbc.Metrics.OracledbScanCount),
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
@@ -5550,8 +5481,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbRecursiveCallCPUTime.emit(ils.Metrics())
 	mb.metricOracledbRecycleBinLimit.emit(ils.Metrics())
 	mb.metricOracledbRedoAllocationUtilization.emit(ils.Metrics())
-	mb.metricOracledbScanIndexFastFull.emit(ils.Metrics())
-	mb.metricOracledbScanTableOperations.emit(ils.Metrics())
+	mb.metricOracledbScanCount.emit(ils.Metrics())
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
@@ -6101,23 +6031,13 @@ func (mb *MetricsBuilder) RecordOracledbRedoAllocationUtilizationDataPoint(ts pc
 	mb.metricOracledbRedoAllocationUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbScanIndexFastFullDataPoint adds a data point to oracledb.scan.index_fast_full metric.
-func (mb *MetricsBuilder) RecordOracledbScanIndexFastFullDataPoint(ts pcommon.Timestamp, inputVal string, oracledbScanTypeAttributeValue AttributeOracledbScanType) error {
+// RecordOracledbScanCountDataPoint adds a data point to oracledb.scan.count metric.
+func (mb *MetricsBuilder) RecordOracledbScanCountDataPoint(ts pcommon.Timestamp, inputVal string, oracledbScanKindAttributeValue AttributeOracledbScanKind, oracledbScanTypeAttributeValue AttributeOracledbScanType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbScanIndexFastFull, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for OracledbScanCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbScanIndexFastFull.recordDataPoint(mb.startTime, ts, val, oracledbScanTypeAttributeValue.String())
-	return nil
-}
-
-// RecordOracledbScanTableOperationsDataPoint adds a data point to oracledb.scan.table.operations metric.
-func (mb *MetricsBuilder) RecordOracledbScanTableOperationsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbScanTypeAttributeValue AttributeOracledbScanType) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbScanTableOperations, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbScanTableOperations.recordDataPoint(mb.startTime, ts, val, oracledbScanTypeAttributeValue.String())
+	mb.metricOracledbScanCount.recordDataPoint(mb.startTime, ts, val, oracledbScanKindAttributeValue.String(), oracledbScanTypeAttributeValue.String())
 	return nil
 }
 

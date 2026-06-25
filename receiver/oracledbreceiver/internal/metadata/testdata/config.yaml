@@ -123,12 +123,9 @@ all_set:
       enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
-    oracledb.scan.index_fast_full:
+    oracledb.scan.count:
       enabled: true
-      attributes: ["oracledb.scan.type"]
-    oracledb.scan.table.operations:
-      enabled: true
-      attributes: ["oracledb.scan.type"]
+      attributes: ["oracledb.scan.kind","oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: true
     oracledb.sessions.limit:
@@ -319,10 +316,7 @@ reaggregate_set:
       enabled: true
     oracledb.redo_allocation.utilization:
       enabled: true
-    oracledb.scan.index_fast_full:
-      enabled: true
-      attributes: []
-    oracledb.scan.table.operations:
+    oracledb.scan.count:
       enabled: true
       attributes: []
     oracledb.scan.table.rows:
@@ -515,12 +509,9 @@ none_set:
       enabled: false
     oracledb.redo_allocation.utilization:
       enabled: false
-    oracledb.scan.index_fast_full:
+    oracledb.scan.count:
       enabled: false
-      attributes: ["oracledb.scan.type"]
-    oracledb.scan.table.operations:
-      enabled: false
-      attributes: ["oracledb.scan.type"]
+      attributes: ["oracledb.scan.kind","oracledb.scan.type"]
     oracledb.scan.table.rows:
       enabled: false
     oracledb.sessions.limit:

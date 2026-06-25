@@ -16,9 +16,8 @@ issues: [48808]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds sixteen new opt-in metrics (disabled by default):
-    - oracledb.scan.table.operations, oracledb.scan.table.rows,
-      oracledb.scan.index_fast_full
+  Adds fifteen new opt-in metrics (disabled by default):
+    - oracledb.scan.count, oracledb.scan.table.rows
     - oracledb.enqueue.operations
     - oracledb.lob.operations
     - oracledb.parse.cpu.time, oracledb.parse.elapsed.time
