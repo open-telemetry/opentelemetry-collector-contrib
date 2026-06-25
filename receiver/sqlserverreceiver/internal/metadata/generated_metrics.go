@@ -580,7 +580,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.deadlock.rate",
 	},
 	SqlserverErrorRate: metricInfo{
-		Name: "sqlserver.error.rate",
+		Name:       "sqlserver.error.rate",
+		Attributes: []string{"sqlserver.error.category"},
 	},
 	SqlserverIndexSearchRate: metricInfo{
 		Name: "sqlserver.index.search.rate",
@@ -602,7 +603,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.latch.wait_time.total",
 	},
 	SqlserverLockBlockCount: metricInfo{
-		Name: "sqlserver.lock.block.count",
+		Name:       "sqlserver.lock.block.count",
+		Attributes: []string{"sqlserver.block.type"},
 	},
 	SqlserverLockEscalationRate: metricInfo{
 		Name: "sqlserver.lock.escalation.rate",
@@ -614,7 +616,8 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.lock.request.rate",
 	},
 	SqlserverLockTimeoutRate: metricInfo{
-		Name: "sqlserver.lock.timeout.rate",
+		Name:       "sqlserver.lock.timeout.rate",
+		Attributes: []string{"sqlserver.lock.timeout.type"},
 	},
 	SqlserverLockWaitCount: metricInfo{
 		Name: "sqlserver.lock.wait.count",
