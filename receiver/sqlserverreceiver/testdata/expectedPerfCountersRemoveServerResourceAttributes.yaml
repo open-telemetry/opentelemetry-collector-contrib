@@ -7,6 +7,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -31,6 +37,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -55,6 +67,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -83,6 +101,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -111,6 +135,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -135,6 +165,46 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "4626"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: database
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -159,6 +229,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -187,6 +263,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -211,6 +293,46 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "4626"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: database
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -239,6 +361,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -263,6 +391,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -288,6 +422,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -312,6 +452,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -336,6 +482,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -360,6 +512,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -384,6 +542,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -408,6 +572,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -432,6 +602,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -456,6 +632,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -480,6 +662,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -504,6 +692,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -536,6 +730,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -560,6 +760,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -584,6 +790,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -608,6 +820,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -632,6 +850,202 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Average latch wait time.
+            gauge:
+              dataPoints:
+                - asDouble: 0.162
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.wait_time.avg
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of latch waits per second.
+            gauge:
+              dataPoints:
+                - asDouble: 935
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.wait.rate
+            unit: '{wait}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total latch wait time.
+            name: sqlserver.latch.wait_time.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 48.25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of superlatches currently active.
+            gauge:
+              dataPoints:
+                - asInt: "12"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.count
+            unit: '{superlatch}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of superlatch promotions or demotions.
+            gauge:
+              dataPoints:
+                - asDouble: 5
+                  attributes:
+                    - key: transition.direction
+                      value:
+                        stringValue: promotion
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.transition.rate
+            unit: '{transition}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of superlatch promotions or demotions.
+            gauge:
+              dataPoints:
+                - asDouble: 3
+                  attributes:
+                    - key: transition.direction
+                      value:
+                        stringValue: demotion
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.transition.rate
+            unit: '{transition}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -656,6 +1070,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -680,6 +1100,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -704,6 +1130,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -717,7 +1149,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “{grants}”
+            unit: '{grants}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -729,6 +1161,80 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "885252096"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: target
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "314802176"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -742,7 +1248,7 @@ resourceMetrics:
                 - asDouble: 24944
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “KB”
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -754,6 +1260,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -778,6 +1290,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -806,6 +1324,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -830,6 +1354,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -858,6 +1388,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -886,6 +1422,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -910,6 +1452,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -938,6 +1486,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -962,6 +1516,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -975,7 +1535,7 @@ resourceMetrics:
                 - asDouble: 234720
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “KB”
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -987,6 +1547,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1011,6 +1577,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1035,6 +1607,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1059,6 +1637,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1088,6 +1672,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1112,6 +1702,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1138,6 +1734,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1153,6 +1755,478 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{wait}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "8388608"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: sql_cache
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "4194304"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: optimizer
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "2097152"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: connection
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "16777216"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: granted_workspace
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Amount of memory used by the SQL Server memory pool.
+            gauge:
+              dataPoints:
+                - asInt: "33554432"
+                  attributes:
+                    - key: memory.pool
+                      value:
+                        stringValue: max_workspace
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.area
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "1024"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: cache
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "8192"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "7168"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: target
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "512"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: stolen
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "256"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of pages in the SQL Server buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "2048"
+                  attributes:
+                    - key: page.pool
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.page.count
+            unit: '{page}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of cache objects in the SQL Server cache.
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  attributes:
+                    - key: cache.state
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.cache.object.count
+            unit: '{object}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of cache objects in the SQL Server cache.
+            gauge:
+              dataPoints:
+                - asInt: "50"
+                  attributes:
+                    - key: cache.state
+                      value:
+                        stringValue: in_use
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.memory.cache.object.count
+            unit: '{object}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Ratio of SQL recompilations to compilations, expressed as a percentage.
+            gauge:
+              dataPoints:
+                - asDouble: 9.469696969696969
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.recompilation.ratio
+            unit: '%'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

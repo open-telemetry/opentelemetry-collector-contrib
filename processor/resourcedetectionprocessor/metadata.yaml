@@ -1,5 +1,6 @@
 display_name: Resource Detection Processor
-type: resourcedetection
+type: resource_detection
+deprecated_type: resourcedetection
 
 status:
   class: processor
