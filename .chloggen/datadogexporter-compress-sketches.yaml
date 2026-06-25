@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Compress the metric sketches payload with gzip, matching the metric series payload. Previously sketches were sent uncompressed, increasing egress for distribution/histogram metrics.
+note: Compress the metric sketches payload with gzip in the legacy metric API client, matching the metric series payload. Previously sketches were sent uncompressed, increasing egress for distribution/histogram metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 # TODO: replace 00000 with the tracking issue or PR number before opening the PR.
