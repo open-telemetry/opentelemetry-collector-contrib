@@ -141,7 +141,7 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			rt.logger.Debug("failed to close response body", zap.Error(closeErr))
 		}
 
-		if err := rt.wait(req.Context(), delay); err != nil {
+		if err = rt.wait(req.Context(), delay); err != nil {
 			return nil, err
 		}
 
