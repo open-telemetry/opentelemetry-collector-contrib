@@ -5,11 +5,14 @@ go 1.25.0
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d
+	github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20260605055552-091960d5da90
 	github.com/stretchr/testify v1.11.1
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/pdata v1.58.1-0.20260514231715-e7f22744c28c
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.1-0.20260514231715-e7f22744c28c
-	go.opentelemetry.io/otel v1.43.0
+	go.opentelemetry.io/collector/pdata v1.61.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.155.0
+	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/proto/otlp/profiles/v1development v0.3.0
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -21,8 +24,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260514231715-e7f22744c28c // indirect
+	go.opentelemetry.io/collector/featuregate v1.61.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

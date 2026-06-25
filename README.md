@@ -78,7 +78,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Grafana Labs
 - [Yang Song](https://github.com/songy23), DataDog
 
 For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
@@ -110,6 +110,7 @@ For more information about the approver role, see the [community repository](htt
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Roger Coll](https://github.com/rogercoll), Elastic
+- [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - Actively seeking contributors to triage issues
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).

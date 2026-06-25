@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -24,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/sha3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
@@ -329,9 +329,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
-	if s.dbObfuscator != nil {
-		s.dbObfuscator.DBSystem = db.GetDBSystem(attributes)
-	}
+	dbSystem := db.GetDBSystem(attributes)
 
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
@@ -365,7 +363,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValueForAttribute(strVal, k)
+		processedString := s.processStringValueForAttribute(strVal, k, dbSystem)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -390,7 +388,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case SHA1:
 			return hashString(match, sha1.New())
 		case SHA3:
-			return hashString(match, sha3.New256())
+			return hashString(match, hash.Hash(sha3.New256()))
 		case MD5:
 			return hashString(match, md5.New())
 		case HMACSHA256:
@@ -438,7 +436,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSystem string) string {
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
 		if match {
@@ -451,7 +449,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) 
 	}
 
 	if s.dbObfuscator.HasObfuscators() {
-		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
+		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey, dbSystem)
 		if err != nil {
 			return strVal
 		}

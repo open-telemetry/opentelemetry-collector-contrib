@@ -5,8 +5,6 @@ deprecated_type: httpcheck
 description: |
   The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:
@@ -69,7 +67,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url, network.transport]
   httpcheck.client.request.duration:
     description: Time spent sending the HTTP request to the endpoint.
@@ -77,7 +75,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.dns.lookup.duration:
     description: Time spent performing DNS lookup for the endpoint.
@@ -85,7 +83,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.
@@ -111,7 +109,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.response.size:
     description: Size of response body in bytes.
@@ -145,7 +143,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    unit: ms
+    unit: ns
     attributes: [http.url]
   httpcheck.validation.failed:
     description: Number of response validations that failed.

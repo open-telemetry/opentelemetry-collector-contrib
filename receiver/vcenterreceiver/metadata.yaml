@@ -1,6 +1,5 @@
 display_name: vCenter Receiver
 type: vcenter
-reaggregation_enabled: true
 
 description: This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
 
@@ -18,9 +17,10 @@ feature_gates:
   - id: receiver.vcenter.resourcePoolMemoryUsageAttribute
     description: >-
       Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric
-    stage: alpha
-    from_version: "v0.104.0"
+    stage: beta
+    from_version: "v0.153.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741
+    skip_strict_validation: true
 
 resource_attributes:
   vcenter.cluster.name:

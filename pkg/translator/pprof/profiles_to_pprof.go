@@ -46,6 +46,29 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		return nil, errors.New("profiles hold varying number of samples")
 	}
 
+	// Validate that all samples within each profile use the same shape, as
+	// required by the OTel Profiles spec (profiles.proto L401-L402):
+	// "All Samples for a Profile SHOULD have the same shape."
+	for profileIdx := range numProfiles {
+		prof := pprofiles.At(profileIdx)
+		if prof.Samples().Len() == 0 {
+			continue
+		}
+		firstShape, err := sampleShapeOf(prof.Samples().At(0))
+		if err != nil {
+			return nil, fmt.Errorf("profile %d, sample 0: %w", profileIdx, err)
+		}
+		for sampleIdx := 1; sampleIdx < prof.Samples().Len(); sampleIdx++ {
+			shape, err := sampleShapeOf(prof.Samples().At(sampleIdx))
+			if err != nil {
+				return nil, fmt.Errorf("profile %d, sample %d: %w", profileIdx, sampleIdx, err)
+			}
+			if shape != firstShape {
+				return nil, fmt.Errorf("profile %d has inconsistent sample shapes: expected shape %d (from sample 0), got shape %d at sample %d", profileIdx, firstShape, shape, sampleIdx)
+			}
+		}
+	}
+
 	// Helper maps to avoid duplicates.
 	functionMap := make(map[uint64]*profile.Function)
 	mappingMap := make(map[uint64]*profile.Mapping)
@@ -76,12 +99,15 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 	// Convert profiles samples into pprof samples.
 	for sampleIdx, s := range p.Samples().All() {
-		pprofSample := profile.Sample{}
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
 
-		// By convention, pprof uses the last sample type as default, while OTel Profiles
-		// uses the first profile as default. Therefore, swap first and last.
+		// Collect per-observation values from each profile (sample type).
+		// By convention, pprof uses the last sample type as default, while OTel
+		// Profiles uses the first profile as default. Therefore, swap first and last.
+		// All profiles must produce the same number of observations for a given sample.
+		var obsCount int
+		valuesByProfile := make([][]int64, numProfiles)
 		for i := range numProfiles {
 			// Swap first and last: first OTel profile becomes last pprof sample type
 			var mappedIdx int
@@ -93,12 +119,22 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			default:
 				mappedIdx = i
 			}
-			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
-				return nil, errors.New("invalid number of values per sample")
+			otlpSample := pprofiles.At(mappedIdx).Samples().At(sampleIdx)
+			vals, err := sampleToPprofValues(otlpSample)
+			if err != nil {
+				return nil, err
 			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
+			if i == 0 {
+				obsCount = len(vals)
+			} else if len(vals) != obsCount {
+				return nil, fmt.Errorf("inconsistent sample shapes across profiles: profile 0 has %d observation(s), profile %d has %d", obsCount, i, len(vals))
+			}
+			valuesByProfile[i] = vals
 		}
 
+		// Build the shared location list once; all expanded pprof samples for
+		// this OTLP sample reference the same stack.
+		var locations []*profile.Location
 		for _, li := range stack.LocationIndices().All() {
 			loc := src.Dictionary().LocationTable().At(int(li))
 			var locMapping *profile.Mapping
@@ -132,12 +168,22 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				lines = append(lines, pprofLine)
 			}
 
-			pprofSample.Location = append(pprofSample.Location,
+			locations = append(locations,
 				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
 		}
 
+		// Emit one pprof Sample per observation. Shapes 1 and 3 expand a single
+		// OTLP sample into multiple pprof samples (one per timestamp); shape 2
+		// always produces exactly one.
+		for obsIdx := range obsCount {
+			pprofSample := profile.Sample{Location: locations}
+			for profIdx := range numProfiles {
+				pprofSample.Value = append(pprofSample.Value, valuesByProfile[profIdx][obsIdx])
+			}
+			dst.Sample = append(dst.Sample, &pprofSample)
+		}
+
 		// pprof.Sample.label is skipped for the moment.
-		dst.Sample = append(dst.Sample, &pprofSample)
 	}
 
 	// Set pprof values that should be common across all profiles.
@@ -181,7 +227,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.TimeNanos = int64(p.Time().AsTime().Nanosecond())
+	dst.TimeNanos = p.Time().AsTime().UnixNano()
 	dst.DurationNanos = int64(p.DurationNano())
 	dst.Period = p.Period()
 
@@ -196,6 +242,73 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	return dst, nil
+}
+
+// sampleShape identifies which value/timestamp combination an OTel Profiles
+// message Sample uses.
+type sampleShape int
+
+const (
+	// timestampsOnly is shape 1: values is empty, timestamps non-empty.
+	timestampsOnly sampleShape = iota + 1
+	// singleAggregate is shape 2: exactly one value, timestamps empty.
+	singleAggregate
+	// perObservation is shape 3: values and timestamps of equal non-zero length.
+	perObservation
+)
+
+// sampleShapeOf returns the shape of an OTel profiles Sample as defined by the
+// OTel Profiles signal, or an error if the sample has an invalid combination
+// of values and timestamps.
+func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
+	nValues := s.Values().Len()
+	nTimestamps := s.TimestampsUnixNano().Len()
+	switch {
+	case nValues == 0 && nTimestamps > 0:
+		return timestampsOnly, nil
+	case nValues == 1 && nTimestamps == 0:
+		return singleAggregate, nil
+	case nValues > 0 && nValues == nTimestamps:
+		return perObservation, nil
+	default:
+		return 0, fmt.Errorf("invalid sample: %d value(s), %d timestamp(s)", nValues, nTimestamps)
+	}
+}
+
+// sampleToPprofValues maps the three valid OTel profiles Sample shapes to a
+// slice of per-observation pprof values according to the profiles proto spec:
+//
+//   - Shape 1 (timestamps only): values is empty; each timestamps_unix_nano
+//     entry represents one observation with an implicit value of 1. Returns a
+//     single-element slice with the count of timestamps as the aggregated value.
+//   - Shape 2 (single aggregate): exactly one value and no timestamps; returns
+//     a single-element slice.
+//   - Shape 3 (per-observation): values and timestamps_unix_nano have equal
+//     non-zero length; each pair is one observation.
+//
+// The caller emits one pprof Sample per returned element, all sharing the same
+// location list. This matches the pprof proto convention where aggregation is
+// done by summing samples that share the same stack, not by pre-collapsing.
+func sampleToPprofValues(s pprofile.Sample) ([]int64, error) {
+	shape, err := sampleShapeOf(s)
+	if err != nil {
+		return nil, err
+	}
+	switch shape {
+	case timestampsOnly:
+		return []int64{int64(s.TimestampsUnixNano().Len())}, nil
+	case singleAggregate:
+		return []int64{s.Values().At(0)}, nil
+	case perObservation:
+		nValues := s.Values().Len()
+		vals := make([]int64, nValues)
+		for i := range nValues {
+			vals[i] = s.Values().At(i)
+		}
+		return vals, nil
+	default:
+		return []int64{}, errors.New("unknown sample shape")
+	}
 }
 
 // allElementsSame checks if all elements in the provided slice are equal.

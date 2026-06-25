@@ -2852,8 +2852,9 @@ func TestExporterTraces(t *testing.T) {
 
 	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
 		t.Parallel()
-		// Test that spans respect dynamic document IDs in ECS mode,
-		// while span events are embedded (not separate documents)
+		// Test that spans respect dynamic document IDs in ECS mode.
+		// Span events are extracted as separate documents; the DocumentIDAttributeName
+		// on the event is ignored (ECS span event IDs are not user-controlled).
 		exampleDocID := "ecs-span-doc-id-789"
 
 		rec := newBulkRecorder()
@@ -2883,10 +2884,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		// In ECS mode, only the span document is created (span events are embedded)
-		rec.WaitItems(1)
+		// In ECS mode, span events are extracted as separate log documents,
+		// so we expect 2 documents: the span and the span event.
+		rec.WaitItems(2)
 		docs := rec.Items()
-		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+		require.Len(t, docs, 2, "should have 2 documents: span and span event in ECS mode")
 
 		// Verify the span document has the correct _id
 		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
@@ -3174,6 +3176,41 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				for i, item := range items {
 					tc.checks[i](t, item.Document, "traces")
 				}
+			})
+		}
+	})
+	t.Run("default mode from allowed modes", func(t *testing.T) {
+		for _, tc := range []struct {
+			name         string
+			allowedModes []string
+			check        checkFunc
+		}{
+			{
+				name:         "first allowed mode if otel not included",
+				allowedModes: []string{"ecs", "raw"},
+				check:        checkECSResource,
+			},
+			{
+				name:         "otel if otel is included",
+				allowedModes: []string{"raw", "ecs", "otel"},
+				check:        checkOTelResource,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				traces := createTraces(defaultScope)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.AllowedModes = tc.allowedModes
+				})
+				mustSendTraces(t, exporter, traces)
+
+				docs := rec.WaitItems(1)
+				tc.check(t, docs[0].Document, "traces")
 			})
 		}
 	})

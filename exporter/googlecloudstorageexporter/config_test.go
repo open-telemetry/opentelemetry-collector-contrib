@@ -7,16 +7,20 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter/internal/metadata"
 )
 
-func TestValidate(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -27,69 +31,109 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{
-				Encoding: func() *component.ID {
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
 					id := component.MustNewID("test")
 					return &id
-				}(),
-				Bucket: bucketConfig{
-					Name:       "test-bucket",
-					Region:     "test-region",
-					ProjectID:  "test-project-id",
-					FilePrefix: "logs",
-				},
-			},
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "with_partition"),
-			expected: &Config{
-				Encoding: func() *component.ID {
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
 					id := component.MustNewID("test")
 					return &id
-				}(),
-				Bucket: bucketConfig{
-					Name:       "test-bucket",
-					Region:     "test-region",
-					ProjectID:  "test-project-id",
-					FilePrefix: "logs",
-					Partition: partitionConfig{
-						Format: "year=%Y",
-						Prefix: "my-logs",
-					},
-				},
-			},
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Partition = partitionConfig{
+					Format: "year=%Y",
+					Prefix: "my-logs",
+				}
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_resource_attrs_to_gcs"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Partition = partitionConfig{
+					Format: "%Y-%m-%d/%H",
+					Prefix: "storage",
+				}
+				cfg.ResourceAttrsToGCS = ResourceAttrsToGCS{Prefix: "service.name"}
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_resiliency"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.TimeoutSettings.Timeout = 3 * time.Second
+				cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 7
+					queue.QueueSize = 123
+					return queue
+				}())
+				cfg.RetrySettings = configretry.NewDefaultBackOffConfig()
+				cfg.RetrySettings.InitialInterval = time.Second
+				cfg.RetrySettings.MaxInterval = 5 * time.Second
+				cfg.RetrySettings.MaxElapsedTime = 20 * time.Second
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "with_gzip_compression"),
-			expected: &Config{
-				Encoding: func() *component.ID {
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
 					id := component.MustNewID("test")
 					return &id
-				}(),
-				Bucket: bucketConfig{
-					Name:        "test-bucket",
-					Region:      "test-region",
-					ProjectID:   "test-project-id",
-					FilePrefix:  "logs",
-					Compression: "gzip",
-				},
-			},
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Compression = "gzip"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "with_zstd_compression"),
-			expected: &Config{
-				Encoding: func() *component.ID {
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
 					id := component.MustNewID("test")
 					return &id
-				}(),
-				Bucket: bucketConfig{
-					Name:        "test-bucket",
-					Region:      "test-region",
-					ProjectID:   "test-project-id",
-					FilePrefix:  "logs",
-					Compression: "zstd",
-				},
-			},
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Compression = "zstd"
+				return cfg
+			}(),
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "empty_bucket_name"),
@@ -102,6 +146,21 @@ func TestValidate(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "unsupported_compression"),
 			expectedErr: errUnknownCompression,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_universe_domain"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.UniverseDomain = "apis.example.com"
+				return cfg
+			}(),
 		},
 	}
 
@@ -126,4 +185,16 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefaultConfigQueueDisabled(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	require.False(t, cfg.(*Config).QueueSettings.HasValue())
 }
