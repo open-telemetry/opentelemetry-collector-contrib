@@ -11,7 +11,7 @@ note: Compress the metric sketches payload with gzip in the legacy metric API cl
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 # TODO: replace 00000 with the tracking issue or PR number before opening the PR.
-issues: [00000]
+issues: [49313]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
