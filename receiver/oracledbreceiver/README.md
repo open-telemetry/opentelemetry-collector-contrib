@@ -117,10 +117,14 @@ GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
-ALTER SYSTEM SET statistics_level = ALL;
 ```
 
-In the SQL query plan details the LAST_* / OUTPUT_ROWS / STARTS columns are only populated when STATISTICS_LEVEL=ALL or GATHER_PLAN_STATISTICS hint is used; otherwise they'll be NULL/empty.
+> [!NOTE]
+> In the SQL query plan details, the `LAST_*`, `OUTPUT_ROWS`, and `STARTS` columns are populated only when Oracle is configured to collect execution plan statistics (for example, `STATISTICS_LEVEL=ALL` or the `GATHER_PLAN_STATISTICS` hint). Otherwise, these fields will be `NULL` or empty. Enabling this Oracle instrumentation may introduce additional runtime overhead.
+
+```sql
+ALTER SYSTEM SET statistics_level = ALL;
+```
 
 ## Enabling metrics.
 
