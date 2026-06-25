@@ -7,4 +7,13 @@ note: Enable the `system.cpu.logical.count` metric by default in the CPU scraper
 issues: [49325]
 
 subtext: |
-  The logical CPU count is recommended by the System CPU semantic conventions and preserves host CPU cardinality information when per-CPU attributes are disabled.
+  To restore the previous behavior, disable the new metric by applying the following config:
+  ```yaml
+  receivers:
+    host_metrics:
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.logical.count:
+              enabled: false
+  ```
