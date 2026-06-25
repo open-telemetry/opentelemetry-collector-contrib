@@ -51,7 +51,6 @@ type cloudWatchMetricsScraper struct {
 	client             metricsClient
 	stsClient          stsClient
 	accountID          string
-	accountIDResolved  bool
 }
 
 type metricsClient interface {
@@ -107,9 +106,9 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 }
 
 // resolveAccountID resolves the account ID of the active credentials via STS GetCallerIdentity.
-// Will try once per call until resolution succeeds, then stores the result for subsequent scrapes.
+// On success, stores the resolved account ID to `s.accountID`.
 func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
-	if s.accountIDResolved || s.stsClient == nil {
+	if s.stsClient == nil {
 		return
 	}
 	out, err := s.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
@@ -120,14 +119,14 @@ func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
 		return
 	}
 	s.accountID = aws.ToString(out.Account)
-	s.accountIDResolved = true
 }
 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
 
-	// Resolve the account ID lazily on the first scrape so that start() makes no network calls.
-	s.resolveAccountID(ctx)
+	if s.accountID == "" {
+		s.resolveAccountID(ctx)
+	}
 
 	var metricsToScrape []MetricQuery
 	if s.discovery != nil {

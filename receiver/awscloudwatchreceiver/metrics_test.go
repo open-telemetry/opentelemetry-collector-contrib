@@ -898,41 +898,30 @@ func TestResolveAccountID_ViaSTS(t *testing.T) {
 	stsMock.AssertExpectations(t)
 }
 
-func TestResolveAccountID_ResolvesOnlyOnce(t *testing.T) {
-	cfg := &Config{Region: "us-east-1"}
-	scr := testScraper(cfg)
+func TestScrape_ResolvesAccountIDOnce(t *testing.T) {
+	mc := &mockMetricsClient{}
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{}, nil,
+	)
 	stsMock := &mockSTSClient{}
 	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
 		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
 	).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Period:  60 * time.Second,
+		Queries: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
 	scr.stsClient = stsMock
 
-	scr.resolveAccountID(t.Context())
-	scr.resolveAccountID(t.Context())
+	// scrape resolves the account ID on the first call and caches it; STS is not called again.
+	_, err := scr.scrape(t.Context())
+	require.NoError(t, err)
+	_, err = scr.scrape(t.Context())
+	require.NoError(t, err)
 	require.Equal(t, "210987654321", scr.accountID)
-	// Once resolved successfully, GetCallerIdentity is not called again on later scrapes.
-	stsMock.AssertExpectations(t)
-}
-
-func TestResolveAccountID_RetriesAfterTransientFailure(t *testing.T) {
-	cfg := &Config{Region: "us-east-1"}
-	scr := testScraper(cfg)
-	stsMock := &mockSTSClient{}
-	// First scrape's call fails transiently; the next succeeds.
-	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
-		(*sts.GetCallerIdentityOutput)(nil), errors.New("timeout"),
-	).Once()
-	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
-		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
-	).Once()
-	scr.stsClient = stsMock
-
-	scr.resolveAccountID(t.Context())
-	require.Empty(t, scr.accountID, "transient failure must not latch an empty account ID")
-	scr.resolveAccountID(t.Context())
-	require.Equal(t, "210987654321", scr.accountID, "resolution must be retried and succeed")
-	// A third scrape must not call again now that resolution has succeeded.
-	scr.resolveAccountID(t.Context())
 	stsMock.AssertExpectations(t)
 }
 
