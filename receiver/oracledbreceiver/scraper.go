@@ -31,11 +31,28 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 const (
-	statsSQL                       = "select * from v$sysstat"
+	statsSQL     = "select * from v$sysstat"
+	sysmetricSQL = "SELECT metric_name, value FROM v$sysmetric WHERE group_id = 2"
+
+	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
+	sysmetricBufferCacheHitRatio      = "Buffer Cache Hit Ratio"
+	sysmetricHostCPUUtilization       = "Host CPU Utilization (%)"
+	sysmetricDatabaseCPUTimeRatio     = "Database CPU Time Ratio"
+	sysmetricLibraryCacheHitRatio     = "Library Cache Hit Ratio"
+	sysmetricSharedPoolFreePct        = "Shared Pool Free %"
+	sysmetricDatabaseWaitTimeRatio    = "Database Wait Time Ratio"
+	sysmetricSoftParseRatio           = "Soft Parse Ratio"
+	sysmetricSQLServiceResponseTime   = "SQL Service Response Time"
+	sysmetricMemorySortsRatio         = "Memory Sorts Ratio"
+	sysmetricRedoAllocationHitRatio   = "Redo Allocation Hit Ratio"
+	sysmetricParseFailureCount        = "Parse Failure Count Per Sec"
+	sysmetricExecuteWithoutParseRatio = "Execute Without Parse Ratio"
+
 	enqueueDeadlocks               = "enqueue deadlocks"
 	exchangeDeadlocks              = "exchange deadlocks"
 	executeCount                   = "execute count"
@@ -106,6 +123,8 @@ const (
 	childAddressAttr = "CHILD_ADDRESS"
 	childNumberAttr  = "CHILD_NUMBER"
 	sqlTextAttr      = "SQL_FULLTEXT"
+	serviceAttr      = "SERVICE"
+	dbNamespaceAttr  = "DB_NAMESPACE"
 	dbSystemNameVal  = "oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
@@ -133,6 +152,7 @@ const (
 	commandTypeAttr = "COMMAND_TYPE"
 
 	// Plan metadata columns
+	firstLoadTimeAttr = "FIRST_LOAD_TIME"
 	lastLoadTimeAttr  = "LAST_LOAD_TIME"
 	planHashValueAttr = "PLAN_HASH_VALUE"
 )
@@ -165,6 +185,7 @@ type oracleScraper struct {
 	osStatClient               dbClient
 	recycleBinSizeClient       dbClient
 	storageUsageClient         dbClient
+	sysmetricClient            dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	mb                         *metadata.MetricsBuilder
@@ -185,6 +206,10 @@ type oracleScraper struct {
 	sessionWaitEventCfg        SessionWaitEvent
 	serviceInstanceID          string
 	lastExecutionTimestamp     time.Time
+	// instanceInfo holds Oracle deployment metadata detected once at start().
+	// All fields are best-effort: detection failures are logged and leave the
+	// field at its zero value; they never prevent the receiver from starting.
+	instanceInfo oracleInstanceInfo
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
@@ -225,12 +250,25 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
-func (s *oracleScraper) start(context.Context, component.Host) error {
+func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
+	}
+	if s.db != nil {
+		s.instanceInfo = detectInstanceInfo(
+			ctx,
+			s.clientProviderFunc(s.db, instanceVersionSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceCDBSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceConTypeSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceConNameSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceRDSSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCISQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCICDBServicesSQL, s.logger),
+			s.logger,
+		)
 	}
 	s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
@@ -242,6 +280,7 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.osStatClient = s.clientProviderFunc(s.db, osStatSQL, s.logger)
 	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
+	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
 	return nil
 }
 
@@ -624,6 +663,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.collectOSStat(ctx, &scrapeErrors)
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
 	s.collectStorageUsage(ctx, &scrapeErrors)
+	s.collectSysMetrics(ctx, &scrapeErrors)
 
 	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
 
@@ -754,18 +794,108 @@ func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[
 	}
 }
 
+func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]error) {
+	anySysmetricEnabled := s.metricsBuilderConfig.Metrics.OracledbBufferCacheUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbHostCPUUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDatabaseCPUUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLibraryCacheUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSharedPoolUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDatabaseWaitUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSQLServiceResponseDuration.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSortRatio.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoAllocationUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled
+	if !anySysmetricEnabled {
+		return
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.sysmetricClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricSQL, err))
+		return
+	}
+
+	for _, row := range rows {
+		metricName := row["METRIC_NAME"]
+		rawVal := row["VALUE"]
+		val, parseErr := strconv.ParseFloat(rawVal, 64)
+		if parseErr != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
+			continue
+		}
+		switch metricName {
+		case sysmetricBufferCacheHitRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbBufferCacheUtilization.Enabled {
+				s.mb.RecordOracledbBufferCacheUtilizationDataPoint(now, val)
+			}
+		case sysmetricHostCPUUtilization:
+			if s.metricsBuilderConfig.Metrics.OracledbHostCPUUtilization.Enabled {
+				s.mb.RecordOracledbHostCPUUtilizationDataPoint(now, val)
+			}
+		case sysmetricDatabaseCPUTimeRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbDatabaseCPUUtilization.Enabled {
+				s.mb.RecordOracledbDatabaseCPUUtilizationDataPoint(now, val)
+			}
+		case sysmetricLibraryCacheHitRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbLibraryCacheUtilization.Enabled {
+				s.mb.RecordOracledbLibraryCacheUtilizationDataPoint(now, val)
+			}
+		case sysmetricSharedPoolFreePct:
+			if s.metricsBuilderConfig.Metrics.OracledbSharedPoolUtilization.Enabled {
+				s.mb.RecordOracledbSharedPoolUtilizationDataPoint(now, val)
+			}
+		case sysmetricDatabaseWaitTimeRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbDatabaseWaitUtilization.Enabled {
+				s.mb.RecordOracledbDatabaseWaitUtilizationDataPoint(now, val)
+			}
+		case sysmetricSoftParseRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbParseUtilization.Enabled {
+				s.mb.RecordOracledbParseUtilizationDataPoint(now, val)
+			}
+		case sysmetricSQLServiceResponseTime:
+			if s.metricsBuilderConfig.Metrics.OracledbSQLServiceResponseDuration.Enabled {
+				// Oracle reports SQL Service Response Time in centiseconds; convert to seconds.
+				s.mb.RecordOracledbSQLServiceResponseDurationDataPoint(now, val/100)
+			}
+		case sysmetricMemorySortsRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbSortRatio.Enabled {
+				s.mb.RecordOracledbSortRatioDataPoint(now, val, metadata.AttributeOracledbSortTypeMemory)
+			}
+		case sysmetricRedoAllocationHitRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbRedoAllocationUtilization.Enabled {
+				s.mb.RecordOracledbRedoAllocationUtilizationDataPoint(now, val)
+			}
+		case sysmetricParseFailureCount:
+			if s.metricsBuilderConfig.Metrics.OracledbParseRate.Enabled {
+				s.mb.RecordOracledbParseRateDataPoint(now, val, metadata.AttributeOracledbParseResultFailure)
+			}
+		case sysmetricExecuteWithoutParseRatio:
+			if s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled {
+				s.mb.RecordOracledbExecutionUtilizationDataPoint(now, val, metadata.AttributeOracledbParseTypeSoft)
+			}
+		}
+	}
+}
+
 type queryMetricCacheHit struct {
 	sqlID         string
 	childNumber   string
 	childAddress  string
 	queryText     string
+	queryComments string
 	metrics       map[string]int64
 	objectID      int64
 	objectName    string
 	objectType    string
 	commandType   int64
+	firstLoadTime string
 	lastLoadTime  string
 	planHashValue string
+	service       string
+	dbNamespace   string
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -846,9 +976,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				commandType, _ = strconv.ParseInt(row[commandTypeAttr], 10, 64)
 			}
 
+			// Extract and filter comments from original SQL before obfuscation
+			queryComments := sqlcomments.ExtractAndFilterComments(row[sqlTextAttr], s.topQueryCollectCfg.AllowedCommentKeys)
+
 			hit := queryMetricCacheHit{
 				sqlID:         row[sqlIDAttr],
 				queryText:     row[sqlTextAttr],
+				queryComments: queryComments,
 				childNumber:   row[childNumberAttr],
 				childAddress:  row[childAddressAttr],
 				metrics:       make(map[string]int64, len(metricNames)),
@@ -856,8 +990,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectName:    row[objectNameAttr],
 				objectType:    row[objectTypeAttr],
 				commandType:   commandType,
+				firstLoadTime: row[firstLoadTimeAttr],
 				lastLoadTime:  row[lastLoadTimeAttr],
 				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
+				service:       row[serviceAttr],
+				dbNamespace:   row[dbNamespaceAttr],
 			}
 
 			var possiblePurge bool
@@ -920,6 +1057,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
 			s.hostName,
+			hit.dbNamespace,
+			hit.service,
 			hit.queryText,
 			planString, hit.sqlID, hit.childNumber,
 			hit.childAddress,
@@ -944,7 +1083,9 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.objectID,
 			hit.objectName,
 			hit.objectType,
+			hit.queryComments,
 			hit.planHashValue,
+			hit.firstLoadTime,
 			hit.lastLoadTime)
 	}
 
@@ -985,6 +1126,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const waitTimeSec = "WAIT_TIME_SEC"
 	const port = "PORT"
 	const serviceName = "SERVICE_NAME"
+	const dbNamespaceCol = "DB_NAMESPACE"
 	const sqlExecStart = "SQL_EXEC_START"
 	const logonTime = "LOGON_TIME"
 	const sessionDuration = "SESSION_DURATION_SEC"
@@ -1064,10 +1206,13 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			"traceparent": row[action],
 		})
 
-		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
+		// Extract and filter query comments from original SQL (before obfuscation)
+		queryComments := sqlcomments.ExtractAndFilterComments(row[sqlText], s.querySampleCfg.AllowedCommentKeys)
+
+		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[dbNamespaceCol], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
-			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec,
+			row[osUser], queryDuration, queryComments, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
 	}
@@ -1192,6 +1337,21 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+	if s.instanceInfo.dbVersion != "" {
+		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
+	}
+	if s.instanceInfo.databaseRole != "" {
+		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
+	}
+	if s.instanceInfo.openMode != "" {
+		rb.SetOracleDbOpenMode(s.instanceInfo.openMode)
+	}
+	if s.instanceInfo.hostingType != "" {
+		rb.SetOracleDbHostingType(s.instanceInfo.hostingType)
+	}
+	if s.instanceInfo.connectedToPDB && s.instanceInfo.pdbName != "" {
+		rb.SetOracleDbPdb(s.instanceInfo.pdbName)
+	}
 	return rb
 }
 

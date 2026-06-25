@@ -4,7 +4,6 @@
 The Windows Service Receiver is a receiver for scraping information about the state of services running on a Windows
 machine.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
