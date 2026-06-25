@@ -2306,7 +2306,7 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	targetWithErr.Report(time.Now(), 0, scrapeErr)
 
 	scrapeCtxWithTarget := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), targetWithErr),
+		scrape.ContextWithTarget(t.Context(), targetWithErr),
 		testMetadataStore(testMetadata))
 
 	tr := newTransaction(
