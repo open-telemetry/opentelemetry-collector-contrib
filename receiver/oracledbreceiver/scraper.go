@@ -39,7 +39,9 @@ const (
 	statsSQL     = "select * from v$sysstat"
 	sysmetricSQL = "SELECT metric_name, value FROM v$sysmetric WHERE group_id = 2"
 	// sysmetricCDBSQL queries V$CON_SYSMETRIC for per-PDB sysmetric values.
-	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+) AND s.group_id = 2"
+	// Note: unlike V$SYSMETRIC, V$CON_SYSMETRIC only exposes short-interval (60s)
+	// rows, so no group_id filter is required.
+	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+)"
 
 	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
 	sysmetricBufferCacheHitRatio      = "Buffer Cache Hit Ratio"
