@@ -301,6 +301,10 @@ component_management:
     name: extension_awsproxy
     paths:
     - extension/awsproxy/**
+  - component_id: extension_awssecretsmanagerprovider
+    name: extension_awssecretsmanagerprovider
+    paths:
+    - extension/awssecretsmanagerprovider/**
   - component_id: extension_azureauth
     name: extension_azureauth
     paths:

@@ -1,0 +1,16 @@
+display_name: AWS Secrets Manager Provider
+type: awssecretsmanagerprovider
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [meebok, frzifus, thomasbaldwin, donny-z, lazureykis]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    skip: true
