@@ -36,20 +36,24 @@ func TestScrape(t *testing.T) {
 		expectedErr         string
 	}
 
+	defaultMetrics := metadata.NewDefaultMetricsBuilderConfig()
+	defaultMetrics.Metrics.SystemCPULogicalCount.Enabled = false
+
 	disabledMetric := metadata.NewDefaultMetricsBuilderConfig()
 	disabledMetric.Metrics.SystemCPUTime.Enabled = false
+	disabledMetric.Metrics.SystemCPULogicalCount.Enabled = false
 
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 2,
+			metricsConfig:       defaultMetrics,
+			expectedMetricCount: 1,
 		},
 		{
 			name:                "Validate Start Time",
 			bootTimeFunc:        func(context.Context) (uint64, error) { return 100, nil },
-			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 2,
+			metricsConfig:       defaultMetrics,
+			expectedMetricCount: 1,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
@@ -62,14 +66,14 @@ func TestScrape(t *testing.T) {
 		{
 			name:                "Times Error",
 			timesFunc:           func(context.Context, bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
-			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 2,
+			metricsConfig:       defaultMetrics,
+			expectedMetricCount: 1,
 			expectedErr:         "err2",
 		},
 		{
 			name:                "SystemCPUTime metric is disabled ",
 			metricsConfig:       disabledMetric,
-			expectedMetricCount: 1,
+			expectedMetricCount: 0,
 		},
 	}
 
@@ -110,16 +114,10 @@ func TestScrape(t *testing.T) {
 
 			if test.expectedMetricCount > 0 {
 				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				assertCPUMetricValid(t, metrics.At(0), test.expectedStartTime)
 
-				if test.metricsConfig.Metrics.SystemCPUTime.Enabled {
-					cpuTimeMetric := findMetricByName(t, metrics, "system.cpu.time")
-					assertCPUMetricValid(t, cpuTimeMetric, test.expectedStartTime)
-					if runtime.GOOS == "linux" {
-						assertCPUMetricHasLinuxSpecificStateLabels(t, cpuTimeMetric)
-					}
-				}
-				if test.metricsConfig.Metrics.SystemCPULogicalCount.Enabled {
-					assertCPULogicalCountMetricValid(t, findMetricByName(t, metrics, "system.cpu.logical.count"))
+				if runtime.GOOS == "linux" {
+					assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 				}
 
 				internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -233,31 +231,32 @@ func TestScrape_CpuUtilization(t *testing.T) {
 		expectedMetricCount int
 		times               bool
 		utilization         bool
-		logicalCount        bool
+		utilizationIndex    int
 	}
+
+	defaultMetrics := metadata.NewDefaultMetricsBuilderConfig()
+	defaultMetrics.Metrics.SystemCPULogicalCount.Enabled = false
 
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 2,
+			metricsConfig:       defaultMetrics,
+			expectedMetricCount: 1,
 			times:               true,
 			utilization:         false,
-			logicalCount:        true,
 		},
 		{
 			name:                "SystemCPUTime metric is disabled",
 			times:               false,
 			utilization:         true,
-			logicalCount:        true,
-			expectedMetricCount: 2,
+			expectedMetricCount: 1,
 		},
 		{
 			name:                "all metrics are enabled",
 			times:               true,
 			utilization:         true,
-			logicalCount:        true,
-			expectedMetricCount: 3,
+			expectedMetricCount: 2,
+			utilizationIndex:    1,
 		},
 		{
 			name:                "all metrics are disabled",
@@ -275,7 +274,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				settings = metadata.NewDefaultMetricsBuilderConfig()
 				settings.Metrics.SystemCPUTime.Enabled = test.times
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
-				settings.Metrics.SystemCPULogicalCount.Enabled = test.logicalCount
+				settings.Metrics.SystemCPULogicalCount.Enabled = false
 			}
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: settings})
@@ -296,21 +295,18 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 			if test.times {
-				timesMetrics := findMetricByName(t, metrics, "system.cpu.time")
+				timesMetrics := metrics.At(0)
 				assertCPUMetricValid(t, timesMetrics, 0)
 				if runtime.GOOS == "linux" {
 					assertCPUMetricHasLinuxSpecificStateLabels(t, timesMetrics)
 				}
 			}
 			if test.utilization {
-				utilizationMetrics := findMetricByName(t, metrics, "system.cpu.utilization")
+				utilizationMetrics := metrics.At(test.utilizationIndex)
 				assertCPUUtilizationMetricValid(t, utilizationMetrics, 0)
 				if runtime.GOOS == "linux" {
 					assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t, utilizationMetrics)
 				}
-			}
-			if settings.Metrics.SystemCPULogicalCount.Enabled {
-				assertCPULogicalCountMetricValid(t, findMetricByName(t, metrics, "system.cpu.logical.count"))
 			}
 		})
 	}
@@ -430,17 +426,6 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 			assertDatapointValueAndStringAttributes(t, dp.At(idx), expectedDp.val, expectedDp.attrs)
 		}
 	}
-}
-
-func findMetricByName(t *testing.T, metrics pmetric.MetricSlice, name string) pmetric.Metric {
-	for i := 0; i < metrics.Len(); i++ {
-		metric := metrics.At(i)
-		if metric.Name() == name {
-			return metric
-		}
-	}
-	require.Fail(t, "missing metric", "Expected metric %q not found", name)
-	return pmetric.Metric{}
 }
 
 func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberDataPoint, value float64, attrs map[string]string) {
