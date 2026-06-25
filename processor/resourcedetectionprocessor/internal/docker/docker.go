@@ -49,14 +49,20 @@ func NewDetector(p processor.Settings, cfg internal.DetectorConfig) (internal.De
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	osType, err := d.provider.OSType(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
+	if d.cfg.OsType.Enabled {
+		osType, err := d.provider.OSType(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
+		}
+		d.rb.SetOsType(osType)
 	}
 
-	hostname, err := d.provider.Hostname(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
+	if d.cfg.HostName.Enabled {
+		hostname, err := d.provider.Hostname(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
+		}
+		d.rb.SetHostName(hostname)
 	}
 
 	if d.cfg.ContainerName.Enabled || d.cfg.ContainerImageName.Enabled {
@@ -67,9 +73,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetContainerName(info.Name)
 		d.rb.SetContainerImageName(info.Image)
 	}
-
-	d.rb.SetHostName(hostname)
-	d.rb.SetOsType(osType)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

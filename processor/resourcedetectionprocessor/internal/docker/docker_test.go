@@ -86,3 +86,22 @@ func TestDetectSkipsContainerInfoByDefault(t *testing.T) {
 	}
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
+
+func TestDetectSkipsDisabledResourceAttributes(t *testing.T) {
+	md := &mockMetadata{}
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.HostName.Enabled = false
+	cfg.ResourceAttributes.OsType.Enabled = false
+
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	require.NoError(t, err)
+	detector.(*Detector).provider = md
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+
+	md.AssertNotCalled(t, "Hostname")
+	md.AssertNotCalled(t, "OSType")
+	md.AssertNotCalled(t, "ContainerInfo")
+	assert.Empty(t, res.Attributes().AsRaw())
+}
