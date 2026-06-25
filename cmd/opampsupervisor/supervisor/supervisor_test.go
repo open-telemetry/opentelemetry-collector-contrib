@@ -345,7 +345,7 @@ func TestCollectorCrashLogSnippet(t *testing.T) {
 	require.Equal(t, logContent, s.collectorCrashLogSnippet())
 }
 
-func TestCollectorCrashLogSnippetFiltersErrors(t *testing.T) {
+func TestCollectorCrashLogSnippetReturnsRawTail(t *testing.T) {
 	s := &Supervisor{
 		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
 		telemetrySettings: newNopTelemetrySettings(),
@@ -355,7 +355,7 @@ func TestCollectorCrashLogSnippetFiltersErrors(t *testing.T) {
 	logContent := "INFO collector starting\nlevel=error msg=\"boom\" component=receiver\nDEBUG tear down"
 	require.NoError(t, os.WriteFile(logPath, []byte(logContent), 0o600))
 
-	require.Equal(t, "level=error msg=\"boom\" component=receiver", s.collectorCrashLogSnippet())
+	require.Equal(t, logContent, s.collectorCrashLogSnippet())
 }
 
 func TestAppendCollectorCrashDetails(t *testing.T) {
@@ -391,52 +391,6 @@ func TestReadFileTailDropsPartialLine(t *testing.T) {
 	require.Equal(t, "second\n", string(data))
 }
 
-func TestCollectorCrashLogSnippetPrefersJSON(t *testing.T) {
-	s := &Supervisor{
-		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
-
-	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
-	payload := `{"level":"error","component":"receiver","msg":"invalid config","stacktrace":"panic: bad config"}`
-	require.NoError(t, os.WriteFile(logPath, []byte(payload+"\nINFO done"), 0o600))
-
-	require.Equal(t, "level=error component=receiver msg=invalid config stacktrace=panic: bad config", s.collectorCrashLogSnippet())
-}
-
-func TestCollectorCrashLogSnippetCapturesStacktrace(t *testing.T) {
-	s := &Supervisor{
-		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
-
-	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
-	content := "info\npanic: boom\nstack line 1\nstack line 2"
-	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
-
-	require.Equal(t, "panic: boom\nstack line 1\nstack line 2", s.collectorCrashLogSnippet())
-}
-
-func TestCollectorCrashLogSnippetIncludesConfigErrors(t *testing.T) {
-	s := &Supervisor{
-		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
-
-	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
-	content := strings.Join([]string{
-		"INFO collector started",
-		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension",
-		"2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
-		"DEBUG shutting down",
-	}, "\n")
-	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
-
-	require.Equal(t,
-		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension\n2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
-		s.collectorCrashLogSnippet())
-}
-
 func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
 	s := &Supervisor{
 		config: config.Supervisor{
@@ -449,7 +403,7 @@ func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
 	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
 	s.appendPassthroughLogLine("panic: boom")
 
-	require.Equal(t, "level=error msg=boom\n\npanic: boom", s.collectorCrashLogSnippet())
+	require.Equal(t, "{\"level\":\"error\",\"msg\":\"boom\"}\npanic: boom", s.collectorCrashLogSnippet())
 }
 
 func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.T) {

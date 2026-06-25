@@ -20,6 +20,8 @@ const passthroughTestModeEnv = "OTEL_SUPERVISOR_COMMANDER_TEST_MODE" // #nosec G
 
 func TestMain(m *testing.M) {
 	if os.Getenv(passthroughTestModeEnv) == "passthrough" {
+		// Re-run this test binary as the child process so the test can assert
+		// Commander drains passthrough logs before reporting process exit.
 		_, _ = fmt.Fprint(os.Stderr, "final error line")
 		os.Exit(1)
 	}
