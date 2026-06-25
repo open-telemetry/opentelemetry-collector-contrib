@@ -235,8 +235,8 @@ attributes:
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
-  oracledb.redo.kind:
-    description: The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit).
+  oracledb.redo.type:
+    description: The phase of the redo pipeline that a redo time measurement is attributed to.
     type: string
     enum: [write, log_space_wait, synch]
   oracledb.rows_processed:
@@ -826,7 +826,7 @@ metrics:
       value_type: double
     unit: By
   oracledb.redo.blocks:
-    description: Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').
+    description: Number of redo blocks moved between the redo log and storage, by I/O direction.
     enabled: false
     stability: development
     sum:
@@ -834,10 +834,10 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{blocks}"
+    unit: "{block}"
     attributes: [disk.io.direction]
-  oracledb.redo.buffer_allocation.retries:
-    description: Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.
+  oracledb.redo.buffer_allocation_retries:
+    description: Number of times a process waited and retried to allocate space in the redo buffer.
     enabled: false
     stability: development
     sum:
@@ -845,9 +845,9 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{retries}"
-  oracledb.redo.log_space.requests:
-    description: Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').
+    unit: "{retry}"
+  oracledb.redo.log_space_requests:
+    description: Number of times a process requested space in the redo log buffer and had to wait.
     enabled: false
     stability: development
     sum:
@@ -855,9 +855,9 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{requests}"
+    unit: "{request}"
   oracledb.redo.operations:
-    description: Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+    description: Number of redo I/O operations, by I/O direction.
     enabled: false
     stability: development
     sum:
@@ -865,10 +865,10 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
     attributes: [disk.io.direction]
   oracledb.redo.size:
-    description: Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
+    description: Amount of redo generated.
     enabled: false
     stability: development
     sum:
@@ -878,7 +878,7 @@ metrics:
       input_type: string
     unit: By
   oracledb.redo.time:
-    description: Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.
+    description: Time spent in each phase of the redo pipeline.
     enabled: false
     stability: development
     sum:
@@ -886,7 +886,7 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
-    attributes: [oracledb.redo.kind]
+    attributes: [oracledb.redo.type]
   oracledb.redo_allocation.utilization:
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false

@@ -196,34 +196,34 @@ var MapAttributeOracledbParseType = map[string]AttributeOracledbParseType{
 	"soft": AttributeOracledbParseTypeSoft,
 }
 
-// AttributeOracledbRedoKind specifies the value oracledb.redo.kind attribute.
-type AttributeOracledbRedoKind int
+// AttributeOracledbRedoType specifies the value oracledb.redo.type attribute.
+type AttributeOracledbRedoType int
 
 const (
-	_ AttributeOracledbRedoKind = iota
-	AttributeOracledbRedoKindWrite
-	AttributeOracledbRedoKindLogSpaceWait
-	AttributeOracledbRedoKindSynch
+	_ AttributeOracledbRedoType = iota
+	AttributeOracledbRedoTypeWrite
+	AttributeOracledbRedoTypeLogSpaceWait
+	AttributeOracledbRedoTypeSynch
 )
 
-// String returns the string representation of the AttributeOracledbRedoKind.
-func (av AttributeOracledbRedoKind) String() string {
+// String returns the string representation of the AttributeOracledbRedoType.
+func (av AttributeOracledbRedoType) String() string {
 	switch av {
-	case AttributeOracledbRedoKindWrite:
+	case AttributeOracledbRedoTypeWrite:
 		return "write"
-	case AttributeOracledbRedoKindLogSpaceWait:
+	case AttributeOracledbRedoTypeLogSpaceWait:
 		return "log_space_wait"
-	case AttributeOracledbRedoKindSynch:
+	case AttributeOracledbRedoTypeSynch:
 		return "synch"
 	}
 	return ""
 }
 
-// MapAttributeOracledbRedoKind is a helper map of string to AttributeOracledbRedoKind attribute value.
-var MapAttributeOracledbRedoKind = map[string]AttributeOracledbRedoKind{
-	"write":          AttributeOracledbRedoKindWrite,
-	"log_space_wait": AttributeOracledbRedoKindLogSpaceWait,
-	"synch":          AttributeOracledbRedoKindSynch,
+// MapAttributeOracledbRedoType is a helper map of string to AttributeOracledbRedoType attribute value.
+var MapAttributeOracledbRedoType = map[string]AttributeOracledbRedoType{
+	"write":          AttributeOracledbRedoTypeWrite,
+	"log_space_wait": AttributeOracledbRedoTypeLogSpaceWait,
+	"synch":          AttributeOracledbRedoTypeSynch,
 }
 
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
@@ -399,10 +399,10 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"disk.io.direction"},
 	},
 	OracledbRedoBufferAllocationRetries: metricInfo{
-		Name: "oracledb.redo.buffer_allocation.retries",
+		Name: "oracledb.redo.buffer_allocation_retries",
 	},
 	OracledbRedoLogSpaceRequests: metricInfo{
-		Name: "oracledb.redo.log_space.requests",
+		Name: "oracledb.redo.log_space_requests",
 	},
 	OracledbRedoOperations: metricInfo{
 		Name:       "oracledb.redo.operations",
@@ -413,7 +413,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbRedoTime: metricInfo{
 		Name:       "oracledb.redo.time",
-		Attributes: []string{"oracledb.redo.kind"},
+		Attributes: []string{"oracledb.redo.type"},
 	},
 	OracledbRedoAllocationUtilization: metricInfo{
 		Name: "oracledb.redo_allocation.utilization",
@@ -3123,8 +3123,8 @@ type metricOracledbRedoBlocks struct {
 // init fills oracledb.redo.blocks metric with initial data.
 func (m *metricOracledbRedoBlocks) init() {
 	m.data.SetName("oracledb.redo.blocks")
-	m.data.SetDescription("Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').")
-	m.data.SetUnit("{blocks}")
+	m.data.SetDescription("Number of redo blocks moved between the redo log and storage, by I/O direction.")
+	m.data.SetUnit("{block}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3210,11 +3210,11 @@ type metricOracledbRedoBufferAllocationRetries struct {
 	capacity int                                             // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.redo.buffer_allocation.retries metric with initial data.
+// init fills oracledb.redo.buffer_allocation_retries metric with initial data.
 func (m *metricOracledbRedoBufferAllocationRetries) init() {
-	m.data.SetName("oracledb.redo.buffer_allocation.retries")
-	m.data.SetDescription("Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.")
-	m.data.SetUnit("{retries}")
+	m.data.SetName("oracledb.redo.buffer_allocation_retries")
+	m.data.SetDescription("Number of times a process waited and retried to allocate space in the redo buffer.")
+	m.data.SetUnit("{retry}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3262,11 +3262,11 @@ type metricOracledbRedoLogSpaceRequests struct {
 	capacity int                                      // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.redo.log_space.requests metric with initial data.
+// init fills oracledb.redo.log_space_requests metric with initial data.
 func (m *metricOracledbRedoLogSpaceRequests) init() {
-	m.data.SetName("oracledb.redo.log_space.requests")
-	m.data.SetDescription("Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').")
-	m.data.SetUnit("{requests}")
+	m.data.SetName("oracledb.redo.log_space_requests")
+	m.data.SetDescription("Number of times a process requested space in the redo log buffer and had to wait.")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3318,8 +3318,8 @@ type metricOracledbRedoOperations struct {
 // init fills oracledb.redo.operations metric with initial data.
 func (m *metricOracledbRedoOperations) init() {
 	m.data.SetName("oracledb.redo.operations")
-	m.data.SetDescription("Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').")
-	m.data.SetUnit("{operations}")
+	m.data.SetDescription("Number of redo I/O operations, by I/O direction.")
+	m.data.SetUnit("{operation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3408,7 +3408,7 @@ type metricOracledbRedoSize struct {
 // init fills oracledb.redo.size metric with initial data.
 func (m *metricOracledbRedoSize) init() {
 	m.data.SetName("oracledb.redo.size")
-	m.data.SetDescription("Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.")
+	m.data.SetDescription("Amount of redo generated.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3461,7 +3461,7 @@ type metricOracledbRedoTime struct {
 // init fills oracledb.redo.time metric with initial data.
 func (m *metricOracledbRedoTime) init() {
 	m.data.SetName("oracledb.redo.time")
-	m.data.SetDescription("Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.")
+	m.data.SetDescription("Time spent in each phase of the redo pipeline.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3470,7 +3470,7 @@ func (m *metricOracledbRedoTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbRedoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbRedoKindAttributeValue string) {
+func (m *metricOracledbRedoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbRedoTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3478,8 +3478,8 @@ func (m *metricOracledbRedoTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbRedoTimeMetricAttributeKeyOracledbRedoKind) {
-		dp.Attributes().PutStr("oracledb.redo.kind", oracledbRedoKindAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbRedoTimeMetricAttributeKeyOracledbRedoType) {
+		dp.Attributes().PutStr("oracledb.redo.type", oracledbRedoTypeAttributeValue)
 	}
 
 	var s string
@@ -5314,7 +5314,7 @@ func (mb *MetricsBuilder) RecordOracledbRedoBlocksDataPoint(ts pcommon.Timestamp
 	return nil
 }
 
-// RecordOracledbRedoBufferAllocationRetriesDataPoint adds a data point to oracledb.redo.buffer_allocation.retries metric.
+// RecordOracledbRedoBufferAllocationRetriesDataPoint adds a data point to oracledb.redo.buffer_allocation_retries metric.
 func (mb *MetricsBuilder) RecordOracledbRedoBufferAllocationRetriesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
@@ -5324,7 +5324,7 @@ func (mb *MetricsBuilder) RecordOracledbRedoBufferAllocationRetriesDataPoint(ts 
 	return nil
 }
 
-// RecordOracledbRedoLogSpaceRequestsDataPoint adds a data point to oracledb.redo.log_space.requests metric.
+// RecordOracledbRedoLogSpaceRequestsDataPoint adds a data point to oracledb.redo.log_space_requests metric.
 func (mb *MetricsBuilder) RecordOracledbRedoLogSpaceRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
@@ -5355,8 +5355,8 @@ func (mb *MetricsBuilder) RecordOracledbRedoSizeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordOracledbRedoTimeDataPoint adds a data point to oracledb.redo.time metric.
-func (mb *MetricsBuilder) RecordOracledbRedoTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbRedoKindAttributeValue AttributeOracledbRedoKind) {
-	mb.metricOracledbRedoTime.recordDataPoint(mb.startTime, ts, val, oracledbRedoKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordOracledbRedoTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbRedoTypeAttributeValue AttributeOracledbRedoType) {
+	mb.metricOracledbRedoTime.recordDataPoint(mb.startTime, ts, val, oracledbRedoTypeAttributeValue.String())
 }
 
 // RecordOracledbRedoAllocationUtilizationDataPoint adds a data point to oracledb.redo_allocation.utilization metric.

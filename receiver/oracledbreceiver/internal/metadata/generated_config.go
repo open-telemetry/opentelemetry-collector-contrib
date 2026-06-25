@@ -1111,7 +1111,7 @@ func (ms *OracledbRedoBlocksMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbRedoBufferAllocationRetriesMetricConfig provides config for the oracledb.redo.buffer_allocation.retries metric.
+// OracledbRedoBufferAllocationRetriesMetricConfig provides config for the oracledb.redo.buffer_allocation_retries metric.
 type OracledbRedoBufferAllocationRetriesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -1131,7 +1131,7 @@ func (ms *OracledbRedoBufferAllocationRetriesMetricConfig) Unmarshal(parser *con
 	return nil
 }
 
-// OracledbRedoLogSpaceRequestsMetricConfig provides config for the oracledb.redo.log_space.requests metric.
+// OracledbRedoLogSpaceRequestsMetricConfig provides config for the oracledb.redo.log_space_requests metric.
 type OracledbRedoLogSpaceRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -1223,7 +1223,7 @@ func (ms *OracledbRedoSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 type OracledbRedoTimeMetricAttributeKey string
 
 const (
-	OracledbRedoTimeMetricAttributeKeyOracledbRedoKind OracledbRedoTimeMetricAttributeKey = "oracledb.redo.kind"
+	OracledbRedoTimeMetricAttributeKeyOracledbRedoType OracledbRedoTimeMetricAttributeKey = "oracledb.redo.type"
 )
 
 // OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric.
@@ -1252,9 +1252,9 @@ func (ms *OracledbRedoTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbRedoTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbRedoTimeMetricAttributeKeyOracledbRedoKind:
+		case OracledbRedoTimeMetricAttributeKeyOracledbRedoType:
 		default:
-			return fmt.Errorf("metric oracledb.redo.time doesn't have an attribute %v, valid attributes: [oracledb.redo.kind]", val)
+			return fmt.Errorf("metric oracledb.redo.time doesn't have an attribute %v, valid attributes: [oracledb.redo.type]", val)
 		}
 	}
 
@@ -1759,8 +1759,8 @@ type MetricsConfig struct {
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
-	OracledbRedoBufferAllocationRetries           OracledbRedoBufferAllocationRetriesMetricConfig           `mapstructure:"oracledb.redo.buffer_allocation.retries"`
-	OracledbRedoLogSpaceRequests                  OracledbRedoLogSpaceRequestsMetricConfig                  `mapstructure:"oracledb.redo.log_space.requests"`
+	OracledbRedoBufferAllocationRetries           OracledbRedoBufferAllocationRetriesMetricConfig           `mapstructure:"oracledb.redo.buffer_allocation_retries"`
+	OracledbRedoLogSpaceRequests                  OracledbRedoLogSpaceRequestsMetricConfig                  `mapstructure:"oracledb.redo.log_space_requests"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
 	OracledbRedoSize                              OracledbRedoSizeMetricConfig                              `mapstructure:"oracledb.redo.size"`
 	OracledbRedoTime                              OracledbRedoTimeMetricConfig                              `mapstructure:"oracledb.redo.time"`
@@ -1954,7 +1954,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbRedoTime: OracledbRedoTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoKind},
+			EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoType},
 		},
 		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
 			Enabled: false,

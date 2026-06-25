@@ -464,18 +464,18 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 		}
 	}
 
-	// oracledb.redo.time: centiseconds converted to seconds (value / 100), one data point per redo.kind.
-	assert.InDelta(t, 15.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=write"], floatDelta)
-	assert.InDelta(t, 2.5, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=log_space_wait"], floatDelta)
-	assert.InDelta(t, 9.0, doubleVals["oracledb.redo.time"]["oracledb.redo.kind=synch"], floatDelta)
+	// oracledb.redo.time: centiseconds converted to seconds (value / 100), one data point per redo.type.
+	assert.InDelta(t, 15.0, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=write"], floatDelta)
+	assert.InDelta(t, 2.5, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=log_space_wait"], floatDelta)
+	assert.InDelta(t, 9.0, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=synch"], floatDelta)
 
 	// Standalone redo counters pass v$sysstat VALUE straight through.
-	assert.Equal(t, int64(104857600), intVals["oracledb.redo.size"][""])
+	assert.Equal(t, int64(104857600), intVals[metadata.MetricsInfo.OracledbRedoSize.Name][""])
 	// redo.operations and redo.blocks carry disk.io.direction=write.
-	assert.Equal(t, int64(45000), intVals["oracledb.redo.operations"]["disk.io.direction=write"])
-	assert.Equal(t, int64(210000), intVals["oracledb.redo.blocks"]["disk.io.direction=write"])
-	assert.Equal(t, int64(12), intVals["oracledb.redo.buffer_allocation.retries"][""])
-	assert.Equal(t, int64(34), intVals["oracledb.redo.log_space.requests"][""])
+	assert.Equal(t, int64(45000), intVals[metadata.MetricsInfo.OracledbRedoOperations.Name]["disk.io.direction=write"])
+	assert.Equal(t, int64(210000), intVals[metadata.MetricsInfo.OracledbRedoBlocks.Name]["disk.io.direction=write"])
+	assert.Equal(t, int64(12), intVals[metadata.MetricsInfo.OracledbRedoBufferAllocationRetries.Name][""])
+	assert.Equal(t, int64(34), intVals[metadata.MetricsInfo.OracledbRedoLogSpaceRequests.Name][""])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

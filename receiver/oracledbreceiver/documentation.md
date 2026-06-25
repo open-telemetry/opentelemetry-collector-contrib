@@ -509,11 +509,11 @@ Total size of the recycle bin.
 
 ### oracledb.redo.blocks
 
-Number of redo blocks moved between the redo log and storage, by I/O direction. disk.io.direction=write counts redo blocks written to the redo log (v$sysstat 'redo blocks written').
+Number of redo blocks moved between the redo log and storage, by I/O direction.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {blocks} | Sum | Int | Cumulative | true | Development |
+| {block} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -521,29 +521,29 @@ Number of redo blocks moved between the redo log and storage, by I/O direction. 
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
-### oracledb.redo.buffer_allocation.retries
+### oracledb.redo.buffer_allocation_retries
 
-Number of times a process waited and retried to allocate space in the redo buffer because the log writer had not finished flushing it (v$sysstat 'redo buffer allocation retries'). A rising value indicates redo buffer or log writer contention.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {retries} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.redo.log_space.requests
-
-Number of times a process requested space in the redo log buffer and had to wait for a log switch or available space (v$sysstat 'redo log space requests').
+Number of times a process waited and retried to allocate space in the redo buffer.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {retry} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.log_space_requests
+
+Number of times a process requested space in the redo log buffer and had to wait.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.redo.operations
 
-Number of redo I/O operations, by direction. disk.io.direction=write counts redo write operations performed by the log writer (LGWR) to the redo log files (v$sysstat 'redo writes').
+Number of redo I/O operations, by I/O direction.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -553,7 +553,7 @@ Number of redo I/O operations, by direction. disk.io.direction=write counts redo
 
 ### oracledb.redo.size
 
-Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical redo write-throughput baseline.
+Amount of redo generated.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -561,7 +561,7 @@ Total amount of redo generated, in bytes (v$sysstat 'redo size'). The canonical 
 
 ### oracledb.redo.time
 
-Cumulative time, in seconds, spent in each phase of the redo pipeline (converted from v$sysstat centiseconds). High write/synch time directly raises commit latency.
+Time spent in each phase of the redo pipeline.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -571,7 +571,7 @@ Cumulative time, in seconds, spent in each phase of the redo pipeline (converted
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.redo.kind | The redo-pipeline phase that a redo time measurement is attributed to (write = redo writer I/O, log_space_wait = waits for available redo log space, synch = foreground redo synch on commit). | Str: ``write``, ``log_space_wait``, ``synch`` | Recommended | - |
+| oracledb.redo.type | The phase of the redo pipeline that a redo time measurement is attributed to. | Str: ``write``, ``log_space_wait``, ``synch`` | Recommended | - |
 
 ### oracledb.redo_allocation.utilization
 
