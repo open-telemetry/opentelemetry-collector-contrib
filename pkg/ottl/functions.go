@@ -429,17 +429,17 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		}
 
 		var val any
-		var manager optionalManager
+		var optionalArg reflectTypedArg
 		var err error
 		var ok bool
 		if isOptional {
-			manager, ok = field.Interface().(optionalManager)
+			optionalArg, ok = field.Addr().Interface().(reflectTypedArg)
 
 			if !ok {
 				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
 			}
 
-			fieldType = manager.get().Type()
+			fieldType = optionalArg.reflectTypeParam()
 		}
 
 		switch {
@@ -453,11 +453,40 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			default:
 				return errors.New("invalid function name given")
 			}
-			f, ok := p.functions[name]
+			var f Factory[K]
+			f, ok = p.functions[name]
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
+		case strings.HasPrefix(fieldType.Name(), "SliceGetter"):
+			var fieldAddr reflectTypedArg
+			if isOptional {
+				fieldAddr, ok = optionalArg.addrReflectValue().(reflectTypedArg)
+			} else {
+				fieldAddr, ok = field.Addr().Interface().(reflectTypedArg)
+			}
+			if !ok {
+				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in the OTTL")
+			}
+
+			var gv any
+			gv, err = buildSliceGetterValue[K](
+				arg.Value,
+				fieldAddr.reflectTypeParam(),
+				p.buildSliceArg,
+				p.buildStandardGetSetter,
+				p.newGetter,
+			)
+			if err != nil {
+				return err
+			}
+
+			err = fieldAddr.setReflectValue(reflect.ValueOf(gv))
+			if err != nil {
+				return err
+			}
+			val = reflect.ValueOf(fieldAddr).Elem().Interface()
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
@@ -467,7 +496,10 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
 		if isOptional {
-			field.Set(manager.set(val))
+			err = optionalArg.setReflectValue(reflect.ValueOf(val))
+			if err != nil {
+				return err
+			}
 		} else {
 			field.Set(reflect.ValueOf(val))
 		}
@@ -589,119 +621,58 @@ func (p *parseContext[K]) buildGetSetterFromPath(path *path) (GetSetter[K], erro
 	return arg, nil
 }
 
+func (*parseContext[K]) buildStandardGetSetter(name string, valueGetter Getter[K]) (any, error) {
+	switch {
+	case
+		strings.HasPrefix(name, "Getter"),
+		strings.HasPrefix(name, "Setter"),
+		strings.HasPrefix(name, "GetSetter"):
+		return valueGetter, nil
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		if setter, ok := any(valueGetter).(GetSetter[K]); ok {
+			return newStandardPMapGetSetter(setter)
+		}
+		return nil, fmt.Errorf("type %q is not a GetSetter and cannot be used as PMapGetSetter", name)
+	case strings.HasPrefix(name, "PSliceGetSetter"):
+		if setter, ok := any(valueGetter).(GetSetter[K]); ok {
+			return newStandardPSliceGetSetter(setter)
+		}
+		return nil, fmt.Errorf("type %q is not a GetSetter and cannot be used as PSliceGetSetter", name)
+	case strings.HasPrefix(name, "StringGetter"):
+		return newStandardStringGetter[K](valueGetter)
+	case strings.HasPrefix(name, "StringLikeGetter"):
+		return newStandardStringLikeGetter[K](valueGetter)
+	case strings.HasPrefix(name, "FloatGetter"):
+		return newStandardFloatGetter[K](valueGetter)
+	case strings.HasPrefix(name, "FloatLikeGetter"):
+		return newStandardFloatLikeGetter[K](valueGetter)
+	case strings.HasPrefix(name, "IntGetter"):
+		return newStandardIntGetter[K](valueGetter)
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		return newStandardIntLikeGetter[K](valueGetter)
+	case strings.HasPrefix(name, "PMapGetter"):
+		return newStandardPMapGetter[K](valueGetter)
+	case strings.HasPrefix(name, "PSliceGetter"):
+		return newStandardPSliceGetter[K](valueGetter)
+	case strings.HasPrefix(name, "DurationGetter"):
+		return newStandardDurationGetter[K](valueGetter)
+	case strings.HasPrefix(name, "TimeGetter"):
+		return newStandardTimeGetter[K](valueGetter)
+	case strings.HasPrefix(name, "BoolGetter"):
+		return newStandardBoolGetter[K](valueGetter)
+	case strings.HasPrefix(name, "BoolLikeGetter"):
+		return newStandardBoolLikeGetter[K](valueGetter)
+	case strings.HasPrefix(name, "ByteSliceLikeGetter"):
+		return newStandardByteSliceLikeGetter[K](valueGetter)
+	default:
+		return nil, fmt.Errorf("unsupported argument type: %s", name)
+	}
+}
+
 // Handle interfaces that can be passed as arguments to OTTL functions.
 func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
-	case strings.HasPrefix(name, "Setter"),
-		strings.HasPrefix(name, "GetSetter"):
-		if argVal.Literal != nil && argVal.Literal.Path != nil {
-			return p.buildGetSetterFromPath(argVal.Literal.Path)
-		}
-		return nil, errors.New("must be a path")
-	case strings.HasPrefix(name, "Getter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return arg, nil
-	case strings.HasPrefix(name, "StringGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardStringGetter[K](arg)
-	case strings.HasPrefix(name, "StringLikeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardStringLikeGetter[K](arg)
-	case strings.HasPrefix(name, "FloatGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardFloatGetter[K](arg)
-	case strings.HasPrefix(name, "FloatLikeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardFloatLikeGetter[K](arg)
-	case strings.HasPrefix(name, "IntGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardIntGetter[K](arg)
-	case strings.HasPrefix(name, "IntLikeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardIntLikeGetter[K](arg)
-	case strings.HasPrefix(name, "PMapGetSetter"):
-		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, errors.New("must be a path")
-		}
-		pathGetSetter, err := p.buildGetSetterFromPath(argVal.Literal.Path)
-		if err != nil {
-			return nil, err
-		}
-		stdMapGetter := StandardPMapGetter[K]{Getter: pathGetSetter.Get}
-		return StandardPMapGetSetter[K]{Getter: stdMapGetter.Get, Setter: pathGetSetter.Set}, nil
-	case strings.HasPrefix(name, "PMapGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardPMapGetter[K](arg)
-	case strings.HasPrefix(name, "PSliceGetSetter"):
-		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, errors.New("must be a path")
-		}
-		pathGetSetter, err := p.buildGetSetterFromPath(argVal.Literal.Path)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardPSliceGetSetter[K](pathGetSetter)
-	case strings.HasPrefix(name, "PSliceGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardPSliceGetter[K](arg)
-	case strings.HasPrefix(name, "DurationGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardDurationGetter[K](arg)
-	case strings.HasPrefix(name, "TimeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardTimeGetter[K](arg)
-	case strings.HasPrefix(name, "BoolGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardBoolGetter[K](arg)
-	case strings.HasPrefix(name, "BoolLikeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardBoolLikeGetter[K](arg)
-	case strings.HasPrefix(name, "ByteSliceLikeGetter"):
-		arg, err := p.newGetter(argVal)
-		if err != nil {
-			return nil, err
-		}
-		return newStandardByteSliceLikeGetter[K](arg)
 	case name == "Enum":
 		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
@@ -737,30 +708,47 @@ func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, err
 			return nil, err
 		}
 		return *lambExpr, nil
+	case strings.HasSuffix(stripGenericArgs(name), "Setter"):
+		if argVal.Literal == nil || argVal.Literal.Path == nil {
+			return nil, errors.New("must be a path")
+		}
+		getter, err := p.buildGetSetterFromPath(argVal.Literal.Path)
+		if err != nil {
+			return nil, err
+		}
+		return p.buildStandardGetSetter(name, getter)
 	default:
-		return nil, fmt.Errorf("unsupported argument type: %s", name)
+		getter, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return p.buildStandardGetSetter(name, getter)
 	}
+}
+
+func stripGenericArgs(name string) string {
+	baseName, _, _ := strings.Cut(name, "[")
+	return baseName
 }
 
 type buildArgFunc func(value, reflect.Type) (any, error)
 
-func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc, name string) (any, error) {
+func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc, name string) ([]T, error) {
 	if argVal.List == nil {
 		return nil, fmt.Errorf("must be a list of type %v", name)
 	}
 
-	vals := []T{}
+	vals := make([]T, 0, len(argVal.List.Values))
 	values := argVal.List.Values
-	for j := range values {
-		untypedVal, err := buildArg(values[j], argType.Elem())
+	for i := range values {
+		untypedVal, err := buildArg(values[i], argType.Elem())
 		if err != nil {
-			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", i, err)
 		}
 
 		val, ok := untypedVal.(T)
-
 		if !ok {
-			return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
+			return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", i, name)
 		}
 
 		vals = append(vals, val)
@@ -821,18 +809,16 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 	return result, nil
 }
 
-// optionalManager provides a way for the parser to handle Optional[T] structs
-// without needing to know the concrete type of T, which is inaccessible through
-// the reflect package.
-// Would likely be resolved by https://github.com/golang/go/issues/54393.
-type optionalManager interface {
-	// set takes a non-reflection value and returns a reflect.Value of
-	// an Optional[T] struct with this value set.
-	set(val any) reflect.Value
-
-	// get returns a reflect.Value value of the value contained within
-	// an Optional[T]. This allows obtaining a reflect.Type for T.
-	get() reflect.Value
+// reflectTypedArg is implemented by generic OTTL function argument types that expose
+// their type parameter at runtime for reflection-based parsing.
+type reflectTypedArg interface {
+	// reflectTypeParam returns the generic type parameter at runtime.
+	reflectTypeParam() reflect.Type
+	// setReflectValue stores val into this argument.
+	setReflectValue(val reflect.Value) error
+	// addrReflectValue returns a pointer to the underlying stored value when it can be
+	// modified in place. Returns nil if there is no addressable underlying value.
+	addrReflectValue() any
 }
 
 // Optional is used to represent an optional function argument
@@ -841,39 +827,43 @@ type Optional[T any] struct {
 	hasValue bool
 }
 
-// This is called only by reflection.
-func (Optional[T]) set(val any) reflect.Value {
-	return reflect.ValueOf(Optional[T]{
-		val:      val.(T),
-		hasValue: true,
-	})
+var _ reflectTypedArg = (*Optional[any])(nil)
+
+func (*Optional[T]) reflectTypeParam() reflect.Type {
+	return reflect.TypeFor[T]()
+}
+
+func (o *Optional[T]) setReflectValue(val reflect.Value) error {
+	typedVal, ok := val.Interface().(T)
+	if !ok {
+		return fmt.Errorf("cannot set value of type %q to an Optional of type %q", val.Type(), reflect.TypeFor[T]())
+	}
+	o.val = typedVal
+	o.hasValue = true
+	return nil
+}
+
+func (o *Optional[T]) addrReflectValue() any {
+	return &o.val
 }
 
 // IsEmpty returns true if the Optional[T] does not contain a value.
-func (o Optional[T]) IsEmpty() bool {
+func (o *Optional[T]) IsEmpty() bool {
 	return !o.hasValue
 }
 
 // Get returns the value contained in the Optional[T].
-func (o Optional[T]) Get() T {
+func (o *Optional[T]) Get() T {
 	return o.val
 }
 
 // GetOr returns the value contained in the Optional[T] if it exists,
 // otherwise it returns the default value provided.
-func (o Optional[T]) GetOr(value T) T {
+func (o *Optional[T]) GetOr(value T) T {
 	if !o.hasValue {
 		return value
 	}
 	return o.val
-}
-
-func (o Optional[T]) get() reflect.Value {
-	// `(reflect.Value).Call` will create a reflect.Value containing a zero-valued T.
-	// Trying to create a reflect.Value for T by calling reflect.TypeOf or
-	// reflect.ValueOf on an empty T value creates an invalid reflect.Value object,
-	// the `Call` method appears to do extra processing to capture the type.
-	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
 }
 
 // NewTestingOptional allows creating an Optional with a value already populated for use in testing

@@ -1092,6 +1092,69 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "slicegetter literal list arg",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{String: ottltest.Strp("a")},
+									{String: ottltest.Strp("b")},
+									{String: ottltest.Strp("c")},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "slicegetter empty list arg",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{},
+							},
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "optional slicegetter with list",
+			inv: editor{
+				Function: "testing_optional_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{String: ottltest.Strp("a")},
+									{String: ottltest.Strp("b")},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "optional slicegetter omitted",
+			inv: editor{
+				Function:  "testing_optional_slicegetter",
+				Arguments: []argument{},
+			},
+			want: 0,
+		},
+		{
 			name: "stringlikegetter slice arg",
 			inv: editor{
 				Function: "testing_stringlikegetter_slice",
@@ -2361,6 +2424,38 @@ func functionWithGetterSlice(getters []Getter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type sliceGetterArguments struct {
+	Values SliceGetter[any, StringGetter[any]]
+}
+
+func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		vals, err := values.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
+	}, nil
+}
+
+type optionalSliceGetterArguments struct {
+	Values Optional[SliceGetter[any, Getter[any]]]
+}
+
+func functionWithOptionalSliceGetter(values Optional[SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		if values.IsEmpty() {
+			return 0, nil
+		}
+		sliceGetter := values.Get()
+		vals, err := sliceGetter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
+	}, nil
+}
+
 type stringGetterSliceArguments struct {
 	StringGetters []StringGetter[any]
 }
@@ -2817,6 +2912,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_getter_slice",
 			&getterSliceArguments{},
 			functionWithGetterSlice,
+		),
+		createFactory[any](
+			"testing_slicegetter",
+			&sliceGetterArguments{},
+			functionWithSliceGetter,
+		),
+		createFactory[any](
+			"testing_optional_slicegetter",
+			&optionalSliceGetterArguments{},
+			functionWithOptionalSliceGetter,
 		),
 		createFactory[any](
 			"testing_stringgetter_slice",
