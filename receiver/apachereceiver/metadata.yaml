@@ -143,15 +143,6 @@ metrics:
       value_type: double
       input_type: string
     attributes: []
-  apache.request.bandwidth.rate:
-    enabled: true
-    stability: development
-    description: Average number of bytes transmitted per second since the server was started, as reported by mod_status.
-    unit: "By/s"
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: []
   apache.request.rate:
     enabled: true
     stability: development
@@ -206,6 +197,15 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  apache.traffic.rate:
+    enabled: true
+    stability: development
+    description: Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+    unit: "By/s"
+    gauge:
+      value_type: double
+      input_type: string
     attributes: []
   apache.uptime:
     enabled: true

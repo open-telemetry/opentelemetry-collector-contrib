@@ -44,7 +44,7 @@ resources:
               unit: '{connections}'
               temporality: cumulative
               monotonic: false
-            - name: apache.request.bandwidth.rate
+            - name: apache.traffic.rate
               type: gauge
               unit: By/s
             - name: apache.load.1

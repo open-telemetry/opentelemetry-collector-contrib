@@ -108,10 +108,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheLoad5DataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheRequestBandwidthRateDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordApacheRequestRateDataPoint(ts, "1")
 
 			defaultMetricsCount++
@@ -129,6 +125,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheTrafficDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordApacheTrafficRateDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheUptimeDataPoint(ts, "1")
@@ -331,18 +331,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "apache.request.bandwidth.rate":
-					assert.False(t, validatedMetrics["apache.request.bandwidth.rate"], "Found a duplicate in the metrics slice: apache.request.bandwidth.rate")
-					validatedMetrics["apache.request.bandwidth.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Average number of bytes transmitted per second since the server was started, as reported by mod_status.", mi.Description())
-					assert.Equal(t, "By/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.request.rate":
 					assert.False(t, validatedMetrics["apache.request.rate"], "Found a duplicate in the metrics slice: apache.request.rate")
 					validatedMetrics["apache.request.rate"] = true
@@ -441,6 +429,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "apache.traffic.rate":
+					assert.False(t, validatedMetrics["apache.traffic.rate"], "Found a duplicate in the metrics slice: apache.traffic.rate")
+					validatedMetrics["apache.traffic.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Average number of bytes transmitted per second since the server was started, as reported by mod_status.", mi.Description())
+					assert.Equal(t, "By/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.uptime":
 					assert.False(t, validatedMetrics["apache.uptime"], "Found a duplicate in the metrics slice: apache.uptime")
 					validatedMetrics["apache.uptime"] = true
