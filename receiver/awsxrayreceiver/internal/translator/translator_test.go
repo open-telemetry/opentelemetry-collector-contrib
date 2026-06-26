@@ -14,12 +14,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 type perSpanProperties struct {
@@ -48,14 +50,20 @@ type eventProps struct {
 func TestTranslation(t *testing.T) {
 	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
-		assert.NoError(t, m.FromRaw(map[string]any{
+		raw := map[string]any{
 			"http.method":                         *seg.HTTP.Request.Method,
-			"http.client_ip":                      *seg.HTTP.Request.ClientIP,
 			"http.user_agent":                     *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
 			"http.status_code":                    *seg.HTTP.Response.Status,
 			"http.url":                            *seg.HTTP.Request.URL,
-		}))
+		}
+		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			raw["http.client_ip"] = *seg.HTTP.Request.ClientIP
+		}
+		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			raw["client.address"] = *seg.HTTP.Request.ClientIP
+		}
+		assert.NoError(t, m.FromRaw(raw))
 		return m
 	}
 
@@ -997,40 +1005,52 @@ func TestTranslation(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.testCase, func(t *testing.T) {
-			content, err := os.ReadFile(tc.samplePath)
-			assert.NoError(t, err, "cannot read raw segment")
-			assert.NotEmpty(t, content, "content length is 0")
+		for _, emitV0 := range []bool{true, false} {
+			for _, emitV1 := range []bool{true, false} {
+				if !emitV0 && !emitV1 {
+					continue
+				}
+				t.Run(fmt.Sprintf("%s/emitV0=%t/emitV1=%t", tc.testCase, emitV0, emitV1), func(t *testing.T) {
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), !emitV0))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), emitV1))
 
-			var (
-				actualSeg  awsxray.Segment
-				expectedRs ptrace.ResourceSpans
-			)
-			if !tc.expectedUnmarshallFailure {
-				err = json.Unmarshal(content, &actualSeg)
-				// the correctness of the actual segment
-				// has been verified in the tracesegment_test.go
-				assert.NoError(t, err, "failed to unmarshal raw segment")
-				expectedRs = initResourceSpans(t,
-					&actualSeg,
-					tc.expectedResourceAttrs(&actualSeg),
-					tc.propsPerSpan(t, tc.testCase, &actualSeg),
-				)
-			}
+					content, err := os.ReadFile(tc.samplePath)
+					assert.NoError(t, err, "cannot read raw segment")
+					assert.NotEmpty(t, content, "content length is 0")
 
-			recorder := telemetry.NewRecorder()
-			traces, totalSpanCount, err := ToTraces(content, recorder)
-			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
-				assert.Equal(t, totalSpanCount,
-					expectedRs.ScopeSpans().At(0).Spans().Len(),
-					"generated span count is different from the expected",
-				)
+					var (
+						actualSeg  awsxray.Segment
+						expectedRs ptrace.ResourceSpans
+					)
+					if !tc.expectedUnmarshallFailure {
+						err = json.Unmarshal(content, &actualSeg)
+						// the correctness of the actual segment
+						// has been verified in the tracesegment_test.go
+						assert.NoError(t, err, "failed to unmarshal raw segment")
+						expectedRs = initResourceSpans(t,
+							&actualSeg,
+							tc.expectedResourceAttrs(&actualSeg),
+							tc.propsPerSpan(t, tc.testCase, &actualSeg),
+						)
+					}
+
+					recorder := telemetry.NewRecorder()
+					traces, totalSpanCount, err := ToTraces(content, recorder)
+					if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
+						assert.Equal(t, totalSpanCount,
+							expectedRs.ScopeSpans().At(0).Spans().Len(),
+							"generated span count is different from the expected",
+						)
+					}
+					tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
+					record := recorder.Rotate()
+					assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
+					assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), false))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), false))
+				})
 			}
-			tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
-			record := recorder.Rotate()
-			assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
-			assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
-		})
+		}
 	}
 }
 

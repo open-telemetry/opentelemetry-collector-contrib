@@ -8,9 +8,11 @@ import (
 	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
 	conventionsv120 "go.opentelemetry.io/otel/semconv/v1.20.0"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
@@ -26,7 +28,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
-			attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventions.ClientAddressKey), *req.ClientIP)
+			}
 		}
 
 		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
