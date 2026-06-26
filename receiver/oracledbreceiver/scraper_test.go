@@ -415,8 +415,8 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	cfg.Metrics.OracledbRedoSize.Enabled = true
 	cfg.Metrics.OracledbRedoOperations.Enabled = true
 	cfg.Metrics.OracledbRedoBlocks.Enabled = true
-	cfg.Metrics.OracledbRedoBufferAllocationRetries.Enabled = true
-	cfg.Metrics.OracledbRedoLogSpaceRequests.Enabled = true
+	cfg.Metrics.OracledbRedoRequests.Enabled = true
+	cfg.Metrics.OracledbRedoRetries.Enabled = true
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
@@ -474,8 +474,9 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	// redo.operations and redo.blocks carry disk.io.direction=write.
 	assert.Equal(t, int64(45000), intVals[metadata.MetricsInfo.OracledbRedoOperations.Name]["disk.io.direction=write"])
 	assert.Equal(t, int64(210000), intVals[metadata.MetricsInfo.OracledbRedoBlocks.Name]["disk.io.direction=write"])
-	assert.Equal(t, int64(12), intVals[metadata.MetricsInfo.OracledbRedoBufferAllocationRetries.Name][""])
-	assert.Equal(t, int64(34), intVals[metadata.MetricsInfo.OracledbRedoLogSpaceRequests.Name][""])
+	// redo.requests and redo.retries each carry a single-value type attribute.
+	assert.Equal(t, int64(34), intVals[metadata.MetricsInfo.OracledbRedoRequests.Name]["oracledb.redo.request.type=log_space"])
+	assert.Equal(t, int64(12), intVals[metadata.MetricsInfo.OracledbRedoRetries.Name]["oracledb.redo.retry.type=buffer_allocation"])
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

@@ -1111,46 +1111,6 @@ func (ms *OracledbRedoBlocksMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbRedoBufferAllocationRetriesMetricConfig provides config for the oracledb.redo.buffer_allocation_retries metric.
-type OracledbRedoBufferAllocationRetriesMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRedoBufferAllocationRetriesMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// OracledbRedoLogSpaceRequestsMetricConfig provides config for the oracledb.redo.log_space_requests metric.
-type OracledbRedoLogSpaceRequestsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRedoLogSpaceRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbRedoOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.operations metric.
 type OracledbRedoOperationsMetricAttributeKey string
 
@@ -1187,6 +1147,102 @@ func (ms *OracledbRedoOperationsMetricConfig) Validate() error {
 		case OracledbRedoOperationsMetricAttributeKeyDiskIoDirection:
 		default:
 			return fmt.Errorf("metric oracledb.redo.operations doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.requests metric.
+type OracledbRedoRequestsMetricAttributeKey string
+
+const (
+	OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType OracledbRedoRequestsMetricAttributeKey = "oracledb.redo.request.type"
+)
+
+// OracledbRedoRequestsMetricConfig provides config for the oracledb.redo.requests metric.
+type OracledbRedoRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoRequestsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoRequestsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType:
+		default:
+			return fmt.Errorf("metric oracledb.redo.requests doesn't have an attribute %v, valid attributes: [oracledb.redo.request.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoRetriesMetricAttributeKey specifies the key of an attribute for the oracledb.redo.retries metric.
+type OracledbRedoRetriesMetricAttributeKey string
+
+const (
+	OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType OracledbRedoRetriesMetricAttributeKey = "oracledb.redo.retry.type"
+)
+
+// OracledbRedoRetriesMetricConfig provides config for the oracledb.redo.retries metric.
+type OracledbRedoRetriesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoRetriesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoRetriesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoRetriesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType:
+		default:
+			return fmt.Errorf("metric oracledb.redo.retries doesn't have an attribute %v, valid attributes: [oracledb.redo.retry.type]", val)
 		}
 	}
 
@@ -1759,9 +1815,9 @@ type MetricsConfig struct {
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
-	OracledbRedoBufferAllocationRetries           OracledbRedoBufferAllocationRetriesMetricConfig           `mapstructure:"oracledb.redo.buffer_allocation_retries"`
-	OracledbRedoLogSpaceRequests                  OracledbRedoLogSpaceRequestsMetricConfig                  `mapstructure:"oracledb.redo.log_space_requests"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
+	OracledbRedoRequests                          OracledbRedoRequestsMetricConfig                          `mapstructure:"oracledb.redo.requests"`
+	OracledbRedoRetries                           OracledbRedoRetriesMetricConfig                           `mapstructure:"oracledb.redo.retries"`
 	OracledbRedoSize                              OracledbRedoSizeMetricConfig                              `mapstructure:"oracledb.redo.size"`
 	OracledbRedoTime                              OracledbRedoTimeMetricConfig                              `mapstructure:"oracledb.redo.time"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
@@ -1937,16 +1993,20 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
 		},
-		OracledbRedoBufferAllocationRetries: OracledbRedoBufferAllocationRetriesMetricConfig{
-			Enabled: false,
-		},
-		OracledbRedoLogSpaceRequests: OracledbRedoLogSpaceRequestsMetricConfig{
-			Enabled: false,
-		},
 		OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
+		},
+		OracledbRedoRequests: OracledbRedoRequestsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoRequestsMetricAttributeKey{OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType},
+		},
+		OracledbRedoRetries: OracledbRedoRetriesMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoRetriesMetricAttributeKey{OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType},
 		},
 		OracledbRedoSize: OracledbRedoSizeMetricConfig{
 			Enabled: false,

@@ -521,22 +521,6 @@ Number of redo blocks moved between the redo log and storage, by I/O direction.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
-### oracledb.redo.buffer_allocation_retries
-
-Number of times a process waited and retried to allocate space in the redo buffer.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {retry} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.redo.log_space_requests
-
-Number of times a process requested space in the redo log buffer and had to wait.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {request} | Sum | Int | Cumulative | true | Development |
-
 ### oracledb.redo.operations
 
 Number of redo I/O operations, by I/O direction.
@@ -550,6 +534,34 @@ Number of redo I/O operations, by I/O direction.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.redo.requests
+
+Number of times a process requested space in the redo log buffer and had to wait.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.request.type | The type of redo log buffer space request. | Str: ``log_space`` | Recommended | - |
+
+### oracledb.redo.retries
+
+Number of times a process waited and retried to allocate space in the redo buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {retry} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.retry.type | The type of redo buffer allocation retry. | Str: ``buffer_allocation`` | Recommended | - |
 
 ### oracledb.redo.size
 

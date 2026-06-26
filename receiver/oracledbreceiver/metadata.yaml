@@ -235,6 +235,14 @@ attributes:
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+  oracledb.redo.request.type:
+    description: The type of redo log buffer space request.
+    type: string
+    enum: [log_space]
+  oracledb.redo.retry.type:
+    description: The type of redo buffer allocation retry.
+    type: string
+    enum: [buffer_allocation]
   oracledb.redo.type:
     description: The phase of the redo pipeline that a redo time measurement is attributed to.
     type: string
@@ -836,26 +844,6 @@ metrics:
       input_type: string
     unit: "{block}"
     attributes: [disk.io.direction]
-  oracledb.redo.buffer_allocation_retries:
-    description: Number of times a process waited and retried to allocate space in the redo buffer.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{retry}"
-  oracledb.redo.log_space_requests:
-    description: Number of times a process requested space in the redo log buffer and had to wait.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{request}"
   oracledb.redo.operations:
     description: Number of redo I/O operations, by I/O direction.
     enabled: false
@@ -867,6 +855,28 @@ metrics:
       input_type: string
     unit: "{operation}"
     attributes: [disk.io.direction]
+  oracledb.redo.requests:
+    description: Number of times a process requested space in the redo log buffer and had to wait.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{request}"
+    attributes: [oracledb.redo.request.type]
+  oracledb.redo.retries:
+    description: Number of times a process waited and retried to allocate space in the redo buffer.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{retry}"
+    attributes: [oracledb.redo.retry.type]
   oracledb.redo.size:
     description: Amount of redo generated.
     enabled: false

@@ -326,8 +326,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoBlocks.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoBufferAllocationRetries.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRedoLogSpaceRequests.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbRedoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoRetries.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -539,11 +539,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoBufferAllocRetries:
-				if err := s.mb.RecordOracledbRedoBufferAllocationRetriesDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoRetriesDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRetryTypeBufferAllocation); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoLogSpaceRequests:
-				if err := s.mb.RecordOracledbRedoLogSpaceRequestsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbRedoRequestsDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRequestTypeLogSpace); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case redoLogSpaceWaitTime:
