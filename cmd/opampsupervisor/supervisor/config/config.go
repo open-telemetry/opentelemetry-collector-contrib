@@ -360,8 +360,9 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -377,8 +378,6 @@ type Telemetry struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
-
-type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
