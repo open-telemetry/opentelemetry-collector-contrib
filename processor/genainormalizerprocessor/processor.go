@@ -22,10 +22,17 @@ import (
 // dst. A nil transformer falls back to a plain src.CopyTo(dst).
 type valueTransformer func(targetKey string, src, dst pcommon.Value)
 
+// attributeAggregator reconstructs structured attributes from multiple
+// flat keys (e.g. flattened OpenInference messages → JSON string).
+type attributeAggregator interface {
+	AggregateAttributes(attrs pcommon.Map, removeOriginals, overwrite bool) bool
+}
+
 // sourceNormalizer holds per-source state used during normalization.
 type sourceNormalizer struct {
 	lookupTable     map[string]string
 	transformValue  valueTransformer
+	aggregators     []attributeAggregator
 	removeOriginals bool
 	overwrite       bool
 }
@@ -43,6 +50,7 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	case SourceOpenInference:
 		sn.lookupTable = openinference.LookupTable
 		sn.transformValue = openinference.Transform
+		sn.aggregators = []attributeAggregator{openinference.MessageAggregator{}}
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
 		sn.transformValue = openllmetry.Transform
@@ -101,6 +109,16 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 // normalizeAttributes applies the source's rename rules to attrs. It returns
 // true if at least one attribute was written.
 func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
+	wrote := false
+
+	// Phase 1: aggregators (reconstruct structured data from flat keys)
+	for _, agg := range sn.aggregators {
+		if agg.AggregateAttributes(attrs, sn.removeOriginals, sn.overwrite) {
+			wrote = true
+		}
+	}
+
+	// Phase 2: simple key renames
 	type rename struct {
 		from string
 		to   string
@@ -115,10 +133,9 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 	})
 
 	if len(renames) == 0 {
-		return false
+		return wrote
 	}
 
-	wrote := false
 	for _, r := range renames {
 		val, ok := attrs.Get(r.from)
 		if !ok {
