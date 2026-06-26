@@ -4478,7 +4478,7 @@ type metricSqlserverTaskCount struct {
 func (m *metricSqlserverTaskCount) init() {
 	m.data.SetName("sqlserver.task.count")
 	m.data.SetDescription("Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.")
-	m.data.SetUnit("“{task}”")
+	m.data.SetUnit("{task}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -4567,7 +4567,7 @@ type metricSqlserverTaskRate struct {
 func (m *metricSqlserverTaskRate) init() {
 	m.data.SetName("sqlserver.task.rate")
 	m.data.SetDescription("Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.")
-	m.data.SetUnit("“{task}/s”")
+	m.data.SetUnit("{task}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]

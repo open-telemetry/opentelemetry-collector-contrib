@@ -751,7 +751,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{task}” | Gauge | Int | Development |
+| {task} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -767,7 +767,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{task}/s” | Gauge | Double | Development |
+| {task}/s | Gauge | Double | Development |
 
 #### Attributes
 

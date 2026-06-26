@@ -972,7 +972,7 @@ metrics:
     enabled: false
     description: Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.
     stability: development
-    unit: “{task}”
+a    unit: "{task}"
     gauge:
       value_type: int
     attributes: [task.state]
@@ -981,7 +981,7 @@ metrics:
     enabled: false
     description: Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.
     stability: development
-    unit: “{task}/s”
+    unit: "{task}/s"
     gauge:
       value_type: double
     attributes: [task.type]
