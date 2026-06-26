@@ -20,8 +20,14 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
+- `langchain` — [LangChain / LangGraph](https://github.com/langchain-ai/langchain) instrumentation
+- `crewai` — [CrewAI](https://github.com/crewAIInc/crewAI) instrumentation
+- `pydanticai` — [PydanticAI](https://github.com/pydantic/pydantic-ai) instrumentation
 
 Any other `name` is a [user-defined source](#user-defined-sources): the entry's `mappings` and `value_mappings` drive the normalization.
+
+> [!NOTE]
+> [Strands](https://github.com/strands-agents/sdk-python) emits `gen_ai.*` attributes natively and needs no source entry. Its spans are already compliant with the OTel GenAI semantic conventions (or are covered by the `openinference` / `openllmetry` sources when those instrumentors are used).
 
 ### Top-level fields
 
@@ -218,6 +224,42 @@ Coverage: this table covers the most common OpenLLMetry attributes. OpenLLMetry 
 OpenLLMetry instrumentation typically emits one of each collision pair (`llm.response.finish_reason` xor `llm.response.stop_reason`; `llm.request.type` xor `traceloop.span.kind`). When both attributes in a pair are present on a span, the resolved value at the target key is undefined.
 
 See [`internal/openllmetry/mappings.go`](./internal/openllmetry/mappings.go) for the canonical map. Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py).
+
+### `langchain`
+
+Attribute renames:
+
+| Source attribute | Target attribute |
+|---|---|
+| `lc.metadata.thread_id` | `gen_ai.conversation.id` |
+| `langgraph.node.name` | `gen_ai.agent.name` |
+
+See [`internal/langchain/mappings.go`](./internal/langchain/mappings.go) for the canonical map.
+
+### `crewai`
+
+Attribute renames:
+
+| Source attribute | Target attribute |
+|---|---|
+| `agent_role` | `gen_ai.agent.name` |
+| `crew_id` | `gen_ai.conversation.id` |
+
+CrewAI's built-in telemetry emits these keys without a `crewai.` prefix. Because the source attributes are unprefixed, enabling this source rewrites any span carrying an `agent_role` or `crew_id` attribute. Sources are opt-in, so this only applies when `crewai` is listed in `sources`.
+
+See [`internal/crewai/mappings.go`](./internal/crewai/mappings.go) for the canonical map.
+
+### `pydanticai`
+
+Attribute renames:
+
+| Source attribute | Target attribute |
+|---|---|
+| `agent_name` | `gen_ai.agent.name` |
+
+PydanticAI's instrumentation emits `agent_name` without a `pydantic_ai.` prefix. As with `crewai`, enabling this source rewrites any span carrying an `agent_name` attribute.
+
+See [`internal/pydanticai/mappings.go`](./internal/pydanticai/mappings.go) for the canonical map.
 
 ### Value transformations
 
