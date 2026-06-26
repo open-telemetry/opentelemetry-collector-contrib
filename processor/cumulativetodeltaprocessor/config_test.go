@@ -4,8 +4,9 @@
 package cumulativetodeltaprocessor
 
 import (
-	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -19,6 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
+
+func TestValidMetricTypeListMatchesMap(t *testing.T) {
+	fromMap := slices.Collect(maps.Keys(validMetricTypes))
+	slices.Sort(fromMap)
+	assert.Equal(t, fromMap, validMetricTypeList)
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -117,11 +124,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_include_metric_type_filter"),
-			errorMessage: fmt.Sprintf("found invalid metric type in include.metric_types: gauge. Valid values are %s", validMetricTypeList),
+			errorMessage: "found invalid metric type in include.metric_types: gauge. Valid values are [exponentialhistogram histogram sum]",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_exclude_metric_type_filter"),
-			errorMessage: fmt.Sprintf("found invalid metric type in exclude.metric_types: Invalid. Valid values are %s", validMetricTypeList),
+			errorMessage: "found invalid metric type in exclude.metric_types: Invalid. Valid values are [exponentialhistogram histogram sum]",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),

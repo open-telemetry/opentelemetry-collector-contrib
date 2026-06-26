@@ -30,13 +30,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
 type Manager struct {
 	settings             receiver.Settings
 	shutdown             chan struct{}
 	cfg                  *Config
-	promCfg              *promconfig.Config
+	promCfg              *sharedpromconfig.Config
 	initialScrapeConfigs []*promconfig.ScrapeConfig
 	scrapeManager        *scrape.Manager
 	discoveryManager     *discovery.Manager
@@ -49,13 +51,13 @@ type Manager struct {
 	configUpdated chan struct{}
 }
 
-func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config) *Manager {
+func NewManager(set receiver.Settings, cfg *Config, promCfg *sharedpromconfig.Config) *Manager {
 	return &Manager{
 		shutdown:             make(chan struct{}),
 		settings:             set,
 		cfg:                  cfg,
 		promCfg:              promCfg,
-		initialScrapeConfigs: promCfg.ScrapeConfigs,
+		initialScrapeConfigs: promCfg.Get().ScrapeConfigs,
 		configUpdateCount:    &atomic.Int64{},
 		configUpdated:        make(chan struct{}, 10),
 	}
@@ -64,7 +66,8 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config) 
 func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Manager, dm *discovery.Manager) error {
 	m.scrapeManager = sm
 	m.discoveryManager = dm
-	err := m.applyCfg()
+	promCfg := m.promCfg.Get()
+	err := m.applyCfg(&promCfg)
 	if err != nil {
 		m.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return err
@@ -141,11 +144,12 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return hash, nil
 	}
 
-	// Copy initial scrape configurations
-	initialConfig := make([]*promconfig.ScrapeConfig, len(m.initialScrapeConfigs))
-	copy(initialConfig, m.initialScrapeConfigs)
+	// Read GlobalConfig under read lock for validation outside the write lock.
+	globalCfg := m.promCfg.Get().GlobalConfig
 
-	m.promCfg.ScrapeConfigs = initialConfig
+	// Build the new scrape configs outside the lock to minimize the critical section.
+	newConfigs := make([]*promconfig.ScrapeConfig, len(m.initialScrapeConfigs))
+	copy(newConfigs, m.initialScrapeConfigs)
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
 		var httpSD promHTTP.SDConfig
@@ -179,17 +183,21 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		}
 
 		// Validate the scrape config and also fill in the defaults from the global config as needed.
-		err = scrapeConfig.Validate(m.promCfg.GlobalConfig)
+		err = scrapeConfig.Validate(globalCfg)
 		if err != nil {
 			m.settings.Logger.Error("Failed to validate the scrape configuration", zap.Error(err))
 			return 0, err
 		}
 
-		m.promCfg.ScrapeConfigs = append(m.promCfg.ScrapeConfigs, scrapeConfig)
+		newConfigs = append(newConfigs, scrapeConfig)
 	}
 
-	err = m.applyCfg()
-	if err != nil {
+	// Hold the write lock only for the config swap for the shared pointer.
+	m.promCfg.Mutate(func(cfg *promconfig.Config) {
+		cfg.ScrapeConfigs = newConfigs
+	})
+	cfgSnapshot := m.promCfg.Get()
+	if err = m.applyCfg(&cfgSnapshot); err != nil {
 		m.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return 0, err
 	}
@@ -204,13 +212,13 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 	return hash, nil
 }
 
-func (m *Manager) applyCfg() error {
-	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+func (m *Manager) applyCfg(cfg *promconfig.Config) error {
+	scrapeConfigs, err := cfg.GetScrapeConfigs()
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
 	}
 
-	if err := m.scrapeManager.ApplyConfig(m.promCfg); err != nil {
+	if err := m.scrapeManager.ApplyConfig(cfg); err != nil {
 		return err
 	}
 
