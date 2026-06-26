@@ -117,7 +117,7 @@ resourceMetrics:
                 - asDouble: 512
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "1632495518500962000"
-            name: apache.request.bandwidth.rate
+            name: apache.traffic.rate
             unit: By/s
           - description: Average number of requests served per second since the server was started, as reported by mod_status.
             gauge:

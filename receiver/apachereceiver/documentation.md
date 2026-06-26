@@ -81,14 +81,6 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### apache.request.bandwidth.rate
-
-Average number of bytes transmitted per second since the server was started, as reported by mod_status.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
-
 ### apache.request.rate
 
 Average number of requests served per second since the server was started, as reported by mod_status.
@@ -136,6 +128,14 @@ Total HTTP server traffic.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
+
+### apache.traffic.rate
+
+Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ### apache.uptime
 

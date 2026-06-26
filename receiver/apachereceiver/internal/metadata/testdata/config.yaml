@@ -17,8 +17,6 @@ all_set:
       enabled: true
     apache.load.5:
       enabled: true
-    apache.request.bandwidth.rate:
-      enabled: true
     apache.request.rate:
       enabled: true
     apache.request.time:
@@ -29,6 +27,8 @@ all_set:
       enabled: true
       attributes: ["state"]
     apache.traffic:
+      enabled: true
+    apache.traffic.rate:
       enabled: true
     apache.uptime:
       enabled: true
@@ -60,8 +60,6 @@ reaggregate_set:
       enabled: true
     apache.load.5:
       enabled: true
-    apache.request.bandwidth.rate:
-      enabled: true
     apache.request.rate:
       enabled: true
     apache.request.time:
@@ -72,6 +70,8 @@ reaggregate_set:
       enabled: true
       attributes: []
     apache.traffic:
+      enabled: true
+    apache.traffic.rate:
       enabled: true
     apache.uptime:
       enabled: true
@@ -103,8 +103,6 @@ none_set:
       enabled: false
     apache.load.5:
       enabled: false
-    apache.request.bandwidth.rate:
-      enabled: false
     apache.request.rate:
       enabled: false
     apache.request.time:
@@ -115,6 +113,8 @@ none_set:
       enabled: false
       attributes: ["state"]
     apache.traffic:
+      enabled: false
+    apache.traffic.rate:
       enabled: false
     apache.uptime:
       enabled: false
