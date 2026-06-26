@@ -28,6 +28,34 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	allSettingsServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	allSettingsServerConfig.WriteTimeout = 0
+	allSettingsServerConfig.ReadHeaderTimeout = 0
+	allSettingsServerConfig.IdleTimeout = 0
+	allSettingsServerConfig.KeepAlivesEnabled = false
+	allSettingsServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8088",
+	}
+
+	tlsServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tlsServerConfig.WriteTimeout = 0
+	tlsServerConfig.ReadHeaderTimeout = 0
+	tlsServerConfig.IdleTimeout = 0
+	tlsServerConfig.KeepAlivesEnabled = false
+	tlsServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8088",
+	}
+	tlsServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "/test.crt",
+			KeyFile:  "/test.key",
+		},
+	})
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -39,12 +67,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:8088",
-					},
-				},
+				ServerConfig: allSettingsServerConfig,
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
@@ -63,18 +86,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:8088",
-					},
-					TLS: configoptional.Some(configtls.ServerConfig{
-						Config: configtls.Config{
-							CertFile: "/test.crt",
-							KeyFile:  "/test.key",
-						},
-					}),
-				},
+				ServerConfig: tlsServerConfig,
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},

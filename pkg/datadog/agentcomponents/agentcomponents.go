@@ -142,7 +142,7 @@ func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, 
 // This function uses the options pattern to allow different modules to configure
 // the component with their specific needs.
 func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
-	pkgconfig := pkgconfigcreate.NewConfig("DD", "")
+	pkgconfig := pkgconfigcreate.NewConfig("DD")
 
 	// Register all standard agent config keys so that subsequent Set calls work
 	// correctly with the nodetreemodel config backend.
