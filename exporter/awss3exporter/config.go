@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 )
 
 const (
@@ -70,6 +72,11 @@ type S3UploaderConfig struct {
 	// If unspecified, a default function will be used that generates a random string.
 	// Valid values are: "uuidv7"
 	UniqueKeyFuncName string `mapstructure:"unique_key_func_name"`
+
+	// Notifications configures optional HTTP webhook notifications sent
+	// after every successful S3 upload. The feature is disabled unless
+	// Notifications.Endpoint is non-empty.
+	Notifications notify.Config `mapstructure:"notifications"`
 }
 
 type MarshalerType string
@@ -151,6 +158,10 @@ func (c *Config) Validate() error {
 
 	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
 		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
+	}
+
+	if err := c.S3Uploader.Notifications.Validate(); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	return errs
 }

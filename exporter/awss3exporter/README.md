@@ -46,6 +46,7 @@ The following exporter configuration parameters are supported.
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
 | `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.                                                                               |                                             |
 | `retry_on_failure`    | see [Retry on Failure](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#retry-on-failure) for the full set of available options.                                                                               |                                             |
+| `notifications`           | optional webhook POSTed after each successful upload; see [Notifications](#notifications). Disabled unless `notifications.endpoint` is set.                                                                                  |                                             |
 
 ### Marshaler
 
@@ -94,6 +95,42 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
   When this option is set, it dynamically overrides `s3uploader/s3_prefix`. 
   If the specified resource attribute exists in the data,  
   its value will be used as the prefix; otherwise, `s3uploader/s3_prefix` will serve as the fallback.
+
+### Notifications
+
+Some object stores don't emit object-created events, and even when they do, you can't always receive them where you need them — network isolation, or S3-compatible systems (for example some NetApp deployments) that simply don't send notifications. The `notifications` block lets the exporter emit the signal itself: after each successful upload it POSTs to an HTTP endpoint you control.
+
+The request body uses the same schema as [AWS S3 Event Notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html) — `{"Records": [...]}` with `s3.bucket.name` and `s3.object.{key,size}` — so a consumer that already understands S3 events can handle it unchanged. Records are batched up to `max_records_per_post` per request and sent as `application/json`.
+
+The feature is disabled unless `notifications.endpoint` is set. Delivery never blocks the upload path: events go onto a bounded in-memory queue drained by a worker pool, and are dropped (and counted in metrics) when the queue is full or the endpoint can't be reached.
+
+`notifications` accepts the standard collector [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) (`endpoint`, `timeout`, `tls`, `headers`, …) plus:
+
+| Name                   | Description                                                       | Default |
+|:-----------------------|:-----------------------------------------------------------------|---------|
+| `endpoint`             | HTTP(s) URL to POST notifications to; empty disables the feature. |         |
+| `timeout`              | per-request timeout.                                              | 10s     |
+| `queue_size`           | events buffered in memory before new events are dropped.         | 10000   |
+| `workers`              | concurrent senders draining the queue.                           | 4       |
+| `max_records_per_post` | records batched into a single POST.                              | 100     |
+| `max_attempts`         | attempts per POST before the batch is dropped.                   | 3       |
+| `initial_backoff`      | backoff before the first retry; grows up to `max_backoff`.       | 1s      |
+| `max_backoff`          | cap on retry backoff.                                             | 30s     |
+
+`headers` may not override `Content-Type` or `Content-Encoding`, and request compression is not supported.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: us-east-1
+      s3_bucket: my-telemetry
+      notifications:
+        endpoint: https://listener.internal/s3-events
+        # optional tuning
+        workers: 8
+        max_records_per_post: 50
+```
 
 # Example Configurations
 
