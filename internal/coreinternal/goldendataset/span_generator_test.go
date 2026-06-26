@@ -145,3 +145,75 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateNetworkConventionsFeatureGates(t *testing.T) {
+	testCases := []struct {
+		name         string
+		dontEmitV0   bool
+		emitV1       bool
+		expectedKeys []string
+		absentKeys   []string
+	}{
+		{
+			name:         "default_v0_only",
+			dontEmitV0:   false,
+			emitV1:       false,
+			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
+			absentKeys:   []string{"network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+		},
+		{
+			name:         "double_publish",
+			dontEmitV0:   false,
+			emitV1:       true,
+			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport", "network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+			absentKeys:   []string{},
+		},
+		{
+			name:         "v1_only",
+			dontEmitV0:   true,
+			emitV1:       true,
+			expectedKeys: []string{"network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+			absentKeys:   []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.ID(), tc.emitV1))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), tc.emitV1))
+
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), false))
+			})
+
+			random := rand.Reader
+			traceID := generateTraceID(random)
+			spanInputs := &PICTSpanInputs{
+				Parent:     SpanParentRoot,
+				Tracestate: TraceStateEmpty,
+				Kind:       SpanKindClient,
+				Attributes: SpanAttrDatabaseSQL,
+				Events:     SpanChildCountEmpty,
+				Links:      SpanChildCountEmpty,
+				Status:     SpanStatusOk,
+			}
+			span := ptrace.NewSpan()
+			fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
+
+			attrs := span.Attributes()
+			for _, k := range tc.expectedKeys {
+				_, ok := attrs.Get(k)
+				assert.True(t, ok, "Expected attribute %s to be present", k)
+			}
+			for _, k := range tc.absentKeys {
+				_, ok := attrs.Get(k)
+				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+		})
+	}
+}
