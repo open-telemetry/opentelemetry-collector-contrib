@@ -17,11 +17,11 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/client v1.61.0
-	go.opentelemetry.io/collector/component v1.61.0
+	go.opentelemetry.io/collector/client v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/component v1.61.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/component/componenttest v0.155.0
-	go.opentelemetry.io/collector/featuregate v1.61.0
-	go.opentelemetry.io/collector/pdata v1.61.0
+	go.opentelemetry.io/collector/featuregate v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/pdata v1.61.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/pdata/pprofile v0.155.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
