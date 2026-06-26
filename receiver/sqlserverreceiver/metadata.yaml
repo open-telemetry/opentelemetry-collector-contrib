@@ -972,7 +972,7 @@ metrics:
     enabled: false
     description: Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.
     stability: development
-a    unit: "{task}"
+    unit: "{task}"
     gauge:
       value_type: int
     attributes: [task.state]
