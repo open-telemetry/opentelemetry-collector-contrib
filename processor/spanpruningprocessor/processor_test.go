@@ -679,6 +679,65 @@ func TestProcessorPreservesOutlierSpans(t *testing.T) {
 	}
 }
 
+// TestProcessorOutlierBudgetSkipsCoveredOutliers verifies that MaxPreservedOutliers
+// is not spent on an outlier already kept by an ancestor's preserved subtree. With
+// a budget of one, the most extreme leaf outlier is a child of the preserved outlier
+// handler, so the budget must go to the next leaf outlier under a normal handler
+// rather than being silently consumed by the already-covered one.
+func TestProcessorOutlierBudgetSkipsCoveredOutliers(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 1
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 5
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithNestedOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ms := int64(1000000)
+	var preservedHandler, preservedLeaf, coveredLeaf bool
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				dur := int64(span.EndTimestamp() - span.StartTimestamp())
+				_, isPreserved := span.Attributes().Get("aggregation.is_preserved_outlier")
+				switch {
+				case span.Name() == "handler" && dur == 2000*ms:
+					assert.True(t, isPreserved, "outlier handler should be a preserved outlier root")
+					preservedHandler = true
+				case span.Name() == "SELECT" && dur == 500*ms:
+					assert.True(t, isPreserved, "leaf outlier under a normal handler should be preserved, not starved by the already-covered outlier")
+					preservedLeaf = true
+				case span.Name() == "SELECT" && dur == 900*ms:
+					// Covered by the handler's preserved subtree: kept, but not a root.
+					assert.False(t, isPreserved, "leaf outlier already covered by an ancestor subtree should not be a preserved root")
+					coveredLeaf = true
+				}
+			}
+		}
+	}
+
+	assert.True(t, preservedHandler, "outlier handler not found in output")
+	assert.True(t, preservedLeaf, "leaf outlier under a normal handler not found in output")
+	assert.True(t, coveredLeaf, "covered leaf outlier (900ms) not found in output")
+}
+
 // TestProcessorSkipsAggregationWhenTooFewNormalSpans tests that aggregation is skipped
 // when preserving outliers would leave too few normal spans to aggregate.
 func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
@@ -864,6 +923,75 @@ func createTestTraceWithManyOutliers(t *testing.T) ptrace.Traces {
 		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
 		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
 		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	return td
+}
+
+// createTestTraceWithNestedOutliers builds a trace with outliers at two levels:
+// one handler is a duration outlier among its siblings (so its whole subtree is
+// preserved), and the SELECT leaf group nested beneath all handlers contains two
+// duration outliers. The most extreme leaf outlier (900ms) is a child of the
+// outlier handler and is therefore already covered by its preserved subtree; the
+// other (500ms) sits under a normal handler.
+func createTestTraceWithNestedOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootID)
+	root.SetName("root")
+	root.SetStartTimestamp(pcommon.Timestamp(baseTime))
+	root.SetEndTimestamp(pcommon.Timestamp(baseTime + 3000*ms))
+
+	// Six handlers under the root. Handler 5 is a clear duration outlier, so its
+	// whole subtree (including its leaf children) is preserved first.
+	handlerDurations := []int64{20, 21, 22, 23, 24, 2000}
+	handlerIDs := make([]pcommon.SpanID, len(handlerDurations))
+	for i, dur := range handlerDurations {
+		id := pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0})
+		handlerIDs[i] = id
+		h := ss.Spans().AppendEmpty()
+		h.SetTraceID(traceID)
+		h.SetSpanID(id)
+		h.SetParentSpanID(rootID)
+		h.SetName("handler")
+		h.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		h.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+	}
+
+	// Two SELECT leaves under each handler. They share one leaf group (keyed by
+	// parent name, depth, and db.operation). The 900ms leaf under the outlier
+	// handler is the most extreme outlier, and the 500ms leaf sits under a normal
+	// handler.
+	leafDurations := [][]int64{
+		{5, 6},
+		{7, 8},
+		{9, 10},
+		{11, 500}, // 500ms outlier under a normal handler
+		{12, 13},
+		{900, 14}, // 900ms outlier under the outlier handler
+	}
+	for hi, durs := range leafDurations {
+		for li, dur := range durs {
+			leaf := ss.Spans().AppendEmpty()
+			leaf.SetTraceID(traceID)
+			leaf.SetSpanID(pcommon.SpanID([8]byte{3, byte(hi), byte(li), 0, 0, 0, 0, 0}))
+			leaf.SetParentSpanID(handlerIDs[hi])
+			leaf.SetName("SELECT")
+			leaf.SetStartTimestamp(pcommon.Timestamp(baseTime))
+			leaf.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+			leaf.Attributes().PutStr("db.operation", "SELECT")
+		}
 	}
 
 	return td

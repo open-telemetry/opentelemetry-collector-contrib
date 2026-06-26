@@ -325,12 +325,23 @@ func (p *spanPruningProcessor) detectAndProtectOutliers(ctx context.Context, gro
 		if !preserve {
 			continue
 		}
-		// filterOutlierNodes applies MaxPreservedOutliers and correlation gating.
-		_, outliers := filterOutlierNodes(group.nodes, res, p.config.OutlierAnalysis)
+		// filterOutlierNodes applies correlation gating and orders outliers most
+		// extreme first. Ask it for all of them (cap 0) and apply
+		// MaxPreservedOutliers here, after dropping outliers already kept by an
+		// enclosing protected subtree. Letting filterOutlierNodes cap first would
+		// spend a budget slot on an already-covered outlier and starve a
+		// not-yet-preserved one further down the order.
+		unlimited := p.config.OutlierAnalysis
+		unlimited.MaxPreservedOutliers = 0
+		_, outliers := filterOutlierNodes(group.nodes, res, unlimited)
+		limit := p.config.OutlierAnalysis.MaxPreservedOutliers
 		for _, o := range outliers {
 			// Skip outliers already kept by an enclosing protected subtree.
 			if o.protected {
 				continue
+			}
+			if limit > 0 && len(protectedRootsByKey[group.key]) >= limit {
+				break
 			}
 			markOutlierSubtree(o)
 			protectedRootsByKey[group.key] = append(protectedRootsByKey[group.key], o)
