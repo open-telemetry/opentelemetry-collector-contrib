@@ -1,11 +1,30 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
         - key: service.instance.id
           value:
-            stringValue: localhost:5432
+            stringValue: 859dc0cd-0be0-5255-b69c-d5c7f3369774
     scopeMetrics:
       - metrics:
+          - description: The number of backends.
+            name: postgresql.backends
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Number of buffers allocated.
             name: postgresql.bgwriter.buffers.allocated
             sum:
@@ -103,142 +122,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: Configured maximum number of client connections allowed
-            gauge:
-              dataPoints:
-                - asInt: "100"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: postgresql.connection.max
-            unit: '{connections}'
-          - description: Number of user databases.
-            name: postgresql.database.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{databases}'
-          - description: The amount of data delayed in replication.
-            gauge:
-              dataPoints:
-                - asInt: "1024"
-                  attributes:
-                    - key: replication_client
-                      value:
-                        stringValue: unix
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: postgresql.replication.data_delay
-            unit: By
-          - description: Age of the oldest WAL file.
-            gauge:
-              dataPoints:
-                - asInt: "3600"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: postgresql.wal.age
-            unit: s
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: service.instance.id
-          value:
-            stringValue: localhost:5432
-    scopeMetrics:
-      - metrics:
-          - description: The number of backends.
-            name: postgresql.backends
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "3"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: "1"
-          - description: The number of commits.
-            name: postgresql.commits
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: "1"
-          - description: The database disk usage.
-            name: postgresql.db_size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "4"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: By
-          - description: The number of rollbacks.
-            name: postgresql.rollbacks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: "1"
-          - description: Number of user tables in a database.
-            name: postgresql.table.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{table}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: postgresql.schema.name
-          value:
-            stringValue: public
-        - key: postgresql.table.name
-          value:
-            stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: localhost:5432
-    scopeMetrics:
-      - metrics:
           - description: The number of blocks read.
             name: postgresql.blocks_read
             sum:
@@ -348,156 +231,6 @@ resourceMetrics:
                         stringValue: toast_read
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: "1"
-          - description: The number of db row operations.
-            name: postgresql.operations
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "41"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: operation
-                      value:
-                        stringValue: del
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "42"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: operation
-                      value:
-                        stringValue: hot_upd
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "39"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "40"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: "1"
-          - description: The number of rows in the database.
-            name: postgresql.rows
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "8"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: state
-                      value:
-                        stringValue: dead
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "7"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: state
-                      value:
-                        stringValue: live
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: "1"
-          - description: Disk space used by a table.
-            name: postgresql.table.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "43"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: By
-          - description: Number of times a table has manually been vacuumed.
-            name: postgresql.table.vacuum.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "44"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{vacuum}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: postgresql.schema.name
-          value:
-            stringValue: public
-        - key: postgresql.table.name
-          value:
-            stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: localhost:5432
-    scopeMetrics:
-      - metrics:
-          - description: The number of blocks read.
-            name: postgresql.blocks_read
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asInt: "28"
                   attributes:
                     - key: db.collection.name
@@ -604,11 +337,171 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The number of commits.
+            name: postgresql.commits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Configured maximum number of client connections allowed
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.connection.max
+            unit: '{connections}'
+          - description: Number of user databases.
+            name: postgresql.database.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{databases}'
+          - description: The database disk usage.
+            name: postgresql.db_size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of index scans on a table.
+            name: postgresql.index.scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "35"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otel_test1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "37"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otel_test2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{scans}'
+          - description: The size of the index on disk.
+            gauge:
+              dataPoints:
+                - asInt: "36"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otel_test1_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "38"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: postgresql.index.name
+                      value:
+                        stringValue: otel_test2_pkey
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.index.size
+            unit: By
           - description: The number of db row operations.
             name: postgresql.operations
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "41"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: del
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "42"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: hot_upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "39"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "40"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: operation
+                      value:
+                        stringValue: upd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "45"
                   attributes:
                     - key: db.collection.name
@@ -663,11 +556,63 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The amount of data delayed in replication.
+            gauge:
+              dataPoints:
+                - asInt: "1024"
+                  attributes:
+                    - key: replication_client
+                      value:
+                        stringValue: unix
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication.data_delay
+            unit: By
+          - description: The number of rollbacks.
+            name: postgresql.rollbacks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
           - description: The number of rows in the database.
             name: postgresql.rows
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "8"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: state
+                      value:
+                        stringValue: dead
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "7"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                    - key: state
+                      value:
+                        stringValue: live
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: db.collection.name
@@ -695,11 +640,34 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: Number of user tables in a database.
+            name: postgresql.table.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{table}'
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "43"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "47"
                   attributes:
                     - key: db.collection.name
@@ -716,6 +684,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "44"
+                  attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
+                    - key: db.namespace
+                      value:
+                        stringValue: otel|public
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "48"
                   attributes:
                     - key: db.collection.name
@@ -728,126 +706,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuum}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: postgresql.index.name
-          value:
-            stringValue: otel_test1_pkey
-        - key: postgresql.schema.name
-          value:
-            stringValue: public
-        - key: postgresql.table.name
-          value:
-            stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: localhost:5432
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "35"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: postgresql.index.name
-                      value:
-                        stringValue: otel_test1_pkey
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
+          - description: Age of the oldest WAL file.
             gauge:
               dataPoints:
-                - asInt: "36"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table1
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: postgresql.index.name
-                      value:
-                        stringValue: otel_test1_pkey
+                - asInt: "3600"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: postgresql.index.size
-            unit: By
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: postgresql.database.name
-          value:
-            stringValue: otel
-        - key: postgresql.index.name
-          value:
-            stringValue: otel_test2_pkey
-        - key: postgresql.schema.name
-          value:
-            stringValue: public
-        - key: postgresql.table.name
-          value:
-            stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: localhost:5432
-    scopeMetrics:
-      - metrics:
-          - description: The number of index scans on a table.
-            name: postgresql.index.scans
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "37"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table2
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: postgresql.index.name
-                      value:
-                        stringValue: otel_test2_pkey
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{scans}'
-          - description: The size of the index on disk.
-            gauge:
-              dataPoints:
-                - asInt: "38"
-                  attributes:
-                    - key: db.collection.name
-                      value:
-                        stringValue: table2
-                    - key: db.namespace
-                      value:
-                        stringValue: otel|public
-                    - key: postgresql.index.name
-                      value:
-                        stringValue: otel_test2_pkey
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: postgresql.index.size
-            unit: By
+            name: postgresql.wal.age
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

@@ -35,6 +35,8 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 	rb.SetPostgresqlTableName("postgresql.table.name-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
 	res := rb.Emit()
 
@@ -143,6 +145,8 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
