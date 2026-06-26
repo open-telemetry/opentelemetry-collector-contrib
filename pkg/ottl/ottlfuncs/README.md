@@ -470,11 +470,11 @@ Examples:
 
 ### truncate_all
 
-`truncate_all(target, limit, Optional[utf8_safe])`
+`truncate_all(target, limit, Optional[utf8_safe], Optional[truncation_marker])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation. `truncation_marker` is an optional string (default: `""`) that is appended to values that are truncated.
 
 The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
 
@@ -482,10 +482,13 @@ This function treats input as valid UTF-8. Truncation is done only at UTF-8 char
 
 When `utf8_safe` is set to `false`, truncation is applied at the byte limit only. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8. This mode is faster but should only be used when preserving valid UTF-8 is not required.
 
+`truncation_marker` is a string that will be appended to any value that has been truncated. The marker counts against the `limit` so the result (including the marker) never exceeds it. If the length of `truncation_marker` is larger than `limit`, `truncate_all` will return an error.
+
 Examples:
 
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
+- `truncate_all(resource.attributes, 50, false, "(...)")`
 
 ## Converters
 
