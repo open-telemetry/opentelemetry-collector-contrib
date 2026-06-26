@@ -124,7 +124,10 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 		})
 		for _, sk := range scopeKeys {
 			sAgg := rAgg.scopes[sk]
-			scope := scopeAssertion{Name: sAgg.name, Version: sAgg.version}
+			scope := scopeAssertion{
+				Name:    sAgg.name,
+				Version: versionMatcher{op: matchExact, value: sAgg.version},
+			}
 
 			metricNames := make([]string, 0, len(sAgg.metrics))
 			for n := range sAgg.metrics {
