@@ -158,6 +158,41 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "v1_no_translation"),
 			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "include_metadata_keys"),
+			expected: &Config{
+				MaxBatchSizeBytes:          3000000,
+				MaxBatchRequestParallelism: nil,
+				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     50 * time.Millisecond,
+					RandomizationFactor: 0.5,
+					Multiplier:          1.5,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+				},
+				RemoteWriteQueue: RemoteWriteQueue{
+					Enabled:      true,
+					QueueSize:    1000,
+					NumConsumers: 5,
+				},
+				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
+				ExternalLabels:      map[string]string{},
+				AddMetricSuffixes:   true,
+				ClientConfig: func() confighttp.ClientConfig {
+					cc := confighttp.NewDefaultClientConfig()
+					cc.Endpoint = "localhost:8888"
+					cc.WriteBufferSize = 512 * 1024
+					cc.Timeout = 5 * time.Second
+					return cc
+				}(),
+				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+				TargetInfo: TargetInfo{
+					Enabled: true,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

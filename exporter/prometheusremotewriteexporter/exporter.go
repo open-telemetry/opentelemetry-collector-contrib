@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -139,6 +141,9 @@ type prwExporter struct {
 	exporterSettings    prometheusremotewrite.Settings
 	telemetry           prwTelemetry
 	RemoteWriteProtoMsg remoteapi.WriteMessageType
+	// includeMetadataKeys lists client metadata keys that are forwarded as
+	// HTTP headers on every outbound remote write request.
+	includeMetadataKeys []string
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -159,6 +164,34 @@ func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry,
 			attribute.String("endpoint", endpointURL.String()),
 		},
 	}, nil
+}
+
+// reservedRemoteWriteHeaders are managed by the remote write protocol itself and
+// must not be overwritten by headers forwarded from client metadata. Keys are
+// stored in canonical MIME form for case-insensitive matching.
+var reservedRemoteWriteHeaders = map[string]struct{}{
+	textproto.CanonicalMIMEHeaderKey("Content-Encoding"):                  {},
+	textproto.CanonicalMIMEHeaderKey("Content-Type"):                      {},
+	textproto.CanonicalMIMEHeaderKey("User-Agent"):                        {},
+	textproto.CanonicalMIMEHeaderKey("X-Prometheus-Remote-Write-Version"): {},
+}
+
+// reservedMetadataKeys drops any include_metadata_keys entries that would
+// collide with headers required by the remote write protocol. Dropped keys are logged
+func reservedMetadataKeys(keys []string, logger *zap.Logger) []string {
+	if len(keys) == 0 {
+		return keys
+	}
+	filtered := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if _, reserved := reservedRemoteWriteHeaders[textproto.CanonicalMIMEHeaderKey(key)]; reserved {
+			logger.Warn("ignoring include_metadata_keys entry that collides with a reserved remote write header",
+				zap.String("key", key))
+			continue
+		}
+		filtered = append(filtered, key)
+	}
+	return filtered
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
@@ -211,6 +244,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
+		includeMetadataKeys: reservedMetadataKeys(cfg.IncludeMetadataKeys, set.Logger),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -454,6 +488,16 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
 			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+		}
+
+		// Forward configured client metadata keys as HTTP headers
+		if len(prwe.includeMetadataKeys) > 0 {
+			md := client.FromContext(ctx).Metadata
+			for _, key := range prwe.includeMetadataKeys {
+				for _, val := range md.Get(key) {
+					req.Header.Add(key, val)
+				}
+			}
 		}
 
 		resp, err := prwe.client.Do(req)
