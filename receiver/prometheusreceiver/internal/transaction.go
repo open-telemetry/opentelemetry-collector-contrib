@@ -125,18 +125,23 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
 		if val == 0.0 {
 			scrapeURL := ""
+			var scrapeErr error
 			if target, ok := scrape.TargetFromContext(t.ctx); ok {
 				scrapeURL = target.URL().String()
+				scrapeErr = target.LastError()
 			}
-			t.logger.Warn("Failed to scrape Prometheus endpoint",
-				zap.String("scrape_url", scrapeURL),
-				zap.Int64("scrape_timestamp", atMs),
-				zap.Stringer("target_labels", ls))
-		} else {
-			t.logger.Warn("The 'up' metric contains invalid value",
-				zap.Float64("value", val),
-				zap.Int64("scrape_timestamp", atMs),
-				zap.Stringer("target_labels", ls))
+			if scrapeErr != nil {
+				t.logger.Warn("Failed to scrape Prometheus endpoint",
+					zap.String("scrape_url", scrapeURL),
+					zap.Error(scrapeErr),
+					zap.Int64("scrape_timestamp", atMs),
+					zap.Stringer("target_labels", ls))
+			} else {
+				t.logger.Warn("Failed to scrape Prometheus endpoint",
+					zap.String("scrape_url", scrapeURL),
+					zap.Int64("scrape_timestamp", atMs),
+					zap.Stringer("target_labels", ls))
+			}
 		}
 	}
 
