@@ -2282,3 +2282,50 @@ func TestTransactionAppend(t *testing.T) {
 		})
 	}
 }
+
+func TestTransactionAppendUpMetricZeroNoTarget(t *testing.T) {
+	minimalTarget := scrape.NewTarget(
+		labels.EmptyLabels(),
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{},
+		nil,
+	)
+	ctx := scrape.ContextWithMetricMetadataStore(
+		scrape.ContextWithTarget(context.Background(), minimalTarget),
+		testMetadataStore(testMetadata),
+	)
+
+	sink := new(consumertest.MetricsSink)
+	receiverSettings := receivertest.NewNopSettings(receivertest.NopType)
+	core, observedLogs := observer.New(zap.WarnLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		ctx,
+		sink,
+		labels.EmptyLabels(),
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+		true,
+	)
+
+	_, err := tr.Append(0, labels.FromStrings(
+		model.InstanceLabel, "localhost:8080",
+		model.JobLabel, "test",
+		model.MetricNameLabel, scrapeUpMetricName,
+	), 0, ts, 0.0, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+
+	require.Equal(t, 1, observedLogs.Len())
+	logEntry := observedLogs.All()[0]
+	assert.Equal(t, "Failed to scrape Prometheus endpoint", logEntry.Message)
+
+	found := false
+	for _, field := range logEntry.Context {
+		if field.Key == "scrape_url" {
+			found = true
+			assert.Equal(t, "", field.String)
+		}
+	}
+	assert.True(t, found, "scrape_url field must always be present in log entry")
+}

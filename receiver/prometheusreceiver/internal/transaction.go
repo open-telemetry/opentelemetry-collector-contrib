@@ -124,7 +124,12 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	// But it can also be a staleNaN, which is inserted when the target goes away.
 	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
 		if val == 0.0 {
+			scrapeURL := ""
+			if target, ok := scrape.TargetFromContext(t.ctx); ok {
+				scrapeURL = target.URL().String()
+			}
 			t.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.String("scrape_url", scrapeURL),
 				zap.Int64("scrape_timestamp", atMs),
 				zap.Stringer("target_labels", ls))
 		} else {
