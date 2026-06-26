@@ -29,7 +29,12 @@ func createDefaultConfig() component.Config {
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	// check if config is a server auth(Htpasswd should be set)
 	if cfg.(*Config).Htpasswd != nil {
-		return newServerAuthExtension(cfg.(*Config))
+		ext, err := newServerAuthExtension(cfg.(*Config))
+		if err != nil {
+			return nil, err
+		}
+		ext.logger = set.Logger
+		return ext, nil
 	}
 	ext := newClientAuthExtension(cfg.(*Config))
 	ext.logger = set.Logger
