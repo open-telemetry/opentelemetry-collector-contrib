@@ -21,7 +21,16 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   
 - `exporter/signalfx`: Stop calculating per-core `cpu.*` metrics disabled by default. (#49247)
   The default transformations still create aggregate CPU metrics. However, per-core `cpu.*` metrics which are disabled by default aren't produced by the default transformations anymore.
-  To emit equivalent per-core CPU metrics, copy and aggregate `system.cpu.time` with the transform processor. For example, to emit per-core `cpu.idle` metrics:
+  This change doesn't have any impact unless any of `cpu.*` metrics are explicitly enabled with the `cpu` attribute in signalfx exporter with configuration like this:
+  ```yaml
+  exporters:
+    signalfx:
+      include_metrics:
+        - metric_name: cpu.idle
+          dimensions:
+            cpu: ["*"]
+  ```
+  In that case, the same metrics can be restore by applying the transform processor the following way:
   ```yaml
   receivers:
     hostmetrics:
@@ -58,7 +67,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   
 - `exporter/signalfx`: Stop calculating `cpu.utilization_per_core` disabled by default. (#49243)
   The exporter still creates the aggregate `cpu.utilization` metric by default. However, `cpu.utilization_per_core` which is disabled by default isn't produced by the default transformations anymore.
-  To emit an equivalent `cpu.utilization_per_core` metric, enable `system.cpu.utilization` in the `host_metrics` receiver, then rename and aggregate it with the transform processor:
+  This change doesn't have any impact unless `cpu.utilization_per_core` metric is explicitly enabled in signalfx exporter with configuration like this:
+  ```yaml
+  exporters:
+    signalfx:
+      include_metrics:
+        - metric_name: cpu.utilization_per_core
+  ```
+  In that case, the same metric can be restore by applying the transform processor the following way:
   ```yaml
   receivers:
     hostmetrics:
@@ -1124,7 +1140,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   Previously:
   - the `service.instance.id` reported in the AgentDescription was based on the OpAMP instance UID
   - the instance UID was typically set based on the `service.instance.id` from the Collector resource attributes
-  - it could be overriden using the `instance_uid` configuration of the OpAMP extension
+  - it could be overridden using the `instance_uid` configuration of the OpAMP extension
   
   This meant that the reported `service.instance.id` did not always match the Collector resource attributes,
   which is a problem for correlation, and that server implementations got used to the typical case of

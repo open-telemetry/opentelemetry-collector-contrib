@@ -102,6 +102,6 @@ The number of views read.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| couchdb.node.name | The name of the node. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| couchdb.node.name | The name of the node. | Any Str | true | - | - |

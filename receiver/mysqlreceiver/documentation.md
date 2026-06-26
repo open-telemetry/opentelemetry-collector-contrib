@@ -730,9 +730,9 @@ This provides insights into query performance and resource usage, helping users 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
-| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - |
-| service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - |
-| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
