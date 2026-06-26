@@ -220,7 +220,7 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.12")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.IsEnabled() {
-		attrMap.PutInt(string(conventions.ClientPortKey), 51306)
+		attrMap.PutInt(string(conventions.ServerPortKey), 51306)
 		attrMap.PutStr(string(conventions.ServerAddressKey), "shopdb.example.com")
 		attrMap.PutInt(string(conventions.ServerPortKey), 3306)
 		attrMap.PutStr(string(conventions.NetworkTransportKey), "tcp")

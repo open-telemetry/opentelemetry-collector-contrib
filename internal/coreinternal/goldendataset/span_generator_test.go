@@ -159,20 +159,20 @@ func TestGenerateNetworkConventionsFeatureGates(t *testing.T) {
 			dontEmitV0:   false,
 			emitV1:       false,
 			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
-			absentKeys:   []string{"network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+			absentKeys:   []string{"network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
 		},
 		{
 			name:         "double_publish",
 			dontEmitV0:   false,
 			emitV1:       true,
-			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport", "network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+			expectedKeys: []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport", "network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
 			absentKeys:   []string{},
 		},
 		{
 			name:         "v1_only",
 			dontEmitV0:   true,
 			emitV1:       true,
-			expectedKeys: []string{"network.local.address", "client.port", "server.address", "network.peer.address", "server.port", "network.transport"},
+			expectedKeys: []string{"network.local.address", "server.address", "network.peer.address", "server.port", "network.transport"},
 			absentKeys:   []string{"net.host.ip", "net.host.port", "net.peer.name", "net.peer.ip", "net.peer.port", "net.transport"},
 		},
 	}
