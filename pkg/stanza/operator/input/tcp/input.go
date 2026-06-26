@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,6 +18,10 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -42,10 +47,30 @@ type Input struct {
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
+
+	authConfig *configauth.Config
+	authServer extensionauth.Server
+	host       component.Host
+}
+
+// SetHost sets the component host to retrieve extensions.
+func (i *Input) SetHost(host component.Host) {
+	i.host = host
 }
 
 // Start will start listening for log entries over tcp.
 func (i *Input) Start(_ operator.Persister) error {
+	if i.authConfig != nil {
+		if i.host == nil {
+			return errors.New("component host not set, cannot configure authenticator")
+		}
+		var err error
+		i.authServer, err = i.authConfig.GetServerAuthenticator(context.Background(), i.host.GetExtensions())
+		if err != nil {
+			return fmt.Errorf("failed to get server authenticator: %w", err)
+		}
+	}
+
 	if err := i.configureListener(); err != nil {
 		return fmt.Errorf("failed to listen on interface: %w", err)
 	}
@@ -78,7 +103,7 @@ func (i *Input) configureListener() error {
 	return nil
 }
 
-// goListenn will listen for tcp connections.
+// goListen will listen for tcp connections.
 func (i *Input) goListen(ctx context.Context) {
 	i.wg.Go(func() {
 		for {
@@ -96,10 +121,43 @@ func (i *Input) goListen(ctx context.Context) {
 			i.backoff.Reset()
 
 			i.Logger().Debug("Received connection", zap.String("address", conn.RemoteAddr().String()))
-			subctx, cancel := context.WithCancel(ctx)
-			i.goHandleClose(subctx, conn)
-			i.goHandleMessages(subctx, conn, cancel)
+			i.goHandleConnection(ctx, conn)
 		}
+	})
+}
+
+// goHandleConnection handles TLS handshake, authentication, and starts message processing.
+func (i *Input) goHandleConnection(ctx context.Context, conn net.Conn) {
+	i.wg.Go(func() {
+		subctx, cancel := context.WithCancel(ctx)
+
+		if tlsConn, ok := conn.(*tls.Conn); ok {
+			if err := tlsConn.Handshake(); err != nil {
+				i.Logger().Debug("TLS handshake failed", zap.Error(err))
+				conn.Close()
+				cancel()
+				return
+			}
+		}
+
+		connCtx := subctx
+		if i.authServer != nil {
+			clientInfo := client.Info{
+				Addr: conn.RemoteAddr(),
+			}
+			authCtx := client.NewContext(connCtx, clientInfo)
+			var authErr error
+			connCtx, authErr = i.authServer.Authenticate(authCtx, nil)
+			if authErr != nil {
+				i.Logger().Debug("Authentication failed", zap.Error(authErr))
+				conn.Close()
+				cancel()
+				return
+			}
+		}
+
+		i.goHandleClose(connCtx, conn)
+		i.goHandleMessages(connCtx, conn, cancel)
 	})
 }
 

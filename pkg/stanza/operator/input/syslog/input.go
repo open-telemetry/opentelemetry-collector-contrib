@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"go.opentelemetry.io/collector/component"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -23,6 +24,13 @@ type Input struct {
 	tcp    *tcp.Input
 	udp    *udp.Input
 	parser *syslog.Parser
+}
+
+// SetHost sets the component host to retrieve extensions for nested operators.
+func (i *Input) SetHost(host component.Host) {
+	if i.tcp != nil {
+		i.tcp.SetHost(host)
+	}
 }
 
 // Start will start listening for log entries over tcp or udp.

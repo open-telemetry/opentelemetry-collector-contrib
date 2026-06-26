@@ -44,6 +44,12 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("storage client: %w", err)
 	}
 
+	for _, op := range r.pipe.Operators() {
+		if hr, ok := op.(interface{ SetHost(component.Host) }); ok {
+			hr.SetHost(host)
+		}
+	}
+
 	if err := r.pipe.Start(r.storageClient); err != nil {
 		return fmt.Errorf("start stanza: %w", err)
 	}
