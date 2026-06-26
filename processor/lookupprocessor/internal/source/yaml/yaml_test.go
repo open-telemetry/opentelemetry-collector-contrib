@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,6 +37,16 @@ func TestConfigValidate(t *testing.T) {
 			name:    "valid path",
 			config:  &Config{Path: "/path/to/file.yaml"},
 			wantErr: false,
+		},
+		{
+			name:    "valid reload interval",
+			config:  &Config{Path: "/path/to/file.yaml", ReloadInterval: 5 * time.Minute},
+			wantErr: false,
+		},
+		{
+			name:    "negative reload interval",
+			config:  &Config{Path: "/path/to/file.yaml", ReloadInterval: -1},
+			wantErr: true,
 		},
 	}
 
@@ -186,7 +197,7 @@ func TestYAMLSourceFileNotFound(t *testing.T) {
 	host := componenttest.NewNopHost()
 	err = source.Start(t.Context(), host)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to read YAML file")
+	assert.Contains(t, err.Error(), "failed to read file")
 }
 
 func TestYAMLSourceInvalidYAML(t *testing.T) {
@@ -210,5 +221,62 @@ func TestYAMLSourceInvalidYAML(t *testing.T) {
 	host := componenttest.NewNopHost()
 	err = source.Start(t.Context(), host)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse YAML file")
+	assert.Contains(t, err.Error(), "failed to parse file")
+}
+
+func TestYAMLSourceReload(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "mappings.yaml")
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("store1010: open_store\n"), 0o600))
+
+	factory := NewFactory()
+	cfg := &Config{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, source.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, source.Shutdown(t.Context())) }()
+
+	val, found, err := source.Lookup(t.Context(), "store1010")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, "open_store", val)
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("store1010: closed_store\n"), 0o600))
+
+	require.Eventually(t, func() bool {
+		v, ok, lookupErr := source.Lookup(t.Context(), "store1010")
+		return lookupErr == nil && ok && v == "closed_store"
+	}, 2*time.Second, 10*time.Millisecond)
+}
+
+func TestYAMLSourceReloadKeepsLastGoodOnError(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "mappings.yaml")
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("store1010: closed_store\n"), 0o600))
+
+	factory := NewFactory()
+	cfg := &Config{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, source.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, source.Shutdown(t.Context())) }()
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("not: valid: yaml: ["), 0o600))
+
+	require.Never(t, func() bool {
+		v, ok, lookupErr := source.Lookup(t.Context(), "store1010")
+		return lookupErr != nil || !ok || v != "closed_store"
+	}, 200*time.Millisecond, 20*time.Millisecond)
 }
