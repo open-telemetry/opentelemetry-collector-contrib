@@ -24,7 +24,10 @@ GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
 # Ignored vulnerabilities with justification:
-IGNORED_VULNS = GO-2026-5662 # False positive, we use `github.com/prometheus/prometheus` >= 0.312.0, which has the fix for this vulnerability.
+# - GO-2026-5662: False positive, we use `github.com/prometheus/prometheus` 
+#   >= 0.312.0, which has the fix for this vulnerability. Besides, this doesn't
+#   affect the Collector in any way, only the Prometheus UI.
+IGNORED_VULNS = GO-2026-5662
 
 # Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
 IGNORE_GOLANG_VULNS ?=
