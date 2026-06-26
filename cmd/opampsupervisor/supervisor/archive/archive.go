@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package archive installs collector executable updates from downloaded
+// Package archive extracts collector executable updates from downloaded
 // packages, dispatching on the configured archive format.
 package archive
 
@@ -26,37 +26,37 @@ const (
 	FormatNone Format = ""
 )
 
-// Installer installs the agent binary from a downloaded package.
-type Installer interface {
-	// Install writes the agent binary contained in pkg to destination.
-	Install(ctx context.Context, pkg []byte, destination string) error
+// Extractor extracts the agent binary from a downloaded package.
+type Extractor interface {
+	// Extract writes the agent binary contained in pkg to destination.
+	Extract(ctx context.Context, pkg []byte, destination string) error
 }
 
-// NewInstaller returns the Installer for the given archive format, or an error if
+// NewExtractor returns the Extractor for the given archive format, or an error if
 // the format is not supported.
-func NewInstaller(format Format) (Installer, error) {
+func NewExtractor(format Format) (Extractor, error) {
 	switch format {
 	case FormatNone:
-		return rawInstaller{maxBytes: maxAgentBytes}, nil
+		return rawExtractor{maxBytes: maxAgentBytes}, nil
 	default:
 		return nil, fmt.Errorf("unsupported archive format: %q", string(format))
 	}
 }
 
-var _ Installer = rawInstaller{}
+var _ Extractor = rawExtractor{}
 
-// rawInstaller treats the package bytes as a raw agent binary and writes them
+// rawExtractor treats the package bytes as a raw agent binary and writes them
 // directly to destination.
-type rawInstaller struct {
-	// maxBytes is the maximum binary size the installer will write. Inputs larger
+type rawExtractor struct {
+	// maxBytes is the maximum binary size the extractor will write. Inputs larger
 	// than this are rejected rather than silently truncated.
 	maxBytes int64
 }
 
-// Install writes the raw bytes by creating or truncating the file at destination.
+// Extract writes the raw bytes by creating or truncating the file at destination.
 // It is the responsibility of the caller to ensure nothing of importance is overwritten.
 // If an error occurs during write, the file at destination will be removed.
-func (r rawInstaller) Install(_ context.Context, pkg []byte, destination string) error {
+func (r rawExtractor) Extract(_ context.Context, pkg []byte, destination string) error {
 	if int64(len(pkg)) > r.maxBytes {
 		return fmt.Errorf("binary exceeds maximum size of %d bytes", r.maxBytes)
 	}

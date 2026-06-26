@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewInstaller(t *testing.T) {
+func TestNewExtractor(t *testing.T) {
 	testCases := []struct {
 		name      string
 		format    Format
@@ -21,7 +21,7 @@ func TestNewInstaller(t *testing.T) {
 		expectNil bool
 	}{
 		{
-			name:   "no archive returns raw installer",
+			name:   "no archive returns raw extractor",
 			format: FormatNone,
 		},
 		{
@@ -40,33 +40,33 @@ func TestNewInstaller(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			installer, err := NewInstaller(tc.format)
+			extractor, err := NewExtractor(tc.format)
 			if tc.expectErr != "" {
 				require.ErrorContains(t, err, tc.expectErr)
-				assert.Nil(t, installer)
+				assert.Nil(t, extractor)
 				return
 			}
 			require.NoError(t, err)
-			assert.NotNil(t, installer)
+			assert.NotNil(t, extractor)
 		})
 	}
 }
 
-func TestRawInstaller_Install(t *testing.T) {
+func TestRawExtractor_Extract(t *testing.T) {
 	destination := filepath.Join(t.TempDir(), "otelcol-contrib")
 	contents := []byte("raw collector binary")
 
-	installer, err := NewInstaller(FormatNone)
+	extractor, err := NewExtractor(FormatNone)
 	require.NoError(t, err)
 
-	require.NoError(t, installer.Install(t.Context(), contents, destination))
+	require.NoError(t, extractor.Extract(t.Context(), contents, destination))
 
 	written, err := os.ReadFile(destination)
 	require.NoError(t, err)
 	assert.Equal(t, contents, written)
 }
 
-func TestRawInstaller_Install_Size(t *testing.T) {
+func TestRawExtractor_Extract_Size(t *testing.T) {
 	const maxBytes = 16
 
 	testCases := []struct {
@@ -94,8 +94,8 @@ func TestRawInstaller_Install_Size(t *testing.T) {
 			destination := filepath.Join(t.TempDir(), "otelcol-contrib")
 			contents := bytes.Repeat([]byte("a"), tc.size)
 
-			installer := rawInstaller{maxBytes: maxBytes}
-			err := installer.Install(t.Context(), contents, destination)
+			extractor := rawExtractor{maxBytes: maxBytes}
+			err := extractor.Extract(t.Context(), contents, destination)
 			if tc.expectErr != "" {
 				require.ErrorContains(t, err, tc.expectErr)
 				return
