@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -530,10 +531,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			} else {
 				assert.Equal(t, "gzip", sketchRecorder.Header.Get("Accept-Encoding"))
 				assert.Equal(t, "application/x-protobuf", sketchRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", sketchRecorder.Header.Get("Content-Encoding"))
 				assert.Equal(t, "otelcol/latest", sketchRecorder.Header.Get("User-Agent"))
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
-				assert.Equal(t, expected, sketchRecorder.ByteBody)
+				reader, err := gzip.NewReader(bytes.NewReader(sketchRecorder.ByteBody))
+				require.NoError(t, err)
+				decompressed, err := io.ReadAll(reader)
+				require.NoError(t, err)
+				assert.Equal(t, expected, decompressed)
 			}
 		})
 	}
@@ -600,8 +606,14 @@ func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing
 	require.NoError(t, exp.PushMetricsData(t.Context(), md))
 	require.NotNil(t, sketchRecorder.ByteBody, "expected a sketch payload to be sent")
 
+	// The sketches payload is gzip-compressed (consistent with the series path).
+	gzReader, err := gzip.NewReader(bytes.NewReader(sketchRecorder.ByteBody))
+	require.NoError(t, err)
+	decompressed, err := io.ReadAll(gzReader)
+	require.NoError(t, err)
+
 	var payload gogen.SketchPayload
-	require.NoError(t, payload.Unmarshal(sketchRecorder.ByteBody))
+	require.NoError(t, payload.Unmarshal(decompressed))
 	require.Len(t, payload.Sketches, 1)
 	sketch := payload.Sketches[0]
 	require.Len(t, sketch.Dogsketches, 1)
