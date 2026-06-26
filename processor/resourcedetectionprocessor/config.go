@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
@@ -82,6 +83,9 @@ type DetectorConfig struct {
 	// Aks contains user-specified configurations for the aks detector
 	AksConfig aks.Config `mapstructure:"aks"`
 
+	// AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
+	AzureContainerAppsConfig containerapps.Config `mapstructure:"azurecontainerapps"`
+
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
@@ -145,34 +149,35 @@ type DetectorConfig struct {
 
 func detectorCreateDefaultConfig() DetectorConfig {
 	return DetectorConfig{
-		AlibabaECSConfig:       alibabaecs.CreateDefaultConfig(),
-		EC2Config:              ec2.CreateDefaultConfig(),
-		ECSConfig:              ecs.CreateDefaultConfig(),
-		EKSConfig:              eks.CreateDefaultConfig(),
-		ElasticbeanstalkConfig: elasticbeanstalk.CreateDefaultConfig(),
-		LambdaConfig:           lambda.CreateDefaultConfig(),
-		AzureConfig:            azure.CreateDefaultConfig(),
-		AksConfig:              aks.CreateDefaultConfig(),
-		ConsulConfig:           consul.CreateDefaultConfig(),
-		DigitalOceanConfig:     digitalocean.CreateDefaultConfig(),
-		DockerConfig:           docker.CreateDefaultConfig(),
-		GcpConfig:              gcp.CreateDefaultConfig(),
-		HerokuConfig:           heroku.CreateDefaultConfig(),
-		HetznerConfig:          hetzner.CreateDefaultConfig(),
-		IBMCloudClassicConfig:  ibmcloudclassic.CreateDefaultConfig(),
-		IBMCloudVPCConfig:      ibmcloudvpc.CreateDefaultConfig(),
-		SystemConfig:           system.CreateDefaultConfig(),
-		OpenShiftConfig:        openshift.CreateDefaultConfig(),
-		OpenStackNovaConfig:    nova.CreateDefaultConfig(),
-		OracleCloudConfig:      oraclecloud.CreateDefaultConfig(),
-		K8SAPIConfig:           k8sapi.CreateDefaultConfig(),
-		K8SNodeConfig:          k8sapi.CreateDefaultConfig(),
-		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
-		AkamaiConfig:           akamai.CreateDefaultConfig(),
-		ScalewayConfig:         scaleway.CreateDefaultConfig(),
-		TencentCVMConfig:       tencentcvm.CreateDefaultConfig(),
-		UpcloudConfig:          upcloud.CreateDefaultConfig(),
-		VultrConfig:            vultr.CreateDefaultConfig(),
+		AlibabaECSConfig:         alibabaecs.CreateDefaultConfig(),
+		EC2Config:                ec2.CreateDefaultConfig(),
+		ECSConfig:                ecs.CreateDefaultConfig(),
+		EKSConfig:                eks.CreateDefaultConfig(),
+		ElasticbeanstalkConfig:   elasticbeanstalk.CreateDefaultConfig(),
+		LambdaConfig:             lambda.CreateDefaultConfig(),
+		AzureConfig:              azure.CreateDefaultConfig(),
+		AksConfig:                aks.CreateDefaultConfig(),
+		AzureContainerAppsConfig: containerapps.CreateDefaultConfig(),
+		ConsulConfig:             consul.CreateDefaultConfig(),
+		DigitalOceanConfig:       digitalocean.CreateDefaultConfig(),
+		DockerConfig:             docker.CreateDefaultConfig(),
+		GcpConfig:                gcp.CreateDefaultConfig(),
+		HerokuConfig:             heroku.CreateDefaultConfig(),
+		HetznerConfig:            hetzner.CreateDefaultConfig(),
+		IBMCloudClassicConfig:    ibmcloudclassic.CreateDefaultConfig(),
+		IBMCloudVPCConfig:        ibmcloudvpc.CreateDefaultConfig(),
+		SystemConfig:             system.CreateDefaultConfig(),
+		OpenShiftConfig:          openshift.CreateDefaultConfig(),
+		OpenStackNovaConfig:      nova.CreateDefaultConfig(),
+		OracleCloudConfig:        oraclecloud.CreateDefaultConfig(),
+		K8SAPIConfig:             k8sapi.CreateDefaultConfig(),
+		K8SNodeConfig:            k8sapi.CreateDefaultConfig(),
+		KubeadmConfig:            kubeadm.CreateDefaultConfig(),
+		AkamaiConfig:             akamai.CreateDefaultConfig(),
+		ScalewayConfig:           scaleway.CreateDefaultConfig(),
+		TencentCVMConfig:         tencentcvm.CreateDefaultConfig(),
+		UpcloudConfig:            upcloud.CreateDefaultConfig(),
+		VultrConfig:              vultr.CreateDefaultConfig(),
 	}
 }
 
@@ -194,6 +199,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AzureConfig
 	case aks.TypeStr:
 		return d.AksConfig
+	case containerapps.TypeStr:
+		return d.AzureContainerAppsConfig
 	case consul.TypeStr:
 		return d.ConsulConfig
 	case digitalocean.TypeStr:
