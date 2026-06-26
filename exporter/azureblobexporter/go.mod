@@ -24,7 +24,7 @@ require (
 	go.uber.org/zap v1.28.0
 )
 
-require github.com/cenkalti/backoff/v6 v6.0.0 // indirect
+require github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect

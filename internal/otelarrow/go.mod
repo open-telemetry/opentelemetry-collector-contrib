@@ -37,7 +37,7 @@ require (
 	github.com/apache/arrow-go/v18 v18.6.0 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/brianvoe/gofakeit/v6 v6.28.0 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.0 // indirect
+	github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-metro v0.0.0-20250106013310-edb8663e5e33 // indirect
