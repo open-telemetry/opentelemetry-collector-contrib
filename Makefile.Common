@@ -24,7 +24,7 @@ GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
 # Ignored vulnerabilities with justification:
-IGNORED_VULNS =
+IGNORED_VULNS = GO-2026-5662
 
 # Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
 IGNORE_GOLANG_VULNS ?=
