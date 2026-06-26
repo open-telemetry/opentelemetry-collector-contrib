@@ -1,0 +1,31 @@
+default:
+all_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+reaggregate_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false

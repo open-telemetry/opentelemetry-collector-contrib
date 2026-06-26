@@ -14,6 +14,9 @@ resource_detection/aks:
   timeout: 2s
   override: false
 
+resource_detection/azurecontainerapps:
+  detectors: [env, azurecontainerapps]
+
 resource_detection/gcp:
   detectors: [env, gcp]
   timeout: 2s
