@@ -23,6 +23,7 @@ type fileWriter struct {
 	flushInterval time.Duration
 	flushTicker   *time.Ticker
 	stopTicker    chan struct{}
+	wg            sync.WaitGroup
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -65,20 +66,24 @@ func (w *fileWriter) startFlusher() {
 		return
 	}
 
-	// Create the stop channel.
-	w.stopTicker = make(chan struct{})
+	// Create the stop channel and capture it locally so the goroutine
+	// always selects on the original channel value, even after shutdown
+	// nils out w.stopTicker.
+	stopCh := make(chan struct{})
+	w.stopTicker = stopCh
 	// Start the ticker.
 	w.flushTicker = time.NewTicker(w.flushInterval)
+	w.wg.Add(1)
 	go func() {
+		defer w.wg.Done()
 		for {
 			select {
 			case <-w.flushTicker.C:
 				w.mutex.Lock()
 				ff.flush()
 				w.mutex.Unlock()
-			case <-w.stopTicker:
+			case <-stopCh:
 				w.flushTicker.Stop()
-				w.flushTicker = nil
 				return
 			}
 		}
@@ -95,15 +100,25 @@ func (w *fileWriter) start() {
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (w *fileWriter) shutdown() error {
-	// Stop the flush ticker.
-	if w.flushTicker != nil {
-		// Stop the go routine.
-		w.mutex.Lock()
-		close(w.stopTicker)
-		w.mutex.Unlock()
+	// Snapshot and nil out stopTicker under the lock to prevent a double-close
+	// if shutdown is called more than once.
+	w.mutex.Lock()
+	stopTicker := w.stopTicker
+	w.stopTicker = nil
+	w.mutex.Unlock()
+
+	if stopTicker != nil {
+		close(stopTicker)
+		// Wait for the flusher goroutine to finish before closing the file.
+		// Cannot hold w.mutex here because the goroutine acquires it on each tick.
+		w.wg.Wait()
 	}
+
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
+	if w.file == nil {
+		return nil
+	}
 	err := w.file.Close()
 	w.file = nil
 	return err
