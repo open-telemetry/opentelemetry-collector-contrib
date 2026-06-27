@@ -53,6 +53,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.session.type"
+            default:
+              - "oracledb.session.type"
       oracledb.db_block_gets:
         description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
         type: object
@@ -108,9 +124,9 @@ $defs:
             items:
               type: string
               enum:
-                - "oracledb.enqueue.kind"
+                - "oracledb.enqueue.type"
             default:
-              - "oracledb.enqueue.kind"
+              - "oracledb.enqueue.type"
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -435,11 +451,11 @@ $defs:
             items:
               type: string
               enum:
-                - "oracledb.scan.kind"
                 - "oracledb.scan.type"
+                - "oracledb.scan.mode"
             default:
-              - "oracledb.scan.kind"
               - "oracledb.scan.type"
+              - "oracledb.scan.mode"
       oracledb.scan.table.rows:
         description: "OracledbScanTableRowsMetricConfig provides config for the oracledb.scan.table.rows metric."
         type: object

@@ -358,13 +358,12 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
-func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
-	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
-	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
-
+// scrapeWithConfig builds an oracleScraper backed by the shared fake query
+// responses, runs a single scrape, and returns the collected metrics. It
+// centralizes the DB-provider / client-provider / start / shutdown boilerplate
+// shared by the metric scrape tests.
+func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
+	t.Helper()
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
@@ -378,10 +377,20 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
+	return m
+}
+
+func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
+	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
 
 	// metricName -> attrSignature -> int value
 	got := map[string]map[string]int64{}
@@ -444,23 +453,7 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg.Metrics.OracledbSortRows.Enabled = true
 	cfg.Metrics.OracledbUserCallCount.Enabled = true
 
-	scrpr := oracleScraper{
-		logger: zap.NewNop(),
-		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
-		},
-		id:                   component.ID{},
-		metricsBuilderConfig: cfg,
-	}
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
-	actualMetrics, err := scrpr.scrape(t.Context())
-	require.NoError(t, err)
+	actualMetrics := scrapeWithConfig(t, cfg)
 
 	expectedFile := filepath.Join("testdata", "expectedWorkloadAnalysisMetrics.yaml")
 	// Uncomment the line below to regenerate the expected golden file.
@@ -479,30 +472,14 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 // TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled verifies that a
 // workload metric whose distinguishing attribute is turned off reaggregates its
 // data points by summing, which is the correct behavior for a cumulative
-// monotonic counter. With oracledb.enqueue.kind disabled, the five per-kind rows
+// monotonic counter. With oracledb.enqueue.type disabled, the five per-type rows
 // (11+22+33+44+55) must collapse into a single attribute-less data point of 165.
 func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
 	cfg.Metrics.OracledbEnqueueOperations.EnabledAttributes = nil
 
-	scrpr := oracleScraper{
-		logger: zap.NewNop(),
-		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
-		},
-		id:                   component.ID{},
-		metricsBuilderConfig: cfg,
-	}
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
-	m, err := scrpr.scrape(t.Context())
-	require.NoError(t, err)
+	m := scrapeWithConfig(t, cfg)
 
 	var found bool
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
@@ -513,9 +490,9 @@ func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 		}
 		found = true
 		dps := me.Sum().DataPoints()
-		require.Equal(t, 1, dps.Len(), "disabling the attribute should collapse all kinds into one data point")
+		require.Equal(t, 1, dps.Len(), "disabling the attribute should collapse all types into one data point")
 		dp := dps.At(0)
-		assert.Equal(t, 0, dp.Attributes().Len(), "no attribute should be emitted when oracledb.enqueue.kind is disabled")
+		assert.Equal(t, 0, dp.Attributes().Len(), "no attribute should be emitted when oracledb.enqueue.type is disabled")
 		assert.Equal(t, int64(165), dp.IntValue(), "data points should reaggregate by sum (11+22+33+44+55)")
 	}
 	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
@@ -523,33 +500,17 @@ func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 
 // TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled verifies that, for a
 // metric with more than one attribute, disabling a single attribute reaggregates
-// correctly across the remaining one. With oracledb.scan.type disabled but
-// oracledb.scan.kind kept, oracledb.scan.count collapses to one data point per
-// kind: table = 100+200+50 = 350, index_fast_full = 10+20+5 = 35.
+// correctly across the remaining one. With oracledb.scan.mode disabled but
+// oracledb.scan.type kept, oracledb.scan.count collapses to one data point per
+// type: table = 100+200+50 = 350, index_fast_full = 10+20+5 = 35.
 func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbScanCount.Enabled = true
 	cfg.Metrics.OracledbScanCount.EnabledAttributes = []metadata.OracledbScanCountMetricAttributeKey{
-		metadata.OracledbScanCountMetricAttributeKeyOracledbScanKind,
+		metadata.OracledbScanCountMetricAttributeKeyOracledbScanType,
 	}
 
-	scrpr := oracleScraper{
-		logger: zap.NewNop(),
-		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
-		},
-		id:                   component.ID{},
-		metricsBuilderConfig: cfg,
-	}
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
-	m, err := scrpr.scrape(t.Context())
-	require.NoError(t, err)
+	m := scrapeWithConfig(t, cfg)
 
 	want := map[string]int64{"table": 350, "index_fast_full": 35}
 	got := map[string]int64{}
@@ -564,14 +525,14 @@ func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
 		dps := me.Sum().DataPoints()
 		for j := 0; j < dps.Len(); j++ {
 			dp := dps.At(j)
-			require.Equal(t, 1, dp.Attributes().Len(), "only oracledb.scan.kind should remain")
-			kind, ok := dp.Attributes().Get("oracledb.scan.kind")
-			require.True(t, ok, "oracledb.scan.kind should be present")
-			got[kind.Str()] = dp.IntValue()
+			require.Equal(t, 1, dp.Attributes().Len(), "only oracledb.scan.type should remain")
+			scanType, ok := dp.Attributes().Get("oracledb.scan.type")
+			require.True(t, ok, "oracledb.scan.type should be present")
+			got[scanType.Str()] = dp.IntValue()
 		}
 	}
 	require.True(t, found, "oracledb.scan.count not found in scrape output")
-	assert.Equal(t, want, got, "access methods should reaggregate by sum within each scan kind")
+	assert.Equal(t, want, got, "scan modes should reaggregate by sum within each scan type")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

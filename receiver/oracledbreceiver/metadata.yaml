@@ -167,8 +167,8 @@ attributes:
   oracledb.elapsed_time:
     description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
     type: double
-  oracledb.enqueue.kind:
-    description: Kind of enqueue (lock) operation reported by Oracle.
+  oracledb.enqueue.type:
+    description: Type of enqueue (lock) operation reported by Oracle.
     type: string
     enum: [conversions, releases, requests, timeouts, waits]
   oracledb.event:
@@ -242,14 +242,14 @@ attributes:
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
-  oracledb.scan.kind:
-    description: Family of scan reported by Oracle.
-    type: string
-    enum: [index_fast_full, table]
-  oracledb.scan.type:
-    description: Access method used by the scan reported by Oracle.
+  oracledb.scan.mode:
+    description: Execution mode of the scan reported by Oracle.
     type: string
     enum: [direct_read, full, long_tables, rowid_ranges]
+  oracledb.scan.type:
+    description: Type of scan operation reported by Oracle.
+    type: string
+    enum: [index_fast_full, table]
   oracledb.schemaname:
     description: Oracle schema under which SQL statements are being executed
     type: string
@@ -262,6 +262,10 @@ attributes:
   oracledb.session.started:
     description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
+  oracledb.session.type:
+    description: Class of session the database time is attributed to.
+    type: string
+    enum: [foreground]
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
@@ -441,7 +445,7 @@ metrics:
       input_type: string
     unit: "{hit}"
   oracledb.cursor.cache.size:
-    description: Total number of cursors currently held in the session cursor cache.
+    description: Number of cursors currently held in the session cursor cache.
     enabled: false
     stability: development
     gauge:
@@ -478,7 +482,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.db.time:
-    description: Total wall-clock time spent in database calls by foreground sessions.
+    description: Total wall-clock time spent in database calls.
     enabled: false
     stability: development
     sum:
@@ -486,6 +490,7 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+    attributes: [oracledb.session.type]
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -542,7 +547,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
-    attributes: [oracledb.enqueue.kind]
+    attributes: [oracledb.enqueue.type]
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
@@ -902,7 +907,7 @@ metrics:
       input_type: string
     unit: "{queries}"
   oracledb.recursive_call.count:
-    description: Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
+    description: Total count of recursive calls.
     enabled: false
     stability: development
     sum:
@@ -944,7 +949,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
-    attributes: [oracledb.scan.kind, oracledb.scan.type]
+    attributes: [oracledb.scan.type, oracledb.scan.mode]
   oracledb.scan.table.rows:
     description: Total number of rows returned by full-table scans.
     enabled: false
@@ -1078,7 +1083,7 @@ metrics:
       input_type: string
     unit: "{transactions}"
   oracledb.user_call.count:
-    description: Total count of user calls (logins, parses, fetches, executes) issued to the database.
+    description: Total count of user calls issued to the database.
     enabled: false
     stability: development
     sum:

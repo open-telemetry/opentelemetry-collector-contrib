@@ -189,10 +189,20 @@ func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
+// OracledbDbTimeMetricAttributeKey specifies the key of an attribute for the oracledb.db.time metric.
+type OracledbDbTimeMetricAttributeKey string
+
+const (
+	OracledbDbTimeMetricAttributeKeyOracledbSessionType OracledbDbTimeMetricAttributeKey = "oracledb.session.type"
+)
+
 // OracledbDbTimeMetricConfig provides config for the oracledb.db.time metric.
 type OracledbDbTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbDbTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDbTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -206,6 +216,24 @@ func (ms *OracledbDbTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbDbTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbDbTimeMetricAttributeKeyOracledbSessionType:
+		default:
+			return fmt.Errorf("metric oracledb.db.time doesn't have an attribute %v, valid attributes: [oracledb.session.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -313,7 +341,7 @@ func (ms *OracledbDmlStatementsParallelizedMetricConfig) Unmarshal(parser *confm
 type OracledbEnqueueOperationsMetricAttributeKey string
 
 const (
-	OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind OracledbEnqueueOperationsMetricAttributeKey = "oracledb.enqueue.kind"
+	OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType OracledbEnqueueOperationsMetricAttributeKey = "oracledb.enqueue.type"
 )
 
 // OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric.
@@ -342,9 +370,9 @@ func (ms *OracledbEnqueueOperationsMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *OracledbEnqueueOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind:
+		case OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType:
 		default:
-			return fmt.Errorf("metric oracledb.enqueue.operations doesn't have an attribute %v, valid attributes: [oracledb.enqueue.kind]", val)
+			return fmt.Errorf("metric oracledb.enqueue.operations doesn't have an attribute %v, valid attributes: [oracledb.enqueue.type]", val)
 		}
 	}
 
@@ -1343,8 +1371,8 @@ func (ms *OracledbRedoAllocationUtilizationMetricConfig) Unmarshal(parser *confm
 type OracledbScanCountMetricAttributeKey string
 
 const (
-	OracledbScanCountMetricAttributeKeyOracledbScanKind OracledbScanCountMetricAttributeKey = "oracledb.scan.kind"
 	OracledbScanCountMetricAttributeKeyOracledbScanType OracledbScanCountMetricAttributeKey = "oracledb.scan.type"
+	OracledbScanCountMetricAttributeKeyOracledbScanMode OracledbScanCountMetricAttributeKey = "oracledb.scan.mode"
 )
 
 // OracledbScanCountMetricConfig provides config for the oracledb.scan.count metric.
@@ -1373,9 +1401,9 @@ func (ms *OracledbScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbScanCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType:
+		case OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode:
 		default:
-			return fmt.Errorf("metric oracledb.scan.count doesn't have an attribute %v, valid attributes: [oracledb.scan.kind, oracledb.scan.type]", val)
+			return fmt.Errorf("metric oracledb.scan.count doesn't have an attribute %v, valid attributes: [oracledb.scan.type, oracledb.scan.mode]", val)
 		}
 	}
 
@@ -2029,7 +2057,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbDbTime: OracledbDbTimeMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 		},
 		OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 			Enabled: false,
@@ -2049,7 +2079,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind},
+			EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
 		},
 		OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
 			Enabled: true,
@@ -2190,7 +2220,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbScanCount: OracledbScanCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType},
+			EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
 		},
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,

@@ -54,7 +54,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					OracledbDbTime: OracledbDbTimeMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 						Enabled: true,
@@ -74,7 +76,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind},
+						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
 					},
 					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
 						Enabled: true,
@@ -215,7 +217,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbScanCount: OracledbScanCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType},
+						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
 					},
 					OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 						Enabled: true,
@@ -328,7 +330,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					OracledbDbTime: OracledbDbTimeMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 					},
 					OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 						Enabled: false,
@@ -348,7 +352,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind},
+						EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
 					},
 					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
 						Enabled: false,
@@ -489,7 +493,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbScanCount: OracledbScanCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanKind, OracledbScanCountMetricAttributeKeyOracledbScanType},
+						EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
 					},
 					OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 						Enabled: false,
@@ -580,12 +584,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestOracledbDbTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbDbTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OracledbDbTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.db.time doesn't have an attribute invalid, valid attributes: [oracledb.session.type]")
+
+	cfg = DefaultMetricsConfig().OracledbDbTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestOracledbEnqueueOperationsMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().OracledbEnqueueOperations
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbEnqueueOperationsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue.operations doesn't have an attribute invalid, valid attributes: [oracledb.enqueue.kind]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.enqueue.operations doesn't have an attribute invalid, valid attributes: [oracledb.enqueue.type]")
 
 	cfg = DefaultMetricsConfig().OracledbEnqueueOperations
 	cfg.AggregationStrategy = "invalid"
@@ -657,7 +673,7 @@ func TestOracledbScanCountMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbScanCountMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.scan.count doesn't have an attribute invalid, valid attributes: [oracledb.scan.kind, oracledb.scan.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.scan.count doesn't have an attribute invalid, valid attributes: [oracledb.scan.type, oracledb.scan.mode]")
 
 	cfg = DefaultMetricsConfig().OracledbScanCount
 	cfg.AggregationStrategy = "invalid"

@@ -267,7 +267,7 @@ Total count of session cursor cache hits, where an existing cached cursor is reu
 
 ### oracledb.cursor.cache.size
 
-Total number of cursors currently held in the session cursor cache.
+Number of cursors currently held in the session cursor cache.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -307,11 +307,17 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 
 ### oracledb.db.time
 
-Total wall-clock time spent in database calls by foreground sessions.
+Total wall-clock time spent in database calls.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.session.type | Class of session the database time is attributed to. | Str: ``foreground`` | Recommended | - |
 
 ### oracledb.db_block_gets
 
@@ -349,7 +355,7 @@ Total count of enqueue (lock) operations.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.enqueue.kind | Kind of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
+| oracledb.enqueue.type | Type of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
 
 ### oracledb.execution.utilization
 
@@ -577,7 +583,7 @@ Number of SELECT statements executed in parallel
 
 ### oracledb.recursive_call.count
 
-Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
+Total count of recursive calls.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -619,8 +625,8 @@ Total count of scan operations.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.scan.kind | Family of scan reported by Oracle. | Str: ``index_fast_full``, ``table`` | Recommended | - |
-| oracledb.scan.type | Access method used by the scan reported by Oracle. | Str: ``direct_read``, ``full``, ``long_tables``, ``rowid_ranges`` | Recommended | - |
+| oracledb.scan.type | Type of scan operation reported by Oracle. | Str: ``index_fast_full``, ``table`` | Recommended | - |
+| oracledb.scan.mode | Execution mode of the scan reported by Oracle. | Str: ``direct_read``, ``full``, ``long_tables``, ``rowid_ranges`` | Recommended | - |
 
 ### oracledb.scan.table.rows
 
@@ -715,7 +721,7 @@ Fraction of allocated database storage that is used.
 
 ### oracledb.user_call.count
 
-Total count of user calls (logins, parses, fetches, executes) issued to the database.
+Total count of user calls issued to the database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

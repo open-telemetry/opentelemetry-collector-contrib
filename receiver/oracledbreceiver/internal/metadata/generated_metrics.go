@@ -152,42 +152,42 @@ var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
 	"transmit": AttributeNetworkIoDirectionTransmit,
 }
 
-// AttributeOracledbEnqueueKind specifies the value oracledb.enqueue.kind attribute.
-type AttributeOracledbEnqueueKind int
+// AttributeOracledbEnqueueType specifies the value oracledb.enqueue.type attribute.
+type AttributeOracledbEnqueueType int
 
 const (
-	_ AttributeOracledbEnqueueKind = iota
-	AttributeOracledbEnqueueKindConversions
-	AttributeOracledbEnqueueKindReleases
-	AttributeOracledbEnqueueKindRequests
-	AttributeOracledbEnqueueKindTimeouts
-	AttributeOracledbEnqueueKindWaits
+	_ AttributeOracledbEnqueueType = iota
+	AttributeOracledbEnqueueTypeConversions
+	AttributeOracledbEnqueueTypeReleases
+	AttributeOracledbEnqueueTypeRequests
+	AttributeOracledbEnqueueTypeTimeouts
+	AttributeOracledbEnqueueTypeWaits
 )
 
-// String returns the string representation of the AttributeOracledbEnqueueKind.
-func (av AttributeOracledbEnqueueKind) String() string {
+// String returns the string representation of the AttributeOracledbEnqueueType.
+func (av AttributeOracledbEnqueueType) String() string {
 	switch av {
-	case AttributeOracledbEnqueueKindConversions:
+	case AttributeOracledbEnqueueTypeConversions:
 		return "conversions"
-	case AttributeOracledbEnqueueKindReleases:
+	case AttributeOracledbEnqueueTypeReleases:
 		return "releases"
-	case AttributeOracledbEnqueueKindRequests:
+	case AttributeOracledbEnqueueTypeRequests:
 		return "requests"
-	case AttributeOracledbEnqueueKindTimeouts:
+	case AttributeOracledbEnqueueTypeTimeouts:
 		return "timeouts"
-	case AttributeOracledbEnqueueKindWaits:
+	case AttributeOracledbEnqueueTypeWaits:
 		return "waits"
 	}
 	return ""
 }
 
-// MapAttributeOracledbEnqueueKind is a helper map of string to AttributeOracledbEnqueueKind attribute value.
-var MapAttributeOracledbEnqueueKind = map[string]AttributeOracledbEnqueueKind{
-	"conversions": AttributeOracledbEnqueueKindConversions,
-	"releases":    AttributeOracledbEnqueueKindReleases,
-	"requests":    AttributeOracledbEnqueueKindRequests,
-	"timeouts":    AttributeOracledbEnqueueKindTimeouts,
-	"waits":       AttributeOracledbEnqueueKindWaits,
+// MapAttributeOracledbEnqueueType is a helper map of string to AttributeOracledbEnqueueType attribute value.
+var MapAttributeOracledbEnqueueType = map[string]AttributeOracledbEnqueueType{
+	"conversions": AttributeOracledbEnqueueTypeConversions,
+	"releases":    AttributeOracledbEnqueueTypeReleases,
+	"requests":    AttributeOracledbEnqueueTypeRequests,
+	"timeouts":    AttributeOracledbEnqueueTypeTimeouts,
+	"waits":       AttributeOracledbEnqueueTypeWaits,
 }
 
 // AttributeOracledbParseResult specifies the value oracledb.parse.result attribute.
@@ -234,30 +234,38 @@ var MapAttributeOracledbParseType = map[string]AttributeOracledbParseType{
 	"soft": AttributeOracledbParseTypeSoft,
 }
 
-// AttributeOracledbScanKind specifies the value oracledb.scan.kind attribute.
-type AttributeOracledbScanKind int
+// AttributeOracledbScanMode specifies the value oracledb.scan.mode attribute.
+type AttributeOracledbScanMode int
 
 const (
-	_ AttributeOracledbScanKind = iota
-	AttributeOracledbScanKindIndexFastFull
-	AttributeOracledbScanKindTable
+	_ AttributeOracledbScanMode = iota
+	AttributeOracledbScanModeDirectRead
+	AttributeOracledbScanModeFull
+	AttributeOracledbScanModeLongTables
+	AttributeOracledbScanModeRowidRanges
 )
 
-// String returns the string representation of the AttributeOracledbScanKind.
-func (av AttributeOracledbScanKind) String() string {
+// String returns the string representation of the AttributeOracledbScanMode.
+func (av AttributeOracledbScanMode) String() string {
 	switch av {
-	case AttributeOracledbScanKindIndexFastFull:
-		return "index_fast_full"
-	case AttributeOracledbScanKindTable:
-		return "table"
+	case AttributeOracledbScanModeDirectRead:
+		return "direct_read"
+	case AttributeOracledbScanModeFull:
+		return "full"
+	case AttributeOracledbScanModeLongTables:
+		return "long_tables"
+	case AttributeOracledbScanModeRowidRanges:
+		return "rowid_ranges"
 	}
 	return ""
 }
 
-// MapAttributeOracledbScanKind is a helper map of string to AttributeOracledbScanKind attribute value.
-var MapAttributeOracledbScanKind = map[string]AttributeOracledbScanKind{
-	"index_fast_full": AttributeOracledbScanKindIndexFastFull,
-	"table":           AttributeOracledbScanKindTable,
+// MapAttributeOracledbScanMode is a helper map of string to AttributeOracledbScanMode attribute value.
+var MapAttributeOracledbScanMode = map[string]AttributeOracledbScanMode{
+	"direct_read":  AttributeOracledbScanModeDirectRead,
+	"full":         AttributeOracledbScanModeFull,
+	"long_tables":  AttributeOracledbScanModeLongTables,
+	"rowid_ranges": AttributeOracledbScanModeRowidRanges,
 }
 
 // AttributeOracledbScanType specifies the value oracledb.scan.type attribute.
@@ -265,33 +273,47 @@ type AttributeOracledbScanType int
 
 const (
 	_ AttributeOracledbScanType = iota
-	AttributeOracledbScanTypeDirectRead
-	AttributeOracledbScanTypeFull
-	AttributeOracledbScanTypeLongTables
-	AttributeOracledbScanTypeRowidRanges
+	AttributeOracledbScanTypeIndexFastFull
+	AttributeOracledbScanTypeTable
 )
 
 // String returns the string representation of the AttributeOracledbScanType.
 func (av AttributeOracledbScanType) String() string {
 	switch av {
-	case AttributeOracledbScanTypeDirectRead:
-		return "direct_read"
-	case AttributeOracledbScanTypeFull:
-		return "full"
-	case AttributeOracledbScanTypeLongTables:
-		return "long_tables"
-	case AttributeOracledbScanTypeRowidRanges:
-		return "rowid_ranges"
+	case AttributeOracledbScanTypeIndexFastFull:
+		return "index_fast_full"
+	case AttributeOracledbScanTypeTable:
+		return "table"
 	}
 	return ""
 }
 
 // MapAttributeOracledbScanType is a helper map of string to AttributeOracledbScanType attribute value.
 var MapAttributeOracledbScanType = map[string]AttributeOracledbScanType{
-	"direct_read":  AttributeOracledbScanTypeDirectRead,
-	"full":         AttributeOracledbScanTypeFull,
-	"long_tables":  AttributeOracledbScanTypeLongTables,
-	"rowid_ranges": AttributeOracledbScanTypeRowidRanges,
+	"index_fast_full": AttributeOracledbScanTypeIndexFastFull,
+	"table":           AttributeOracledbScanTypeTable,
+}
+
+// AttributeOracledbSessionType specifies the value oracledb.session.type attribute.
+type AttributeOracledbSessionType int
+
+const (
+	_ AttributeOracledbSessionType = iota
+	AttributeOracledbSessionTypeForeground
+)
+
+// String returns the string representation of the AttributeOracledbSessionType.
+func (av AttributeOracledbSessionType) String() string {
+	switch av {
+	case AttributeOracledbSessionTypeForeground:
+		return "foreground"
+	}
+	return ""
+}
+
+// MapAttributeOracledbSessionType is a helper map of string to AttributeOracledbSessionType attribute value.
+var MapAttributeOracledbSessionType = map[string]AttributeOracledbSessionType{
+	"foreground": AttributeOracledbSessionTypeForeground,
 }
 
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
@@ -349,7 +371,8 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.database.wait.utilization",
 	},
 	OracledbDbTime: metricInfo{
-		Name: "oracledb.db.time",
+		Name:       "oracledb.db.time",
+		Attributes: []string{"oracledb.session.type"},
 	},
 	OracledbDbBlockGets: metricInfo{
 		Name: "oracledb.db_block_gets",
@@ -368,7 +391,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbEnqueueOperations: metricInfo{
 		Name:       "oracledb.enqueue.operations",
-		Attributes: []string{"oracledb.enqueue.kind"},
+		Attributes: []string{"oracledb.enqueue.type"},
 	},
 	OracledbEnqueueDeadlocks: metricInfo{
 		Name: "oracledb.enqueue_deadlocks",
@@ -503,7 +526,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbScanCount: metricInfo{
 		Name:       "oracledb.scan.count",
-		Attributes: []string{"oracledb.scan.kind", "oracledb.scan.type"},
+		Attributes: []string{"oracledb.scan.type", "oracledb.scan.mode"},
 	},
 	OracledbScanTableRows: metricInfo{
 		Name: "oracledb.scan.table.rows",
@@ -867,7 +890,7 @@ type metricOracledbCursorCacheSize struct {
 // init fills oracledb.cursor.cache.size metric with initial data.
 func (m *metricOracledbCursorCacheSize) init() {
 	m.data.SetName("oracledb.cursor.cache.size")
-	m.data.SetDescription("Total number of cursors currently held in the session cursor cache.")
+	m.data.SetDescription("Number of cursors currently held in the session cursor cache.")
 	m.data.SetUnit("{cursor}")
 	m.data.SetEmptyGauge()
 }
@@ -1109,29 +1132,63 @@ func newMetricOracledbDatabaseWaitUtilization(cfg OracledbDatabaseWaitUtilizatio
 }
 
 type metricOracledbDbTime struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   OracledbDbTimeMetricConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        OracledbDbTimeMetricConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.db.time metric with initial data.
 func (m *metricOracledbDbTime) init() {
 	m.data.SetName("oracledb.db.time")
-	m.data.SetDescription("Total wall-clock time spent in database calls by foreground sessions.")
+	m.data.SetDescription("Total wall-clock time spent in database calls.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbDbTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbDbTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbDbTimeMetricAttributeKeyOracledbSessionType) {
+		dp.Attributes().PutStr("oracledb.session.type", oracledbSessionTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1144,6 +1201,11 @@ func (m *metricOracledbDbTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbDbTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1435,7 +1497,7 @@ func (m *metricOracledbEnqueueOperations) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbEnqueueOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbEnqueueKindAttributeValue string) {
+func (m *metricOracledbEnqueueOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbEnqueueTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1443,8 +1505,8 @@ func (m *metricOracledbEnqueueOperations) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueKind) {
-		dp.Attributes().PutStr("oracledb.enqueue.kind", oracledbEnqueueKindAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType) {
+		dp.Attributes().PutStr("oracledb.enqueue.type", oracledbEnqueueTypeAttributeValue)
 	}
 
 	var s string
@@ -3671,7 +3733,7 @@ type metricOracledbRecursiveCallCount struct {
 // init fills oracledb.recursive_call.count metric with initial data.
 func (m *metricOracledbRecursiveCallCount) init() {
 	m.data.SetName("oracledb.recursive_call.count")
-	m.data.SetDescription("Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.")
+	m.data.SetDescription("Total count of recursive calls.")
 	m.data.SetUnit("{call}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3885,7 +3947,7 @@ func (m *metricOracledbScanCount) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbScanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanKindAttributeValue string, oracledbScanTypeAttributeValue string) {
+func (m *metricOracledbScanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanTypeAttributeValue string, oracledbScanModeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3893,11 +3955,11 @@ func (m *metricOracledbScanCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbScanCountMetricAttributeKeyOracledbScanKind) {
-		dp.Attributes().PutStr("oracledb.scan.kind", oracledbScanKindAttributeValue)
-	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbScanCountMetricAttributeKeyOracledbScanType) {
 		dp.Attributes().PutStr("oracledb.scan.type", oracledbScanTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OracledbScanCountMetricAttributeKeyOracledbScanMode) {
+		dp.Attributes().PutStr("oracledb.scan.mode", oracledbScanModeAttributeValue)
 	}
 
 	var s string
@@ -4967,7 +5029,7 @@ type metricOracledbUserCallCount struct {
 // init fills oracledb.user_call.count metric with initial data.
 func (m *metricOracledbUserCallCount) init() {
 	m.data.SetName("oracledb.user_call.count")
-	m.data.SetDescription("Total count of user calls (logins, parses, fetches, executes) issued to the database.")
+	m.data.SetDescription("Total count of user calls issued to the database.")
 	m.data.SetUnit("{call}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -5597,8 +5659,8 @@ func (mb *MetricsBuilder) RecordOracledbDatabaseWaitUtilizationDataPoint(ts pcom
 }
 
 // RecordOracledbDbTimeDataPoint adds a data point to oracledb.db.time metric.
-func (mb *MetricsBuilder) RecordOracledbDbTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbDbTime.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordOracledbDbTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue AttributeOracledbSessionType) {
+	mb.metricOracledbDbTime.recordDataPoint(mb.startTime, ts, val, oracledbSessionTypeAttributeValue.String())
 }
 
 // RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
@@ -5652,12 +5714,12 @@ func (mb *MetricsBuilder) RecordOracledbDmlStatementsParallelizedDataPoint(ts pc
 }
 
 // RecordOracledbEnqueueOperationsDataPoint adds a data point to oracledb.enqueue.operations metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueOperationsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbEnqueueKindAttributeValue AttributeOracledbEnqueueKind) error {
+func (mb *MetricsBuilder) RecordOracledbEnqueueOperationsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbEnqueueTypeAttributeValue AttributeOracledbEnqueueType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueOperations.recordDataPoint(mb.startTime, ts, val, oracledbEnqueueKindAttributeValue.String())
+	mb.metricOracledbEnqueueOperations.recordDataPoint(mb.startTime, ts, val, oracledbEnqueueTypeAttributeValue.String())
 	return nil
 }
 
@@ -6032,12 +6094,12 @@ func (mb *MetricsBuilder) RecordOracledbRedoAllocationUtilizationDataPoint(ts pc
 }
 
 // RecordOracledbScanCountDataPoint adds a data point to oracledb.scan.count metric.
-func (mb *MetricsBuilder) RecordOracledbScanCountDataPoint(ts pcommon.Timestamp, inputVal string, oracledbScanKindAttributeValue AttributeOracledbScanKind, oracledbScanTypeAttributeValue AttributeOracledbScanType) error {
+func (mb *MetricsBuilder) RecordOracledbScanCountDataPoint(ts pcommon.Timestamp, inputVal string, oracledbScanTypeAttributeValue AttributeOracledbScanType, oracledbScanModeAttributeValue AttributeOracledbScanMode) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbScanCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbScanCount.recordDataPoint(mb.startTime, ts, val, oracledbScanKindAttributeValue.String(), oracledbScanTypeAttributeValue.String())
+	mb.metricOracledbScanCount.recordDataPoint(mb.startTime, ts, val, oracledbScanTypeAttributeValue.String(), oracledbScanModeAttributeValue.String())
 	return nil
 }
 

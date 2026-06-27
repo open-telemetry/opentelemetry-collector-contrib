@@ -21,6 +21,7 @@ all_set:
       enabled: true
     oracledb.db.time:
       enabled: true
+      attributes: ["oracledb.session.type"]
     oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
@@ -33,7 +34,7 @@ all_set:
       enabled: true
     oracledb.enqueue.operations:
       enabled: true
-      attributes: ["oracledb.enqueue.kind"]
+      attributes: ["oracledb.enqueue.type"]
     oracledb.enqueue_deadlocks:
       enabled: true
     oracledb.enqueue_locks.limit:
@@ -125,7 +126,7 @@ all_set:
       enabled: true
     oracledb.scan.count:
       enabled: true
-      attributes: ["oracledb.scan.kind","oracledb.scan.type"]
+      attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: true
     oracledb.sessions.limit:
@@ -214,6 +215,7 @@ reaggregate_set:
       enabled: true
     oracledb.db.time:
       enabled: true
+      attributes: []
     oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
@@ -407,6 +409,7 @@ none_set:
       enabled: false
     oracledb.db.time:
       enabled: false
+      attributes: ["oracledb.session.type"]
     oracledb.db_block_gets:
       enabled: false
     oracledb.ddl_statements_parallelized:
@@ -419,7 +422,7 @@ none_set:
       enabled: false
     oracledb.enqueue.operations:
       enabled: false
-      attributes: ["oracledb.enqueue.kind"]
+      attributes: ["oracledb.enqueue.type"]
     oracledb.enqueue_deadlocks:
       enabled: false
     oracledb.enqueue_locks.limit:
@@ -511,7 +514,7 @@ none_set:
       enabled: false
     oracledb.scan.count:
       enabled: false
-      attributes: ["oracledb.scan.kind","oracledb.scan.type"]
+      attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: false
     oracledb.sessions.limit:

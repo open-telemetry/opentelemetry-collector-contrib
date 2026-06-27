@@ -32,7 +32,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{hit}'
-          - description: Total number of cursors currently held in the session cursor cache.
+          - description: Number of cursors currently held in the session cursor cache.
             gauge:
               dataPoints:
                 - asInt: "1024"
@@ -48,12 +48,16 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: oracledb.cursor.open
             unit: '{cursor}'
-          - description: Total wall-clock time spent in database calls by foreground sessions.
+          - description: Total wall-clock time spent in database calls.
             name: oracledb.db.time
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 600
+                  attributes:
+                    - key: oracledb.session.type
+                      value:
+                        stringValue: foreground
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -65,35 +69,35 @@ resourceMetrics:
               dataPoints:
                 - asInt: "11"
                   attributes:
-                    - key: oracledb.enqueue.kind
+                    - key: oracledb.enqueue.type
                       value:
                         stringValue: conversions
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "22"
                   attributes:
-                    - key: oracledb.enqueue.kind
+                    - key: oracledb.enqueue.type
                       value:
                         stringValue: releases
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "33"
                   attributes:
-                    - key: oracledb.enqueue.kind
+                    - key: oracledb.enqueue.type
                       value:
                         stringValue: requests
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "44"
                   attributes:
-                    - key: oracledb.enqueue.kind
+                    - key: oracledb.enqueue.type
                       value:
                         stringValue: timeouts
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "55"
                   attributes:
-                    - key: oracledb.enqueue.kind
+                    - key: oracledb.enqueue.type
                       value:
                         stringValue: waits
                   startTimeUnixNano: "1000000"
@@ -237,7 +241,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: oracledb.processes.usage
             unit: '{processes}'
-          - description: Total count of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures.
+          - description: Total count of recursive calls.
             name: oracledb.recursive_call.count
             sum:
               aggregationTemporality: 2
@@ -264,62 +268,62 @@ resourceMetrics:
               dataPoints:
                 - asInt: "10"
                   attributes:
-                    - key: oracledb.scan.kind
-                      value:
-                        stringValue: index_fast_full
-                    - key: oracledb.scan.type
+                    - key: oracledb.scan.mode
                       value:
                         stringValue: direct_read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "20"
-                  attributes:
-                    - key: oracledb.scan.kind
-                      value:
-                        stringValue: index_fast_full
                     - key: oracledb.scan.type
                       value:
-                        stringValue: full
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "5"
-                  attributes:
-                    - key: oracledb.scan.kind
-                      value:
                         stringValue: index_fast_full
-                    - key: oracledb.scan.type
-                      value:
-                        stringValue: rowid_ranges
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "100"
                   attributes:
-                    - key: oracledb.scan.kind
-                      value:
-                        stringValue: table
-                    - key: oracledb.scan.type
+                    - key: oracledb.scan.mode
                       value:
                         stringValue: direct_read
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "20"
+                  attributes:
+                    - key: oracledb.scan.mode
+                      value:
+                        stringValue: full
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: index_fast_full
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "200"
                   attributes:
-                    - key: oracledb.scan.kind
-                      value:
-                        stringValue: table
-                    - key: oracledb.scan.type
+                    - key: oracledb.scan.mode
                       value:
                         stringValue: long_tables
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: oracledb.scan.mode
+                      value:
+                        stringValue: rowid_ranges
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: index_fast_full
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "50"
                   attributes:
-                    - key: oracledb.scan.kind
-                      value:
-                        stringValue: table
-                    - key: oracledb.scan.type
+                    - key: oracledb.scan.mode
                       value:
                         stringValue: rowid_ranges
+                    - key: oracledb.scan.type
+                      value:
+                        stringValue: table
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -404,7 +408,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: oracledb.tablespace_size.usage
             unit: By
-          - description: Total count of user calls (logins, parses, fetches, executes) issued to the database.
+          - description: Total count of user calls issued to the database.
             name: oracledb.user_call.count
             sum:
               aggregationTemporality: 2

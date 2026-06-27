@@ -562,15 +562,15 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case tableScansDirectReadStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindTable, metadata.AttributeOracledbScanTypeDirectRead); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeDirectRead); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case tableScansLongTablesStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindTable, metadata.AttributeOracledbScanTypeLongTables); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeLongTables); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case tableScansRowidRangesStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindTable, metadata.AttributeOracledbScanTypeRowidRanges); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeRowidRanges); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case tableScanRowsGottenStat:
@@ -578,35 +578,35 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case indexFastFullScansDirectStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindIndexFastFull, metadata.AttributeOracledbScanTypeDirectRead); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeDirectRead); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case indexFastFullScansFullStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindIndexFastFull, metadata.AttributeOracledbScanTypeFull); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeFull); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case indexFastFullScansRowidStat:
-				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanKindIndexFastFull, metadata.AttributeOracledbScanTypeRowidRanges); err != nil {
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeRowidRanges); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case enqueueConversionsStat:
-				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueKindConversions); err != nil {
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeConversions); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case enqueueReleasesStat:
-				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueKindReleases); err != nil {
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeReleases); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case enqueueRequestsStat:
-				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueKindRequests); err != nil {
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeRequests); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case enqueueTimeoutsStat:
-				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueKindTimeouts); err != nil {
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeTimeouts); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case enqueueWaitsStat:
-				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueKindWaits); err != nil {
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeWaits); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case lobReadsStat:
@@ -679,7 +679,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", dbTimeStat, row[colValue], err))
 				} else {
 					value /= 100
-					s.mb.RecordOracledbDbTimeDataPoint(now, value)
+					s.mb.RecordOracledbDbTimeDataPoint(now, value, metadata.AttributeOracledbSessionTypeForeground)
 				}
 			}
 		}
