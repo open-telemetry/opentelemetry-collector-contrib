@@ -9,5 +9,11 @@ properties:
   record_type:
     description: 'RecordType is an alias for Encoding for backwards compatibility. It is an error to specify both encoding and record_type. Deprecated: [v0.121.0] use Encoding instead.'
     type: string
+  record_decompressed_size_limit:
+    description: RecordDecompressedSizeLimit sets the maximum decompressed size in bytes for a single record.
+    type: integer
+  request_decompressed_size_limit:
+    description: RequestDecompressedSizeLimit sets the maximum cumulative decompressed size in bytes for all records in a single request.
+    type: integer
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

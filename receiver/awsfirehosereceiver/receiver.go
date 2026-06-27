@@ -38,6 +38,12 @@ var (
 	errInHeaderMissingRequestID = errors.New("missing request id in header")
 	errInBodyMissingRequestID   = errors.New("missing request id in body")
 	errInBodyDiffRequestID      = errors.New("different request id in body")
+	errLimitExceeded            = errors.New("decompression limit exceeded")
+)
+
+const (
+	defaultRecordDecompressedSizeLimit  = 20 * 1024 * 1024 // 20 MiB
+	defaultRequestDecompressedSizeLimit = 20 * 1024 * 1024 // 20 MiB
 )
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
@@ -204,6 +210,16 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var recordIndex int
 	var recordBuf []byte
+	recordDecompressedSizeLimit := fmr.config.RecordDecompressedSizeLimit
+	if recordDecompressedSizeLimit == 0 {
+		recordDecompressedSizeLimit = defaultRecordDecompressedSizeLimit
+	}
+	requestDecompressedSizeLimit := fmr.config.RequestDecompressedSizeLimit
+	if requestDecompressedSizeLimit == 0 {
+		requestDecompressedSizeLimit = defaultRequestDecompressedSizeLimit
+	}
+	var cumulativeDecompressedSize int64
+
 	nextRecord := func() ([]byte, error) {
 		if recordIndex == len(fr.Records) {
 			return nil, io.EOF
@@ -217,7 +233,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", recordIndex-1, decodeErr)
 		}
 
-		recordBuf, decodeErr = gunzipRecordIfNeeded(recordBuf)
+		recordBuf, decodeErr = gunzipRecordIfNeeded(recordBuf, recordDecompressedSizeLimit, requestDecompressedSizeLimit, &cumulativeDecompressedSize)
 		if decodeErr != nil {
 			return nil, fmt.Errorf("unable to decompress the record at index %d: %w", recordIndex-1, decodeErr)
 		}
@@ -282,8 +298,16 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 }
 
-func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
+func gunzipRecordIfNeeded(record []byte, recordLimit, cumulativeLimit int64, cumulativeDecompressedSize *int64) ([]byte, error) {
 	if len(record) < 2 || record[0] != 0x1f || record[1] != 0x8b {
+		size := int64(len(record))
+		if size > recordLimit {
+			return nil, fmt.Errorf("%w: record size (%d bytes) exceeds the limit of %d bytes", errLimitExceeded, size, recordLimit)
+		}
+		if *cumulativeDecompressedSize+size > cumulativeLimit {
+			return nil, fmt.Errorf("%w: cumulative decompressed size (%d bytes) exceeds the limit of %d bytes", errLimitExceeded, *cumulativeDecompressedSize+size, cumulativeLimit)
+		}
+		*cumulativeDecompressedSize += size
 		return record, nil
 	}
 
@@ -293,11 +317,29 @@ func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
 	}
 	defer reader.Close()
 
-	decompressed, err := io.ReadAll(reader)
+	allowedForRecord := recordLimit
+	remainingCumulative := cumulativeLimit - *cumulativeDecompressedSize
+	if remainingCumulative < allowedForRecord {
+		allowedForRecord = remainingCumulative
+	}
+	if allowedForRecord < 0 {
+		allowedForRecord = 0
+	}
+
+	limitedReader := io.LimitReader(reader, allowedForRecord+1)
+	decompressed, err := io.ReadAll(limitedReader)
 	if err != nil {
 		return nil, err
 	}
 
+	if int64(len(decompressed)) > allowedForRecord {
+		if int64(len(decompressed)) > recordLimit {
+			return nil, fmt.Errorf("%w: decompressed record size exceeds the limit of %d bytes", errLimitExceeded, recordLimit)
+		}
+		return nil, fmt.Errorf("%w: cumulative decompressed size exceeds the limit of %d bytes", errLimitExceeded, cumulativeLimit)
+	}
+
+	*cumulativeDecompressedSize += int64(len(decompressed))
 	return decompressed, nil
 }
 

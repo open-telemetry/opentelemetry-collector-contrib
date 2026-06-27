@@ -126,6 +126,12 @@ func (c *metricsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc
 		if errors.Is(err, io.EOF) {
 			break
 		}
+		if err != nil {
+			if errors.Is(err, errLimitExceeded) {
+				return http.StatusRequestEntityTooLarge, err
+			}
+			return http.StatusBadRequest, err
+		}
 		metrics, err := c.unmarshaler.UnmarshalMetrics(record)
 		if err != nil {
 			return http.StatusBadRequest, err

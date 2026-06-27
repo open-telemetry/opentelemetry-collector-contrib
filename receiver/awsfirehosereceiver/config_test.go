@@ -77,3 +77,55 @@ func TestLoadConfigInvalid(t *testing.T) {
 	err = xconfmap.Validate(cfg)
 	assert.ErrorIs(t, err, errRecordTypeEncodingSet)
 }
+
+func TestValidate(t *testing.T) {
+	testCases := map[string]struct {
+		cfg     *Config
+		wantErr string
+	}{
+		"negative record_decompressed_size_limit": {
+			cfg: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "localhost:8443",
+					},
+				},
+				RecordDecompressedSizeLimit: -1,
+			},
+			wantErr: "record_decompressed_size_limit must be non-negative",
+		},
+		"negative request_decompressed_size_limit": {
+			cfg: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "localhost:8443",
+					},
+				},
+				RequestDecompressedSizeLimit: -1,
+			},
+			wantErr: "request_decompressed_size_limit must be non-negative",
+		},
+		"valid configuration": {
+			cfg: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "localhost:8443",
+					},
+				},
+				RecordDecompressedSizeLimit:  10,
+				RequestDecompressedSizeLimit: 20,
+			},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
