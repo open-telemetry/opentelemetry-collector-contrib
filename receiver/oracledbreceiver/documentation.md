@@ -584,17 +584,17 @@ Current OS load average as reported by the operating system.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
-### system.cpu.physical.count
+### oracledb.system.cpu.physical.count
 
-Number of physical CPUs available to the Oracle server as reported by the operating system.
+Number of physical CPUs available to the Oracle server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {cpu} | Gauge | Int | Development |
 
-### system.memory.limit
+### oracledb.system.memory.limit
 
-Total physical memory available to the Oracle server in bytes.
+Total physical memory available to the Oracle server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

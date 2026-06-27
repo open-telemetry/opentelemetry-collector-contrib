@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add OS-level metrics from V$OSSTAT sourced from the Oracle server's operating system
+note: Add OS-level metrics for the Oracle server
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48458]
@@ -16,11 +16,8 @@ issues: [48458]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Add 3 new opt-in metrics (disabled by default, stability: development) sourced from V$OSSTAT:
-  system.cpu.physical.count - number of physical CPUs available to the Oracle server (reuses OTel system semconv),
-  system.memory.limit - total physical memory of the Oracle server in bytes (reuses OTel system semconv),
-  oracledb.system.cpu.load - current OS load average as reported by the Oracle server.
-  Requires GRANT SELECT ON V_$OSSTAT TO <username>.
+  Adds the opt-in metrics `oracledb.system.cpu.physical.count`,
+  `oracledb.system.memory.limit`, and `oracledb.system.cpu.load`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

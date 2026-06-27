@@ -122,6 +122,10 @@ all_set:
       enabled: true
     oracledb.system.cpu.load:
       enabled: true
+    oracledb.system.cpu.physical.count:
+      enabled: true
+    oracledb.system.memory.limit:
+      enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
       attributes: ["tablespace_name"]
@@ -135,10 +139,6 @@ all_set:
     oracledb.user_commits:
       enabled: true
     oracledb.user_rollbacks:
-      enabled: true
-    system.cpu.physical.count:
-      enabled: true
-    system.memory.limit:
       enabled: true
   events:
     db.server.query_sample:
@@ -287,6 +287,10 @@ reaggregate_set:
       enabled: true
     oracledb.system.cpu.load:
       enabled: true
+    oracledb.system.cpu.physical.count:
+      enabled: true
+    oracledb.system.memory.limit:
+      enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
       attributes: []
@@ -300,10 +304,6 @@ reaggregate_set:
     oracledb.user_commits:
       enabled: true
     oracledb.user_rollbacks:
-      enabled: true
-    system.cpu.physical.count:
-      enabled: true
-    system.memory.limit:
       enabled: true
   events:
     db.server.query_sample:
@@ -452,6 +452,10 @@ none_set:
       enabled: false
     oracledb.system.cpu.load:
       enabled: false
+    oracledb.system.cpu.physical.count:
+      enabled: false
+    oracledb.system.memory.limit:
+      enabled: false
     oracledb.tablespace_size.limit:
       enabled: false
       attributes: ["tablespace_name"]
@@ -465,10 +469,6 @@ none_set:
     oracledb.user_commits:
       enabled: false
     oracledb.user_rollbacks:
-      enabled: false
-    system.cpu.physical.count:
-      enabled: false
-    system.memory.limit:
       enabled: false
   events:
     db.server.query_sample:

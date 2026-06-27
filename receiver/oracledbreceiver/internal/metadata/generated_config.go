@@ -1349,6 +1349,46 @@ func (ms *OracledbSystemCPULoadMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// OracledbSystemCPUPhysicalCountMetricConfig provides config for the oracledb.system.cpu.physical.count metric.
+type OracledbSystemCPUPhysicalCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemMemoryLimitMetricConfig provides config for the oracledb.system.memory.limit metric.
+type OracledbSystemMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbTablespaceSizeLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.limit metric.
 type OracledbTablespaceSizeLimitMetricAttributeKey string
 
@@ -1525,46 +1565,6 @@ func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// SystemCPUPhysicalCountMetricConfig provides config for the system.cpu.physical.count metric.
-type SystemCPUPhysicalCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// SystemMemoryLimitMetricConfig provides config for the system.memory.limit metric.
-type SystemMemoryLimitMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
 	OracledbBufferCacheUtilization                OracledbBufferCacheUtilizationMetricConfig                `mapstructure:"oracledb.buffer_cache.utilization"`
@@ -1624,14 +1624,14 @@ type MetricsConfig struct {
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
 	OracledbSystemCPULoad                         OracledbSystemCPULoadMetricConfig                         `mapstructure:"oracledb.system.cpu.load"`
+	OracledbSystemCPUPhysicalCount                OracledbSystemCPUPhysicalCountMetricConfig                `mapstructure:"oracledb.system.cpu.physical.count"`
+	OracledbSystemMemoryLimit                     OracledbSystemMemoryLimitMetricConfig                     `mapstructure:"oracledb.system.memory.limit"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
 	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
 	OracledbUserCommits                           OracledbUserCommitsMetricConfig                           `mapstructure:"oracledb.user_commits"`
 	OracledbUserRollbacks                         OracledbUserRollbacksMetricConfig                         `mapstructure:"oracledb.user_rollbacks"`
-	SystemCPUPhysicalCount                        SystemCPUPhysicalCountMetricConfig                        `mapstructure:"system.cpu.physical.count"`
-	SystemMemoryLimit                             SystemMemoryLimitMetricConfig                             `mapstructure:"system.memory.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -1821,6 +1821,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbSystemCPULoad: OracledbSystemCPULoadMetricConfig{
 			Enabled: false,
 		},
+		OracledbSystemCPUPhysicalCount: OracledbSystemCPUPhysicalCountMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+			Enabled: false,
+		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -1842,12 +1848,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbUserRollbacks: OracledbUserRollbacksMetricConfig{
 			Enabled: true,
-		},
-		SystemCPUPhysicalCount: SystemCPUPhysicalCountMetricConfig{
-			Enabled: false,
-		},
-		SystemMemoryLimit: SystemMemoryLimitMetricConfig{
-			Enabled: false,
 		},
 	}
 }

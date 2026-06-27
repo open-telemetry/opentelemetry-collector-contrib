@@ -363,7 +363,7 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for SystemCPUPhysicalCount, value was bad`,
+			errWanted: `failed to parse int64 for OracledbSystemCPUPhysicalCount, value was bad`,
 		},
 		{
 			name: "bad LOAD value",
@@ -387,15 +387,15 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for SystemMemoryLimit, value was bad`,
+			errWanted: `failed to parse int64 for OracledbSystemMemoryLimit, value was bad`,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
-			cfg.Metrics.SystemCPUPhysicalCount.Enabled = true
+			cfg.Metrics.OracledbSystemCPUPhysicalCount.Enabled = true
 			cfg.Metrics.OracledbSystemCPULoad.Enabled = true
-			cfg.Metrics.SystemMemoryLimit.Enabled = true
+			cfg.Metrics.OracledbSystemMemoryLimit.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -419,23 +419,21 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-
-				intMetricMap := make(map[string]int64)
-				doubleMetricMap := make(map[string]float64)
 				for i := 0; i < metrics.Len(); i++ {
 					metric := metrics.At(i)
-					if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
-						dp := metric.Gauge().DataPoints().At(0)
-						if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
-							doubleMetricMap[metric.Name()] = dp.DoubleValue()
-						} else {
-							intMetricMap[metric.Name()] = dp.IntValue()
-						}
+					if metric.Type() != pmetric.MetricTypeGauge || metric.Gauge().DataPoints().Len() == 0 {
+						continue
+					}
+					dp := metric.Gauge().DataPoints().At(0)
+					switch metric.Name() {
+					case "oracledb.system.cpu.physical.count":
+						assert.Equal(t, int64(8), dp.IntValue())
+					case "oracledb.system.cpu.load":
+						assert.InDelta(t, 1.5, dp.DoubleValue(), floatDelta)
+					case "oracledb.system.memory.limit":
+						assert.Equal(t, int64(17179869184), dp.IntValue())
 					}
 				}
-				assert.Equal(t, int64(8), intMetricMap["system.cpu.physical.count"])
-				assert.InDelta(t, 1.5, doubleMetricMap["oracledb.system.cpu.load"], floatDelta)
-				assert.Equal(t, int64(17179869184), intMetricMap["system.memory.limit"])
 			}
 		})
 	}

@@ -660,7 +660,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	s.collectDataDictHitRatio(ctx, &scrapeErrors)
-	s.collectOSStat(ctx, &scrapeErrors)
+	if s.metricsBuilderConfig.Metrics.OracledbSystemCPUPhysicalCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled {
+		s.collectOSStat(ctx, &scrapeErrors)
+	}
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
 	s.collectStorageUsage(ctx, &scrapeErrors)
 	s.collectSysMetrics(ctx, &scrapeErrors)
@@ -696,11 +700,6 @@ func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeError
 }
 
 func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled &&
-		!s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
-		return
-	}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	rows, err := s.osStatClient.metricRows(ctx)
 	if err != nil {
@@ -712,32 +711,26 @@ func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error
 		statValue := row[colOSStatValue]
 		switch statName {
 		case osStatNameNumCPUs:
-			if s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
-				val, err := strconv.ParseInt(statValue, 10, 64)
-				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemCPUPhysicalCount, value was %s: %w", statValue, err))
-					continue
-				}
-				s.mb.RecordSystemCPUPhysicalCountDataPoint(now, val)
+			val, err := strconv.ParseInt(statValue, 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemCPUPhysicalCount, value was %s: %w", statValue, err))
+				continue
 			}
+			s.mb.RecordOracledbSystemCPUPhysicalCountDataPoint(now, val)
 		case osStatNameLoad:
-			if s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled {
-				val, err := strconv.ParseFloat(statValue, 64)
-				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemCPULoad, value was %s: %w", statValue, err))
-					continue
-				}
-				s.mb.RecordOracledbSystemCPULoadDataPoint(now, val)
+			val, err := strconv.ParseFloat(statValue, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemCPULoad, value was %s: %w", statValue, err))
+				continue
 			}
+			s.mb.RecordOracledbSystemCPULoadDataPoint(now, val)
 		case osStatNamePhysicalMemory:
-			if s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
-				val, err := strconv.ParseInt(statValue, 10, 64)
-				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemMemoryLimit, value was %s: %w", statValue, err))
-					continue
-				}
-				s.mb.RecordSystemMemoryLimitDataPoint(now, val)
+			val, err := strconv.ParseInt(statValue, 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemMemoryLimit, value was %s: %w", statValue, err))
+				continue
 			}
+			s.mb.RecordOracledbSystemMemoryLimitDataPoint(now, val)
 		}
 	}
 }
