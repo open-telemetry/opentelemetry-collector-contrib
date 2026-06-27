@@ -196,6 +196,64 @@ var MapAttributeOracledbParseType = map[string]AttributeOracledbParseType{
 	"soft": AttributeOracledbParseTypeSoft,
 }
 
+// AttributeOracledbSgaComponentName specifies the value oracledb.sga.component.name attribute.
+type AttributeOracledbSgaComponentName int
+
+const (
+	_ AttributeOracledbSgaComponentName = iota
+	AttributeOracledbSgaComponentNameFixedSGASize
+	AttributeOracledbSgaComponentNameRedoBuffers
+	AttributeOracledbSgaComponentNameBufferCacheSize
+	AttributeOracledbSgaComponentNameSharedPoolSize
+	AttributeOracledbSgaComponentNameLargePoolSize
+	AttributeOracledbSgaComponentNameJavaPoolSize
+	AttributeOracledbSgaComponentNameStreamsPoolSize
+	AttributeOracledbSgaComponentNameSharedIOPoolSize
+	AttributeOracledbSgaComponentNameDataTransferCacheSize
+	AttributeOracledbSgaComponentNameInMemoryAreaSize
+)
+
+// String returns the string representation of the AttributeOracledbSgaComponentName.
+func (av AttributeOracledbSgaComponentName) String() string {
+	switch av {
+	case AttributeOracledbSgaComponentNameFixedSGASize:
+		return "Fixed SGA Size"
+	case AttributeOracledbSgaComponentNameRedoBuffers:
+		return "Redo Buffers"
+	case AttributeOracledbSgaComponentNameBufferCacheSize:
+		return "Buffer Cache Size"
+	case AttributeOracledbSgaComponentNameSharedPoolSize:
+		return "Shared Pool Size"
+	case AttributeOracledbSgaComponentNameLargePoolSize:
+		return "Large Pool Size"
+	case AttributeOracledbSgaComponentNameJavaPoolSize:
+		return "Java Pool Size"
+	case AttributeOracledbSgaComponentNameStreamsPoolSize:
+		return "Streams Pool Size"
+	case AttributeOracledbSgaComponentNameSharedIOPoolSize:
+		return "Shared IO Pool Size"
+	case AttributeOracledbSgaComponentNameDataTransferCacheSize:
+		return "Data Transfer Cache Size"
+	case AttributeOracledbSgaComponentNameInMemoryAreaSize:
+		return "In-Memory Area Size"
+	}
+	return ""
+}
+
+// MapAttributeOracledbSgaComponentName is a helper map of string to AttributeOracledbSgaComponentName attribute value.
+var MapAttributeOracledbSgaComponentName = map[string]AttributeOracledbSgaComponentName{
+	"Fixed SGA Size":           AttributeOracledbSgaComponentNameFixedSGASize,
+	"Redo Buffers":             AttributeOracledbSgaComponentNameRedoBuffers,
+	"Buffer Cache Size":        AttributeOracledbSgaComponentNameBufferCacheSize,
+	"Shared Pool Size":         AttributeOracledbSgaComponentNameSharedPoolSize,
+	"Large Pool Size":          AttributeOracledbSgaComponentNameLargePoolSize,
+	"Java Pool Size":           AttributeOracledbSgaComponentNameJavaPoolSize,
+	"Streams Pool Size":        AttributeOracledbSgaComponentNameStreamsPoolSize,
+	"Shared IO Pool Size":      AttributeOracledbSgaComponentNameSharedIOPoolSize,
+	"Data Transfer Cache Size": AttributeOracledbSgaComponentNameDataTransferCacheSize,
+	"In-Memory Area Size":      AttributeOracledbSgaComponentNameInMemoryAreaSize,
+}
+
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
 type AttributeOracledbSortType int
 
@@ -3266,7 +3324,7 @@ type metricOracledbSgaLimit struct {
 // init fills oracledb.sga.limit metric with initial data.
 func (m *metricOracledbSgaLimit) init() {
 	m.data.SetName("oracledb.sga.limit")
-	m.data.SetDescription("Maximum size of the System Global Area (SGA) in bytes as reported by V$SGAINFO (Maximum SGA Size).")
+	m.data.SetDescription("Maximum size of the System Global Area (SGA).")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -3317,7 +3375,7 @@ type metricOracledbSgaUsage struct {
 // init fills oracledb.sga.usage metric with initial data.
 func (m *metricOracledbSgaUsage) init() {
 	m.data.SetName("oracledb.sga.usage")
-	m.data.SetDescription("Size in bytes of each component of the System Global Area (SGA) as reported by V$SGAINFO.")
+	m.data.SetDescription("Size of each component of the System Global Area (SGA).")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -4985,8 +5043,8 @@ func (mb *MetricsBuilder) RecordOracledbSgaLimitDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordOracledbSgaUsageDataPoint adds a data point to oracledb.sga.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSgaUsageDataPoint(ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue string) {
-	mb.metricOracledbSgaUsage.recordDataPoint(mb.startTime, ts, val, oracledbSgaComponentNameAttributeValue)
+func (mb *MetricsBuilder) RecordOracledbSgaUsageDataPoint(ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue AttributeOracledbSgaComponentName) {
+	mb.metricOracledbSgaUsage.recordDataPoint(mb.startTime, ts, val, oracledbSgaComponentNameAttributeValue.String())
 }
 
 // RecordOracledbSharedPoolUtilizationDataPoint adds a data point to oracledb.shared_pool.utilization metric.

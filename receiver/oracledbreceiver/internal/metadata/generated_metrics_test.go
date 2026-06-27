@@ -255,9 +255,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSgaLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbSgaUsageDataPoint(ts, 1, "oracledb.sga.component.name-val")
+			mb.RecordOracledbSgaUsageDataPoint(ts, 1, AttributeOracledbSgaComponentNameFixedSGASize)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbSgaUsageDataPoint(ts, 3, "oracledb.sga.component.name-val-2")
+				mb.RecordOracledbSgaUsageDataPoint(ts, 3, AttributeOracledbSgaComponentNameRedoBuffers)
 			}
 
 			allMetricsCount++
@@ -1179,7 +1179,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.sga.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum size of the System Global Area (SGA) in bytes as reported by V$SGAINFO (Maximum SGA Size).", mi.Description())
+					assert.Equal(t, "Maximum size of the System Global Area (SGA).", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1192,7 +1192,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.sga.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Size in bytes of each component of the System Global Area (SGA) as reported by V$SGAINFO.", mi.Description())
+						assert.Equal(t, "Size of each component of the System Global Area (SGA).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1201,13 +1201,13 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						oracledbSgaComponentNameAttrVal, ok := dp.Attributes().Get("oracledb.sga.component.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.sga.component.name-val", oracledbSgaComponentNameAttrVal.Str())
+						assert.Equal(t, "Fixed SGA Size", oracledbSgaComponentNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.sga.usage"], "Found a duplicate in the metrics slice: oracledb.sga.usage")
 						validatedMetrics["oracledb.sga.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Size in bytes of each component of the System Global Area (SGA) as reported by V$SGAINFO.", mi.Description())
+						assert.Equal(t, "Size of each component of the System Global Area (SGA).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

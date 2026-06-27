@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add SGA component size and maximum size metrics from V$SGAINFO
+note: Add SGA component memory metrics
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48540]
@@ -16,11 +16,7 @@ issues: [48540]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Add 2 new opt-in metrics (disabled by default, stability: development) sourced from V$SGAINFO:
-  oracledb.sga.usage - size in bytes of each SGA component (Buffer Cache, Shared Pool, Redo Buffers, etc.)
-  tagged with the oracledb.sga.component.name attribute.
-  oracledb.sga.limit - maximum size of the SGA in bytes (Maximum SGA Size row from V$SGAINFO).
-  Requires GRANT SELECT ON V_$SGAINFO TO <username>.
+  Adds the opt-in metrics `oracledb.sga.usage` and `oracledb.sga.limit`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

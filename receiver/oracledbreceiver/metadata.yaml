@@ -249,8 +249,19 @@ attributes:
     description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
   oracledb.sga.component.name:
-    description: Name of the SGA memory component as reported by V$SGAINFO (e.g. Buffer Cache, Shared Pool, Log Buffer).
+    description: Name of the SGA memory component.
     type: string
+    enum:
+      - Fixed SGA Size
+      - Redo Buffers
+      - Buffer Cache Size
+      - Shared Pool Size
+      - Large Pool Size
+      - Java Pool Size
+      - Streams Pool Size
+      - Shared IO Pool Size
+      - Data Transfer Cache Size
+      - In-Memory Area Size
     requirement_level: recommended
   oracledb.sid:
     description: ID of the Oracle Server session.
@@ -850,7 +861,7 @@ metrics:
       input_type: string
     unit: "{sessions}"
   oracledb.sga.limit:
-    description: Maximum size of the System Global Area (SGA) in bytes as reported by V$SGAINFO (Maximum SGA Size).
+    description: Maximum size of the System Global Area (SGA).
     enabled: false
     stability: development
     gauge:
@@ -859,7 +870,7 @@ metrics:
   oracledb.sga.usage:
     attributes:
       - oracledb.sga.component.name
-    description: Size in bytes of each component of the System Global Area (SGA) as reported by V$SGAINFO.
+    description: Size of each component of the System Global Area (SGA).
     enabled: false
     stability: development
     gauge:

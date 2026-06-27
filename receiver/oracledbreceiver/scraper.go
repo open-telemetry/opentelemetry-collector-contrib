@@ -115,6 +115,10 @@ const (
 	colUsedDBSize          = "USED_DB_SIZE"
 	colAllocatedDBSize     = "ALLOCATED_DB_SIZE"
 
+	// sgaMaxSize is the row routed to oracledb.sga.limit; other non-component
+	// rows are filtered via MapAttributeOracledbSgaComponentName.
+	sgaMaxSize = "Maximum SGA Size"
+
 	sqlIDAttr        = "SQL_ID"
 	childAddressAttr = "CHILD_ADDRESS"
 	childNumberAttr  = "CHILD_NUMBER"
@@ -657,7 +661,10 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	s.collectDataDictHitRatio(ctx, &scrapeErrors)
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
-	s.collectSGAInfo(ctx, &scrapeErrors)
+	if s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
+		s.collectSGAInfo(ctx, &scrapeErrors)
+	}
 	s.collectStorageUsage(ctx, &scrapeErrors)
 	s.collectSysMetrics(ctx, &scrapeErrors)
 
@@ -711,13 +718,7 @@ func (s *oracleScraper) collectRecycleBinSize(ctx context.Context, scrapeErrors 
 	}
 }
 
-const sgaMaxComponentName = "Maximum SGA Size"
-
 func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
-		return
-	}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	rows, err := s.sgaInfoClient.metricRows(ctx)
 	if err != nil {
@@ -730,13 +731,20 @@ func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]erro
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSgaUsage, value was %s: %w", row[colSGAInfoBytes], err))
 			continue
 		}
-		if row[colSGAInfoName] == sgaMaxComponentName {
-			if s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
-				s.mb.RecordOracledbSgaLimitDataPoint(now, val)
-			}
-		} else if s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled {
-			s.mb.RecordOracledbSgaUsageDataPoint(now, val, row[colSGAInfoName])
+		name := row[colSGAInfoName]
+		if name == sgaMaxSize {
+			s.mb.RecordOracledbSgaLimitDataPoint(now, val)
+			continue
 		}
+		// Skip rows that are not allocated SGA components. Filtering these out
+		// keeps sum(oracledb.sga.usage) consistent with oracledb.sga.limit per
+		// OTel semantic conventions. Unknown future component names are also
+		// skipped via the MapAttributeOracledbSgaComponentName lookup below.
+		component, ok := metadata.MapAttributeOracledbSgaComponentName[name]
+		if !ok {
+			continue
+		}
+		s.mb.RecordOracledbSgaUsageDataPoint(now, val, component)
 	}
 }
 
