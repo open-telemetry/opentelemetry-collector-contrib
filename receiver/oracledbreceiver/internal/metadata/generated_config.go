@@ -1808,7 +1808,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbSgaUsage: OracledbSgaUsageMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
 		},
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
