@@ -562,7 +562,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				} else {
-					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeSynch)
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeSync)
 				}
 			case redoWriteTime:
 				// redo time is reported in centiseconds; convert to seconds.
@@ -723,8 +723,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return out, nil
 }
 
-// parseFloat converts a raw v$sysstat string value to a float64, wrapping parse
-// errors with the metric name for context.
 func parseFloat(metricName, rawValue string) (float64, error) {
 	value, err := strconv.ParseFloat(rawValue, 64)
 	if err != nil {

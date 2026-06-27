@@ -1143,7 +1143,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.redo.blocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of redo blocks moved between the redo log and storage, by I/O direction.", mi.Description())
+						assert.Equal(t, "Number of redo blocks moved between the redo log and storage.", mi.Description())
 						assert.Equal(t, "{block}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1160,7 +1160,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.redo.blocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of redo blocks moved between the redo log and storage, by I/O direction.", mi.Description())
+						assert.Equal(t, "Number of redo blocks moved between the redo log and storage.", mi.Description())
 						assert.Equal(t, "{block}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1187,7 +1187,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.redo.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of redo I/O operations, by I/O direction.", mi.Description())
+						assert.Equal(t, "Number of redo I/O operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1204,7 +1204,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.redo.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of redo I/O operations, by I/O direction.", mi.Description())
+						assert.Equal(t, "Number of redo I/O operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

@@ -509,7 +509,7 @@ Total size of the recycle bin.
 
 ### oracledb.redo.blocks
 
-Number of redo blocks moved between the redo log and storage, by I/O direction.
+Number of redo blocks moved between the redo log and storage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -523,7 +523,7 @@ Number of redo blocks moved between the redo log and storage, by I/O direction.
 
 ### oracledb.redo.operations
 
-Number of redo I/O operations, by I/O direction.
+Number of redo I/O operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -583,7 +583,7 @@ Time spent in each phase of the redo pipeline.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.redo.type | The phase of the redo pipeline that a redo time measurement is attributed to. | Str: ``write``, ``log_space_wait``, ``synch`` | Recommended | - |
+| oracledb.redo.type | The phase of the redo pipeline that a redo time measurement is attributed to. | Str: ``write``, ``log_space_wait``, ``sync`` | Recommended | - |
 
 ### oracledb.redo_allocation.utilization
 

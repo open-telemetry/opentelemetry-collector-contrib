@@ -246,7 +246,7 @@ attributes:
   oracledb.redo.type:
     description: The phase of the redo pipeline that a redo time measurement is attributed to.
     type: string
-    enum: [write, log_space_wait, synch]
+    enum: [write, log_space_wait, sync]
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
@@ -834,7 +834,7 @@ metrics:
       value_type: double
     unit: By
   oracledb.redo.blocks:
-    description: Number of redo blocks moved between the redo log and storage, by I/O direction.
+    description: Number of redo blocks moved between the redo log and storage.
     enabled: false
     stability: development
     sum:
@@ -845,7 +845,7 @@ metrics:
     unit: "{block}"
     attributes: [disk.io.direction]
   oracledb.redo.operations:
-    description: Number of redo I/O operations, by I/O direction.
+    description: Number of redo I/O operations.
     enabled: false
     stability: development
     sum:

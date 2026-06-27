@@ -436,47 +436,64 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	// metricName -> attrSignature -> data point (int and double accessors)
-	intVals := map[string]map[string]int64{}
-	doubleVals := map[string]map[string]float64{}
+	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
+	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
 		if me.Type() != pmetric.MetricTypeSum {
 			continue
 		}
 		dps := me.Sum().DataPoints()
-		for j := 0; j < dps.Len(); j++ {
-			dp := dps.At(j)
-			var keys []string
-			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-				keys = append(keys, k+"="+v.AsString())
-				return true
-			})
-			sort.Strings(keys)
-			sig := strings.Join(keys, ",")
-			if _, ok := intVals[me.Name()]; !ok {
-				intVals[me.Name()] = map[string]int64{}
-				doubleVals[me.Name()] = map[string]float64{}
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbRedoTime.Name:
+			// centiseconds converted to seconds (value / 100), one data point per redo.type.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				redoType, _ := dp.Attributes().Get("oracledb.redo.type")
+				switch redoType.Str() {
+				case metadata.AttributeOracledbRedoTypeWrite.String():
+					assert.InDelta(t, 15.0, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeLogSpaceWait.String():
+					assert.InDelta(t, 2.5, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeSync.String():
+					assert.InDelta(t, 9.0, dp.DoubleValue(), floatDelta)
+				default:
+					t.Errorf("unexpected oracledb.redo.type: %q", redoType.Str())
+				}
 			}
-			intVals[me.Name()][sig] = dp.IntValue()
-			doubleVals[me.Name()][sig] = dp.DoubleValue()
+			seen++
+		case metadata.MetricsInfo.OracledbRedoSize.Name:
+			assert.Equal(t, int64(104857600), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoOperations.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(45000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoBlocks.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(210000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRequests.Name:
+			dp := dps.At(0)
+			reqType, _ := dp.Attributes().Get("oracledb.redo.request.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRequestTypeLogSpace.String(), reqType.Str())
+			assert.Equal(t, int64(34), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRetries.Name:
+			dp := dps.At(0)
+			retryType, _ := dp.Attributes().Get("oracledb.redo.retry.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRetryTypeBufferAllocation.String(), retryType.Str())
+			assert.Equal(t, int64(12), dp.IntValue())
+			seen++
 		}
 	}
-
-	// oracledb.redo.time: centiseconds converted to seconds (value / 100), one data point per redo.type.
-	assert.InDelta(t, 15.0, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=write"], floatDelta)
-	assert.InDelta(t, 2.5, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=log_space_wait"], floatDelta)
-	assert.InDelta(t, 9.0, doubleVals[metadata.MetricsInfo.OracledbRedoTime.Name]["oracledb.redo.type=synch"], floatDelta)
-
-	// Standalone redo counters pass v$sysstat VALUE straight through.
-	assert.Equal(t, int64(104857600), intVals[metadata.MetricsInfo.OracledbRedoSize.Name][""])
-	// redo.operations and redo.blocks carry disk.io.direction=write.
-	assert.Equal(t, int64(45000), intVals[metadata.MetricsInfo.OracledbRedoOperations.Name]["disk.io.direction=write"])
-	assert.Equal(t, int64(210000), intVals[metadata.MetricsInfo.OracledbRedoBlocks.Name]["disk.io.direction=write"])
-	// redo.requests and redo.retries each carry a single-value type attribute.
-	assert.Equal(t, int64(34), intVals[metadata.MetricsInfo.OracledbRedoRequests.Name]["oracledb.redo.request.type=log_space"])
-	assert.Equal(t, int64(12), intVals[metadata.MetricsInfo.OracledbRedoRetries.Name]["oracledb.redo.retry.type=buffer_allocation"])
+	assert.Equal(t, 6, seen, "expected all 6 redo metrics to be emitted")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

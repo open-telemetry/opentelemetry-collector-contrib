@@ -247,7 +247,7 @@ const (
 	_ AttributeOracledbRedoType = iota
 	AttributeOracledbRedoTypeWrite
 	AttributeOracledbRedoTypeLogSpaceWait
-	AttributeOracledbRedoTypeSynch
+	AttributeOracledbRedoTypeSync
 )
 
 // String returns the string representation of the AttributeOracledbRedoType.
@@ -257,8 +257,8 @@ func (av AttributeOracledbRedoType) String() string {
 		return "write"
 	case AttributeOracledbRedoTypeLogSpaceWait:
 		return "log_space_wait"
-	case AttributeOracledbRedoTypeSynch:
-		return "synch"
+	case AttributeOracledbRedoTypeSync:
+		return "sync"
 	}
 	return ""
 }
@@ -267,7 +267,7 @@ func (av AttributeOracledbRedoType) String() string {
 var MapAttributeOracledbRedoType = map[string]AttributeOracledbRedoType{
 	"write":          AttributeOracledbRedoTypeWrite,
 	"log_space_wait": AttributeOracledbRedoTypeLogSpaceWait,
-	"synch":          AttributeOracledbRedoTypeSynch,
+	"sync":           AttributeOracledbRedoTypeSync,
 }
 
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
@@ -3169,7 +3169,7 @@ type metricOracledbRedoBlocks struct {
 // init fills oracledb.redo.blocks metric with initial data.
 func (m *metricOracledbRedoBlocks) init() {
 	m.data.SetName("oracledb.redo.blocks")
-	m.data.SetDescription("Number of redo blocks moved between the redo log and storage, by I/O direction.")
+	m.data.SetDescription("Number of redo blocks moved between the redo log and storage.")
 	m.data.SetUnit("{block}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3260,7 +3260,7 @@ type metricOracledbRedoOperations struct {
 // init fills oracledb.redo.operations metric with initial data.
 func (m *metricOracledbRedoOperations) init() {
 	m.data.SetName("oracledb.redo.operations")
-	m.data.SetDescription("Number of redo I/O operations, by I/O direction.")
+	m.data.SetDescription("Number of redo I/O operations.")
 	m.data.SetUnit("{operation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
