@@ -433,41 +433,50 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	// metricName -> attrSignature -> int value
-	got := map[string]map[string]int64{}
+	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
+	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
 	for i := 0; i < metrics.Len(); i++ {
 		me := metrics.At(i)
 		if me.Type() != pmetric.MetricTypeSum {
 			continue
 		}
 		dps := me.Sum().DataPoints()
-		for j := 0; j < dps.Len(); j++ {
-			dp := dps.At(j)
-			var keys []string
-			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-				keys = append(keys, k+"="+v.AsString())
-				return true
-			})
-			sort.Strings(keys)
-			sig := strings.Join(keys, ",")
-			if _, ok := got[me.Name()]; !ok {
-				got[me.Name()] = map[string]int64{}
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name:
+			assert.Equal(t, int64(8800000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name:
+			assert.Equal(t, int64(7700000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointBuffers.Name:
+			assert.Equal(t, int64(12000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointCompleted.Name:
+			assert.Equal(t, int64(320), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferRequests.Name:
+			assert.Equal(t, int64(6100), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferInspected.Name:
+			// one data point per buffer state.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.Attributes().Get("oracledb.buffer.state")
+				switch state.Str() {
+				case metadata.AttributeOracledbBufferStateFree.String():
+					assert.Equal(t, int64(55000), dp.IntValue())
+				case metadata.AttributeOracledbBufferStateDirty.String():
+					assert.Equal(t, int64(1200), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.buffer.state: %q", state.Str())
+				}
 			}
-			got[me.Name()][sig] = dp.IntValue()
+			seen++
 		}
 	}
-
-	// Standalone counters (no attributes).
-	assert.Equal(t, int64(8800000), got[metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name][""])
-	assert.Equal(t, int64(7700000), got[metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name][""])
-	assert.Equal(t, int64(12000), got[metadata.MetricsInfo.OracledbCheckpointBuffers.Name][""])
-	assert.Equal(t, int64(320), got[metadata.MetricsInfo.OracledbCheckpointCompleted.Name][""])
-
-	// buffer.requests has no attributes; buffer.inspected is keyed by buffer state.
-	assert.Equal(t, int64(6100), got[metadata.MetricsInfo.OracledbBufferRequests.Name][""])
-	assert.Equal(t, int64(55000), got[metadata.MetricsInfo.OracledbBufferInspected.Name]["oracledb.buffer.state=free"])
-	assert.Equal(t, int64(1200), got[metadata.MetricsInfo.OracledbBufferInspected.Name]["oracledb.buffer.state=dirty"])
+	assert.Equal(t, 6, seen, "expected all 6 buffer/checkpoint metrics to be emitted")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
