@@ -268,6 +268,23 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 | Metrics   | :white_check_mark: |
 | Profiles  | :white_check_mark: |
 
+For example, a single log record is indexed as a document with the OTLP
+structure preserved — `resource`, `scope`, and `attributes` keep their
+namespaces, `data_stream.*` is lifted to the root, and the log body is placed
+under `body`:
+
+```json
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "observed_timestamp": "2024-03-12T20:00:41.123456789Z",
+  "data_stream": { "type": "logs", "dataset": "mydataset.otel", "namespace": "default" },
+  "resource": { "attributes": { "service.name": "myservice" } },
+  "scope": {},
+  "attributes": { "attr.foo": "attr.foo.value" },
+  "body": { "text": "hello world" }
+}
+```
+
 #### ECS mapping mode
 
 > [!WARNING]
@@ -291,6 +308,20 @@ the APM data stream convention:
   to `logs-apm.error-<namespace>`.
 - All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
 
+For example, OTLP resource and log attributes are mapped to their ECS
+equivalents (`service.*`, `host.*`, `agent.*`, `event.*`, etc.) as nested
+fields:
+
+```json
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "agent": { "name": "custom-agent", "version": "1.2.3" },
+  "event": { "action": "user-password-change" },
+  "host": { "hostname": "localhost", "name": "localhost", "os": { "name": "Mac OS X", "platform": "darwin", "version": "10.14.1" } },
+  "service": { "name": "foo.bar", "version": "1.1.0" }
+}
+```
+
 #### Bodymap mapping mode
 
 > [!WARNING]
@@ -308,6 +339,14 @@ the Elasticsearch document structure.
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
 
+The indexed document is exactly the log record's body map, with no added or
+renamed fields. A log record whose body is the map `{"a": 1, "nested": {"b": 2}}`
+is indexed as:
+
+```json
+{ "a": 1, "nested": { "b": 2 } }
+```
+
 #### Default (none) mapping mode
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
@@ -319,6 +358,23 @@ field names of from the OTLP data structures.
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+Fields are flattened with dotted keys, and attributes, resource attributes, and
+scope fields are emitted under `Attributes.`, `Resource.`, and `Scope.`
+prefixes respectively:
+
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "Attributes.log-attr1": "value1",
+  "Body": "log-body",
+  "Resource.key1": "value1",
+  "Scope.name": "",
+  "Scope.version": "",
+  "SeverityNumber": 0,
+  "TraceFlags": 0
+}
+```
 
 #### Raw mapping mode
 
@@ -335,6 +391,22 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+The same log record as the `none` example above is indexed without the
+`Attributes.` prefix on attribute fields:
+
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "log-attr1": "value1",
+  "Body": "log-body",
+  "Resource.key1": "value1",
+  "Scope.name": "",
+  "Scope.version": "",
+  "SeverityNumber": 0,
+  "TraceFlags": 0
+}
+```
 
 ### Elasticsearch ingest pipeline
 
