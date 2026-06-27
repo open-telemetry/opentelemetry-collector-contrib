@@ -10,6 +10,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
+
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -24,6 +27,7 @@ func main() {
 
 func runInteractive() error {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
+	featuregate.GlobalRegistry().RegisterFlags(flag.CommandLine)
 	flag.Parse()
 
 	cfg, err := config.Load(*configFlag)
@@ -49,8 +53,8 @@ func runInteractive() error {
 		return fmt.Errorf("failed to start supervisor: %w", err)
 	}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
+	interrupt := make(chan os.Signal, 2)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
 	supervisor.Shutdown()
 

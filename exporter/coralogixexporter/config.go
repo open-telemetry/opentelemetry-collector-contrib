@@ -47,15 +47,18 @@ type TransportConfig struct {
 func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	c.Headers.Set("Content-Type", "application/x-protobuf")
 
-	httpClientConfig := confighttp.ClientConfig{
-		ProxyURL:        c.ProxyURL,
-		TLS:             c.TLS,
-		ReadBufferSize:  c.ReadBufferSize,
-		WriteBufferSize: c.WriteBufferSize,
-		Timeout:         c.Timeout,
-		Headers:         c.Headers,
-		Compression:     c.Compression,
-	}
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpClientConfig.MaxIdleConns = 0
+	httpClientConfig.IdleConnTimeout = 0
+	httpClientConfig.ForceAttemptHTTP2 = false
+	httpClientConfig.ProxyURL = c.ProxyURL
+	httpClientConfig.TLS = c.TLS
+	httpClientConfig.ReadBufferSize = c.ReadBufferSize
+	httpClientConfig.WriteBufferSize = c.WriteBufferSize
+	httpClientConfig.Timeout = c.Timeout
+	httpClientConfig.Headers = c.Headers
+	httpClientConfig.Compression = c.Compression
 	return httpClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 }
 
@@ -79,7 +82,12 @@ type Config struct {
 	// Transport settings used with Domain (supports both gRPC and HTTP)
 	DomainSettings TransportConfig `mapstructure:"domain_settings"`
 
-	// Use AWS PrivateLink for the domain
+	// PrivateLink, when enabled, automatically routes telemetry to the AWS PrivateLink ingress
+	// endpoint (ingress.private.<domain>) for the configured domain. AWS PrivateLink provides
+	// private connectivity between VPCs, supported AWS services, and on-premises networks
+	// without exposing traffic to the public internet. If the domain already contains
+	// "private.", no additional prefix is added. For up-to-date PrivateLink endpoints, see
+	// https://coralogix.com/docs/integrations/aws/aws-privatelink/aws-privatelink/#privatelink-endpoints
 	PrivateLink bool `mapstructure:"private_link"`
 
 	// Coralogix traces ingress endpoint (supports both gRPC and HTTP)

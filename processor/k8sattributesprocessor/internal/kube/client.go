@@ -17,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,14 +54,16 @@ type WatchClient struct {
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
-	Pods         map[PodIdentifier]*Pod
-	Rules        ExtractionRules
-	Filters      Filters
-	Associations []Association
-	Exclude      Excludes
+	Pods                      map[PodIdentifier]*Pod
+	Rules                     ExtractionRules
+	Filters                   Filters
+	Associations              []Association
+	hasContainerIDAssociation bool
+	Exclude                   Excludes
 
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
@@ -135,6 +137,7 @@ func New(
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 	watchSyncPeriod time.Duration,
+	podDeleteGracePeriod time.Duration,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -142,17 +145,19 @@ func New(
 	}
 
 	c := &WatchClient{
-		logger:                 set.Logger,
-		Rules:                  rules,
-		Filters:                filters,
-		Associations:           associations,
-		Exclude:                exclude,
-		cronJobRegex:           cronJobRegex,
-		stopCh:                 make(chan struct{}),
-		telemetryBuilder:       telemetryBuilder,
-		waitForMetadata:        waitForMetadata,
-		waitForMetadataTimeout: waitForMetadataTimeout,
-		watchSyncPeriod:        watchSyncPeriod,
+		logger:                    set.Logger,
+		Rules:                     rules,
+		Filters:                   filters,
+		Associations:              associations,
+		hasContainerIDAssociation: hasContainerIDAssociation(associations),
+		Exclude:                   exclude,
+		cronJobRegex:              cronJobRegex,
+		stopCh:                    make(chan struct{}),
+		telemetryBuilder:          telemetryBuilder,
+		waitForMetadata:           waitForMetadata,
+		waitForMetadataTimeout:    waitForMetadataTimeout,
+		watchSyncPeriod:           watchSyncPeriod,
+		podDeleteGracePeriod:      podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -272,7 +277,7 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	// Start the delete loop for cleaning up old pods from cache
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+	go c.deleteLoop(time.Second*30, c.podDeleteGracePeriod)
 
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
@@ -1609,11 +1614,16 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	var staleContainerIDRequests []deleteRequest
 
 	c.m.Lock()
-	defer c.m.Unlock()
-
-	identifiers := c.getIdentifiersFromAssoc(newPod)
+	var oldPod *Pod
+	if newPod.PodUID != "" {
+		if op, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && op.PodUID == newPod.PodUID {
+			oldPod = op
+		}
+	}
 	for i := range identifiers {
 		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
@@ -1627,11 +1637,45 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		}
 		c.Pods[id] = newPod
 	}
+	if c.hasContainerIDAssociation && oldPod != nil &&
+		c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
+		// Run stale container.id cleanup only when this watch actually replaced the pod under
+		// k8s.pod.uid. The loop skips c.Pods[uid]=newPod when pod.Status.StartTime is older than
+		// the StartTime already stored for that key, so a stale watch leaves the UID entry
+		// pointing at the previous *Pod.
+		//
+		// Only container.id-based identifiers are handled here.
+		// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
+		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
+		staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+	}
+	c.m.Unlock()
+
+	c.appendDeleteRequests(staleContainerIDRequests)
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	podToRemove := c.podFromAPI(pod)
-	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	// Look up the cached pod using its UID. Unlike dynamic status attributes (such as IP addresses)
+	// which may be cleared or missing in the final DELETE event payload, the Pod UID is immutable
+	// and guaranteed to be present. Using the cached pod ensures we generate and clean up all keys
+	// under which the pod was originally registered.
+	uidKey := PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), string(pod.UID)),
+	}
+	c.m.RLock()
+	cachedPod, ok := c.Pods[uidKey]
+	c.m.RUnlock()
+
+	var identifiers []PodIdentifier
+	if ok {
+		identifiers = c.getIdentifiersFromAssoc(cachedPod)
+	} else {
+		// Fallback: if the pod was never added to the cache (e.g. startup/informer sync edge cases),
+		// generate deletion keys from the incoming delete event payload directly.
+		podToRemove := c.podFromAPI(pod)
+		identifiers = c.getIdentifiersFromAssoc(podToRemove)
+	}
+
 	for i := range identifiers {
 		id := identifiers[i]
 		p, ok := c.GetPod(id)
@@ -1639,6 +1683,78 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 		if ok && p.PodUID == string(pod.UID) {
 			c.appendDeleteQueue(id, p.PodUID)
 		}
+	}
+}
+
+func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
+	staleContainerIDs := staleContainerIDs(oldPod, newPod)
+	if len(staleContainerIDs) == 0 {
+		return nil
+	}
+
+	identifiers := c.getIdentifiersFromAssoc(oldPod)
+	requests := make([]deleteRequest, 0, len(staleContainerIDs))
+	for i := range identifiers {
+		id := identifiers[i]
+		if !podIdentifierHasContainerID(id, staleContainerIDs) {
+			continue
+		}
+		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
+			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
+		}
+	}
+	return requests
+}
+
+func staleContainerIDs(oldPod, newPod *Pod) map[string]struct{} {
+	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
+		return nil
+	}
+
+	staleContainerIDs := map[string]struct{}{}
+	for containerID := range oldPod.Containers.ByID {
+		if containerID == "" {
+			continue
+		}
+		if _, ok := newPod.Containers.ByID[containerID]; !ok {
+			staleContainerIDs[containerID] = struct{}{}
+		}
+	}
+	return staleContainerIDs
+}
+
+func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struct{}) bool {
+	for i := range id {
+		attr := id[i]
+		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
+			if _, ok := containerIDs[attr.Value]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasContainerIDAssociation(associations []Association) bool {
+	for _, assoc := range associations {
+		for _, source := range assoc.Sources {
+			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func podUIDIdentifier(podUID string) PodIdentifier {
+	return PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), podUID),
+	}
+}
+
+func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
+	for i := range requests {
+		c.appendDeleteQueue(requests[i].id, requests[i].podUID)
 	}
 }
 

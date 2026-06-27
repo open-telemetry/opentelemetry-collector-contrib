@@ -174,6 +174,9 @@ agent:
   # Values here override the values in the agent description retrieved from the collector's
   # OpAMP extension (self-reported by the Collector).
   description:
+    # Passed to the Supervisor-injected OpAMP extension to copy the collector's 
+    # resource attributes into the non-identifying attributes.
+    include_resource_attributes: true
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:
@@ -182,6 +185,14 @@ agent:
   # The port the Supervisor will start its OpAmp server on and the Collector's
   # OpAmp extension will connect to
   opamp_server_port:
+
+  # List of paths to fallback configuration files to use when the OpAMP server is
+  # unreachable. If more than one path is specified, they are merged in order.
+  # Together, these must be complete, standalone Collector configuration.
+  # The fallback configs are intentionally not merged with config_files to ensure
+  # predictable fallback behavior.
+  startup_fallback_configs:
+  - /etc/otelcol/fallback.yaml
 
 # Supervisor's internal telemetry settings.
 telemetry:
@@ -231,6 +242,14 @@ telemetry:
   resource:
     service.namespace: otel-demo
 
+# Supervisor-side extensions. See "Supervisor Extensions" below.
+# Requires the `opampsupervisor.Extensions` feature gate (alpha).
+extensions:
+  # Single instance of an extension with default settings.
+  nop:
+  # Named instance with custom settings.
+  extension_a/primary:
+    option_a: value
 ```
 
 #### Notes on `agent::config_files`, `agent::args`, and `agent::env`
@@ -300,12 +319,88 @@ This results in the following Collector process invocation:
 ./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates service.AllowNoPipelines
 ```
 
+### Supervisor Extensions
+
+**Note:** This functionality is experimental and only a subset of extensions have support.
+If you want to see support for an extension added, open an issue.
+
+**Note:** This capability is experimental and must be manually enabled via the
+`opampsupervisor.Extensions` feature gate (alpha, introduced in v0.153.0).
+If `extensions` are configured but the gate is disabled, the Supervisor
+will not start and the error message names the gate to enable.
+
+These are instances of extensions specific to the Supervisor and are 
+distinct from any extensions configured to run inside the managed
+Collector configuration. Supervisor extensions are loaded and managed by the 
+Supervisor process itself.
+
+Supervisor extensions are configured under a top-level `extensions:` key
+using the same `type` or `type/name` component ID form used by the
+Collector:
+
+```yaml
+extensions:
+  # Single instance, default settings.
+  nop:
+  # Named instance with custom settings.
+  some_extension/primary:
+    option_a: value
+```
+
+Only extensions bundled with the Supervisor binary are
+supported. The allowlist is intentionally narrow and extensions are
+added on a case-by-case basis as their functionality is integrated.
+Referencing an unknown extension type, or providing invalid configuration
+for a known one, produces a startup error.
+
+The list of available extensions is below:
+- [Bearer Token Authenticator Extension](../../../extension/bearertokenauthextension/README.md)
+- [Basic Auth Authenticator Extension](../../../extension/basicauthextension/README.md)
+- [OAuth2 Client Credentials Authenticator Extension](../../../extension/oauth2clientauthextension/README.md)
+
+#### Lifecycle
+
+1. On startup, each configured extension is parsed and validated
+   against its factory's config schema. Validation errors are reported
+   before any extension instance is created.
+2. Extensions are started in a deterministic order based on the
+   lexicographic ordering of their component IDs. If any extension
+   fails to start, previously started extensions are shut down in
+   reverse order before the failure is reported.
+3. On Supervisor shutdown, extensions are stopped in reverse start
+   order. Shutdown errors from individual extensions are aggregated
+   and reported together rather than aborting the shutdown sequence.
+
 ### Operation When OpAMP Server is Unavailable
 
 When the supervisor cannot connect to the OpAMP server, the collector will
 be run with the last known configuration if a previous configuration is persisted.
 If no previous configuration has been persisted, the collector does not run.
 The supervisor will continually attempt to reconnect to the OpAMP server with exponential backoff.
+
+#### Fallback Configuration
+
+For enhanced resilience, the Supervisor supports a startup fallback configuration mechanism.
+When configured, the Supervisor can automatically switch to this startup fallback configuration
+if the OpAMP server is unreachable or unavailable.
+
+To enable this feature, the user must set the `agent::startup_fallback_configs`
+configuration option. The Supervisor will validate the configurations
+using the binary indicated by the `agent::executable` via the `validate` subcommand
+to ensure that they are valid configurations.
+
+If more than one startup fallback configurations are specified, the Supervisor
+will merge them in order.
+
+**Recovery**: When the connection to the OpAMP server is restored after using the
+fallback configurations, the Supervisor automatically switches back to the regular
+configuration (indicated by `agent::config_files`) and any potential remote configuration
+received from the OpAMP server.
+
+Note that the fallback configurations are intentionally a standalone configuration files
+and is not merged with the `agent::config_files` setting. This ensures predictable fallback
+behavior without dependencies on other configuration files. The OpAMP extension
+configuration is automatically added to maintain Supervisor-Collector communication.
 
 ### Executing Collector
 

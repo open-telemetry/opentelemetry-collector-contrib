@@ -347,3 +347,248 @@ func TestBodyMapMappingModel_EncodeTrace(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
+
+func TestOTelV1_EncodeLog(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	resource := rl.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+	resource.Attributes().PutInt("resource.int", 42)
+	resource.Attributes().PutDouble("resource.double", 3.14)
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	scope := sl.Scope()
+	scope.SetName("my-scope")
+	scope.SetVersion("1.2.3")
+	scope.Attributes().PutStr("scope.attr", "val")
+
+	record := sl.LogRecords().AppendEmpty()
+	record.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 41, 123456789, time.UTC)))
+	record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 42, 0, time.UTC)))
+	record.SetSeverityNumber(plog.SeverityNumberError)
+	record.SetSeverityText("ERROR")
+	record.Body().SetStr("something went wrong")
+	record.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	record.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	record.SetFlags(plog.DefaultLogRecordFlags)
+	record.Attributes().PutStr("log.attr", "hello")
+	record.Attributes().PutInt("log.count", 5)
+
+	result, err := model.encodeLog(resource, scope, "https://schema.example.com", record)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	// Verify top-level fields
+	assert.Equal(t, "something went wrong", doc["body"])
+	assert.Equal(t, "0102030405060708090a0b0c0d0e0f10", doc["traceId"])
+	assert.Equal(t, "0102030405060708", doc["spanId"])
+	assert.Equal(t, float64(0), doc["flags"])
+	assert.Contains(t, doc, "@timestamp")
+	assert.Contains(t, doc, "time")
+	assert.Contains(t, doc, "observedTime")
+
+	// Verify severity is a nested object with numeric code
+	sev := doc["severity"].(map[string]any)
+	assert.Equal(t, float64(17), sev["number"]) // SeverityNumberError = 17
+	assert.Equal(t, "ERROR", sev["text"])
+
+	// Verify resource preserves types
+	res := doc["resource"].(map[string]any)
+	attrs := res["attributes"].(map[string]any)
+	assert.Equal(t, "test-service", attrs["service.name"])
+	assert.Equal(t, float64(42), attrs["resource.int"])
+	assert.Equal(t, 3.14, attrs["resource.double"])
+	assert.Equal(t, "https://schema.example.com", res["schemaUrl"])
+
+	// Verify instrumentationScope
+	is := doc["instrumentationScope"].(map[string]any)
+	assert.Equal(t, "my-scope", is["name"])
+	assert.Equal(t, "1.2.3", is["version"])
+	assert.Equal(t, "https://schema.example.com", is["schemaUrl"])
+	scopeAttrs := is["attributes"].(map[string]any)
+	assert.Equal(t, "val", scopeAttrs["scope.attr"])
+
+	// Verify log attributes preserve types
+	logAttrs := doc["attributes"].(map[string]any)
+	assert.Equal(t, "hello", logAttrs["log.attr"])
+	assert.Equal(t, float64(5), logAttrs["log.count"])
+}
+
+func TestOTelV1_EncodeLog_EventName(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+
+	record := plog.NewLogRecord()
+	record.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 41, 0, time.UTC)))
+	record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 42, 0, time.UTC)))
+	record.SetSeverityNumber(plog.SeverityNumberInfo)
+	record.SetSeverityText("INFO")
+	record.Body().SetStr("hello world")
+	record.SetEventName("ServerStartedSuccessfully")
+
+	result, err := model.encodeLog(resource, scope, "", record)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	assert.Equal(t, "ServerStartedSuccessfully", doc["eventName"])
+
+	// Verify eventName is omitted when empty
+	record2 := plog.NewLogRecord()
+	record2.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 41, 0, time.UTC)))
+	record2.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 42, 0, time.UTC)))
+	record2.Body().SetStr("no event name")
+
+	result2, err := model.encodeLog(resource, scope, "", record2)
+	require.NoError(t, err)
+
+	var doc2 map[string]any
+	require.NoError(t, json.Unmarshal(result2, &doc2))
+	_, hasEventName := doc2["eventName"]
+	assert.False(t, hasEventName, "eventName should be omitted when empty")
+}
+
+func TestOTelV1_EncodeTrace_RootSpan(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("service.name", "my-service")
+	resource.Attributes().PutInt("host.port", 8080)
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("tracer")
+	scope.SetVersion("0.1.0")
+
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID([16]byte{0x8c, 0x8b, 0x17, 0x65, 0xa7, 0xb0, 0xac, 0xf0, 0xb6, 0x6a, 0xa4, 0x62, 0x3f, 0xcb, 0x7b, 0xd5})
+	span.SetSpanID([8]byte{0xfd, 0x0d, 0xa8, 0x83, 0xbb, 0x27, 0xcd, 0x6b})
+	// No parent span ID = root span
+	span.SetName("HTTP GET /api/users")
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 1, 15, 10, 0, 0, 500000000, time.UTC)))
+	span.Status().SetCode(ptrace.StatusCodeOk)
+	span.Status().SetMessage("success")
+	span.Attributes().PutStr("http.method", "GET")
+	span.Attributes().PutInt("http.status_code", 200)
+
+	// Add an event
+	event := span.Events().AppendEmpty()
+	event.SetName("exception")
+	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 1, 15, 10, 0, 0, 100000000, time.UTC)))
+	event.Attributes().PutStr("exception.message", "timeout")
+
+	// Add a link
+	link := span.Links().AppendEmpty()
+	link.SetTraceID([16]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99})
+	link.SetSpanID([8]byte{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88})
+	link.Attributes().PutStr("link.reason", "retry")
+
+	result, err := model.encodeTrace(resource, scope, "https://schema.example.com", span)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	// Verify basic span fields
+	assert.Equal(t, "8c8b1765a7b0acf0b66aa4623fcb7bd5", doc["traceId"])
+	assert.Equal(t, "fd0da883bb27cd6b", doc["spanId"])
+	assert.Empty(t, doc["parentSpanId"])
+	assert.Equal(t, "HTTP GET /api/users", doc["name"])
+	assert.Equal(t, "Server", doc["kind"])
+
+	// Verify durationInNanos = 500ms = 500_000_000 ns
+	assert.Equal(t, float64(500000000), doc["durationInNanos"])
+
+	// Verify serviceName from resource
+	assert.Equal(t, "my-service", doc["serviceName"])
+
+	// Verify status code is integer
+	status := doc["status"].(map[string]any)
+	assert.Equal(t, float64(1), status["code"]) // StatusCodeOk = 1
+	assert.Equal(t, "success", status["message"])
+
+	// Verify root span has traceGroup
+	assert.Equal(t, "HTTP GET /api/users", doc["traceGroup"])
+	tgf := doc["traceGroupFields"].(map[string]any)
+	assert.Equal(t, float64(500000000), tgf["durationInNanos"])
+	assert.Equal(t, float64(1), tgf["statusCode"])
+	assert.Contains(t, tgf, "endTime")
+
+	// Verify events
+	events := doc["events"].([]any)
+	require.Len(t, events, 1)
+	ev := events[0].(map[string]any)
+	assert.Equal(t, "exception", ev["name"])
+	assert.Contains(t, ev, "time")
+	evAttrs := ev["attributes"].(map[string]any)
+	assert.Equal(t, "timeout", evAttrs["exception.message"])
+
+	// Verify links
+	links := doc["links"].([]any)
+	require.Len(t, links, 1)
+	lk := links[0].(map[string]any)
+	assert.Equal(t, "aabbccddeeff00112233445566778899", lk["traceId"])
+	assert.Equal(t, "1122334455667788", lk["spanId"])
+	lkAttrs := lk["attributes"].(map[string]any)
+	assert.Equal(t, "retry", lkAttrs["link.reason"])
+
+	// Verify resource attributes preserve types
+	res := doc["resource"].(map[string]any)
+	resAttrs := res["attributes"].(map[string]any)
+	assert.Equal(t, "my-service", resAttrs["service.name"])
+	assert.Equal(t, float64(8080), resAttrs["host.port"])
+
+	// Verify instrumentationScope
+	is := doc["instrumentationScope"].(map[string]any)
+	assert.Equal(t, "tracer", is["name"])
+	assert.Equal(t, "0.1.0", is["version"])
+}
+
+func TestOTelV1_EncodeTrace_NonRootSpan(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	resource := pcommon.NewResource()
+	scope := pcommon.NewInstrumentationScope()
+
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	span.SetParentSpanID([8]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11}) // non-empty = not root
+	span.SetName("child-span")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 1, 15, 10, 0, 1, 0, time.UTC)))
+	span.Status().SetCode(ptrace.StatusCodeError)
+
+	result, err := model.encodeTrace(resource, scope, "", span)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	// Non-root span should NOT have traceGroup
+	assert.Empty(t, doc["traceGroup"])
+	assert.Nil(t, doc["traceGroupFields"])
+
+	// Verify status code Error = 2
+	status := doc["status"].(map[string]any)
+	assert.Equal(t, float64(2), status["code"])
+
+	// Verify parentSpanId is set
+	assert.Equal(t, "aabbccddeeff0011", doc["parentSpanId"])
+
+	// Verify durationInNanos = 1 second
+	assert.Equal(t, float64(1000000000), doc["durationInNanos"])
+}

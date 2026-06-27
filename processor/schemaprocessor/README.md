@@ -109,6 +109,38 @@ return an error immediately.
 | `cache_cooldown` | duration | `5m` | Wait time after retry limit is reached |
 | `cache_retry_limit` | int | `5` | Consecutive failures before cooldown |
 
+### Persistent storage
+
+By default, cached schema files are stored in memory and lost when the collector restarts. To persist schemas across restarts, configure a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage) using the `storage` field.
+
+When configured, fetched schema files are saved to persistent storage after the first HTTP fetch. On subsequent startups, schemas are loaded from storage without requiring network access. This is useful for:
+
+- **Faster cold starts** — schemas are available immediately without HTTP fetches
+- **Offline operation** — the collector can translate schemas without internet access after the initial fetch
+- **Reduced load on schema servers** — fewer HTTP requests to the servers hosting the schema files
+
+```yaml
+extensions:
+  file_storage/schemas:
+    directory: /var/lib/otelcol/schema_cache
+
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.26.0
+    storage: file_storage/schemas
+
+service:
+  extensions: [file_storage/schemas]
+  pipelines:
+    traces:
+      processors: [schema]
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `storage` | string | *(none)* | ID of a storage extension to persist cached schema files |
+
 ## Schema Formats
 
 A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
@@ -120,6 +152,26 @@ A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is 
 ```
 
 The final path in the schema URL _MUST_ be the schema version and the preceding portion of the URL is the _Schema Family_.
+
+### Supported file formats
+
+The processor auto-detects the schema document format via the `file_format` field returned by the schema URL. No configuration is required.
+
+| `file_format` | Status | Notes |
+|---|---|---|
+| `1.0.0`, `1.1.0` | Supported | OTel Schema File Format v1.0 / v1.1 |
+| `manifest/2.0` | Supported | v2 manifest ([OTEP #4815](https://github.com/open-telemetry/opentelemetry-specification/pull/4815)). Processor follows `resolved_registry_uri` to fetch the resolved registry. Both fetches go through the same provider chain, so caching, retry, and storage apply to both. |
+| `resolved/2.0` | Supported | v2 resolved registry. Renames are extracted from `deprecated.renamed_to` entries on `attribute_catalog` and `registry.{metrics,spans,events}`. |
+| `diff/2.0` | Not supported | `weaver registry diff` output is generated on demand and is not published as a static artifact. |
+| `definition/2` | Not supported | Authoring format, not intended for runtime consumption. |
+
+### v2 translation model
+
+v2 supports single-hop translation: any incoming version older than the resolved registry's head version is translated by walking the registry's `deprecated.renamed_to` entries (old name to current name). Unmapped names pass through unchanged. Downgrade (incoming version newer than target) works via the reversed map.
+
+v2's attribute catalog is flat: there is no per-signal scoping. A rename recorded on an attribute applies to every signal that carries it. Span name, metric name, and span event name renames are kept per signal under `registry.{spans,metrics,events}`.
+
+Arbitrary pairwise translation between two non-head registries (e.g. 1.30 to 1.34 when the configured target is 1.40) is not supported; the configured target is treated as the head.
 
 ## Targets Schemas
 

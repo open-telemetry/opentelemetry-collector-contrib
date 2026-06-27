@@ -25,6 +25,7 @@ type Config struct {
 	Endpoint                       string              `mapstructure:"endpoint"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
+	MaxQueryMetrics                int                 `mapstructure:"max_query_metrics"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

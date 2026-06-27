@@ -4,18 +4,23 @@
 package spanpruningprocessor
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
 
 func TestNewTraces(t *testing.T) {
@@ -401,7 +406,341 @@ func TestLeafSpanPruning_TemplateEventsAndLinksPreserved(t *testing.T) {
 	assert.Equal(t, "template", linkAttr.Str())
 }
 
+func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
+	cfg.AttributeLossExemplarSampleRate = 0
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, _ := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	leafSummary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "leaf summary span should exist")
+	leafDiverse, exists := leafSummary.Attributes().Get("aggregation.diverse_attributes")
+	require.True(t, exists)
+	assert.Contains(t, leafDiverse.Str(), "db.system(1)")
+	leafMissing, exists := leafSummary.Attributes().Get("aggregation.missing_attributes")
+	require.True(t, exists)
+	assert.Contains(t, leafMissing.Str(), "db.instance(2)")
+
+	parentSummary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "parent summary span should exist")
+	parentDiverse, exists := parentSummary.Attributes().Get("aggregation.diverse_attributes")
+	require.True(t, exists)
+	assert.Contains(t, parentDiverse.Str(), "service.instance.id(1)")
+	parentMissing, exists := parentSummary.Attributes().Get("aggregation.missing_attributes")
+	require.True(t, exists)
+	assert.Contains(t, parentMissing.Str(), "handler.version(1)")
+
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss")
+}
+
+func TestAttributeLoss_ExemplarSampling(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
+	cfg.AttributeLossExemplarSampleRate = 1
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, traceID := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss", traceID)
+}
+
+func TestAttributeLoss_DisabledByDefault(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	require.False(t, cfg.EnableAttributeLossAnalysis, "attribute loss analysis should be disabled by default")
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, _ := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	leafSummary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "leaf summary span should exist")
+	_, exists := leafSummary.Attributes().Get("aggregation.diverse_attributes")
+	assert.False(t, exists)
+	_, exists = leafSummary.Attributes().Get("aggregation.missing_attributes")
+	assert.False(t, exists)
+
+	parentSummary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "parent summary span should exist")
+	_, exists = parentSummary.Attributes().Get("aggregation.diverse_attributes")
+	assert.False(t, exists)
+	_, exists = parentSummary.Attributes().Get("aggregation.missing_attributes")
+	assert.False(t, exists)
+
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_leaf_attribute_diversity_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_leaf_attribute_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_parent_attribute_diversity_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_parent_attribute_loss")
+	assert.Error(t, err)
+}
+
+func TestOutlierMetrics_IQR(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestOutlierMetrics_MAD(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodMAD
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.MADMultiplier = 3.0
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestOutlierMetrics_NoPreservation(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = false
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_outliers_preserved")
+	assert.Error(t, err, "outliers_preserved should not be recorded when preserve_outliers is false")
+}
+
+func TestProcessorPreservesOutlierSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 2
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.75
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.25
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOutliers(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	var spans []ptrace.Span
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				spans = append(spans, ss.Spans().At(k))
+			}
+		}
+	}
+
+	var summarySpan ptrace.Span
+	var outlierSpans []ptrace.Span
+	for _, span := range spans {
+		if isSummary, exists := span.Attributes().Get("aggregation.is_summary"); exists && isSummary.Bool() {
+			summarySpan = span
+		}
+		if isOutlier, exists := span.Attributes().Get("aggregation.is_preserved_outlier"); exists && isOutlier.Bool() {
+			outlierSpans = append(outlierSpans, span)
+		}
+	}
+
+	require.False(t, summarySpan.SpanID().IsEmpty(), "summary span should exist")
+	assert.Len(t, outlierSpans, 2, "should have 2 preserved outlier spans")
+
+	spanCount, exists := summarySpan.Attributes().Get("aggregation.span_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(8), spanCount.Int(), "summary should aggregate only normal spans")
+
+	outlierCount, exists := summarySpan.Attributes().Get("aggregation.preserved_outlier_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(2), outlierCount.Int())
+
+	summarySpanIDStr := summarySpan.SpanID().String()
+	for _, outlier := range outlierSpans {
+		summaryRef, hasSummaryRef := outlier.Attributes().Get("aggregation.summary_span_id")
+		require.True(t, hasSummaryRef)
+		assert.Equal(t, summarySpanIDStr, summaryRef.Str())
+	}
+}
+
+// TestProcessorSkipsAggregationWhenTooFewNormalSpans tests that aggregation is skipped
+// when preserving outliers would leave too few normal spans to aggregate.
+func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 11
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.Method = OutlierMethodIQR
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 0 // preserve all outliers
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.OutlierAnalysis.CorrelationMinOccurrence = 0.5
+	cfg.OutlierAnalysis.CorrelationMaxNormalOccurrence = 0.5
+	cfg.OutlierAnalysis.MaxCorrelatedAttributes = 5
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// 13 leaf spans: 10 normal + 3 outliers. After preserving outliers,
+	// only 10 normal spans remain (< MinSpansToAggregate=11), so aggregation is skipped.
+	td := createTestTraceWithManyOutliers(t)
+	initialSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, initialSpanCount, countSpans(td), "no spans should be aggregated")
+	_, found := findSummarySpanByName(td, "SELECT")
+	assert.False(t, found, "summary span should not be created when normal spans drop below threshold")
+}
+
 // Helper functions
+
+func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
+	t.Helper()
+	hist := requireInt64HistogramMetric(t, tel, metricName)
+	require.Len(t, hist.DataPoints, 1, "expected a single data point for %s", metricName)
+	assert.Equal(t, uint64(1), hist.DataPoints[0].Count)
+	assert.Equal(t, int64(1), hist.DataPoints[0].Sum)
+}
+
+func assertHistogramHasTraceExemplar(t *testing.T, tel *componenttest.Telemetry, metricName string, expectedTraceID pcommon.TraceID) {
+	t.Helper()
+	hist := requireInt64HistogramMetric(t, tel, metricName)
+	require.NotEmpty(t, hist.DataPoints)
+	require.NotEmpty(t, hist.DataPoints[0].Exemplars, "expected exemplar on %s", metricName)
+	exemplar := hist.DataPoints[0].Exemplars[0]
+	assert.Equal(t, expectedTraceID[:], exemplar.TraceID)
+	assert.Len(t, exemplar.SpanID, 8)
+}
+
+func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, metricName string) metricdata.Histogram[int64] {
+	t.Helper()
+	metric, err := tel.GetMetric(metricName)
+	require.NoError(t, err)
+
+	hist, ok := metric.Data.(metricdata.Histogram[int64])
+	require.True(t, ok, "metric %s should be an int64 histogram", metricName)
+	return hist
+}
 
 func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
 	t.Helper()
@@ -433,6 +772,195 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 	}
 
 	return td
+}
+
+func createTestTraceWithOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	normalDurations := []int64{5, 6, 7, 8, 9, 10, 11, 12}
+	outlierDurations := []int64{500, 600}
+
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "true")
+	}
+
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "false")
+	}
+
+	return td
+}
+
+func createTestTraceWithManyOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	normalDurations := []int64{5, 6, 6, 7, 7, 8, 8, 9, 9, 10}
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	outlierDurations := []int64{500, 600, 700}
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	return td
+}
+
+func createTestTraceWithAttributeLoss(t *testing.T) (ptrace.Traces, pcommon.TraceID) {
+	t.Helper()
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{5, 4, 3, 2, 1, 9, 8, 7, 6, 0, 1, 2, 3, 4, 5, 6})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	handler1ID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	handler2ID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootID)
+	root.SetName("root")
+	root.SetStartTimestamp(pcommon.Timestamp(1000))
+	root.SetEndTimestamp(pcommon.Timestamp(3000))
+
+	handler1 := ss.Spans().AppendEmpty()
+	handler1.SetTraceID(traceID)
+	handler1.SetSpanID(handler1ID)
+	handler1.SetParentSpanID(rootID)
+	handler1.SetName("handler")
+	handler1.Attributes().PutStr("service.instance.id", "svc-a")
+	handler1.Attributes().PutStr("handler.version", "v1")
+	handler1.SetStartTimestamp(pcommon.Timestamp(1100))
+	handler1.SetEndTimestamp(pcommon.Timestamp(1600))
+
+	handler2 := ss.Spans().AppendEmpty()
+	handler2.SetTraceID(traceID)
+	handler2.SetSpanID(handler2ID)
+	handler2.SetParentSpanID(rootID)
+	handler2.SetName("handler")
+	handler2.Attributes().PutStr("service.instance.id", "svc-b")
+	handler2.SetStartTimestamp(pcommon.Timestamp(1200))
+	handler2.SetEndTimestamp(pcommon.Timestamp(2100))
+
+	leafConfigs := []struct {
+		spanID      pcommon.SpanID
+		parentID    pcommon.SpanID
+		dbSystem    string
+		dbInstance  string
+		start, stop pcommon.Timestamp
+	}{
+		{
+			spanID:     pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0}),
+			parentID:   handler1ID,
+			dbSystem:   "postgres",
+			dbInstance: "orders-db",
+			start:      pcommon.Timestamp(1200),
+			stop:       pcommon.Timestamp(1350),
+		},
+		{
+			spanID:   pcommon.SpanID([8]byte{4, 1, 0, 0, 0, 0, 0, 0}),
+			parentID: handler1ID,
+			dbSystem: "mysql",
+			start:    pcommon.Timestamp(1250),
+			stop:     pcommon.Timestamp(1400),
+		},
+		{
+			spanID:   pcommon.SpanID([8]byte{5, 0, 0, 0, 0, 0, 0, 0}),
+			parentID: handler2ID,
+			dbSystem: "postgres",
+			start:    pcommon.Timestamp(1300),
+			stop:     pcommon.Timestamp(1900),
+		},
+		{
+			spanID:     pcommon.SpanID([8]byte{5, 1, 0, 0, 0, 0, 0, 0}),
+			parentID:   handler2ID,
+			dbSystem:   "mysql",
+			dbInstance: "users-db",
+			start:      pcommon.Timestamp(1350),
+			stop:       pcommon.Timestamp(1500),
+		},
+	}
+
+	for _, cfg := range leafConfigs {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(cfg.spanID)
+		span.SetParentSpanID(cfg.parentID)
+		span.SetName("SELECT")
+		span.Attributes().PutStr("db.system", cfg.dbSystem)
+		if cfg.dbInstance != "" {
+			span.Attributes().PutStr("db.instance", cfg.dbInstance)
+		}
+		span.SetStartTimestamp(cfg.start)
+		span.SetEndTimestamp(cfg.stop)
+	}
+
+	return td, traceID
 }
 
 func createTestTraceWithNonStringAttributes(t *testing.T) ptrace.Traces {
@@ -2018,4 +2546,254 @@ func findAllSummarySpans(td ptrace.Traces) []ptrace.Span {
 		}
 	}
 	return result
+}
+
+// TestOutlierReparentingDeterministicAcrossDepths is a regression test for
+// same-named parents at different depths. Previously the leaf group key used
+// only the parent's name, so SELECT children of a "handler" at depth 1 and a
+// "handler" at depth 2 collapsed into one group; the summary (and any preserved
+// outliers) then anchored to whichever parent map iteration visited first,
+// producing a non-deterministic outlier depth. With depth in the leaf key the
+// two depths form separate groups, so the deep-handler outliers stay at depth 3
+// on every run and carry provenance recording their original position.
+func TestOutlierReparentingDeterministicAcrossDepths(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           0,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0.1,
+	}
+
+	deepHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+
+	observedDepths := make(map[int]bool)
+	const iterations = 50
+	for range iterations {
+		tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+
+		td := createTraceWithSameNamedParentsAtDifferentDepths(t)
+		require.NoError(t, tp.ConsumeTraces(t.Context(), td))
+
+		// The two depths must form separate groups (not one merged summary),
+		// so we get one summary per handler.
+		require.Len(t, findAllSummarySpans(td), 2, "shallow and deep handlers must aggregate separately")
+
+		outliers := findPreservedOutlierSpans(td)
+		require.Len(t, outliers, 2, "both deep-handler outliers should be preserved")
+
+		for _, o := range outliers {
+			observedDepths[spanDepthInTrace(td, o)] = true
+			// Outliers stay anchored under their real parent (the deep handler).
+			assert.Equal(t, deepHandlerID, o.ParentSpanID())
+		}
+	}
+
+	assert.Equal(t, map[int]bool{3: true}, observedDepths,
+		"preserved-outlier depth must be stable at 3 across runs; got %v", observedDepths)
+}
+
+// findPreservedOutlierSpans returns all spans tagged as preserved outliers.
+func findPreservedOutlierSpans(td ptrace.Traces) []ptrace.Span {
+	var out []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				s := spans.At(k)
+				if v, ok := s.Attributes().Get("aggregation.is_preserved_outlier"); ok && v.Bool() {
+					out = append(out, s)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// spanDepthInTrace counts ancestor hops from span to the root within td.
+func spanDepthInTrace(td ptrace.Traces, span ptrace.Span) int {
+	byID := make(map[pcommon.SpanID]ptrace.Span)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		for j := 0; j < rss.At(i).ScopeSpans().Len(); j++ {
+			spans := rss.At(i).ScopeSpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				s := spans.At(k)
+				byID[s.SpanID()] = s
+			}
+		}
+	}
+	depth := 0
+	for current := span; ; {
+		parentID := current.ParentSpanID()
+		if parentID.IsEmpty() {
+			break
+		}
+		parent, ok := byID[parentID]
+		if !ok {
+			break
+		}
+		depth++
+		current = parent
+	}
+	return depth
+}
+
+// createTraceWithSameNamedParentsAtDifferentDepths builds a trace with two
+// "handler" spans — one at depth 1 (under root) and one at depth 2 (under
+// middleware). The deep handler has 7 normal + 2 outlier SELECT children so its
+// leaf group alone satisfies MinGroupSize for outlier detection.
+func createTraceWithSameNamedParentsAtDifferentDepths(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	shallowHandlerID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	middlewareID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+	deepHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+
+	baseNs := int64(1_000_000_000)
+	ms := int64(1_000_000)
+
+	nextID := func() pcommon.SpanID {
+		var id [8]byte
+		id[0] = byte(ss.Spans().Len() + 10)
+		return pcommon.SpanID(id)
+	}
+
+	addSpan := func(id, parentID pcommon.SpanID, name string, durationMs int64, cacheHit string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(id)
+		s.SetParentSpanID(parentID)
+		s.SetName(name)
+		s.SetStartTimestamp(pcommon.Timestamp(baseNs))
+		s.SetEndTimestamp(pcommon.Timestamp(baseNs + durationMs*ms))
+		if cacheHit != "" {
+			s.Attributes().PutStr("cache_hit", cacheHit)
+		}
+	}
+
+	addSpan(rootID, pcommon.SpanID{}, "root", 700, "")
+	addSpan(shallowHandlerID, rootID, "handler", 10, "")     // depth 1
+	addSpan(middlewareID, rootID, "middleware", 650, "")     // depth 1
+	addSpan(deepHandlerID, middlewareID, "handler", 600, "") // depth 2
+
+	// Shallow handler: 5 normal SELECTs (depth 2) — aggregates, no outliers.
+	for _, dur := range []int64{5, 6, 7, 8, 9} {
+		addSpan(nextID(), shallowHandlerID, "SELECT", dur, "true")
+	}
+
+	// Deep handler: 7 normal + 2 outlier SELECTs (depth 3).
+	for _, dur := range []int64{5, 6, 7, 8, 9, 10, 11} {
+		addSpan(nextID(), deepHandlerID, "SELECT", dur, "true")
+	}
+	for _, dur := range []int64{500, 600} {
+		addSpan(nextID(), deepHandlerID, "SELECT", dur, "false")
+	}
+
+	return td
+}
+
+// TestParentReparentingDeterministicAcrossSiblings is a regression test for
+// same-named parents at the same depth under different-named parents. The
+// parent group key excludes the grandparent, so two "handler" spans at depth 2
+// (one under "auth-mw", one under "log-mw") merge into a single summary. The
+// summary anchors to nodes[0]'s parent; parent candidates derive from leaf
+// groups visited in map order, so without a stable sort the anchor — auth-mw vs
+// log-mw — varied run to run. The auth-mw handler starts earliest, so the
+// summary must consistently anchor there.
+func TestParentReparentingDeterministicAcrossSiblings(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.GroupByAttributes = []string{"db.operation"}
+
+	authMwID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+
+	observedParents := make(map[pcommon.SpanID]bool)
+	const iterations = 50
+	for range iterations {
+		tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+
+		td := createTraceWithSameNamedParentsUnderDifferentGrandparents(t)
+		require.NoError(t, tp.ConsumeTraces(t.Context(), td))
+
+		summary, found := findSummarySpanByName(td, "handler")
+		require.True(t, found, "the two handlers should aggregate into one summary")
+		observedParents[summary.ParentSpanID()] = true
+	}
+
+	require.Len(t, observedParents, 1, "handler summary parent must be stable across runs; got %v", observedParents)
+	assert.Contains(t, observedParents, authMwID, "summary should anchor to the earliest-starting handler's parent (auth-mw)")
+}
+
+// createTraceWithSameNamedParentsUnderDifferentGrandparents builds a trace with
+// two "handler" spans at depth 2 under different-named middlewares. Their SELECT
+// children use distinct db.operation values so they form two leaf groups (the
+// source of map-order non-determinism feeding parent candidates).
+func createTraceWithSameNamedParentsUnderDifferentGrandparents(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	authMwID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	logMwID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+	authHandlerID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+	logHandlerID := pcommon.SpanID([8]byte{5, 0, 0, 0, 0, 0, 0, 0})
+
+	baseNs := int64(1_000_000_000)
+	ms := int64(1_000_000)
+
+	add := func(id, parentID pcommon.SpanID, name string, startNs, durMs int64, dbOp string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(id)
+		s.SetParentSpanID(parentID)
+		s.SetName(name)
+		s.SetStartTimestamp(pcommon.Timestamp(startNs))
+		s.SetEndTimestamp(pcommon.Timestamp(startNs + durMs*ms))
+		if dbOp != "" {
+			s.Attributes().PutStr("db.operation", dbOp)
+		}
+	}
+
+	add(rootID, pcommon.SpanID{}, "root", baseNs, 700, "")
+	add(authMwID, rootID, "auth-mw", baseNs, 300, "")
+	add(logMwID, rootID, "log-mw", baseNs, 300, "")
+	// auth-mw's handler starts earliest so it sorts first and wins the anchor.
+	add(authHandlerID, authMwID, "handler", baseNs, 200, "")
+	add(logHandlerID, logMwID, "handler", baseNs+ms, 200, "")
+
+	leafID := byte(10)
+	addLeaves := func(parentID pcommon.SpanID, dbOp string) {
+		for i := range 5 {
+			id := [8]byte{leafID}
+			leafID++
+			add(pcommon.SpanID(id), parentID, "SELECT", baseNs, int64(5+i), dbOp)
+		}
+	}
+	addLeaves(authHandlerID, "A")
+	addLeaves(logHandlerID, "B")
+
+	return td
 }

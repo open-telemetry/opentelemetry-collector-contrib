@@ -61,12 +61,16 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	pCfg, err := promConfig.Load("", promslog.NewNopLogger())
 	require.NoError(t, err)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = tas.srv.URL
 	config := &Config{
 		PrometheusConfig: (*PromConfig)(pCfg),
 		TargetAllocator: configoptional.Some(targetallocator.Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: tas.srv.URL,
-			},
+			ClientConfig: clientConfig,
 			CollectorID:  "1",
 			HTTPSDConfig: (*targetallocator.PromHTTPSDConfig)(promSDConfig),
 			Interval:     60 * time.Second,
