@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/postgresql
+note: Prevent table metrics collection from blocking when a PostgreSQL table has an AccessExclusiveLock.
+issues: [49351]
+change_logs: [user]
