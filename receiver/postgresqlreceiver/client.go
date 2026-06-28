@@ -407,6 +407,8 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
+	// explicitly ignore the relations which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT
     s.schemaname AS schema,
     s.relname AS table,
