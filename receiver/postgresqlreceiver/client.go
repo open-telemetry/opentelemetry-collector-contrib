@@ -407,23 +407,27 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname as schema, relname AS table,
-	n_live_tup AS live,
-	n_dead_tup AS dead,
-	n_tup_ins AS ins,
-	n_tup_upd AS upd,
-	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd,
-	seq_scan AS seq_scans,
-	pg_relation_size(relid) AS table_size,
-	vacuum_count
-	FROM pg_stat_user_tables
-	WHERE NOT EXISTS (
-    SELECT 1 FROM pg_locks
+	query := `SELECT
+    s.schemaname AS schema,
+    s.relname AS table,
+    s.n_live_tup AS live,
+    s.n_dead_tup AS dead,
+    s.n_tup_ins AS ins,
+    s.n_tup_upd AS upd,
+    s.n_tup_del AS del,
+    s.n_tup_hot_upd AS hot_upd,
+    s.seq_scan AS seq_scans,
+    pg_relation_size(s.relid) AS table_size,
+    s.vacuum_count
+FROM pg_stat_user_tables s
+LEFT JOIN (
+    SELECT DISTINCT relation
+    FROM pg_locks
     WHERE locktype = 'relation'
-    AND mode = 'AccessExclusiveLock'
-    AND granted = true
-    AND relation = pg_stat_user_tables.relid);`
+      AND mode = 'AccessExclusiveLock'
+      AND granted = true
+) l ON s.relid = l.relation
+WHERE l.relation IS NULL;`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
