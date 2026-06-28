@@ -530,10 +530,20 @@ type indexStat struct {
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	// explicitly ignore indexes which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
-	FROM pg_stat_user_indexes;`
+	FROM pg_stat_user_indexes s
+	LEFT JOIN (
+		SELECT DISTINCT relation
+		FROM pg_locks
+		WHERE locktype = 'relation'
+		  AND mode = 'AccessExclusiveLock'
+		  AND granted = true
+	) l ON s.indexrelid = l.relation
+	WHERE l.relation IS NULL;`
 
 	stats := map[indexIdentifer]indexStat{}
 
