@@ -417,7 +417,13 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	seq_scan AS seq_scans,
 	pg_relation_size(relid) AS table_size,
 	vacuum_count
-	FROM pg_stat_user_tables;`
+	FROM pg_stat_user_tables
+	WHERE NOT EXISTS (
+    SELECT 1 FROM pg_locks
+    WHERE locktype = 'relation'
+    AND mode = 'AccessExclusiveLock'
+    AND granted = true
+    AND relation = pg_stat_user_tables.relid);`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
