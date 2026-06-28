@@ -40,10 +40,26 @@ func TestValidate(t *testing.T) {
 	// Cases that exercise a non-HealthCheck failure path still need a
 	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
 	// the empty default before reaching the field under test.
+	defaultHealthCheckServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultHealthCheckServerConfig.WriteTimeout = 0
+	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
+	defaultHealthCheckServerConfig.IdleTimeout = 0
+	defaultHealthCheckServerConfig.KeepAlivesEnabled = false
+	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{Transport: confignet.TransportTypeTCP},
-		},
+		ServerConfig: defaultHealthCheckServerConfig,
+	}
+
+	invalidPortServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	invalidPortServerConfig.WriteTimeout = 0
+	invalidPortServerConfig.ReadHeaderTimeout = 0
+	invalidPortServerConfig.IdleTimeout = 0
+	invalidPortServerConfig.KeepAlivesEnabled = false
+	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:-1",
 	}
 
 	testCases := []struct {
@@ -538,12 +554,7 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 				HealthCheck: HealthCheck{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:-1",
-						},
-					},
+					ServerConfig: invalidPortServerConfig,
 				},
 			},
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
@@ -674,10 +685,15 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	cfg := DefaultSupervisor()
 	// HealthCheck endpoint with an invalid port produces a Validate() error
 	// from the HealthCheck substruct via reflection.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{Endpoint: "localhost:99999"},
-		},
+		ServerConfig: serverConfig,
 	}
 
 	err := confmap.Validate(cfg)
@@ -934,6 +950,7 @@ storage:
 agent:
   executable: %s
   description:
+    include_resource_attributes: true
     identifying_attributes:
       "service.name": "io.opentelemetry.collector"
     non_identifying_attributes:
@@ -977,6 +994,7 @@ telemetry:
 					Agent: Agent{
 						Executable: executablePath,
 						Description: AgentDescription{
+							IncludeResourceAttributes: true,
 							IdentifyingAttributes: map[string]string{
 								"service.name": "io.opentelemetry.collector",
 							},

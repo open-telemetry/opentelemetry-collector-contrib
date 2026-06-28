@@ -24,6 +24,22 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.WriteTimeout = 0
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
+
+	noAuthServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	noAuthServerConfig.WriteTimeout = 0
+	noAuthServerConfig.ReadHeaderTimeout = 0
+	noAuthServerConfig.IdleTimeout = 0
+	noAuthServerConfig.KeepAlivesEnabled = false
+	noAuthServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
+
 	tests := []struct {
 		id                 component.ID
 		expected           component.Config
@@ -32,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				HTTP: &defaultServerConfig,
 				Auth: component.MustNewID("azureauth"),
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
@@ -48,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "no_auth"),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				HTTP: &noAuthServerConfig,
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
 						Logs: []EncodingConfig{
