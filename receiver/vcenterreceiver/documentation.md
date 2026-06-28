@@ -881,20 +881,20 @@ As measured over the most recent 20s interval.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true | - |
-| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true | - |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true | - |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true | - |
-| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true | - |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true | - |
-| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true | - |
-| vcenter.virtual_app.name | The name of the vApp. | Any Str | true | - |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true | - |
-| vcenter.vm.name | The name of the virtual machine. | Any Str | true | - |
-| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true | - |
-| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true | - | - |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true | - | - |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true | - | - |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true | - | - |
+| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true | - | - |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true | - | - |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true | - | - |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true | - | - |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true | - | - |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true | - | - |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true | - | - |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true | - | - |
 
 ## Feature Gates
 
