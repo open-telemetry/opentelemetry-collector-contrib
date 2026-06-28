@@ -451,6 +451,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
 | sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
@@ -469,6 +470,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
 | sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
@@ -487,6 +489,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
 | sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
@@ -505,6 +508,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
 | sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |

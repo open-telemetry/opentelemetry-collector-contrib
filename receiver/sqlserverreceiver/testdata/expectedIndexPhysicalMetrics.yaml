@@ -13,6 +13,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: testdb
@@ -26,6 +32,9 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 75
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "1"
@@ -44,6 +53,9 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 12.5
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "1"
@@ -62,6 +74,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "100"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "1"
@@ -80,6 +95,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "1"
@@ -98,6 +116,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "819200"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "1"
@@ -128,6 +149,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: testdb
@@ -141,6 +168,9 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 88.5
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "2"
@@ -159,6 +189,9 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 3.2
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "2"
@@ -177,6 +210,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "20"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "2"
@@ -195,6 +231,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "2"
@@ -213,6 +252,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "163840"
                   attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
                     - key: sqlserver.index.id
                       value:
                         intValue: "2"
