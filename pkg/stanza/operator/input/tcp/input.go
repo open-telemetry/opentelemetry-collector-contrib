@@ -21,6 +21,7 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -163,19 +164,31 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 	}
 
 	if i.addAttributes {
-		entry.AddAttribute("net.transport", "IP.TCP")
-		if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.peer.ip", ip)
-			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
-		}
-
-		if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.host.ip", addr.IP.String())
-			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+		if metadata.StanzaUseStableNetworkAttributesFeatureGate.IsEnabled() {
+			entry.AddAttribute("network.transport", "tcp")
+			if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("network.peer.address", ip)
+				entry.AddAttribute("network.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+			}
+			if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+				entry.AddAttribute("network.local.address", addr.IP.String())
+				entry.AddAttribute("network.local.port", strconv.FormatInt(int64(addr.Port), 10))
+			}
+		} else {
+			entry.AddAttribute("net.transport", "IP.TCP")
+			if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.peer.ip", ip)
+				entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			}
+			if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.host.ip", addr.IP.String())
+				entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+			}
 		}
 	}
 
