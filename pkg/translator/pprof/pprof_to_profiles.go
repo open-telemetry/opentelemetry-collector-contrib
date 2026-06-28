@@ -27,6 +27,8 @@ var (
 	errIdxFormatInvalid = errors.New("invalid format of attribute indices")
 )
 
+const scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+
 const (
 	// noAttrUnit is an internal helper to indicate that no
 	// unit is associated to this Attribute.
@@ -127,6 +129,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl(semconv.SchemaURL)
+	sp.Scope().SetName(scopeName)
 
 	// Use a dedicated pprofile.Profile for each sample type.
 	// By convention, pprof uses the last sample type as default, while OTel Profiles
