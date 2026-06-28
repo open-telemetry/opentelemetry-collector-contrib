@@ -162,27 +162,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 1, 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 3, 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverIndexFragmentationDataPoint(ts, 3, 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				mb.RecordSqlserverIndexFragmentationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverIndexPageCountDataPoint(ts, "3", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				mb.RecordSqlserverIndexPageCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverIndexRecordCountDataPoint(ts, "1", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
+			mb.RecordSqlserverIndexRecordCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverIndexRecordCountDataPoint(ts, "3", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				mb.RecordSqlserverIndexRecordCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
 			}
 
 			allMetricsCount++
@@ -833,6 +833,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
 						assert.True(t, ok)
 						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
@@ -863,7 +866,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("sqlserver.index.id")
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.object.name")
 						assert.False(t, ok)
@@ -883,6 +888,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
 						assert.True(t, ok)
 						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
@@ -913,7 +921,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("sqlserver.index.id")
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.object.name")
 						assert.False(t, ok)
@@ -933,6 +943,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
 						assert.True(t, ok)
 						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
@@ -963,7 +976,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("sqlserver.index.id")
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.object.name")
 						assert.False(t, ok)
@@ -983,6 +998,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
 						assert.True(t, ok)
 						assert.EqualValues(t, 18, sqlserverIndexIDAttrVal.Int())
@@ -1013,7 +1031,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("sqlserver.index.id")
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.index.id")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.object.name")
 						assert.False(t, ok)

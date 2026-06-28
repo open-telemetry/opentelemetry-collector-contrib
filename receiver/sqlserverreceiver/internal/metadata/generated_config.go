@@ -483,6 +483,7 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 type SqlserverIndexAvgPageSpaceUsedMetricAttributeKey string
 
 const (
+	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace         SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "db.namespace"
 	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID    SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.index.id"
 	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.object.name"
 	SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName SqlserverIndexAvgPageSpaceUsedMetricAttributeKey = "sqlserver.schema.name"
@@ -514,9 +515,9 @@ func (ms *SqlserverIndexAvgPageSpaceUsedMetricConfig) Unmarshal(parser *confmap.
 func (ms *SqlserverIndexAvgPageSpaceUsedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName:
+		case SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName:
 		default:
-			return fmt.Errorf("metric sqlserver.index.avg_page_space_used doesn't have an attribute %v, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
+			return fmt.Errorf("metric sqlserver.index.avg_page_space_used doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
 		}
 	}
 
@@ -533,6 +534,7 @@ func (ms *SqlserverIndexAvgPageSpaceUsedMetricConfig) Validate() error {
 type SqlserverIndexFragmentationMetricAttributeKey string
 
 const (
+	SqlserverIndexFragmentationMetricAttributeKeyDbNamespace         SqlserverIndexFragmentationMetricAttributeKey = "db.namespace"
 	SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID    SqlserverIndexFragmentationMetricAttributeKey = "sqlserver.index.id"
 	SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName SqlserverIndexFragmentationMetricAttributeKey = "sqlserver.object.name"
 	SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName SqlserverIndexFragmentationMetricAttributeKey = "sqlserver.schema.name"
@@ -564,9 +566,9 @@ func (ms *SqlserverIndexFragmentationMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *SqlserverIndexFragmentationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName:
+		case SqlserverIndexFragmentationMetricAttributeKeyDbNamespace, SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName:
 		default:
-			return fmt.Errorf("metric sqlserver.index.fragmentation doesn't have an attribute %v, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
+			return fmt.Errorf("metric sqlserver.index.fragmentation doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
 		}
 	}
 
@@ -583,6 +585,7 @@ func (ms *SqlserverIndexFragmentationMetricConfig) Validate() error {
 type SqlserverIndexPageCountMetricAttributeKey string
 
 const (
+	SqlserverIndexPageCountMetricAttributeKeyDbNamespace         SqlserverIndexPageCountMetricAttributeKey = "db.namespace"
 	SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID    SqlserverIndexPageCountMetricAttributeKey = "sqlserver.index.id"
 	SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName SqlserverIndexPageCountMetricAttributeKey = "sqlserver.object.name"
 	SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName SqlserverIndexPageCountMetricAttributeKey = "sqlserver.schema.name"
@@ -614,9 +617,9 @@ func (ms *SqlserverIndexPageCountMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *SqlserverIndexPageCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName:
+		case SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName:
 		default:
-			return fmt.Errorf("metric sqlserver.index.page.count doesn't have an attribute %v, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
+			return fmt.Errorf("metric sqlserver.index.page.count doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
 		}
 	}
 
@@ -633,6 +636,7 @@ func (ms *SqlserverIndexPageCountMetricConfig) Validate() error {
 type SqlserverIndexRecordCountMetricAttributeKey string
 
 const (
+	SqlserverIndexRecordCountMetricAttributeKeyDbNamespace         SqlserverIndexRecordCountMetricAttributeKey = "db.namespace"
 	SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID    SqlserverIndexRecordCountMetricAttributeKey = "sqlserver.index.id"
 	SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName SqlserverIndexRecordCountMetricAttributeKey = "sqlserver.object.name"
 	SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName SqlserverIndexRecordCountMetricAttributeKey = "sqlserver.schema.name"
@@ -664,9 +668,9 @@ func (ms *SqlserverIndexRecordCountMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *SqlserverIndexRecordCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName:
+		case SqlserverIndexRecordCountMetricAttributeKeyDbNamespace, SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName:
 		default:
-			return fmt.Errorf("metric sqlserver.index.record.count doesn't have an attribute %v, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
+			return fmt.Errorf("metric sqlserver.index.record.count doesn't have an attribute %v, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]", val)
 		}
 	}
 
@@ -2122,22 +2126,22 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverIndexAvgPageSpaceUsed: SqlserverIndexAvgPageSpaceUsedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
+			EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
 		},
 		SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
+			EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeyDbNamespace, SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
 		},
 		SqlserverIndexPageCount: SqlserverIndexPageCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
+			EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
 		},
 		SqlserverIndexRecordCount: SqlserverIndexRecordCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
+			EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeyDbNamespace, SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
 		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 			Enabled: false,

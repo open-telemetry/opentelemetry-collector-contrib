@@ -227,10 +227,12 @@ $defs:
             items:
               type: string
               enum:
+                - "db.namespace"
                 - "sqlserver.index.id"
                 - "sqlserver.object.name"
                 - "sqlserver.schema.name"
             default:
+              - "db.namespace"
               - "sqlserver.index.id"
               - "sqlserver.object.name"
               - "sqlserver.schema.name"
@@ -254,10 +256,12 @@ $defs:
             items:
               type: string
               enum:
+                - "db.namespace"
                 - "sqlserver.index.id"
                 - "sqlserver.object.name"
                 - "sqlserver.schema.name"
             default:
+              - "db.namespace"
               - "sqlserver.index.id"
               - "sqlserver.object.name"
               - "sqlserver.schema.name"
@@ -281,10 +285,12 @@ $defs:
             items:
               type: string
               enum:
+                - "db.namespace"
                 - "sqlserver.index.id"
                 - "sqlserver.object.name"
                 - "sqlserver.schema.name"
             default:
+              - "db.namespace"
               - "sqlserver.index.id"
               - "sqlserver.object.name"
               - "sqlserver.schema.name"
@@ -308,10 +314,12 @@ $defs:
             items:
               type: string
               enum:
+                - "db.namespace"
                 - "sqlserver.index.id"
                 - "sqlserver.object.name"
                 - "sqlserver.schema.name"
             default:
+              - "db.namespace"
               - "sqlserver.index.id"
               - "sqlserver.object.name"
               - "sqlserver.schema.name"
@@ -355,6 +363,7 @@ $defs:
               type: string
               enum:
 <<<<<<< HEAD
+<<<<<<< HEAD
                 - "transition.direction"
             default:
               - "transition.direction"
@@ -380,10 +389,14 @@ $defs:
             type: boolean
             default: false
 =======
+=======
+                - "db.namespace"
+>>>>>>> 1535d555c8 ([receiver/sqlserverreceiver] Add db.namespace attribute to index physical stats metrics)
                 - "sqlserver.index.id"
                 - "sqlserver.object.name"
                 - "sqlserver.schema.name"
             default:
+              - "db.namespace"
               - "sqlserver.index.id"
               - "sqlserver.object.name"
               - "sqlserver.schema.name"

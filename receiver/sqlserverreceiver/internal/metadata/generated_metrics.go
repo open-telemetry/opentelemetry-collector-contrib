@@ -484,19 +484,19 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverIndexAvgPageSpaceUsed: metricInfo{
 		Name:       "sqlserver.index.avg_page_space_used",
-		Attributes: []string{"sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
+		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexFragmentation: metricInfo{
 		Name:       "sqlserver.index.fragmentation",
-		Attributes: []string{"sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
+		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexPageCount: metricInfo{
 		Name:       "sqlserver.index.page.count",
-		Attributes: []string{"sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
+		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexRecordCount: metricInfo{
 		Name:       "sqlserver.index.record.count",
-		Attributes: []string{"sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
+		Attributes: []string{"db.namespace", "sqlserver.index.id", "sqlserver.object.name", "sqlserver.schema.name"},
 	},
 	SqlserverIndexSearchRate: metricInfo{
 		Name: "sqlserver.index.search.rate",
@@ -1776,7 +1776,7 @@ func (m *metricSqlserverIndexAvgPageSpaceUsed) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverIndexAvgPageSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+func (m *metricSqlserverIndexAvgPageSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1784,6 +1784,9 @@ func (m *metricSqlserverIndexAvgPageSpaceUsed) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID) {
 		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
 	}
@@ -1871,7 +1874,7 @@ func (m *metricSqlserverIndexFragmentation) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverIndexFragmentation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+func (m *metricSqlserverIndexFragmentation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1879,6 +1882,9 @@ func (m *metricSqlserverIndexFragmentation) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexFragmentationMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID) {
 		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
 	}
@@ -1966,7 +1972,7 @@ func (m *metricSqlserverIndexPageCount) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverIndexPageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+func (m *metricSqlserverIndexPageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1974,6 +1980,9 @@ func (m *metricSqlserverIndexPageCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageCountMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID) {
 		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
 	}
@@ -2061,7 +2070,7 @@ func (m *metricSqlserverIndexRecordCount) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverIndexRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+func (m *metricSqlserverIndexRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2069,6 +2078,9 @@ func (m *metricSqlserverIndexRecordCount) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexRecordCountMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID) {
 		dp.Attributes().PutInt("sqlserver.index.id", sqlserverIndexIDAttributeValue)
 	}
@@ -5528,32 +5540,32 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 }
 
 // RecordSqlserverIndexAvgPageSpaceUsedDataPoint adds a data point to sqlserver.index.avg_page_space_used metric.
-func (mb *MetricsBuilder) RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts pcommon.Timestamp, val float64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
-	mb.metricSqlserverIndexAvgPageSpaceUsed.recordDataPoint(mb.startTime, ts, val, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverIndexAvgPageSpaceUsedDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+	mb.metricSqlserverIndexAvgPageSpaceUsed.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 }
 
 // RecordSqlserverIndexFragmentationDataPoint adds a data point to sqlserver.index.fragmentation metric.
-func (mb *MetricsBuilder) RecordSqlserverIndexFragmentationDataPoint(ts pcommon.Timestamp, val float64, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
-	mb.metricSqlserverIndexFragmentation.recordDataPoint(mb.startTime, ts, val, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverIndexFragmentationDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) {
+	mb.metricSqlserverIndexFragmentation.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 }
 
 // RecordSqlserverIndexPageCountDataPoint adds a data point to sqlserver.index.page.count metric.
-func (mb *MetricsBuilder) RecordSqlserverIndexPageCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSqlserverIndexPageCountDataPoint(ts pcommon.Timestamp, inputVal string, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SqlserverIndexPageCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSqlserverIndexPageCount.recordDataPoint(mb.startTime, ts, val, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
+	mb.metricSqlserverIndexPageCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 	return nil
 }
 
 // RecordSqlserverIndexRecordCountDataPoint adds a data point to sqlserver.index.record.count metric.
-func (mb *MetricsBuilder) RecordSqlserverIndexRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSqlserverIndexRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, dbNamespaceAttributeValue string, sqlserverIndexIDAttributeValue int64, sqlserverObjectNameAttributeValue string, sqlserverSchemaNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SqlserverIndexRecordCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSqlserverIndexRecordCount.recordDataPoint(mb.startTime, ts, val, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
+	mb.metricSqlserverIndexRecordCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, sqlserverIndexIDAttributeValue, sqlserverObjectNameAttributeValue, sqlserverSchemaNameAttributeValue)
 	return nil
 }
 

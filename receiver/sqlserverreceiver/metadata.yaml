@@ -604,7 +604,7 @@ metrics:
     unit: “%”
     gauge:
       value_type: double
-    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.fragmentation:
     enabled: false
@@ -613,7 +613,7 @@ metrics:
     unit: “%”
     gauge:
       value_type: double
-    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.page.count:
     enabled: false
@@ -623,7 +623,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.record.count:
     enabled: false
@@ -633,7 +633,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false

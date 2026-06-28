@@ -88,22 +88,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverIndexAvgPageSpaceUsed: SqlserverIndexAvgPageSpaceUsedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeyDbNamespace, SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexPageCount: SqlserverIndexPageCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexRecordCount: SqlserverIndexRecordCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeyDbNamespace, SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 						Enabled: true,
@@ -351,22 +351,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverIndexAvgPageSpaceUsed: SqlserverIndexAvgPageSpaceUsedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{SqlserverIndexAvgPageSpaceUsedMetricAttributeKeyDbNamespace, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverIndexID, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverObjectName, SqlserverIndexAvgPageSpaceUsedMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexFragmentationMetricAttributeKey{SqlserverIndexFragmentationMetricAttributeKeyDbNamespace, SqlserverIndexFragmentationMetricAttributeKeySqlserverIndexID, SqlserverIndexFragmentationMetricAttributeKeySqlserverObjectName, SqlserverIndexFragmentationMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexPageCount: SqlserverIndexPageCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexPageCountMetricAttributeKey{SqlserverIndexPageCountMetricAttributeKeyDbNamespace, SqlserverIndexPageCountMetricAttributeKeySqlserverIndexID, SqlserverIndexPageCountMetricAttributeKeySqlserverObjectName, SqlserverIndexPageCountMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexRecordCount: SqlserverIndexRecordCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
+						EnabledAttributes:   []SqlserverIndexRecordCountMetricAttributeKey{SqlserverIndexRecordCountMetricAttributeKeyDbNamespace, SqlserverIndexRecordCountMetricAttributeKeySqlserverIndexID, SqlserverIndexRecordCountMetricAttributeKeySqlserverObjectName, SqlserverIndexRecordCountMetricAttributeKeySqlserverSchemaName},
 					},
 					SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 						Enabled: false,
@@ -624,7 +624,7 @@ func TestSqlserverIndexAvgPageSpaceUsedMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverIndexAvgPageSpaceUsedMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.avg_page_space_used doesn't have an attribute invalid, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.avg_page_space_used doesn't have an attribute invalid, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverIndexAvgPageSpaceUsed
 	cfg.AggregationStrategy = "invalid"
@@ -636,7 +636,7 @@ func TestSqlserverIndexFragmentationMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverIndexFragmentationMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.fragmentation doesn't have an attribute invalid, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.fragmentation doesn't have an attribute invalid, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverIndexFragmentation
 	cfg.AggregationStrategy = "invalid"
@@ -648,7 +648,7 @@ func TestSqlserverIndexPageCountMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverIndexPageCountMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.page.count doesn't have an attribute invalid, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.page.count doesn't have an attribute invalid, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverIndexPageCount
 	cfg.AggregationStrategy = "invalid"
@@ -660,7 +660,7 @@ func TestSqlserverIndexRecordCountMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverIndexRecordCountMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.record.count doesn't have an attribute invalid, valid attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.index.record.count doesn't have an attribute invalid, valid attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverIndexRecordCount
 	cfg.AggregationStrategy = "invalid"
