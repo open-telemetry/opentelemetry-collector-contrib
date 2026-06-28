@@ -207,22 +207,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      sqlserver.index.search.rate:
-        description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      sqlserver.latch.superlatch.count:
-        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      sqlserver.latch.superlatch.transition.rate:
-        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
+      sqlserver.index.avg_page_space_used:
+        description: "SqlserverIndexAvgPageSpaceUsedMetricConfig provides config for the sqlserver.index.avg_page_space_used metric."
         type: object
         properties:
           enabled:
@@ -241,6 +227,134 @@ $defs:
             items:
               type: string
               enum:
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.fragmentation:
+        description: "SqlserverIndexFragmentationMetricConfig provides config for the sqlserver.index.fragmentation metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.page.count:
+        description: "SqlserverIndexPageCountMetricConfig provides config for the sqlserver.index.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.record.count:
+        description: "SqlserverIndexRecordCountMetricConfig provides config for the sqlserver.index.record.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.search.rate:
+        description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+<<<<<<< HEAD
+      sqlserver.latch.superlatch.count:
+        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.superlatch.transition.rate:
+        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
+=======
+      sqlserver.index.size:
+        description: "SqlserverIndexSizeMetricConfig provides config for the sqlserver.index.size metric."
+>>>>>>> b47db40ae5 ([receiver/sqlserverreceiver] Add per-index physical stats metrics)
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+<<<<<<< HEAD
                 - "transition.direction"
             default:
               - "transition.direction"
@@ -265,6 +379,15 @@ $defs:
           enabled:
             type: boolean
             default: false
+=======
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+>>>>>>> b47db40ae5 ([receiver/sqlserverreceiver] Add per-index physical stats metrics)
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object

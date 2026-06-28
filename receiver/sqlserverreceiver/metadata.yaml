@@ -184,6 +184,10 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
+  sqlserver.index.id:
+    description: The ID of the index within a table or indexed view.
+    type: int
+    requirement_level: recommended
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
@@ -191,6 +195,10 @@ attributes:
   sqlserver.logical_reads:
     description: Number of logical reads (data read from cache/memory).
     type: int
+    requirement_level: recommended
+  sqlserver.object.name:
+    description: The name of the table or indexed view the index belongs to.
+    type: string
     requirement_level: recommended
   sqlserver.open_transaction_count:
     description: Number of transactions currently open in the session.
@@ -258,6 +266,10 @@ attributes:
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
+    requirement_level: recommended
+  sqlserver.schema.name:
+    description: The name of the schema the object belongs to.
+    type: string
     requirement_level: recommended
   sqlserver.session.duration:
     description: Total elapsed time in seconds the session has been actively executing requests.
@@ -585,6 +597,44 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.avg_page_space_used:
+    enabled: false
+    description: Average percentage of available data storage space used in all pages of the index.
+    stability: development
+    unit: “%”
+    gauge:
+      value_type: double
+    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.fragmentation:
+    enabled: false
+    description: Average fragmentation percentage of the index leaf level.
+    stability: development
+    unit: “%”
+    gauge:
+      value_type: double
+    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.page.count:
+    enabled: false
+    description: Number of pages in the index.
+    stability: development
+    unit: “{pages}”
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.record.count:
+    enabled: false
+    description: Total number of records in the index.
+    stability: development
+    unit: “{records}”
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -593,11 +643,21 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.size:
+    enabled: false
+    description: Total size of the index in bytes.
+    stability: development
+    unit: “By”
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.latch.superlatch.count:
     enabled: false
     description: Number of superlatches currently active.
     stability: development
-    unit: "{superlatch}"
+    unit: “{superlatch}”
     gauge:
       value_type: int
     attributes: []
@@ -606,7 +666,7 @@ metrics:
     enabled: false
     description: Rate of superlatch promotions or demotions.
     stability: development
-    unit: "{transition}/s"
+    unit: “{transition}/s”
     gauge:
       value_type: double
     attributes: [transition.direction]
@@ -615,7 +675,7 @@ metrics:
     enabled: false
     description: Number of latch waits per second.
     stability: development
-    unit: "{wait}/s"
+    unit: “{wait}/s”
     gauge:
       value_type: double
     attributes: []

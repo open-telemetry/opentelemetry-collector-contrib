@@ -124,6 +124,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabaseStatusMetrics(ctx)
 	case getSQLServerWaitStatsQuery(s.config.InstanceName):
 		err = s.recordDatabaseWaitMetrics(ctx)
+	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
+		err = s.recordIndexPhysicalMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -1072,6 +1074,74 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordIndexPhysicalMetrics(ctx context.Context) error {
+	const (
+		indexIDKey          = "index_id"
+		objectNameKey       = "object_name"
+		schemaNameKey       = "schema_name"
+		fragKey             = "avg_fragmentation_in_percent"
+		pageCountKey        = "page_count"
+		pageSpaceUsedKey    = "avg_page_space_used_in_percent"
+		recordCountKey      = "record_count"
+		sqlServerPageSizeBy = int64(8192) // SQL Server pages are 8 KB
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting index physical stats rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+
+		indexID, err := retrieveInt(row, indexIDKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse %s: %w", i, indexIDKey, err))
+			continue
+		}
+
+		val, err := retrieveFloat(row, fragKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse %s: %w", i, fragKey, err))
+		} else {
+			s.mb.RecordSqlserverIndexFragmentationDataPoint(now, val.(float64), indexID.(int64), row[objectNameKey], row[schemaNameKey])
+		}
+
+		pageCount, err := retrieveInt(row, pageCountKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse %s: %w", i, pageCountKey, err))
+		} else {
+			s.mb.RecordSqlserverIndexPageCountDataPoint(now, row[pageCountKey], indexID.(int64), row[objectNameKey], row[schemaNameKey])
+			s.mb.RecordSqlserverIndexSizeDataPoint(now, strconv.FormatInt(pageCount.(int64)*sqlServerPageSizeBy, 10), indexID.(int64), row[objectNameKey], row[schemaNameKey])
+		}
+
+		val, err = retrieveFloat(row, pageSpaceUsedKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse %s: %w", i, pageSpaceUsedKey, err))
+		} else {
+			s.mb.RecordSqlserverIndexAvgPageSpaceUsedDataPoint(now, val.(float64), indexID.(int64), row[objectNameKey], row[schemaNameKey])
+		}
+
+		errs = append(errs,
+			s.mb.RecordSqlserverIndexRecordCountDataPoint(now, row[recordCountKey], indexID.(int64), row[objectNameKey], row[schemaNameKey]),
+		)
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found by index physical stats query")
 	}
 
 	return errors.Join(errs...)
