@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/resource_detection
-note: Add GCP Cloud Run Worker Pool detector to the resource detection processor
-issues: [48931]
-change_logs: [user]

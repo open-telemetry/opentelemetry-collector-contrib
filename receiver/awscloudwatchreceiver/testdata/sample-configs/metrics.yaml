@@ -1,5 +1,5 @@
 receivers:
-  awscloudwatch:
+  aws_cloudwatch:
     region: us-west-2
     # profile: <your profile name>
     metrics:
@@ -9,3 +9,4 @@ receivers:
         filters:
           namespace: AWS/EC2
         limit: 50
+
