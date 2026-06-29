@@ -71,7 +71,7 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 }
 
 // Diff computes the delta between two sets of buckets with the same scale.
-func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets) {
+func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets, reset bool) {
 	for index, bucketCount := range buckets.BucketCounts {
 		if bucketCount == 0 {
 			continue
@@ -82,9 +82,11 @@ func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out Exponentia
 		if oldIndex >= 0 && oldIndex < len(old.BucketCounts) {
 			oldCount = old.BucketCounts[oldIndex]
 		}
-		if bucketCount <= oldCount {
-			// bucketCount < oldCount is a monotonicity error, we'll consider the diff to be zero as fallback
+		if bucketCount == oldCount {
 			continue
+		} else if bucketCount < oldCount {
+			// reset happened
+			return out, true
 		}
 		diff := bucketCount - oldCount
 		if out.BucketCounts == nil {
@@ -96,7 +98,7 @@ func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out Exponentia
 		}
 		out.BucketCounts = append(out.BucketCounts, diff)
 	}
-	return out
+	return out, false
 }
 
 type ExponentialHistogramPoint struct {

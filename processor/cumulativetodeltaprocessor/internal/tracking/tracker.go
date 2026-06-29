@@ -195,15 +195,26 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		delta := value.Clone()
 
-		// Calculate deltas unless histogram count was reset
-		if valid && delta.Count >= prevValue.Count {
+		// Calculate deltas unless there was a reset.
+		if valid {
+			// Detect a reset when there is a drop in the total count OR a bucket count.
+			isReset := delta.Count < prevValue.Count
+			if !isReset {
+				for index, prevBucket := range prevValue.BucketCounts {
+					if delta.BucketCounts[index] < prevBucket {
+						isReset = true
+						break
+					}
+				}
+			}
+			if isReset {
+				return out, false, ReasonReset
+			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}
-		} else if valid {
-			reason = ReasonReset
 		}
 
 		out.HistogramValue = &delta
@@ -242,8 +253,15 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			prevValue.Positive = prevValue.Positive.Coarsen(bitsLost)
 			prevValue.Negative = prevValue.Negative.Coarsen(bitsLost)
 		}
-		delta.Positive = value.Positive.Diff(&prevValue.Positive)
-		delta.Negative = value.Negative.Diff(&prevValue.Negative)
+		var reset bool
+		delta.Positive, reset = value.Positive.Diff(&prevValue.Positive)
+		if reset {
+			return out, false, ReasonReset
+		}
+		delta.Negative, reset = value.Negative.Diff(&prevValue.Negative)
+		if reset {
+			return out, false, ReasonReset
+		}
 
 		out.ExponentialHistogramPoint = &delta
 
