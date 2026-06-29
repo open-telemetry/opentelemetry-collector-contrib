@@ -124,6 +124,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
+		NewWhenFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
 		NewDeleteIndexFactory[K](),
