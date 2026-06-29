@@ -182,7 +182,7 @@ attributes:
     description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
   relation:
-    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
+    description: Name of the relation targeted by the lock. Empty if the target is not a relation or part of a relation.
     type: string
     requirement_level: recommended
   replication_client:

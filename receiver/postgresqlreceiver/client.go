@@ -311,14 +311,21 @@ type databaseLocks struct {
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
-	AS locks FROM pg_locks
-	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	GROUP BY relname, mode, locktype;`
+	query := `SELECT
+	COALESCE(pg_class.relname, '') AS relation,
+	pg_locks.mode,
+	pg_locks.locktype,
+	COUNT(*) AS locks
+	FROM pg_locks
+	LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid
+	WHERE pg_locks.database IS NULL
+	OR pg_locks.database = 0
+	OR pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+	GROUP BY pg_class.relname, pg_locks.mode, pg_locks.locktype;`
 
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
+		return nil, fmt.Errorf("unable to query pg_locks: %w", err)
 	}
 	defer rows.Close()
 	var dl []databaseLocks

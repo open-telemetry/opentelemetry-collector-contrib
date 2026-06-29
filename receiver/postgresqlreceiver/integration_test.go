@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tj/assert"
@@ -61,6 +62,114 @@ func TestIntegrationWithConnectionPool(t *testing.T) {
 	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
+}
+
+func TestIntegrationDatabaseLocksIncludePreparedTransactions(t *testing.T) {
+	ctx := t.Context()
+	container, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				ExposedPorts: []string{postgresqlPort},
+				Cmd:          []string{"-c", "max_prepared_transactions=10"},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, container.Start(ctx))
+	defer testcontainers.CleanupContainer(t, container)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+	port, err := container.MappedPort(ctx, postgresqlPort)
+	require.NoError(t, err)
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@%s/otel?sslmode=disable", net.JoinHostPort(host, port.Port())))
+	require.NoError(t, err)
+	defer db.Close()
+	require.NoError(t, db.PingContext(ctx))
+
+	_, err = db.ExecContext(ctx, "CREATE TABLE prepared_lock_test (id integer)")
+	require.NoError(t, err)
+	conn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "BEGIN")
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "INSERT INTO prepared_lock_test VALUES (1)")
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "PREPARE TRANSACTION 'otel_prepared_lock'")
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+	defer func() {
+		_, rollbackErr := db.ExecContext(ctx, "ROLLBACK PREPARED 'otel_prepared_lock'")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	_, err = db.ExecContext(ctx, "CREATE DATABASE other_database")
+	require.NoError(t, err)
+	otherDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@%s/other_database?sslmode=disable", net.JoinHostPort(host, port.Port())))
+	require.NoError(t, err)
+	defer otherDB.Close()
+	require.NoError(t, otherDB.PingContext(ctx))
+	_, err = otherDB.ExecContext(ctx, "CREATE TABLE other_database_lock_test (id integer)")
+	require.NoError(t, err)
+	otherConn, err := otherDB.Conn(ctx)
+	require.NoError(t, err)
+	defer otherConn.Close()
+	_, err = otherConn.ExecContext(ctx, "BEGIN")
+	require.NoError(t, err)
+	defer func() {
+		_, rollbackErr := otherConn.ExecContext(ctx, "ROLLBACK")
+		assert.NoError(t, rollbackErr)
+	}()
+	_, err = otherConn.ExecContext(ctx, "LOCK TABLE other_database_lock_test IN ACCESS EXCLUSIVE MODE")
+	require.NoError(t, err)
+
+	var expectedCount, nullPIDCount, otherDatabaseTransactionIDCount, preparedRelationLockCount int64
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock' AND (database = (SELECT oid FROM pg_database WHERE datname = current_database()) OR database IS NULL)`).Scan(&expectedCount)
+	require.NoError(t, err)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'transactionid' AND mode = 'ExclusiveLock' AND pid IS NULL`).Scan(&nullPIDCount)
+	require.NoError(t, err)
+	require.Positive(t, nullPIDCount)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid WHERE pg_locks.locktype = 'transactionid' AND pg_locks.mode = 'ExclusiveLock' AND pg_stat_activity.datname = 'other_database'`).Scan(&otherDatabaseTransactionIDCount)
+	require.NoError(t, err)
+	require.Positive(t, otherDatabaseTransactionIDCount)
+	err = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM pg_locks WHERE locktype = 'relation' AND mode = 'RowExclusiveLock' AND relation = 'prepared_lock_test'::regclass AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`).Scan(&preparedRelationLockCount)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), preparedRelationLockCount)
+
+	client := &postgreSQLClient{client: db}
+	locks, err := client.getDatabaseLocks(ctx)
+	require.NoError(t, err)
+
+	foundTransactionID := false
+	foundPreparedRelation := false
+	for _, lock := range locks {
+		require.False(t,
+			lock.relation == "" && lock.lockType == "relation" && lock.mode == "AccessExclusiveLock",
+			"relation lock from another database must not be emitted as an empty relation",
+		)
+		if lock.lockType == "transactionid" && lock.mode == "ExclusiveLock" {
+			require.Empty(t, lock.relation)
+			require.Equal(t, expectedCount, lock.locks)
+			require.Equal(t, nullPIDCount, lock.locks, "transactionid lock group should exclude active transactions from other databases")
+			require.Greater(t, expectedCount, nullPIDCount, "current query still observes transactionid locks from other databases")
+			foundTransactionID = true
+		}
+		if lock.relation == "prepared_lock_test" && lock.lockType == "relation" && lock.mode == "RowExclusiveLock" {
+			require.Equal(t, preparedRelationLockCount, lock.locks)
+			foundPreparedRelation = true
+		}
+	}
+	require.True(t, foundTransactionID, "expected transactionid lock group")
+	require.True(t, foundPreparedRelation, "expected prepared transaction relation lock group")
 }
 
 func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
@@ -158,7 +267,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
 				Env: map[string]string{
