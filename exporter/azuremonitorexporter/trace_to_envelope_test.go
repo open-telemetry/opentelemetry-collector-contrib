@@ -398,7 +398,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "127.0.0.1:81")
 
-	// test RPC error using the new rpc.grpc.status_code attribute
+	// test RPC error using the deprecated rpc.grpc.status_code attribute
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Resource exhausted")
 	spanAttributes.PutInt("rpc.grpc.status_code", 8)
@@ -410,6 +410,43 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	assert.Equal(t, "8", data.ResultCode)
 	assert.Equal(t, traceutil.StatusCodeStr(span.Status().Code()), data.Properties[attributeOtelStatusCode])
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
+}
+
+// Tests RPC span detection and processing using the new rpc.system.name attribute (semconv v1.39.0+)
+func TestRPCNewSemconvSpanDetection(t *testing.T) {
+	requiredNewRPCAttributes := map[string]any{
+		"rpc.system.name": defaultRPCSystem,
+		"server.address":  defaultServerAddress,
+	}
+
+	span := getServerSpan(defaultRPCSpanName, requiredNewRPCAttributes)
+	spanAttributes := span.Attributes()
+
+	spanAttributes.PutStr("server.address", "foo")
+	spanAttributes.PutInt("server.port", 81)
+
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelope := envelopes[0]
+	commonEnvelopeValidations(t, span, envelope, defaultRequestDataEnvelopeName)
+	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData)
+	defaultRPCRequestDataValidations(t, span, data, "foo:81")
+}
+
+// Tests rpc.response.status_code (semconv v1.39.0+) takes precedence over rpc.grpc.status_code
+func TestRPCResponseStatusCode(t *testing.T) {
+	span := getDefaultRPCClientSpan()
+	spanAttributes := span.Attributes()
+
+	spanAttributes.PutStr("client.address", "foo")
+	spanAttributes.PutInt("client.port", 81)
+	span.Status().SetCode(ptrace.StatusCodeError)
+	spanAttributes.PutStr("rpc.response.status_code", "14")
+
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelope := envelopes[0]
+	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+
+	assert.Equal(t, "14", data.ResultCode)
 }
 
 // Tests proper assignment for a Database client span

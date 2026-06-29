@@ -1,5 +1,5 @@
 receivers:
-  awscloudwatch:
+  aws_cloudwatch:
     region: us-west-1
     logs:
       poll_interval: 1m
