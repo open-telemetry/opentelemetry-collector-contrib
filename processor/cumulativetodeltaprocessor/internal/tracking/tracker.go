@@ -114,6 +114,22 @@ func (t *MetricTracker) Streams() int64 {
 	return t.streams.Load()
 }
 
+// isMonotonicHistogram reports if a histogram is monotonic.
+// A histogram is not monotonic when there is a drop in the total count or a bucket count.
+func isMonotonicHistogram(value, prevValue *HistogramPoint) bool {
+	if value.Count < prevValue.Count {
+		return false
+	}
+
+	for index, prevBucket := range prevValue.BucketCounts {
+		if value.BucketCounts[index] < prevBucket {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, reason string) {
 	metricID := in.Identity
 	metricPoint := in.Value
@@ -197,17 +213,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Calculate deltas unless there was a reset.
 		if valid {
-			// Detect a reset when there is a drop in the total count OR a bucket count.
-			isReset := delta.Count < prevValue.Count
-			if !isReset {
-				for index, prevBucket := range prevValue.BucketCounts {
-					if delta.BucketCounts[index] < prevBucket {
-						isReset = true
-						break
-					}
-				}
-			}
-			if isReset {
+			if !isMonotonicHistogram(&delta, prevValue) {
 				return out, false, ReasonReset
 			}
 			delta.Count -= prevValue.Count
