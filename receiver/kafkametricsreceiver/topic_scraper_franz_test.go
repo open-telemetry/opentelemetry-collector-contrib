@@ -182,9 +182,7 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 }
 
 func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
-	// A broker/proxy that reports an empty cluster_id in its MetadataResponse
-	// must not produce an empty-string kafka.cluster.id attribute, even when the
-	// attribute is explicitly enabled.
+	// An empty cluster_id in metadata must not yield an empty-string attribute, even when enabled.
 	_, clientCfg := kafkatest.NewCluster(t,
 		kfake.SeedTopics(1, "topic-a"),
 		kfake.ClusterID(""),

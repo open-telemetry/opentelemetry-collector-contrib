@@ -132,16 +132,12 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
-	// Cluster ID is carried in the broker metadata response (topics excluded).
-	// Only issue the extra request when the attribute is enabled. The cluster ID
-	// is a best-effort, opt-in resource attribute: a failure to fetch it loses no
-	// metric data points, so we log a warning rather than record a (partial)
-	// scrape error.
+	// Cluster ID needs an extra metadata request here, so only fetch it when enabled.
+	// It is opt-in and loses no data points on failure, so warn rather than error.
 	if s.config.ResourceAttributes.KafkaClusterID.Enabled {
 		if meta, merr := s.adm.BrokerMetadata(ctx); merr != nil {
 			s.settings.Logger.Warn("franz-go: BrokerMetadata failed; kafka.cluster.id will be omitted", zap.Error(merr))
-		} else if meta.Cluster != "" {
-			// Skip an empty cluster ID so we never emit an empty-string attribute.
+		} else if meta.Cluster != "" { // skip empty IDs so we never emit an empty-string attribute
 			rb.SetKafkaClusterID(meta.Cluster)
 		}
 	}

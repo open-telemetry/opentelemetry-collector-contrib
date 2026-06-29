@@ -80,11 +80,8 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	scrapeErrs := scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// 1) cluster metadata + topic list (single request)
-	// Metadata carries both the topic list and the cluster ID in one response, so
-	// we reuse it for the kafka.cluster.id resource attribute below instead of
-	// issuing a separate BrokerMetadata request. FilterInternal reproduces the
-	// behavior of ListTopics, which drops internal topics when none are named.
+	// Metadata returns the topic list and cluster ID in one response. FilterInternal
+	// (below) reproduces ListTopics, which drops internal topics when none are named.
 	meta, err := s.adm.Metadata(ctx)
 	if err != nil {
 		s.settings.Logger.Error("franz-go: Metadata failed", zap.Error(err))
@@ -215,11 +212,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
-	// Cluster ID comes from the metadata response fetched above (no extra
-	// request). Skip an empty cluster ID so we never emit an empty-string
-	// attribute; SetKafkaClusterID is itself a no-op unless the attribute is
-	// enabled.
-	if meta.Cluster != "" {
+	if meta.Cluster != "" { // reuse cluster ID from metadata above; skip empty IDs
 		rb.SetKafkaClusterID(meta.Cluster)
 	}
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
