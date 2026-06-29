@@ -501,7 +501,7 @@ func (ms *OracledbLibraryCacheUtilizationMetricConfig) Unmarshal(parser *confmap
 type OracledbLockTimeMetricAttributeKey string
 
 const (
-	OracledbLockTimeMetricAttributeKeyOracledbLockKind OracledbLockTimeMetricAttributeKey = "oracledb.lock.kind"
+	OracledbLockTimeMetricAttributeKeyOracledbLockType OracledbLockTimeMetricAttributeKey = "oracledb.lock.type"
 )
 
 // OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric.
@@ -530,9 +530,9 @@ func (ms *OracledbLockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbLockTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbLockTimeMetricAttributeKeyOracledbLockKind:
+		case OracledbLockTimeMetricAttributeKeyOracledbLockType:
 		default:
-			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.lock.kind]", val)
+			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.lock.type]", val)
 		}
 	}
 
@@ -1801,7 +1801,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbLockTime: OracledbLockTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockKind},
+			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockType},
 		},
 		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 			Enabled: true,

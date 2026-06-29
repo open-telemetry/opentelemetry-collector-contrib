@@ -173,7 +173,7 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
-  oracledb.lock.kind:
+  oracledb.lock.type:
     description: Whether the lock timing is accumulated by background (get) or foreground (wait) sessions.
     type: string
     enum: [background, foreground]
@@ -561,7 +561,7 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.gc.current_block.receive.time:
-    description: Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.
+    description: Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.
     enabled: false
     stability: development
     sum:
@@ -595,8 +595,8 @@ metrics:
     unit: "%"
   oracledb.lock.time:
     attributes:
-      - oracledb.lock.kind
-    description: Cumulative time spent on transaction lock activity, in seconds (converted from centiseconds). Sourced from v$sysstat names transaction lock background get time (oracledb.lock.kind=background) and transaction lock foreground wait time (oracledb.lock.kind=foreground).
+      - oracledb.lock.type
+    description: Cumulative time spent on transaction lock activity, in seconds.
     enabled: false
     stability: development
     sum:
@@ -839,7 +839,7 @@ metrics:
       input_type: string
     unit: "{queries}"
   oracledb.recovery.blocks_read:
-    description: Number of blocks read during instance or media recovery. Sourced from v$sysstat name recovery blocks read.
+    description: Number of blocks read during instance or media recovery.
     enabled: false
     stability: development
     sum:
@@ -847,7 +847,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{blocks}"
+    unit: "{block}"
   oracledb.recycle_bin.limit:
     description: Total size of the recycle bin.
     enabled: false
@@ -889,7 +889,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.smon.instance_recovery.posts:
-    description: Number of times SMON was posted to perform instance recovery. Sourced from v$sysstat name SMON posted for instance recovery.
+    description: Number of times SMON was posted to perform instance recovery.
     enabled: false
     stability: development
     sum:
@@ -897,9 +897,9 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{posts}"
+    unit: "{post}"
   oracledb.smon.txn_recovery.posts:
-    description: Number of times SMON was posted to perform transaction recovery for other instances. Sourced from v$sysstat name SMON posted for txn recovery for other instances.
+    description: Number of times SMON was posted to perform transaction recovery for other instances.
     enabled: false
     stability: development
     sum:
@@ -907,7 +907,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{posts}"
+    unit: "{post}"
   oracledb.sort.ratio:
     attributes:
       - oracledb.sort.type
@@ -968,7 +968,7 @@ metrics:
       value_type: int
     unit: By
   oracledb.transaction.rollbacks:
-    description: Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.
+    description: Number of transactions rolled back.
     enabled: false
     stability: development
     sum:
@@ -976,7 +976,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{rollbacks}"
+    unit: "{rollback}"
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true

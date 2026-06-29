@@ -100,7 +100,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbLockTime: OracledbLockTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockKind},
+						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockType},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 						Enabled: true,
@@ -341,7 +341,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbLockTime: OracledbLockTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockKind},
+						EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockType},
 					},
 					OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 						Enabled: false,
@@ -531,7 +531,7 @@ func TestOracledbLockTimeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbLockTimeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.lock.time doesn't have an attribute invalid, valid attributes: [oracledb.lock.kind]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.lock.time doesn't have an attribute invalid, valid attributes: [oracledb.lock.type]")
 
 	cfg = DefaultMetricsConfig().OracledbLockTime
 	cfg.AggregationStrategy = "invalid"

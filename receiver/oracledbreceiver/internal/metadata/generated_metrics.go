@@ -152,30 +152,30 @@ var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
 	"transmit": AttributeNetworkIoDirectionTransmit,
 }
 
-// AttributeOracledbLockKind specifies the value oracledb.lock.kind attribute.
-type AttributeOracledbLockKind int
+// AttributeOracledbLockType specifies the value oracledb.lock.type attribute.
+type AttributeOracledbLockType int
 
 const (
-	_ AttributeOracledbLockKind = iota
-	AttributeOracledbLockKindBackground
-	AttributeOracledbLockKindForeground
+	_ AttributeOracledbLockType = iota
+	AttributeOracledbLockTypeBackground
+	AttributeOracledbLockTypeForeground
 )
 
-// String returns the string representation of the AttributeOracledbLockKind.
-func (av AttributeOracledbLockKind) String() string {
+// String returns the string representation of the AttributeOracledbLockType.
+func (av AttributeOracledbLockType) String() string {
 	switch av {
-	case AttributeOracledbLockKindBackground:
+	case AttributeOracledbLockTypeBackground:
 		return "background"
-	case AttributeOracledbLockKindForeground:
+	case AttributeOracledbLockTypeForeground:
 		return "foreground"
 	}
 	return ""
 }
 
-// MapAttributeOracledbLockKind is a helper map of string to AttributeOracledbLockKind attribute value.
-var MapAttributeOracledbLockKind = map[string]AttributeOracledbLockKind{
-	"background": AttributeOracledbLockKindBackground,
-	"foreground": AttributeOracledbLockKindForeground,
+// MapAttributeOracledbLockType is a helper map of string to AttributeOracledbLockType attribute value.
+var MapAttributeOracledbLockType = map[string]AttributeOracledbLockType{
+	"background": AttributeOracledbLockTypeBackground,
+	"foreground": AttributeOracledbLockTypeForeground,
 }
 
 // AttributeOracledbParseResult specifies the value oracledb.parse.result attribute.
@@ -317,7 +317,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbLockTime: metricInfo{
 		Name:       "oracledb.lock.time",
-		Attributes: []string{"oracledb.lock.kind"},
+		Attributes: []string{"oracledb.lock.type"},
 	},
 	OracledbLogicalReads: metricInfo{
 		Name: "oracledb.logical_reads",
@@ -1551,7 +1551,7 @@ type metricOracledbGcCurrentBlockReceiveTime struct {
 // init fills oracledb.gc.current_block.receive.time metric with initial data.
 func (m *metricOracledbGcCurrentBlockReceiveTime) init() {
 	m.data.SetName("oracledb.gc.current_block.receive.time")
-	m.data.SetDescription("Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.")
+	m.data.SetDescription("Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1756,7 +1756,7 @@ type metricOracledbLockTime struct {
 // init fills oracledb.lock.time metric with initial data.
 func (m *metricOracledbLockTime) init() {
 	m.data.SetName("oracledb.lock.time")
-	m.data.SetDescription("Cumulative time spent on transaction lock activity, in seconds (converted from centiseconds). Sourced from v$sysstat names transaction lock background get time (oracledb.lock.kind=background) and transaction lock foreground wait time (oracledb.lock.kind=foreground).")
+	m.data.SetDescription("Cumulative time spent on transaction lock activity, in seconds.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1765,7 +1765,7 @@ func (m *metricOracledbLockTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbLockKindAttributeValue string) {
+func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbLockTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1773,8 +1773,8 @@ func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbLockTimeMetricAttributeKeyOracledbLockKind) {
-		dp.Attributes().PutStr("oracledb.lock.kind", oracledbLockKindAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbLockTimeMetricAttributeKeyOracledbLockType) {
+		dp.Attributes().PutStr("oracledb.lock.type", oracledbLockTypeAttributeValue)
 	}
 
 	var s string
@@ -3209,8 +3209,8 @@ type metricOracledbRecoveryBlocksRead struct {
 // init fills oracledb.recovery.blocks_read metric with initial data.
 func (m *metricOracledbRecoveryBlocksRead) init() {
 	m.data.SetName("oracledb.recovery.blocks_read")
-	m.data.SetDescription("Number of blocks read during instance or media recovery. Sourced from v$sysstat name recovery blocks read.")
-	m.data.SetUnit("{blocks}")
+	m.data.SetDescription("Number of blocks read during instance or media recovery.")
+	m.data.SetUnit("{block}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3553,8 +3553,8 @@ type metricOracledbSmonInstanceRecoveryPosts struct {
 // init fills oracledb.smon.instance_recovery.posts metric with initial data.
 func (m *metricOracledbSmonInstanceRecoveryPosts) init() {
 	m.data.SetName("oracledb.smon.instance_recovery.posts")
-	m.data.SetDescription("Number of times SMON was posted to perform instance recovery. Sourced from v$sysstat name SMON posted for instance recovery.")
-	m.data.SetUnit("{posts}")
+	m.data.SetDescription("Number of times SMON was posted to perform instance recovery.")
+	m.data.SetUnit("{post}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3605,8 +3605,8 @@ type metricOracledbSmonTxnRecoveryPosts struct {
 // init fills oracledb.smon.txn_recovery.posts metric with initial data.
 func (m *metricOracledbSmonTxnRecoveryPosts) init() {
 	m.data.SetName("oracledb.smon.txn_recovery.posts")
-	m.data.SetDescription("Number of times SMON was posted to perform transaction recovery for other instances. Sourced from v$sysstat name SMON posted for txn recovery for other instances.")
-	m.data.SetUnit("{posts}")
+	m.data.SetDescription("Number of times SMON was posted to perform transaction recovery for other instances.")
+	m.data.SetUnit("{post}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4168,8 +4168,8 @@ type metricOracledbTransactionRollbacks struct {
 // init fills oracledb.transaction.rollbacks metric with initial data.
 func (m *metricOracledbTransactionRollbacks) init() {
 	m.data.SetName("oracledb.transaction.rollbacks")
-	m.data.SetDescription("Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.")
-	m.data.SetUnit("{rollbacks}")
+	m.data.SetDescription("Number of transactions rolled back.")
+	m.data.SetUnit("{rollback}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4991,8 +4991,8 @@ func (mb *MetricsBuilder) RecordOracledbLibraryCacheUtilizationDataPoint(ts pcom
 }
 
 // RecordOracledbLockTimeDataPoint adds a data point to oracledb.lock.time metric.
-func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbLockKindAttributeValue AttributeOracledbLockKind) {
-	mb.metricOracledbLockTime.recordDataPoint(mb.startTime, ts, val, oracledbLockKindAttributeValue.String())
+func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbLockTypeAttributeValue AttributeOracledbLockType) {
+	mb.metricOracledbLockTime.recordDataPoint(mb.startTime, ts, val, oracledbLockTypeAttributeValue.String())
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.

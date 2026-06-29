@@ -321,7 +321,7 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 
 ### oracledb.gc.current_block.receive.time
 
-Cumulative time spent receiving current blocks from other instances over Oracle RAC cache fusion, in seconds (converted from centiseconds). The gc prefix here denotes Oracle global cache (Cache Fusion), not JVM garbage collection. Sourced from v$sysstat name gc current block receive time.
+Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -345,7 +345,7 @@ Fraction of library cache pin requests that found the object already cached, as 
 
 ### oracledb.lock.time
 
-Cumulative time spent on transaction lock activity, in seconds (converted from centiseconds). Sourced from v$sysstat names transaction lock background get time (oracledb.lock.kind=background) and transaction lock foreground wait time (oracledb.lock.kind=foreground).
+Cumulative time spent on transaction lock activity, in seconds.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -355,7 +355,7 @@ Cumulative time spent on transaction lock activity, in seconds (converted from c
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.lock.kind | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
+| oracledb.lock.type | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.logons
 
@@ -523,11 +523,11 @@ Number of SELECT statements executed in parallel
 
 ### oracledb.recovery.blocks_read
 
-Number of blocks read during instance or media recovery. Sourced from v$sysstat name recovery blocks read.
+Number of blocks read during instance or media recovery.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {blocks} | Sum | Int | Cumulative | true | Development |
+| {block} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.recycle_bin.limit
 
@@ -555,19 +555,19 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 
 ### oracledb.smon.instance_recovery.posts
 
-Number of times SMON was posted to perform instance recovery. Sourced from v$sysstat name SMON posted for instance recovery.
+Number of times SMON was posted to perform instance recovery.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {posts} | Sum | Int | Cumulative | true | Development |
+| {post} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.smon.txn_recovery.posts
 
-Number of times SMON was posted to perform transaction recovery for other instances. Sourced from v$sysstat name SMON posted for txn recovery for other instances.
+Number of times SMON was posted to perform transaction recovery for other instances.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {posts} | Sum | Int | Cumulative | true | Development |
+| {post} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.sort.ratio
 
@@ -624,11 +624,11 @@ Fraction of allocated database storage that is used.
 
 ### oracledb.transaction.rollbacks
 
-Number of transactions rolled back. Sourced from v$sysstat name transaction rollbacks. Distinct from oracledb.user_rollbacks (the v$sysstat 'user rollbacks' stat counting user-issued ROLLBACK statements); this counts all transaction rollbacks, including internal/recursive ones.
+Number of transactions rolled back.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {rollbacks} | Sum | Int | Cumulative | true | Development |
+| {rollback} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

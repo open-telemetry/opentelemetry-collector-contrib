@@ -543,7 +543,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row["VALUE"], err))
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockKindBackground)
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockTypeBackground)
 				}
 			case transactionLockForegroundTime:
 				value, err := strconv.ParseFloat(row["VALUE"], 64)
@@ -551,7 +551,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row["VALUE"], err))
 				} else {
 					// divide by 100 as the value is expressed in centiseconds
-					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockKindForeground)
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockTypeForeground)
 				}
 			case recoveryBlocksRead:
 				if err := s.mb.RecordOracledbRecoveryBlocksReadDataPoint(now, row["VALUE"]); err != nil {

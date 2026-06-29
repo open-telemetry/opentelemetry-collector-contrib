@@ -415,6 +415,55 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg.Metrics.OracledbSmonTxnRecoveryPosts.Enabled = true
 	cfg.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled = true
 
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case "oracledb.transaction.rollbacks":
+			seen++
+			assert.Equal(t, int64(4521), dps.At(0).IntValue())
+		case "oracledb.lock.time":
+			seen++
+			// one data point per oracledb.lock.type; raw centiseconds are divided by 100
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				lockType, _ := dp.Attributes().Get("oracledb.lock.type")
+				switch lockType.Str() {
+				case "background":
+					assert.InDelta(t, 3.5, dp.DoubleValue(), 1e-9)
+				case "foreground":
+					assert.InDelta(t, 12.0, dp.DoubleValue(), 1e-9)
+				default:
+					t.Errorf("unexpected oracledb.lock.type %q", lockType.Str())
+				}
+			}
+		case "oracledb.recovery.blocks_read":
+			seen++
+			assert.Equal(t, int64(8800), dps.At(0).IntValue())
+		case "oracledb.smon.instance_recovery.posts":
+			seen++
+			assert.Equal(t, int64(12), dps.At(0).IntValue())
+		case "oracledb.smon.txn_recovery.posts":
+			seen++
+			assert.Equal(t, int64(7), dps.At(0).IntValue())
+		case "oracledb.gc.current_block.receive.time":
+			seen++
+			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
+		}
+	}
+	assert.Equal(t, 6, seen)
+}
+
+// scrapeWithConfig builds the scraper with the given metrics config against the
+// shared fake v$ result sets, runs a single scrape, and returns the metrics.
+func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
@@ -428,58 +477,10 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
-
-	got := collectNumberDataPoints(m)
-
-	assert.InDelta(t, float64(4521), got["oracledb.transaction.rollbacks"][""], 1e-9)
-	assert.InDelta(t, 3.5, got["oracledb.lock.time"]["oracledb.lock.kind=background"], 1e-9)
-	assert.InDelta(t, 12.0, got["oracledb.lock.time"]["oracledb.lock.kind=foreground"], 1e-9)
-	assert.InDelta(t, float64(8800), got["oracledb.recovery.blocks_read"][""], 1e-9)
-	assert.InDelta(t, float64(12), got["oracledb.smon.instance_recovery.posts"][""], 1e-9)
-	assert.InDelta(t, float64(7), got["oracledb.smon.txn_recovery.posts"][""], 1e-9)
-	assert.InDelta(t, 6.4, got["oracledb.gc.current_block.receive.time"][""], 1e-9)
-}
-
-// collectNumberDataPoints flattens all Sum and Gauge metrics from a scrape into
-// metricName -> sorted-attribute-signature -> numeric value (doubles preserved).
-func collectNumberDataPoints(m pmetric.Metrics) map[string]map[string]float64 {
-	got := map[string]map[string]float64{}
-	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	for i := 0; i < metrics.Len(); i++ {
-		me := metrics.At(i)
-		var dps pmetric.NumberDataPointSlice
-		switch me.Type() {
-		case pmetric.MetricTypeSum:
-			dps = me.Sum().DataPoints()
-		case pmetric.MetricTypeGauge:
-			dps = me.Gauge().DataPoints()
-		default:
-			continue
-		}
-		for j := 0; j < dps.Len(); j++ {
-			dp := dps.At(j)
-			var keys []string
-			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-				keys = append(keys, k+"="+v.AsString())
-				return true
-			})
-			sort.Strings(keys)
-			sig := strings.Join(keys, ",")
-			if _, ok := got[me.Name()]; !ok {
-				got[me.Name()] = map[string]float64{}
-			}
-			if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
-				got[me.Name()][sig] = dp.DoubleValue()
-			} else {
-				got[me.Name()][sig] = float64(dp.IntValue())
-			}
-		}
-	}
-	return got
+	return m
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

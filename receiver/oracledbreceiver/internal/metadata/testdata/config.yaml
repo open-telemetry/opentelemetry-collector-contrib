@@ -50,7 +50,7 @@ all_set:
       enabled: true
     oracledb.lock.time:
       enabled: true
-      attributes: ["oracledb.lock.kind"]
+      attributes: ["oracledb.lock.type"]
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
@@ -394,7 +394,7 @@ none_set:
       enabled: false
     oracledb.lock.time:
       enabled: false
-      attributes: ["oracledb.lock.kind"]
+      attributes: ["oracledb.lock.type"]
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:
