@@ -4,6 +4,7 @@
 package credentialsfile
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -55,6 +56,44 @@ func TestFileWatcher_StartFailsMissingFile(t *testing.T) {
 	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t))
 	require.NoError(t, err)
 	require.Error(t, r.Start(t.Context()))
+}
+
+func TestFileWatcher_StartWithRetryToleratesMissingFile(t *testing.T) {
+	t.Parallel()
+	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t))
+	require.NoError(t, err)
+	require.Error(t, r.StartWithRetry(t.Context(), 1, time.Second))
+}
+
+func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- r.StartWithRetry(ctx, 5, 100*time.Millisecond)
+	}()
+
+	// Simulate the file appearing later
+	time.Sleep(200 * time.Millisecond)
+	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for StartWithRetry")
+	}
 }
 
 func TestFileWatcher_StartFailsEmptyFile(t *testing.T) {
