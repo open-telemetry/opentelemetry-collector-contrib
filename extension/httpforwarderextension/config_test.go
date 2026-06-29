@@ -34,6 +34,17 @@ func TestLoadConfig(t *testing.T) {
 	egressCfg.IdleConnTimeout = idleConnTimeout
 	egressCfg.Timeout = 5 * time.Second
 
+	ingressCfg := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	ingressCfg.WriteTimeout = 0
+	ingressCfg.ReadHeaderTimeout = 0
+	ingressCfg.IdleTimeout = 0
+	ingressCfg.KeepAlivesEnabled = false
+	ingressCfg.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "http://localhost:7070",
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -45,13 +56,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				Ingress: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "http://localhost:7070",
-					},
-				},
-				Egress: egressCfg,
+				Ingress: ingressCfg,
+				Egress:  egressCfg,
 			},
 		},
 	}
