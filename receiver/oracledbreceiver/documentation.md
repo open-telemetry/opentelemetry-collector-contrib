@@ -608,6 +608,7 @@ sample query
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | user.name | Database user name under which a session is connected to | Any Str | - |
 | db.namespace | The database name. | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | client.address | Hostname or address of the client. | Any Str | - |
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
@@ -671,6 +672,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | db.server.name | The name of the server hosting the database. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
@@ -704,13 +707,13 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| host.name | The host name of Oracle Server | Any Str | true | - |
-| oracle.db.hosting_type | The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci". | Any Str | true | - |
-| oracle.db.open_mode | The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED"). | Any Str | true | - |
-| oracle.db.pdb | The pluggable database (PDB) name associated with the connection. | Any Str | true | - |
-| oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - |
-| oracle.db.version | The Oracle Database version string. | Any Str | true | - |
-| oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true | - |
-| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.name | The host name of Oracle Server | Any Str | true | - | - |
+| oracle.db.hosting_type | The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci". | Any Str | true | - | - |
+| oracle.db.open_mode | The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED"). | Any Str | true | - | - |
+| oracle.db.pdb | The pluggable database (PDB) name associated with the connection. | Any Str | true | - | - |
+| oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |
+| oracle.db.version | The Oracle Database version string. | Any Str | true | - | - |
+| oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true | - | - |

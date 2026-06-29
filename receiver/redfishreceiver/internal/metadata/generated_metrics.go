@@ -22,40 +22,52 @@ const (
 
 var MetricsInfo = metricsInfo{
 	ChassisPowerstate: metricInfo{
-		Name: "chassis.powerstate",
+		Name:       "chassis.powerstate",
+		Attributes: []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 	},
 	ChassisStatusHealth: metricInfo{
-		Name: "chassis.status.health",
+		Name:       "chassis.status.health",
+		Attributes: []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 	},
 	ChassisStatusState: metricInfo{
-		Name: "chassis.status.state",
+		Name:       "chassis.status.state",
+		Attributes: []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 	},
 	FanReading: metricInfo{
-		Name: "fan.reading",
+		Name:       "fan.reading",
+		Attributes: []string{"chassis.id", "fan.name", "fan.reading_units"},
 	},
 	FanStatusHealth: metricInfo{
-		Name: "fan.status.health",
+		Name:       "fan.status.health",
+		Attributes: []string{"chassis.id", "fan.name"},
 	},
 	FanStatusState: metricInfo{
-		Name: "fan.status.state",
+		Name:       "fan.status.state",
+		Attributes: []string{"chassis.id", "fan.name"},
 	},
 	SystemPowerstate: metricInfo{
-		Name: "system.powerstate",
+		Name:       "system.powerstate",
+		Attributes: []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 	},
 	SystemStatusHealth: metricInfo{
-		Name: "system.status.health",
+		Name:       "system.status.health",
+		Attributes: []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 	},
 	SystemStatusState: metricInfo{
-		Name: "system.status.state",
+		Name:       "system.status.state",
+		Attributes: []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 	},
 	TemperatureReading: metricInfo{
-		Name: "temperature.reading",
+		Name:       "temperature.reading",
+		Attributes: []string{"chassis.id", "temperature.name"},
 	},
 	TemperatureStatusHealth: metricInfo{
-		Name: "temperature.status.health",
+		Name:       "temperature.status.health",
+		Attributes: []string{"chassis.id", "temperature.name"},
 	},
 	TemperatureStatusState: metricInfo{
-		Name: "temperature.status.state",
+		Name:       "temperature.status.state",
+		Attributes: []string{"chassis.id", "temperature.name"},
 	},
 }
 
@@ -75,7 +87,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricChassisPowerstate struct {

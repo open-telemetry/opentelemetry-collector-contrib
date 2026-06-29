@@ -4,16 +4,16 @@ go 1.25.0
 
 require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.155.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	go.opentelemetry.io/collector/component v1.60.1-0.20260612191519-af182d232650
-	go.opentelemetry.io/collector/component/componenttest v0.154.1-0.20260612191519-af182d232650
-	go.opentelemetry.io/collector/config/configcompression v1.60.1-0.20260612191519-af182d232650
-	go.opentelemetry.io/collector/config/configopaque v1.60.1-0.20260612191519-af182d232650
-	go.opentelemetry.io/collector/config/configtls v1.60.1-0.20260612191519-af182d232650
-	go.opentelemetry.io/collector/extension v1.60.1-0.20260612191519-af182d232650
+	go.opentelemetry.io/collector/component v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/component/componenttest v0.155.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/config/configcompression v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/config/configopaque v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/config/configtls v1.61.1-0.20260625204839-9782f9e8a3d6
+	go.opentelemetry.io/collector/extension v1.61.1-0.20260625204839-9782f9e8a3d6
 	go.uber.org/goleak v1.3.0
 	golang.org/x/oauth2 v0.36.0
 )
@@ -24,8 +24,8 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260612191519-af182d232650 // indirect
-	go.opentelemetry.io/collector/pdata v1.60.1-0.20260612191519-af182d232650 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.155.1-0.20260625204839-9782f9e8a3d6 // indirect
+	go.opentelemetry.io/collector/pdata v1.61.1-0.20260625204839-9782f9e8a3d6 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
@@ -73,8 +73,8 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/confmap v1.60.1-0.20260612191519-af182d232650 // indirect
-	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260612191519-af182d232650 // indirect
+	go.opentelemetry.io/collector/confmap v1.61.1-0.20260625204839-9782f9e8a3d6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.61.1-0.20260625204839-9782f9e8a3d6 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
