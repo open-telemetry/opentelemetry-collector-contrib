@@ -1405,8 +1405,8 @@ func TestFilesKeptOpenBetweenPolls(t *testing.T) {
 
 	// Even though we hold the handle, the file can be moved out of the include
 	// pattern. On Windows this only works because we open with FILE_SHARE_DELETE.
-	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	require.NoError(t, os.Mkdir(newDir, 0o777))
+	newDir := tempDir + "_new"
+	require.NoError(t, os.MkdirAll(newDir, 0o777))
 	require.NoError(t, os.Rename(temp.Name(), filepath.Join(newDir, "moved.log")))
 
 	// After the file is no longer matched, the handle should be released within
