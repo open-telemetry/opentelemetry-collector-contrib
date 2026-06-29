@@ -95,315 +95,252 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatusWaiting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 3, AttributeSchedulerStatusRunning)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageFailedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 3, AttributeGcTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 3, AttributeGcTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryTypeDirect)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 3, AttributePoolMemoryTypeMapped)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 3, AttributeLocationOffHeap)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusDroppedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusPostedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorInputSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorTaskResultDataPoint(ts, 3, AttributeExecutorTaskResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobStageResultDataPoint(ts, 3, AttributeJobResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobTaskResultDataPoint(ts, 3, AttributeJobResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoSizeDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 3, AttributeSourceRemote)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 3, AttributeSourceRemote)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoWriteSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageStatusDataPoint(ts, 1, true, true, false, true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageStatusDataPoint(ts, 3, false, false, true, false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultDataPoint(ts, 1, AttributeStageTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageTaskResultDataPoint(ts, 3, AttributeStageTaskResultFailed)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)

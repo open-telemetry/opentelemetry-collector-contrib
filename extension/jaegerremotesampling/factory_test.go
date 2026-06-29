@@ -16,11 +16,18 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:5778",
+		Transport: confignet.TransportTypeTCP,
+	}
 	expected := &Config{
-		HTTPServerConfig: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{
-			Endpoint:  "localhost:5778",
-			Transport: confignet.TransportTypeTCP,
-		}},
+		HTTPServerConfig: &serverConfig,
 		GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:14250",
 			Transport: confignet.TransportTypeTCP,
