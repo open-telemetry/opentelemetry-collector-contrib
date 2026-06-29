@@ -1311,7 +1311,7 @@ type metricSqlserverCursorMemory struct {
 func (m *metricSqlserverCursorMemory) init() {
 	m.data.SetName("sqlserver.cursor.memory")
 	m.data.SetDescription("Memory used by cursors.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 

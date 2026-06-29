@@ -534,7 +534,7 @@ metrics:
     enabled: false
     description: Memory used by cursors.
     stability: development
-    unit: "KBy"
+    unit: By
     gauge:
       value_type: int
     attributes: []

@@ -278,7 +278,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | Development |
+| By | Gauge | Int | Development |
 
 ### sqlserver.cursor.plan.count
 

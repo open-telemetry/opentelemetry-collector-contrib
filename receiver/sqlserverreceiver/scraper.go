@@ -1026,7 +1026,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, cursorMemoryUsage)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverCursorMemoryDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverCursorMemoryDataPoint(now, val.(int64)*1024)
 			}
 		case cursorRequestsPerSec:
 			val, err := retrieveFloat(row, valueKey)
