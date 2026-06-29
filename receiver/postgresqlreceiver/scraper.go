@@ -450,10 +450,125 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+// Each query has one guard reporting whether any metric it produces is enabled, so
+// a query can be skipped when all of its metrics are disabled. TestEnabledMetricIsEmitted
+// fails if a metric is wired into a query but missing from its guard.
+
+func backendsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBackends.Enabled
+}
+
+func bgWriterStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBgwriterBuffersAllocated.Enabled ||
+		m.PostgresqlBgwriterBuffersWrites.Enabled ||
+		m.PostgresqlBgwriterCheckpointCount.Enabled ||
+		m.PostgresqlBgwriterDuration.Enabled ||
+		m.PostgresqlBgwriterMaxwritten.Enabled
+}
+
+func blocksReadEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBlocksRead.Enabled
+}
+
+func databaseLocksEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlDatabaseLocks.Enabled
+}
+
+func databaseSizeEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlDbSize.Enabled
+}
+
+func databaseStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlBlksHit.Enabled ||
+		m.PostgresqlBlksRead.Enabled ||
+		m.PostgresqlCommits.Enabled ||
+		m.PostgresqlDeadlocks.Enabled ||
+		m.PostgresqlRollbacks.Enabled ||
+		m.PostgresqlTempFiles.Enabled ||
+		m.PostgresqlTempIo.Enabled ||
+		m.PostgresqlTupDeleted.Enabled ||
+		m.PostgresqlTupFetched.Enabled ||
+		m.PostgresqlTupInserted.Enabled ||
+		m.PostgresqlTupReturned.Enabled ||
+		m.PostgresqlTupUpdated.Enabled
+}
+
+func functionStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlFunctionCalls.Enabled
+}
+
+func indexStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlIndexScans.Enabled ||
+		m.PostgresqlIndexSize.Enabled
+}
+
+func maxConnectionsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlConnectionMax.Enabled
+}
+
+func perTableStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlOperations.Enabled ||
+		m.PostgresqlRows.Enabled ||
+		m.PostgresqlSequentialScans.Enabled ||
+		m.PostgresqlTableSize.Enabled ||
+		m.PostgresqlTableVacuumCount.Enabled
+}
+
+func replicationStatsEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlReplicationDataDelay.Enabled ||
+		m.PostgresqlWalDelay.Enabled ||
+		m.PostgresqlWalLag.Enabled
+}
+
+func tableCountEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlTableCount.Enabled
+}
+
+func walAgeEnabled(m *metadata.MetricsConfig) bool {
+	return m.PostgresqlWalAge.Enabled
+}
+
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
-	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	m := &p.config.Metrics
+
+	perTableStats := perTableStatsEnabled(m)
+	blocksRead := blocksReadEnabled(m)
+
+	if !perTableStats && !blocksRead {
+		if !tableCountEnabled(m) {
+			return 0
+		}
+		// Only the table count is wanted, so use a cheap COUNT(*) instead of the
+		// full per-table query, which computes a relation size for every table.
+		count, err := dbClient.getTableCount(ctx)
+		if err != nil {
+			errs.addPartial(err)
+			return 0
+		}
+		return count
+	}
+
+	var blockReads map[tableIdentifier]tableIOStats
+	if blocksRead {
+		var err error
+		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
+	}
+
+	// When no per-table metric is enabled, postgresql.blocks_read can be served
+	// entirely from pg_statio_user_tables, which (unlike pg_stat_user_tables)
+	// does not compute a relation size for every table. Emit directly from that
+	// result and skip the expensive getDatabaseTableMetrics query. The two views
+	// cover the same relations, so the row count also satisfies
+	// postgresql.table.count.
+	if !perTableStats {
+		for _, br := range blockReads {
+			p.recordBlocksRead(now, br)
+			p.emitTableResource(db, br.schema, br.table)
+		}
+		return int64(len(blockReads))
 	}
 
 	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
@@ -472,31 +587,43 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
 		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
 
-		br, ok := blockReads[tableKey]
-		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
+		if br, ok := blockReads[tableKey]; ok {
+			p.recordBlocksRead(now, br)
 		}
 
-		var schemaName string
-		var tableName string
-		if p.separateSchemaAttr {
-			schemaName = tm.schema
-			tableName = tm.table
-		} else {
-			tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
-		}
-
-		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		p.emitTableResource(db, tm.schema, tm.table)
 	}
 	return int64(len(tableMetrics))
+}
+
+// recordBlocksRead records every postgresql.blocks_read data point for a single
+// table from its pg_statio_user_tables row.
+func (p *postgreSQLScraper) recordBlocksRead(now pcommon.Timestamp, br tableIOStats) {
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
+	p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
+}
+
+// emitTableResource emits the accumulated table-scoped data points under a
+// resource identifying the given table, honoring the separate-schema feature
+// gate.
+func (p *postgreSQLScraper) emitTableResource(db, schema, table string) {
+	var schemaName string
+	var tableName string
+	if p.separateSchemaAttr {
+		schemaName = schema
+		tableName = table
+	} else {
+		tableName = fmt.Sprintf("%s.%s", schema, table)
+	}
+
+	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
+	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (p *postgreSQLScraper) collectIndexes(
@@ -506,6 +633,9 @@ func (p *postgreSQLScraper) collectIndexes(
 	database string,
 	errs *errsMux,
 ) {
+	if !indexStatsEnabled(&p.config.Metrics) {
+		return
+	}
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -533,6 +663,9 @@ func (p *postgreSQLScraper) collectFunctions(
 	database string,
 	errs *errsMux,
 ) {
+	if !functionStatsEnabled(&p.config.Metrics) {
+		return
+	}
 	funcStats, err := client.getFunctionStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -558,6 +691,9 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	client client,
 	errs *errsMux,
 ) {
+	if !bgWriterStatsEnabled(&p.config.Metrics) {
+		return
+	}
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -590,6 +726,9 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	client client,
 	errs *errsMux,
 ) {
+	if !databaseLocksEnabled(&p.config.Metrics) {
+		return
+	}
 	dbLocks, err := client.getDatabaseLocks(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database locks", zap.Error(err))
@@ -607,6 +746,9 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	client client,
 	errs *errsMux,
 ) {
+	if !maxConnectionsEnabled(&p.config.Metrics) {
+		return
+	}
 	mc, err := client.getMaxConnections(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -621,6 +763,9 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	client client,
 	errs *errsMux,
 ) {
+	if !replicationStatsEnabled(&p.config.Metrics) {
+		return
+	}
 	rss, err := client.getReplicationStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -660,6 +805,9 @@ func (p *postgreSQLScraper) collectWalAge(
 	client client,
 	errs *errsMux,
 ) {
+	if !walAgeEnabled(&p.config.Metrics) {
+		return
+	}
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
 	if errors.Is(err, errNoLastArchive) {
 		// return no error as there is no last archive to derive the value from
@@ -681,6 +829,9 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	if !databaseStatsEnabled(&p.config.Metrics) {
+		return
+	}
 	dbStats, err := client.getDatabaseStats(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
@@ -701,6 +852,9 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	if !databaseSizeEnabled(&p.config.Metrics) {
+		return
+	}
 	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
@@ -712,7 +866,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (*postgreSQLScraper) retrieveBackends(
+func (p *postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -721,6 +875,9 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
+	if !backendsEnabled(&p.config.Metrics) {
+		return
+	}
 	activityByDB, err := client.getBackends(ctx, databases)
 	if err != nil {
 		errs.addPartial(err)

@@ -58,6 +58,7 @@ type client interface {
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
+	getTableCount(ctx context.Context) (int64, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
@@ -449,6 +450,57 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 		}
 	}
 	return ts, errors
+}
+
+// getTableCount returns the number of user tables in the connected database.
+// It backs the postgresql.table.count metric when the more expensive per-table
+// metrics (getDatabaseTableMetrics) are not needed.
+//
+// The result must equal len(getDatabaseTableMetrics), which counts the rows of
+// pg_stat_user_tables. Rather than counting that view (which evaluates the
+// per-table statistics functions for every row), this counts pg_class directly,
+// which is significantly cheaper and avoids the per-table pg_relation_size()
+// computation the full query performs.
+//
+// pg_stat_user_tables is pg_stat_all_tables restricted to user schemas, and
+// pg_stat_all_tables exposes relations whose relkind the view filters on. That
+// set is reproduced here: ordinary tables ('r') and materialized views ('m'),
+// plus partitioned parents ('p') which were added to pg_stat_all_tables in
+// PostgreSQL 14. relkind 't' (TOAST) lives in pg_toast and is excluded by the
+// schema filter, matching the view.
+func (c *postgreSQLClient) getTableCount(ctx context.Context) (int64, error) {
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return 0, err
+	}
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return 0, err
+	}
+
+	// Ordinary tables ('r') and materialized views ('m') are always counted.
+	// Partitioned parents ('p') appear in pg_stat_all_tables only from PG 14 on.
+	query := `SELECT count(*) FROM pg_class
+	WHERE relkind IN ('r', 'm')
+	AND relnamespace NOT IN (
+		SELECT oid FROM pg_namespace
+		WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+	);`
+	if major >= 14 {
+		query = `SELECT count(*) FROM pg_class
+	WHERE relkind IN ('r', 'm', 'p')
+	AND relnamespace NOT IN (
+		SELECT oid FROM pg_namespace
+		WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+	);`
+	}
+
+	row := c.client.QueryRowContext(ctx, query)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 type tableIOStats struct {

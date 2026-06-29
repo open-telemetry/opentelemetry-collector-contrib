@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"text/template"
@@ -404,6 +405,349 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 	runTest(true, "exclude_schemaattr.yaml")
 	runTest(false, "exclude.yaml")
+}
+
+// disableAllMetrics clears the Enabled flag on every metric in the config. It uses
+// reflection so the test stays correct as metrics are added or removed.
+func disableAllMetrics(mc *metadata.MetricsConfig) {
+	v := reflect.ValueOf(mc).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Kind() != reflect.Struct {
+			continue
+		}
+		enabledField := field.FieldByName("Enabled")
+		if enabledField.IsValid() && enabledField.CanSet() {
+			enabledField.SetBool(false)
+		}
+	}
+}
+
+// TestScraperSkipsQueriesForDisabledMetrics verifies that when every metric is
+// disabled, none of the metric-fetching queries are executed. The mock client
+// panics on any unexpected call, so a query that should have been skipped will
+// fail the test loudly; AssertNotCalled documents the intent explicitly.
+func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"} // set explicitly so listDatabases is not called
+	disableAllMetrics(&cfg.Metrics)
+
+	dbClient := new(mockClient)
+	dbClient.On("Close").Return(nil)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(dbClient, nil)
+	factory.On("getClient", "otel").Return(dbClient, nil)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	_, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dbClient.AssertNotCalled(t, "getBackends", mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseSize", mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseStats", mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getTableCount", mock.Anything)
+	dbClient.AssertNotCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getIndexStats", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getFunctionStats", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getBGWriterStats", mock.Anything)
+	dbClient.AssertNotCalled(t, "getMaxConnections", mock.Anything)
+	dbClient.AssertNotCalled(t, "getLatestWalAgeSeconds", mock.Anything)
+	dbClient.AssertNotCalled(t, "getReplicationStats", mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseLocks", mock.Anything)
+}
+
+// TestScraperTableCountUsesCheapQuery verifies that when only
+// postgresql.table.count is enabled, the count is satisfied by the cheap
+// getTableCount query rather than the expensive per-table getDatabaseTableMetrics
+// query (and that the separate blocks-read query is not run either).
+func TestScraperTableCountUsesCheapQuery(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	disableAllMetrics(&cfg.Metrics)
+	cfg.Metrics.PostgresqlTableCount.Enabled = true
+
+	dbClient := new(mockClient)
+	dbClient.On("Close").Return(nil)
+	dbClient.On("getTableCount", mock.Anything).Return(int64(7), nil)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(dbClient, nil)
+	factory.On("getClient", "otel").Return(dbClient, nil)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	_, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dbClient.AssertCalled(t, "getTableCount", mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
+}
+
+// TestScraperTableCountWithPerTableStats verifies that when a per-table stat is
+// enabled alongside the count, the full per-table query is used (and the cheap
+// count query is not), since the count can be derived from its results for free.
+func TestScraperTableCountWithPerTableStats(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	disableAllMetrics(&cfg.Metrics)
+	cfg.Metrics.PostgresqlTableCount.Enabled = true
+	cfg.Metrics.PostgresqlRows.Enabled = true
+
+	dbClient := new(mockClient)
+	dbClient.On("Close").Return(nil)
+	dbClient.On("getDatabaseTableMetrics", mock.Anything, mock.Anything).
+		Return(map[tableIdentifier]tableStats{}, nil)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(dbClient, nil)
+	factory.On("getClient", "otel").Return(dbClient, nil)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	_, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dbClient.AssertCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getTableCount", mock.Anything)
+}
+
+// TestScraperBlocksReadWithoutPerTableStats verifies that when postgresql.blocks_read
+// is enabled but no per-table metric is, blocks_read is served from the
+// pg_statio_user_tables query alone and the expensive per-table
+// getDatabaseTableMetrics query (which computes a relation size for every table) is
+// not run. This is the inverse coupling to TestScraperTableCountWithPerTableStats:
+// blocks_read must not drag in the per-table stats query.
+func TestScraperBlocksReadWithoutPerTableStats(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	disableAllMetrics(&cfg.Metrics)
+	cfg.Metrics.PostgresqlBlocksRead.Enabled = true
+
+	const db, schema = "otel", "public"
+	dbClient := new(mockClient)
+	dbClient.On("Close").Return(nil)
+	dbClient.On("getBlocksReadByTable", mock.Anything, mock.Anything).
+		Return(map[tableIdentifier]tableIOStats{
+			tableKey(db, schema, "t1"): {schema: schema, table: "t1"},
+		}, nil)
+
+	factory := new(mockClientFactory)
+	factory.On("getClient", defaultPostgreSQLDatabase).Return(dbClient, nil)
+	factory.On("getClient", "otel").Return(dbClient, nil)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dbClient.AssertCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getTableCount", mock.Anything)
+
+	_, ok := emittedMetricNames(md)["postgresql.blocks_read"]
+	assert.True(t, ok, "postgresql.blocks_read was enabled but not emitted")
+}
+
+// enableMetricByName enables the single metric whose mapstructure tag matches name.
+func enableMetricByName(t *testing.T, mc *metadata.MetricsConfig, name string) {
+	t.Helper()
+	v := reflect.ValueOf(mc).Elem()
+	tp := v.Type()
+	for i := 0; i < tp.NumField(); i++ {
+		if tp.Field(i).Tag.Get("mapstructure") == name {
+			v.Field(i).FieldByName("Enabled").SetBool(true)
+			return
+		}
+	}
+	t.Fatalf("no metric field with mapstructure tag %q", name)
+}
+
+// emittedMetricNames returns the set of metric names present in md.
+func emittedMetricNames(md pmetric.Metrics) map[string]struct{} {
+	names := map[string]struct{}{}
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				names[ms.At(k).Name()] = struct{}{}
+			}
+		}
+	}
+	return names
+}
+
+// TestEnabledMetricIsEmitted is a safety net for the hand-maintained mapping
+// between queries and the metrics they feed (the enablement guards in the
+// collect*/retrieve* functions). For every metric, it enables only that metric
+// and asserts the scrape still emits it. Because the metric list is discovered
+// by reflection over MetricsConfig, a newly added metric is covered automatically:
+// if it is wired into a query but not into that query's enablement guard, enabling
+// only the new metric skips the query, emits nothing, and fails this test.
+func TestEnabledMetricIsEmitted(t *testing.T) {
+	mt := reflect.TypeFor[metadata.MetricsConfig]()
+	for i := 0; i < mt.NumField(); i++ {
+		name := mt.Field(i).Tag.Get("mapstructure")
+		t.Run(name, func(t *testing.T) {
+			if name == "postgresql.wal.lag" {
+				// wal.lag is the legacy counterpart of wal.delay and only emits
+				// when the (beta, default-on) precise-lag feature gate is disabled.
+				defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
+			}
+
+			factory := mockClientFactory{}
+			factory.initMocks([]string{"otel"})
+
+			cfg := createDefaultConfig().(*Config)
+			disableAllMetrics(&cfg.Metrics)
+			enableMetricByName(t, &cfg.Metrics, name)
+
+			scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
+
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			_, ok := emittedMetricNames(md)[name]
+			assert.True(t, ok, "metric %q is enabled but was not emitted; if it is recorded by a query, "+
+				"make sure that query's enablement guard in scraper.go includes it", name)
+		})
+	}
+}
+
+// errQueryProbe is returned by the targeted query in newQueryMockClient to
+// simulate a single query failing while the rest succeed.
+var errQueryProbe = errors.New("query probe failure")
+
+// infraMethods are client methods that are not metric-fetching queries; they are
+// ignored when introspecting which queries a scrape ran.
+var infraMethods = map[string]bool{
+	"Close": true, "listDatabases": true, "getVersion": true,
+	"getQuerySamples": true, "getTopQuery": true, "explainQuery": true,
+}
+
+// onQuery registers a query method on the mock. Normally the method returns data
+// and no error; when method is the one being probed (failMethod), it instead
+// returns a typed zero value and errQueryProbe, mirroring how the real client
+// returns nil on failure. args are the call's argument matchers.
+func onQuery[T any](c *mockClient, failMethod, method string, data T, args ...any) {
+	if method == failMethod {
+		var zero T
+		c.On(method, args...).Return(zero, errQueryProbe)
+		return
+	}
+	c.On(method, args...).Return(data, nil)
+}
+
+// newQueryMockClient returns a mock client that serves data for every query, so
+// that any enabled metric is emitted. The data only needs the keys/entries that
+// drive emission (e.g. one table row); the scrape records a data point regardless
+// of value, so the struct fields are left zero. If failMethod is non-empty, that
+// one query returns an error instead, which lets a test probe whether a query is
+// actually required to produce a given metric.
+func newQueryMockClient(failMethod string) *mockClient {
+	const db, schema = "otel", "public"
+	// getDatabaseTableMetrics and getBlocksReadByTable must use the same key: when
+	// per-table stats are also enabled, blocks_read is recorded while iterating the
+	// table metrics, so it is only emitted for tables present in both results.
+	table := tableKey(db, schema, "t1")
+
+	c := new(mockClient)
+	c.On("Close").Return(nil)
+	c.On("listDatabases").Return([]string{db}, nil)
+	c.On("getVersion").Return("16.0", nil)
+
+	onQuery(c, failMethod, "getBackends", map[databaseName]int64{db: 0}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseSize", map[databaseName]int64{db: 0}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseStats", map[databaseName]databaseStats{db: {}}, mock.Anything)
+	onQuery(c, failMethod, "getBGWriterStats", &bgStat{}, mock.Anything)
+	onQuery(c, failMethod, "getMaxConnections", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getLatestWalAgeSeconds", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getReplicationStats", []replicationStats{{clientAddr: "addr"}}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseLocks", []databaseLocks{{}}, mock.Anything)
+	onQuery(c, failMethod, "getDatabaseTableMetrics", map[tableIdentifier]tableStats{table: {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getTableCount", int64(0), mock.Anything)
+	onQuery(c, failMethod, "getBlocksReadByTable", map[tableIdentifier]tableIOStats{table: {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getIndexStats", map[indexIdentifer]indexStat{indexKey(db, schema, "t1", "i1"): {}}, mock.Anything, mock.Anything)
+	onQuery(c, failMethod, "getFunctionStats", map[functionIdentifer]functionStat{functionKey(db, schema, "f1"): {}}, mock.Anything, mock.Anything)
+	return c
+}
+
+// scrapeProbe enables only the named metric, runs a scrape against a mock where
+// failMethod (if set) fails, and reports which queries ran and whether the metric
+// was emitted.
+func scrapeProbe(t *testing.T, metric, failMethod string) (ranQueries map[string]bool, emitted bool) {
+	t.Helper()
+	if metric == "postgresql.wal.lag" {
+		// wal.lag is the legacy counterpart of wal.delay and only emits when the
+		// (beta, default-on) precise-lag feature gate is disabled.
+		defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
+	}
+
+	client := newQueryMockClient(failMethod)
+	factory := new(mockClientFactory)
+	factory.On("getClient", mock.Anything).Return(client, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"} // set explicitly so listDatabases is not called
+	disableAllMetrics(&cfg.Metrics)
+	enableMetricByName(t, &cfg.Metrics, metric)
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+	// A probe deliberately fails a query, so scrape may return a partial error; the
+	// signal we care about is whether the metric was still emitted.
+	md, _ := scraper.scrape(t.Context())
+
+	ranQueries = map[string]bool{}
+	for i := range client.Calls {
+		method := client.Calls[i].Method
+		if !infraMethods[method] {
+			ranQueries[method] = true
+		}
+	}
+	_, emitted = emittedMetricNames(md)[metric]
+	return ranQueries, emitted
+}
+
+// TestOnlyNeededQueriesRun is the inverse of TestEnabledMetricIsEmitted: for each
+// metric, it asserts that every query the scrape runs is actually required to
+// produce that metric, so no unnecessary queries are issued.
+//
+// It needs no hand-maintained metric-to-query mapping. Instead it discovers, by
+// reflection over MetricsConfig, every metric; runs a scrape with only that metric
+// enabled to observe which queries run; then forces each observed query to fail in
+// turn. A query that is genuinely needed makes the metric disappear when it fails;
+// a query that still leaves the metric emitted was run needlessly (its enablement
+// guard is too broad).
+func TestOnlyNeededQueriesRun(t *testing.T) {
+	mt := reflect.TypeFor[metadata.MetricsConfig]()
+	for i := 0; i < mt.NumField(); i++ {
+		name := mt.Field(i).Tag.Get("mapstructure")
+		t.Run(name, func(t *testing.T) {
+			ranQueries, emitted := scrapeProbe(t, name, "")
+			require.Truef(t, emitted, "metric %q was enabled but not emitted", name)
+
+			if name == "postgresql.table.count" {
+				// table.count is recorded unconditionally from the table count (it
+				// emits 0 even if its query fails), so the failure probe below can't
+				// prove query necessity. Its query gating is covered instead by
+				// TestScraperTableCountUsesCheapQuery and ...WithPerTableStats.
+				return
+			}
+
+			for q := range ranQueries {
+				_, stillEmitted := scrapeProbe(t, name, q)
+				assert.False(t, stillEmitted, fmt.Sprintf(
+					"query %q ran for metric %q but is not required to produce it "+
+						"(forcing it to fail still emitted the metric); its enablement guard is too broad", q, name))
+			}
+		})
+	}
 }
 
 //go:embed testdata/scraper/query-sample/expectedSql.sql
@@ -1043,6 +1387,11 @@ func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database strin
 	return args.Get(0).(map[tableIdentifier]tableStats), args.Error(1)
 }
 
+func (m *mockClient) getTableCount(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
 	args := m.Called(ctx, database)
 	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
@@ -1270,6 +1619,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
+		m.On("getTableCount", mock.Anything).Return(int64(len(tableMetrics)), nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
 		index1 := database + "_test1_pkey"
