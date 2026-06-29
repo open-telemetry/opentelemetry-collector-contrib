@@ -4,8 +4,10 @@
 package filestorage
 
 import (
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -51,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 					CleanupOnStart:             true,
 				},
 				Timeout:              2 * time.Second,
+				MaxSize:              256 * oneMiB,
 				FSync:                true,
 				CreateDirectory:      false,
 				DirectoryPermissions: "0750",
@@ -106,6 +109,7 @@ func TestDirectoryCreateConfig(t *testing.T) {
 		name   string
 		config func(*testing.T, extension.Factory) *Config
 		err    error
+		errMsg string
 	}{
 		{
 			name: "create directory true - no error",
@@ -200,14 +204,116 @@ func TestDirectoryCreateConfig(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			name: "max transaction size below zero - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.Compaction.MaxTransactionSize = -1
+				return cfg
+			},
+			errMsg: "max transaction size for compaction cannot be less than 0",
+		},
+		{
+			name: "max size below zero - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = -1
+				return cfg
+			},
+			errMsg: "max size cannot be less than 0",
+		},
+		{
+			name: "max size above int max - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				if strconv.IntSize == 64 {
+					t.Skip("int64 max matches native int max on this platform")
+				}
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = int64(math.MaxInt32) + 1
+				return cfg
+			},
+			errMsg: "max size is too large",
+		},
+		{
+			name: "rebound needed threshold above max size - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = 32 * oneMiB
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.Directory = t.TempDir()
+				cfg.Compaction.ReboundNeededThresholdMiB = 64
+				return cfg
+			},
+			errMsg: "compaction rebound needed threshold cannot be greater than max size",
+		},
+		{
+			name: "rebound trigger threshold above max size - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = 32 * oneMiB
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.Directory = t.TempDir()
+				cfg.Compaction.ReboundNeededThresholdMiB = 16
+				cfg.Compaction.ReboundTriggerThresholdMiB = 64
+				return cfg
+			},
+			errMsg: "compaction rebound trigger threshold cannot be greater than max size",
+		},
+		{
+			name: "rebound thresholds above max size allowed when rebound compaction disabled",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = 1 * oneMiB
+				cfg.Compaction.OnRebound = false
+				return cfg
+			},
+			err: nil,
+		},
+		{
+			name: "rebound check interval not positive - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.Compaction.Directory = t.TempDir()
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.CheckInterval = 0
+				return cfg
+			},
+			errMsg: "compaction check interval must be positive when rebound compaction is set",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := NewFactory()
 			config := tt.config(t, f)
-			require.ErrorIs(t, config.Validate(), tt.err)
+			err := config.Validate()
+			if tt.err != nil {
+				require.ErrorIs(t, err, tt.err)
+				return
+			}
+			if tt.errMsg != "" {
+				require.EqualError(t, err, tt.errMsg)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
+}
+
+func TestValidateReturnsAccessProblem(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = "\x00"
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.Contains(t, strings.ToLower(err.Error()), "problem accessing configured directory: \x00, err: stat \x00")
 }
 
 func TestCompactionDirectory(t *testing.T) {
