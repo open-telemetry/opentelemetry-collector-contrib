@@ -1276,13 +1276,13 @@ func (ms *SqlserverPageOperationRateMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverPageReadaheadRateMetricConfig provides config for the sqlserver.page.readahead.rate metric.
-type SqlserverPageReadaheadRateMetricConfig struct {
+// SqlserverPageReadAheadRateMetricConfig provides config for the sqlserver.page.read_ahead.rate metric.
+type SqlserverPageReadAheadRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverPageReadaheadRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverPageReadAheadRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1945,7 +1945,7 @@ type MetricsConfig struct {
 	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
 	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
 	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageReadaheadRate                  SqlserverPageReadaheadRateMetricConfig                  `mapstructure:"sqlserver.page.readahead.rate"`
+	SqlserverPageReadAheadRate                  SqlserverPageReadAheadRateMetricConfig                  `mapstructure:"sqlserver.page.read_ahead.rate"`
 	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
 	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
@@ -2135,7 +2135,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverPageOperationRateMetricAttributeKey{SqlserverPageOperationRateMetricAttributeKeyPageOperations},
 		},
-		SqlserverPageReadaheadRate: SqlserverPageReadaheadRateMetricConfig{
+		SqlserverPageReadAheadRate: SqlserverPageReadAheadRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverPageSplitRate: SqlserverPageSplitRateMetricConfig{

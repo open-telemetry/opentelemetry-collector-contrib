@@ -79,7 +79,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
 	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageOperationRate.Enabled = enabled
-	cfg.Metrics.SqlserverPageReadaheadRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
 	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
 	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled

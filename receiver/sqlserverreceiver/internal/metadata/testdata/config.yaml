@@ -105,7 +105,7 @@ all_set:
     sqlserver.page.operation.rate:
       enabled: true
       attributes: ["type"]
-    sqlserver.page.readahead.rate:
+    sqlserver.page.read_ahead.rate:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
@@ -288,7 +288,7 @@ reaggregate_set:
     sqlserver.page.operation.rate:
       enabled: true
       attributes: []
-    sqlserver.page.readahead.rate:
+    sqlserver.page.read_ahead.rate:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
@@ -471,7 +471,7 @@ none_set:
     sqlserver.page.operation.rate:
       enabled: false
       attributes: ["type"]
-    sqlserver.page.readahead.rate:
+    sqlserver.page.read_ahead.rate:
       enabled: false
     sqlserver.page.split.rate:
       enabled: false

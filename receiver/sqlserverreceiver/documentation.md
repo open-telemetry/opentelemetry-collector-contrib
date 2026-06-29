@@ -222,7 +222,7 @@ metrics:
 
 ### sqlserver.access.scan.rate
 
-Rate of access method scans, by type.
+Rate of access method scans.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -389,7 +389,7 @@ Total number of deadlocks.
 
 ### sqlserver.extent.operation.rate
 
-Rate of extent allocation/deallocation operations, by type.
+Rate of extent operations.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -594,7 +594,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.page.allocation.rate
 
-Rate of page allocation/deallocation operations, by type.
+Rate of page allocation operations.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -618,7 +618,7 @@ Number of free list stalls.
 
 ### sqlserver.page.compression.rate
 
-Rate of page compression operations, by type.
+Rate of page compression operations.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -630,7 +630,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.page.compression.type | The type of page compression operation. | Str: ``attempted``, ``compressed`` | Required | - |
+| sqlserver.page.compression.type | The type of page compression operation. | Str: ``attempted``, ``succeeded`` | Required | - |
 
 ### sqlserver.page.lookup.rate
 
@@ -640,7 +640,7 @@ Total number of page lookups.
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
 
-### sqlserver.page.readahead.rate
+### sqlserver.page.read_ahead.rate
 
 Rate of pages read from disk by the read-ahead manager.
 
@@ -754,7 +754,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {revalidation}/s | Gauge | Double | Development |
+| {revalidate}/s | Gauge | Double | Development |
 
 ### sqlserver.table.count
 

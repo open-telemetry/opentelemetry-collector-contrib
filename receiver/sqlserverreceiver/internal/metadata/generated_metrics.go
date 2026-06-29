@@ -352,7 +352,7 @@ type AttributeSqlserverPageCompressionType int
 const (
 	_ AttributeSqlserverPageCompressionType = iota
 	AttributeSqlserverPageCompressionTypeAttempted
-	AttributeSqlserverPageCompressionTypeCompressed
+	AttributeSqlserverPageCompressionTypeSucceeded
 )
 
 // String returns the string representation of the AttributeSqlserverPageCompressionType.
@@ -360,16 +360,16 @@ func (av AttributeSqlserverPageCompressionType) String() string {
 	switch av {
 	case AttributeSqlserverPageCompressionTypeAttempted:
 		return "attempted"
-	case AttributeSqlserverPageCompressionTypeCompressed:
-		return "compressed"
+	case AttributeSqlserverPageCompressionTypeSucceeded:
+		return "succeeded"
 	}
 	return ""
 }
 
 // MapAttributeSqlserverPageCompressionType is a helper map of string to AttributeSqlserverPageCompressionType attribute value.
 var MapAttributeSqlserverPageCompressionType = map[string]AttributeSqlserverPageCompressionType{
-	"attempted":  AttributeSqlserverPageCompressionTypeAttempted,
-	"compressed": AttributeSqlserverPageCompressionTypeCompressed,
+	"attempted": AttributeSqlserverPageCompressionTypeAttempted,
+	"succeeded": AttributeSqlserverPageCompressionTypeSucceeded,
 }
 
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
@@ -695,8 +695,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.page.operation.rate",
 		Attributes: []string{"page.operations"},
 	},
-	SqlserverPageReadaheadRate: metricInfo{
-		Name: "sqlserver.page.readahead.rate",
+	SqlserverPageReadAheadRate: metricInfo{
+		Name: "sqlserver.page.read_ahead.rate",
 	},
 	SqlserverPageSplitRate: metricInfo{
 		Name: "sqlserver.page.split.rate",
@@ -821,7 +821,7 @@ type metricsInfo struct {
 	SqlserverPageLifeExpectancy                 metricInfo
 	SqlserverPageLookupRate                     metricInfo
 	SqlserverPageOperationRate                  metricInfo
-	SqlserverPageReadaheadRate                  metricInfo
+	SqlserverPageReadAheadRate                  metricInfo
 	SqlserverPageSplitRate                      metricInfo
 	SqlserverParameterizationRate               metricInfo
 	SqlserverPlanExecutionRate                  metricInfo
@@ -861,7 +861,7 @@ type metricSqlserverAccessScanRate struct {
 // init fills sqlserver.access.scan.rate metric with initial data.
 func (m *metricSqlserverAccessScanRate) init() {
 	m.data.SetName("sqlserver.access.scan.rate")
-	m.data.SetDescription("Rate of access method scans, by type.")
+	m.data.SetDescription("Rate of access method scans.")
 	m.data.SetUnit("{scan}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1943,7 +1943,7 @@ type metricSqlserverExtentOperationRate struct {
 // init fills sqlserver.extent.operation.rate metric with initial data.
 func (m *metricSqlserverExtentOperationRate) init() {
 	m.data.SetName("sqlserver.extent.operation.rate")
-	m.data.SetDescription("Rate of extent allocation/deallocation operations, by type.")
+	m.data.SetDescription("Rate of extent operations.")
 	m.data.SetUnit("{extent}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -3153,7 +3153,7 @@ type metricSqlserverPageAllocationRate struct {
 // init fills sqlserver.page.allocation.rate metric with initial data.
 func (m *metricSqlserverPageAllocationRate) init() {
 	m.data.SetName("sqlserver.page.allocation.rate")
-	m.data.SetDescription("Rate of page allocation/deallocation operations, by type.")
+	m.data.SetDescription("Rate of page allocation operations.")
 	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -3355,7 +3355,7 @@ type metricSqlserverPageCompressionRate struct {
 // init fills sqlserver.page.compression.rate metric with initial data.
 func (m *metricSqlserverPageCompressionRate) init() {
 	m.data.SetName("sqlserver.page.compression.rate")
-	m.data.SetDescription("Rate of page compression operations, by type.")
+	m.data.SetDescription("Rate of page compression operations.")
 	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -3676,21 +3676,21 @@ func newMetricSqlserverPageOperationRate(cfg SqlserverPageOperationRateMetricCon
 	return m
 }
 
-type metricSqlserverPageReadaheadRate struct {
+type metricSqlserverPageReadAheadRate struct {
 	data     pmetric.Metric                         // data buffer for generated metric.
-	config   SqlserverPageReadaheadRateMetricConfig // metric config provided by user.
+	config   SqlserverPageReadAheadRateMetricConfig // metric config provided by user.
 	capacity int                                    // max observed number of data points added to the metric.
 }
 
-// init fills sqlserver.page.readahead.rate metric with initial data.
-func (m *metricSqlserverPageReadaheadRate) init() {
-	m.data.SetName("sqlserver.page.readahead.rate")
+// init fills sqlserver.page.read_ahead.rate metric with initial data.
+func (m *metricSqlserverPageReadAheadRate) init() {
+	m.data.SetName("sqlserver.page.read_ahead.rate")
 	m.data.SetDescription("Rate of pages read from disk by the read-ahead manager.")
 	m.data.SetUnit("{page}/s")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverPageReadaheadRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverPageReadAheadRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3701,14 +3701,14 @@ func (m *metricSqlserverPageReadaheadRate) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverPageReadaheadRate) updateCapacity() {
+func (m *metricSqlserverPageReadAheadRate) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverPageReadaheadRate) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverPageReadAheadRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -3716,8 +3716,8 @@ func (m *metricSqlserverPageReadaheadRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSqlserverPageReadaheadRate(cfg SqlserverPageReadaheadRateMetricConfig) metricSqlserverPageReadaheadRate {
-	m := metricSqlserverPageReadaheadRate{config: cfg}
+func newMetricSqlserverPageReadAheadRate(cfg SqlserverPageReadAheadRateMetricConfig) metricSqlserverPageReadAheadRate {
+	m := metricSqlserverPageReadAheadRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4342,7 +4342,7 @@ type metricSqlserverScanPointRevalidationRate struct {
 func (m *metricSqlserverScanPointRevalidationRate) init() {
 	m.data.SetName("sqlserver.scan_point.revalidation.rate")
 	m.data.SetDescription("Rate at which scan points needed to be revalidated.")
-	m.data.SetUnit("{revalidation}/s")
+	m.data.SetUnit("{revalidate}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -5138,7 +5138,7 @@ type MetricsBuilder struct {
 	metricSqlserverPageLifeExpectancy                 metricSqlserverPageLifeExpectancy
 	metricSqlserverPageLookupRate                     metricSqlserverPageLookupRate
 	metricSqlserverPageOperationRate                  metricSqlserverPageOperationRate
-	metricSqlserverPageReadaheadRate                  metricSqlserverPageReadaheadRate
+	metricSqlserverPageReadAheadRate                  metricSqlserverPageReadAheadRate
 	metricSqlserverPageSplitRate                      metricSqlserverPageSplitRate
 	metricSqlserverParameterizationRate               metricSqlserverParameterizationRate
 	metricSqlserverPlanExecutionRate                  metricSqlserverPlanExecutionRate
@@ -5233,7 +5233,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverPageLifeExpectancy:                 newMetricSqlserverPageLifeExpectancy(mbc.Metrics.SqlserverPageLifeExpectancy),
 		metricSqlserverPageLookupRate:                     newMetricSqlserverPageLookupRate(mbc.Metrics.SqlserverPageLookupRate),
 		metricSqlserverPageOperationRate:                  newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
-		metricSqlserverPageReadaheadRate:                  newMetricSqlserverPageReadaheadRate(mbc.Metrics.SqlserverPageReadaheadRate),
+		metricSqlserverPageReadAheadRate:                  newMetricSqlserverPageReadAheadRate(mbc.Metrics.SqlserverPageReadAheadRate),
 		metricSqlserverPageSplitRate:                      newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
 		metricSqlserverParameterizationRate:               newMetricSqlserverParameterizationRate(mbc.Metrics.SqlserverParameterizationRate),
 		metricSqlserverPlanExecutionRate:                  newMetricSqlserverPlanExecutionRate(mbc.Metrics.SqlserverPlanExecutionRate),
@@ -5429,7 +5429,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverPageLifeExpectancy.emit(ils.Metrics())
 	mb.metricSqlserverPageLookupRate.emit(ils.Metrics())
 	mb.metricSqlserverPageOperationRate.emit(ils.Metrics())
-	mb.metricSqlserverPageReadaheadRate.emit(ils.Metrics())
+	mb.metricSqlserverPageReadAheadRate.emit(ils.Metrics())
 	mb.metricSqlserverPageSplitRate.emit(ils.Metrics())
 	mb.metricSqlserverParameterizationRate.emit(ils.Metrics())
 	mb.metricSqlserverPlanExecutionRate.emit(ils.Metrics())
@@ -5739,9 +5739,9 @@ func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.T
 	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
 }
 
-// RecordSqlserverPageReadaheadRateDataPoint adds a data point to sqlserver.page.readahead.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageReadaheadRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverPageReadaheadRate.recordDataPoint(mb.startTime, ts, val)
+// RecordSqlserverPageReadAheadRateDataPoint adds a data point to sqlserver.page.read_ahead.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverPageReadAheadRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverPageReadAheadRate.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.

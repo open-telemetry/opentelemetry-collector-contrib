@@ -292,7 +292,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||
 		metrics.SqlserverPageCompressionRate.Enabled ||
 		metrics.SqlserverPageLookupRate.Enabled ||
-		metrics.SqlserverPageReadaheadRate.Enabled ||
+		metrics.SqlserverPageReadAheadRate.Enabled ||
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||

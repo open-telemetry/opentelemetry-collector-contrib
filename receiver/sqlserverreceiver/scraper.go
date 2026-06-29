@@ -1051,7 +1051,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pagesCompressedPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageCompressionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageCompressionTypeCompressed)
+				s.mb.RecordSqlserverPageCompressionRateDataPoint(now, val.(float64), metadata.AttributeSqlserverPageCompressionTypeSucceeded)
 			}
 		case pageCompressionAttemptsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1083,7 +1083,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, readaheadPagesPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageReadaheadRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverPageReadAheadRateDataPoint(now, val.(float64))
 			}
 		case skippedGhostedRecordsPerSec:
 			val, err := retrieveFloat(row, valueKey)

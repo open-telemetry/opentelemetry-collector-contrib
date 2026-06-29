@@ -78,7 +78,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of access method scans, by type.
+          - description: Rate of access method scans.
             gauge:
               dataPoints:
                 - asDouble: 120
@@ -112,7 +112,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of access method scans, by type.
+          - description: Rate of access method scans.
             gauge:
               dataPoints:
                 - asDouble: 37
@@ -146,7 +146,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of access method scans, by type.
+          - description: Rate of access method scans.
             gauge:
               dataPoints:
                 - asDouble: 5
@@ -180,7 +180,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of page allocation/deallocation operations, by type.
+          - description: Rate of page allocation operations.
             gauge:
               dataPoints:
                 - asDouble: 812
@@ -214,7 +214,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of page allocation/deallocation operations, by type.
+          - description: Rate of page allocation operations.
             gauge:
               dataPoints:
                 - asDouble: 401
@@ -248,7 +248,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of page allocation/deallocation operations, by type.
+          - description: Rate of page allocation operations.
             gauge:
               dataPoints:
                 - asDouble: 12
@@ -282,14 +282,14 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of page compression operations, by type.
+          - description: Rate of page compression operations.
             gauge:
               dataPoints:
                 - asDouble: 60
                   attributes:
                     - key: sqlserver.page.compression.type
                       value:
-                        stringValue: compressed
+                        stringValue: succeeded
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.compression.rate
@@ -316,7 +316,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of page compression operations, by type.
+          - description: Rate of page compression operations.
             gauge:
               dataPoints:
                 - asDouble: 75
@@ -350,7 +350,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of extent allocation/deallocation operations, by type.
+          - description: Rate of extent operations.
             gauge:
               dataPoints:
                 - asDouble: 30
@@ -384,7 +384,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Rate of extent allocation/deallocation operations, by type.
+          - description: Rate of extent operations.
             gauge:
               dataPoints:
                 - asDouble: 11
@@ -455,7 +455,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.scan_point.revalidation.rate
-            unit: '{revalidation}/s'
+            unit: '{revalidate}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -740,7 +740,7 @@ resourceMetrics:
                 - asDouble: 347
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.page.readahead.rate
+            name: sqlserver.page.read_ahead.rate
             unit: '{page}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

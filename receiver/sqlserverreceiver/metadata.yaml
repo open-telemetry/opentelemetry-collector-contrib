@@ -215,7 +215,7 @@ attributes:
     description: The type of page compression operation.
     type: string
     requirement_level: required
-    enum: [attempted, compressed]
+    enum: [attempted, succeeded]
   sqlserver.parameterization.result:
     description: The result of an auto-parameterization attempt by the SQL Server query optimizer.
     type: string
@@ -467,7 +467,7 @@ events:
 metrics:
   sqlserver.access.scan.rate:
     enabled: false
-    description: Rate of access method scans, by type.
+    description: Rate of access method scans.
     stability: development
     unit: "{scan}/s"
     gauge:
@@ -616,7 +616,7 @@ metrics:
     attributes: []
   sqlserver.extent.operation.rate:
     enabled: false
-    description: Rate of extent allocation/deallocation operations, by type.
+    description: Rate of extent operations.
     stability: development
     unit: "{extent}/s"
     gauge:
@@ -796,7 +796,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.allocation.rate:
     enabled: false
-    description: Rate of page allocation/deallocation operations, by type.
+    description: Rate of page allocation operations.
     stability: development
     unit: "{page}/s"
     gauge:
@@ -828,7 +828,7 @@ metrics:
     extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.compression.rate:
     enabled: false
-    description: Rate of page compression operations, by type.
+    description: Rate of page compression operations.
     stability: development
     unit: "{page}/s"
     gauge:
@@ -868,7 +868,7 @@ metrics:
       value_type: double
     attributes: [page.operations]
     extended_documentation: This metric is only available when running on Windows.
-  sqlserver.page.readahead.rate:
+  sqlserver.page.read_ahead.rate:
     enabled: false
     description: Rate of pages read from disk by the read-ahead manager.
     stability: development
@@ -960,7 +960,7 @@ metrics:
     enabled: false
     description: Rate at which scan points needed to be revalidated.
     stability: development
-    unit: "{revalidation}/s"
+    unit: "{revalidate}/s"
     gauge:
       value_type: double
     attributes: []

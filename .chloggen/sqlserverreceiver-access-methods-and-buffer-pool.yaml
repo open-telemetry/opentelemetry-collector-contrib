@@ -17,12 +17,12 @@ issues: [49182]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds the following metrics, all disabled by default:
-    - `sqlserver.access.scan.rate` (with `sqlserver.access.scan.type` attribute: free_space, probe, range)
-    - `sqlserver.extent.operation.rate` (with `sqlserver.extent.operation.type` attribute: allocated, deallocated)
+    - `sqlserver.access.scan.rate`
+    - `sqlserver.extent.operation.rate`
     - `sqlserver.ghost_record.skipped.rate`
-    - `sqlserver.page.allocation.rate` (with `sqlserver.page.allocation.type` attribute: allocated, deallocated, mixed)
-    - `sqlserver.page.compression.rate` (with `sqlserver.page.compression.type` attribute: attempted, compressed)
-    - `sqlserver.page.readahead.rate`
+    - `sqlserver.page.allocation.rate`
+    - `sqlserver.page.compression.rate`
+    - `sqlserver.page.read_ahead.rate`
     - `sqlserver.scan_point.revalidation.rate`
     - `sqlserver.worktable.cache.hit_ratio`
 

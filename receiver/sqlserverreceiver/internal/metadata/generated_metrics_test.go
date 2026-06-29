@@ -268,7 +268,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverPageReadaheadRateDataPoint(ts, 1)
+			mb.RecordSqlserverPageReadAheadRateDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
@@ -416,7 +416,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.access.scan.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of access method scans, by type.", mi.Description())
+					assert.Equal(t, "Rate of access method scans.", mi.Description())
 					assert.Equal(t, "{scan}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -824,7 +824,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.extent.operation.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of extent allocation/deallocation operations, by type.", mi.Description())
+					assert.Equal(t, "Rate of extent operations.", mi.Description())
 					assert.Equal(t, "{extent}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1224,7 +1224,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.page.allocation.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of page allocation/deallocation operations, by type.", mi.Description())
+					assert.Equal(t, "Rate of page allocation operations.", mi.Description())
 					assert.Equal(t, "{page}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1275,7 +1275,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.page.compression.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of page compression operations, by type.", mi.Description())
+					assert.Equal(t, "Rate of page compression operations.", mi.Description())
 					assert.Equal(t, "{page}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1389,9 +1389,9 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("type")
 						assert.False(t, ok)
 					}
-				case "sqlserver.page.readahead.rate":
-					assert.False(t, validatedMetrics["sqlserver.page.readahead.rate"], "Found a duplicate in the metrics slice: sqlserver.page.readahead.rate")
-					validatedMetrics["sqlserver.page.readahead.rate"] = true
+				case "sqlserver.page.read_ahead.rate":
+					assert.False(t, validatedMetrics["sqlserver.page.read_ahead.rate"], "Found a duplicate in the metrics slice: sqlserver.page.read_ahead.rate")
+					validatedMetrics["sqlserver.page.read_ahead.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Rate of pages read from disk by the read-ahead manager.", mi.Description())
@@ -1627,7 +1627,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Rate at which scan points needed to be revalidated.", mi.Description())
-					assert.Equal(t, "{revalidation}/s", mi.Unit())
+					assert.Equal(t, "{revalidate}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
