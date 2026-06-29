@@ -642,7 +642,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockBlocks)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeBlocks)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverLockBlockTypeBlocks)
 			}
 		case lockBlocksAllocated:
 			val, err := retrieveInt(row, valueKey)
@@ -650,7 +650,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockBlocksAllocated)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeAllocated)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverLockBlockTypeAllocated)
 			}
 		case lockMemoryKB:
 			val, err := retrieveInt(row, valueKey)
@@ -666,7 +666,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockOwnerBlocks)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeOwner)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverLockBlockTypeOwner)
 			}
 		case lockOwnerBlocksAllocated:
 			val, err := retrieveInt(row, valueKey)
@@ -674,7 +674,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockOwnerBlocksAllocated)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverBlockTypeOwnerAllocated)
+				s.mb.RecordSqlserverLockBlockCountDataPoint(now, val.(int64), metadata.AttributeSqlserverLockBlockTypeOwnerAllocated)
 			}
 		case lockRequestsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1491,9 +1491,10 @@ const (
 )
 
 // errorCategoryAttr maps a SQLServer:SQL Errors counter instance to the
-// sqlserver.error.category attribute value. The "_Total" instance is
-// intentionally skipped since callers can sum the per-category points.
-func errorCategoryAttr(instance string) (metadata.AttributeSqlserverErrorCategory, bool) {
+// sqlserver.error.category attribute value. The returned ok is false for
+// instances that have no mapping (for example the "_Total" instance, which is
+// intentionally skipped since callers can sum the per-category points).
+func errorCategoryAttr(instance string) (category metadata.AttributeSqlserverErrorCategory, ok bool) {
 	switch instance {
 	case dbOfflineErrors:
 		return metadata.AttributeSqlserverErrorCategoryDbOffline, true

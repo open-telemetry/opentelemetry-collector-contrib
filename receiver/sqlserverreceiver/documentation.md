@@ -383,7 +383,7 @@ Total number of deadlocks.
 
 ### sqlserver.error.rate
 
-Number of errors raised by SQL Server per second.
+Number of errors raised per second.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -395,7 +395,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.error.category | The SQL Server error category as reported by the `SQLServer:SQL Errors` performance counter object. | Str: ``db_offline``, ``info``, ``kill_connection``, ``user`` | Recommended | - |
+| sqlserver.error.category | The error category as reported by the `SQLServer:SQL Errors` performance counter object. | Str: ``db_offline``, ``info``, ``kill_connection``, ``user`` | Required | - |
 
 ### sqlserver.index.search.rate
 
@@ -475,7 +475,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.block.type | The type of lock block tracked by the lock manager. | Str: ``allocated``, ``blocks``, ``owner``, ``owner_allocated`` | Required | - |
+| sqlserver.lock.block.type | The type of lock block tracked by the lock manager. | Str: ``allocated``, ``blocks``, ``owner``, ``owner_allocated`` | Required | - |
 
 ### sqlserver.lock.escalation.rate
 
@@ -489,7 +489,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.lock.memory
 
-Total amount of memory the SQL Server is using for locks.
+Total amount of memory used for locks.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

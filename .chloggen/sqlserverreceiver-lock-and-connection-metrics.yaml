@@ -18,13 +18,12 @@ issues: [48925]
 subtext: |
   Adds the following metrics, all disabled by default:
     - `sqlserver.connection.reset.rate`
-    - `sqlserver.error.rate` (with `sqlserver.error.category` attribute)
-    - `sqlserver.lock.block.count` (with `sqlserver.block.type` attribute: allocated, blocks, owner, owner_allocated)
+    - `sqlserver.error.rate`
+    - `sqlserver.lock.block.count`
     - `sqlserver.lock.escalation.rate`
     - `sqlserver.lock.memory`
     - `sqlserver.lock.request.rate`
     - `sqlserver.lock.wait_time.total`
-  Also adds a `sqlserver.lock.timeout.type` attribute (`all`, `nonzero`) to the existing `sqlserver.lock.timeout.rate` metric.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -42,7 +42,6 @@ all_set:
       enabled: true
     sqlserver.error.rate:
       enabled: true
-      attributes: ["sqlserver.error.category"]
     sqlserver.index.search.rate:
       enabled: true
     sqlserver.latch.superlatch.count:
@@ -224,7 +223,6 @@ reaggregate_set:
       enabled: true
     sqlserver.error.rate:
       enabled: true
-      attributes: []
     sqlserver.index.search.rate:
       enabled: true
     sqlserver.latch.superlatch.count:
@@ -406,7 +404,6 @@ none_set:
       enabled: false
     sqlserver.error.rate:
       enabled: false
-      attributes: ["sqlserver.error.category"]
     sqlserver.index.search.rate:
       enabled: false
     sqlserver.latch.superlatch.count:

@@ -89,9 +89,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					SqlserverErrorRate: SqlserverErrorRateMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverErrorRateMetricAttributeKey{SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory},
+						Enabled: true,
 					},
 					SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 						Enabled: true,
@@ -350,9 +348,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					SqlserverErrorRate: SqlserverErrorRateMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverErrorRateMetricAttributeKey{SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory},
+						Enabled: false,
 					},
 					SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 						Enabled: false,
@@ -611,18 +607,6 @@ func TestSqlserverDatabaseTempdbSpaceMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.tempdb.space doesn't have an attribute invalid, valid attributes: [tempdb.state]")
 
 	cfg = DefaultMetricsConfig().SqlserverDatabaseTempdbSpace
-	cfg.AggregationStrategy = "invalid"
-	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
-}
-
-func TestSqlserverErrorRateMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverErrorRate
-	require.NoError(t, cfg.Validate())
-
-	cfg.EnabledAttributes = []SqlserverErrorRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.error.rate doesn't have an attribute invalid, valid attributes: [sqlserver.error.category]")
-
-	cfg = DefaultMetricsConfig().SqlserverErrorRate
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

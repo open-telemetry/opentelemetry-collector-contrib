@@ -1938,7 +1938,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second.
+          - description: Number of errors raised per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1978,7 +1978,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second.
+          - description: Number of errors raised per second.
             gauge:
               dataPoints:
                 - asDouble: 313
@@ -2018,7 +2018,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second.
+          - description: Number of errors raised per second.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -2058,7 +2058,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of errors raised by SQL Server per second.
+          - description: Number of errors raised per second.
             gauge:
               dataPoints:
                 - asDouble: 56
@@ -2915,7 +2915,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total amount of memory the SQL Server is using for locks.
+          - description: Total amount of memory used for locks.
             gauge:
               dataPoints:
                 - asInt: "10534912"
@@ -2956,7 +2956,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: sqlserver.block.type
+                    - key: sqlserver.lock.block.type
                       value:
                         stringValue: blocks
                   startTimeUnixNano: "1000000"
@@ -2996,7 +2996,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
-                    - key: sqlserver.block.type
+                    - key: sqlserver.lock.block.type
                       value:
                         stringValue: allocated
                   startTimeUnixNano: "1000000"
@@ -3036,7 +3036,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: sqlserver.block.type
+                    - key: sqlserver.lock.block.type
                       value:
                         stringValue: owner
                   startTimeUnixNano: "1000000"
@@ -3076,7 +3076,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "5000"
                   attributes:
-                    - key: sqlserver.block.type
+                    - key: sqlserver.lock.block.type
                       value:
                         stringValue: owner_allocated
                   startTimeUnixNano: "1000000"

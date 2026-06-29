@@ -499,20 +499,10 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// SqlserverErrorRateMetricAttributeKey specifies the key of an attribute for the sqlserver.error.rate metric.
-type SqlserverErrorRateMetricAttributeKey string
-
-const (
-	SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory SqlserverErrorRateMetricAttributeKey = "sqlserver.error.category"
-)
-
 // SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric.
 type SqlserverErrorRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverErrorRateMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverErrorRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -526,24 +516,6 @@ func (ms *SqlserverErrorRateMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverErrorRateMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory:
-		default:
-			return fmt.Errorf("metric sqlserver.error.rate doesn't have an attribute %v, valid attributes: [sqlserver.error.category]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -2042,9 +2014,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverErrorRateMetricAttributeKey{SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory},
+			Enabled: false,
 		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 			Enabled: false,

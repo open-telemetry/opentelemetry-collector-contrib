@@ -7,7 +7,7 @@ change_type: breaking
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change `sqlserver.lock.timeout.rate` to emit per-kind data points
+note: Change `sqlserver.lock.timeout.rate` to emit per-type data points
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48925]
@@ -16,8 +16,8 @@ issues: [48925]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `sqlserver.lock.timeout.rate` now requires a `sqlserver.lock.timeout.kind` attribute
-  (`all`, `nonzero`) and emits one data point per kind. Users who enable this metric
+  `sqlserver.lock.timeout.rate` now requires a `sqlserver.lock.timeout.type` attribute
+  (`all`, `nonzero`) and emits one data point per type. Users who enable this metric
   will receive two data points per scrape instead of one. The metric stays
   `enabled: false` and `stability: development`.
 

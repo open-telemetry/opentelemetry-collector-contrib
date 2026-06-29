@@ -72,7 +72,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
-			aggMap["sqlserver.error.rate"] = mb.metricSqlserverErrorRate.config.AggregationStrategy
 			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
@@ -162,9 +161,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverErrorRateDataPoint(ts, 1, AttributeSqlserverErrorCategoryDbOffline)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverErrorRateDataPoint(ts, 3, AttributeSqlserverErrorCategoryInfo)
-			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexSearchRateDataPoint(ts, 1)
@@ -188,7 +184,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLatchWaitTimeTotalDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeSqlserverBlockTypeAllocated)
+			mb.RecordSqlserverLockBlockCountDataPoint(ts, 1, AttributeSqlserverLockBlockTypeAllocated)
 
 			allMetricsCount++
 			mb.RecordSqlserverLockEscalationRateDataPoint(ts, 1)
@@ -373,7 +369,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverErrorRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
@@ -819,45 +814,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.error.rate":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.error.rate"], "Found a duplicate in the metrics slice: sqlserver.error.rate")
-						validatedMetrics["sqlserver.error.rate"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of errors raised by SQL Server per second.", mi.Description())
-						assert.Equal(t, "{error}/s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						sqlserverErrorCategoryAttrVal, ok := dp.Attributes().Get("sqlserver.error.category")
-						assert.True(t, ok)
-						assert.Equal(t, "db_offline", sqlserverErrorCategoryAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.error.rate"], "Found a duplicate in the metrics slice: sqlserver.error.rate")
-						validatedMetrics["sqlserver.error.rate"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of errors raised by SQL Server per second.", mi.Description())
-						assert.Equal(t, "{error}/s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.error.rate"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("sqlserver.error.category")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["sqlserver.error.rate"], "Found a duplicate in the metrics slice: sqlserver.error.rate")
+					validatedMetrics["sqlserver.error.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of errors raised per second.", mi.Description())
+					assert.Equal(t, "{error}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverErrorCategoryAttrVal, ok := dp.Attributes().Get("sqlserver.error.category")
+					assert.True(t, ok)
+					assert.Equal(t, "db_offline", sqlserverErrorCategoryAttrVal.Str())
 				case "sqlserver.index.search.rate":
 					assert.False(t, validatedMetrics["sqlserver.index.search.rate"], "Found a duplicate in the metrics slice: sqlserver.index.search.rate")
 					validatedMetrics["sqlserver.index.search.rate"] = true
@@ -972,9 +942,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					sqlserverBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.block.type")
+					sqlserverLockBlockTypeAttrVal, ok := dp.Attributes().Get("sqlserver.lock.block.type")
 					assert.True(t, ok)
-					assert.Equal(t, "allocated", sqlserverBlockTypeAttrVal.Str())
+					assert.Equal(t, "allocated", sqlserverLockBlockTypeAttrVal.Str())
 				case "sqlserver.lock.escalation.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.escalation.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.escalation.rate")
 					validatedMetrics["sqlserver.lock.escalation.rate"] = true
@@ -992,7 +962,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.lock.memory"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total amount of memory the SQL Server is using for locks.", mi.Description())
+					assert.Equal(t, "Total amount of memory used for locks.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

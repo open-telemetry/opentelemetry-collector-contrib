@@ -260,40 +260,6 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
-// AttributeSqlserverBlockType specifies the value sqlserver.block.type attribute.
-type AttributeSqlserverBlockType int
-
-const (
-	_ AttributeSqlserverBlockType = iota
-	AttributeSqlserverBlockTypeAllocated
-	AttributeSqlserverBlockTypeBlocks
-	AttributeSqlserverBlockTypeOwner
-	AttributeSqlserverBlockTypeOwnerAllocated
-)
-
-// String returns the string representation of the AttributeSqlserverBlockType.
-func (av AttributeSqlserverBlockType) String() string {
-	switch av {
-	case AttributeSqlserverBlockTypeAllocated:
-		return "allocated"
-	case AttributeSqlserverBlockTypeBlocks:
-		return "blocks"
-	case AttributeSqlserverBlockTypeOwner:
-		return "owner"
-	case AttributeSqlserverBlockTypeOwnerAllocated:
-		return "owner_allocated"
-	}
-	return ""
-}
-
-// MapAttributeSqlserverBlockType is a helper map of string to AttributeSqlserverBlockType attribute value.
-var MapAttributeSqlserverBlockType = map[string]AttributeSqlserverBlockType{
-	"allocated":       AttributeSqlserverBlockTypeAllocated,
-	"blocks":          AttributeSqlserverBlockTypeBlocks,
-	"owner":           AttributeSqlserverBlockTypeOwner,
-	"owner_allocated": AttributeSqlserverBlockTypeOwnerAllocated,
-}
-
 // AttributeSqlserverErrorCategory specifies the value sqlserver.error.category attribute.
 type AttributeSqlserverErrorCategory int
 
@@ -326,6 +292,40 @@ var MapAttributeSqlserverErrorCategory = map[string]AttributeSqlserverErrorCateg
 	"info":            AttributeSqlserverErrorCategoryInfo,
 	"kill_connection": AttributeSqlserverErrorCategoryKillConnection,
 	"user":            AttributeSqlserverErrorCategoryUser,
+}
+
+// AttributeSqlserverLockBlockType specifies the value sqlserver.lock.block.type attribute.
+type AttributeSqlserverLockBlockType int
+
+const (
+	_ AttributeSqlserverLockBlockType = iota
+	AttributeSqlserverLockBlockTypeAllocated
+	AttributeSqlserverLockBlockTypeBlocks
+	AttributeSqlserverLockBlockTypeOwner
+	AttributeSqlserverLockBlockTypeOwnerAllocated
+)
+
+// String returns the string representation of the AttributeSqlserverLockBlockType.
+func (av AttributeSqlserverLockBlockType) String() string {
+	switch av {
+	case AttributeSqlserverLockBlockTypeAllocated:
+		return "allocated"
+	case AttributeSqlserverLockBlockTypeBlocks:
+		return "blocks"
+	case AttributeSqlserverLockBlockTypeOwner:
+		return "owner"
+	case AttributeSqlserverLockBlockTypeOwnerAllocated:
+		return "owner_allocated"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverLockBlockType is a helper map of string to AttributeSqlserverLockBlockType attribute value.
+var MapAttributeSqlserverLockBlockType = map[string]AttributeSqlserverLockBlockType{
+	"allocated":       AttributeSqlserverLockBlockTypeAllocated,
+	"blocks":          AttributeSqlserverLockBlockTypeBlocks,
+	"owner":           AttributeSqlserverLockBlockTypeOwner,
+	"owner_allocated": AttributeSqlserverLockBlockTypeOwnerAllocated,
 }
 
 // AttributeSqlserverLockTimeoutType specifies the value sqlserver.lock.timeout.type attribute.
@@ -604,7 +604,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverLockBlockCount: metricInfo{
 		Name:       "sqlserver.lock.block.count",
-		Attributes: []string{"sqlserver.block.type"},
+		Attributes: []string{"sqlserver.lock.block.type"},
 	},
 	SqlserverLockEscalationRate: metricInfo{
 		Name: "sqlserver.lock.escalation.rate",
@@ -1910,61 +1910,29 @@ func newMetricSqlserverDeadlockRate(cfg SqlserverDeadlockRateMetricConfig) metri
 }
 
 type metricSqlserverErrorRate struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        SqlserverErrorRateMetricConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   SqlserverErrorRateMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills sqlserver.error.rate metric with initial data.
 func (m *metricSqlserverErrorRate) init() {
 	m.data.SetName("sqlserver.error.rate")
-	m.data.SetDescription("Number of errors raised by SQL Server per second.")
+	m.data.SetDescription("Number of errors raised per second.")
 	m.data.SetUnit("{error}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSqlserverErrorRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverErrorCategoryAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverErrorRateMetricAttributeKeySqlserverErrorCategory) {
-		dp.Attributes().PutStr("sqlserver.error.category", sqlserverErrorCategoryAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("sqlserver.error.category", sqlserverErrorCategoryAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1977,11 +1945,6 @@ func (m *metricSqlserverErrorRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverErrorRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2354,7 +2317,7 @@ func (m *metricSqlserverLockBlockCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverBlockTypeAttributeValue string) {
+func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverLockBlockTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2362,7 +2325,7 @@ func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("sqlserver.block.type", sqlserverBlockTypeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.lock.block.type", sqlserverLockBlockTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2450,7 +2413,7 @@ type metricSqlserverLockMemory struct {
 // init fills sqlserver.lock.memory metric with initial data.
 func (m *metricSqlserverLockMemory) init() {
 	m.data.SetName("sqlserver.lock.memory")
-	m.data.SetDescription("Total amount of memory the SQL Server is using for locks.")
+	m.data.SetDescription("Total amount of memory used for locks.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -5591,8 +5554,8 @@ func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.
 }
 
 // RecordSqlserverLockBlockCountDataPoint adds a data point to sqlserver.lock.block.count metric.
-func (mb *MetricsBuilder) RecordSqlserverLockBlockCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverBlockTypeAttributeValue AttributeSqlserverBlockType) {
-	mb.metricSqlserverLockBlockCount.recordDataPoint(mb.startTime, ts, val, sqlserverBlockTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverLockBlockCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverLockBlockTypeAttributeValue AttributeSqlserverLockBlockType) {
+	mb.metricSqlserverLockBlockCount.recordDataPoint(mb.startTime, ts, val, sqlserverLockBlockTypeAttributeValue.String())
 }
 
 // RecordSqlserverLockEscalationRateDataPoint adds a data point to sqlserver.lock.escalation.rate metric.

@@ -148,11 +148,6 @@ attributes:
     description: The port number on which the server is listening.
     type: int
     requirement_level: recommended
-  sqlserver.block.type:
-    description: The type of lock block tracked by the lock manager.
-    type: string
-    requirement_level: required
-    enum: [allocated, blocks, owner, owner_allocated]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -182,9 +177,9 @@ attributes:
     type: int
     requirement_level: recommended
   sqlserver.error.category:
-    description: The SQL Server error category as reported by the `SQLServer:SQL Errors` performance counter object.
+    description: The error category as reported by the `SQLServer:SQL Errors` performance counter object.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum: [db_offline, info, kill_connection, user]
   sqlserver.estimated_completion_time:
     description: Estimated time remaining for the request to complete, in seconds.
@@ -194,6 +189,11 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
+  sqlserver.lock.block.type:
+    description: The type of lock block tracked by the lock manager.
+    type: string
+    requirement_level: required
+    enum: [allocated, blocks, owner, owner_allocated]
   sqlserver.lock.timeout.type:
     description: The type of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
     type: string
@@ -611,7 +611,7 @@ metrics:
     attributes: []
   sqlserver.error.rate:
     enabled: false
-    description: Number of errors raised by SQL Server per second.
+    description: Number of errors raised per second.
     stability: development
     unit: "{error}/s"
     gauge:
@@ -680,7 +680,7 @@ metrics:
     unit: "{block}"
     gauge:
       value_type: int
-    attributes: [sqlserver.block.type]
+    attributes: [sqlserver.lock.block.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.escalation.rate:
     enabled: false
@@ -693,7 +693,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.memory:
     enabled: false
-    description: Total amount of memory the SQL Server is using for locks.
+    description: Total amount of memory used for locks.
     stability: development
     unit: By
     gauge:
