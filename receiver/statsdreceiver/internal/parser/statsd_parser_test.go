@@ -1991,6 +1991,73 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 	}
 }
 
+// TestStatsDParser_DistributionHistogramMaxSize is a regression test for the
+// max_size mis-assignment in Initialize(): the histogram/distribution mapping
+// used to write its expo-histogram config (max_size) onto timerEvents instead of
+// histogramEvents, so a max_size configured on a "distribution" (or "histogram")
+// mapping was ignored and those metrics always used the go-expohisto default
+// (160). Here only a "distribution" mapping is configured with MaxSize 10 and the
+// inputs span 2**10, so a correctly-applied max_size forces scale 0 with 10
+// buckets. Without the fix histogramEvents keeps the default size and the scale
+// does not collapse, so the expected metric does not match.
+func TestStatsDParser_DistributionHistogramMaxSize(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	mapping := []protocol.TimerHistogramMapping{
+		{
+			StatsdType:   "distribution",
+			ObserverType: "histogram",
+			Histogram: protocol.HistogramConfig{
+				MaxSize: 10,
+			},
+		},
+	}
+	input := []string{
+		"expohisto:0|d|#mykey:myvalue",
+		"expohisto:1.5|d|#mykey:myvalue",
+		"expohisto:2.5|d|#mykey:myvalue",
+		"expohisto:4.5|d|#mykey:myvalue",
+		"expohisto:8.5|d|#mykey:myvalue",
+		"expohisto:16.5|d|#mykey:myvalue",
+		"expohisto:32.5|d|#mykey:myvalue",
+		"expohisto:64.5|d|#mykey:myvalue",
+		"expohisto:128.5|d|#mykey:myvalue",
+		"expohisto:256.5|d|#mykey:myvalue",
+		"expohisto:512.5|d|#mykey:myvalue",
+	}
+	expected := func() pmetric.Metrics {
+		data := pmetric.NewMetrics()
+		ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
+		m.SetName("expohisto")
+		ep := m.SetEmptyExponentialHistogram()
+		ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := ep.DataPoints().AppendEmpty()
+		dp.Attributes().PutStr("mykey", "myvalue")
+		dp.SetCount(11)
+		dp.SetSum(1028)
+		dp.SetMin(0)
+		dp.SetMax(512.5)
+		dp.SetZeroCount(1)
+		dp.SetScale(0)
+		dp.Positive().SetOffset(0)
+		dp.Positive().BucketCounts().FromRaw([]uint64{
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		})
+		return data
+	}()
+
+	p := &StatsDParser{}
+	assert.NoError(t, p.Initialize(false, false, false, false, false, mapping, protocol.CounterTypeInt))
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	for _, line := range input {
+		assert.NoError(t, p.Aggregate(line, addr))
+	}
+	var nodiffs []*metricstestutil.MetricDiff
+	assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, expected, p.GetMetrics()[0].Metrics))
+}
+
 func TestStatsDParser_HistogramExplicitBucket(t *testing.T) {
 	timeNowFunc = func() time.Time {
 		return time.Unix(711, 0)
