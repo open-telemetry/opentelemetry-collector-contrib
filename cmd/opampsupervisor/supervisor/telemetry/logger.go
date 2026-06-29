@@ -32,8 +32,6 @@ func NewLogger(cfg config.Logs) (*zap.Logger, error) {
 func newZapConfig(cfg config.Logs) (zap.Config, error) {
 	zapCfg := zap.NewProductionConfig()
 
-	zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-
 	enc := strings.ToLower(strings.TrimSpace(cfg.Encoding))
 	if enc == "" {
 		enc = "json"
@@ -42,8 +40,11 @@ func newZapConfig(cfg config.Logs) (zap.Config, error) {
 	switch enc {
 	case "console":
 		zapCfg.Encoding = "console"
+		// Console output is meant for humans; use ISO8601 timestamps.
+		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	case "json":
 		zapCfg.Encoding = "json"
+		// Keep production defaults for JSON to preserve backward compatibility.
 	default:
 		return zap.Config{}, fmt.Errorf("unsupported log encoding %q, supported values are 'json' and 'console'", cfg.Encoding)
 	}
