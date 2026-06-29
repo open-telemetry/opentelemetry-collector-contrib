@@ -1,15 +1,15 @@
-awscloudwatch/default:
+aws_cloudwatch/default:
   region: us-west-1
   logs:
     poll_interval: 1m
 
-awscloudwatch/initial-lookback:
+aws_cloudwatch/initial-lookback:
   region: us-west-1
   logs:
     poll_interval: 1m
     initial_lookback: 1h
 
-awscloudwatch/prefix-log-group-autodiscover:
+aws_cloudwatch/prefix-log-group-autodiscover:
   region: us-west-1
   logs:
     poll_interval: 1m
@@ -18,7 +18,7 @@ awscloudwatch/prefix-log-group-autodiscover:
         limit: 100
         prefix: /aws/eks/
 
-awscloudwatch/name-pattern-log-group-autodiscover:
+aws_cloudwatch/name-pattern-log-group-autodiscover:
   region: us-west-1
   logs:
     poll_interval: 1m
@@ -27,7 +27,7 @@ awscloudwatch/name-pattern-log-group-autodiscover:
         limit: 100
         pattern: eks
 
-awscloudwatch/autodiscover-filter-streams:
+aws_cloudwatch/autodiscover-filter-streams:
   region: us-west-1
   logs:
     poll_interval: 1m
@@ -37,7 +37,7 @@ awscloudwatch/autodiscover-filter-streams:
         streams:
           prefixes: [kube-api-controller]
 
-awscloudwatch/named-prefix-with-streams:
+aws_cloudwatch/named-prefix-with-streams:
   profile: "my-profile"
   region: us-west-1
   logs:
@@ -47,8 +47,8 @@ awscloudwatch/named-prefix-with-streams:
         /aws/eks/dev-0/cluster:
           names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 
-awscloudwatch/named-prefix:
-  profile: 'my-profile'
+aws_cloudwatch/named-prefix:
+  profile: "my-profile"
   region: us-west-1
   logs:
     poll_interval: 5m
@@ -56,7 +56,7 @@ awscloudwatch/named-prefix:
       named:
         /aws/eks/dev-0/cluster:
 
-awscloudwatch/metrics-explicit:
+aws_cloudwatch/metrics-explicit:
   region: us-east-1
   metrics:
     collection_interval: 1m
@@ -69,7 +69,7 @@ awscloudwatch/metrics-explicit:
       - namespace: AWS/EC2
         metric_name: NetworkIn
 
-awscloudwatch/metrics-explicit-gauge:
+aws_cloudwatch/metrics-explicit-gauge:
   region: us-east-1
   metrics:
     collection_interval: 1m
@@ -79,7 +79,7 @@ awscloudwatch/metrics-explicit-gauge:
         metric_name: CPUUtilization
         stats: [Average, p99]
 
-awscloudwatch/metrics-discovery:
+aws_cloudwatch/metrics-discovery:
   region: us-east-1
   metrics:
     collection_interval: 5m
@@ -89,7 +89,7 @@ awscloudwatch/metrics-discovery:
         namespace: AWS/EC2
       limit: 200
 
-awscloudwatch/metrics-discovery-gauge:
+aws_cloudwatch/metrics-discovery-gauge:
   region: us-east-1
   metrics:
     collection_interval: 5m
@@ -100,7 +100,7 @@ awscloudwatch/metrics-discovery-gauge:
       limit: 100
       stats: [Sum, Average]
 
-awscloudwatch/metrics-discovery-no-namespace:
+aws_cloudwatch/metrics-discovery-no-namespace:
   region: us-west-2
   metrics:
     collection_interval: 2m
