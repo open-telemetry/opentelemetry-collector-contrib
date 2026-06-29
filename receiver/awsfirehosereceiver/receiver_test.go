@@ -134,6 +134,7 @@ func TestFirehoseRequest(t *testing.T) {
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
+		config           *Config
 		headers          map[string]string
 		commonAttributes map[string]string
 		body             any
@@ -224,6 +225,82 @@ func TestFirehoseRequest(t *testing.T) {
 			}),
 			wantStatusCode: http.StatusOK,
 		},
+		"WithGzipRecordExceedingRecordLimit": {
+			config: &Config{
+				AccessKey:                   testFirehoseAccessKey,
+				RecordDecompressedSizeLimit: 10,
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("012345678901234"))),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusRequestEntityTooLarge, err
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusRequestEntityTooLarge,
+			wantErr:        errors.New("unable to decompress the record at index 0: decompression limit exceeded: decompressed record size exceeds the limit of 10 bytes"),
+		},
+		"WithGzipRecordsExceedingCumulativeLimit": {
+			config: &Config{
+				AccessKey:                    testFirehoseAccessKey,
+				RequestDecompressedSizeLimit: 15,
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("0123456789"))),
+				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("0123456789"))),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusBadRequest, err
+				}
+				if _, err := next(); err != nil {
+					return http.StatusRequestEntityTooLarge, err
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusRequestEntityTooLarge,
+			wantErr:        errors.New("unable to decompress the record at index 1: decompression limit exceeded: cumulative decompressed size exceeds the limit of 15 bytes"),
+		},
+		"WithNonGzipRecordExceedingRecordLimit": {
+			config: &Config{
+				AccessKey:                   testFirehoseAccessKey,
+				RecordDecompressedSizeLimit: 5,
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecord("0123456789"),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusRequestEntityTooLarge, err
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusRequestEntityTooLarge,
+			wantErr:        errors.New("unable to decompress the record at index 0: decompression limit exceeded: record size (10 bytes) exceeds the limit of 5 bytes"),
+		},
+		"WithNonGzipRecordsExceedingCumulativeLimit": {
+			config: &Config{
+				AccessKey:                    testFirehoseAccessKey,
+				RequestDecompressedSizeLimit: 15,
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecord("0123456789"),
+				testFirehoseRecord("0123456789"),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusBadRequest, err
+				}
+				if _, err := next(); err != nil {
+					return http.StatusRequestEntityTooLarge, err
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusRequestEntityTooLarge,
+			wantErr:        errors.New("unable to decompress the record at index 1: decompression limit exceeded: cumulative decompressed size (20 bytes) exceeds the limit of 15 bytes"),
+		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
@@ -263,7 +340,11 @@ func TestFirehoseRequest(t *testing.T) {
 			if consumer == nil {
 				consumer = defaultConsumer
 			}
-			r := testFirehoseReceiver(cfg, consumer)
+			config := testCase.config
+			if config == nil {
+				config = cfg
+			}
+			r := testFirehoseReceiver(config, consumer)
 
 			got := httptest.NewRecorder()
 			r.ServeHTTP(got, request)

@@ -35,6 +35,12 @@ type Config struct {
 	// This can be set when creating or updating the Firehose delivery
 	// stream.
 	AccessKey configopaque.String `mapstructure:"access_key"`
+	// RecordDecompressedSizeLimit sets the maximum decompressed size in bytes for a single record.
+	// Default is 20971520 (20 MiB) if not set or 0.
+	RecordDecompressedSizeLimit int64 `mapstructure:"record_decompressed_size_limit"`
+	// RequestDecompressedSizeLimit sets the maximum cumulative decompressed size in bytes for all records in a single request.
+	// Default is 20971520 (20 MiB) if not set or 0.
+	RequestDecompressedSizeLimit int64 `mapstructure:"request_decompressed_size_limit"`
 }
 
 // Validate checks that the endpoint and record type exist and
@@ -45,6 +51,12 @@ func (c *Config) Validate() error {
 	}
 	if c.RecordType != "" && c.Encoding != "" {
 		return errRecordTypeEncodingSet
+	}
+	if c.RecordDecompressedSizeLimit < 0 {
+		return errors.New("record_decompressed_size_limit must be non-negative")
+	}
+	if c.RequestDecompressedSizeLimit < 0 {
+		return errors.New("request_decompressed_size_limit must be non-negative")
 	}
 	return nil
 }

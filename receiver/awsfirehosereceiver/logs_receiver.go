@@ -91,6 +91,12 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		if errors.Is(err, io.EOF) {
 			break
 		}
+		if err != nil {
+			if errors.Is(err, errLimitExceeded) {
+				return http.StatusRequestEntityTooLarge, err
+			}
+			return http.StatusBadRequest, err
+		}
 		logs, err := c.unmarshaler.UnmarshalLogs(record)
 		if err != nil {
 			return http.StatusBadRequest, err
