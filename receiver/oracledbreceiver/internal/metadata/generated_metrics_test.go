@@ -680,7 +680,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.committed"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Mirrors semconv jvm.memory.committed for the embedded OJVM.", mi.Description())
+					assert.Equal(t, "Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -692,7 +692,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.live"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size. No semconv jvm.memory equivalent.", mi.Description())
+					assert.Equal(t, "Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -704,7 +704,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.used"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Mirrors semconv jvm.memory.used for the embedded OJVM.", mi.Description())
+					assert.Equal(t, "Used size in bytes of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -756,8 +756,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.os.swaps"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of OS swap operations, as accounted by Oracle. Sourced from v$sysstat name OS Swaps.", mi.Description())
-					assert.Equal(t, "{swaps}", mi.Unit())
+					assert.Equal(t, "Number of OS swap operations.", mi.Description())
+					assert.Equal(t, "{swap}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1192,7 +1192,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.session.stored_procedure.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.", mi.Description())
+					assert.Equal(t, "Memory in bytes currently allocated for stored procedures in the session.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1205,7 +1205,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.wait.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.", mi.Description())
+						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1222,7 +1222,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.wait.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.", mi.Description())
+						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1249,8 +1249,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.waits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.", mi.Description())
-						assert.Equal(t, "{waits}", mi.Unit())
+						assert.Equal(t, "Cumulative number of non-idle waits across sessions.", mi.Description())
+						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1266,8 +1266,8 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.waits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.", mi.Description())
-						assert.Equal(t, "{waits}", mi.Unit())
+						assert.Equal(t, "Cumulative number of non-idle waits across sessions.", mi.Description())
+						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)

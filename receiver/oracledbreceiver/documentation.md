@@ -329,7 +329,7 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 
 ### oracledb.jvm.memory.committed
 
-Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Mirrors semconv jvm.memory.committed for the embedded OJVM.
+Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -337,7 +337,7 @@ Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. So
 
 ### oracledb.jvm.memory.live
 
-Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size. No semconv jvm.memory equivalent.
+Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -345,7 +345,7 @@ Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sour
 
 ### oracledb.jvm.memory.used
 
-Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Mirrors semconv jvm.memory.used for the embedded OJVM.
+Used size in bytes of Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -369,11 +369,11 @@ Number of logon operations
 
 ### oracledb.os.swaps
 
-Number of OS swap operations, as accounted by Oracle. Sourced from v$sysstat name OS Swaps.
+Number of OS swap operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {swaps} | Sum | Int | Cumulative | true | Development |
+| {swap} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
@@ -549,7 +549,7 @@ Fraction of redo allocations that succeeded without space contention, as compute
 
 ### oracledb.session.stored_procedure.usage
 
-Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.
+Memory in bytes currently allocated for stored procedures in the session.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -557,7 +557,7 @@ Memory in bytes currently allocated for stored procedures in the session. Source
 
 ### oracledb.session.wait.time
 
-Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.
+Cumulative time sessions spent in non-idle waits, in seconds.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -567,21 +567,21 @@ Cumulative time sessions spent in non-idle waits, in seconds (converted from cen
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. Oracle's v$sysstat currently exposes only the non-idle aggregate. | Str: ``non_idle`` | Recommended | - |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
 
 ### oracledb.session.waits
 
-Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.
+Cumulative number of non-idle waits across sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {waits} | Sum | Int | Cumulative | true | Development |
+| {wait} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. Oracle's v$sysstat currently exposes only the non-idle aggregate. | Str: ``non_idle`` | Recommended | - |
+| oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
 
 ### oracledb.shared_pool.utilization
 

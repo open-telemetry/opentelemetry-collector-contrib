@@ -1654,7 +1654,7 @@ type metricOracledbJvmMemoryCommitted struct {
 // init fills oracledb.jvm.memory.committed metric with initial data.
 func (m *metricOracledbJvmMemoryCommitted) init() {
 	m.data.SetName("oracledb.jvm.memory.committed")
-	m.data.SetDescription("Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap total size. Mirrors semconv jvm.memory.committed for the embedded OJVM.")
+	m.data.SetDescription("Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -1704,7 +1704,7 @@ type metricOracledbJvmMemoryLive struct {
 // init fills oracledb.jvm.memory.live metric with initial data.
 func (m *metricOracledbJvmMemoryLive) init() {
 	m.data.SetName("oracledb.jvm.memory.live")
-	m.data.SetDescription("Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap live size. No semconv jvm.memory equivalent.")
+	m.data.SetDescription("Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -1754,7 +1754,7 @@ type metricOracledbJvmMemoryUsed struct {
 // init fills oracledb.jvm.memory.used metric with initial data.
 func (m *metricOracledbJvmMemoryUsed) init() {
 	m.data.SetName("oracledb.jvm.memory.used")
-	m.data.SetDescription("Used size in bytes of Oracle's in-database JVM (OJVM) call heap. Sourced from v$sysstat name java call heap used size. Mirrors semconv jvm.memory.used for the embedded OJVM.")
+	m.data.SetDescription("Used size in bytes of Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -1958,8 +1958,8 @@ type metricOracledbOsSwaps struct {
 // init fills oracledb.os.swaps metric with initial data.
 func (m *metricOracledbOsSwaps) init() {
 	m.data.SetName("oracledb.os.swaps")
-	m.data.SetDescription("Number of OS swap operations, as accounted by Oracle. Sourced from v$sysstat name OS Swaps.")
-	m.data.SetUnit("{swaps}")
+	m.data.SetDescription("Number of OS swap operations.")
+	m.data.SetUnit("{swap}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3369,7 +3369,7 @@ type metricOracledbSessionStoredProcedureUsage struct {
 // init fills oracledb.session.stored_procedure.usage metric with initial data.
 func (m *metricOracledbSessionStoredProcedureUsage) init() {
 	m.data.SetName("oracledb.session.stored_procedure.usage")
-	m.data.SetDescription("Memory in bytes currently allocated for stored procedures in the session. Sourced from v$sysstat name session stored procedure space.")
+	m.data.SetDescription("Memory in bytes currently allocated for stored procedures in the session.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -3420,7 +3420,7 @@ type metricOracledbSessionWaitTime struct {
 // init fills oracledb.session.wait.time metric with initial data.
 func (m *metricOracledbSessionWaitTime) init() {
 	m.data.SetName("oracledb.session.wait.time")
-	m.data.SetDescription("Cumulative time sessions spent in non-idle waits, in seconds (converted from centiseconds). Sourced from v$sysstat name non-idle wait time.")
+	m.data.SetDescription("Cumulative time sessions spent in non-idle waits, in seconds.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3511,8 +3511,8 @@ type metricOracledbSessionWaits struct {
 // init fills oracledb.session.waits metric with initial data.
 func (m *metricOracledbSessionWaits) init() {
 	m.data.SetName("oracledb.session.waits")
-	m.data.SetDescription("Cumulative number of non-idle waits across sessions. Sourced from v$sysstat name non-idle wait count.")
-	m.data.SetUnit("{waits}")
+	m.data.SetDescription("Cumulative number of non-idle waits across sessions.")
+	m.data.SetUnit("{wait}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

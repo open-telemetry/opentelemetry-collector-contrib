@@ -416,6 +416,48 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
 	cfg.Metrics.OracledbOsSwaps.Enabled = true
 
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		switch me.Name() {
+		case "oracledb.session.waits":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.Equal(t, int64(98765), dp.IntValue())
+		case "oracledb.session.wait.time":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
+		case "oracledb.os.swaps":
+			seen++
+			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
+		case "oracledb.session.stored_procedure.usage":
+			seen++
+			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.used":
+			seen++
+			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.committed":
+			seen++
+			assert.Equal(t, int64(4194304), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.live":
+			seen++
+			assert.Equal(t, int64(1048576), me.Gauge().DataPoints().At(0).IntValue())
+		}
+	}
+	assert.Equal(t, 7, seen)
+}
+
+// scrapeWithConfig builds the scraper with the given metrics config against the
+// shared fake v$ result sets, runs a single scrape, and returns the metrics.
+func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
@@ -429,58 +471,10 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
-
-	got := collectNumberDataPoints(m)
-
-	assert.InDelta(t, float64(98765), got["oracledb.session.waits"]["oracledb.session.wait.state=non_idle"], 1e-9)
-	assert.InDelta(t, 45.0, got["oracledb.session.wait.time"]["oracledb.session.wait.state=non_idle"], 1e-9)
-	assert.InDelta(t, float64(262144), got["oracledb.session.stored_procedure.usage"][""], 1e-9)
-	assert.InDelta(t, float64(1048576), got["oracledb.jvm.memory.live"][""], 1e-9)
-	assert.InDelta(t, float64(4194304), got["oracledb.jvm.memory.committed"][""], 1e-9)
-	assert.InDelta(t, float64(2097152), got["oracledb.jvm.memory.used"][""], 1e-9)
-	assert.InDelta(t, float64(17), got["oracledb.os.swaps"][""], 1e-9)
-}
-
-// collectNumberDataPoints flattens all Sum and Gauge metrics from a scrape into
-// metricName -> sorted-attribute-signature -> numeric value (doubles preserved).
-func collectNumberDataPoints(m pmetric.Metrics) map[string]map[string]float64 {
-	got := map[string]map[string]float64{}
-	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	for i := 0; i < metrics.Len(); i++ {
-		me := metrics.At(i)
-		var dps pmetric.NumberDataPointSlice
-		switch me.Type() {
-		case pmetric.MetricTypeSum:
-			dps = me.Sum().DataPoints()
-		case pmetric.MetricTypeGauge:
-			dps = me.Gauge().DataPoints()
-		default:
-			continue
-		}
-		for j := 0; j < dps.Len(); j++ {
-			dp := dps.At(j)
-			var keys []string
-			dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-				keys = append(keys, k+"="+v.AsString())
-				return true
-			})
-			sort.Strings(keys)
-			sig := strings.Join(keys, ",")
-			if _, ok := got[me.Name()]; !ok {
-				got[me.Name()] = map[string]float64{}
-			}
-			if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
-				got[me.Name()][sig] = dp.DoubleValue()
-			} else {
-				got[me.Name()][sig] = float64(dp.IntValue())
-			}
-		}
-	}
-	return got
+	return m
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
