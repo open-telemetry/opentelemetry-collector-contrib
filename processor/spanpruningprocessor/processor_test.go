@@ -5,6 +5,7 @@ package spanpruningprocessor
 
 import (
 	"context"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
@@ -41,7 +43,7 @@ func TestLeafSpanPruning_BasicAggregation(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 3, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -72,7 +74,7 @@ func TestLeafSpanPruning_BelowThreshold(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithLeafSpans(t, 1, "SELECT", map[string]string{"db.operation": "select"})
+	td := createTestTraceWithLeafSpans(t, 1, map[string]string{"db.operation": "select"})
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 2, originalSpanCount) // 1 parent + 1 leaf span
 
@@ -771,6 +773,463 @@ func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
 	assert.False(t, found, "summary span should not be created when normal spans drop below threshold")
 }
 
+// TestProcessorSamplesExemplars verifies that random exemplar sampling keeps
+// ceil(multiplier * sqrt(N)) spans as siblings of the summary, annotates them,
+// records summary-level exemplar attributes, and leaves the summary's
+// TraceState untouched.
+func TestProcessorSamplesExemplars(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	const n = 100
+	td := createTestTraceWithLeafSpans(t, n, map[string]string{"db.operation": "SELECT"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	summary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "summary span should be created")
+
+	wantK := int(math.Ceil(math.Sqrt(float64(n))))
+	wantAggregated := n - wantK
+
+	spanCount, exists := summary.Attributes().Get("aggregation.span_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(wantAggregated), spanCount.Int(), "summary aggregates N-K spans")
+
+	exemplarCount, exists := summary.Attributes().Get("aggregation.exemplar_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(wantK), exemplarCount.Int())
+
+	exemplarIDsAttr, exists := summary.Attributes().Get("aggregation.exemplar_span_ids")
+	require.True(t, exists)
+	require.Equal(t, wantK, exemplarIDsAttr.Slice().Len())
+
+	// Each preserved exemplar must be a sibling of the summary, carry the
+	// is_exemplar marker, and reference the summary span.
+	allLeaves := findAllSpansByExactName(td, "SELECT")
+	var exemplars []ptrace.Span
+	for _, leaf := range allLeaves {
+		if isEx, ok := leaf.Attributes().Get("aggregation.is_exemplar"); ok && isEx.Bool() {
+			exemplars = append(exemplars, leaf)
+		}
+	}
+	require.Len(t, exemplars, wantK)
+
+	summaryIDStr := summary.SpanID().String()
+	for _, ex := range exemplars {
+		assert.Equal(t, summary.ParentSpanID(), ex.ParentSpanID(), "exemplar should be a sibling of the summary")
+		summaryRef, hasRef := ex.Attributes().Get("aggregation.summary_span_id")
+		require.True(t, hasRef)
+		assert.Equal(t, summaryIDStr, summaryRef.Str())
+	}
+
+	// Summary span TraceState must not be modified by exemplar sampling.
+	assert.Empty(t, summary.TraceState().AsRaw())
+}
+
+// TestProcessorExemplarThreshold verifies that exemplar spans with an existing
+// CPS th-value get their threshold composed multiplicatively, while spans
+// without a prior th retain their original TraceState.
+func TestProcessorExemplarThreshold(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	const n = 100
+	td := createTestTraceWithLeafSpans(t, n, map[string]string{"db.operation": "SELECT"})
+
+	// Stamp prior th encoding p=0.5 on every leaf span.
+	priorTh, err := sampling.ProbabilityToThreshold(0.5)
+	require.NoError(t, err)
+	priorTS := "ot=th:" + priorTh.TValue()
+	rs := td.ResourceSpans().At(0)
+	ss := rs.ScopeSpans().At(0)
+	for i := 0; i < ss.Spans().Len(); i++ {
+		span := ss.Spans().At(i)
+		if span.Name() == "SELECT" {
+			span.TraceState().FromRaw(priorTS)
+		}
+	}
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	wantK := int(math.Ceil(math.Sqrt(float64(n))))
+	wantNewTh, err := sampling.ProbabilityToThreshold(0.5 * float64(wantK) / float64(n))
+	require.NoError(t, err)
+	wantTS := "ot=th:" + wantNewTh.TValue()
+
+	leaves := findAllSpansByExactName(td, "SELECT")
+	var exemplars []ptrace.Span
+	for _, leaf := range leaves {
+		if isEx, ok := leaf.Attributes().Get("aggregation.is_exemplar"); ok && isEx.Bool() {
+			exemplars = append(exemplars, leaf)
+		}
+	}
+	require.Len(t, exemplars, wantK)
+
+	for _, ex := range exemplars {
+		assert.Equal(t, wantTS, ex.TraceState().AsRaw(), "exemplar th should be composed to p_old * K/N")
+	}
+
+	// Summary span keeps the template's TraceState verbatim (the prior th).
+	summary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found)
+	assert.Equal(t, priorTS, summary.TraceState().AsRaw())
+}
+
+// TestProcessorExemplarThresholdNoPrior verifies that exemplars without a prior
+// th retain their original TraceState (no fabricated CPS context).
+func TestProcessorExemplarThresholdNoPrior(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableExemplarSampling = true
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithLeafSpans(t, 50, map[string]string{"db.operation": "SELECT"})
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	leaves := findAllSpansByExactName(td, "SELECT")
+	exemplarCount := 0
+	for _, leaf := range leaves {
+		if isEx, ok := leaf.Attributes().Get("aggregation.is_exemplar"); ok && isEx.Bool() {
+			exemplarCount++
+			assert.Empty(t, leaf.TraceState().AsRaw(), "no prior th means no synthesized CPS state")
+		}
+	}
+	assert.Equal(t, int(math.Ceil(math.Sqrt(50))), exemplarCount)
+}
+
+// TestProcessorOutlierAndExemplarCoexist verifies that outlier preservation and
+// exemplar sampling coexist under "keep if outlier OR sampled" semantics:
+// exemplars are drawn from the FULL group (outliers included), an outlier that
+// is drawn is kept once via the outlier rule (never tagged as both), preserved
+// outliers retain their prior threshold verbatim, and exemplars compose their
+// threshold by D/N where D is the draw size over the full group N.
+//
+// Counts are asserted as invariants rather than exact values: the overlap
+// between the draw and the outlier set is random (the math/rand/v2 global RNG
+// cannot be seeded), so exemplar_count varies run-to-run by the overlap.
+func TestProcessorOutlierAndExemplarCoexist(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MaxPreservedOutliers = 10
+	cfg.OutlierAnalysis.IQRMultiplier = 1.5
+	cfg.OutlierAnalysis.MinGroupSize = 7
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	const (
+		numNormal   = 100
+		numOutliers = 5
+		n           = numNormal + numOutliers // full group size N
+	)
+	d := int(math.Ceil(math.Sqrt(float64(n)))) // draw size D = ceil(1.0 * sqrt(N))
+
+	// Stamp prior th encoding p=0.5 on every SELECT span.
+	priorTh, err := sampling.ProbabilityToThreshold(0.5)
+	require.NoError(t, err)
+	priorTS := "ot=th:" + priorTh.TValue()
+
+	td := createTestTraceWithOutliersCount(t, numNormal, numOutliers, priorTS)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	summary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found)
+
+	// Expected composed threshold for non-outlier exemplars: p_old * D/N.
+	wantExTh, err := sampling.ProbabilityToThreshold(0.5 * float64(d) / float64(n))
+	require.NoError(t, err)
+	wantExTS := "ot=th:" + wantExTh.TValue()
+
+	leaves := findAllSpansByExactName(td, "SELECT")
+	var outliers, exemplars []ptrace.Span
+	for _, leaf := range leaves {
+		isOutlier, _ := leaf.Attributes().Get("aggregation.is_preserved_outlier")
+		isEx, _ := leaf.Attributes().Get("aggregation.is_exemplar")
+		// OR semantics: no span is kept as both an outlier and an exemplar.
+		assert.False(t, isOutlier.Bool() && isEx.Bool(), "span tagged as both outlier and exemplar")
+		switch {
+		case isOutlier.Bool():
+			outliers = append(outliers, leaf)
+		case isEx.Bool():
+			exemplars = append(exemplars, leaf)
+		}
+	}
+
+	// The 5 long spans are detected and preserved deterministically.
+	require.Len(t, outliers, numOutliers, "all outliers should be preserved")
+
+	// Preserved outliers keep their prior threshold verbatim — being drawn into
+	// the exemplar sample must NOT recompose an outlier's threshold (OR).
+	for _, o := range outliers {
+		assert.Equal(t, priorTS, o.TraceState().AsRaw(), "preserved outlier threshold must be untouched")
+	}
+
+	// Exemplars are non-outlier draws; their threshold is composed by D/N.
+	for _, ex := range exemplars {
+		assert.Equal(t, wantExTS, ex.TraceState().AsRaw(), "exemplar th should be composed to p_old * D/N")
+	}
+
+	// exemplar_count = D minus any draws that landed on outliers, so it is in
+	// [D - numOutliers, D] and never exceeds the non-outlier population.
+	exemplarCountAttr, ok := summary.Attributes().Get("aggregation.exemplar_count")
+	require.True(t, ok)
+	exemplarCount := int(exemplarCountAttr.Int())
+	assert.Equal(t, len(exemplars), exemplarCount)
+	assert.GreaterOrEqual(t, exemplarCount, d-numOutliers)
+	assert.LessOrEqual(t, exemplarCount, d)
+
+	preservedCount, ok := summary.Attributes().Get("aggregation.preserved_outlier_count")
+	require.True(t, ok)
+	assert.Equal(t, int64(numOutliers), preservedCount.Int())
+
+	// Conservation: every span is either a preserved outlier, an exemplar, or
+	// aggregated into the summary.
+	spanCount, ok := summary.Attributes().Get("aggregation.span_count")
+	require.True(t, ok)
+	assert.Equal(t, int64(n), preservedCount.Int()+exemplarCountAttr.Int()+spanCount.Int(),
+		"preserved + exemplars + aggregated must equal the full group")
+}
+
+// TestProcessorExemplarSkipsWhenBelowMinSpansToAggregate verifies that when
+// exemplar sampling would drop the aggregated set below MinSpansToAggregate,
+// the entire leaf group is left unchanged: no summary, no exemplar markers,
+// and the exemplars_sampled counter is not incremented.
+func TestProcessorExemplarSkipsWhenBelowMinSpansToAggregate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// 10 leaf spans, K = ceil(sqrt(10)) = 4 exemplars, aggregate = 6.
+	// MinSpansToAggregate = 7 means the floor check should reject this group.
+	cfg.MinSpansToAggregate = 7
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	settings := metadatatest.NewSettings(tel)
+	tp, err := factory.CreateTraces(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	const n = 10
+	td := createTestTraceWithLeafSpans(t, n, map[string]string{"db.operation": "SELECT"})
+	initialCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, initialCount, countSpans(td), "no spans should be added or removed")
+	_, found := findSummarySpanByName(td, "SELECT")
+	assert.False(t, found, "no summary should be created")
+
+	for _, leaf := range findAllSpansByExactName(td, "SELECT") {
+		_, hasMarker := leaf.Attributes().Get("aggregation.is_exemplar")
+		assert.False(t, hasMarker, "no exemplar markers should leak when the group is skipped")
+	}
+
+	// exemplars_sampled counter must not be incremented for skipped groups.
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_exemplars_sampled")
+	assert.Error(t, err, "exemplars_sampled should not be recorded when the group is skipped")
+}
+
+// TestProcessorExemplarPreservesTopLevelSubtree verifies that exemplar sampling
+// runs only at the top of an aggregation tree and keeps each sampled span's
+// whole subtree: the chosen handlers are preserved intact (their SELECT children
+// are not aggregated), the remaining handlers aggregate normally, and no leaf
+// span is independently sampled.
+func TestProcessorExemplarPreservesTopLevelSubtree(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.MaxParentDepth = -1
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// 10 handlers under the root, each with 5 SELECT children. The top of the
+	// tree is the handler group, so exemplars are drawn there: ceil(sqrt(10)) = 4
+	// handlers are kept whole, the other 6 aggregate.
+	const (
+		numHandlers       = 10
+		selectsPerHandler = 5
+	)
+	td := createTraceHandlersEachWithSelects(t, numHandlers, selectsPerHandler)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	wantExemplars := int(math.Ceil(math.Sqrt(float64(numHandlers))))
+
+	exemplars := findExemplarSpans(td)
+	require.Len(t, exemplars, wantExemplars)
+
+	// Every exemplar is a top-level handler, never a leaf.
+	for _, ex := range exemplars {
+		assert.Equal(t, "handler", ex.Name(), "exemplars must be sampled at the top (handler) level")
+	}
+
+	// No SELECT leaf is independently sampled: sampling happens only at the top.
+	for _, leaf := range findAllSpansByExactName(td, "SELECT") {
+		isEx, _ := leaf.Attributes().Get("aggregation.is_exemplar")
+		assert.False(t, isEx.Bool(), "leaf groups below the top must not be sampled")
+	}
+
+	// The remaining handlers aggregate into a single handler summary, and the
+	// exemplar handlers become its siblings (reparented to the root).
+	handlerSummary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "non-exemplar handlers should aggregate")
+	handlerSpanCount, ok := handlerSummary.Attributes().Get("aggregation.span_count")
+	require.True(t, ok)
+	assert.Equal(t, int64(numHandlers-wantExemplars), handlerSpanCount.Int())
+	for _, ex := range exemplars {
+		assert.Equal(t, handlerSummary.ParentSpanID(), ex.ParentSpanID(), "exemplar reparented as a sibling of the handler summary")
+	}
+
+	// Each exemplar handler's whole subtree is preserved: its SELECT children are
+	// still present and none were aggregated into a summary.
+	bySpanID := indexSpansByID(td)
+	for _, ex := range exemplars {
+		children := childSpans(td, ex.SpanID())
+		require.Len(t, children, selectsPerHandler, "exemplar subtree should keep all its children")
+		for _, child := range children {
+			assert.Equal(t, "SELECT", child.Name())
+			isSummary, _ := child.Attributes().Get("aggregation.is_summary")
+			assert.False(t, isSummary.Bool(), "children of an exemplar must not be aggregated")
+			_, stillPresent := bySpanID[child.SpanID()]
+			assert.True(t, stillPresent)
+		}
+	}
+}
+
+// indexSpansByID returns every span in the trace keyed by its SpanID.
+func indexSpansByID(td ptrace.Traces) map[pcommon.SpanID]ptrace.Span {
+	out := make(map[pcommon.SpanID]ptrace.Span)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				out[span.SpanID()] = span
+			}
+		}
+	}
+	return out
+}
+
+// childSpans returns all spans whose parent is the given SpanID.
+func childSpans(td ptrace.Traces, parentID pcommon.SpanID) []ptrace.Span {
+	var out []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if span.ParentSpanID() == parentID {
+					out = append(out, span)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// findExemplarSpans returns all spans with the is_exemplar marker.
+func findExemplarSpans(td ptrace.Traces) []ptrace.Span {
+	var out []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if isEx, ok := span.Attributes().Get("aggregation.is_exemplar"); ok && isEx.Bool() {
+					out = append(out, span)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// createTraceHandlersEachWithSelects builds a trace where each of numHandlers
+// handler spans has selectsPerHandler SELECT children that all share the same
+// leaf group key. Used to exercise parent aggregation interacting with
+// exemplar sampling.
+func createTraceHandlersEachWithSelects(t *testing.T, numHandlers, selectsPerHandler int) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootID)
+	root.SetName("root")
+	root.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	root.SetEndTimestamp(pcommon.Timestamp(2000000000))
+
+	for h := range numHandlers {
+		handlerID := pcommon.SpanID([8]byte{2, byte(h), 0, 0, 0, 0, 0, 0})
+		handler := ss.Spans().AppendEmpty()
+		handler.SetTraceID(traceID)
+		handler.SetSpanID(handlerID)
+		handler.SetParentSpanID(rootID)
+		handler.SetName("handler")
+		handler.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		handler.SetEndTimestamp(pcommon.Timestamp(1500000000))
+
+		for i := range selectsPerHandler {
+			leaf := ss.Spans().AppendEmpty()
+			leaf.SetTraceID(traceID)
+			leaf.SetSpanID(pcommon.SpanID([8]byte{3, byte(h), byte(i), 0, 0, 0, 0, 0}))
+			leaf.SetParentSpanID(handlerID)
+			leaf.SetName("SELECT")
+			leaf.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
+			leaf.SetEndTimestamp(pcommon.Timestamp(1000000200 + int64(i)*100))
+			leaf.Attributes().PutStr("db.operation", "SELECT")
+		}
+	}
+	return td
+}
+
 // Helper functions
 
 func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
@@ -801,7 +1260,7 @@ func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, met
 	return hist
 }
 
-func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
+func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, attrs map[string]string) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -822,7 +1281,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
 		span.SetParentSpanID(parentSpanID)
-		span.SetName(spanName)
+		span.SetName("SELECT")
 		span.SetStartTimestamp(pcommon.Timestamp(1000000000 + int64(i)*100))
 		span.SetEndTimestamp(pcommon.Timestamp(1000000100 + int64(i)*100))
 		for k, v := range attrs {
@@ -877,6 +1336,56 @@ func createTestTraceWithOutliers(t *testing.T) ptrace.Traces {
 		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
 		span.Attributes().PutStr("db.operation", "SELECT")
 		span.Attributes().PutStr("cache_hit", "false")
+	}
+
+	return td
+}
+
+// createTestTraceWithOutliersCount builds a single SELECT leaf group with
+// numNormal short spans and numOutliers very long spans (clear duration
+// outliers), all sharing db.operation=SELECT. Outliers carry cache_hit=false to
+// drive correlation detection. The prior TraceState (if non-empty) is stamped on
+// every SELECT span so exemplar/outlier threshold composition can be asserted.
+func createTestTraceWithOutliersCount(t *testing.T, numNormal, numOutliers int, priorTS string) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	addSpan := func(prefix byte, i int, durMS int64, cacheHit string) {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{prefix, byte(i), byte(i >> 8), 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + durMS*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", cacheHit)
+		if priorTS != "" {
+			span.TraceState().FromRaw(priorTS)
+		}
+	}
+
+	for i := range numNormal {
+		// Tight spread (5..14ms) so normals never trip outlier detection.
+		addSpan(2, i, 5+int64(i%10), "true")
+	}
+	for i := range numOutliers {
+		addSpan(3, i, 500+int64(i)*10, "false")
 	}
 
 	return td

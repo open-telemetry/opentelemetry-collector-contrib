@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gobwas/glob v0.2.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.154.1-0.20260612191519-af182d232650
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/component/componenttest v0.155.1-0.20260625204839-9782f9e8a3d6
@@ -54,3 +55,5 @@ require (
 	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling

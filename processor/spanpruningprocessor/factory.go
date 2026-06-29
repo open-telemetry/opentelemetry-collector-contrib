@@ -57,6 +57,10 @@ func createDefaultConfig() component.Config {
 			PreserveOnlyWithCorrelation:    false,
 			MinOutlierThresholdPercent:     0.1,
 		},
+		EnableExemplarSampling: false,
+		ExemplarSampling: ExemplarSamplingConfig{
+			PrecisionMultiplier: 1.0,
+		},
 	}
 }
 

@@ -27,6 +27,7 @@ type TelemetryBuilder struct {
 	registrations                                    []metric.Registration
 	ProcessorSpanpruningAggregationGroupSize         metric.Int64Histogram
 	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
+	ProcessorSpanpruningExemplarsSampled             metric.Int64Counter
 	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
 	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
 	ProcessorSpanpruningOutliersCorrelationsDetected metric.Int64Counter
@@ -78,6 +79,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorSpanpruningAggregationsCreated, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_aggregations_created",
 		metric.WithDescription("Total aggregation summary spans created [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningExemplarsSampled, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_exemplars_sampled",
+		metric.WithDescription("Spans randomly sampled as exemplars (excluded from aggregation) [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
