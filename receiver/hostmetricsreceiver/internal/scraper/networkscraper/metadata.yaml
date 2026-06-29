@@ -33,6 +33,14 @@ attributes:
     requirement_level: recommended
 
 metrics:
+  system.network.bandwidth.limit:
+    enabled: false
+    description: Available link bandwidth for the network interface, derived from the reported link speed.
+    unit: By/s
+    stability: development
+    gauge:
+      value_type: int
+    attributes: [device]
   system.network.connections:
     enabled: true
     description: The number of connections.

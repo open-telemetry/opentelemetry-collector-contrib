@@ -100,6 +100,11 @@ func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		errors.AddPartial(conntrackMetricsLen, err)
 	}
 
+	err = s.recordNetworkBandwidthMetrics(ctx)
+	if err != nil {
+		errors.AddPartial(bandwidthMetricsLen, err)
+	}
+
 	return s.mb.Emit(), errors.Combine()
 }
 

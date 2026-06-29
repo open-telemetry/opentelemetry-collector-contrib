@@ -97,6 +97,20 @@ metrics:
     enabled: true
 ```
 
+### system.network.bandwidth.limit
+
+Available link bandwidth for the network interface, derived from the reported link speed.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+
 ### system.network.conntrack.count
 
 The count of entries in conntrack table.

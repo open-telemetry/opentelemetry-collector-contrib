@@ -1,6 +1,9 @@
 default:
 all_set:
   metrics:
+    system.network.bandwidth.limit:
+      enabled: true
+      attributes: ["device"]
     system.network.connections:
       enabled: true
       attributes: ["protocol","state"]
@@ -22,6 +25,9 @@ all_set:
       attributes: ["device","direction"]
 reaggregate_set:
   metrics:
+    system.network.bandwidth.limit:
+      enabled: true
+      attributes: []
     system.network.connections:
       enabled: true
       attributes: []
@@ -43,6 +49,9 @@ reaggregate_set:
       attributes: []
 none_set:
   metrics:
+    system.network.bandwidth.limit:
+      enabled: false
+      attributes: ["device"]
     system.network.connections:
       enabled: false
       attributes: ["protocol","state"]

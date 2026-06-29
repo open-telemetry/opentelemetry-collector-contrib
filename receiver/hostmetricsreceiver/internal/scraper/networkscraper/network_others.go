@@ -10,6 +10,7 @@ import (
 
 const (
 	conntrackMetricsLen = 0
+	bandwidthMetricsLen = 0
 )
 
 var allTCPStates = []string{
@@ -28,5 +29,9 @@ var allTCPStates = []string{
 }
 
 func (*networkScraper) recordNetworkConntrackMetrics(context.Context) error {
+	return nil
+}
+
+func (*networkScraper) recordNetworkBandwidthMetrics(context.Context) error {
 	return nil
 }

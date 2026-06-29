@@ -69,6 +69,9 @@ var MapAttributeProtocol = map[string]AttributeProtocol{
 }
 
 var MetricsInfo = metricsInfo{
+	SystemNetworkBandwidthLimit: metricInfo{
+		Name: "system.network.bandwidth.limit",
+	},
 	SystemNetworkConnections: metricInfo{
 		Name: "system.network.connections",
 	},
@@ -93,6 +96,7 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	SystemNetworkBandwidthLimit metricInfo
 	SystemNetworkConnections    metricInfo
 	SystemNetworkConntrackCount metricInfo
 	SystemNetworkConntrackMax   metricInfo
@@ -104,6 +108,95 @@ type metricsInfo struct {
 
 type metricInfo struct {
 	Name string
+}
+
+type metricSystemNetworkBandwidthLimit struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SystemNetworkBandwidthLimitMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills system.network.bandwidth.limit metric with initial data.
+func (m *metricSystemNetworkBandwidthLimit) init() {
+	m.data.SetName("system.network.bandwidth.limit")
+	m.data.SetDescription("Available link bandwidth for the network interface, derived from the reported link speed.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSystemNetworkBandwidthLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkBandwidthLimitMetricAttributeKeyDevice) {
+		dp.Attributes().PutStr("device", deviceAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkBandwidthLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkBandwidthLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkBandwidthLimit(cfg SystemNetworkBandwidthLimitMetricConfig) metricSystemNetworkBandwidthLimit {
+	m := metricSystemNetworkBandwidthLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricSystemNetworkConnections struct {
@@ -688,6 +781,7 @@ type MetricsBuilder struct {
 	metricsCapacity                   int                  // maximum observed number of metrics per resource.
 	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo  // contains version information.
+	metricSystemNetworkBandwidthLimit metricSystemNetworkBandwidthLimit
 	metricSystemNetworkConnections    metricSystemNetworkConnections
 	metricSystemNetworkConntrackCount metricSystemNetworkConntrackCount
 	metricSystemNetworkConntrackMax   metricSystemNetworkConntrackMax
@@ -720,6 +814,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
+		metricSystemNetworkBandwidthLimit: newMetricSystemNetworkBandwidthLimit(mbc.Metrics.SystemNetworkBandwidthLimit),
 		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(mbc.Metrics.SystemNetworkConnections),
 		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(mbc.Metrics.SystemNetworkConntrackCount),
 		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(mbc.Metrics.SystemNetworkConntrackMax),
@@ -793,6 +888,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemNetworkBandwidthLimit.emit(ils.Metrics())
 	mb.metricSystemNetworkConnections.emit(ils.Metrics())
 	mb.metricSystemNetworkConntrackCount.emit(ils.Metrics())
 	mb.metricSystemNetworkConntrackMax.emit(ils.Metrics())
@@ -819,6 +915,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemNetworkBandwidthLimitDataPoint adds a data point to system.network.bandwidth.limit metric.
+func (mb *MetricsBuilder) RecordSystemNetworkBandwidthLimitDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemNetworkBandwidthLimit.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.
