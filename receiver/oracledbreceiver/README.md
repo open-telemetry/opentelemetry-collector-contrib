@@ -120,7 +120,7 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;
 ```
 
 > [!NOTE]
-> In the SQL query plan details, the `LAST_*`, `OUTPUT_ROWS`, and `STARTS` columns are populated only when Oracle is configured to collect execution plan statistics (for example, `STATISTICS_LEVEL=ALL` or the `GATHER_PLAN_STATISTICS` hint). Otherwise, these fields will be `NULL` or empty. Enabling this Oracle instrumentation may introduce additional runtime overhead.
+> In the SQL query plan details, the LAST_*, OUTPUT_ROWS, and STARTS columns are populated only when Oracle is configured to collect execution plan statistics (for example, STATISTICS_LEVEL=ALL or the GATHER_PLAN_STATISTICS hint). Otherwise, these fields will be NULL or empty. Configuring this Oracle instrumentation may introduce additional runtime overhead. Enable it only if you need these runtime execution statistics for query performance analysis.
 
 ```sql
 ALTER SYSTEM SET statistics_level = ALL;

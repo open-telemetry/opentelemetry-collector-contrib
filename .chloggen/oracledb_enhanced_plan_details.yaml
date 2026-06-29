@@ -16,10 +16,12 @@ issues: [49329]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The Oracle DB collector now retrieves SQL execution plan details from V$SQL_PLAN_STATISTICS_ALL instead of V$SQL_PLAN,enabling collection of additional runtime execution statistics
+  This change requires the collector user to have access to V$SQL_PLAN_STATISTICS_ALL. Existing deployments that only grant access to V$SQL_PLAN
+  may experience query plan collection failures until the appropriate privileges are granted.
+  
+  SQL query plan details are now retrieved from V$SQL_PLAN_STATISTICS_ALL instead of V$SQL_PLAN. Since V$SQL_PLAN_STATISTICS_ALL is a superset of V$SQL_PLAN,
+  this change is backward compatible with respect to the emitted plan detail fields while enabling collection of additional runtime execution statistics,
   including OUTPUT_ROWS, LAST_OUTPUT_ROWS, LAST_ELAPSED_TIME, LAST_CR_BUFFER_GETS, LAST_CU_BUFFER_GETS, STARTS, and LAST_STARTS.
-  This change is backward compatible in terms of emitted plan detail fields because V$SQL_PLAN_STATISTICS_ALL is a superset of V$SQL_PLAN; however, it may require additional database privileges.
-  Users must ensure the collector user has access to V$SQL_PLAN_STATISTICS_ALL, otherwise query plan collection may fail.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
