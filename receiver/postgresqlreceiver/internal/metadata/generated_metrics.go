@@ -443,7 +443,7 @@ type metricPostgresqlBackends struct {
 // init fills postgresql.backends metric with initial data.
 func (m *metricPostgresqlBackends) init() {
 	m.data.SetName("postgresql.backends")
-	m.data.SetDescription("The total number of PostgreSQL backend processes associated with this database, including client connections in active, idle, and idle-in-transaction states, as reported by `pg_stat_activity`.")
+	m.data.SetDescription("The number of backend processes associated with each database, as reported by `pg_stat_activity`. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -341,8 +341,10 @@ func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLock
 	return dl, multierr.Combine(errs...)
 }
 
-// getBackends returns the total number of PostgreSQL backend processes associated with each database,
-// including client connections in active, idle, and idle-in-transaction states.
+// getBackends returns the number of backend processes for each database, counted from pg_stat_activity
+// across all connection states (active, idle, idle-in-transaction) and all backend types, including
+// non-client backends such as autovacuum and parallel workers. Backends with no associated database
+// (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 	rows, err := c.client.QueryContext(ctx, query)
