@@ -99,16 +99,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 2 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
 	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 2 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "added-entry", Value: "added value"},
-				{Name: "dot.test", Value: "test"},
-			},
-		},
+		AccessToken:  "testToken",
+		Realm:        "us1",
+		ClientConfig: clientConfig,
 	}
 
 	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
@@ -255,6 +259,12 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 		require.Equal(t, val, dim.Value)
 	}
 	require.True(t, found, `missing dimension: %s`, key)
+}
+
+func requireNoDimension(t *testing.T, dims []*sfxpb.Dimension, key string) {
+	for _, dim := range dims {
+		require.NotEqual(t, key, dim.Key)
+	}
 }
 
 func testMetricsData(addHistogram bool) pmetric.Metrics {
@@ -561,11 +571,25 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
 
+	cpuIdle := m["cpu.idle"]
+	require.Len(t, cpuIdle, 1)
+
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.Truef(t, ok, "%s metrics not found", metric)
-		require.Len(t, dps, 9)
+		require.Len(t, dps, 1)
+	}
+
+	for metric, dps := range m {
+		switch metric {
+		case "cpu.num_processors", "cpu.utilization", "cpu.idle", "cpu.interrupt", "cpu.nice",
+			"cpu.softirq", "cpu.steal", "cpu.system", "cpu.user", "cpu.wait":
+			require.Len(t, dps, 1)
+			for _, dp := range dps {
+				requireNoDimension(t, dp.Dimensions, "cpu")
+			}
+		}
 	}
 }
 
