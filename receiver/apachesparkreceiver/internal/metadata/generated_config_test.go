@@ -520,6 +520,246 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSparkDriverBlockManagerMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverBlockManagerMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverBlockManagerMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.block_manager.memory.usage doesn't have an attribute invalid, valid attributes: [location, state]")
+
+	cfg = DefaultMetricsConfig().SparkDriverBlockManagerMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverDagSchedulerStageCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverDagSchedulerStageCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverDagSchedulerStageCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.dag_scheduler.stage.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SparkDriverDagSchedulerStageCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorGcOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorGcOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorGcOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.gc.operations doesn't have an attribute invalid, valid attributes: [gc_type]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorGcOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorGcTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorGcTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorGcTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.gc.time doesn't have an attribute invalid, valid attributes: [gc_type]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorGcTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorMemoryExecutionMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorMemoryExecution
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorMemoryExecutionMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.memory.execution doesn't have an attribute invalid, valid attributes: [location]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorMemoryExecution
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorMemoryJvmMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorMemoryJvm
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorMemoryJvmMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.memory.jvm doesn't have an attribute invalid, valid attributes: [location]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorMemoryJvm
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorMemoryPoolMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorMemoryPool
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorMemoryPoolMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.memory.pool doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorMemoryPool
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkDriverExecutorMemoryStorageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkDriverExecutorMemoryStorage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkDriverExecutorMemoryStorageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.driver.executor.memory.storage doesn't have an attribute invalid, valid attributes: [location]")
+
+	cfg = DefaultMetricsConfig().SparkDriverExecutorMemoryStorage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkExecutorShuffleIoSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkExecutorShuffleIoSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkExecutorShuffleIoSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.executor.shuffle.io.size doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().SparkExecutorShuffleIoSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkExecutorStorageMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkExecutorStorageMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkExecutorStorageMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.executor.storage_memory.usage doesn't have an attribute invalid, valid attributes: [location, state]")
+
+	cfg = DefaultMetricsConfig().SparkExecutorStorageMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkExecutorTaskResultMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkExecutorTaskResult
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkExecutorTaskResultMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.executor.task.result doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().SparkExecutorTaskResult
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkJobStageResultMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkJobStageResult
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkJobStageResultMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.job.stage.result doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().SparkJobStageResult
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkJobTaskResultMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkJobTaskResult
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkJobTaskResultMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.job.task.result doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().SparkJobTaskResult
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageIoRecordsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageIoRecords
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageIoRecordsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.io.records doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().SparkStageIoRecords
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageIoSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageIoSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageIoSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.io.size doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().SparkStageIoSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageShuffleBlocksFetchedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageShuffleBlocksFetched
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageShuffleBlocksFetchedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.shuffle.blocks_fetched doesn't have an attribute invalid, valid attributes: [source]")
+
+	cfg = DefaultMetricsConfig().SparkStageShuffleBlocksFetched
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageShuffleIoReadSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageShuffleIoReadSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageShuffleIoReadSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.shuffle.io.read.size doesn't have an attribute invalid, valid attributes: [source]")
+
+	cfg = DefaultMetricsConfig().SparkStageShuffleIoReadSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageShuffleIoRecordsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageShuffleIoRecords
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageShuffleIoRecordsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.shuffle.io.records doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().SparkStageShuffleIoRecords
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.status doesn't have an attribute invalid, valid attributes: [active, complete, pending, failed]")
+
+	cfg = DefaultMetricsConfig().SparkStageStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSparkStageTaskResultMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SparkStageTaskResult
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SparkStageTaskResultMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric spark.stage.task.result doesn't have an attribute invalid, valid attributes: [result]")
+
+	cfg = DefaultMetricsConfig().SparkStageTaskResult
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

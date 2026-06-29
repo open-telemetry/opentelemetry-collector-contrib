@@ -2,18 +2,18 @@
 
 The encoding extensions can be used by compatible receivers or exporters to encode or decode data into/from a specific
 format. This is useful when the data is being sent to/from a system that expects a specific format and doesn't support
-the OpenTelemetry protocol. 
+the OpenTelemetry protocol.
 
 _🚧 Under active development 🚧_
 
 ## Component Milestones
 
-To help track what work needs to be done with this component, these are the currently active goals being 
+To help track what work needs to be done with this component, these are the currently active goals being
 worked towards.
 
 ### Development
 
-- Add encoding extensions support additionally to the existing ways of configuring encodings (where applicable) 
+- Add encoding extensions support additionally to the existing ways of configuring encodings (where applicable)
   to the following components:
     - `file receiver`
     - `file exporter`

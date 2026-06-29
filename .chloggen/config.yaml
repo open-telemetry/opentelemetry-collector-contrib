@@ -13,7 +13,6 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
-    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
@@ -240,8 +239,8 @@ components:
     - receiver/aerospike
     - receiver/apache
     - receiver/apache_spark
+    - receiver/aws_cloudwatch
     - receiver/aws_lambda
-    - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
@@ -326,8 +325,8 @@ components:
     - receiver/snmp
     - receiver/snowflake
     - receiver/solace
+    - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/splunkenterprise
     - receiver/sqlquery
     - receiver/sqlserver
     - receiver/ssh_check
