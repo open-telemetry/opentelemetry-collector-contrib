@@ -180,8 +180,7 @@ func TestSyslogParseRFC3164_OctetCounting(t *testing.T) {
 		},
 		{
 			name: "message exceeds max_octets",
-			// Unlike the previous implementation, which truncated, an over-long
-			// frame is now rejected (matching the RFC5424 octet counting path).
+			// frame is rejected (matching the RFC5424 octet counting path).
 			body:      frame("<34>Oct 11 22:14:15 mymachine su: su root"),
 			maxOctets: 10,
 			expectErr: "exceeds maximum length",
@@ -191,13 +190,13 @@ func TestSyslogParseRFC3164_OctetCounting(t *testing.T) {
 			// A count smaller than the payload leaves trailing bytes that cannot
 			// begin a new frame.
 			body:      "5 <34>Oct 11 22:14:15 mymachine su: su root",
-			expectErr: "MSGLEN",
+			expectErr: "expecting a MSGLEN",
 		},
 		{
 			name: "declared length longer than payload",
 			// Underflow: the frame promises more octets than are present.
 			body:      "200 <34>Oct 11 22:14:15 mymachine su: su root",
-			expectErr: "octets",
+			expectErr: "expecting a SYSLOGMSG containing 200 octets",
 		},
 	}
 
