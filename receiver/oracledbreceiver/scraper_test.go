@@ -120,6 +120,8 @@ var cacheValue = map[string]int64{
 	"PROCEDURE_EXECUTIONS":    200413,
 }
 
+const SqlPlanTable = "V$SQL_PLAN_STATISTICS_ALL"
+
 func TestScraper_Scrape(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -409,7 +411,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 		{
 			name: "valid collection",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if strings.Contains(s, "V$SQL_PLAN_STATISTICS_ALL") {
+				if strings.Contains(s, SqlPlanTable) {
 					metricRowFile := readFile("oracleQueryPlanData.txt")
 					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
 					if unmarshalErr == nil {
@@ -1004,7 +1006,7 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN_STATISTICS_ALL") {
+			if strings.Contains(s, SqlPlanTable) {
 				metricRowFile := readFile("oracleQueryPlanData.txt")
 				_ = json.Unmarshal(metricRowFile, &logRowData)
 				return &fakeDbClient{Responses: [][]metricRow{logRowData}}
@@ -1095,7 +1097,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN_STATISTICS_ALL") {
+			if strings.Contains(s, SqlPlanTable) {
 				return &fakeDbClient{Responses: [][]metricRow{planData}}
 			}
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
@@ -1145,7 +1147,7 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		{
 			name: "valid collection",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if strings.Contains(s, "V$SQL_PLAN_STATISTICS_ALL") {
+				if strings.Contains(s, SqlPlanTable) {
 					metricRowFile := readFile("oracleQueryPlanData.txt")
 					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
 					if unmarshalErr == nil {
@@ -1279,7 +1281,7 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			if strings.Contains(s, "V$SQL_PLAN_STATISTICS_ALL") {
+			if strings.Contains(s, SqlPlanTable) {
 				return &fakeDbClient{Responses: [][]metricRow{{}}}
 			}
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
