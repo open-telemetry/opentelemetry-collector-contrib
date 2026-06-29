@@ -418,6 +418,46 @@ func TestOTelV1_EncodeLog(t *testing.T) {
 	assert.Equal(t, float64(5), logAttrs["log.count"])
 }
 
+func TestOTelV1_EncodeLog_EventName(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+
+	record := plog.NewLogRecord()
+	record.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 41, 0, time.UTC)))
+	record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 42, 0, time.UTC)))
+	record.SetSeverityNumber(plog.SeverityNumberInfo)
+	record.SetSeverityText("INFO")
+	record.Body().SetStr("hello world")
+	record.SetEventName("ServerStartedSuccessfully")
+
+	result, err := model.encodeLog(resource, scope, "", record)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	assert.Equal(t, "ServerStartedSuccessfully", doc["eventName"])
+
+	// Verify eventName is omitted when empty
+	record2 := plog.NewLogRecord()
+	record2.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 41, 0, time.UTC)))
+	record2.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2024, 3, 12, 20, 0, 42, 0, time.UTC)))
+	record2.Body().SetStr("no event name")
+
+	result2, err := model.encodeLog(resource, scope, "", record2)
+	require.NoError(t, err)
+
+	var doc2 map[string]any
+	require.NoError(t, json.Unmarshal(result2, &doc2))
+	_, hasEventName := doc2["eventName"]
+	assert.False(t, hasEventName, "eventName should be omitted when empty")
+}
+
 func TestOTelV1_EncodeTrace_RootSpan(t *testing.T) {
 	model := &encodeModel{otelV1: true}
 

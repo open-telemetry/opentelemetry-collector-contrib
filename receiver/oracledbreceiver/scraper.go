@@ -120,6 +120,8 @@ const (
 	dbNamespaceAttr  = "DB_NAMESPACE"
 	dbSystemNameVal  = "oracle"
 
+	defaultServiceName = "unknown_service:oracle"
+
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
 	cpuTimeMetric               = "CPU_TIME"
@@ -1280,11 +1282,7 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
-	if _, serviceName, found := strings.Cut(s.instanceName, "/"); found && serviceName != "" {
-		rb.SetServiceName(serviceName)
-	} else {
-		rb.SetServiceName("unknown_service:oracle")
-	}
+	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
 	if s.instanceInfo.dbVersion != "" {
