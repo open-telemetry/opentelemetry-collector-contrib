@@ -401,7 +401,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.cpu.usage.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Oracle database CPU consumption rate, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.database.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'CPU Usage Per Sec', converted from centiseconds per second).", mi.Description())
+					assert.Equal(t, "Oracle database CPU consumption rate, in CPU-seconds used per second.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -427,7 +427,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.cursor_cache.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Fraction of cursor executions that reused a usable cursor in the session cursor cache, as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'Cursor Cache Hit Ratio').", mi.Description())
+					assert.Equal(t, "Percentage of cursor executions that reused a cursor in the session cursor cache.", mi.Description())
 					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -685,7 +685,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.host.cpu.usage.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Host CPU consumption rate across all cores, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.host.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Host CPU Usage Per Sec', converted from centiseconds per second).", mi.Description())
+					assert.Equal(t, "Host CPU consumption rate across all cores, in CPU-seconds used per second.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -709,7 +709,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.io.single_block_read.latency"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Average latency of a synchronous single-block read. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Synchronous Single-Block Read Latency', converted from milliseconds to seconds).", mi.Description())
+					assert.Equal(t, "Average latency of a synchronous single-block read.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -911,7 +911,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.pga_cache.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Fraction of PGA work-area memory requests satisfied optimally (without spilling to temporary disk), as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'PGA Cache Hit %').", mi.Description())
+					assert.Equal(t, "Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.", mi.Description())
 					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1195,8 +1195,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.session.active.average"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Average Active Sessions (AAS), the mean number of sessions actively running or waiting over the metric interval; a standard Oracle database load indicator. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Active Sessions').", mi.Description())
-					assert.Equal(t, "{sessions}", mi.Unit())
+					assert.Equal(t, "Average number of active sessions over the metric interval.", mi.Description())
+					assert.Equal(t, "{session}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1207,8 +1207,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.session.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Point-in-time total number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type. Oracle-reported value read from V$SYSMETRIC (group_id=2, ~60s; 'Session Count').", mi.Description())
-					assert.Equal(t, "{sessions}", mi.Unit())
+					assert.Equal(t, "Number of sessions.", mi.Description())
+					assert.Equal(t, "{session}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1493,7 +1493,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.transaction.response.time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Average response time per transaction. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Response Time Per Txn', converted from centiseconds to seconds).", mi.Description())
+					assert.Equal(t, "Average response time per transaction.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

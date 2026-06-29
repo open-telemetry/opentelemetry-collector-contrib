@@ -259,7 +259,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 
 ### oracledb.cpu.usage.rate
 
-Oracle database CPU consumption rate, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.database.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'CPU Usage Per Sec', converted from centiseconds per second).
+Oracle database CPU consumption rate, in CPU-seconds used per second.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -267,7 +267,7 @@ Oracle database CPU consumption rate, expressed as CPU-seconds used per second (
 
 ### oracledb.cursor_cache.utilization
 
-Fraction of cursor executions that reused a usable cursor in the session cursor cache, as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'Cursor Cache Hit Ratio').
+Percentage of cursor executions that reused a cursor in the session cursor cache.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -337,7 +337,7 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 
 ### oracledb.host.cpu.usage.rate
 
-Host CPU consumption rate across all cores, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.host.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Host CPU Usage Per Sec', converted from centiseconds per second).
+Host CPU consumption rate across all cores, in CPU-seconds used per second.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -353,7 +353,7 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 
 ### oracledb.io.single_block_read.latency
 
-Average latency of a synchronous single-block read. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Synchronous Single-Block Read Latency', converted from milliseconds to seconds).
+Average latency of a synchronous single-block read.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -447,7 +447,7 @@ Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC
 
 ### oracledb.pga_cache.utilization
 
-Fraction of PGA work-area memory requests satisfied optimally (without spilling to temporary disk), as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'PGA Cache Hit %').
+Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -557,19 +557,19 @@ Fraction of redo allocations that succeeded without space contention, as compute
 
 ### oracledb.session.active.average
 
-Average Active Sessions (AAS), the mean number of sessions actively running or waiting over the metric interval; a standard Oracle database load indicator. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Active Sessions').
+Average number of active sessions over the metric interval.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Double | Development |
+| {session} | Gauge | Double | Development |
 
 ### oracledb.session.count
 
-Point-in-time total number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type. Oracle-reported value read from V$SYSMETRIC (group_id=2, ~60s; 'Session Count').
+Number of sessions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Development |
 
 ### oracledb.shared_pool.utilization
 
@@ -634,7 +634,7 @@ Fraction of allocated database storage that is used.
 
 ### oracledb.transaction.response.time
 
-Average response time per transaction. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Response Time Per Txn', converted from centiseconds to seconds).
+Average response time per transaction.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

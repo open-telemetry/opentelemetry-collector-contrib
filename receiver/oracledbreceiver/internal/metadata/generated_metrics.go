@@ -629,7 +629,7 @@ type metricOracledbCPUUsageRate struct {
 // init fills oracledb.cpu.usage.rate metric with initial data.
 func (m *metricOracledbCPUUsageRate) init() {
 	m.data.SetName("oracledb.cpu.usage.rate")
-	m.data.SetDescription("Oracle database CPU consumption rate, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.database.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'CPU Usage Per Sec', converted from centiseconds per second).")
+	m.data.SetDescription("Oracle database CPU consumption rate, in CPU-seconds used per second.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -731,7 +731,7 @@ type metricOracledbCursorCacheUtilization struct {
 // init fills oracledb.cursor_cache.utilization metric with initial data.
 func (m *metricOracledbCursorCacheUtilization) init() {
 	m.data.SetName("oracledb.cursor_cache.utilization")
-	m.data.SetDescription("Fraction of cursor executions that reused a usable cursor in the session cursor cache, as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'Cursor Cache Hit Ratio').")
+	m.data.SetDescription("Percentage of cursor executions that reused a cursor in the session cursor cache.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 }
@@ -1684,7 +1684,7 @@ type metricOracledbHostCPUUsageRate struct {
 // init fills oracledb.host.cpu.usage.rate metric with initial data.
 func (m *metricOracledbHostCPUUsageRate) init() {
 	m.data.SetName("oracledb.host.cpu.usage.rate")
-	m.data.SetDescription("Host CPU consumption rate across all cores, expressed as CPU-seconds used per second (fractional CPU cores); unbounded by core count. Distinct from oracledb.host.cpu.utilization, which is a 0-100 busy ratio. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Host CPU Usage Per Sec', converted from centiseconds per second).")
+	m.data.SetDescription("Host CPU consumption rate across all cores, in CPU-seconds used per second.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -1784,7 +1784,7 @@ type metricOracledbIoSingleBlockReadLatency struct {
 // init fills oracledb.io.single_block_read.latency metric with initial data.
 func (m *metricOracledbIoSingleBlockReadLatency) init() {
 	m.data.SetName("oracledb.io.single_block_read.latency")
-	m.data.SetDescription("Average latency of a synchronous single-block read. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Synchronous Single-Block Read Latency', converted from milliseconds to seconds).")
+	m.data.SetDescription("Average latency of a synchronous single-block read.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
@@ -2491,7 +2491,7 @@ type metricOracledbPgaCacheUtilization struct {
 // init fills oracledb.pga_cache.utilization metric with initial data.
 func (m *metricOracledbPgaCacheUtilization) init() {
 	m.data.SetName("oracledb.pga_cache.utilization")
-	m.data.SetDescription("Fraction of PGA work-area memory requests satisfied optimally (without spilling to temporary disk), as computed by Oracle V$SYSMETRIC (group_id=2, ~60s; 'PGA Cache Hit %').")
+	m.data.SetDescription("Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 }
@@ -3397,8 +3397,8 @@ type metricOracledbSessionActiveAverage struct {
 // init fills oracledb.session.active.average metric with initial data.
 func (m *metricOracledbSessionActiveAverage) init() {
 	m.data.SetName("oracledb.session.active.average")
-	m.data.SetDescription("Average Active Sessions (AAS), the mean number of sessions actively running or waiting over the metric interval; a standard Oracle database load indicator. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Average Active Sessions').")
-	m.data.SetUnit("{sessions}")
+	m.data.SetDescription("Average number of active sessions over the metric interval.")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -3447,8 +3447,8 @@ type metricOracledbSessionCount struct {
 // init fills oracledb.session.count metric with initial data.
 func (m *metricOracledbSessionCount) init() {
 	m.data.SetName("oracledb.session.count")
-	m.data.SetDescription("Point-in-time total number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type. Oracle-reported value read from V$SYSMETRIC (group_id=2, ~60s; 'Session Count').")
-	m.data.SetUnit("{sessions}")
+	m.data.SetDescription("Number of sessions.")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -4200,7 +4200,7 @@ type metricOracledbTransactionResponseTime struct {
 // init fills oracledb.transaction.response.time metric with initial data.
 func (m *metricOracledbTransactionResponseTime) init() {
 	m.data.SetName("oracledb.transaction.response.time")
-	m.data.SetDescription("Average response time per transaction. Oracle-computed value read from V$SYSMETRIC (group_id=2, ~60s; 'Response Time Per Txn', converted from centiseconds to seconds).")
+	m.data.SetDescription("Average response time per transaction.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }

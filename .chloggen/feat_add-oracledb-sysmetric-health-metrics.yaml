@@ -16,7 +16,7 @@ issues: [49087]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  All metrics are Oracle-computed values read from V$SYSMETRIC (group_id=2, ~60s interval) and are disabled by default with development stability. New metrics: oracledb.session.active.average, oracledb.io.single_block_read.latency, oracledb.transaction.response.time, oracledb.cursor_cache.utilization, oracledb.pga_cache.utilization, oracledb.cpu.usage.rate, oracledb.host.cpu.usage.rate, oracledb.session.count.
+  All metrics are disabled by default with development stability.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
