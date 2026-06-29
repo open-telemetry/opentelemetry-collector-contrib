@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +36,17 @@ func (m *mockMetricsClient) ListMetrics(ctx context.Context, params *cloudwatch.
 func (m *mockMetricsClient) GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	return args.Get(0).(*cloudwatch.GetMetricDataOutput), args.Error(1)
+}
+
+// mockSTSClient implements stsClient for testing.
+type mockSTSClient struct {
+	mock.Mock
+}
+
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	out, _ := args.Get(0).(*sts.GetCallerIdentityOutput)
+	return out, args.Error(1)
 }
 
 func testScraper(cfg *Config) *cloudWatchMetricsScraper {
@@ -281,6 +293,36 @@ func TestConvertGetMetricDataToPdata_MultipleMetrics(t *testing.T) {
 	require.ElementsMatch(t, []string{"amazonaws.com/AWS/EC2/CPUUtilization", "amazonaws.com/AWS/EC2/NetworkIn"}, names)
 }
 
+func TestConvertGetMetricDataToPdata_GroupsByAccount(t *testing.T) {
+	// Receiver's own account; one query overrides it with a source account.
+	scr := testScraper(&Config{Region: "us-east-1"})
+	scr.accountID = "111111111111"
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		{Id: aws.String("q1_1"), Values: []float64{2.0}, Timestamps: []time.Time{ts}},
+	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},                       // own account
+		{Namespace: "AWS/EC2", MetricName: "NetworkIn", AccountID: "222222222222"}, // source account
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, ts)
+	require.Equal(t, 2, md.ResourceMetrics().Len())
+
+	byAccount := map[string]string{} // account ID -> metric name
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		acct, ok := rm.Resource().Attributes().Get("cloud.account.id")
+		require.True(t, ok)
+		require.Equal(t, 1, rm.ScopeMetrics().At(0).Metrics().Len())
+		byAccount[acct.Str()] = rm.ScopeMetrics().At(0).Metrics().At(0).Name()
+	}
+	require.Equal(t, "amazonaws.com/AWS/EC2/CPUUtilization", byAccount["111111111111"])
+	require.Equal(t, "amazonaws.com/AWS/EC2/NetworkIn", byAccount["222222222222"])
+}
+
 // --- gauge mode tests ---
 
 func TestConvertGetMetricDataToPdata_GaugeMode_SingleStat(t *testing.T) {
@@ -491,6 +533,144 @@ func TestListMetrics_Error(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestListMetrics_PerAccountIdentifiers(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// One ListMetrics call per requested account, each filtered by OwningAccount with
+	// IncludeLinkedAccounts set. The discovered MetricQuery is tagged with that account.
+	for _, account := range []string{"111111111111", "222222222222"} {
+		mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+			return p.OwningAccount != nil && *p.OwningAccount == account &&
+				p.IncludeLinkedAccounts != nil && *p.IncludeLinkedAccounts
+		}), mock.Anything).Return(
+			&cloudwatch.ListMetricsOutput{
+				Metrics: []types.Metric{
+					{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+				},
+			}, nil,
+		).Once()
+	}
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit:                 100,
+			IncludeLinkedAccounts: aws.Bool(true),
+			AccountIdentifiers:    []string{"111111111111", "222222222222"},
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 2)
+	accounts := []string{out[0].AccountID, out[1].AccountID}
+	require.ElementsMatch(t, []string{"111111111111", "222222222222"}, accounts)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_LinkedAccountsSweep(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// Monitoring-account sweep: IncludeLinkedAccounts true, no OwningAccount filter.
+	// OwningAccounts is a 1:1 mapping to Metrics and tags each discovered query.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.OwningAccount == nil && p.IncludeLinkedAccounts != nil && *p.IncludeLinkedAccounts
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("NetworkIn")},
+			},
+			OwningAccounts: []string{"111111111111", "222222222222"},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit:                 100,
+			IncludeLinkedAccounts: aws.Bool(true),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 2)
+	byMetric := map[string]string{}
+	for _, q := range out {
+		byMetric[q.MetricName] = q.AccountID
+	}
+	require.Equal(t, "111111111111", byMetric["CPUUtilization"])
+	require.Equal(t, "222222222222", byMetric["NetworkIn"])
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_LimitIsPerAccountInSweep(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// Two accounts, limit 1 each: one metric per account is kept, the rest dropped.
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M1")},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M2")},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M3")},
+			},
+			OwningAccounts: []string{"111111111111", "111111111111", "222222222222"},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit:                 1,
+			IncludeLinkedAccounts: aws.Bool(true),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	// One kept per account (M1 for 111…, M3 for 222…); M2 exceeds account 111's limit.
+	require.Len(t, out, 2)
+	perAccount := map[string]int{}
+	for _, q := range out {
+		perAccount[q.AccountID]++
+	}
+	require.Equal(t, 1, perAccount["111111111111"])
+	require.Equal(t, 1, perAccount["222222222222"])
+}
+
+func TestListMetrics_SweepDropsUnattributableMetrics(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// Contract violation: OwningAccounts is shorter than Metrics. The unmappable metric
+	// must be dropped, not misattributed to the receiver's own account.
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M1")},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("M2")},
+			},
+			OwningAccounts: []string{"111111111111"}, // missing entry for M2
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit:                 100,
+			IncludeLinkedAccounts: aws.Bool(true),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.accountID = "999999999999" // the receiver's own account; must NOT leak onto M2
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Equal(t, "M1", out[0].MetricName)
+	require.Equal(t, "111111111111", out[0].AccountID)
+}
+
 // --- pollBatch tests ---
 
 func TestPollBatch_GeneratesFourSubQueries(t *testing.T) {
@@ -522,6 +702,59 @@ func TestPollBatch_GeneratesFourSubQueries(t *testing.T) {
 	dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0)
 	require.Equal(t, uint64(3), dp.Count())
 	require.InDelta(t, 20.0, dp.Sum(), 0.001)
+	mc.AssertExpectations(t)
+}
+
+func TestPollBatch_SetsAccountIDOnQueries(t *testing.T) {
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	mc := &mockMetricsClient{}
+	mc.On("GetMetricData", mock.Anything, mock.MatchedBy(func(p *cloudwatch.GetMetricDataInput) bool {
+		// Every sub-query for a cross-account metric must carry its source AccountId.
+		for _, q := range p.MetricDataQueries {
+			if q.AccountId == nil || *q.AccountId != "222222222222" {
+				return false
+			}
+		}
+		return len(p.MetricDataQueries) > 0
+	}), mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{Id: aws.String("q0_0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+			},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Period: 60 * time.Second}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Sum"}, AccountID: "222222222222"}}
+	_, err := scr.pollBatch(t.Context(), batch, ts.Add(-60*time.Second), ts)
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
+func TestPollBatch_ForbiddenStatusProducesNoData(t *testing.T) {
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	mc := &mockMetricsClient{}
+	// A Forbidden cross-account result carries no values; conversion must drop it
+	// (no resource metrics) rather than fabricate empty data.
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{Id: aws.String("q0_0"), StatusCode: types.StatusCodeForbidden},
+			},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Period: 60 * time.Second}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Sum"}, AccountID: "222222222222"}}
+	md, err := scr.pollBatch(t.Context(), batch, ts.Add(-60*time.Second), ts)
+	require.NoError(t, err)
+	require.Equal(t, 0, md.ResourceMetrics().Len())
 	mc.AssertExpectations(t)
 }
 
@@ -647,4 +880,94 @@ func TestScrape_DiscoveryError(t *testing.T) {
 
 	_, err := scr.scrape(t.Context())
 	require.ErrorContains(t, err, "list metrics")
+}
+
+// --- account ID tests ---
+
+func TestResolveAccountID_ViaSTS(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
+	)
+	scr.stsClient = stsMock
+
+	scr.resolveAccountID(t.Context())
+	require.Equal(t, "210987654321", scr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestScrape_ResolvesAccountIDOnce(t *testing.T) {
+	mc := &mockMetricsClient{}
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{}, nil,
+	)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		&sts.GetCallerIdentityOutput{Account: aws.String("210987654321")}, nil,
+	).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Period:  60 * time.Second,
+		Queries: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+	scr.stsClient = stsMock
+
+	// scrape resolves the account ID on the first call and caches it; STS is not called again.
+	_, err := scr.scrape(t.Context())
+	require.NoError(t, err)
+	_, err = scr.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "210987654321", scr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestResolveAccountID_STSErrorDegradesGracefully(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		(*sts.GetCallerIdentityOutput)(nil), errors.New("access denied"),
+	)
+	scr.stsClient = stsMock
+
+	scr.resolveAccountID(t.Context())
+	require.Empty(t, scr.accountID)
+}
+
+func TestSetResourceAttributes_AccountID(t *testing.T) {
+	t.Run("present when resolved", func(t *testing.T) {
+		scr := testScraper(&Config{Region: "us-east-1"})
+		scr.accountID = "123456789012"
+
+		ts := time.Unix(1_700_000_000, 0).UTC()
+		results := []types.MetricDataResult{
+			{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		}
+		batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}}
+
+		md := scr.convertGetMetricDataToPdata(results, batch, ts)
+		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+		v, ok := attrs.Get("cloud.account.id")
+		require.True(t, ok)
+		require.Equal(t, "123456789012", v.Str())
+	})
+
+	t.Run("omitted when unresolved", func(t *testing.T) {
+		scr := testScraper(&Config{Region: "us-east-1"})
+
+		ts := time.Unix(1_700_000_000, 0).UTC()
+		results := []types.MetricDataResult{
+			{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		}
+		batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}}
+
+		md := scr.convertGetMetricDataToPdata(results, batch, ts)
+		attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+		_, ok := attrs.Get("cloud.account.id")
+		require.False(t, ok)
+	})
 }

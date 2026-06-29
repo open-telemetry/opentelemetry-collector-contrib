@@ -49,6 +49,9 @@ $defs:
     description: 'MetricQuery defines a single CloudWatch metric to scrape via GetMetricData. When Stats is empty all four statistics (Sum, SampleCount, Minimum, Maximum) are fetched and combined into an OpenTelemetry Summary metric aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format. When Stats is set, each named statistic is fetched and emitted as a separate Gauge data point on the same metric, with a "stat" attribute identifying the statistic. CloudWatch statistic names: Sum, Average, Minimum, Maximum, SampleCount, p99, p95, etc.'
     type: object
     properties:
+      account_id:
+        description: AccountID optionally identifies the metric's source account in a cross-account monitoring setup.
+        type: string
       dimensions:
         type: object
         additionalProperties:
@@ -86,10 +89,20 @@ $defs:
     description: MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics. Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
     type: object
     properties:
+      account_identifiers:
+        description: AccountIdentifiers optionally narrows cross-account discovery to specific source accounts. Requires IncludeLinkedAccounts to be true.
+        type: array
+        items:
+          type: string
       filters:
         x-optional: true
         $ref: metrics_discovery_filters
+      include_linked_accounts:
+        description: IncludeLinkedAccounts, when true and run from a monitoring account, discovers metrics from linked source accounts in addition to (or filtered by) AccountIdentifiers.
+        x-pointer: true
+        type: boolean
       limit:
+        description: Limit is the maximum number of metric queries to generate during discovery. Each combination of namespace, metric name, and dimensions counts as a single metric query (e.g. EC2/CPUUtilization for 10 unique instances counts as 10 metrics). Defaults to 100. In a cross-account setup `Limit` applies independently to each source account.
         type: integer
       stats:
         description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.

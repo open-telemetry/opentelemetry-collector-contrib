@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,6 +15,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
+
+// accountIDPattern matches an AWS account ID: exactly 12 digits.
+var accountIDPattern = regexp.MustCompile(`^\d{12}$`)
 
 var (
 	defaultPollInterval         = time.Minute
@@ -54,10 +58,20 @@ type MetricsConfig struct {
 // Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
 type MetricsDiscoveryConfig struct {
 	Filters configoptional.Optional[MetricsDiscoveryFilters] `mapstructure:"filters"`
-	Limit   int                                              `mapstructure:"limit"` // max metrics to discover and scrape (default 100)
+	// Limit is the maximum number of metric queries to generate during discovery. Each combination
+	// of namespace, metric name, and dimensions counts as a single metric query (e.g.
+	// EC2/CPUUtilization for 10 unique instances counts as 10 metrics). Defaults to 100.
+	// In a cross-account setup `Limit` applies independently to each source account.
+	Limit int `mapstructure:"limit"`
 	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
+	// IncludeLinkedAccounts, when true and run from a monitoring account, discovers
+	// metrics from linked source accounts in addition to (or filtered by) AccountIdentifiers.
+	IncludeLinkedAccounts *bool `mapstructure:"include_linked_accounts"`
+	// AccountIdentifiers optionally narrows cross-account discovery to specific source
+	// accounts. Requires IncludeLinkedAccounts to be true.
+	AccountIdentifiers []string `mapstructure:"account_identifiers"`
 }
 
 // MetricsDiscoveryFilters optionally narrows which metrics are discovered.
@@ -79,6 +93,8 @@ type MetricQuery struct {
 	MetricName string            `mapstructure:"metric_name"`
 	Dimensions map[string]string `mapstructure:"dimensions"`
 	Stats      []string          `mapstructure:"stats"`
+	// AccountID optionally identifies the metric's source account in a cross-account monitoring setup.
+	AccountID string `mapstructure:"account_id"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -126,6 +142,8 @@ var (
 	errMetricMissingName                = errors.New("metric must have metric_name")
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
+	errAccountIdentifiersWithoutLinked  = errors.New("metrics.discovery.account_identifiers requires include_linked_accounts to be true")
+	errInvalidAccountID                 = errors.New("account id must be a 12-digit number")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
@@ -186,6 +204,15 @@ func (c *Config) validateMetricsConfig() error {
 		if discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
 		}
+		if len(discovery.AccountIdentifiers) > 0 &&
+			(discovery.IncludeLinkedAccounts == nil || !*discovery.IncludeLinkedAccounts) {
+			return errAccountIdentifiersWithoutLinked
+		}
+		for j, id := range discovery.AccountIdentifiers {
+			if !accountIDPattern.MatchString(id) {
+				return fmt.Errorf("metrics.discovery.account_identifiers[%d] %q: %w", j, id, errInvalidAccountID)
+			}
+		}
 		for j, st := range discovery.Stats {
 			if st == "" {
 				return fmt.Errorf("metrics.discovery.stats[%d]: %w", j, errEmptyStatName)
@@ -205,6 +232,9 @@ func (c *Config) validateMetricsConfig() error {
 		}
 		if m.MetricName == "" {
 			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingName)
+		}
+		if m.AccountID != "" && !accountIDPattern.MatchString(m.AccountID) {
+			return fmt.Errorf("metrics[%d].account_id %q: %w", i, m.AccountID, errInvalidAccountID)
 		}
 		for j, st := range m.Stats {
 			if st == "" {

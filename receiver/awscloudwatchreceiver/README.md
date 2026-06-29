@@ -87,6 +87,7 @@ List every metric you want to collect. Each entry supports:
 | `metric_name` | String          | yes      | CloudWatch metric name, e.g. `CPUUtilization`. |
 | `dimensions`  | Map             | no       | CloudWatch dimension key/value pairs. Required for metrics that are scoped to a specific resource (e.g. a single EC2 instance or DynamoDB table). Original casing is preserved. |
 | `stats`       | List of strings | no       | Which CloudWatch statistics to fetch. See [Statistics](#statistics) below. |
+| `account_id`  | String          | no       | Source account (a 12-digit account ID) the metric is located in, for cross-account monitoring. When set, the metric is fetched from that account via `GetMetricData` and reported under its `cloud.account.id`. The receiver must run in a monitoring account with that source account linked; otherwise `GetMetricData` returns a `Forbidden` status and the metric is dropped (a warning is logged). See [Cross-account monitoring](#cross-account-monitoring). |
 
 #### Auto-discovery (`discovery`)
 
@@ -97,8 +98,21 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 | `filters`              | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
 | `filters.namespace`    | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
 | `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
-| `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
+| `limit`                | Integer         | 100     | Maximum number of metric queries to generate during discovery. Each combination of namespace, metric name, and dimensions counts as a single metric query (e.g. `AWS/EC2` `CPUUtilization` for 10 unique instances counts as 10). Applied **per account** (in a cross-account setup, each source account may contribute up to `limit` metric queries). |
 | `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+| `include_linked_accounts` | Boolean      | false   | When running in a monitoring account, discover metrics from linked source accounts. See [Cross-account monitoring](#cross-account-monitoring). |
+| `account_identifiers`  | List of strings | —       | Restrict cross-account discovery to specific source account IDs (each a 12-digit account ID). Requires `include_linked_accounts: true`. When omitted (with `include_linked_accounts: true`), metrics from all linked accounts are discovered. |
+
+#### Cross-account monitoring
+
+In a [CloudWatch cross-account observability](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Unified-Cross-Account.html) setup, a *monitoring account* can collect metrics from linked *source accounts*. Run the receiver with credentials for the monitoring account and:
+
+- **Auto-discovery:** set `discovery.include_linked_accounts: true` to discover metrics across all linked accounts, or add `discovery.account_identifiers: [<id>, ...]` to restrict to specific source accounts. Because `ListMetrics` filters one owning account at a time, each identifier is queried separately, so the `limit` applies per account.
+- **Explicit queries:** set `account_id` on a query to fetch that metric from a specific source account.
+
+Each metric is emitted under its source account's `cloud.account.id` resource attribute. Without any cross-account configuration, the receiver collects only from its own account (the default).
+
+> **Prerequisite:** cross-account collection requires the credentials to belong to a CloudWatch **monitoring account** with the source accounts linked to it (via [Observability Access Manager](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Unified-Cross-Account-Setup.html)). The receiver cannot detect this from configuration alone. If a source account is not reachable, `GetMetricData` returns a `Forbidden` status for those metrics rather than an error, so they are simply absent from the output; the receiver logs a warning (`GetMetricData returned a non-complete status for a metric`) identifying the account so the misconfiguration is diagnosable.
 
 #### Statistics
 
@@ -115,7 +129,7 @@ Extended statistics (percentiles, trimmed means, etc.): `p99`, `p95`, `p50`, `tm
 All metrics follow the [CloudWatch Metric Streams OpenTelemetry 1.0.0 format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html):
 
 - **Metric name:** `amazonaws.com/{Namespace}/{MetricName}` (CloudWatch casing preserved)
-- **Resource attributes:** `cloud.provider = aws`, `cloud.region = <configured region>`
+- **Resource attributes:** `cloud.provider = aws`, `cloud.region = <configured region>`, and `cloud.account.id` (resolved via STS `GetCallerIdentity`; omitted when it cannot be resolved)
 - **Data point attributes:** `Namespace`, `MetricName`, and `Dimensions` (a nested key/value map, omitted when no dimensions are set)
 
 #### Examples
@@ -175,6 +189,25 @@ awscloudwatch:
       filters:
         namespace: AWS/EC2
       limit: 200
+```
+
+Discover EC2 metrics across specific linked source accounts (run from a monitoring account):
+
+```yaml
+awscloudwatch:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    delay: 10m
+    discovery:
+      filters:
+        namespace: AWS/EC2
+      limit: 100
+      include_linked_accounts: true
+      account_identifiers:
+        - "111111111111"
+        - "222222222222"
 ```
 
 #### Logs Autodiscovery Example Configuration

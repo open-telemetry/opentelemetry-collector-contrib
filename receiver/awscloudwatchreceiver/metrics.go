@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -48,11 +49,18 @@ type cloudWatchMetricsScraper struct {
 	metrics            []MetricQuery
 	discovery          *MetricsDiscoveryConfig
 	client             metricsClient
+	stsClient          stsClient
+	accountID          string
 }
 
 type metricsClient interface {
 	ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error)
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
+}
+
+// stsClient resolves the AWS account ID of the active credentials via GetCallerIdentity.
+type stsClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
@@ -89,11 +97,36 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 		return err
 	}
 	s.client = cloudwatch.NewFromConfig(cfg)
+
+	// Ensure to always construct the STS client after credentials are resolved.
+	if s.stsClient == nil {
+		s.stsClient = sts.NewFromConfig(cfg)
+	}
 	return nil
+}
+
+// resolveAccountID resolves the account ID of the active credentials via STS GetCallerIdentity.
+// On success, stores the resolved account ID to `s.accountID`.
+func (s *cloudWatchMetricsScraper) resolveAccountID(ctx context.Context) {
+	if s.stsClient == nil {
+		return
+	}
+	out, err := s.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		s.settings.Logger.Warn("unable to resolve AWS account ID via STS GetCallerIdentity; "+
+			"will retry on the next scrape. Metrics are emitted without the cloud.account.id "+
+			"resource attribute until resolution succeeds.", zap.Error(err))
+		return
+	}
+	s.accountID = aws.ToString(out.Account)
 }
 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
+
+	if s.accountID == "" {
+		s.resolveAccountID(ctx)
+	}
 
 	var metricsToScrape []MetricQuery
 	if s.discovery != nil {
@@ -153,8 +186,36 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 	return time.Unix(aligned, 0).UTC()
 }
 
-// listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
+// listMetrics discovers metrics via the ListMetrics API, respecting discovery config
+// (namespace, metric name, limit, and cross-account options).
+//
+// When account_identifiers is set, each source account is queried separately because
+// ListMetrics filters a single owning account at a time; the limit applies per account.
+// When include_linked_accounts is set without identifiers, a single monitoring-account
+// sweep discovers metrics across all linked accounts, again capped per account. Otherwise
+// the receiver's own account is discovered as before.
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
+	if len(s.discovery.AccountIdentifiers) > 0 {
+		var out []MetricQuery
+		for _, account := range s.discovery.AccountIdentifiers {
+			qs, err := s.discoverMetrics(ctx, account)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, qs...)
+		}
+		return out, nil
+	}
+	return s.discoverMetrics(ctx, "")
+}
+
+// discoverMetrics paginates ListMetrics for a single owning account (or, when
+// owningAccount is empty and include_linked_accounts is set, a sweep across all linked
+// accounts). The discovery limit is enforced per account. Each returned MetricQuery is
+// tagged with the account that owns it, or left empty for same-account discovery.
+func (s *cloudWatchMetricsScraper) discoverMetrics(ctx context.Context, owningAccount string) ([]MetricQuery, error) {
+	includeLinked := s.discovery.IncludeLinkedAccounts != nil && *s.discovery.IncludeLinkedAccounts
+
 	input := &cloudwatch.ListMetricsInput{}
 	if f := s.discovery.Filters.Get(); f != nil {
 		if f.Namespace != "" {
@@ -164,7 +225,19 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			input.MetricName = aws.String(f.MetricName)
 		}
 	}
+	if includeLinked {
+		input.IncludeLinkedAccounts = aws.Bool(true)
+	}
+	if owningAccount != "" {
+		input.OwningAccount = aws.String(owningAccount)
+	}
 
+	// singleAccount is true whenever every returned metric belongs to one account, so we
+	// can stop paginating once the limit is reached. The all-linked sweep must page fully
+	// because metrics for under-limit accounts may still appear on later pages.
+	singleAccount := owningAccount != "" || !includeLinked
+
+	perAccount := make(map[string]int)
 	var out []MetricQuery
 	var nextToken *string
 	for {
@@ -173,17 +246,45 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 		if err != nil {
 			return nil, err
 		}
-		for _, met := range resp.Metrics {
-			if len(out) >= s.discovery.Limit {
-				return out, nil
+		dropped := 0
+		for i, met := range resp.Metrics {
+			var account string
+			switch {
+			case singleAccount:
+				// Per-identifier discovery uses the requested account; same-account discovery
+				// leaves it empty so the receiver's own resolved account is used.
+				account = owningAccount
+			case i >= len(resp.OwningAccounts) || resp.OwningAccounts[i] == "":
+				// Linked-account sweep where AWS did not return an aligned OwningAccounts entry:
+				// the metric cannot be attributed to a source account, so drop it rather than
+				// misattributing it to the monitoring account.
+				dropped++
+				continue
+			default:
+				// Linked-account sweep: attribute the metric to its source account.
+				account = resp.OwningAccounts[i]
 			}
-			q := MetricQuery{
+			if perAccount[account] >= s.discovery.Limit {
+				if singleAccount {
+					return out, nil
+				}
+				continue
+			}
+			perAccount[account]++
+			out = append(out, MetricQuery{
 				Namespace:  aws.ToString(met.Namespace),
 				MetricName: aws.ToString(met.MetricName),
 				Dimensions: dimensionsToMap(met.Dimensions),
 				Stats:      s.discovery.Stats,
-			}
-			out = append(out, q)
+				AccountID:  account,
+			})
+		}
+		if dropped > 0 {
+			s.settings.Logger.Warn("dropped discovered metrics that could not be attributed to a source "+
+				"account; ListMetrics OwningAccounts did not align 1:1 with the returned metrics",
+				zap.Int("dropped", dropped),
+				zap.Int("metrics", len(resp.Metrics)),
+				zap.Int("owning_accounts", len(resp.OwningAccounts)))
 		}
 		nextToken = resp.NextToken
 		if nextToken == nil {
@@ -235,7 +336,7 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 			stats = q.Stats
 		}
 		for si, stat := range stats {
-			queries = append(queries, types.MetricDataQuery{
+			mdq := types.MetricDataQuery{
 				Id: aws.String(fmt.Sprintf("q%d_%d", i, si)),
 				MetricStat: &types.MetricStat{
 					Metric: &types.Metric{
@@ -246,7 +347,12 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 					Period: aws.Int32(int32(s.period.Seconds())),
 					Stat:   aws.String(stat),
 				},
-			})
+			}
+			// In a cross-account setup, fetch the metric from its owning source account.
+			if q.AccountID != "" {
+				mdq.AccountId = aws.String(q.AccountID)
+			}
+			queries = append(queries, mdq)
 		}
 	}
 
@@ -270,9 +376,18 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 	}
 
 	withData := 0
+	warned := make(map[int]bool)
 	for _, r := range allResults {
 		if len(r.Values) > 0 {
 			withData++
+		}
+		// Warn about non-complete statuses (Forbidden, InternalError) so that cross-account misconfigurations are visible.
+		// Deduplicate per metric so that a metric's sub-queries do not each emit an identical warning.
+		if r.StatusCode == types.StatusCodeForbidden || r.StatusCode == types.StatusCodeInternalError {
+			if mi, _, err := parseQueryID(aws.ToString(r.Id)); err == nil && mi >= 0 && mi < len(batch) && !warned[mi] {
+				warned[mi] = true
+				s.logResultStatus(batch[mi], r)
+			}
 		}
 	}
 	s.settings.Logger.Debug("GetMetricData response",
@@ -294,6 +409,24 @@ func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []Metric
 	return md, nil
 }
 
+// logResultStatus emits a warning describing a non-complete GetMetricData result.
+func (s *cloudWatchMetricsScraper) logResultStatus(q MetricQuery, r types.MetricDataResult) {
+	fields := []zap.Field{
+		zap.String("status", string(r.StatusCode)),
+		zap.String("namespace", q.Namespace),
+		zap.String("metric_name", q.MetricName),
+		zap.String("account_id", s.effectiveAccountID(q)),
+	}
+	for _, m := range r.Messages {
+		if m.Value != nil {
+			fields = append(fields, zap.String("message", aws.ToString(m.Value)))
+		}
+	}
+	s.settings.Logger.Warn("GetMetricData returned a non-complete status for a metric; "+
+		"a Forbidden status usually means the receiver is not running in a monitoring account "+
+		"or the source account is not linked", fields...)
+}
+
 func dimensionsFromMap(d map[string]string) []types.Dimension {
 	if len(d) == 0 {
 		return nil
@@ -305,13 +438,25 @@ func dimensionsFromMap(d map[string]string) []types.Dimension {
 	return out
 }
 
-// setResourceAttributes sets the resource-level attributes that identify the AWS source.
-// Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: only cloud.provider
+// setResourceAttributes sets the resource-level attributes that identify the AWS source. Aligned
+// with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: cloud.provider, cloud.account.id,
 // and cloud.region are set on the resource; namespace and dimensions go on data points.
-func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource) {
+func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource, accountID string) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	if accountID != "" {
+		attrs.PutStr(string(conventions.CloudAccountIDKey), accountID)
+	}
 	attrs.PutStr(string(conventions.CloudRegionKey), s.cfg.Region)
+}
+
+// effectiveAccountID returns the account ID to attribute to a metric query: the query's
+// own AccountID when set (cross-account), otherwise the receiver's resolved account ID.
+func (s *cloudWatchMetricsScraper) effectiveAccountID(q MetricQuery) string {
+	if q.AccountID != "" {
+		return q.AccountID
+	}
+	return s.accountID
 }
 
 // parseQueryID parses a sub-query ID of the form "q{metricIdx}_{statIdx}".
@@ -370,10 +515,22 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	}
 
 	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	s.setResourceAttributes(rm.Resource())
-	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName(metadata.ScopeName)
+
+	// Group metrics into one ResourceMetrics per account ID so that cross-account
+	// metrics carry the correct cloud.account.id. In the single-account case all
+	// metrics share the receiver's resolved account ID and land in one resource.
+	scopeByAccount := make(map[string]pmetric.ScopeMetrics)
+	scopeForAccount := func(accountID string) pmetric.ScopeMetrics {
+		if sm, ok := scopeByAccount[accountID]; ok {
+			return sm
+		}
+		rm := md.ResourceMetrics().AppendEmpty()
+		s.setResourceAttributes(rm.Resource(), accountID)
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName(metadata.ScopeName)
+		scopeByAccount[accountID] = sm
+		return sm
+	}
 
 	periodNano := pcommon.Timestamp(s.period.Nanoseconds())
 
@@ -390,7 +547,7 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 			continue
 		}
 
-		metric := sm.Metrics().AppendEmpty()
+		metric := scopeForAccount(s.effectiveAccountID(q)).Metrics().AppendEmpty()
 		metric.SetName("amazonaws.com/" + q.Namespace + "/" + q.MetricName)
 
 		if len(q.Stats) == 0 {
@@ -457,10 +614,8 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 		}
 	}
 
-	// Drop the ResourceMetrics if no metric had any data.
-	if sm.Metrics().Len() == 0 {
-		return pmetric.NewMetrics()
-	}
+	// No ResourceMetrics are created unless a metric had data, so an empty result
+	// means nothing was emitted.
 	return md
 }
 
