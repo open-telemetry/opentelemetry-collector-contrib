@@ -154,7 +154,7 @@ func TestOnIndexerError_ConnectionRefused_MustBeRetryable(t *testing.T) {
 		Err: errors.New("connection refused"),
 	}
 
-	lbi.onIndexerError(context.Background(), netErr)
+	lbi.onIndexerError(t.Context(), netErr)
 
 	require.Len(t, lbi.errs, 1)
 	assert.True(t, isRetryableError(lbi.errs[0]),
@@ -164,7 +164,7 @@ func TestOnIndexerError_ConnectionRefused_MustBeRetryable(t *testing.T) {
 func TestOnIndexerError_ContextDeadlineExceeded_MustBeRetryable(t *testing.T) {
 	lbi := newTestLogBulkIndexer()
 
-	lbi.onIndexerError(context.Background(), context.DeadlineExceeded)
+	lbi.onIndexerError(t.Context(), context.DeadlineExceeded)
 
 	require.Len(t, lbi.errs, 1)
 	assert.True(t, isRetryableError(lbi.errs[0]),
@@ -180,7 +180,7 @@ func TestOnIndexerError_DNSFailure_MustBeRetryable(t *testing.T) {
 		Err: &net.DNSError{Err: "no such host", Name: "opensearch.example.com"},
 	}
 
-	lbi.onIndexerError(context.Background(), dnsErr)
+	lbi.onIndexerError(t.Context(), dnsErr)
 
 	require.Len(t, lbi.errs, 1)
 	assert.True(t, isRetryableError(lbi.errs[0]),
@@ -190,7 +190,7 @@ func TestOnIndexerError_DNSFailure_MustBeRetryable(t *testing.T) {
 func TestOnIndexerError_GenericNetworkError_MustBeRetryable(t *testing.T) {
 	lbi := newTestLogBulkIndexer()
 
-	lbi.onIndexerError(context.Background(), errors.New("EOF"))
+	lbi.onIndexerError(t.Context(), errors.New("EOF"))
 
 	require.Len(t, lbi.errs, 1)
 	assert.True(t, isRetryableError(lbi.errs[0]),
@@ -200,7 +200,7 @@ func TestOnIndexerError_GenericNetworkError_MustBeRetryable(t *testing.T) {
 func TestOnIndexerError_RetryableError_DoesNotWrapAsNewPermanent(t *testing.T) {
 	lbi := newTestLogBulkIndexer()
 
-	lbi.onIndexerError(context.Background(), context.DeadlineExceeded)
+	lbi.onIndexerError(t.Context(), context.DeadlineExceeded)
 
 	require.Len(t, lbi.errs, 1)
 	assert.False(t, consumererror.IsPermanent(lbi.errs[0]),
