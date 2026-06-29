@@ -360,7 +360,7 @@ type Logs struct {
 	OutputPaths      []string      `mapstructure:"output_paths"`
 	// Encoding sets the logger's encoding. Valid values are "json" and "console".
 	// Defaults to "json".
-	Encoding string `mapstructure:"encoding" yaml:"encoding"`
+	Encoding string `mapstructure:"encoding"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
