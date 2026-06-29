@@ -73,9 +73,7 @@ func (w *fileWriter) startFlusher() {
 	w.stopTicker = stopCh
 	// Start the ticker.
 	w.flushTicker = time.NewTicker(w.flushInterval)
-	w.wg.Add(1)
-	go func() {
-		defer w.wg.Done()
+	w.wg.Go(func() {
 		for {
 			select {
 			case <-w.flushTicker.C:
@@ -87,7 +85,7 @@ func (w *fileWriter) startFlusher() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 // Start starts the flush timer if set.
