@@ -61,6 +61,13 @@ type FlowControlConfig struct {
 	MaxOutstandingMessages int64 `mapstructure:"max_outstanding_messages"`
 	// Pub/Sub flow control settings for the maximum number of outstanding bytes.
 	MaxOutstandingBytes int64 `mapstructure:"max_outstanding_bytes"`
+
+	// ModAckDeadlineSeconds is the deadline (in seconds) sent via
+	// ModifyAckDeadline immediately after a message is received. This tells
+	// Pub/Sub the client is actively processing the message and is required
+	// for the dead-letter queue delivery-attempt counter to work correctly
+	// with StreamingPull. Defaults to 60. Set to 0 to disable.
+	ModAckDeadlineSeconds int32 `mapstructure:"mod_ack_deadline_seconds"`
 }
 
 func (fcc *FlowControlConfig) getInternalConfig() *internal.FlowControlConfig {
@@ -69,6 +76,7 @@ func (fcc *FlowControlConfig) getInternalConfig() *internal.FlowControlConfig {
 		StreamAckDeadline:       fcc.StreamAckDeadline,
 		MaxOutstandingMessages:  fcc.MaxOutstandingMessages,
 		MaxOutstandingBytes:     fcc.MaxOutstandingBytes,
+		ModAckDeadlineSeconds:   fcc.ModAckDeadlineSeconds,
 	}
 }
 

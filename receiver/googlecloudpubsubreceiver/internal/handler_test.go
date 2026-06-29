@@ -5,8 +5,10 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
-func createHandler(ctx context.Context, t *testing.T) (cleanupFn func(), srv *pstest.Server, handler *StreamHandler) {
+func createHandlerWithCallback(ctx context.Context, t *testing.T, callback func(context.Context, *pubsubpb.ReceivedMessage) error) (cleanupFn func(), srv *pstest.Server, handler *StreamHandler) {
 	srv = pstest.NewServer()
 
 	var copts []option.ClientOption
@@ -53,11 +55,15 @@ func createHandler(ctx context.Context, t *testing.T) (cleanupFn func(), srv *ps
 	client, err := pubsub.NewSubscriptionAdminClient(ctx, copts...)
 	assert.NoError(t, err)
 	handler, err = NewHandler(ctx, settings, telemetryBuilder, client, "client-id", "projects/my-project/subscriptions/otlp",
-		nil, func(context.Context, *pubsubpb.ReceivedMessage) error {
-			return nil
-		})
+		nil, callback)
 	assert.NoError(t, err)
 	return cleanupFn, srv, handler
+}
+
+func createHandler(ctx context.Context, t *testing.T) (cleanupFn func(), srv *pstest.Server, handler *StreamHandler) {
+	return createHandlerWithCallback(ctx, t, func(context.Context, *pubsubpb.ReceivedMessage) error {
+		return nil
+	})
 }
 
 func TestCancelStream(t *testing.T) {
@@ -71,6 +77,84 @@ func TestCancelStream(t *testing.T) {
 		"content-type": "application/protobuf",
 	})
 	handler.RecoverableStream(ctx)
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		handler.CancelNow()
+	}()
+	handler.Wait()
+}
+
+func TestNackOnProcessingFailure(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	var received sync.WaitGroup
+	received.Add(1)
+	cleanupFn, srv, handler := createHandlerWithCallback(ctx, t, func(_ context.Context, _ *pubsubpb.ReceivedMessage) error {
+		received.Done()
+		return errors.New("processing failed")
+	})
+	defer cleanupFn()
+
+	srv.Publish("projects/my-project/topics/otlp", []byte("test"), map[string]string{
+		"ce-type":      "org.opentelemetry.otlp.traces.v1",
+		"content-type": "application/protobuf",
+	})
+	handler.RecoverableStream(ctx)
+
+	received.Wait()
+	time.Sleep(50 * time.Millisecond)
+
+	handler.mutex.Lock()
+	hasAcks := len(handler.acks) > 0
+	hasNacks := false
+	for _, d := range handler.modAckDeadlines {
+		if d == 0 {
+			hasNacks = true
+			break
+		}
+	}
+	handler.mutex.Unlock()
+
+	assert.False(t, hasAcks, "failed message should not be queued for ack")
+	assert.True(t, hasNacks, "failed message should be nacked (ModAck with deadline 0)")
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		handler.CancelNow()
+	}()
+	handler.Wait()
+}
+
+func TestModAckDisabledWhenZero(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	var received sync.WaitGroup
+	received.Add(1)
+	cleanupFn, srv, handler := createHandlerWithCallback(ctx, t, func(_ context.Context, _ *pubsubpb.ReceivedMessage) error {
+		received.Done()
+		return nil
+	})
+	defer cleanupFn()
+
+	handler.flowControlConfig.ModAckDeadlineSeconds = 0
+
+	srv.Publish("projects/my-project/topics/otlp", []byte("test"), map[string]string{
+		"ce-type":      "org.opentelemetry.otlp.traces.v1",
+		"content-type": "application/protobuf",
+	})
+	handler.RecoverableStream(ctx)
+
+	received.Wait()
+	time.Sleep(50 * time.Millisecond)
+
+	handler.mutex.Lock()
+	modAckCount := len(handler.modAckIDs)
+	handler.mutex.Unlock()
+
+	assert.Equal(t, 0, modAckCount, "no ModAck should be sent when ModAckDeadlineSeconds is 0")
+
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		handler.CancelNow()

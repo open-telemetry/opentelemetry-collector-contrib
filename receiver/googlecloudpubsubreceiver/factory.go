@@ -46,6 +46,7 @@ func (*pubsubReceiverFactory) CreateDefaultConfig() component.Config {
 			StreamAckDeadline:       fcc.StreamAckDeadline,
 			MaxOutstandingMessages:  fcc.MaxOutstandingMessages,
 			MaxOutstandingBytes:     fcc.MaxOutstandingBytes,
+			ModAckDeadlineSeconds:   fcc.ModAckDeadlineSeconds,
 		},
 	}
 }
