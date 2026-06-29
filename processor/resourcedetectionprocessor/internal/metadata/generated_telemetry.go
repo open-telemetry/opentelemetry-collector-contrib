@@ -27,7 +27,7 @@ type TelemetryBuilder struct {
 	meter                               metric.Meter
 	mu                                  sync.Mutex
 	registrations                       []metric.Registration
-	ResourcedetectionAttributesDetected metric.Int64ObservableGauge
+	ResourcedetectionAttributesDetected metric.Int64ObservableUpDownCounter
 	ResourcedetectionDetectorDuration   metric.Float64Histogram
 	ResourcedetectionDetectorResults    metric.Int64Counter
 }
@@ -86,7 +86,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ResourcedetectionAttributesDetected, err = builder.meter.Int64ObservableGauge(
+	builder.ResourcedetectionAttributesDetected, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol.resourcedetection.attributes.detected",
 		metric.WithDescription("Number of resource attributes in the currently detected resource. [Development]"),
 		metric.WithUnit("{attribute}"),

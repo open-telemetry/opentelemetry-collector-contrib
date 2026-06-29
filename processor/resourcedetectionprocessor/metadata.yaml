@@ -62,8 +62,9 @@ telemetry:
       description: Number of resource attributes in the currently detected resource.
       stability: development
       unit: "{attribute}"
-      gauge:
+      sum:
         value_type: int
+        monotonic: false
         async: true
     resourcedetection.detector.duration:
       prefix: otelcol.

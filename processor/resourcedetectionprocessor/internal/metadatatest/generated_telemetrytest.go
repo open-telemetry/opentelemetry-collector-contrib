@@ -26,8 +26,10 @@ func AssertEqualResourcedetectionAttributesDetected(t *testing.T, tt *componentt
 		Name:        "otelcol.resourcedetection.attributes.detected",
 		Description: "Number of resource attributes in the currently detected resource. [Development]",
 		Unit:        "{attribute}",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol.resourcedetection.attributes.detected")
