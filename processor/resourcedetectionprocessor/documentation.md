@@ -10,9 +10,9 @@ The following telemetry is emitted by this component.
 
 Number of resource attributes in the currently detected resource.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {attribute} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {attribute} | Sum | Int | false | Development |
 
 ### otelcol.resourcedetection.detector.duration
 
