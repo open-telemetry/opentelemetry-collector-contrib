@@ -221,6 +221,59 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestConsumerScraperFranz_EmptyClusterID(t *testing.T) {
+	// A broker/proxy that reports an empty cluster_id in its MetadataResponse
+	// must not produce an empty-string kafka.cluster.id attribute, even when the
+	// attribute is explicitly enabled.
+	const (
+		topic = "topic-a"
+		group = "test-group-empty-id"
+	)
+
+	cluster, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, topic),
+		kfake.ClusterID(""),
+	)
+	cl, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	adm := kadm.NewClient(cl)
+
+	// Produce + commit an offset so the consumer scraper emits a resource for the group.
+	produceResults := cl.ProduceSync(t.Context(), &kgo.Record{Topic: topic, Value: []byte("payload")})
+	require.NoError(t, produceResults.FirstErr())
+	var os kadm.Offsets
+	os.AddOffset(topic, 0, 0, -1)
+	_, err = adm.CommitOffsets(t.Context(), group, os)
+	require.NoError(t, err)
+
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		TopicMatch:           ".*",
+		GroupMatch:           ".*",
+	}
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
+
+	// Clean up the group so the kfake goroutine exits.
+	_, err = adm.DeleteGroups(t.Context(), group)
+	require.NoError(t, err)
+}
+
 func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing.T) {
 	const (
 		topic = "topic-a"

@@ -181,6 +181,35 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	}
 }
 
+func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
+	// A broker/proxy that reports an empty cluster_id in its MetadataResponse
+	// must not produce an empty-string kafka.cluster.id attribute, even when the
+	// attribute is explicitly enabled.
+	_, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, "topic-a"),
+		kfake.ClusterID(""),
+	)
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		TopicMatch:           ".*",
+	}
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
+}
+
 func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
 	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "include-me", "_internal"))
 	cfg := Config{
