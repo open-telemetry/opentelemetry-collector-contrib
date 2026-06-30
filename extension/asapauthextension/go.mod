@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.61.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/extension/extensiontest v0.155.1-0.20260625204839-9782f9e8a3d6
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.0
 )
 
 require (
