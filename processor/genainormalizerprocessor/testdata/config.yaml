@@ -93,6 +93,14 @@ gen_ai_normalizer/user_defined_unreachable_value_mapping:
         gen_ai.operation.name:
           chat_completion: chat
 
+# The newer built-in sources, listed together.
+gen_ai_normalizer/new_builtin_sources:
+  sources:
+    - name: langchain
+      remove_originals: true
+    - name: crewai
+    - name: pydanticai
+
 # User-defined source with mappings + value_mappings folding onto an OTel
 # GenAI enum target.
 gen_ai_normalizer/user_defined_with_value_mappings:

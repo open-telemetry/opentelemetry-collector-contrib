@@ -593,6 +593,84 @@ func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 	}
 }
 
+func TestNormalize_LangChainEndToEnd(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceLangChain, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("lc.metadata.thread_id", "thread-42")
+	span.Attributes().PutStr("langgraph.node.name", "planner")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.conversation.id")
+	require.True(t, ok, "gen_ai.conversation.id must be set")
+	assert.Equal(t, "thread-42", v.Str())
+	v, ok = out.Get("gen_ai.agent.name")
+	require.True(t, ok, "gen_ai.agent.name must be set")
+	assert.Equal(t, "planner", v.Str())
+
+	for _, k := range []string{"lc.metadata.thread_id", "langgraph.node.name"} {
+		_, ok := out.Get(k)
+		assert.False(t, ok, "expected %s to be removed", k)
+	}
+}
+
+func TestNormalize_CrewAIEndToEnd(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceCrewAI, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("agent_role", "Senior Researcher")
+	span.Attributes().PutStr("crew_id", "crew-7")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.agent.name")
+	require.True(t, ok, "gen_ai.agent.name must be set")
+	assert.Equal(t, "Senior Researcher", v.Str())
+	v, ok = out.Get("gen_ai.conversation.id")
+	require.True(t, ok, "gen_ai.conversation.id must be set")
+	assert.Equal(t, "crew-7", v.Str())
+
+	for _, k := range []string{"agent_role", "crew_id"} {
+		_, ok := out.Get(k)
+		assert.False(t, ok, "expected %s to be removed", k)
+	}
+}
+
+func TestNormalize_PydanticAIEndToEnd(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourcePydanticAI, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("agent_name", "weather_agent")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.agent.name")
+	require.True(t, ok, "gen_ai.agent.name must be set")
+	assert.Equal(t, "weather_agent", v.Str())
+
+	_, ok = out.Get("agent_name")
+	assert.False(t, ok, "expected agent_name to be removed")
+}
+
 // TestNormalize_OpenLLMetry_FinishReasonWrapsToSlice asserts that OpenLLMetry's
 // string-valued llm.response.finish_reason is wrapped into a single-element
 // string[] at gen_ai.response.finish_reasons, which the OTel GenAI semantic
