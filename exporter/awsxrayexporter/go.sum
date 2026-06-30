@@ -26,8 +26,12 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.43.3 h1:VrIhKRCSK1umelSgB9RghvA9RTUY
 github.com/aws/aws-sdk-go-v2/service/sts v1.43.3/go.mod h1:r8wkDOuLaaMFqFiYAb8dGY2A3gJCOujMc6CFOVC4Zhc=
 github.com/aws/aws-sdk-go-v2/service/xray v1.37.3 h1:ozG9CuAEB1zS7hBI7BYWYvr798LD7G+Tiw1ccS5sAms=
 github.com/aws/aws-sdk-go-v2/service/xray v1.37.3/go.mod h1:8bpZogGTIFDJBAXh9Le/rVo6rCcxOMMtZh8fG8lR6Po=
+github.com/aws/aws-sdk-go-v2/service/xray v1.37.4 h1:90o6DWsNJkrJrE5VscaQ67JCDm27Uw6xgl6hCo7Vbfg=
+github.com/aws/aws-sdk-go-v2/service/xray v1.37.4/go.mod h1:8bpZogGTIFDJBAXh9Le/rVo6rCcxOMMtZh8fG8lR6Po=
 github.com/aws/smithy-go v1.27.2 h1:y9NPmSE6am6LjEFPfqHqG/jJk7AauQvhCJONKh7kpzk=
 github.com/aws/smithy-go v1.27.2/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/aws/smithy-go v1.27.3 h1:F3Zb497UhhskkfpJmfkXswyo+t0sh9OTBnIHjogWbVY=
+github.com/aws/smithy-go v1.27.3/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/cenkalti/backoff/v6 v6.0.1 h1:sjqUu1q4wY0FfFEkBmM3bVIHfr1QGq4nATg9M5VWj1U=
 github.com/cenkalti/backoff/v6 v6.0.1/go.mod h1:5WCmPelT2zwAaNETjGJVKHDnZvjQdPsGeHHwm5lIPPI=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
