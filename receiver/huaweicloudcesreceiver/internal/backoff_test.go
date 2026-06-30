@@ -81,9 +81,8 @@ func TestMakeAPICallWithRetryThrottlingMaxRetries(t *testing.T) {
 	}
 
 	backOffConfig := backoff.NewExponentialBackOff()
-	backOffConfig.MaxElapsedTime = 50 * time.Millisecond
 
-	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig, 0)
+	resp, err := MakeAPICallWithRetry(t.Context(), make(chan struct{}), logger, apiCall, isThrottlingError, backOffConfig, 50*time.Millisecond)
 
 	assert.Error(t, err)
 	assert.Nil(t, resp)

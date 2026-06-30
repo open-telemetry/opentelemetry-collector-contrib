@@ -61,10 +61,11 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan            chan struct{}
-	closeOnce            sync.Once
-	backOff              *backoff.ExponentialBackOff
-	id                   component.ID
+	closeChan               chan struct{}
+	closeOnce               sync.Once
+	backOff                 *backoff.ExponentialBackOff
+	backOffMaxElapsedTime   time.Duration
+	id                      component.ID
 	collectorCredentials credentials.CollectorCredentials
 	procx                *procx.Procx
 }
@@ -142,24 +143,24 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	// Prepare ExponentialBackoff
 	backOff := backoff.NewExponentialBackOff()
 	backOff.InitialInterval = conf.BackOff.InitialInterval
-	backOff.MaxElapsedTime = conf.BackOff.MaxElapsedTime
 	backOff.MaxInterval = conf.BackOff.MaxInterval
 
 	return &SumologicExtension{
-		collectorName:     collectorName,
-		buildVersion:      buildVersion,
-		baseURL:           strings.TrimSuffix(conf.APIBaseURL, "/"),
-		credsNotifyUpdate: make(chan struct{}),
-		conf:              conf,
-		origLogger:        logger,
-		logger:            logger,
-		hashKey:           hashKey,
-		credentialsStore:  credentialsStore,
-		updateMetadata:    conf.UpdateMetadata,
-		closeChan:         make(chan struct{}),
-		backOff:           backOff,
-		id:                id,
-		procx:             procx.NewProcx(logger),
+		collectorName:         collectorName,
+		buildVersion:          buildVersion,
+		baseURL:               strings.TrimSuffix(conf.APIBaseURL, "/"),
+		credsNotifyUpdate:     make(chan struct{}),
+		conf:                  conf,
+		origLogger:            logger,
+		logger:                logger,
+		hashKey:               hashKey,
+		credentialsStore:      credentialsStore,
+		updateMetadata:        conf.UpdateMetadata,
+		closeChan:             make(chan struct{}),
+		backOff:               backOff,
+		backOffMaxElapsedTime: conf.BackOff.MaxElapsedTime,
+		id:                    id,
+		procx:                 procx.NewProcx(logger),
 	}, nil
 }
 
@@ -256,6 +257,7 @@ func (se *SumologicExtension) validateCredentials(
 	}
 
 	se.backOff.Reset()
+	backOffStartTime := time.Now()
 	var err error
 
 	for {
@@ -266,6 +268,9 @@ func (se *SumologicExtension) validateCredentials(
 		}
 
 		nbo := se.backOff.NextBackOff()
+		if se.backOffMaxElapsedTime > 0 && time.Since(backOffStartTime)+nbo > se.backOffMaxElapsedTime {
+			nbo = backoff.Stop
+		}
 		// Return error if backoff reaches the limit or uncoverable error is spotted
 		if nbo == backoff.Stop || errors.Is(err, backoff.ErrPermanent) {
 			return err
@@ -548,6 +553,7 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 // this loosely base on backoff.Retry function
 func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, collectorName string) (credentials.CollectorCredentials, error) {
 	se.backOff.Reset()
+	regBackOffStartTime := time.Now()
 	for {
 		creds, err := se.registerCollector(ctx, collectorName)
 		if err == nil {
@@ -561,6 +567,9 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 		}
 
 		nbo := se.backOff.NextBackOff()
+		if se.backOffMaxElapsedTime > 0 && time.Since(regBackOffStartTime)+nbo > se.backOffMaxElapsedTime {
+			nbo = backoff.Stop
+		}
 		// Return error if backoff reaches the limit or uncoverable error is spotted
 		if nbo == backoff.Stop || errors.Is(err, backoff.ErrPermanent) {
 			return credentials.CollectorCredentials{}, fmt.Errorf("collector registration failed: %w", err)
@@ -849,9 +858,10 @@ func (se *SumologicExtension) updateMetadataAsync() {
 
 	bo := backoff.NewExponentialBackOff()
 	bo.InitialInterval = se.conf.BackOff.InitialInterval
-	bo.MaxElapsedTime = se.conf.BackOff.MaxElapsedTime
 	bo.MaxInterval = se.conf.BackOff.MaxInterval
+	boMaxElapsedTime := se.conf.BackOff.MaxElapsedTime
 	bo.Reset()
+	boStartTime := time.Now()
 
 	for {
 		select {
@@ -875,6 +885,9 @@ func (se *SumologicExtension) updateMetadataAsync() {
 		}
 
 		nbo := bo.NextBackOff()
+		if boMaxElapsedTime > 0 && time.Since(boStartTime)+nbo > boMaxElapsedTime {
+			nbo = backoff.Stop
+		}
 		if nbo == backoff.Stop {
 			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
 			return
