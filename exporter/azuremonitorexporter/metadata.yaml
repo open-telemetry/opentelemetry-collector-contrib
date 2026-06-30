@@ -1,4 +1,5 @@
-type: azuremonitor
+type: azure_monitor
+deprecated_type: azuremonitor
 display_name: Azure Monitor Exporter
 
 status:
@@ -16,3 +17,4 @@ tests:
   expect_consumer_error: true
   goleak:
     skip: true
+

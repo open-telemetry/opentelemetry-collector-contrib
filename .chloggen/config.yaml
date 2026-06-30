@@ -37,7 +37,7 @@ components:
     - exporter/awsxray
     - exporter/azure_blob
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
+    - exporter/azure_monitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
