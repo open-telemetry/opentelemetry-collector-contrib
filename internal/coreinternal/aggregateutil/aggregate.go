@@ -254,7 +254,14 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 				continue
 			}
 			dp.SetCount(dp.Count() + dps.At(i).Count())
-			dp.SetSum(dp.Sum() + dps.At(i).Sum())
+			// Sum is optional: only keep an aggregate sum while every merged
+			// datapoint carries one. Once any contributor lacks a sum the total
+			// is unknowable, so drop it rather than treating absent as zero.
+			if dp.HasSum() && dps.At(i).HasSum() {
+				dp.SetSum(dp.Sum() + dps.At(i).Sum())
+			} else {
+				dp.RemoveSum()
+			}
 			if dp.HasMin() && dp.Min() > dps.At(i).Min() {
 				dp.SetMin(dps.At(i).Min())
 			}
@@ -285,7 +292,13 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 				continue
 			}
 			dp.SetCount(dp.Count() + dps.At(i).Count())
-			dp.SetSum(dp.Sum() + dps.At(i).Sum())
+			// Sum is optional: only keep an aggregate sum while every merged
+			// datapoint carries one (see mergeHistogramDataPoints).
+			if dp.HasSum() && dps.At(i).HasSum() {
+				dp.SetSum(dp.Sum() + dps.At(i).Sum())
+			} else {
+				dp.RemoveSum()
+			}
 			dp.SetZeroCount(dp.ZeroCount() + dps.At(i).ZeroCount())
 			if dp.HasMin() && dp.Min() > dps.At(i).Min() {
 				dp.SetMin(dps.At(i).Min())
