@@ -63,7 +63,8 @@ The following settings can be optionally configured:
   - `directory` (default = ``): The directory to store the WAL in.
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
   - `truncate_frequency` (default = `1m`): Frequency for how often the WAL should be truncated. 
-  - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL. 
+  - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL.
+  - `segment_cache_size` (default = `buffer_size`): Number of WAL segments to be cached in memory. Lower values reduce memory usage at the cost of additional disk reads during WAL replay. Set to `2` for a minimal memory footprint.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
 - `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version` and `otel_scope_...` attributes) will not be exported.
