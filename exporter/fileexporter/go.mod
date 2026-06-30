@@ -6,6 +6,7 @@ require (
 	github.com/DeRuina/timberjack v1.4.5
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.18.7
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.155.0
