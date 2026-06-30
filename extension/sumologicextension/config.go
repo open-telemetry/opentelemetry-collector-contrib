@@ -96,7 +96,7 @@ type accessCredentials struct {
 }
 
 // backOff configuration. See following link for details:
-// https://pkg.go.dev/github.com/cenkalti/backoff/v4#ExponentialBackOff
+// https://pkg.go.dev/github.com/cenkalti/backoff/v7#ExponentialBackOff
 type backOffConfig struct {
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
 	MaxInterval     time.Duration `mapstructure:"max_interval"`

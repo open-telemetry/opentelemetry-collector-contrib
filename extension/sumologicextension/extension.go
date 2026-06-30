@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/Showmax/go-fqdn"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -266,9 +266,8 @@ func (se *SumologicExtension) validateCredentials(
 		}
 
 		nbo := se.backOff.NextBackOff()
-		var backOffErr *backoff.PermanentError
 		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
+		if nbo == backoff.Stop || errors.Is(err, backoff.ErrPermanent) {
 			return err
 		}
 
@@ -562,9 +561,8 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 		}
 
 		nbo := se.backOff.NextBackOff()
-		var backOffErr *backoff.PermanentError
 		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
+		if nbo == backoff.Stop || errors.Is(err, backoff.ErrPermanent) {
 			return credentials.CollectorCredentials{}, fmt.Errorf("collector registration failed: %w", err)
 		}
 
@@ -871,14 +869,13 @@ func (se *SumologicExtension) updateMetadataAsync() {
 
 		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
 
-		var backOffErr *backoff.PermanentError
-		if errors.As(err, &backOffErr) {
+		if errors.Is(err, backoff.ErrPermanent) {
 			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
 			return
 		}
 
 		nbo := bo.NextBackOff()
-		if nbo == bo.Stop {
+		if nbo == backoff.Stop {
 			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
 			return
 		}

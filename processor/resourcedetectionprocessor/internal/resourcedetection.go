@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v5"
+	backoff "github.com/cenkalti/backoff/v7"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"

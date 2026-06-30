@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -84,15 +84,17 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
 			MaxInterval:         rt.backoffConfig.MaxInterval,
-			MaxElapsedTime:      rt.backoffConfig.MaxElapsedTime,
-			Stop:                backoff.Stop,
-			Clock:               backoff.SystemClock,
 		}
 		expBackoff.Reset()
+		backOffStartTime := time.Now()
+		maxElapsedTime := rt.backoffConfig.MaxElapsedTime
 		attempts := 0
 		for {
 			attempts++
 			delay := expBackoff.NextBackOff()
+			if maxElapsedTime > 0 && time.Since(backOffStartTime)+delay > maxElapsedTime {
+				delay = backoff.Stop
+			}
 			if delay == backoff.Stop {
 				return resp, err
 			}

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -76,7 +76,8 @@ type pc struct {
 	ctx    context.Context
 	cancel context.CancelCauseFunc
 	// Not safe for concurrent use, this field is never accessed concurrently.
-	backOff *backoff.ExponentialBackOff
+	backOff        *backoff.ExponentialBackOff
+	maxElapsedTime time.Duration
 
 	mu sync.RWMutex // protects the fields below
 	// wg tracks the number of in-flight message processing goroutines for this
@@ -495,7 +496,8 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
 			partitionConsumer := pc{
-				backOff: newExponentialBackOff(c.config.ErrorBackOff),
+				backOff:        newExponentialBackOff(c.config.ErrorBackOff),
+				maxElapsedTime: c.config.ErrorBackOff.MaxElapsedTime,
 				logger: c.settings.Logger.With(
 					zap.String("topic", topic),
 					zap.Int64("partition", int64(partition)),
@@ -567,6 +569,7 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 	if pc.backOff != nil {
 		defer pc.backOff.Reset()
 	}
+	backOffStartTime := time.Now()
 
 	for {
 		err := c.consumeMessage(pc.ctx, record, pc.attrs)
@@ -584,6 +587,9 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 		// pipelines, where it may make sense to make share groups opt-in.
 		if pc.backOff != nil && !consumererror.IsPermanent(err) {
 			backOffDelay := pc.backOff.NextBackOff()
+			if pc.maxElapsedTime > 0 && time.Since(backOffStartTime)+backOffDelay > pc.maxElapsedTime {
+				backOffDelay = backoff.Stop
+			}
 			if backOffDelay != backoff.Stop {
 				pc.logger.Info("Backing off due to error from the next consumer.",
 					zap.Error(err),
@@ -597,7 +603,7 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 				}
 			}
 			pc.logger.Warn("Stop error backoff because the configured max_elapsed_time is reached",
-				zap.Duration("max_elapsed_time", pc.backOff.MaxElapsedTime),
+				zap.Duration("max_elapsed_time", pc.maxElapsedTime),
 			)
 		}
 

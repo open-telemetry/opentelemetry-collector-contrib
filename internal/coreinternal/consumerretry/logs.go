@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -45,15 +45,14 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
-		MaxElapsedTime:      lc.cfg.MaxElapsedTime,
 		InitialInterval:     lc.cfg.InitialInterval,
 		MaxInterval:         lc.cfg.MaxInterval,
 		RandomizationFactor: backoff.DefaultRandomizationFactor,
 		Multiplier:          backoff.DefaultMultiplier,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
+	maxElapsedTime := lc.cfg.MaxElapsedTime
+	backOffStartTime := time.Now()
 
 	span := trace.SpanFromContext(ctx)
 	retryNum := int64(0)
@@ -83,6 +82,9 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 
 		// TODO: take delay from the error once it is available in the consumererror package.
 		backoffDelay := expBackoff.NextBackOff()
+		if maxElapsedTime > 0 && time.Since(backOffStartTime)+backoffDelay > maxElapsedTime {
+			backoffDelay = backoff.Stop
+		}
 		if backoffDelay == backoff.Stop {
 			lc.logger.Error("Max elapsed time expired. Dropping data.", zap.Error(err), zap.Int("dropped_items",
 				logs.LogRecordCount()))
