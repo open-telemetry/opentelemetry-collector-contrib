@@ -511,6 +511,9 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		// can flush any buffered entries and check the truncation timer.
 		if errors.Is(err, wal.ErrNotFound) {
 			readWaitTimeout := prweWAL.walConfig.truncateFrequency() / 2
+			if readWaitTimeout <= 0 {
+				readWaitTimeout = time.Millisecond
+			}
 			waitTimer := time.NewTimer(readWaitTimeout)
 			select {
 			case <-prweWAL.rNotify:

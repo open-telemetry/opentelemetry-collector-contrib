@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -306,8 +307,9 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	// Test successful WAL write
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
+	exporterAttr := attribute.NewSet(attribute.String("exporter", set.ID.String()))
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
 		metricdatatest.IgnoreTimestamp())
 
 	// Test failed WAL write by causing an out-of-order write error
@@ -317,7 +319,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.Error(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: exporterAttr}},
 		metricdatatest.IgnoreTimestamp())
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
@@ -460,4 +462,117 @@ func TestWALLag_Telemetry(t *testing.T) {
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_lag")
 	require.NoError(t, err)
+}
+
+// TestWAL_IdleFlush verifies that buffered WAL entries are flushed to the
+// backend even when no further data arrives. With BufferSize larger than the
+// number of written entries, the only path that can deliver the data is the
+// idle read-timeout in readPrompbFromWAL firing and the truncation timer in
+// continuallyPopWALThenExport then flushing the buffered request. This guards
+// against the "buffered data stall on idle" regression.
+func TestWAL_IdleFlush(t *testing.T) {
+	requestsReceived := &atomic.Int64{}
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		requestsReceived.Add(1)
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.NotNil(t, body)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory: t.TempDir(),
+			// BufferSize deliberately larger than the single entry we write,
+			// so an export is NOT triggered by the buffer filling up. The only
+			// way the data is delivered is via the idle read-timeout + truncation
+			// timer flush path.
+			BufferSize: 100,
+			// Short truncate frequency so the idle flush happens quickly. The
+			// idle read-wait timeout is truncate_frequency/2.
+			TruncateFrequency: 200 * time.Millisecond,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NotNil(t, prwe)
+
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, prwe.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+	// Write a single entry, then stay idle (no further writes). The entry must
+	// still be delivered via the idle-flush path within a few truncate cycles.
+	require.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	assert.EventuallyWithT(t, func(t *assert.CollectT) {
+		assert.GreaterOrEqual(t, requestsReceived.Load(), int64(1))
+	}, 5*time.Second, 10*time.Millisecond, "buffered WAL entry was not flushed while idle")
+}
+
+// TestWAL_TelemetryExporterAttribute verifies that WAL telemetry carries the
+// "exporter" attribute set to the exporter's component ID, so metrics can be
+// disambiguated when multiple PRW exporters share a collector.
+func TestWAL_TelemetryExporterAttribute(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
+	})
+	set := metadatatest.NewSettings(tel)
+
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory: t.TempDir(),
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	require.NoError(t, prw.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+	require.NoError(t, prw.handleExport(t.Context(), metrics, nil))
+
+	// The wal_writes metric must carry the exporter attribute set to the
+	// component ID supplied by the test settings.
+	expectedAttr := attribute.String("exporter", set.ID.String())
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(expectedAttr),
+		}},
+		metricdatatest.IgnoreTimestamp())
 }
