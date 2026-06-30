@@ -127,7 +127,7 @@ linters:
         path: exporter/awsemfexporter/
       - linters:
           - forbidigo
-        path: exporter/awsxrayexporter/
+        path: exporter/awsxrayexporter/internal/translator/
       - linters:
           - forbidigo
         path: internal/filter/
