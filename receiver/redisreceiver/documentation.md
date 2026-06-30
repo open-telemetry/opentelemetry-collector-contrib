@@ -549,8 +549,8 @@ Number of keys being tracked by the server
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| redis.version | Redis server's version. | Any Str | true | - |
-| server.address | Redis server's address | Any Str | false | - |
-| server.port | Redis server's port | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| redis.version | Redis server's version. | Any Str | true | - | - |
+| server.address | Redis server's address | Any Str | false | - | - |
+| server.port | Redis server's port | Any Str | false | - | - |

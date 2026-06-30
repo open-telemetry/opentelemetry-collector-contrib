@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -25,6 +26,42 @@ import (
 
 func TestReqToLog(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
+
+	newlineSplittingServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	newlineSplittingServerConfig.NetAddr = confignet.AddrConfig{}
+	newlineSplittingServerConfig.WriteTimeout = 0
+	newlineSplittingServerConfig.ReadHeaderTimeout = 0
+	newlineSplittingServerConfig.IdleTimeout = 0
+	newlineSplittingServerConfig.KeepAlivesEnabled = false
+	newlineSplittingServerConfig.MaxRequestBodySize = 150 * 1024 // Set to 150KB to handle the 100KB test payload
+
+	jsonBoundarySplittingServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	jsonBoundarySplittingServerConfig.NetAddr = confignet.AddrConfig{}
+	jsonBoundarySplittingServerConfig.WriteTimeout = 0
+	jsonBoundarySplittingServerConfig.ReadHeaderTimeout = 0
+	jsonBoundarySplittingServerConfig.IdleTimeout = 0
+	jsonBoundarySplittingServerConfig.KeepAlivesEnabled = false
+	jsonBoundarySplittingServerConfig.MaxRequestBodySize = 100 * 1024 // 100KB to handle the ~80KB test payload
+
+	exceedsMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	exceedsMaxSizeServerConfig.NetAddr = confignet.AddrConfig{}
+	exceedsMaxSizeServerConfig.WriteTimeout = 0
+	exceedsMaxSizeServerConfig.ReadHeaderTimeout = 0
+	exceedsMaxSizeServerConfig.IdleTimeout = 0
+	exceedsMaxSizeServerConfig.KeepAlivesEnabled = false
+	exceedsMaxSizeServerConfig.MaxRequestBodySize = 100 * 1024 // Set to 100KB, smaller than payload
+
+	tinyMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tinyMaxSizeServerConfig.NetAddr = confignet.AddrConfig{}
+	tinyMaxSizeServerConfig.WriteTimeout = 0
+	tinyMaxSizeServerConfig.ReadHeaderTimeout = 0
+	tinyMaxSizeServerConfig.IdleTimeout = 0
+	tinyMaxSizeServerConfig.KeepAlivesEnabled = false
+	tinyMaxSizeServerConfig.MaxRequestBodySize = 64 // Set smaller than allowed
 
 	tests := []struct {
 		desc        string
@@ -403,9 +440,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 150 * 1024, // Set to 150KB to handle the 100KB test payload
-				},
+				ServerConfig:       newlineSplittingServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
@@ -439,9 +474,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 100 * 1024, // 100KB to handle the ~80KB test payload
-				},
+				ServerConfig:            jsonBoundarySplittingServerConfig,
 				Path:                    defaultPath,
 				HealthPath:              defaultHealthPath,
 				ReadTimeout:             defaultReadTimeout,
@@ -466,9 +499,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 100 * 1024, // Set to 100KB, smaller than payload
-				},
+				ServerConfig:       exceedsMaxSizeServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
@@ -495,9 +526,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 64, // Set smaller than allowed
-				},
+				ServerConfig:       tinyMaxSizeServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
