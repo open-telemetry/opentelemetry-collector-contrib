@@ -52,8 +52,7 @@ The following settings are available:
       (the `client.Info.Auth` attributes produced by a server-side authenticator extension
       configured on the receiver), and may include attributes like `subject` and `membership`.
       This is **not** the resource, scope, span, metric, log, or any other attribute on the
-      telemetry payload itself — the extension runs as a client authenticator on the exporter
-      and has no access to the pdata being exported.
+      telemetry payload itself.
 
 The `value`, `value_file`, `from_context,default_value` and `from_attribute,default_value` properties are mutually exclusive.
 
