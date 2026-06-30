@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.44.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.4
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
 	github.com/jaegertracing/jaeger-idl v0.9.0
@@ -44,7 +45,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.31.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.7 // indirect
 	github.com/aws/smithy-go v1.27.1 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

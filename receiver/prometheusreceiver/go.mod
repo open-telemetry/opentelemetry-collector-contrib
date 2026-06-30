@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/go-kit/log v0.2.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gogo/protobuf v1.3.2
@@ -94,7 +95,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect

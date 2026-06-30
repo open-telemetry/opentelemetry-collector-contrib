@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.155.0
 	github.com/splunk/stef/go/grpc v0.1.2
@@ -32,7 +33,6 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect

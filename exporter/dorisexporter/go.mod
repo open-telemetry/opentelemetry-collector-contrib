@@ -19,6 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v6 v6.0.1
 	github.com/google/uuid v1.6.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/config/confighttp v0.155.1-0.20260625204839-9782f9e8a3d6
@@ -32,7 +33,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
