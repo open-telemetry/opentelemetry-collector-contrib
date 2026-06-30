@@ -536,8 +536,8 @@ The number of bytes read into the WiredTiger cache.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| server.address | The address of the MongoDB host. | Any Str | true | - |
-| server.port | The port of the MongoDB host. | Any Int | false | - |
-| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| server.address | The address of the MongoDB host. | Any Str | true | - | - |
+| server.port | The port of the MongoDB host. | Any Int | false | - | - |
+| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |

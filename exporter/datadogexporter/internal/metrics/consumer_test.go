@@ -137,4 +137,17 @@ func TestTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
 	assert.Len(t, runningMetrics, 3)
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
+
+	var runningMetricNames []string
+	for _, metric := range runningMetrics {
+		runningMetricNames = append(runningMetricNames, metric.Metric)
+	}
+	assert.ElementsMatch(t,
+		runningMetricNames,
+		[]string{
+			"otel.datadog_exporter.metrics.running.fargate",
+			"otel.datadog_exporter.metrics.running.fargate",
+			"otel.datadog_exporter.metrics.running.fargate",
+		},
+	)
 }
