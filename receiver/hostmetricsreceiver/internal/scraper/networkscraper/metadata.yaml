@@ -22,6 +22,17 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [receive, transmit]
+  network.interface.name:
+    description: The name of the network interface.
+    type: string
+    requirement_level: recommended
+  network.io.direction:
+    description: The network IO operation direction.
+    type: string
+    enum:
+      - transmit
+      - receive
+    requirement_level: recommended
   protocol:
     description: Network protocol, e.g. TCP or UDP.
     type: string
@@ -40,7 +51,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [network.interface.name, network.io.direction]
   system.network.connections:
     enabled: true
     description: The number of connections.

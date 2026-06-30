@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemNetworkBandwidthLimit: SystemNetworkBandwidthLimitMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyDevice},
+						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection},
 					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             true,
@@ -72,7 +72,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemNetworkBandwidthLimit: SystemNetworkBandwidthLimitMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyDevice},
+						EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection},
 					},
 					SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 						Enabled:             false,

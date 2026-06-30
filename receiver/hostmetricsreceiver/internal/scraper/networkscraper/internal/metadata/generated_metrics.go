@@ -46,6 +46,32 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
+// AttributeNetworkIoDirection specifies the value network.io.direction attribute.
+type AttributeNetworkIoDirection int
+
+const (
+	_ AttributeNetworkIoDirection = iota
+	AttributeNetworkIoDirectionTransmit
+	AttributeNetworkIoDirectionReceive
+)
+
+// String returns the string representation of the AttributeNetworkIoDirection.
+func (av AttributeNetworkIoDirection) String() string {
+	switch av {
+	case AttributeNetworkIoDirectionTransmit:
+		return "transmit"
+	case AttributeNetworkIoDirectionReceive:
+		return "receive"
+	}
+	return ""
+}
+
+// MapAttributeNetworkIoDirection is a helper map of string to AttributeNetworkIoDirection attribute value.
+var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
+	"transmit": AttributeNetworkIoDirectionTransmit,
+	"receive":  AttributeNetworkIoDirectionReceive,
+}
+
 // AttributeProtocol specifies the value protocol attribute.
 type AttributeProtocol int
 
@@ -127,7 +153,7 @@ func (m *metricSystemNetworkBandwidthLimit) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemNetworkBandwidthLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemNetworkBandwidthLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkInterfaceNameAttributeValue string, networkIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -135,8 +161,11 @@ func (m *metricSystemNetworkBandwidthLimit) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemNetworkBandwidthLimitMetricAttributeKeyDevice) {
-		dp.Attributes().PutStr("device", deviceAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection) {
+		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
 	}
 
 	var s string
@@ -918,8 +947,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemNetworkBandwidthLimitDataPoint adds a data point to system.network.bandwidth.limit metric.
-func (mb *MetricsBuilder) RecordSystemNetworkBandwidthLimitDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemNetworkBandwidthLimit.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkBandwidthLimitDataPoint(ts pcommon.Timestamp, val int64, networkInterfaceNameAttributeValue string, networkIoDirectionAttributeValue AttributeNetworkIoDirection) {
+	mb.metricSystemNetworkBandwidthLimit.recordDataPoint(mb.startTime, ts, val, networkInterfaceNameAttributeValue, networkIoDirectionAttributeValue.String())
 }
 
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.

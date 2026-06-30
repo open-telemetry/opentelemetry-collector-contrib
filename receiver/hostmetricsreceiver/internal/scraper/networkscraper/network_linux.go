@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
 )
 
 const (
@@ -66,8 +68,12 @@ func (s *networkScraper) recordNetworkBandwidthMetrics(ctx context.Context) erro
 		if !ok {
 			continue
 		}
-		// speed is reported in Mbit/s; convert to bytes/s.
-		s.mb.RecordSystemNetworkBandwidthLimitDataPoint(now, speedMbps*125000, ioc.Name)
+		// speed is reported in Mbit/s; convert to bytes/s. A full-duplex link
+		// carries this capacity in each direction, so it pairs with the
+		// directional system.network.io usage to give utilization.
+		limit := speedMbps * 125000
+		s.mb.RecordSystemNetworkBandwidthLimitDataPoint(now, limit, ioc.Name, metadata.AttributeNetworkIoDirectionTransmit)
+		s.mb.RecordSystemNetworkBandwidthLimitDataPoint(now, limit, ioc.Name, metadata.AttributeNetworkIoDirectionReceive)
 	}
 	return nil
 }

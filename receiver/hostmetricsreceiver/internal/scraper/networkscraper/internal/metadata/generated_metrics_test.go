@@ -74,9 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemNetworkBandwidthLimitDataPoint(ts, 1, "device-val")
+			mb.RecordSystemNetworkBandwidthLimitDataPoint(ts, 1, "network.interface.name-val", AttributeNetworkIoDirectionTransmit)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemNetworkBandwidthLimitDataPoint(ts, 3, "device-val-2")
+				mb.RecordSystemNetworkBandwidthLimitDataPoint(ts, 3, "network.interface.name-val-2", AttributeNetworkIoDirectionReceive)
 			}
 
 			defaultMetricsCount++
@@ -169,9 +169,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						deviceAttrVal, ok := dp.Attributes().Get("device")
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmit", networkIoDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.bandwidth.limit"], "Found a duplicate in the metrics slice: system.network.bandwidth.limit")
 						validatedMetrics["system.network.bandwidth.limit"] = true
@@ -193,7 +196,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("device")
+						_, ok := dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.io.direction")
 						assert.False(t, ok)
 					}
 				case "system.network.connections":

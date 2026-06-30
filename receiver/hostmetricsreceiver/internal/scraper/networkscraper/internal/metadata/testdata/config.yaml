@@ -3,7 +3,7 @@ all_set:
   metrics:
     system.network.bandwidth.limit:
       enabled: true
-      attributes: ["device"]
+      attributes: ["network.interface.name","network.io.direction"]
     system.network.connections:
       enabled: true
       attributes: ["protocol","state"]
@@ -51,7 +51,7 @@ none_set:
   metrics:
     system.network.bandwidth.limit:
       enabled: false
-      attributes: ["device"]
+      attributes: ["network.interface.name","network.io.direction"]
     system.network.connections:
       enabled: false
       attributes: ["protocol","state"]

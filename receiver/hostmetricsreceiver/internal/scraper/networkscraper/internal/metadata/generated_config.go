@@ -12,7 +12,8 @@ import (
 type SystemNetworkBandwidthLimitMetricAttributeKey string
 
 const (
-	SystemNetworkBandwidthLimitMetricAttributeKeyDevice SystemNetworkBandwidthLimitMetricAttributeKey = "device"
+	SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName SystemNetworkBandwidthLimitMetricAttributeKey = "network.interface.name"
+	SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection   SystemNetworkBandwidthLimitMetricAttributeKey = "network.io.direction"
 )
 
 // SystemNetworkBandwidthLimitMetricConfig provides config for the system.network.bandwidth.limit metric.
@@ -41,9 +42,9 @@ func (ms *SystemNetworkBandwidthLimitMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *SystemNetworkBandwidthLimitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkBandwidthLimitMetricAttributeKeyDevice:
+		case SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection:
 		default:
-			return fmt.Errorf("metric system.network.bandwidth.limit doesn't have an attribute %v, valid attributes: [device]", val)
+			return fmt.Errorf("metric system.network.bandwidth.limit doesn't have an attribute %v, valid attributes: [network.interface.name, network.io.direction]", val)
 		}
 	}
 
@@ -358,7 +359,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemNetworkBandwidthLimit: SystemNetworkBandwidthLimitMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyDevice},
+			EnabledAttributes:   []SystemNetworkBandwidthLimitMetricAttributeKey{SystemNetworkBandwidthLimitMetricAttributeKeyNetworkInterfaceName, SystemNetworkBandwidthLimitMetricAttributeKeyNetworkIoDirection},
 		},
 		SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 			Enabled:             true,

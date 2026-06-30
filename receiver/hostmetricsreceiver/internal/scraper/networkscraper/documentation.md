@@ -109,7 +109,8 @@ Available link bandwidth for the network interface, derived from the reported li
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| device | Name of the network interface. | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface. | Any Str | Recommended | - |
+| network.io.direction | The network IO operation direction. | Str: ``transmit``, ``receive`` | Recommended | - |
 
 ### system.network.conntrack.count
 
