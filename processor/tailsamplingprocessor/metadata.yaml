@@ -41,6 +41,11 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331
     skip_strict_validation: true
 
+  - id: "processor.tailsamplingprocessor.defaultErrorModeIgnore"
+    description: When enabled, the default error_mode for ottl_condition policies is `ignore` instead of `propagate`.
+    stage: alpha
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420
+
 tests:
   config:
 
