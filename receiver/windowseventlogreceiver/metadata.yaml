@@ -12,7 +12,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [armstrmi, pjanotti]
+    active: [mrsillydog, pjanotti]
   unsupported_platforms: [darwin, linux]
 
 tests:
