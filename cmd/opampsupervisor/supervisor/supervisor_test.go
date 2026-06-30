@@ -328,13 +328,19 @@ service:
 	}
 }
 
-func TestCollectorCrashLogSnippet(t *testing.T) {
-	s := &Supervisor{
-		config: config.Supervisor{
-			Storage: config.Storage{Directory: t.TempDir()},
-		},
+func newCollectorCrashLogTestSupervisor(t *testing.T, passthroughLogs bool) *Supervisor {
+	cfg := config.DefaultSupervisor()
+	cfg.Storage.Directory = t.TempDir()
+	cfg.Agent.PassthroughLogs = passthroughLogs
+	cfg.Agent.CollectorCrashLogSnippetBytes = 4 * 1024
+	return &Supervisor{
+		config:            cfg,
 		telemetrySettings: newNopTelemetrySettings(),
 	}
+}
+
+func TestCollectorCrashLogSnippet(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
 
 	require.Empty(t, s.collectorCrashLogSnippet())
 
@@ -345,11 +351,18 @@ func TestCollectorCrashLogSnippet(t *testing.T) {
 	require.Equal(t, logContent, s.collectorCrashLogSnippet())
 }
 
+func TestCollectorCrashLogSnippetDisabled(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+	s.config.Agent.CollectorCrashLogSnippetBytes = 0
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	require.NoError(t, os.WriteFile(logPath, []byte("collector failed to start\n"), 0o600))
+
+	require.Empty(t, s.collectorCrashLogSnippet())
+}
+
 func TestCollectorCrashLogSnippetReturnsRawTail(t *testing.T) {
-	s := &Supervisor{
-		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
+	s := newCollectorCrashLogTestSupervisor(t, false)
 
 	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
 	logContent := "INFO collector starting\nlevel=error msg=\"boom\" component=receiver\nDEBUG tear down"
@@ -358,21 +371,24 @@ func TestCollectorCrashLogSnippetReturnsRawTail(t *testing.T) {
 	require.Equal(t, logContent, s.collectorCrashLogSnippet())
 }
 
+func TestCollectorCrashLogSnippetDropsInvalidUTF8(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, false)
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	require.NoError(t, os.WriteFile(logPath, []byte{'o', 'k', 0xff, '\n'}, 0o600))
+
+	require.Equal(t, "ok", s.collectorCrashLogSnippet())
+}
+
 func TestAppendCollectorCrashDetails(t *testing.T) {
 	t.Run("no snippet", func(t *testing.T) {
-		s := &Supervisor{
-			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-			telemetrySettings: newNopTelemetrySettings(),
-		}
+		s := newCollectorCrashLogTestSupervisor(t, false)
 		const base = "collector crashed"
 		require.Equal(t, base, s.appendCollectorCrashDetails(base))
 	})
 
 	t.Run("with snippet", func(t *testing.T) {
-		s := &Supervisor{
-			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
-			telemetrySettings: newNopTelemetrySettings(),
-		}
+		s := newCollectorCrashLogTestSupervisor(t, false)
 		logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
 		require.NoError(t, os.WriteFile(logPath, []byte("oops\nstacktrace"), 0o600))
 
@@ -392,13 +408,7 @@ func TestReadFileTailDropsPartialLine(t *testing.T) {
 }
 
 func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
-	s := &Supervisor{
-		config: config.Supervisor{
-			Storage: config.Storage{Directory: t.TempDir()},
-			Agent:   config.Agent{PassthroughLogs: true},
-		},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
+	s := newCollectorCrashLogTestSupervisor(t, true)
 
 	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
 	s.appendPassthroughLogLine("panic: boom")
@@ -407,13 +417,7 @@ func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
 }
 
 func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.T) {
-	s := &Supervisor{
-		config: config.Supervisor{
-			Storage: config.Storage{Directory: t.TempDir()},
-			Agent:   config.Agent{PassthroughLogs: true},
-		},
-		telemetrySettings: newNopTelemetrySettings(),
-	}
+	s := newCollectorCrashLogTestSupervisor(t, true)
 
 	s.appendPassthroughLogLine(`{"level":"error","msg":"previous run"}`)
 	require.Contains(t, s.appendCollectorCrashDetails("collector crashed"), "previous run")
@@ -439,7 +443,7 @@ func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
 	s := &Supervisor{
 		runCtx:            t.Context(),
 		commander:         cmdr,
-		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true}},
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true, CollectorCrashLogSnippetBytes: 4 * 1024}},
 		telemetrySettings: newNopTelemetrySettings(),
 		agentReadyChan:    make(chan struct{}, 1),
 	}
@@ -476,7 +480,7 @@ func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testi
 	s := &Supervisor{
 		runCtx:            t.Context(),
 		commander:         cmdr,
-		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true}},
+		config:            config.Supervisor{Agent: config.Agent{PassthroughLogs: true, CollectorCrashLogSnippetBytes: 4 * 1024}},
 		telemetrySettings: newNopTelemetrySettings(),
 		agentReadyChan:    make(chan struct{}, 1),
 	}

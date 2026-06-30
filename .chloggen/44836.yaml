@@ -19,7 +19,9 @@ subtext: |
   When a Collector process exits unexpectedly, the Supervisor now adds the relevant
   tail of the Collector logs to the health and remote config failure messages sent
   to the OpAMP server. This helps operators understand why a remote config failed
-  without first logging into the host to inspect `agent.log`.
+  without first logging into the host to inspect `agent.log`. This behavior is
+  disabled by default; set `agent::collector_crash_log_snippet_bytes` to a positive
+  byte count, such as `102400` for 100 KiB, up to `1048576` (1 MiB) to enable it.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

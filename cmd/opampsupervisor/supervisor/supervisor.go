@@ -81,11 +81,10 @@ var (
 )
 
 const (
-	persistentStateFileName       = "persistent_state.yaml"
-	agentConfigFileName           = "effective.yaml"
-	agentLogFileName              = "agent.log"
-	collectorCrashLogSnippetBytes = 4 * 1024
-	AllowNoPipelinesFeatureGate   = "service.AllowNoPipelines"
+	persistentStateFileName     = "persistent_state.yaml"
+	agentConfigFileName         = "effective.yaml"
+	agentLogFileName            = "agent.log"
+	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
