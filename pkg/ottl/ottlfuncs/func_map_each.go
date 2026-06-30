@@ -15,19 +15,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type MapArguments[K any] struct {
+type MapEachArguments[K any] struct {
 	Source ottl.Getter[K]
 	Mapper ottl.LambdaExpression[K]
 }
 
-func NewMapFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Map", &MapArguments[K]{}, createMapFunction[K])
+func NewMapEachFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("MapEach", &MapEachArguments[K]{}, createMapEachFunction[K])
 }
 
-func createMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MapArguments[K])
+func createMapEachFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*MapEachArguments[K])
 	if !ok {
-		return nil, errors.New("MapFactory args must be of type *MapArguments[K]")
+		return nil, errors.New("MapEachFactory args must be of type *MapEachArguments[K]")
 	}
 	return mapEach(args.Source, &args.Mapper), nil
 }
@@ -51,7 +51,7 @@ func mapEach[K any](source ottl.Getter[K], mapper *ottl.LambdaExpression[K]) ott
 		case pcommon.Slice:
 			return mapSliceValues(tCtx, typedVal, lb)
 		default:
-			return nil, fmt.Errorf("unsupported type provided to Map function: %T", typedVal)
+			return nil, fmt.Errorf("unsupported type: %T", typedVal)
 		}
 	}
 }

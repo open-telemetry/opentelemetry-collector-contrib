@@ -1602,7 +1602,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["mapped_slice"], Map(attributes["primitiveValuesSlice"], (i, v) => Concat([String(i), ":", String(v)], "")))`,
+			statement: `set(attributes["mapped_slice"], MapEach(attributes["primitiveValuesSlice"], (i, v) => Concat([String(i), ":", String(v)], "")))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("mapped_slice")
 				mapped.AppendEmpty().SetStr("0:value1")
@@ -1611,7 +1611,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["mapped_map"], Map(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
+			statement: `set(attributes["mapped_map"], MapEach(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				mapped := tCtx.GetLogRecord().Attributes().PutEmptyMap("mapped_map")
 				mapped.PutStr("bar", "bar:pass")

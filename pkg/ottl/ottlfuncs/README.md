@@ -535,7 +535,7 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
-- [Map](#map)
+- [MapEach](#mapeach)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -1530,14 +1530,14 @@ Examples:
 
 - `IsValidLuhn("17893729974")`
 
-### Map
+### MapEach
 
 > [!IMPORTANT]
 > This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
-`Map(source, mapper)`
+`MapEach(source, mapper)`
 
-The `Map` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
+The `MapEach` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
 transformed by `mapper`.
 
 `source` is a path expression or another getter that resolves to a slice or map.
@@ -1552,15 +1552,15 @@ Examples:
 
 Mapping slice values:
 
-- `Map(log.attributes["counts"], (_, v) => Int(v) * 2)`
+- `MapEach(log.attributes["counts"], (_, v) => Int(v) * 2)`
 
 Stringify map values:
 
-- `Map(log.attributes, (_, v) => String(v))`
+- `MapEach(log.attributes, (_, v) => String(v))`
 
 Store the mapped result:
 
-- `set(log.attributes["doubled"], Map(log.attributes["counts"], (_, v) => Int(v)))`
+- `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
 
 ### MD5
 

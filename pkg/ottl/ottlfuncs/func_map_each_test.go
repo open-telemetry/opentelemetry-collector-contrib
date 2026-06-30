@@ -119,7 +119,7 @@ func Test_mapEach_error(t *testing.T) {
 	assert.ErrorContains(t, err, "unsupported type")
 }
 
-func Test_createMapFunction(t *testing.T) {
+func Test_createMapEachFunction(t *testing.T) {
 	fCtx := ottl.FunctionContext{}
 	mapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return "ok", nil
@@ -131,7 +131,7 @@ func Test_createMapFunction(t *testing.T) {
 	}
 
 	t.Run("valid args", func(t *testing.T) {
-		fn, err := createMapFunction[any](fCtx, &MapArguments[any]{
+		fn, err := createMapEachFunction[any](fCtx, &MapEachArguments[any]{
 			Source: source,
 			Mapper: *mapper,
 		})
@@ -140,7 +140,7 @@ func Test_createMapFunction(t *testing.T) {
 	})
 
 	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createMapFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "MapFactory args must be of type *MapArguments[K]")
+		_, err := createMapEachFunction[any](fCtx, &struct{}{})
+		assert.EqualError(t, err, "MapEachFactory args must be of type *MapEachArguments[K]")
 	})
 }
