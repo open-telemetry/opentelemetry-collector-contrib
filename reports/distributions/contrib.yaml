@@ -24,7 +24,7 @@ components:
         - awsxray
         - azure_blob
         - azuredataexplorer
-        - azuremonitor
+        - azure_monitor
         - bmc_helix
         - cassandra
         - clickhouse
