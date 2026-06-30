@@ -293,7 +293,7 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	export := buildExportFunc(e.conf)
+	export := buildExportFunc(e.conf, e.marshaller.encodingUnframed)
 
 	pathParts := strings.Split(e.conf.Path, "*")
 

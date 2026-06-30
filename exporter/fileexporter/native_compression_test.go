@@ -6,21 +6,27 @@ package fileexporter
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -289,4 +295,92 @@ func TestNativeZstdCompression_WithRotation(t *testing.T) {
 	}
 
 	require.Equal(t, 100, totalTraces, "expected all 100 traces to be recoverable across all files")
+}
+
+// streamDecodableEncoding marshals log bodies as text and is stream-decodable.
+type streamDecodableEncoding struct{}
+
+func (streamDecodableEncoding) Start(context.Context, component.Host) error { return nil }
+func (streamDecodableEncoding) Shutdown(context.Context) error              { return nil }
+
+func (streamDecodableEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	var buf bytes.Buffer
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				buf.WriteString(lrs.At(k).Body().AsString())
+			}
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func (streamDecodableEncoding) NewLogsDecoder(io.Reader, ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return nil, nil
+}
+
+func logsWithBody(body string) plog.Logs {
+	ld := plog.NewLogs()
+	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr(body)
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
+// A stream-decodable encoding gets newline framing, yielding clean text.
+func TestNativeCompression_UnframedForStreamDecodableEncoding(t *testing.T) {
+	setNativeCompressionFeatureGate(t, true)
+
+	encID := component.MustNewID("streamdecodable")
+	path := filepath.Join(t.TempDir(), "app.log.zst")
+	conf := &Config{
+		Path:              path,
+		FormatType:        formatTypeJSON,
+		Encoding:          &encID,
+		Compression:       compressionZSTD,
+		CompressionParams: configcompression.CompressionParams{Level: 3},
+	}
+
+	host := hostWithEncoding{map[component.ID]component.Component{encID: streamDecodableEncoding{}}}
+	fe := &fileExporter{conf: conf}
+	require.NoError(t, fe.Start(t.Context(), host))
+	require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-one")))
+	require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-two")))
+	require.NoError(t, fe.Shutdown(t.Context()))
+
+	require.Equal(t, "line-one\nline-two\n", string(decompressZstd(t, path)))
+}
+
+// encodingUnframed toggles between newline and length-prefix framing.
+func TestBuildExportFunc_EncodingUnframed(t *testing.T) {
+	setNativeCompressionFeatureGate(t, true)
+
+	encID := component.MustNewID("enc")
+	conf := &Config{FormatType: formatTypeJSON, Encoding: &encID, Compression: compressionZSTD}
+
+	require.Equal(t, []byte("hello\n"), runExport(t, buildExportFunc(conf, true), []byte("hello")))
+	require.Equal(t, []byte{0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o'}, runExport(t, buildExportFunc(conf, false), []byte("hello")))
+}
+
+func runExport(t *testing.T, export exportFunc, buf []byte) []byte {
+	t.Helper()
+	out := &bytes.Buffer{}
+	w := &fileWriter{file: &nopWriteCloser{out}}
+	require.NoError(t, export(w, buf))
+	return out.Bytes()
+}
+
+func decompressZstd(t *testing.T, path string) []byte {
+	t.Helper()
+	compressed, err := os.ReadFile(path)
+	require.NoError(t, err)
+	reader, err := zstd.NewReader(bytes.NewReader(compressed))
+	require.NoError(t, err)
+	defer reader.Close()
+	decompressed, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	return decompressed
 }
