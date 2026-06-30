@@ -113,7 +113,11 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span,
 ) (ok bool) {
-	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, &v.exporter.config.TagMappings, v.exporter.logger)
+	httpSuccessConfig := httpStatusCodeSuccessConfig{
+		NonErrorHTTPStatusCodes:                   v.exporter.config.NonErrorHTTPStatusCodes,
+		AlignHTTPServerRequestSuccessWithOTelSpec: v.exporter.config.AlignHTTPServerRequestSuccessWithOTelSpec,
+	}
+	envelopes, err := spanToEnvelopesWithHTTPSuccessConfig(resource, scope, span, v.exporter.config.SpanEventsEnabled, httpSuccessConfig, &v.exporter.config.TagMappings, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
