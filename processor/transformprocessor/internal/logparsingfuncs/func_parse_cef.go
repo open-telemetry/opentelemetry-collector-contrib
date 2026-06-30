@@ -77,10 +77,6 @@ func parseCEFMessage(message string) (pcommon.Map, error) {
 	}
 
 	versionField := fields[0]
-	if !strings.HasPrefix(versionField, "CEF:") {
-		return pcommon.Map{}, fmt.Errorf("invalid CEF message: must start with 'CEF:', got %q", versionField)
-	}
-
 	version := strings.TrimPrefix(versionField, "CEF:")
 	if version == "" {
 		return pcommon.Map{}, errors.New("invalid CEF message: missing version")
