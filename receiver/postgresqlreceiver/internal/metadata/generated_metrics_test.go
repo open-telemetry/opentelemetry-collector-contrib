@@ -71,10 +71,10 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.bgwriter.checkpoint.count"] = mb.metricPostgresqlBgwriterCheckpointCount.config.AggregationStrategy
 			aggMap["postgresql.bgwriter.duration"] = mb.metricPostgresqlBgwriterDuration.config.AggregationStrategy
 			aggMap["postgresql.blocks_read"] = mb.metricPostgresqlBlocksRead.config.AggregationStrategy
-			aggMap["postgresql.database.conflicts"] = mb.metricPostgresqlDatabaseConflicts.config.AggregationStrategy
 			aggMap["postgresql.database.locks"] = mb.metricPostgresqlDatabaseLocks.config.AggregationStrategy
 			aggMap["postgresql.function.calls"] = mb.metricPostgresqlFunctionCalls.config.AggregationStrategy
 			aggMap["postgresql.operations"] = mb.metricPostgresqlOperations.config.AggregationStrategy
+			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
 			aggMap["postgresql.wal.delay"] = mb.metricPostgresqlWalDelay.config.AggregationStrategy
@@ -132,13 +132,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlConnectionMaxDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordPostgresqlDatabaseConflictsDataPoint(ts, 1, AttributeConflictTypeTablespace)
-			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlDatabaseConflictsDataPoint(ts, 3, AttributeConflictTypeLock)
-			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
@@ -171,6 +164,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlOperationsDataPoint(ts, 3, AttributeOperationUpd)
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlQueryConflictsDataPoint(ts, 1, AttributePostgresqlConflictTypeTablespace)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlQueryConflictsDataPoint(ts, 3, AttributePostgresqlConflictTypeLock)
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -249,10 +248,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlBgwriterCheckpointCount.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlBgwriterDuration.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlBlocksRead.aggDataPoints)
-				assert.Empty(t, mb.metricPostgresqlDatabaseConflicts.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlDatabaseLocks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlFunctionCalls.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlOperations.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalDelay.aggDataPoints)
@@ -556,50 +555,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "postgresql.database.conflicts":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["postgresql.database.conflicts"], "Found a duplicate in the metrics slice: postgresql.database.conflicts")
-						validatedMetrics["postgresql.database.conflicts"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.", mi.Description())
-						assert.Equal(t, "{conflict}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						conflictTypeAttrVal, ok := dp.Attributes().Get("type")
-						assert.True(t, ok)
-						assert.Equal(t, "tablespace", conflictTypeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["postgresql.database.conflicts"], "Found a duplicate in the metrics slice: postgresql.database.conflicts")
-						validatedMetrics["postgresql.database.conflicts"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.", mi.Description())
-						assert.Equal(t, "{conflict}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["postgresql.database.conflicts"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("type")
-						assert.False(t, ok)
-					}
 				case "postgresql.database.count":
 					assert.False(t, validatedMetrics["postgresql.database.count"], "Found a duplicate in the metrics slice: postgresql.database.count")
 					validatedMetrics["postgresql.database.count"] = true
@@ -804,6 +759,50 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
+				case "postgresql.query.conflicts":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.query.conflicts"], "Found a duplicate in the metrics slice: postgresql.query.conflicts")
+						validatedMetrics["postgresql.query.conflicts"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.", mi.Description())
+						assert.Equal(t, "{query}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlConflictTypeAttrVal, ok := dp.Attributes().Get("postgresql.conflict.type")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace", postgresqlConflictTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.query.conflicts"], "Found a duplicate in the metrics slice: postgresql.query.conflicts")
+						validatedMetrics["postgresql.query.conflicts"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.", mi.Description())
+						assert.Equal(t, "{query}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.query.conflicts"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.conflict.type")
 						assert.False(t, ok)
 					}
 				case "postgresql.replication.data_delay":

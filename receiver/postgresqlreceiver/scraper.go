@@ -425,7 +425,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	// pg_stat_database_conflicts is queried separately and only when the metric is
 	// enabled, since the counters are only populated on standby servers and would
 	// otherwise add an unnecessary query on every scrape.
-	if p.config.Metrics.PostgresqlDatabaseConflicts.Enabled {
+	if p.config.Metrics.PostgresqlQueryConflicts.Enabled {
 		wg.Add(1)
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
@@ -457,11 +457,11 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
 	}
 	if conflicts, ok := r.dbConflictStats[dbName]; ok {
-		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributeConflictTypeTablespace)
-		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflLock, metadata.AttributeConflictTypeLock)
-		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflSnapshot, metadata.AttributeConflictTypeSnapshot)
-		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributeConflictTypeBufferpin)
-		p.mb.RecordPostgresqlDatabaseConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributeConflictTypeDeadlock)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributePostgresqlConflictTypeTablespace)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflLock, metadata.AttributePostgresqlConflictTypeLock)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflSnapshot, metadata.AttributePostgresqlConflictTypeSnapshot)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributePostgresqlConflictTypeBufferpin)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributePostgresqlConflictTypeDeadlock)
 	}
 	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))

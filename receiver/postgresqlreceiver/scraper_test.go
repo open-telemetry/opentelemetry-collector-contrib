@@ -69,7 +69,7 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 
@@ -124,8 +124,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseConflicts.Enabled)
-		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err := scraper.scrape(t.Context())
@@ -151,7 +151,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlBlksRead.Enabled = false
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = false
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
-		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = false
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = false
 
 		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 		actualMetrics, err = scraper.scrape(t.Context())
@@ -365,8 +365,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
-		require.False(t, cfg.Metrics.PostgresqlDatabaseConflicts.Enabled)
-		cfg.Metrics.PostgresqlDatabaseConflicts.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlQueryConflicts.Enabled)
+		cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory, newCache(1), newTTLCache[string](1, time.Second))
 
 		actualMetrics, err := scraper.scrape(t.Context())
