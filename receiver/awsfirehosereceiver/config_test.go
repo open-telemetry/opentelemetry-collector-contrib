@@ -38,21 +38,26 @@ func TestLoadConfig(t *testing.T) {
 
 			err = xconfmap.Validate(cfg)
 			assert.NoError(t, err)
-			require.Equal(t, &Config{
-				RecordType: configType,
-				AccessKey:  "some_access_key",
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "0.0.0.0:4433",
-					},
-					TLS: configoptional.Some(configtls.ServerConfig{
-						Config: configtls.Config{
-							CertFile: "server.crt",
-							KeyFile:  "server.key",
-						},
-					}),
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "0.0.0.0:4433",
+			}
+			serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+				Config: configtls.Config{
+					CertFile: "server.crt",
+					KeyFile:  "server.key",
 				},
+			})
+			require.Equal(t, &Config{
+				RecordType:   configType,
+				AccessKey:    "some_access_key",
+				ServerConfig: serverConfig,
 			}, cfg)
 		})
 	}
