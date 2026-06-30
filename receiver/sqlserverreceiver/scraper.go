@@ -1107,7 +1107,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, worktablesFromCacheRatio)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverWorktableCacheHitRatioDataPoint(now, val.(float64))
+				// The query returns this ratio counter as a percentage (0-100); emit it as a 0-1 fraction.
+				s.mb.RecordSqlserverWorktableCacheHitRatioDataPoint(now, val.(float64)/100)
 			}
 		}
 

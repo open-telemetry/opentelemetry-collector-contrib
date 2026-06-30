@@ -1070,9 +1070,9 @@ metrics:
       value_type: int
   sqlserver.worktable.cache.hit_ratio:
     enabled: false
-    description: Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
+    description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
     stability: development
-    unit: "%"
+    unit: "1"
     gauge:
       value_type: double
     attributes: []

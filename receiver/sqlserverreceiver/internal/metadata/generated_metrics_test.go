@@ -1825,8 +1825,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.worktable.cache.hit_ratio"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.", mi.Description())
-					assert.Equal(t, "%", mi.Unit())
+					assert.Equal(t, "Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

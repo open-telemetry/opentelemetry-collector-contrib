@@ -5041,8 +5041,8 @@ type metricSqlserverWorktableCacheHitRatio struct {
 // init fills sqlserver.worktable.cache.hit_ratio metric with initial data.
 func (m *metricSqlserverWorktableCacheHitRatio) init() {
 	m.data.SetName("sqlserver.worktable.cache.hit_ratio")
-	m.data.SetDescription("Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.")
-	m.data.SetUnit("%")
+	m.data.SetDescription("Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 

@@ -789,13 +789,13 @@ Total number of mirror write transactions.
 
 ### sqlserver.worktable.cache.hit_ratio
 
-Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
+Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | Development |
+| 1 | Gauge | Double | Development |
 
 ## Default Events
 

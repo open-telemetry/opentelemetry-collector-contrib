@@ -568,14 +568,14 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Percentage of worktables that did not require initialization because they were retrieved from the worktable cache.
+          - description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
             gauge:
               dataPoints:
-                - asDouble: 97.5
+                - asDouble: 0.975
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.worktable.cache.hit_ratio
-            unit: '%'
+            unit: '1'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
