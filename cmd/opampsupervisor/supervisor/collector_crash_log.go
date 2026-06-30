@@ -64,7 +64,7 @@ func (s *Supervisor) passthroughLogTail() string {
 	if buf == nil {
 		return ""
 	}
-	return buf.Tail(int(s.config.Agent.CollectorCrashLogSnippetBytes))
+	return buf.Tail(s.config.Agent.CollectorCrashLogSnippetBytes)
 }
 
 func (s *Supervisor) appendPassthroughLogLine(line string) {
@@ -79,7 +79,7 @@ func (s *Supervisor) ensurePassthroughLogBuffer() *logRingBuffer {
 	s.passthroughLogMu.Lock()
 	defer s.passthroughLogMu.Unlock()
 	if s.passthroughLogBuffer == nil {
-		s.passthroughLogBuffer = newLogRingBuffer(int(s.config.Agent.CollectorCrashLogSnippetBytes))
+		s.passthroughLogBuffer = newLogRingBuffer(s.config.Agent.CollectorCrashLogSnippetBytes)
 	}
 	return s.passthroughLogBuffer
 }
