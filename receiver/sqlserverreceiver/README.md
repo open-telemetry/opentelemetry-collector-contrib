@@ -39,6 +39,9 @@ When configured to directly connect to the SQL Server instance, the user must ha
    - SQL Server pre-2022: `VIEW SERVER STATE`
    - SQL Server 2022 and later: `VIEW SERVER PERFORMANCE STATE`
 
+3. To collect the per-index physical stats metrics (`sqlserver.index.*`), `VIEW ANY DEFINITION`
+   is also required so the index, object, and schema catalog views are visible across databases.
+
 ## Configuration
 
 The following is a generic configuration that can be used for the default logs and metrics scraped
