@@ -57,11 +57,13 @@ func BenchmarkMergeSplit_Items(b *testing.B) {
 	}
 }
 
+var sinkInt int
+
 func BenchmarkBytesSize(b *testing.B) {
 	req := New(benchRecords(1000, 256))
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		_ = req.BytesSize()
+		sinkInt = req.BytesSize()
 	}
 }
