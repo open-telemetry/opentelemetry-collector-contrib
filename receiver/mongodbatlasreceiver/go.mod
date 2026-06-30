@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongod
 go 1.25.0
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/google/go-cmp v0.7.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.155.0
@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v4 v4.3.0
 	go.opentelemetry.io/collector/component/componenttest v0.155.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/config/confighttp v0.155.1-0.20260625204839-9782f9e8a3d6
 	go.opentelemetry.io/collector/config/confignet v1.61.1-0.20260625204839-9782f9e8a3d6
