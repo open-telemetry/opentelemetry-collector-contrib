@@ -52,8 +52,6 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
 github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
-github.com/graph-gophers/graphql-go v1.10.2 h1:HXu6Wu5klCH4ALn1fQHVI20cjEIa4wftavHIgbLA4Fo=
-github.com/graph-gophers/graphql-go v1.10.2/go.mod h1:AsADheC4CCFwd8n1/QbkduTlHgYYMsRgtPihYVAlEsk=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 h1:5VipnvEpbqr2gA2VbM+nYVbkIF28c5ZQfqCBQ5g2xfk=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0/go.mod h1:Hyl3n6Twe1hvtd9XUXDec4pTvgMSEixRuQKPTMH2bNs=
 github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9neXJWAZQ=
@@ -141,8 +139,6 @@ github.com/tklauser/numcpus v0.11.0 h1:nSTwhKH5e1dMNsCdVBukSZrURJRoHbSEQjdEbY+9R
 github.com/tklauser/numcpus v0.11.0/go.mod h1:z+LwcLq54uWZTX0u/bGobaV34u6V7KNlTZejzM6/3MQ=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-gitlab.com/gitlab-org/api/client-go/v2 v2.41.0 h1:sQ/1iwrn6Arnv9ocBsirUpGs7SRlvO347AFWDjQ00yg=
-gitlab.com/gitlab-org/api/client-go/v2 v2.41.0/go.mod h1:SKUbKSS59KPt6WeGNJoYF8HDaf/rFMUSITlftj/HkLg=
 gitlab.com/gitlab-org/api/client-go/v2 v2.44.0 h1:Vtv2WKC8p9BAygu5VCZlZUwDhTQ7UMlS3PErXyjUmeY=
 gitlab.com/gitlab-org/api/client-go/v2 v2.44.0/go.mod h1:pTbeBowtVA+0/ZExWEZYUGOrpu5qlRN5ZyOUf27BnVY=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
