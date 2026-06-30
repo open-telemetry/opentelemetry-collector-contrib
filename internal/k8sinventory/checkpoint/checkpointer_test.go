@@ -91,7 +91,7 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.resourceVersion, rv)
 
-			key := checkpointer.CheckpointKey(tt.namespace, tt.objectType)
+			key := checkpointer.checkpointKey(tt.namespace, tt.objectType)
 			assert.Equal(t, tt.expectedKey, key)
 		})
 	}
@@ -357,7 +357,7 @@ func TestCheckpointerLoadSkipsMissingAndUnparseable(t *testing.T) {
 	// going around SetCheckpoint's validation — write the raw bytes directly.
 	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
 	require.NoError(t, cp.Flush(ctx))
-	require.NoError(t, client.Set(ctx, cp.CheckpointKey("weird", "pods"), []byte("not-a-number")))
+	require.NoError(t, client.Set(ctx, cp.checkpointKey("weird", "pods"), []byte("not-a-number")))
 
 	cp.Load(ctx, []string{"default", "missing", "weird"}, "pods")
 

@@ -841,10 +841,6 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "", "pods")
 	require.NoError(t, err)
 	assert.NotEmpty(t, rv) // Should have a value
-
-	// Verify key format
-	key := checkpointer.CheckpointKey("", "pods")
-	assert.Equal(t, "latestResourceVersion/pods", key)
 }
 
 func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
@@ -907,13 +903,6 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	rv2, err := checkpointer.GetCheckpoint(t.Context(), "other", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv2)
-
-	// Verify key formats
-	key1 := checkpointer.CheckpointKey("default", "pods")
-	assert.Equal(t, "latestResourceVersion/pods.default", key1)
-
-	key2 := checkpointer.CheckpointKey("other", "pods")
-	assert.Equal(t, "latestResourceVersion/pods.other", key2)
 }
 
 func TestGetResourceVersion(t *testing.T) {

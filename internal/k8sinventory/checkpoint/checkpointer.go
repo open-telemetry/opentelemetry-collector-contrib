@@ -44,7 +44,7 @@ func (c *Checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType 
 		return "", errors.New("storage client is nil")
 	}
 
-	checkPointKey := c.CheckpointKey(namespace, objectType)
+	checkPointKey := c.checkpointKey(namespace, objectType)
 	c.logger.Debug("Retrieving checkpoint, key: "+checkPointKey,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
@@ -76,7 +76,7 @@ func (c *Checkpointer) SetCheckpoint(
 	_ context.Context,
 	namespace, objectType, resourceVersion string,
 ) error {
-	key := c.CheckpointKey(namespace, objectType)
+	key := c.checkpointKey(namespace, objectType)
 	if key == "" {
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
@@ -182,7 +182,7 @@ func (c *Checkpointer) DeleteCheckpoint(
 		return errors.New("storage client is nil")
 	}
 
-	key := c.CheckpointKey(namespace, objectType)
+	key := c.checkpointKey(namespace, objectType)
 	if key == "" {
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
@@ -198,10 +198,10 @@ func (c *Checkpointer) DeleteCheckpoint(
 	return nil
 }
 
-// CheckpointKey generates a unique storage key
+// checkpointKey generates a unique storage key
 // returns resourceVersion key for global watch stream (without namespace) or
 // per namespace watch stream.
-func (*Checkpointer) CheckpointKey(namespace, objectType string) string {
+func (*Checkpointer) checkpointKey(namespace, objectType string) string {
 	// when watch stream is cluster-wide or cluster-scoped resource (no namespace),
 	// the resource version is persisted per object type only.
 	if namespace == "" {
