@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -84,10 +85,11 @@ func (t *timingInfo) getDurations() (dnsNs, tcpNs, tlsNs, requestNs, responseNs 
 }
 
 type httpcheckScraper struct {
-	clients  []*http.Client
-	cfg      *Config
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
+	clients        []*http.Client
+	cfg            *Config
+	settings       component.TelemetrySettings
+	mb             *metadata.MetricsBuilder
+	lastStatusCode []int // per target, 0 signifies not present
 }
 
 // extractTLSInfo extracts TLS certificate information from the connection state
@@ -233,7 +235,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 			expandedTargets = append(expandedTargets, &targetClone) // Add the cloned target to expanded targets
 		}
 	}
-
+	h.lastStatusCode = make([]int, len(expandedTargets))
 	h.cfg.Targets = expandedTargets // Replace targets with expanded targets
 	return err
 }
@@ -417,8 +419,42 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Record HTTP status class metrics
+			//
+			// we want for e.g. status_code=200
+			// httpcheck.status{http.status_class:2xx, http.status_code:200,...} = 1
+			// the other httpcheck.status DataPoints may be 0 or (preferably) not exported
+			//
+			// when the code changes, we want to reflect that immediately, e.g
+			// sart with status=200
+			// httpcheck.status{http.status_class:2xx, http.status_code:200,...} = 1
+			// change status=200 to status=500:
+			// httpcheck.status{http.status_class:2xx, http.status_code:200,...} = 0
+			// httpcheck.status{http.status_class:5xx, http.status_code:500,...} = 1
+			// after "stabilitzation" at status=500 we could omit the 200 series and only export
+			// httpcheck.status{http.status_class:5xx, http.status_code:500,...} = 1
+			//
+			// We also want a metric without status_code for each class:
+			// httpcheck.status{http.status_class:2xx, ...} = 1
+
+			// did the status change since last successful scrape? (even in the same class, e.g 200 -> 201)
+			// then export the old status_code once with value 0 to avoid stale value 1
+			// and was there a ever a successful scrape?
+			if h.lastStatusCode[targetIndex] != statusCode && h.lastStatusCode[targetIndex] != 0 {
+				class := fmt.Sprintf("%dxx", h.lastStatusCode[targetIndex]/100)
+				h.mb.RecordHttpcheckStatusDataPoint(
+					now,
+					int64(0),
+					endpoint,
+					int64(h.lastStatusCode[targetIndex]),
+					req.Method,
+					class,
+				)
+			}
+
 			for class, intVal := range httpResponseClasses {
+				valueForStatusClass := 0
 				if statusCode/100 == intVal {
+					valueForStatusClass = 1
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(1),
@@ -427,16 +463,23 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 						req.Method,
 						class,
 					)
-				} else {
-					h.mb.RecordHttpcheckStatusDataPoint(
-						now,
-						int64(0),
-						h.cfg.Targets[targetIndex].Endpoint,
-						int64(0), // Use 0 as status code when the class doesn't match
-						req.Method,
-						class,
-					)
 				}
+				// status_code-less datapoint
+				h.mb.RecordHttpcheckStatusDataPoint(
+					now,
+					int64(valueForStatusClass),
+					h.cfg.Targets[targetIndex].Endpoint,
+					// mark status_code attribute for deletion in removeStatusCodeForZeroValues
+					// cannot omit this here as RecordHttpcheckStatusDataPoint is auto-generated
+					int64(0),
+					req.Method,
+					class,
+				)
+			}
+			// store current statusCode for next round only when it was recorded above (0 isn't)
+			// also prevents confusing lastStatusCode's initial 0 with reset to 0
+			if statusCode != 0 {
+				h.lastStatusCode[targetIndex] = statusCode
 			}
 			mux.Unlock()
 		}(client, idx)
@@ -444,15 +487,16 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 	wg.Wait()
 
-	// Emit metrics and post-process to remove http.status_code when value is 0
+	// Emit metrics and post-process to remove http.status_code attribute where not useful
 	metrics := h.mb.Emit()
-	removeStatusCodeForZeroValues(metrics)
+	removeStatusCodeIfZero(metrics)
 
 	return metrics, nil
 }
 
-// removeStatusCodeForZeroValues removes the http.status_code attribute from httpcheck.status metrics
-func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
+// removeStatusCodeIfZero removes the http.status_code attribute from httpcheck.status metrics
+// where http.status_code == 0
+func removeStatusCodeIfZero(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -468,8 +512,9 @@ func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
 						dps := m.Sum().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
 							dp := dps.At(l)
-							// If the value is 0, remove the http.status_code attribute
-							if dp.IntValue() == 0 {
+							statusCode, ok := dp.Attributes().Get("http.status_code")
+							// remove the http.status_code attribute if its value is 0
+							if ok && statusCode.Int() == 0 {
 								dp.Attributes().Remove("http.status_code")
 							}
 						}

@@ -64,6 +64,19 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 4xx
+                    - key: http.url
+                      value:
+                        stringValue: http://invalid-endpoint
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 4xx
                     - key: http.status_code
                       value:
                         intValue: "404"
