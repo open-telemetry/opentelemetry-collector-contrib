@@ -1628,7 +1628,7 @@ func Test_e2e_converters(t *testing.T) {
 
 func Test_e2e_ottl_features(t *testing.T) {
 	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
-  true))
+		true))
 	tests := []struct {
 		name      string
 		statement string
