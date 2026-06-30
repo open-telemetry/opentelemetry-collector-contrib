@@ -247,8 +247,12 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 				profile := scopeProfile.Profiles().At(k)
 				counter.updateTimestamp(profile.Time())
 				pCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, ld.Dictionary())
-				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile, ld.Dictionary())
-				multiError = errors.Join(multiError, counter.update(ctx, attributes, scopeAttrs, resourceAttrs, pCtx))
+				attributes, attrErr := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile, ld.Dictionary())
+				if attrErr != nil {
+					multiError = errors.Join(multiError, attrErr)
+				} else {
+					multiError = errors.Join(multiError, counter.update(ctx, attributes, scopeAttrs, resourceAttrs, pCtx))
+				}
 				pCtx.Close()
 			}
 		}
