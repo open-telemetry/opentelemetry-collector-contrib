@@ -64,10 +64,15 @@ BEGIN
 END;
 "
 
+# VIEW SERVER PERFORMANCE STATE covers the sys.dm_db_index_physical_stats DMF; VIEW ANY
+# DEFINITION makes the dbo-owned tables/indexes visible in the sys.indexes/objects/schemas
+# catalog views the index physical stats query joins against. Without the latter, those
+# joins return no rows and the per-database query yields no index metrics.
 $SQLCMD -Q "
 CREATE LOGIN otelcollectoruser WITH PASSWORD = 'otel-password123';
 CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
 GRANT VIEW SERVER PERFORMANCE STATE to otelcollectoruser;
+GRANT VIEW ANY DEFINITION to otelcollectoruser;
 "
 
 echo "Initialization complete."
