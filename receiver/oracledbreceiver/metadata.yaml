@@ -4,8 +4,6 @@ type: oracledb
 description: |
   This receiver periodically queries an Oracle Database host to collect metrics.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:
@@ -97,6 +95,9 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  oracle.db.service:
+    description: The Oracle service name associated with the database connection.
+    type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
@@ -232,6 +233,18 @@ attributes:
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+  oracledb.redo.request.type:
+    description: The type of redo log buffer space request.
+    type: string
+    enum: [log_space]
+  oracledb.redo.retry.type:
+    description: The type of redo buffer allocation retry.
+    type: string
+    enum: [buffer_allocation]
+  oracledb.redo.type:
+    description: The phase of the redo pipeline that a redo time measurement is attributed to.
+    type: string
+    enum: [write, log_space_wait, sync]
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
@@ -302,6 +315,7 @@ events:
       - db.system.name
       - user.name
       - db.namespace
+      - oracle.db.service
       - client.address
       - client.port
       - network.peer.address
@@ -355,6 +369,8 @@ events:
     attributes:
       - db.system.name
       - db.server.name
+      - db.namespace
+      - oracle.db.service
       - db.query.text
       - oracledb.query_plan
       - oracledb.sql_id
@@ -815,6 +831,70 @@ metrics:
     gauge:
       value_type: double
     unit: By
+  oracledb.redo.blocks:
+    description: Number of redo blocks moved between the redo log and storage.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{block}"
+    attributes: [disk.io.direction]
+  oracledb.redo.operations:
+    description: Number of redo I/O operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [disk.io.direction]
+  oracledb.redo.requests:
+    description: Number of times a process requested space in the redo log buffer and had to wait.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{request}"
+    attributes: [oracledb.redo.request.type]
+  oracledb.redo.retries:
+    description: Number of times a process waited and retried to allocate space in the redo buffer.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{retry}"
+    attributes: [oracledb.redo.retry.type]
+  oracledb.redo.size:
+    description: Amount of redo generated.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.redo.time:
+    description: Time spent in each phase of the redo pipeline.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+    attributes: [oracledb.redo.type]
   oracledb.redo_allocation.utilization:
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false

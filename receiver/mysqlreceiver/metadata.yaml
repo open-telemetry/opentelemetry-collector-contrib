@@ -8,11 +8,9 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, cjksplunk]
+    active: [antonblock, ishleenk17]
     seeking_new: true
     emeritus: [djaglowski]
-
-reaggregation_enabled: true
 
 resource_attributes:
   mysql.instance.endpoint:

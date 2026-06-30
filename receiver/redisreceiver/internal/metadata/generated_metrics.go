@@ -263,7 +263,8 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.cluster.slots_pfail",
 	},
 	RedisClusterState: metricInfo{
-		Name: "redis.cluster.state",
+		Name:       "redis.cluster.state",
+		Attributes: []string{"cluster_state"},
 	},
 	RedisClusterStatsMessagesReceived: metricInfo{
 		Name: "redis.cluster.stats_messages_received",
@@ -275,13 +276,16 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.cluster.uptime",
 	},
 	RedisCmdCalls: metricInfo{
-		Name: "redis.cmd.calls",
+		Name:       "redis.cmd.calls",
+		Attributes: []string{"cmd"},
 	},
 	RedisCmdLatency: metricInfo{
-		Name: "redis.cmd.latency",
+		Name:       "redis.cmd.latency",
+		Attributes: []string{"cmd", "percentile"},
 	},
 	RedisCmdUsec: metricInfo{
-		Name: "redis.cmd.usec",
+		Name:       "redis.cmd.usec",
+		Attributes: []string{"cmd"},
 	},
 	RedisCommands: metricInfo{
 		Name: "redis.commands",
@@ -296,16 +300,20 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.connections.rejected",
 	},
 	RedisCPUTime: metricInfo{
-		Name: "redis.cpu.time",
+		Name:       "redis.cpu.time",
+		Attributes: []string{"state"},
 	},
 	RedisDbAvgTTL: metricInfo{
-		Name: "redis.db.avg_ttl",
+		Name:       "redis.db.avg_ttl",
+		Attributes: []string{"db"},
 	},
 	RedisDbExpires: metricInfo{
-		Name: "redis.db.expires",
+		Name:       "redis.db.expires",
+		Attributes: []string{"db"},
 	},
 	RedisDbKeys: metricInfo{
-		Name: "redis.db.keys",
+		Name:       "redis.db.keys",
+		Attributes: []string{"db"},
 	},
 	RedisKeysEvicted: metricInfo{
 		Name: "redis.keys.evicted",
@@ -347,7 +355,8 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.memory.used_memory_startup",
 	},
 	RedisMode: metricInfo{
-		Name: "redis.mode",
+		Name:       "redis.mode",
+		Attributes: []string{"mode"},
 	},
 	RedisNetInput: metricInfo{
 		Name: "redis.net.input",
@@ -377,7 +386,8 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.replication.replica_offset",
 	},
 	RedisRole: metricInfo{
-		Name: "redis.role",
+		Name:       "redis.role",
+		Attributes: []string{"role"},
 	},
 	RedisSentinelMasters: metricInfo{
 		Name: "redis.sentinel.masters",
@@ -473,7 +483,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricRedisClientsBlocked struct {

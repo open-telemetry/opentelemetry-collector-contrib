@@ -123,39 +123,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 3, "circuit_breaker_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 3, "circuit_breaker_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 3, "circuit_breaker_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterHealthDataPoint(ts, 3, AttributeHealthStatusYellow)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
@@ -165,47 +159,39 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 3, AttributeCacheNameQuery)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 3, AttributeClusterPublishedDifferenceStateCompatible)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterShardsDataPoint(ts, 3, AttributeShardStateActivePrimary)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 3, AttributeClusterStateQueueStateCommitted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 3, "cluster_state_update_state-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
@@ -230,21 +216,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 3, AttributeDocumentStateDeleted, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
@@ -263,14 +246,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
@@ -289,7 +270,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
@@ -308,40 +288,33 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 3, AttributeIndexingPressureStagePrimary)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 3, AttributeQueryCacheCountTypeMiss)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 3, AttributeCacheNameQuery)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
@@ -351,65 +324,51 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 3, AttributeDirectionSent)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 3, AttributeDocumentStateDeleted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
@@ -434,43 +393,36 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 3, AttributeGetResultMiss)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 3, AttributeOperationDelete)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 3, "ingest_pipeline_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 3, "ingest_pipeline_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 3, "ingest_pipeline_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
@@ -480,68 +432,54 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 3, AttributeSegmentsMemoryObjectTypeDocValue)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 3, "thread_pool_name-val-2", AttributeTaskStateCompleted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 3, "thread_pool_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 3, "thread_pool_name-val-2", AttributeThreadStateIdle)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
@@ -557,62 +495,51 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmClassesLoadedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmGcCollectionsCountDataPoint(ts, 3, "collector_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 3, "collector_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmMemoryPoolMaxDataPoint(ts, 3, "memory_pool_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmMemoryPoolUsedDataPoint(ts, 3, "memory_pool_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmThreadsCountDataPoint(ts, 1)

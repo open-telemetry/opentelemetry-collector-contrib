@@ -25,7 +25,7 @@ The purpose of this receiver is to allow users to monitor metrics from standalon
 
 This receiver supports MongoDB versions:
 
-- 4.0+
+- 4.4+
 - 5.0
 - 6.0
 - 7.0

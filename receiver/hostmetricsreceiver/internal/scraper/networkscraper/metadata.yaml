@@ -8,8 +8,6 @@ status:
   codeowners:
     active: [dmitryax, braydonk, rogercoll]
 
-reaggregation_enabled: true
-
 sem_conv_version: 1.9.0
 
 attributes:
