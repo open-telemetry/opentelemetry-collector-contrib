@@ -12,7 +12,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.60.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.18.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.155.0
