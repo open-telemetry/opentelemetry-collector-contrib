@@ -27,4 +27,3 @@ azure_monitor/tag_mappings:
     application_version: [service.version]
 
 disk/3:
-
