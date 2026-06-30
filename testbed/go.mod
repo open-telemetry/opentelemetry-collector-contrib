@@ -87,26 +87,26 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.201 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.80.2 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.203 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.80.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.82.0-devel.0.20260617134427-74e6d071eaae // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.82.0-devel.0.20260617134427-74e6d071eaae // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.80.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.80.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.80.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.80.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.80.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.80.2 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.60.0 // indirect
-	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.80.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.80.3 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.61.0 // indirect
+	github.com/DataDog/datadog-go/v5 v5.9.0 // indirect
 	github.com/DataDog/go-sqllexer v0.2.2 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.8 // indirect
@@ -122,13 +122,13 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.32.25 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.24 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.32.26 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.25 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.30 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.308.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.309.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.81.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.52.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.12 // indirect
@@ -136,10 +136,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.52.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.54.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/rds v1.118.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.2.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.31.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.2.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.31.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.43.4 // indirect
 	github.com/aws/smithy-go v1.27.1 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
