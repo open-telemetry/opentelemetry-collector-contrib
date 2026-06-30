@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const querySampleTraceContextKey = "_otel_trace_context"
@@ -780,10 +779,6 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	if !metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
-		return c.getDeprecatedReplicationStats(ctx)
-	}
-
 	query := `SELECT
 	coalesce(cast(client_addr as varchar), 'unix') AS client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
