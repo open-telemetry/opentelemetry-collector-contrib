@@ -18,6 +18,7 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -258,7 +259,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
 
 	if operator.includeLogRecordOriginal {
-		entry.AddAttribute("log.record.original", strings.TrimSpace(string(line)))
+		entry.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
 	}
 
 	return entry, cursorString, nil
