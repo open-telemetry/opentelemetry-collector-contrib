@@ -17,4 +17,3 @@ tests:
   expect_consumer_error: true
   goleak:
     skip: true
-
