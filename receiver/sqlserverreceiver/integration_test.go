@@ -95,11 +95,11 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := basicConfig(uint(portNumber))
-	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexFragmentation.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageCount.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSize.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexAvgPageSpaceUsed.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.Metrics.SqlserverIndexFragmentation.Enabled = true
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = true
+	cfg.Metrics.SqlserverIndexSize.Enabled = true
+	cfg.Metrics.SqlserverIndexAvgPageSpaceUsed.Enabled = true
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = true
 
 	settings := receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
@@ -127,7 +127,7 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 
 	// We expect at least 2 indexes from test_indexed_table (PK clustered + nonclustered)
 	// in the mydb database
-	require.Greater(t, actualMetrics.ResourceMetrics().Len(), 0, "expected at least one resource metric")
+	require.Positive(t, actualMetrics.ResourceMetrics().Len(), "expected at least one resource metric")
 
 	// Collect all data points and verify attribute presence
 	foundMyDB := false
