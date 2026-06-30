@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/eventhub"
@@ -120,6 +121,100 @@ func TestHandleLogs(t *testing.T) {
 	}
 }
 
+func TestHandleMetrics(t *testing.T) {
+	tests := map[string]struct {
+		testDataFile           string
+		expectedMetricsBatches int
+		expectedDataPoints     int
+		expectedReturnValue    string
+		expectedErrorSubstring string
+		checkMetadata          bool
+	}{
+		"valid_metrics": {
+			testDataFile:           "valid_metrics.request.json",
+			expectedMetricsBatches: 1,
+			expectedDataPoints:     1,
+			expectedReturnValue:    "success",
+			checkMetadata:          true,
+		},
+		"invalid_unmarshal": {
+			testDataFile:           "invalid_metrics.request.json",
+			expectedMetricsBatches: 0,
+			expectedReturnValue:    "failure",
+			expectedErrorSubstring: "unmarshal message 0",
+		},
+		// Same invoke shape as valid_logs: Data only has "logs", so the metrics binding is absent.
+		"wrong_binding": {
+			testDataFile:           "valid_logs.request.json",
+			expectedMetricsBatches: 0,
+			expectedReturnValue:    "failure",
+			expectedErrorSubstring: "missing data for binding \"metrics\"",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			metricsSink := consumertest.MetricsSink{}
+			unmarshaler := &testMetricsUnmarshaler{}
+			decoder := transport.NewBinaryDecoder()
+			protocol := newInvokeProtocol(decoder, zap.NewNop(), eventhub.ExtractMetadata)
+			consumer := eventhub.NewMetricsConsumer(unmarshaler, &metricsSink)
+			prof := newProfile("metrics", protocol, consumer)
+			h := createHandler(prof)
+
+			requestBody, err := os.ReadFile(filepath.Join("testdata", test.testDataFile))
+			require.NoError(t, err, "failed to read test data file")
+
+			req := httptest.NewRequest(http.MethodPost, "/metrics", io.NopCloser(bytes.NewReader(requestBody)))
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Result().StatusCode, "status code")
+			require.Equal(t, "application/json", w.Result().Header.Get("Content-Type"), "content-type")
+
+			body, err := io.ReadAll(w.Result().Body)
+			require.NoError(t, err, "failed to read response body")
+
+			var resp invokeprotocol.InvokeResponse
+			require.NoError(t, json.Unmarshal(body, &resp))
+			assert.Equal(t, test.expectedReturnValue, resp.ReturnValue, "returnValue")
+
+			if test.expectedErrorSubstring != "" {
+				require.NotNil(t, resp.Outputs, "outputs should be set on failure")
+				assert.Contains(t, resp.Outputs.FailedMessage.Error, test.expectedErrorSubstring, "error message")
+			}
+
+			assert.Len(t, metricsSink.AllMetrics(), test.expectedMetricsBatches, "number of metrics batches")
+			if test.expectedMetricsBatches > 0 {
+				totalPoints := 0
+				for _, md := range metricsSink.AllMetrics() {
+					totalPoints += md.DataPointCount()
+					if test.checkMetadata {
+						for i := 0; i < md.ResourceMetrics().Len(); i++ {
+							resource := md.ResourceMetrics().At(i).Resource()
+							name, ok := resource.Attributes().Get(eventhub.AttrEventHubName)
+							require.True(t, ok)
+							assert.Equal(t, "metrics", name.Str())
+							partitionID, ok := resource.Attributes().Get(eventhub.AttrEventHubPartitionID)
+							require.True(t, ok)
+							assert.Equal(t, "3", partitionID.Str())
+							consumerGroup, ok := resource.Attributes().Get(eventhub.AttrEventHubConsumerGroup)
+							require.True(t, ok)
+							assert.Equal(t, "test", consumerGroup.Str())
+							namespace, ok := resource.Attributes().Get(eventhub.AttrEventHubNamespace)
+							require.True(t, ok)
+							assert.Equal(t, "test-namespace.servicebus.windows.net", namespace.Str())
+						}
+					}
+				}
+				assert.Equal(t, test.expectedDataPoints, totalPoints, "data point count")
+			}
+
+			metricsSink.Reset()
+		})
+	}
+}
+
 // testLogsUnmarshaler returns one log record for payload "valid", error for "invalid".
 type testLogsUnmarshaler struct{}
 
@@ -132,4 +227,20 @@ func (testLogsUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty()
 	return logs, nil
+}
+
+// testMetricsUnmarshaler returns one int gauge for payload "valid", error for "invalid".
+type testMetricsUnmarshaler struct{}
+
+func (testMetricsUnmarshaler) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
+	if string(data) == "invalid" {
+		return pmetric.Metrics{}, errors.New("invalid metric payload")
+	}
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	met := sm.Metrics().AppendEmpty()
+	met.SetName("test")
+	met.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+	return m, nil
 }
