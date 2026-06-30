@@ -4,8 +4,10 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -33,9 +35,111 @@ type resourceAssertion struct {
 }
 
 type scopeAssertion struct {
-	Name    string            `yaml:"name,omitempty"`
-	Version string            `yaml:"version,omitempty"`
+	// Name is always matched exactly: it is the stable instrumentation library
+	// identity, so it has no /exists or /regex operator (unlike Version).
+	Name    string
+	Version versionMatcher
+	Metrics []metricAssertion
+}
+
+type matcherOp int
+
+const (
+	matchExact  matcherOp = iota // `version:` — the only form WriteAssertionFile emits
+	matchExists                  // `version/exists: true` — present, any value
+	matchRegex                   // `version/regex: <pattern>` — full-string match
+)
+
+// versionMatcher matches a scope version. Its zero value is an exact match
+// against "", so an omitted `version:` key still pins the empty scope version.
+type versionMatcher struct {
+	op    matcherOp
+	value string
+}
+
+// scopeAssertionYAML is the on-disk shape of scopeAssertion: the operator keys
+// must be distinct YAML fields because yaml.v3 cannot decode a `version/regex`
+// suffix into the versionMatcher struct directly.
+type scopeAssertionYAML struct {
+	Name          string  `yaml:"name,omitempty"`
+	Version       *string `yaml:"version,omitempty"`
+	VersionExists *bool   `yaml:"version/exists,omitempty"`
+	VersionRegex  *string `yaml:"version/regex,omitempty"`
+
 	Metrics []metricAssertion `yaml:"metrics"`
+}
+
+// UnmarshalYAML decodes a scope, resolving the version operator keys into a versionMatcher.
+func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
+	var raw scopeAssertionYAML
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
+	if err != nil {
+		return err
+	}
+
+	s.Name = raw.Name
+	s.Version = version
+	s.Metrics = raw.Metrics
+	return nil
+}
+
+func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMatcher, error) {
+	set := 0
+	if exact != nil {
+		set++
+	}
+	if exists != nil {
+		set++
+	}
+	if regex != nil {
+		set++
+	}
+	if set > 1 {
+		return versionMatcher{}, errors.New(`scope must use at most one of "version", "version/exists", "version/regex"`)
+	}
+
+	switch {
+	case exists != nil:
+		if !*exists {
+			return versionMatcher{}, errors.New("scope version/exists must be true (the only supported value)")
+		}
+		return versionMatcher{op: matchExists}, nil
+	case regex != nil:
+		if _, err := regexp.Compile("^(?:" + *regex + ")$"); err != nil {
+			return versionMatcher{}, fmt.Errorf("scope version/regex has invalid pattern %q: %w", *regex, err)
+		}
+		return versionMatcher{op: matchRegex, value: *regex}, nil
+	case exact != nil:
+		return versionMatcher{op: matchExact, value: *exact}, nil
+	default:
+		return versionMatcher{op: matchExact}, nil
+	}
+}
+
+// MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
+// scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
+func (s scopeAssertion) MarshalYAML() (any, error) {
+	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
+
+	switch s.Version.op {
+	case matchExists:
+		t := true
+		out.VersionExists = &t
+	case matchRegex:
+		v := s.Version.value
+		out.VersionRegex = &v
+	case matchExact:
+		if s.Version.value != "" {
+			v := s.Version.value
+			out.Version = &v
+		}
+	}
+
+	return out, nil
 }
 
 type metricAssertion struct {

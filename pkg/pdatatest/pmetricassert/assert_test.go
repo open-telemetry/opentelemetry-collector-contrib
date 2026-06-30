@@ -280,6 +280,198 @@ resources:
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_ScopeVersionExistsMatcher(t *testing.T) {
+	// The scope version/exists matcher is the assertion-file equivalent of
+	// pmetrictest.IgnoreScopeVersion: the version must be present but its
+	// exact value is volatile.
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/exists: true
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// A different scope version still satisfies version/exists.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v9.9.9")
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_ScopeVersionExistsMatcherDetectsMissingVersion(t *testing.T) {
+	m := buildSampleMetrics()
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/exists: true
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+}
+
+func TestAssertMetrics_ScopeVersionRegexMatcher(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/regex: v[0-9]+\.[0-9]+\.[0-9]+
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Another semver-shaped version still matches.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v1.2.3")
+	require.NoError(t, AssertMetrics(path, m))
+
+	// A non-matching version fails.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("snapshot")
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+
+	// The pattern must match the full version: a value the regex matches only
+	// as a prefix must still fail (the matcher anchors with ^(?:...)$).
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v1.2.3-rc1")
+	err = AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+}
+
+func TestAssertMetrics_ScopeMatcherRoundTripStaysExact(t *testing.T) {
+	// WriteAssertionFile must keep emitting plain name:/version: scalars, not
+	// operator-suffixed keys, so generated snapshots are unchanged.
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m))
+
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), "name: github.com/example/receiver")
+	require.Contains(t, string(raw), "version: v0.0.1")
+	require.NotContains(t, string(raw), "/exists")
+	require.NotContains(t, string(raw), "/regex")
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestReadDocument_ScopeMatcherSchemaErrors(t *testing.T) {
+	t.Run("exists must be true", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version/exists: false
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "scope version/exists must be true")
+	})
+
+	t.Run("at most one version matcher", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version: v1
+          version/regex: v[0-9]+
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must use at most one of")
+	})
+
+	t.Run("regex pattern must compile", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version/regex: "["
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `scope version/regex has invalid pattern "["`)
+	})
+}
+
 func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 	// A YAML snippet that omits `datapoints:` entirely must match a metric
 	// with exactly one datapoint that has no attributes.
