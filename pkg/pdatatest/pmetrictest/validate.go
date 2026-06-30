@@ -20,6 +20,9 @@ import (
 //   - No two metrics share the same name under the same scope.
 //   - No two ScopeMetrics share the same scope (name + version) under the same resource.
 //   - No two ResourceMetrics share the same resource attributes.
+//   - No ResourceMetrics entry has an empty ScopeMetrics set.
+//   - No ScopeMetrics entry has an empty Metrics set.
+//   - No typed Metric has an empty datapoint set.
 //
 // It returns nil if no violations are found.
 func ValidateMetrics(md pmetric.Metrics) error {
@@ -29,14 +32,38 @@ func ValidateMetrics(md pmetric.Metrics) error {
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		sms := rm.ScopeMetrics()
+
+		// Check for empty ScopeMetrics set.
+		if sms.Len() == 0 {
+			errs = multierr.Append(errs, fmt.Errorf(
+				`resource "%v" at index %d has no scope metrics`,
+				rm.Resource().Attributes().AsRaw(), i))
+		}
+
 		for j := 0; j < sms.Len(); j++ {
 			sm := sms.At(j)
 			ms := sm.Metrics()
+
+			// Check for empty Metrics set.
+			if ms.Len() == 0 {
+				errPrefix := fmt.Sprintf(`resource "%v"`,
+					rm.Resource().Attributes().AsRaw())
+				errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix,
+					fmt.Errorf("scope %q at index %d has no metrics", sm.Scope().Name(), j)))
+			}
+
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
 				if err := validateDatapointUniqueness(m); err != nil {
 					errPrefix := fmt.Sprintf(`resource "%v": scope %q: metric %q`,
 						rm.Resource().Attributes().AsRaw(), sm.Scope().Name(), m.Name())
+					errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
+				}
+
+				// Check for empty datapoint set on typed metrics.
+				if err := validateEmptyDatapoints(m); err != nil {
+					errPrefix := fmt.Sprintf(`resource "%v": scope %q`,
+						rm.Resource().Attributes().AsRaw(), sm.Scope().Name())
 					errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
 				}
 			}
@@ -196,4 +223,29 @@ func validateDuplicateScopes(sms pmetric.ScopeMetricsSlice) error {
 	}
 
 	return errs
+}
+
+// validateEmptyDatapoints checks that a typed metric (non-Empty) has at least
+// one datapoint. MetricTypeEmpty is excluded since it has no datapoint slice.
+func validateEmptyDatapoints(m pmetric.Metric) error {
+	var dpLen int
+	//exhaustive:enforce
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		dpLen = m.Gauge().DataPoints().Len()
+	case pmetric.MetricTypeSum:
+		dpLen = m.Sum().DataPoints().Len()
+	case pmetric.MetricTypeHistogram:
+		dpLen = m.Histogram().DataPoints().Len()
+	case pmetric.MetricTypeExponentialHistogram:
+		dpLen = m.ExponentialHistogram().DataPoints().Len()
+	case pmetric.MetricTypeSummary:
+		dpLen = m.Summary().DataPoints().Len()
+	case pmetric.MetricTypeEmpty:
+		return nil
+	}
+	if dpLen == 0 {
+		return fmt.Errorf("metric %q has no datapoints", m.Name())
+	}
+	return nil
 }
