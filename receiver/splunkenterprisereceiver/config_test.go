@@ -43,6 +43,44 @@ func TestEndpointCorrectness(t *testing.T) {
 	errScheme = multierr.Append(errScheme, errBadScheme)
 	errScheme = multierr.Append(errScheme, errMissingAuthExtension)
 
+	missingIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingIdxEndpoint.MaxIdleConns = 0
+	missingIdxEndpoint.IdleConnTimeout = 0
+	missingIdxEndpoint.ForceAttemptHTTP2 = false
+	missingIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingSHEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingSHEndpoint.MaxIdleConns = 0
+	missingSHEndpoint.IdleConnTimeout = 0
+	missingSHEndpoint.ForceAttemptHTTP2 = false
+	missingSHEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingCMEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingCMEndpoint.MaxIdleConns = 0
+	missingCMEndpoint.IdleConnTimeout = 0
+	missingCMEndpoint.ForceAttemptHTTP2 = false
+	missingCMEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	invalidIdxEndpoint.MaxIdleConns = 0
+	invalidIdxEndpoint.IdleConnTimeout = 0
+	invalidIdxEndpoint.ForceAttemptHTTP2 = false
+	invalidIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint.Endpoint = "123.321.12.1:1"
+	badSchemeIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	badSchemeIdxEndpoint.MaxIdleConns = 0
+	badSchemeIdxEndpoint.IdleConnTimeout = 0
+	badSchemeIdxEndpoint.ForceAttemptHTTP2 = false
+	badSchemeIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	badSchemeIdxEndpoint.Endpoint = "gss://123.124.32.12:90"
+	missingAuthIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingAuthIdxEndpoint.MaxIdleConns = 0
+	missingAuthIdxEndpoint.IdleConnTimeout = 0
+	missingAuthIdxEndpoint.ForceAttemptHTTP2 = false
+	missingAuthIdxEndpoint.Endpoint = "https://123.123.32.2:2093"
 	tests := []struct {
 		desc     string
 		expected error
@@ -52,44 +90,30 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "missing any endpoint setting",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				SHEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				CMEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
+				IdxEndpoint: missingIdxEndpoint,
+				SHEndpoint:  missingSHEndpoint,
+				CMEndpoint:  missingCMEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured invalid endpoint",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "123.321.12.1:1",
-				},
+				IdxEndpoint: invalidIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint has bad scheme",
 			expected: errScheme,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "gss://123.124.32.12:90",
-				},
+				IdxEndpoint: badSchemeIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint missing auth",
 			expected: errMissingAuthExtension,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Endpoint: "https://123.123.32.2:2093",
-				},
+				IdxEndpoint: missingAuthIdxEndpoint,
 			},
 		},
 	}
@@ -105,10 +129,13 @@ func TestEndpointCorrectness(t *testing.T) {
 }
 
 func TestCustomSearchConfigValidation(t *testing.T) {
-	validEndpoint := confighttp.ClientConfig{
-		Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-		Endpoint: "https://localhost:8089",
-	}
+	validEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	validEndpoint.MaxIdleConns = 0
+	validEndpoint.IdleConnTimeout = 0
+	validEndpoint.ForceAttemptHTTP2 = false
+	validEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	validEndpoint.Endpoint = "https://localhost:8089"
 
 	tests := []struct {
 		desc        string
