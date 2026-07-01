@@ -1566,6 +1566,9 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 				val, ok = resourceAttrs.Get("test.resource.attr")
 				assert.True(t, ok, "Expected test.resource.attr attribute to be present")
 				assert.Equal(t, "test-value", val.Str())
+				val, ok = resourceAttrs.Get("source")
+				assert.True(t, ok, "Expected source attribute to be present")
+				assert.Equal(t, "spanmetrics", val.Str())
 			} else {
 				// Should not have resource attributes
 				assert.Equal(t, 0, resourceAttrs.Len(), "Expected no resource attributes")
