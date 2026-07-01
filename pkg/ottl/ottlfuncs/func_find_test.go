@@ -21,7 +21,7 @@ func Test_find(t *testing.T) {
 		name      string
 		source    ottl.Getter[any]
 		predicate *ottl.LambdaExpression[any]
-		mapper    ottl.Optional[ottl.LambdaExpression[any]]
+		mapper    ottl.Optional[*ottl.LambdaExpression[any]]
 		want      any
 	}{
 		{
@@ -142,7 +142,7 @@ func Test_find(t *testing.T) {
 				k := resolveBinding("k")
 				return k.(string) == "target", nil
 			}),
-			mapper: ottl.NewTestingOptional(*ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				v := resolveBinding("v")
 				return k.(string) + ":" + v.(string), nil
@@ -164,7 +164,7 @@ func Test_find(t *testing.T) {
 				i := resolveBinding("i")
 				return i.(int64) == 1, nil
 			}),
-			mapper: ottl.NewTestingOptional(*ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				v := resolveBinding("v")
 				return fmt.Sprintf("%d:%s", i.(int64), v.(string)), nil
@@ -184,55 +184,103 @@ func Test_find(t *testing.T) {
 }
 
 func Test_find_error(t *testing.T) {
-	exprFunc := find(
-		ottl.StandardGetSetter[any]{
-			Getter: func(_ context.Context, _ any) (any, error) {
-				return "not a collection", nil
+	t.Run("unsupported source type", func(t *testing.T) {
+		exprFunc := find(
+			ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "not a collection", nil
+				},
 			},
-		},
-		ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-			return true, nil
-		}),
-		&ottl.Optional[ottl.LambdaExpression[any]]{},
-	)
-	_, err := exprFunc(t.Context(), nil)
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "unsupported type")
-}
+			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+				return true, nil
+			}),
+			&ottl.Optional[*ottl.LambdaExpression[any]]{},
+		)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "unsupported type")
+	})
 
-func Test_find_predicate_error(t *testing.T) {
-	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			m := pcommon.NewMap()
-			m.PutStr("a", "b")
-			return m, nil
-		},
-	}
+	t.Run("non-boolean predicate on map item", func(t *testing.T) {
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				m := pcommon.NewMap()
+				m.PutInt("a", 1)
+				return m, nil
+			},
+		}
+		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return 123, nil
+		})
 
-	t.Run("predicate eval error", func(t *testing.T) {
+		exprFunc := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+
+	t.Run("non-boolean predicate on slice item", func(t *testing.T) {
+		s := pcommon.NewSlice()
+		require.NoError(t, s.FromRaw([]any{int64(1)}))
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return s, nil
+			},
+		}
+		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return 123, nil
+		})
+
+		exprFunc := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+
+	t.Run("predicate eval error on map item", func(t *testing.T) {
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				m := pcommon.NewMap()
+				m.PutStr("a", "b")
+				return m, nil
+			},
+		}
+
 		exprFunc := find(
 			source,
 			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
-			&ottl.Optional[ottl.LambdaExpression[any]]{},
+			&ottl.Optional[*ottl.LambdaExpression[any]]{},
 		)
 		_, err := exprFunc(t.Context(), nil)
 		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
 		assert.ErrorContains(t, err, "eval failed")
 	})
 
-	t.Run("predicate non-boolean result", func(t *testing.T) {
+	t.Run("predicate eval error on slice item", func(t *testing.T) {
+		s := pcommon.NewSlice()
+		require.NoError(t, s.FromRaw([]any{"b"}))
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return s, nil
+			},
+		}
+
 		exprFunc := find(
 			source,
-			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-				return 123, nil
+			ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+				return nil, errors.New("eval failed")
 			}),
-			&ottl.Optional[ottl.LambdaExpression[any]]{},
+			&ottl.Optional[*ottl.LambdaExpression[any]]{},
 		)
 		_, err := exprFunc(t.Context(), nil)
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
+		assert.ErrorContains(t, err, "eval failed")
 	})
 }
 
@@ -248,13 +296,14 @@ func Test_find_mapper_error(t *testing.T) {
 		k := resolveBinding("k")
 		return k.(string) == "target", nil
 	})
-	mapper := ottl.NewTestingOptional(*ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	mapper := ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return nil, errors.New("mapper failed")
 	}))
 
 	exprFunc := find(source, predicate, &mapper)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
+	assert.ErrorContains(t, err, "error while evaluating mapper lambda function on item (target,")
 	assert.ErrorContains(t, err, "mapper failed")
 }
 
@@ -272,7 +321,7 @@ func Test_createFindFunction(t *testing.T) {
 	t.Run("valid args", func(t *testing.T) {
 		fn, err := createFindFunction[any](fCtx, &FindArguments[any]{
 			Source:    source,
-			Predicate: *predicate,
+			Predicate: predicate,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, fn)
@@ -284,8 +333,8 @@ func Test_createFindFunction(t *testing.T) {
 		})
 		fn, err := createFindFunction[any](fCtx, &FindArguments[any]{
 			Source:    source,
-			Predicate: *predicate,
-			Mapper:    ottl.NewTestingOptional(*mapper),
+			Predicate: predicate,
+			Mapper:    ottl.NewTestingOptional(mapper),
 		})
 		require.NoError(t, err)
 		require.NotNil(t, fn)

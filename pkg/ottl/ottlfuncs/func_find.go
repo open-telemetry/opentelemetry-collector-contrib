@@ -17,8 +17,8 @@ import (
 
 type FindArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate ottl.LambdaExpression[K]
-	Mapper    ottl.Optional[ottl.LambdaExpression[K]]
+	Predicate *ottl.LambdaExpression[K]
+	Mapper    ottl.Optional[*ottl.LambdaExpression[K]]
 }
 
 func NewFindFactory[K any]() ottl.Factory[K] {
@@ -30,10 +30,10 @@ func createFindFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	if !ok {
 		return nil, errors.New("FindFactory args must be of type *FindArguments[K]")
 	}
-	return find(args.Source, &args.Predicate, &args.Mapper), nil
+	return find(args.Source, args.Predicate, &args.Mapper), nil
 }
 
-func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], mapper *ottl.Optional[ottl.LambdaExpression[K]]) ottl.ExprFunc[K] {
+func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], mapper *ottl.Optional[*ottl.LambdaExpression[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		sourceVal, err := funcutil.GetSliceOrMapValue(ctx, tCtx, source)
 		if err != nil {
@@ -71,7 +71,7 @@ func findSliceValue[K any](tCtx K, source pcommon.Slice, lambda, mapper *ottl.La
 	for i, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, int64(i), v)
 		if err != nil {
-			return nil, err
+			return false, fmt.Errorf("error while evaluating lambda function on slice item (%d, %v): %w", i, v, err)
 		}
 		if match {
 			return formatFindResult(tCtx, int64(i), v, mapper)
@@ -84,7 +84,7 @@ func findMapValue[K any](tCtx K, source pcommon.Map, lambda, mapper *ottl.Lambda
 	for k, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, k, v)
 		if err != nil {
-			return nil, err
+			return false, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 		}
 		if match {
 			return formatFindResult(tCtx, k, v, mapper)
@@ -99,7 +99,7 @@ func formatFindResult[K any](tCtx K, v1 any, v2 pcommon.Value, mapper *ottl.Lamb
 	}
 	result, err := funcutil.EvaluateBiFunction[K, any](tCtx, mapper, v1, v2)
 	if err != nil {
-		return nil, err
+		return false, fmt.Errorf("error while evaluating mapper lambda function on item (%v, %v): %w", v1, v2, err)
 	}
 	return ottlcommon.NormalizeValue(result), nil
 }
