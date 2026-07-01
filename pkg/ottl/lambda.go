@@ -51,17 +51,24 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 	return slices.Clone(l.formals)
 }
 
+// ValidateArity checks that the number of arguments that will be passed to the
+// lambda matches the number of declared formals. If the counts differ, an error
+// is returned. This allows statically verifying arity: it should be run inside
+// the OTTL function factory, i.e. outside the closure the factory returns. It's
+// meant to verify the lambda passed by the user has the correct number of
+// formals before calling [LambdaExpression.Activate].
+func (l *LambdaExpression[K]) ValidateArity(arity int) error {
+	if len(l.formals) != arity {
+		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
+	}
+	return nil
+}
+
 // Activate creates a [LambdaActivation] for a single outer function invocation, allocating
 // its own activation and argument storage, linking the resulting activation to the given ctx.
-// The arity is the number of formals the caller must pass, and their values are set via
-// [LambdaActivation.SetArg]. If the lambda's declared formal count differs from arity, an
-// error is returned.
 // Call [LambdaActivation.SetArg] for every index in (0...arity) before each [LambdaActivation.Eval],
 // and then [LambdaActivation.Close] on the returned activation when it is no longer needed.
-func (l *LambdaExpression[K]) Activate(ctx context.Context, arity int) (*LambdaActivation[K], error) {
-	if len(l.formals) != arity {
-		return nil, fmt.Errorf("lambda expects exactly %d argument(s), got %d", arity, len(l.formals))
-	}
+func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
 	v := l.activationPool.Get().(*LambdaActivation[K])
 	v.ctx = pushLocalActivation(ctx, v.activation)
 	return v, nil

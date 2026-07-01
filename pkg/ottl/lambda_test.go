@@ -55,22 +55,64 @@ func TestLambdaExpression_Formals(t *testing.T) {
 	}
 }
 
+func TestLambdaExpression_ValidateArity(t *testing.T) {
+	tests := []struct {
+		name    string
+		formals []LocalIdentifierDecl
+		arity   int
+		wantErr string
+	}{
+		{
+			name:    "matching arity",
+			formals: makeLocalIdentifiers("a", "b"),
+			arity:   2,
+		},
+		{
+			name:    "no formals matches zero arity",
+			formals: nil,
+			arity:   0,
+		},
+		{
+			name:    "blank formals count toward arity",
+			formals: makeLocalIdentifiers("_", "a"),
+			arity:   2,
+		},
+		{
+			name:    "too few arguments",
+			formals: makeLocalIdentifiers("a", "b"),
+			arity:   1,
+			wantErr: "lambda should be defined with exactly 1 formal(s), but has 2",
+		},
+		{
+			name:    "too many arguments",
+			formals: makeLocalIdentifiers("a"),
+			arity:   3,
+			wantErr: "lambda should be defined with exactly 3 formal(s), but has 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr := newLambdaExpression[any](tt.formals, nil, nil)
+			err := expr.ValidateArity(tt.arity)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestLambdaExpression_Eval(t *testing.T) {
 	tests := []struct {
 		name    string
 		expr    *LambdaExpression[any]
 		ctx     context.Context
-		arity   int
 		params  []any
 		want    any
 		wantErr string
 	}{
-		{
-			name:    "arity mismatch",
-			expr:    newLambdaExpression[any](makeLocalIdentifiers("a", "b"), nil, nil),
-			arity:   1,
-			wantErr: "lambda expects exactly 1 argument(s), got 2",
-		},
 		{
 			name: "literal body evaluate as-is",
 			expr: newLambdaExpression[any](
@@ -78,7 +120,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				newLiteral[any, any]("literal"),
 				nil,
 			),
-			arity:  1,
 			params: []any{"a value"},
 			want:   "literal",
 		},
@@ -98,7 +139,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 					},
 				},
 			),
-			arity:  1,
 			params: []any{"bound"},
 			want:   true,
 		},
@@ -113,7 +153,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 					},
 				},
 			),
-			arity:   1,
 			params:  []any{"bound"},
 			wantErr: "failed to evaluate",
 		},
@@ -126,7 +165,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				},
 				nil,
 			),
-			arity:  1,
 			params: []any{42},
 			want:   42,
 		},
@@ -140,7 +178,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				nil,
 			),
 			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"parent": "value"}}),
-			arity:  0,
 			params: []any{},
 			want:   "value",
 		},
@@ -154,7 +191,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				nil,
 			),
 			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"a": "old"}}),
-			arity:  1,
 			params: []any{"new"},
 			want:   "new",
 		},
@@ -173,7 +209,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				},
 				nil,
 			),
-			arity: 1,
 			params: []any{
 				map[string]any{"name": []any{"zero", "one"}},
 			},
@@ -182,7 +217,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name:    "invalid lambda without body",
 			expr:    newLambdaExpression[any](nil, nil, nil),
-			arity:   0,
 			params:  []any{},
 			wantErr: "invalid lambda: no body",
 		},
@@ -195,7 +229,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				},
 				nil,
 			),
-			arity:  2,
 			params: []any{"skip", "bound"},
 			want:   "bound",
 		},
@@ -215,7 +248,6 @@ func TestLambdaExpression_Eval(t *testing.T) {
 					},
 				},
 			),
-			arity:  1,
 			params: []any{"skip"},
 			want:   true,
 		},
@@ -228,13 +260,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				ctx = t.Context()
 			}
 
-			lb, err := tt.expr.Activate(ctx, tt.arity)
-			if tt.wantErr != "" && lb == nil {
-				require.Error(t, err)
-				assert.EqualError(t, err, tt.wantErr)
-				return
-			}
-
+			lb, err := tt.expr.Activate(ctx)
 			require.NoError(t, err)
 			defer lb.Close()
 			for i, param := range tt.params {
@@ -262,7 +288,7 @@ func TestLambdaExpression_Activate(t *testing.T) {
 		nil,
 	)
 
-	lb, err := expr.Activate(t.Context(), 1)
+	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, lb.SetArg(0, 1))
@@ -277,9 +303,9 @@ func TestLambdaExpression_Activate(t *testing.T) {
 
 	// Each Activate yields independent state, so overlapping activations of the same expression do not
 	// interfere with one another.
-	lb1, err := expr.Activate(t.Context(), 1)
+	lb1, err := expr.Activate(t.Context())
 	require.NoError(t, err)
-	lb2, err := expr.Activate(t.Context(), 1)
+	lb2, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, lb1.SetArg(0, "one"))
@@ -301,7 +327,7 @@ func TestLambdaActivation_SetArg(t *testing.T) {
 		nil,
 	)
 
-	lb, err := expr.Activate(t.Context(), 1)
+	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 
 	err = lb.SetArg(-1, "x")
@@ -320,7 +346,7 @@ func TestLambdaActivation_StaleArg(t *testing.T) {
 		nil,
 	)
 
-	lb, err := expr.Activate(t.Context(), 2)
+	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, lb.SetArg(0, "first-a"))
@@ -358,13 +384,13 @@ func TestLambdaActivation_ParentChain(t *testing.T) {
 		nil,
 	)
 
-	outerLb, err := outerExpr.Activate(t.Context(), 1)
+	outerLb, err := outerExpr.Activate(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, outerLb.SetArg(0, "from-outer"))
 	_, err = outerLb.Eval(nil)
 	require.NoError(t, err)
 
-	innerLb, err := innerExpr.Activate(outerLb.ctx, 1)
+	innerLb, err := innerExpr.Activate(outerLb.ctx)
 	require.NoError(t, err)
 	require.NoError(t, innerLb.SetArg(0, "inner-val"))
 
@@ -382,7 +408,7 @@ func TestLambdaActivation_Close(t *testing.T) {
 		nil,
 	)
 
-	lb, err := expr.Activate(t.Context(), 2)
+	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, lb.SetArg(0, 1))
 	eval, err := lb.Eval(nil)
@@ -390,7 +416,7 @@ func TestLambdaActivation_Close(t *testing.T) {
 	assert.Equal(t, 1, eval)
 	lb.Close()
 
-	lb2, err := expr.Activate(t.Context(), 2)
+	lb2, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, lb2.activation)
 	assert.Nil(t, lb2.activation.parent)
