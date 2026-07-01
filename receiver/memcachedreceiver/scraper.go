@@ -35,10 +35,16 @@ func newMemcachedScraper(
 	}
 }
 
-func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (r *memcachedScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	tlsConfig, err := r.config.TLS.LoadTLSConfig(ctx)
+	if err != nil {
+		r.logger.Error("Failed to load TLS config", zap.Error(err))
+		return pmetric.Metrics{}, err
+	}
+
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
-	statsClient, err := r.newClient(r.config.Endpoint, r.config.Timeout)
+	statsClient, err := r.newClient(r.config.Endpoint, r.config.Timeout, tlsConfig)
 	if err != nil {
 		r.logger.Error("Failed to establish client", zap.Error(err))
 		return pmetric.Metrics{}, err

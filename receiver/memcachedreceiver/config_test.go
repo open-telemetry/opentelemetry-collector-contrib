@@ -19,6 +19,8 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, defaultEndpoint, cfg.Endpoint)
 	require.Equal(t, defaultTimeout, cfg.Timeout)
 	require.Equal(t, defaultCollectionInterval, cfg.CollectionInterval)
+	// TLS is disabled by default to preserve plaintext connections.
+	require.True(t, cfg.TLS.Insecure)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -32,4 +34,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.Equal(t, factory.CreateDefaultConfig(), cfg)
+}
+
+func TestLoadConfigTLS(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "tls").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	require.False(t, cfg.(*Config).TLS.Insecure)
+	require.Equal(t, "/etc/ssl/certs/ca.crt", cfg.(*Config).TLS.CAFile)
 }
