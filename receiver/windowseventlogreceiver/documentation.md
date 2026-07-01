@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `domainControllers.autodiscovery` | alpha | When enabled and is remote automatically discover domain controllers through joined controllers and  start collecting logs from specified channel. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156) |
+| `domainControllers.autodiscovery` | alpha | When enabled and is remote automatically discover domain controllers through joined controllers and start collecting logs from specified channel. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156) |
+| `receiver.windowseventlog.multipleRemoteHosts` | alpha | When enabled, allows configuring multiple remote hosts in a single receiver instance via the remote.hosts configuration block. | v0.121.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

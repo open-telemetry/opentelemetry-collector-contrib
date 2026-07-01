@@ -25,8 +25,16 @@ feature_gates:
   - id: domainControllers.autodiscovery
     stage: alpha
     description: >-
-      When enabled and is remote automatically discover domain controllers through joined controllers and 
+      When enabled and is remote automatically discover domain controllers through joined controllers and
       start collecting logs from specified channel.
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156
+    skip_strict_validation: true
+  - id: receiver.windowseventlog.multipleRemoteHosts
+    stage: alpha
+    description: >-
+      When enabled, allows configuring multiple remote hosts in a single receiver instance
+      via the remote.hosts configuration block.
+    from_version: v0.121.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933
     skip_strict_validation: true
