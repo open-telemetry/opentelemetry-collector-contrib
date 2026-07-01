@@ -105,10 +105,7 @@ func Test_when_unused_branch(t *testing.T) {
 	assert.Equal(t, "true", got)
 }
 
-func Test_when_lambda_type_error(t *testing.T) {
-	condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return "not a bool", nil
-	})
+func Test_when_error(t *testing.T) {
 	trueValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
 		return "true", nil
 	}}
@@ -116,10 +113,29 @@ func Test_when_lambda_type_error(t *testing.T) {
 		return "false", nil
 	}}
 
-	exprFunc := whenFunction(condition, trueValue, falseValue)
-	_, err := exprFunc(t.Context(), nil)
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	t.Run("non-boolean condition", func(t *testing.T) {
+		condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return "not a bool", nil
+		})
+
+		exprFunc := whenFunction(condition, trueValue, falseValue)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+
+	t.Run("condition eval error", func(t *testing.T) {
+		condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return nil, errors.New("eval failed")
+		})
+
+		exprFunc := whenFunction(condition, trueValue, falseValue)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function")
+		assert.ErrorContains(t, err, "eval failed")
+	})
 }
 
 func Test_createWhenFunction(t *testing.T) {
@@ -136,7 +152,7 @@ func Test_createWhenFunction(t *testing.T) {
 
 	t.Run("valid args", func(t *testing.T) {
 		fn, err := createWhenFunction[any](fCtx, &WhenArguments[any]{
-			Condition:  *condition,
+			Condition:  condition,
 			TrueValue:  trueValue,
 			FalseValue: falseValue,
 		})

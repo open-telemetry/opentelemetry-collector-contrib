@@ -6,13 +6,14 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
 type WhenArguments[K any] struct {
-	Condition  ottl.LambdaExpression[K]
+	Condition  *ottl.LambdaExpression[K]
 	TrueValue  ottl.Getter[K]
 	FalseValue ottl.Getter[K]
 }
@@ -26,7 +27,7 @@ func createWhenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	if !ok {
 		return nil, errors.New("WhenFactory args must be of type *WhenArguments[K]")
 	}
-	return whenFunction(&args.Condition, args.TrueValue, args.FalseValue), nil
+	return whenFunction(args.Condition, args.TrueValue, args.FalseValue), nil
 }
 
 func whenFunction[K any](condition *ottl.LambdaExpression[K], trueValueGetter, falseValueGetter ottl.Getter[K]) ottl.ExprFunc[K] {
@@ -48,7 +49,7 @@ func whenFunction[K any](condition *ottl.LambdaExpression[K], trueValueGetter, f
 
 		match, err := funcutil.EvaluateLambdaActivation[K, bool](tCtx, lb)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error while evaluating lambda function: %w", err)
 		}
 
 		if match {
