@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: true,
@@ -57,7 +57,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPU},
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
 					},
 					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 						Enabled: false,

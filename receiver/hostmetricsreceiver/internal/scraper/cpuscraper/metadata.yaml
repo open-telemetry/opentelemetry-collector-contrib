@@ -14,7 +14,12 @@ attributes:
   cpu:
     description: Logical CPU number starting at 0.
     type: string
-    requirement_level: recommended
+    requirement_level: opt_in
+
+  cpu.frequency:
+    name_override: cpu
+    description: Logical CPU number starting at 0.
+    type: string
 
   state:
     description: Breakdown of CPU usage by type.
@@ -30,7 +35,7 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu]
+    attributes: [cpu.frequency]
 
   system.cpu.logical.count:
     enabled: false
