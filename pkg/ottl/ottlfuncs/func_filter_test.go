@@ -150,7 +150,7 @@ func Test_createFilterFunction(t *testing.T) {
 	t.Run("valid args", func(t *testing.T) {
 		fn, err := createFilterFunction[any](fCtx, &FilterArguments[any]{
 			Source:    source,
-			Predicate: *predicate,
+			Predicate: predicate,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, fn)

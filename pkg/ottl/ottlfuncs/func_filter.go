@@ -17,7 +17,7 @@ import (
 
 type FilterArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate ottl.LambdaExpression[K]
+	Predicate *ottl.LambdaExpression[K]
 }
 
 func NewFilterFactory[K any]() ottl.Factory[K] {
@@ -29,7 +29,7 @@ func createFilterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	if !ok {
 		return nil, errors.New("FilterFactory args must be of type *FilterArguments[K]")
 	}
-	return filter(args.Source, &args.Predicate), nil
+	return filter(args.Source, args.Predicate), nil
 }
 
 func filter[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
