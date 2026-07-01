@@ -4,6 +4,48 @@ $defs:
     description: MetricsConfig provides config for oracledb metrics.
     type: object
     properties:
+      oracledb.buffer.inspected:
+        description: "OracledbBufferInspectedMetricConfig provides config for the oracledb.buffer.inspected metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer.requests:
+        description: "OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer_cache.block.changes:
+        description: "OracledbBufferCacheBlockChangesMetricConfig provides config for the oracledb.buffer_cache.block.changes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer_cache.block.gets:
+        description: "OracledbBufferCacheBlockGetsMetricConfig provides config for the oracledb.buffer_cache.block.gets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.checkpoint.buffers:
+        description: "OracledbCheckpointBuffersMetricConfig provides config for the oracledb.checkpoint.buffers metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.checkpoint.completed:
+        description: "OracledbCheckpointCompletedMetricConfig provides config for the oracledb.checkpoint.completed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.consistent_gets:
         description: "OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric."
         type: object

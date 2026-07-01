@@ -74,6 +74,14 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Buffer cache and DBWR v$sysstat rows
+		{"NAME": dbBlockChanges, "VALUE": "8800000"},
+		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
+		{"NAME": dbwrCheckpointBuffersWritten, "VALUE": "12000"},
+		{"NAME": dbwrCheckpoints, "VALUE": "320"},
+		{"NAME": freeBufferRequested, "VALUE": "6100"},
+		{"NAME": freeBufferInspected, "VALUE": "55000"},
+		{"NAME": dirtyBuffersInspected, "VALUE": "1200"},
 		// Redo log v$sysstat rows (redo time values are in centiseconds)
 		{"NAME": redoWriteTime, "VALUE": "1500"},
 		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
@@ -407,6 +415,79 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
 }
 
+func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbBufferCacheBlockChanges.Enabled = true
+	cfg.Metrics.OracledbBufferCacheBlockGets.Enabled = true
+	cfg.Metrics.OracledbBufferInspected.Enabled = true
+	cfg.Metrics.OracledbCheckpointBuffers.Enabled = true
+	cfg.Metrics.OracledbCheckpointCompleted.Enabled = true
+	cfg.Metrics.OracledbBufferRequests.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
+	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name:
+			assert.Equal(t, int64(8800000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name:
+			assert.Equal(t, int64(7700000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointBuffers.Name:
+			assert.Equal(t, int64(12000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointCompleted.Name:
+			assert.Equal(t, int64(320), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferRequests.Name:
+			assert.Equal(t, int64(6100), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferInspected.Name:
+			// one data point per buffer state.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.Attributes().Get("oracledb.buffer.state")
+				switch state.Str() {
+				case metadata.AttributeOracledbBufferStateFree.String():
+					assert.Equal(t, int64(55000), dp.IntValue())
+				case metadata.AttributeOracledbBufferStateDirty.String():
+					assert.Equal(t, int64(1200), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.buffer.state: %q", state.Str())
+				}
+			}
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 buffer/checkpoint metrics to be emitted")
+}
+
 func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	const floatDelta = 0.0001
 
@@ -436,8 +517,6 @@ func TestScraper_ScrapeRedoMetrics(t *testing.T) {
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
 
-	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
-	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	seen := 0
 	for i := 0; i < metrics.Len(); i++ {
