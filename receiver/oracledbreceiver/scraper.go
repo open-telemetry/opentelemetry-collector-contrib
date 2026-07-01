@@ -53,34 +53,43 @@ const (
 	sysmetricParseFailureCount        = "Parse Failure Count Per Sec"
 	sysmetricExecuteWithoutParseRatio = "Execute Without Parse Ratio"
 
+	consistentGets                 = "consistent gets"
+	cpuTime                        = "CPU used by this session"
+	dbBlockGets                    = "db block gets"
+	ddlStatementsParallelized      = "DDL statements parallelized"
+	dmlStatementsParallelized      = "DML statements parallelized"
 	enqueueDeadlocks               = "enqueue deadlocks"
 	exchangeDeadlocks              = "exchange deadlocks"
 	executeCount                   = "execute count"
-	parseCountTotal                = "parse count (total)"
-	parseCountHard                 = "parse count (hard)"
 	logons                         = "logons cumulative"
-	userCommits                    = "user commits"
-	userRollbacks                  = "user rollbacks"
-	physicalReads                  = "physical reads"
-	physicalReadsDirect            = "physical reads direct"
-	physicalReadIORequests         = "physical read IO requests"
-	physicalWrites                 = "physical writes"
-	physicalWritesDirect           = "physical writes direct"
-	physicalWriteIORequests        = "physical write IO requests"
-	queriesParallelized            = "queries parallelized"
-	ddlStatementsParallelized      = "DDL statements parallelized"
-	dmlStatementsParallelized      = "DML statements parallelized"
-	parallelOpsNotDowngraded       = "Parallel operations not downgraded"
-	parallelOpsDowngradedToSerial  = "Parallel operations downgraded to serial"
 	parallelOpsDowngraded1To25Pct  = "Parallel operations downgraded 1 to 25 pct"
 	parallelOpsDowngraded25To50Pct = "Parallel operations downgraded 25 to 50 pct"
 	parallelOpsDowngraded50To75Pct = "Parallel operations downgraded 50 to 75 pct"
 	parallelOpsDowngraded75To99Pct = "Parallel operations downgraded 75 to 99 pct"
-	sessionLogicalReads            = "session logical reads"
-	cpuTime                        = "CPU used by this session"
+	parallelOpsDowngradedToSerial  = "Parallel operations downgraded to serial"
+	parallelOpsNotDowngraded       = "Parallel operations not downgraded"
+	parseCountHard                 = "parse count (hard)"
+	parseCountTotal                = "parse count (total)"
 	pgaMemory                      = "session pga memory"
-	dbBlockGets                    = "db block gets"
-	consistentGets                 = "consistent gets"
+	physicalReadIORequests         = "physical read IO requests"
+	physicalReads                  = "physical reads"
+	physicalReadsDirect            = "physical reads direct"
+	physicalWriteIORequests        = "physical write IO requests"
+	physicalWrites                 = "physical writes"
+	physicalWritesDirect           = "physical writes direct"
+	queriesParallelized            = "queries parallelized"
+	sessionLogicalReads            = "session logical reads"
+	userCommits                    = "user commits"
+	userRollbacks                  = "user rollbacks"
+
+	// Buffer cache and DBWR v$sysstat names
+	dbBlockChanges               = "db block changes"
+	dbBlockGetsFromCache         = "db block gets from cache"
+	dbwrCheckpointBuffersWritten = "DBWR checkpoint buffers written"
+	dbwrCheckpoints              = "DBWR checkpoints"
+	dirtyBuffersInspected        = "dirty buffers inspected"
+	freeBufferInspected          = "free buffer inspected"
+	freeBufferRequested          = "free buffer requested"
 
 	// Redo log v$sysstat names
 	redoBlocksWritten      = "redo blocks written"
@@ -94,18 +103,45 @@ const (
 
 	// I/O performance v$sysstat names
 	physicalReadBytesStat            = "physical read bytes"
-	physicalWriteBytesStat           = "physical write bytes"
-	physicalReadTotalBytesStat       = "physical read total bytes"
-	physicalWriteTotalBytesStat      = "physical write total bytes"
-	physicalReadTotalIORequestsStat  = "physical read total IO requests"
-	physicalWriteTotalIORequestsStat = "physical write total IO requests"
 	physicalReadMultiBlockReqStat    = "physical read total multi block requests"
+	physicalReadTotalBytesStat       = "physical read total bytes"
+	physicalReadTotalIORequestsStat  = "physical read total IO requests"
+	physicalWriteBytesStat           = "physical write bytes"
 	physicalWriteMultiBlockReqStat   = "physical write total multi block requests"
 	physicalWritesFromCacheStat      = "physical writes from cache"
+	physicalWriteTotalBytesStat      = "physical write total bytes"
+	physicalWriteTotalIORequestsStat = "physical write total IO requests"
 	sqlnetBytesRecvFromClient        = "bytes received via SQL*Net from client"
-	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
+	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
+
+	dbTimeStat                   = "DB time"
+	enqueueConversionsStat       = "enqueue conversions"
+	enqueueReleasesStat          = "enqueue releases"
+	enqueueRequestsStat          = "enqueue requests"
+	enqueueTimeoutsStat          = "enqueue timeouts"
+	enqueueWaitsStat             = "enqueue waits"
+	indexFastFullScansDirectStat = "index fast full scans (direct read)"
+	indexFastFullScansFullStat   = "index fast full scans (full)"
+	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
+	lobReadsStat                 = "lob reads"
+	lobWritesStat                = "lob writes"
+	openedCursorsCurrentStat     = "opened cursors current"
+	parseTimeCPUStat             = "parse time cpu"
+	parseTimeElapsedStat         = "parse time elapsed"
+	recursiveCallsStat           = "recursive calls"
+	recursiveCPUUsageStat        = "recursive cpu usage"
+	sessionCursorCacheCountStat  = "session cursor cache count"
+	sessionCursorCacheHitsStat   = "session cursor cache hits"
+	sortsDiskStat                = "sorts (disk)"
+	sortsMemoryStat              = "sorts (memory)"
+	sortsRowsStat                = "sorts (rows)"
+	tableScanRowsGottenStat      = "table scan rows gotten"
+	tableScansDirectReadStat     = "table scans (direct read)"
+	tableScansLongTablesStat     = "table scans (long tables)"
+	tableScansRowidRangesStat    = "table scans (rowid ranges)"
+	userCallsStat                = "user calls"
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
@@ -117,10 +153,13 @@ const (
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
 	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
 
+	colAllocatedDBSize     = "ALLOCATED_DB_SIZE"
 	colDataDictHitRatio    = "DATA_DICTIONARY_HIT_RATIO"
+	colMetricName          = "METRIC_NAME"
+	colName                = "NAME"
 	colRecycleBinSizeBytes = "RECYCLE_BIN_SIZE_BYTES"
 	colUsedDBSize          = "USED_DB_SIZE"
-	colAllocatedDBSize     = "ALLOCATED_DB_SIZE"
+	colValue               = "VALUE"
 
 	sqlIDAttr        = "SQL_ID"
 	childAddressAttr = "CHILD_ADDRESS"
@@ -129,6 +168,8 @@ const (
 	serviceAttr      = "SERVICE"
 	dbNamespaceAttr  = "DB_NAMESPACE"
 	dbSystemNameVal  = "oracle"
+
+	defaultServiceName = "unknown_service:oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
@@ -322,6 +363,26 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorCacheSize.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
@@ -336,201 +397,349 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 
 		for _, row := range rows {
-			switch row["NAME"] {
+			switch row[colName] {
 			case enqueueDeadlocks:
-				err := s.mb.RecordOracledbEnqueueDeadlocksDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbEnqueueDeadlocksDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case exchangeDeadlocks:
-				err := s.mb.RecordOracledbExchangeDeadlocksDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbExchangeDeadlocksDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case executeCount:
-				err := s.mb.RecordOracledbExecutionsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbExecutionsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parseCountTotal:
-				err := s.mb.RecordOracledbParseCallsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParseCallsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parseCountHard:
-				err := s.mb.RecordOracledbHardParsesDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbHardParsesDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case userCommits:
-				err := s.mb.RecordOracledbUserCommitsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbUserCommitsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case userRollbacks:
-				err := s.mb.RecordOracledbUserRollbacksDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbUserRollbacksDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReads:
-				err := s.mb.RecordOracledbPhysicalReadsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalReadsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadsDirect:
-				err := s.mb.RecordOracledbPhysicalReadsDirectDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalReadsDirectDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadIORequests:
-				err := s.mb.RecordOracledbPhysicalReadIoRequestsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalReadIoRequestsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWrites:
-				err := s.mb.RecordOracledbPhysicalWritesDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalWritesDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWritesDirect:
-				err := s.mb.RecordOracledbPhysicalWritesDirectDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalWritesDirectDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteIORequests:
-				err := s.mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case queriesParallelized:
-				err := s.mb.RecordOracledbQueriesParallelizedDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbQueriesParallelizedDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case ddlStatementsParallelized:
-				err := s.mb.RecordOracledbDdlStatementsParallelizedDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbDdlStatementsParallelizedDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dmlStatementsParallelized:
-				err := s.mb.RecordOracledbDmlStatementsParallelizedDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbDmlStatementsParallelizedDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsNotDowngraded:
-				err := s.mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsDowngradedToSerial:
-				err := s.mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsDowngraded1To25Pct:
-				err := s.mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsDowngraded25To50Pct:
-				err := s.mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsDowngraded50To75Pct:
-				err := s.mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case parallelOpsDowngraded75To99Pct:
-				err := s.mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sessionLogicalReads:
-				err := s.mb.RecordOracledbLogicalReadsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbLogicalReadsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case cpuTime:
-				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				value, err := strconv.ParseFloat(row[colValue], 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", cpuTime, row["VALUE"], err))
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", cpuTime, row[colValue], err))
 				} else {
-					// divide by 100 as the value is expressed in tens of milliseconds
 					value /= 100
 					s.mb.RecordOracledbCPUTimeDataPoint(now, value)
 				}
 			case pgaMemory:
-				err := s.mb.RecordOracledbPgaMemoryDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"])
+				err := s.mb.RecordOracledbPgaMemoryDataPoint(pcommon.NewTimestampFromTime(time.Now()), row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case dbBlockGets:
-				err := s.mb.RecordOracledbDbBlockGetsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbDbBlockGetsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case consistentGets:
-				err := s.mb.RecordOracledbConsistentGetsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbConsistentGetsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case logons:
-				err := s.mb.RecordOracledbLogonsDataPoint(now, row["VALUE"])
+				err := s.mb.RecordOracledbLogonsDataPoint(now, row[colValue])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeBuffered); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeBuffered); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeBuffered); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeBuffered); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadTotalBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeTotal); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoTypeTotal); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteTotalBytesStat:
-				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeTotal); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoTransferredDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoTypeTotal); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadTotalIORequestsStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeAll); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeAll); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteTotalIORequestsStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeAll); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeAll); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalReadMultiBlockReqStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionRead, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWriteMultiBlockReqStat:
-				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionWrite, metadata.AttributeDiskIoBlockSizeMulti); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case physicalWritesFromCacheStat:
-				if err := s.mb.RecordOracledbPhysicalIoCacheWritesDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbPhysicalIoCacheWritesDataPoint(now, row[colValue]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesRecvFromClient:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeClient); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row[colValue], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeClient); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesSentToClient:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeClient); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row[colValue], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeClient); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesRecvFromDBLink:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeDblink); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row[colValue], metadata.AttributeNetworkIoDirectionReceive, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case sqlnetBytesSentToDBLink:
-				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row[colValue], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansDirectReadStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeDirectRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansLongTablesStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeLongTables); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansRowidRangesStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeTable, metadata.AttributeOracledbScanModeRowidRanges); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScanRowsGottenStat:
+				if err := s.mb.RecordOracledbScanTableRowsDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansDirectStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeDirectRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansFullStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeFull); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansRowidStat:
+				if err := s.mb.RecordOracledbScanCountDataPoint(now, row[colValue], metadata.AttributeOracledbScanTypeIndexFastFull, metadata.AttributeOracledbScanModeRowidRanges); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueConversionsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeConversions); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueReleasesStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeReleases); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueRequestsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeRequests); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueTimeoutsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeTimeouts); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueWaitsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbEnqueueTypeWaits); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case lobReadsStat:
+				if err := s.mb.RecordOracledbLobOperationsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case lobWritesStat:
+				if err := s.mb.RecordOracledbLobOperationsDataPoint(now, row[colValue], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parseTimeCPUStat:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseTimeCPUStat, row[colValue], err))
+				} else {
+					value /= 100
+					s.mb.RecordOracledbParseCPUTimeDataPoint(now, value)
+				}
+			case parseTimeElapsedStat:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseTimeElapsedStat, row[colValue], err))
+				} else {
+					value /= 100
+					s.mb.RecordOracledbParseElapsedTimeDataPoint(now, value)
+				}
+			case sortsDiskStat:
+				if err := s.mb.RecordOracledbSortOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbSortTypeDisk); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sortsMemoryStat:
+				if err := s.mb.RecordOracledbSortOperationsDataPoint(now, row[colValue], metadata.AttributeOracledbSortTypeMemory); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sortsRowsStat:
+				if err := s.mb.RecordOracledbSortRowsDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionCursorCacheHitsStat:
+				if err := s.mb.RecordOracledbCursorCacheHitsDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionCursorCacheCountStat:
+				if err := s.mb.RecordOracledbCursorCacheSizeDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case openedCursorsCurrentStat:
+				if err := s.mb.RecordOracledbCursorOpenDataPoint(now, row[colValue]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case userCallsStat:
+				if err := s.mb.RecordOracledbCallCountDataPoint(now, row[colValue], metadata.AttributeOracledbCallTypeUser); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case recursiveCallsStat:
+				if err := s.mb.RecordOracledbCallCountDataPoint(now, row[colValue], metadata.AttributeOracledbCallTypeRecursive); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case recursiveCPUUsageStat:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", recursiveCPUUsageStat, row[colValue], err))
+				} else {
+					value /= 100
+					s.mb.RecordOracledbCallRecursiveCPUTimeDataPoint(now, value)
+				}
+			case dbTimeStat:
+				value, err := strconv.ParseFloat(row[colValue], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", dbTimeStat, row[colValue], err))
+				} else {
+					value /= 100
+					s.mb.RecordOracledbDbTimeDataPoint(now, value, metadata.AttributeOracledbSessionTypeForeground)
+				}
+			// Buffer cache and DBWR v$sysstat statistics
+			case dbBlockChanges:
+				if err := s.mb.RecordOracledbBufferCacheBlockChangesDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbBlockGetsFromCache:
+				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpointBuffersWritten:
+				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpoints:
+				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dirtyBuffersInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateDirty); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferRequested:
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			// Redo log v$sysstat statistics
@@ -585,7 +794,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", sessionCountSQL, err))
 		}
 		for _, row := range rows {
-			err := s.mb.RecordOracledbSessionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"],
+			err := s.mb.RecordOracledbSessionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row[colValue],
 				row["TYPE"], row["STATUS"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
@@ -828,8 +1037,8 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 
 	for _, row := range rows {
-		metricName := row["METRIC_NAME"]
-		rawVal := row["VALUE"]
+		metricName := row[colMetricName]
+		rawVal := row[colValue]
 		val, parseErr := strconv.ParseFloat(rawVal, 64)
 		if parseErr != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
@@ -1346,6 +1555,9 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
+
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
