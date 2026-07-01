@@ -326,7 +326,9 @@ func TestCheckpointerAlreadySeenBeforeLoad(t *testing.T) {
 	cp := New(client, zap.NewNop())
 
 	// Without Load, no namespace is known — AlreadySeen must not panic or return true.
-	assert.False(t, cp.AlreadySeen("100", "default"))
+	seen, err := cp.AlreadySeen("100", "default")
+	require.NoError(t, err)
+	assert.False(t, seen)
 }
 
 func TestCheckpointerLoadAndAlreadySeen(t *testing.T) {
@@ -338,14 +340,19 @@ func TestCheckpointerLoadAndAlreadySeen(t *testing.T) {
 	require.NoError(t, cp.SetCheckpoint(ctx, "kube-system", "pods", "500"))
 	require.NoError(t, cp.Flush(ctx))
 
-	cp.Load(ctx, []string{"default", "kube-system"}, "pods")
+	require.NoError(t, cp.Load(ctx, []string{"default", "kube-system"}, "pods"))
 
-	assert.True(t, cp.AlreadySeen("199", "default"), "RV below persisted should be seen")
-	assert.True(t, cp.AlreadySeen("200", "default"), "RV equal to persisted should be seen (≤)")
-	assert.False(t, cp.AlreadySeen("201", "default"), "RV above persisted should not be seen")
+	mustSeen := func(rv, ns string) bool {
+		seen, err := cp.AlreadySeen(rv, ns)
+		require.NoError(t, err)
+		return seen
+	}
 
-	assert.True(t, cp.AlreadySeen("500", "kube-system"))
-	assert.False(t, cp.AlreadySeen("501", "kube-system"))
+	assert.True(t, mustSeen("199", "default"), "RV below persisted should be seen")
+	assert.True(t, mustSeen("200", "default"), "RV equal to persisted should be seen (≤)")
+	assert.False(t, mustSeen("201", "default"), "RV above persisted should not be seen")
+	assert.True(t, mustSeen("500", "kube-system"))
+	assert.False(t, mustSeen("501", "kube-system"))
 }
 
 func TestCheckpointerLoadSkipsMissingAndUnparseable(t *testing.T) {
@@ -359,11 +366,19 @@ func TestCheckpointerLoadSkipsMissingAndUnparseable(t *testing.T) {
 	require.NoError(t, cp.Flush(ctx))
 	require.NoError(t, client.Set(ctx, cp.checkpointKey("weird", "pods"), []byte("not-a-number")))
 
-	cp.Load(ctx, []string{"default", "missing", "weird"}, "pods")
+	// Load returns valid namespaces cleanly; missing keys are not an error.
+	require.NoError(t, cp.Load(ctx, []string{"default", "missing"}, "pods"))
 
-	assert.True(t, cp.AlreadySeen("50", "default"), "valid RV namespace loaded")
-	assert.False(t, cp.AlreadySeen("50", "missing"), "namespace with no checkpoint must not be marked seen")
-	assert.False(t, cp.AlreadySeen("50", "weird"), "namespace with unparseable RV must not be marked seen")
+	seen, err := cp.AlreadySeen("50", "default")
+	require.NoError(t, err)
+	assert.True(t, seen, "valid RV namespace loaded")
+
+	seen, err = cp.AlreadySeen("50", "missing")
+	require.NoError(t, err)
+	assert.False(t, seen, "namespace with no checkpoint must not be marked seen")
+
+	// An unparseable persisted RV surfaces as a Load error rather than being silently skipped.
+	require.Error(t, cp.Load(ctx, []string{"default", "weird"}, "pods"), "unparseable persisted RV should fail Load")
 }
 
 func TestCheckpointerLoadResetsState(t *testing.T) {
@@ -373,13 +388,17 @@ func TestCheckpointerLoadResetsState(t *testing.T) {
 
 	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
 	require.NoError(t, cp.Flush(ctx))
-	cp.Load(ctx, []string{"default"}, "pods")
-	assert.True(t, cp.AlreadySeen("100", "default"))
+	require.NoError(t, cp.Load(ctx, []string{"default"}, "pods"))
+	seen, err := cp.AlreadySeen("100", "default")
+	require.NoError(t, err)
+	assert.True(t, seen)
 
 	// Delete the persisted entry; Load should discard the previously cached value.
 	require.NoError(t, cp.DeleteCheckpoint(ctx, "default", "pods"))
-	cp.Load(ctx, []string{"default"}, "pods")
-	assert.False(t, cp.AlreadySeen("100", "default"), "Load must reset previously loaded entries")
+	require.NoError(t, cp.Load(ctx, []string{"default"}, "pods"))
+	seen, err = cp.AlreadySeen("100", "default")
+	require.NoError(t, err)
+	assert.False(t, seen, "Load must reset previously loaded entries")
 }
 
 func TestCheckpointerAlreadySeenUnparseableRV(t *testing.T) {
@@ -389,7 +408,9 @@ func TestCheckpointerAlreadySeenUnparseableRV(t *testing.T) {
 
 	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
 	require.NoError(t, cp.Flush(ctx))
-	cp.Load(ctx, []string{"default"}, "pods")
+	require.NoError(t, cp.Load(ctx, []string{"default"}, "pods"))
 
-	assert.False(t, cp.AlreadySeen("not-a-number", "default"), "unparseable RV must not be marked seen")
+	seen, err := cp.AlreadySeen("not-a-number", "default")
+	require.Error(t, err, "unparseable RV must surface a parse error")
+	assert.False(t, seen, "unparseable RV must not be marked seen")
 }

@@ -144,32 +144,38 @@ func (c *Checkpointer) Flush(ctx context.Context) error {
 
 // Load reads the persisted RV for each namespace into memory.
 // Must be called before processing initial-list events so AlreadySeen() has data to compare against.
-func (c *Checkpointer) Load(ctx context.Context, namespaces []string, objectType string) {
+func (c *Checkpointer) Load(ctx context.Context, namespaces []string, objectType string) error {
 	c.persistedMu.Lock()
 	defer c.persistedMu.Unlock()
 	c.persistedRVs = make(map[string]int64)
 	for _, ns := range namespaces {
 		rv, err := c.GetCheckpoint(ctx, ns, objectType)
-		if err != nil || rv == "" {
+		if err != nil {
+			return err
+		}
+		if rv == "" {
 			continue
 		}
-		if parsed, err := strconv.ParseInt(rv, 10, 64); err == nil {
-			c.persistedRVs[ns] = parsed
+		parsed, err := strconv.ParseInt(rv, 10, 64)
+		if err != nil {
+			return err
 		}
+		c.persistedRVs[ns] = parsed
 	}
+	return nil
 }
 
 // AlreadySeen reports whether the given resourceVersion is ≤ the persisted checkpoint
 // for the namespace, meaning the object was already processed before the last restart.
-func (c *Checkpointer) AlreadySeen(resourceVersion, namespace string) bool {
+func (c *Checkpointer) AlreadySeen(resourceVersion, namespace string) (bool, error) {
 	objRV, err := strconv.ParseInt(resourceVersion, 10, 64)
 	if err != nil {
-		return false
+		return false, err
 	}
 	c.persistedMu.RLock()
 	persisted, exists := c.persistedRVs[namespace]
 	c.persistedMu.RUnlock()
-	return exists && objRV <= persisted
+	return exists && objRV <= persisted, nil
 }
 
 // DeleteCheckpoint deletes the persisted checkpoint for a given namespace and object type.
