@@ -62,7 +62,7 @@ func filterSliceValues[K any](tCtx K, source pcommon.Slice, lambda *ottl.LambdaA
 	for i, v := range source.All() {
 		keep, err := funcutil.EvaluateBiPredicate(tCtx, lambda, int64(i), v)
 		if err != nil {
-			return pcommon.Slice{}, err
+			return pcommon.Slice{}, fmt.Errorf("error while evaluating lambda function on slice item (%d, %v): %w", i, v, err)
 		}
 		if keep {
 			v.CopyTo(res.AppendEmpty())
@@ -77,7 +77,7 @@ func filterMapValues[K any](tCtx K, source pcommon.Map, lambda *ottl.LambdaActiv
 	for k, v := range source.All() {
 		keep, err := funcutil.EvaluateBiPredicate(tCtx, lambda, k, v)
 		if err != nil {
-			return pcommon.Map{}, err
+			return pcommon.Map{}, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 		}
 		if keep {
 			v.CopyTo(builder.AppendEmpty(k))
