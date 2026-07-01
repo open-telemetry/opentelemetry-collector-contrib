@@ -319,9 +319,9 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverIndexFragmentation.Enabled ||
+	return metrics.SqlserverIndexAvgPageSpaceUsed.Enabled ||
+		metrics.SqlserverIndexFragmentation.Enabled ||
 		metrics.SqlserverIndexPageCount.Enabled ||
-		metrics.SqlserverIndexSize.Enabled ||
-		metrics.SqlserverIndexAvgPageSpaceUsed.Enabled ||
-		metrics.SqlserverIndexRecordCount.Enabled
+		metrics.SqlserverIndexRecordCount.Enabled ||
+		metrics.SqlserverIndexSize.Enabled
 }

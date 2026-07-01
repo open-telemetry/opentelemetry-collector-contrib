@@ -1081,13 +1081,13 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 
 func (s *sqlServerScraperHelper) recordIndexPhysicalMetrics(ctx context.Context) error {
 	const (
+		fragKey             = "avg_fragmentation_in_percent"
 		indexIDKey          = "index_id"
 		objectNameKey       = "object_name"
-		schemaNameKey       = "schema_name"
-		fragKey             = "avg_fragmentation_in_percent"
 		pageCountKey        = "page_count"
 		pageSpaceUsedKey    = "avg_page_space_used_in_percent"
 		recordCountKey      = "record_count"
+		schemaNameKey       = "schema_name"
 		sqlServerPageSizeBy = int64(8192) // SQL Server pages are 8 KB
 	)
 

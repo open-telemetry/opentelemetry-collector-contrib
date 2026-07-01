@@ -379,7 +379,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “%” | Gauge | Double | Development |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
@@ -387,18 +387,18 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
-| sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.index.fragmentation
 
-Average fragmentation percentage of the index leaf level.
+Average fragmentation percentage of the index.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “%” | Gauge | Double | Development |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
@@ -406,7 +406,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
-| sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.index.page.count
@@ -417,7 +417,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{pages}” | Gauge | Int | Development |
+| {pages} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -425,7 +425,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
-| sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.index.record.count
@@ -436,7 +436,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{records}” | Gauge | Int | Development |
+| {records} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -444,7 +444,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
-| sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.index.search.rate
@@ -457,13 +457,13 @@ Total number of index searches.
 
 ### sqlserver.index.size
 
-Total size of the index in bytes.
+Total size of the index.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “By” | Gauge | Int | Development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -471,7 +471,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
-| sqlserver.object.name | The name of the table or indexed view the index belongs to. | Any Str | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
 | sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.latch.superlatch.count
@@ -482,7 +482,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{superlatch}” | Gauge | Int | Development |
+| {superlatch} | Gauge | Int | Development |
 
 ### sqlserver.latch.superlatch.transition.rate
 
@@ -492,7 +492,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{transition}/s” | Gauge | Double | Development |
+| {transition}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -508,7 +508,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{wait}/s” | Gauge | Double | Development |
+| {wait}/s | Gauge | Double | Development |
 
 ### sqlserver.latch.wait_time.avg
 

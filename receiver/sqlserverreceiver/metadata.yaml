@@ -197,7 +197,7 @@ attributes:
     type: int
     requirement_level: recommended
   sqlserver.object.name:
-    description: The name of the table or indexed view the index belongs to.
+    description: The name of the object the index belongs to.
     type: string
     requirement_level: recommended
   sqlserver.open_transaction_count:
@@ -601,16 +601,16 @@ metrics:
     enabled: false
     description: Average percentage of available data storage space used in all pages of the index.
     stability: development
-    unit: “%”
+    unit: "%"
     gauge:
       value_type: double
     attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.fragmentation:
     enabled: false
-    description: Average fragmentation percentage of the index leaf level.
+    description: Average fragmentation percentage of the index.
     stability: development
-    unit: “%”
+    unit: "%"
     gauge:
       value_type: double
     attributes: [db.namespace, sqlserver.index.id, sqlserver.object.name, sqlserver.schema.name]
@@ -619,7 +619,7 @@ metrics:
     enabled: false
     description: Number of pages in the index.
     stability: development
-    unit: “{pages}”
+    unit: "{pages}"
     gauge:
       value_type: int
       input_type: string
@@ -629,7 +629,7 @@ metrics:
     enabled: false
     description: Total number of records in the index.
     stability: development
-    unit: “{records}”
+    unit: "{records}"
     gauge:
       value_type: int
       input_type: string
@@ -645,9 +645,9 @@ metrics:
     attributes: []
   sqlserver.index.size:
     enabled: false
-    description: Total size of the index in bytes.
+    description: Total size of the index.
     stability: development
-    unit: “By”
+    unit: "By"
     gauge:
       value_type: int
       input_type: string
@@ -657,7 +657,7 @@ metrics:
     enabled: false
     description: Number of superlatches currently active.
     stability: development
-    unit: “{superlatch}”
+    unit: "{superlatch}"
     gauge:
       value_type: int
     attributes: []
@@ -666,7 +666,7 @@ metrics:
     enabled: false
     description: Rate of superlatch promotions or demotions.
     stability: development
-    unit: “{transition}/s”
+    unit: "{transition}/s"
     gauge:
       value_type: double
     attributes: [transition.direction]
@@ -675,7 +675,7 @@ metrics:
     enabled: false
     description: Number of latch waits per second.
     stability: development
-    unit: “{wait}/s”
+    unit: "{wait}/s"
     gauge:
       value_type: double
     attributes: []

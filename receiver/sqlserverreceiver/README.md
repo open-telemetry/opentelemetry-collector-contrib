@@ -39,8 +39,12 @@ When configured to directly connect to the SQL Server instance, the user must ha
    - SQL Server pre-2022: `VIEW SERVER STATE`
    - SQL Server 2022 and later: `VIEW SERVER PERFORMANCE STATE`
 
-3. To collect the per-index physical stats metrics (`sqlserver.index.*`), `VIEW ANY DEFINITION`
-   is also required so the index, object, and schema catalog views are visible across databases.
+3. To collect the per-index physical stats metrics (`sqlserver.index.*`), the following two
+   permissions are also required:
+   - `CONNECT ANY DATABASE` — the receiver enters each user database to read its index
+     physical stats; this grant lets the login connect to all current and future databases.
+   - `VIEW ANY DEFINITION` — makes the index, object, and schema catalog views visible in
+     every database so the physical stats query can resolve index metadata.
 
 ## Configuration
 

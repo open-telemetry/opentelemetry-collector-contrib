@@ -47,8 +47,8 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.avg_page_space_used
-            unit: “%”
-          - description: Average fragmentation percentage of the index leaf level.
+            unit: "%"
+          - description: Average fragmentation percentage of the index.
             gauge:
               dataPoints:
                 - asDouble: 12.5
@@ -68,7 +68,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.fragmentation
-            unit: “%”
+            unit: "%"
           - description: Number of pages in the index.
             gauge:
               dataPoints:
@@ -89,7 +89,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.count
-            unit: “{pages}”
+            unit: "{pages}"
           - description: Total number of records in the index.
             gauge:
               dataPoints:
@@ -110,8 +110,8 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.record.count
-            unit: “{records}”
-          - description: Total size of the index in bytes.
+            unit: "{records}"
+          - description: Total size of the index.
             gauge:
               dataPoints:
                 - asInt: "819200"
@@ -131,7 +131,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.size
-            unit: “By”
+            unit: "By"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -183,8 +183,8 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.avg_page_space_used
-            unit: “%”
-          - description: Average fragmentation percentage of the index leaf level.
+            unit: "%"
+          - description: Average fragmentation percentage of the index.
             gauge:
               dataPoints:
                 - asDouble: 3.2
@@ -204,7 +204,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.fragmentation
-            unit: “%”
+            unit: "%"
           - description: Number of pages in the index.
             gauge:
               dataPoints:
@@ -225,7 +225,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.page.count
-            unit: “{pages}”
+            unit: "{pages}"
           - description: Total number of records in the index.
             gauge:
               dataPoints:
@@ -246,8 +246,8 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.record.count
-            unit: “{records}”
-          - description: Total size of the index in bytes.
+            unit: "{records}"
+          - description: Total size of the index.
             gauge:
               dataPoints:
                 - asInt: "163840"
@@ -267,7 +267,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.size
-            unit: “By”
+            unit: "By"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

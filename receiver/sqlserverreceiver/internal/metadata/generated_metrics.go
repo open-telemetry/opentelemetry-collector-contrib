@@ -1770,7 +1770,7 @@ type metricSqlserverIndexAvgPageSpaceUsed struct {
 func (m *metricSqlserverIndexAvgPageSpaceUsed) init() {
 	m.data.SetName("sqlserver.index.avg_page_space_used")
 	m.data.SetDescription("Average percentage of available data storage space used in all pages of the index.")
-	m.data.SetUnit("“%”")
+	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -1867,8 +1867,8 @@ type metricSqlserverIndexFragmentation struct {
 // init fills sqlserver.index.fragmentation metric with initial data.
 func (m *metricSqlserverIndexFragmentation) init() {
 	m.data.SetName("sqlserver.index.fragmentation")
-	m.data.SetDescription("Average fragmentation percentage of the index leaf level.")
-	m.data.SetUnit("“%”")
+	m.data.SetDescription("Average fragmentation percentage of the index.")
+	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -1966,7 +1966,7 @@ type metricSqlserverIndexPageCount struct {
 func (m *metricSqlserverIndexPageCount) init() {
 	m.data.SetName("sqlserver.index.page.count")
 	m.data.SetDescription("Number of pages in the index.")
-	m.data.SetUnit("“{pages}”")
+	m.data.SetUnit("{pages}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2064,7 +2064,7 @@ type metricSqlserverIndexRecordCount struct {
 func (m *metricSqlserverIndexRecordCount) init() {
 	m.data.SetName("sqlserver.index.record.count")
 	m.data.SetDescription("Total number of records in the index.")
-	m.data.SetUnit("“{records}”")
+	m.data.SetUnit("{records}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2211,8 +2211,8 @@ type metricSqlserverIndexSize struct {
 // init fills sqlserver.index.size metric with initial data.
 func (m *metricSqlserverIndexSize) init() {
 	m.data.SetName("sqlserver.index.size")
-	m.data.SetDescription("Total size of the index in bytes.")
-	m.data.SetUnit("“By”")
+	m.data.SetDescription("Total size of the index.")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2309,7 +2309,7 @@ type metricSqlserverLatchSuperlatchCount struct {
 func (m *metricSqlserverLatchSuperlatchCount) init() {
 	m.data.SetName("sqlserver.latch.superlatch.count")
 	m.data.SetDescription("Number of superlatches currently active.")
-	m.data.SetUnit("“{superlatch}”")
+	m.data.SetUnit("{superlatch}")
 	m.data.SetEmptyGauge()
 }
 
@@ -2360,7 +2360,7 @@ type metricSqlserverLatchSuperlatchTransitionRate struct {
 func (m *metricSqlserverLatchSuperlatchTransitionRate) init() {
 	m.data.SetName("sqlserver.latch.superlatch.transition.rate")
 	m.data.SetDescription("Rate of superlatch promotions or demotions.")
-	m.data.SetUnit("“{transition}/s”")
+	m.data.SetUnit("{transition}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2448,7 +2448,7 @@ type metricSqlserverLatchWaitRate struct {
 func (m *metricSqlserverLatchWaitRate) init() {
 	m.data.SetName("sqlserver.latch.wait.rate")
 	m.data.SetDescription("Number of latch waits per second.")
-	m.data.SetUnit("“{wait}/s”")
+	m.data.SetUnit("{wait}/s")
 	m.data.SetEmptyGauge()
 }
 

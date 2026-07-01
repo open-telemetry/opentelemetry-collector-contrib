@@ -64,15 +64,29 @@ BEGIN
 END;
 "
 
-# VIEW SERVER PERFORMANCE STATE covers the sys.dm_db_index_physical_stats DMF; VIEW ANY
-# DEFINITION makes the dbo-owned tables/indexes visible in the sys.indexes/objects/schemas
-# catalog views the index physical stats query joins against. Without the latter, those
-# joins return no rows and the per-database query yields no index metrics.
+# VIEW SERVER PERFORMANCE STATE covers the server-level DMVs the other scrapers read. The
+# index physical stats query additionally loops over user databases, entering each one and
+# joining sys.dm_db_index_physical_stats against its sys.indexes/objects/schemas catalog
+# views, so it needs CONNECT ANY DATABASE (to enter every database) and VIEW ANY DEFINITION
+# (to see the dbo-owned tables/indexes in the catalog views). These server-level grants match
+# the permissions documented in the receiver README.
 $SQLCMD -Q "
 CREATE LOGIN otelcollectoruser WITH PASSWORD = 'otel-password123';
 CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
 GRANT VIEW SERVER PERFORMANCE STATE to otelcollectoruser;
-GRANT VIEW ANY DEFINITION to otelcollectoruser;
+"
+
+# The index physical stats query loops over user databases and runs dynamic SQL inside each
+# one under the login's own security context, joining sys.dm_db_index_physical_stats against
+# the per-database sys.indexes/objects/schemas catalog views. The login therefore needs, in
+# each target database: a database user (so it can enter the database), VIEW DEFINITION (so
+# the dbo-owned tables/indexes are visible in the catalog views), and VIEW DATABASE
+# PERFORMANCE STATE (so the DMF returns rows). Without all three the per-database query yields
+# no index metrics.
+$SQLCMD -d mydb -Q "
+CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
+GRANT VIEW DEFINITION TO otelcollectoruser;
+GRANT VIEW DATABASE PERFORMANCE STATE TO otelcollectoruser;
 "
 
 echo "Initialization complete."
