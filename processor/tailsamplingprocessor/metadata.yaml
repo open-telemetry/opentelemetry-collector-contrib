@@ -58,6 +58,10 @@ attributes:
     description: Whether the sampling decision was sampled or not, false can mean either not sampled or dropped
     type: bool
 
+  shard:
+    description: Index of the sampling shard reporting the metric (0 for unsharded)
+    type: int
+
 telemetry:
   metrics:
     processor_tail_sampling_count_bytes_sampled:
@@ -189,6 +193,7 @@ telemetry:
       enabled: true
       gauge:
         value_type: int
+      attributes: [shard]
 
     processor_tail_sampling_traces_dropped_too_large:
       description: Count of traces that were dropped because they were too large

@@ -87,6 +87,11 @@ type tailSamplingSpanProcessor struct {
 	cfg  Config
 	host component.Host
 
+	// shardAttrOpt is a pre-built metric.MeasurementOption carrying the
+	// shard index for this instance. Defaults to shard=0 for unsharded
+	// processors; overridden per shard in newShardedTracesProcessor.
+	shardAttrOpt metric.MeasurementOption
+
 	sampledHooks    []DecisionHook
 	nonSampledHooks []DecisionHook
 
@@ -103,6 +108,10 @@ type tailSamplingSpanProcessor struct {
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
+	}
+
+	if cfg.NumShards > 1 {
+		return newShardedTracesProcessor(ctx, set, nextConsumer, cfg)
 	}
 
 	telemetrySettings := set.TelemetrySettings
@@ -142,6 +151,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
 		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
+		shardAttrOpt:       metric.WithAttributes(attribute.Int("shard", 0)),
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
 		// We need to buffer one new policy command/size update so that external callers can
@@ -736,7 +746,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
-	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(len(tsp.idToTrace)))
+	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(len(tsp.idToTrace)), tsp.shardAttrOpt)
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
 	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
 

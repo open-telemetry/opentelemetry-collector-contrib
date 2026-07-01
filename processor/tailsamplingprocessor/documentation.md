@@ -167,6 +167,12 @@ Tracks the number of traces current on memory
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Gauge | Int | Development |
 
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| shard | Index of the sampling shard reporting the metric (0 for unsharded) | Any Int | - |
+
 ### otelcol_processor_tail_sampling_traces_dropped_too_large
 
 Count of traces that were dropped because they were too large
