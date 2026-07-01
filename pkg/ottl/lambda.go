@@ -59,7 +59,7 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 // formals before calling [LambdaExpression.Activate].
 func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
-		return fmt.Errorf("lambda expects exactly %d argument(s), got %d", arity, len(l.formals))
+		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
 	}
 	return nil
 }
