@@ -32,6 +32,7 @@ This component has the following feature gates:
 | `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
 | `filelog.mtimeSortType` | alpha | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
 | `filelog.protobufCheckpointEncoding` | alpha | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
+| `filelog.skipUnchangedPathByMtime` | alpha | When enabled, a file whose path+mtime is unchanged from a previously tracked reader (within the `knownFiles` generation window) is skipped during the poll: no open, no fingerprint, no read. The retained reader metadata is promoted into the current generation so it ages on the same schedule as if it had been processed. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47861) |
 | `filelog.windows.caseInsensitive` | alpha | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
