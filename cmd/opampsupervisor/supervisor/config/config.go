@@ -239,6 +239,7 @@ type Agent struct {
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	AutomaticConfigRollback bool              `mapstructure:"automatic_config_rollback"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
 	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
