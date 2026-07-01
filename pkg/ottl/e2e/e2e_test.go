@@ -2854,7 +2854,10 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		lambda, err := args.Expr.Activate(ctx, len(args.Params))
+		if err := args.Expr.ValidateArity(len(args.Params)); err != nil {
+			return nil, err
+		}
+		lambda, err := args.Expr.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}

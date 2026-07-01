@@ -2539,7 +2539,10 @@ type evalLambdaArguments[K any] struct {
 //nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
 func evalLambdaFunction[K any](expr LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		lambda, err := expr.Activate(ctx, len(args))
+		if err := expr.ValidateArity(len(args)); err != nil {
+			return nil, err
+		}
+		lambda, err := expr.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
