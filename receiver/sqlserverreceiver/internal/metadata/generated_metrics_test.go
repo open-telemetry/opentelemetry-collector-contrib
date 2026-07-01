@@ -87,6 +87,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
 			aggMap["sqlserver.task.count"] = mb.metricSqlserverTaskCount.config.AggregationStrategy
 			aggMap["sqlserver.task.rate"] = mb.metricSqlserverTaskRate.config.AggregationStrategy
+			aggMap["sqlserver.worker.request.count"] = mb.metricSqlserverWorkerRequestCount.config.AggregationStrategy
 			aggMap["sqlserver.worker.thread.count"] = mb.metricSqlserverWorkerThreadCount.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -329,9 +330,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverTaskRateDataPoint(ts, 1, AttributeTaskTypeStarted)
+			mb.RecordSqlserverTaskRateDataPoint(ts, 1, AttributeTaskResultStarted)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverTaskRateDataPoint(ts, 3, AttributeTaskTypeAborted)
+				mb.RecordSqlserverTaskRateDataPoint(ts, 3, AttributeTaskResultAborted)
 			}
 
 			allMetricsCount++
@@ -368,10 +369,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverWorkerRequestWaitingDataPoint(ts, 1)
+			mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 1, AttributeRequestStateWaiting)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 3, AttributeRequestStateWaiting)
+			}
 
 			allMetricsCount++
-			mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 1, AttributeWorkerStateTotal)
+			mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 1, AttributeWorkerStateMaximum)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 3, AttributeWorkerStateActive)
 			}
@@ -409,6 +413,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverTableCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTaskCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTaskRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverWorkerRequestCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverWorkerThreadCount.aggDataPoints)
 			}
 
@@ -1767,9 +1772,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						taskTypeAttrVal, ok := dp.Attributes().Get("task.type")
+						taskResultAttrVal, ok := dp.Attributes().Get("task.result")
 						assert.True(t, ok)
-						assert.Equal(t, "started", taskTypeAttrVal.Str())
+						assert.Equal(t, "started", taskResultAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.task.rate"], "Found a duplicate in the metrics slice: sqlserver.task.rate")
 						validatedMetrics["sqlserver.task.rate"] = true
@@ -1791,7 +1796,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("task.type")
+						_, ok := dp.Attributes().Get("task.result")
 						assert.False(t, ok)
 					}
 				case "sqlserver.transaction.delay":
@@ -1932,18 +1937,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "sqlserver.worker.request.waiting":
-					assert.False(t, validatedMetrics["sqlserver.worker.request.waiting"], "Found a duplicate in the metrics slice: sqlserver.worker.request.waiting")
-					validatedMetrics["sqlserver.worker.request.waiting"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of requests waiting for a worker thread.", mi.Description())
-					assert.Equal(t, "{request}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.worker.request.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
+						validatedMetrics["sqlserver.worker.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker requests by state.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						requestStateAttrVal, ok := dp.Attributes().Get("request.state")
+						assert.True(t, ok)
+						assert.Equal(t, "waiting", requestStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
+						validatedMetrics["sqlserver.worker.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of worker requests by state.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.worker.request.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request.state")
+						assert.False(t, ok)
+					}
 				case "sqlserver.worker.thread.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.worker.thread.count"], "Found a duplicate in the metrics slice: sqlserver.worker.thread.count")
@@ -1959,7 +1992,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						workerStateAttrVal, ok := dp.Attributes().Get("worker.state")
 						assert.True(t, ok)
-						assert.Equal(t, "total", workerStateAttrVal.Str())
+						assert.Equal(t, "maximum", workerStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.worker.thread.count"], "Found a duplicate in the metrics slice: sqlserver.worker.thread.count")
 						validatedMetrics["sqlserver.worker.thread.count"] = true

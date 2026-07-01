@@ -138,7 +138,7 @@ all_set:
       attributes: ["task.state"]
     sqlserver.task.rate:
       enabled: true
-      attributes: ["task.type"]
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -161,8 +161,9 @@ all_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
-    sqlserver.worker.request.waiting:
+    sqlserver.worker.request.count:
       enabled: true
+      attributes: ["request.state"]
     sqlserver.worker.thread.count:
       enabled: true
       attributes: ["worker.state"]
@@ -352,8 +353,9 @@ reaggregate_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
-    sqlserver.worker.request.waiting:
+    sqlserver.worker.request.count:
       enabled: true
+      attributes: []
     sqlserver.worker.thread.count:
       enabled: true
       attributes: []
@@ -520,7 +522,7 @@ none_set:
       attributes: ["task.state"]
     sqlserver.task.rate:
       enabled: false
-      attributes: ["task.type"]
+      attributes: ["task.result"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
@@ -543,8 +545,9 @@ none_set:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
-    sqlserver.worker.request.waiting:
+    sqlserver.worker.request.count:
       enabled: false
+      attributes: ["request.state"]
     sqlserver.worker.thread.count:
       enabled: false
       attributes: ["worker.state"]

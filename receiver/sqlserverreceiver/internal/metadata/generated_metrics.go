@@ -286,6 +286,28 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
+// AttributeRequestState specifies the value request.state attribute.
+type AttributeRequestState int
+
+const (
+	_ AttributeRequestState = iota
+	AttributeRequestStateWaiting
+)
+
+// String returns the string representation of the AttributeRequestState.
+func (av AttributeRequestState) String() string {
+	switch av {
+	case AttributeRequestStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeRequestState is a helper map of string to AttributeRequestState attribute value.
+var MapAttributeRequestState = map[string]AttributeRequestState{
+	"waiting": AttributeRequestStateWaiting,
+}
+
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
 type AttributeSqlserverParameterizationResult int
 
@@ -402,6 +424,32 @@ var MapAttributeTableStatus = map[string]AttributeTableStatus{
 	"permanent": AttributeTableStatusPermanent,
 }
 
+// AttributeTaskResult specifies the value task.result attribute.
+type AttributeTaskResult int
+
+const (
+	_ AttributeTaskResult = iota
+	AttributeTaskResultStarted
+	AttributeTaskResultAborted
+)
+
+// String returns the string representation of the AttributeTaskResult.
+func (av AttributeTaskResult) String() string {
+	switch av {
+	case AttributeTaskResultStarted:
+		return "started"
+	case AttributeTaskResultAborted:
+		return "aborted"
+	}
+	return ""
+}
+
+// MapAttributeTaskResult is a helper map of string to AttributeTaskResult attribute value.
+var MapAttributeTaskResult = map[string]AttributeTaskResult{
+	"started": AttributeTaskResultStarted,
+	"aborted": AttributeTaskResultAborted,
+}
+
 // AttributeTaskState specifies the value task.state attribute.
 type AttributeTaskState int
 
@@ -426,32 +474,6 @@ func (av AttributeTaskState) String() string {
 var MapAttributeTaskState = map[string]AttributeTaskState{
 	"running":       AttributeTaskStateRunning,
 	"limit_reached": AttributeTaskStateLimitReached,
-}
-
-// AttributeTaskType specifies the value task.type attribute.
-type AttributeTaskType int
-
-const (
-	_ AttributeTaskType = iota
-	AttributeTaskTypeStarted
-	AttributeTaskTypeAborted
-)
-
-// String returns the string representation of the AttributeTaskType.
-func (av AttributeTaskType) String() string {
-	switch av {
-	case AttributeTaskTypeStarted:
-		return "started"
-	case AttributeTaskTypeAborted:
-		return "aborted"
-	}
-	return ""
-}
-
-// MapAttributeTaskType is a helper map of string to AttributeTaskType attribute value.
-var MapAttributeTaskType = map[string]AttributeTaskType{
-	"started": AttributeTaskTypeStarted,
-	"aborted": AttributeTaskTypeAborted,
 }
 
 // AttributeTempdbState specifies the value tempdb.state attribute.
@@ -511,7 +533,7 @@ type AttributeWorkerState int
 
 const (
 	_ AttributeWorkerState = iota
-	AttributeWorkerStateTotal
+	AttributeWorkerStateMaximum
 	AttributeWorkerStateActive
 	AttributeWorkerStateAvailable
 	AttributeWorkerStateWaitingForCPU
@@ -520,8 +542,8 @@ const (
 // String returns the string representation of the AttributeWorkerState.
 func (av AttributeWorkerState) String() string {
 	switch av {
-	case AttributeWorkerStateTotal:
-		return "total"
+	case AttributeWorkerStateMaximum:
+		return "maximum"
 	case AttributeWorkerStateActive:
 		return "active"
 	case AttributeWorkerStateAvailable:
@@ -534,7 +556,7 @@ func (av AttributeWorkerState) String() string {
 
 // MapAttributeWorkerState is a helper map of string to AttributeWorkerState attribute value.
 var MapAttributeWorkerState = map[string]AttributeWorkerState{
-	"total":           AttributeWorkerStateTotal,
+	"maximum":         AttributeWorkerStateMaximum,
 	"active":          AttributeWorkerStateActive,
 	"available":       AttributeWorkerStateAvailable,
 	"waiting_for_cpu": AttributeWorkerStateWaitingForCPU,
@@ -736,7 +758,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverTaskRate: metricInfo{
 		Name:       "sqlserver.task.rate",
-		Attributes: []string{"task.type"},
+		Attributes: []string{"task.result"},
 	},
 	SqlserverTransactionDelay: metricInfo{
 		Name: "sqlserver.transaction.delay",
@@ -771,8 +793,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverUserConnectionCount: metricInfo{
 		Name: "sqlserver.user.connection.count",
 	},
-	SqlserverWorkerRequestWaiting: metricInfo{
-		Name: "sqlserver.worker.request.waiting",
+	SqlserverWorkerRequestCount: metricInfo{
+		Name:       "sqlserver.worker.request.count",
+		Attributes: []string{"request.state"},
 	},
 	SqlserverWorkerThreadCount: metricInfo{
 		Name:       "sqlserver.worker.thread.count",
@@ -851,7 +874,7 @@ type metricsInfo struct {
 	SqlserverTransactionLogShrinkCount          metricInfo
 	SqlserverTransactionLogUsage                metricInfo
 	SqlserverUserConnectionCount                metricInfo
-	SqlserverWorkerRequestWaiting               metricInfo
+	SqlserverWorkerRequestCount                 metricInfo
 	SqlserverWorkerThreadCount                  metricInfo
 }
 
@@ -4573,7 +4596,7 @@ func (m *metricSqlserverTaskRate) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverTaskRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, taskTypeAttributeValue string) {
+func (m *metricSqlserverTaskRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, taskResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4581,8 +4604,8 @@ func (m *metricSqlserverTaskRate) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverTaskRateMetricAttributeKeyTaskType) {
-		dp.Attributes().PutStr("task.type", taskTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverTaskRateMetricAttributeKeyTaskResult) {
+		dp.Attributes().PutStr("task.result", taskResultAttributeValue)
 	}
 
 	var s string
@@ -5201,48 +5224,87 @@ func newMetricSqlserverUserConnectionCount(cfg SqlserverUserConnectionCountMetri
 	return m
 }
 
-type metricSqlserverWorkerRequestWaiting struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   SqlserverWorkerRequestWaitingMetricConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+type metricSqlserverWorkerRequestCount struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SqlserverWorkerRequestCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.worker.request.waiting metric with initial data.
-func (m *metricSqlserverWorkerRequestWaiting) init() {
-	m.data.SetName("sqlserver.worker.request.waiting")
-	m.data.SetDescription("Number of requests waiting for a worker thread.")
+// init fills sqlserver.worker.request.count metric with initial data.
+func (m *metricSqlserverWorkerRequestCount) init() {
+	m.data.SetName("sqlserver.worker.request.count")
+	m.data.SetDescription("Number of worker requests by state.")
 	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverWorkerRequestWaiting) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverWorkerRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverWorkerRequestCountMetricAttributeKeyRequestState) {
+		dp.Attributes().PutStr("request.state", requestStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverWorkerRequestWaiting) updateCapacity() {
+func (m *metricSqlserverWorkerRequestCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverWorkerRequestWaiting) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverWorkerRequestCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSqlserverWorkerRequestWaiting(cfg SqlserverWorkerRequestWaitingMetricConfig) metricSqlserverWorkerRequestWaiting {
-	m := metricSqlserverWorkerRequestWaiting{config: cfg}
+func newMetricSqlserverWorkerRequestCount(cfg SqlserverWorkerRequestCountMetricConfig) metricSqlserverWorkerRequestCount {
+	m := metricSqlserverWorkerRequestCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5420,7 +5482,7 @@ type MetricsBuilder struct {
 	metricSqlserverTransactionLogShrinkCount          metricSqlserverTransactionLogShrinkCount
 	metricSqlserverTransactionLogUsage                metricSqlserverTransactionLogUsage
 	metricSqlserverUserConnectionCount                metricSqlserverUserConnectionCount
-	metricSqlserverWorkerRequestWaiting               metricSqlserverWorkerRequestWaiting
+	metricSqlserverWorkerRequestCount                 metricSqlserverWorkerRequestCount
 	metricSqlserverWorkerThreadCount                  metricSqlserverWorkerThreadCount
 }
 
@@ -5517,7 +5579,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTransactionLogShrinkCount:          newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:                newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
 		metricSqlserverUserConnectionCount:                newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
-		metricSqlserverWorkerRequestWaiting:               newMetricSqlserverWorkerRequestWaiting(mbc.Metrics.SqlserverWorkerRequestWaiting),
+		metricSqlserverWorkerRequestCount:                 newMetricSqlserverWorkerRequestCount(mbc.Metrics.SqlserverWorkerRequestCount),
 		metricSqlserverWorkerThreadCount:                  newMetricSqlserverWorkerThreadCount(mbc.Metrics.SqlserverWorkerThreadCount),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
@@ -5715,7 +5777,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
-	mb.metricSqlserverWorkerRequestWaiting.emit(ils.Metrics())
+	mb.metricSqlserverWorkerRequestCount.emit(ils.Metrics())
 	mb.metricSqlserverWorkerThreadCount.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -6079,8 +6141,8 @@ func (mb *MetricsBuilder) RecordSqlserverTaskCountDataPoint(ts pcommon.Timestamp
 }
 
 // RecordSqlserverTaskRateDataPoint adds a data point to sqlserver.task.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTaskRateDataPoint(ts pcommon.Timestamp, val float64, taskTypeAttributeValue AttributeTaskType) {
-	mb.metricSqlserverTaskRate.recordDataPoint(mb.startTime, ts, val, taskTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverTaskRateDataPoint(ts pcommon.Timestamp, val float64, taskResultAttributeValue AttributeTaskResult) {
+	mb.metricSqlserverTaskRate.recordDataPoint(mb.startTime, ts, val, taskResultAttributeValue.String())
 }
 
 // RecordSqlserverTransactionDelayDataPoint adds a data point to sqlserver.transaction.delay metric.
@@ -6138,9 +6200,9 @@ func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverWorkerRequestWaitingDataPoint adds a data point to sqlserver.worker.request.waiting metric.
-func (mb *MetricsBuilder) RecordSqlserverWorkerRequestWaitingDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverWorkerRequestWaiting.recordDataPoint(mb.startTime, ts, val)
+// RecordSqlserverWorkerRequestCountDataPoint adds a data point to sqlserver.worker.request.count metric.
+func (mb *MetricsBuilder) RecordSqlserverWorkerRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestStateAttributeValue AttributeRequestState) {
+	mb.metricSqlserverWorkerRequestCount.recordDataPoint(mb.startTime, ts, val, requestStateAttributeValue.String())
 }
 
 // RecordSqlserverWorkerThreadCountDataPoint adds a data point to sqlserver.worker.thread.count metric.

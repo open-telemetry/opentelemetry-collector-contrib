@@ -773,7 +773,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| task.type | The type of the task operation. | Str: ``started``, ``aborted`` | Recommended | - |
+| task.result | The result of the task activation. | Str: ``started``, ``aborted`` | Recommended | - |
 
 ### sqlserver.transaction.delay
 
@@ -791,15 +791,21 @@ Total number of mirror write transactions.
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
 
-### sqlserver.worker.request.waiting
+### sqlserver.worker.request.count
 
-Number of requests waiting for a worker thread.
+Number of worker requests by state.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {request} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request.state | The state of the worker request. | Str: ``waiting`` | Recommended | - |
 
 ### sqlserver.worker.thread.count
 
@@ -815,7 +821,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| worker.state | The state of the worker thread. | Str: ``total``, ``active``, ``available``, ``waiting_for_cpu`` | Recommended | - |
+| worker.state | The state of the worker thread. | Str: ``maximum``, ``active``, ``available``, ``waiting_for_cpu`` | Recommended | - |
 
 ## Default Events
 

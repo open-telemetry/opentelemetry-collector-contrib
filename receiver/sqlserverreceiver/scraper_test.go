@@ -1232,7 +1232,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
 	cfg.Metrics.SqlserverWorkerThreadCount.Enabled = true
-	cfg.Metrics.SqlserverWorkerRequestWaiting.Enabled = true
+	cfg.Metrics.SqlserverWorkerRequestCount.Enabled = true
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -1267,9 +1267,9 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
 				switch m.Name() {
-				case "sqlserver.worker.thread.count":
+				case metadata.MetricsInfo.SqlserverWorkerThreadCount.Name:
 					totalDP += m.Gauge().DataPoints().Len()
-				case "sqlserver.worker.request.waiting":
+				case metadata.MetricsInfo.SqlserverWorkerRequestCount.Name:
 					totalDP += m.Gauge().DataPoints().Len()
 				}
 			}
@@ -1288,7 +1288,7 @@ func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
 	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 
 	metrics.SqlserverWorkerThreadCount.Enabled = false
-	metrics.SqlserverWorkerRequestWaiting.Enabled = true
+	metrics.SqlserverWorkerRequestCount.Enabled = true
 	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 

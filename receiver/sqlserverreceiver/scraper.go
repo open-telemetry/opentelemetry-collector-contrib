@@ -1066,7 +1066,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, tasksStartedPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverTaskRateDataPoint(now, val.(float64), metadata.AttributeTaskTypeStarted)
+				s.mb.RecordSqlserverTaskRateDataPoint(now, val.(float64), metadata.AttributeTaskResultStarted)
 			}
 		case tasksAbortedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1074,7 +1074,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, tasksAbortedPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverTaskRateDataPoint(now, val.(float64), metadata.AttributeTaskTypeAborted)
+				s.mb.RecordSqlserverTaskRateDataPoint(now, val.(float64), metadata.AttributeTaskResultAborted)
 			}
 		case storedProceduresInvokedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1439,11 +1439,11 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 }
 
 func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) error {
-	const totalThreads = "total_threads"
 	const activeThreads = "active_threads"
 	const availableThreads = "available_threads"
-	const waitingForCPUThreads = "waiting_for_cpu_threads"
 	const requestsWaitingForThreads = "requests_waiting_for_threads"
+	const totalThreads = "total_threads"
+	const waitingForCPUThreads = "waiting_for_cpu_threads"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -1458,11 +1458,11 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		val, err := retrieveInt(row, totalThreads)
+		val, err := retrieveInt(row, requestsWaitingForThreads)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", totalThreads, i, err))
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", requestsWaitingForThreads, i, err))
 		} else {
-			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateTotal)
+			s.mb.RecordSqlserverWorkerRequestCountDataPoint(now, val.(int64), metadata.AttributeRequestStateWaiting)
 		}
 
 		val, err = retrieveInt(row, activeThreads)
@@ -1479,18 +1479,18 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateAvailable)
 		}
 
+		val, err = retrieveInt(row, totalThreads)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", totalThreads, i, err))
+		} else {
+			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateMaximum)
+		}
+
 		val, err = retrieveInt(row, waitingForCPUThreads)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", waitingForCPUThreads, i, err))
 		} else {
 			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateWaitingForCPU)
-		}
-
-		val, err = retrieveInt(row, requestsWaitingForThreads)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", requestsWaitingForThreads, i, err))
-		} else {
-			s.mb.RecordSqlserverWorkerRequestWaitingDataPoint(now, val.(int64))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

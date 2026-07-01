@@ -145,6 +145,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [transmit, receive]
+  request.state:
+    description: The state of the worker request.
+    type: string
+    requirement_level: recommended
+    enum: [waiting]
   server.address:
     description: The network address of the server hosting the database.
     type: string
@@ -351,16 +356,16 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [temporary, permanent]
+  task.result:
+    description: The result of the task activation.
+    type: string
+    requirement_level: recommended
+    enum: [started, aborted]
   task.state:
     description: The state of the task.
     type: string
     requirement_level: recommended
     enum: [running, limit_reached]
-  task.type:
-    description: The type of the task operation.
-    type: string
-    requirement_level: recommended
-    enum: [started, aborted]
   tempdb.state:
     description: The status of the tempdb space usage.
     type: string
@@ -388,7 +393,7 @@ attributes:
     description: The state of the worker thread.
     type: string
     requirement_level: recommended
-    enum: [total, active, available, waiting_for_cpu]
+    enum: [maximum, active, available, waiting_for_cpu]
   # attributes for events
   ## common
 events:
@@ -984,7 +989,7 @@ metrics:
     unit: "{task}/s"
     gauge:
       value_type: double
-    attributes: [task.type]
+    attributes: [task.result]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false
@@ -1079,14 +1084,14 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-  sqlserver.worker.request.waiting:
+  sqlserver.worker.request.count:
     enabled: false
-    description: Number of requests waiting for a worker thread.
+    description: Number of worker requests by state.
     stability: development
     unit: "{request}"
     gauge:
       value_type: int
-    attributes: []
+    attributes: [request.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.worker.thread.count:
     enabled: false

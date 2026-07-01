@@ -1,5 +1,16 @@
 change_type: enhancement
 component: receiver/sqlserver
-note: Add 10 new opt-in metrics for cursor management, worker threads, CLR execution, Service Broker task activation, and stored procedure monitoring (sqlserver.cursor.count, sqlserver.cursor.memory, sqlserver.cursor.plan.count, sqlserver.cursor.request.rate, sqlserver.worker.thread.count, sqlserver.worker.request.waiting, sqlserver.clr.execution.time, sqlserver.task.count, sqlserver.task.rate, sqlserver.stored_procedure.invocation.rate). sqlserver.cursor.memory reports in bytes (converted from the KB value returned by SQL Server per OTel semantic conventions).
+note: Add 10 new opt-in metrics for cursor management, worker threads, CLR execution, Service Broker task activation, and stored procedure monitoring.
+subtext: |
+  - `sqlserver.cursor.count`
+  - `sqlserver.cursor.memory`
+  - `sqlserver.cursor.plan.count`
+  - `sqlserver.cursor.request.rate`
+  - `sqlserver.worker.thread.count`
+  - `sqlserver.worker.request.count`
+  - `sqlserver.clr.execution.time`
+  - `sqlserver.task.count`
+  - `sqlserver.task.rate`
+  - `sqlserver.stored_procedure.invocation.rate`
 issues: [49257]
 change_logs: [user]

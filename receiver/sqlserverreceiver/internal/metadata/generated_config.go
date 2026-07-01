@@ -1717,7 +1717,7 @@ func (ms *SqlserverTaskCountMetricConfig) Validate() error {
 type SqlserverTaskRateMetricAttributeKey string
 
 const (
-	SqlserverTaskRateMetricAttributeKeyTaskType SqlserverTaskRateMetricAttributeKey = "task.type"
+	SqlserverTaskRateMetricAttributeKeyTaskResult SqlserverTaskRateMetricAttributeKey = "task.result"
 )
 
 // SqlserverTaskRateMetricConfig provides config for the sqlserver.task.rate metric.
@@ -1746,9 +1746,9 @@ func (ms *SqlserverTaskRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SqlserverTaskRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverTaskRateMetricAttributeKeyTaskType:
+		case SqlserverTaskRateMetricAttributeKeyTaskResult:
 		default:
-			return fmt.Errorf("metric sqlserver.task.rate doesn't have an attribute %v, valid attributes: [task.type]", val)
+			return fmt.Errorf("metric sqlserver.task.rate doesn't have an attribute %v, valid attributes: [task.result]", val)
 		}
 	}
 
@@ -1981,13 +1981,23 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// SqlserverWorkerRequestWaitingMetricConfig provides config for the sqlserver.worker.request.waiting metric.
-type SqlserverWorkerRequestWaitingMetricConfig struct {
+// SqlserverWorkerRequestCountMetricAttributeKey specifies the key of an attribute for the sqlserver.worker.request.count metric.
+type SqlserverWorkerRequestCountMetricAttributeKey string
+
+const (
+	SqlserverWorkerRequestCountMetricAttributeKeyRequestState SqlserverWorkerRequestCountMetricAttributeKey = "request.state"
+)
+
+// SqlserverWorkerRequestCountMetricConfig provides config for the sqlserver.worker.request.count metric.
+type SqlserverWorkerRequestCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverWorkerRequestCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverWorkerRequestWaitingMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverWorkerRequestCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1998,6 +2008,24 @@ func (ms *SqlserverWorkerRequestWaitingMetricConfig) Unmarshal(parser *confmap.C
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverWorkerRequestCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverWorkerRequestCountMetricAttributeKeyRequestState:
+		default:
+			return fmt.Errorf("metric sqlserver.worker.request.count doesn't have an attribute %v, valid attributes: [request.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2121,7 +2149,7 @@ type MetricsConfig struct {
 	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
 	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
-	SqlserverWorkerRequestWaiting               SqlserverWorkerRequestWaitingMetricConfig               `mapstructure:"sqlserver.worker.request.waiting"`
+	SqlserverWorkerRequestCount                 SqlserverWorkerRequestCountMetricConfig                 `mapstructure:"sqlserver.worker.request.count"`
 	SqlserverWorkerThreadCount                  SqlserverWorkerThreadCountMetricConfig                  `mapstructure:"sqlserver.worker.thread.count"`
 }
 
@@ -2342,7 +2370,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverTaskRate: SqlserverTaskRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskType},
+			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,
@@ -2377,8 +2405,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 			Enabled: true,
 		},
-		SqlserverWorkerRequestWaiting: SqlserverWorkerRequestWaitingMetricConfig{
-			Enabled: false,
+		SqlserverWorkerRequestCount: SqlserverWorkerRequestCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverWorkerRequestCountMetricAttributeKey{SqlserverWorkerRequestCountMetricAttributeKeyRequestState},
 		},
 		SqlserverWorkerThreadCount: SqlserverWorkerThreadCountMetricConfig{
 			Enabled:             false,

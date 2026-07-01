@@ -242,7 +242,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTaskRate: SqlserverTaskRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskType},
+						EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 					},
 					SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 						Enabled: true,
@@ -277,8 +277,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 						Enabled: true,
 					},
-					SqlserverWorkerRequestWaiting: SqlserverWorkerRequestWaitingMetricConfig{
-						Enabled: true,
+					SqlserverWorkerRequestCount: SqlserverWorkerRequestCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SqlserverWorkerRequestCountMetricAttributeKey{SqlserverWorkerRequestCountMetricAttributeKeyRequestState},
 					},
 					SqlserverWorkerThreadCount: SqlserverWorkerThreadCountMetricConfig{
 						Enabled:             true,
@@ -518,7 +520,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTaskRate: SqlserverTaskRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskType},
+						EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 					},
 					SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 						Enabled: false,
@@ -553,8 +555,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 						Enabled: false,
 					},
-					SqlserverWorkerRequestWaiting: SqlserverWorkerRequestWaitingMetricConfig{
-						Enabled: false,
+					SqlserverWorkerRequestCount: SqlserverWorkerRequestCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SqlserverWorkerRequestCountMetricAttributeKey{SqlserverWorkerRequestCountMetricAttributeKeyRequestState},
 					},
 					SqlserverWorkerThreadCount: SqlserverWorkerThreadCountMetricConfig{
 						Enabled:             false,
@@ -579,7 +583,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAttentionRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverClrExecutionTimeMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverCursorCountMetricConfig{}, SqlserverCursorMemoryMetricConfig{}, SqlserverCursorPlanCountMetricConfig{}, SqlserverCursorRequestRateMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverStoredProcedureInvocationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTaskCountMetricConfig{}, SqlserverTaskRateMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorkerRequestWaitingMetricConfig{}, SqlserverWorkerThreadCountMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAttentionRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverClrExecutionTimeMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverCursorCountMetricConfig{}, SqlserverCursorMemoryMetricConfig{}, SqlserverCursorPlanCountMetricConfig{}, SqlserverCursorRequestRateMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverStoredProcedureInvocationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTaskCountMetricConfig{}, SqlserverTaskRateMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorkerRequestCountMetricConfig{}, SqlserverWorkerThreadCountMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -818,9 +822,21 @@ func TestSqlserverTaskRateMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverTaskRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.task.rate doesn't have an attribute invalid, valid attributes: [task.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.task.rate doesn't have an attribute invalid, valid attributes: [task.result]")
 
 	cfg = DefaultMetricsConfig().SqlserverTaskRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSqlserverWorkerRequestCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverWorkerRequestCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SqlserverWorkerRequestCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.worker.request.count doesn't have an attribute invalid, valid attributes: [request.state]")
+
+	cfg = DefaultMetricsConfig().SqlserverWorkerRequestCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
