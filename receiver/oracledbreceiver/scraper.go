@@ -82,6 +82,25 @@ const (
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
 
+	// Buffer cache and DBWR v$sysstat names
+	dbBlockChanges               = "db block changes"
+	dbBlockGetsFromCache         = "db block gets from cache"
+	dbwrCheckpointBuffersWritten = "DBWR checkpoint buffers written"
+	dbwrCheckpoints              = "DBWR checkpoints"
+	dirtyBuffersInspected        = "dirty buffers inspected"
+	freeBufferInspected          = "free buffer inspected"
+	freeBufferRequested          = "free buffer requested"
+
+	// Redo log v$sysstat names
+	redoBlocksWritten      = "redo blocks written"
+	redoBufferAllocRetries = "redo buffer allocation retries"
+	redoLogSpaceRequests   = "redo log space requests"
+	redoLogSpaceWaitTime   = "redo log space wait time"
+	redoSize               = "redo size"
+	redoSynchTime          = "redo synch time"
+	redoWriteTime          = "redo write time"
+	redoWrites             = "redo writes"
+
 	// I/O performance v$sysstat names
 	physicalReadBytesStat            = "physical read bytes"
 	physicalWriteBytesStat           = "physical write bytes"
@@ -311,7 +330,19 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoCacheWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoBlocks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoRetries.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -517,6 +548,77 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
+			// Buffer cache and DBWR v$sysstat statistics
+			case dbBlockChanges:
+				if err := s.mb.RecordOracledbBufferCacheBlockChangesDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbBlockGetsFromCache:
+				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpointBuffersWritten:
+				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpoints:
+				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dirtyBuffersInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateDirty); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferRequested:
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Redo log v$sysstat statistics
+			case redoBlocksWritten:
+				if err := s.mb.RecordOracledbRedoBlocksDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoBufferAllocRetries:
+				if err := s.mb.RecordOracledbRedoRetriesDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRetryTypeBufferAllocation); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoLogSpaceRequests:
+				if err := s.mb.RecordOracledbRedoRequestsDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRequestTypeLogSpace); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoLogSpaceWaitTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeLogSpaceWait)
+				}
+			case redoSize:
+				if err := s.mb.RecordOracledbRedoSizeDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoSynchTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeSync)
+				}
+			case redoWriteTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeWrite)
+				}
+			case redoWrites:
+				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
 			}
 		}
 	}
@@ -663,6 +765,14 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
 	return out, nil
+}
+
+func parseFloat(metricName, rawValue string) (float64, error) {
+	value, err := strconv.ParseFloat(rawValue, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%s value: %q, %w", metricName, rawValue, err)
+	}
+	return value, nil
 }
 
 func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeErrors *[]error) {
