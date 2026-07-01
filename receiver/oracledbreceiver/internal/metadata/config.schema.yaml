@@ -355,6 +355,48 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.redo.blocks:
+        description: "OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.operations:
+        description: "OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.requests:
+        description: "OracledbRedoRequestsMetricConfig provides config for the oracledb.redo.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.retries:
+        description: "OracledbRedoRetriesMetricConfig provides config for the oracledb.redo.retries metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.size:
+        description: "OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.time:
+        description: "OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object

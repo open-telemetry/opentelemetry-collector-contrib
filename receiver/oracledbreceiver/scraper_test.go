@@ -82,6 +82,15 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": freeBufferRequested, "VALUE": "6100"},
 		{"NAME": freeBufferInspected, "VALUE": "55000"},
 		{"NAME": dirtyBuffersInspected, "VALUE": "1200"},
+		// Redo log v$sysstat rows (redo time values are in centiseconds)
+		{"NAME": redoWriteTime, "VALUE": "1500"},
+		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
+		{"NAME": redoSynchTime, "VALUE": "900"},
+		{"NAME": redoSize, "VALUE": "104857600"},
+		{"NAME": redoWrites, "VALUE": "45000"},
+		{"NAME": redoBlocksWritten, "VALUE": "210000"},
+		{"NAME": redoBufferAllocRetries, "VALUE": "12"},
+		{"NAME": redoLogSpaceRequests, "VALUE": "34"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -477,6 +486,93 @@ func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 6, seen, "expected all 6 buffer/checkpoint metrics to be emitted")
+}
+
+func TestScraper_ScrapeRedoMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbRedoTime.Enabled = true
+	cfg.Metrics.OracledbRedoSize.Enabled = true
+	cfg.Metrics.OracledbRedoOperations.Enabled = true
+	cfg.Metrics.OracledbRedoBlocks.Enabled = true
+	cfg.Metrics.OracledbRedoRequests.Enabled = true
+	cfg.Metrics.OracledbRedoRetries.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbRedoTime.Name:
+			// centiseconds converted to seconds (value / 100), one data point per redo.type.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				redoType, _ := dp.Attributes().Get("oracledb.redo.type")
+				switch redoType.Str() {
+				case metadata.AttributeOracledbRedoTypeWrite.String():
+					assert.InDelta(t, 15.0, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeLogSpaceWait.String():
+					assert.InDelta(t, 2.5, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeSync.String():
+					assert.InDelta(t, 9.0, dp.DoubleValue(), floatDelta)
+				default:
+					t.Errorf("unexpected oracledb.redo.type: %q", redoType.Str())
+				}
+			}
+			seen++
+		case metadata.MetricsInfo.OracledbRedoSize.Name:
+			assert.Equal(t, int64(104857600), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoOperations.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(45000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoBlocks.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(210000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRequests.Name:
+			dp := dps.At(0)
+			reqType, _ := dp.Attributes().Get("oracledb.redo.request.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRequestTypeLogSpace.String(), reqType.Str())
+			assert.Equal(t, int64(34), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRetries.Name:
+			dp := dps.At(0)
+			retryType, _ := dp.Attributes().Get("oracledb.redo.retry.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRetryTypeBufferAllocation.String(), retryType.Str())
+			assert.Equal(t, int64(12), dp.IntValue())
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 redo metrics to be emitted")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
