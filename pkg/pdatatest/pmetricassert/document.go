@@ -56,6 +56,7 @@ type datapointAssertion struct {
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
+	Rest           map[string]any `yaml:",inline"`
 }
 
 func readDocument(path string) (*document, error) {
