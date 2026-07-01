@@ -45,7 +45,7 @@ docker run -v "./file-exporter:/file-exporter:rwz" -v "otel-collector-config.yam
 ```
 Note this same syntax for volumes will work with docker-compose.
 
-You could also modify the base image and manually build your own container to have a writeable directory or change the runas uid if needed, but this is more involved. 
+You could also modify the base image and manually build your own container to have a writeable directory or change the runas uid if needed, but this is more involved.
 
 ## Configuration options:
 
@@ -74,7 +74,7 @@ The following settings are optional:
         - SpeedDefault: `3`
         - SpeedBetterCompression: `6`
         - SpeedBestCompression: `11`
-- `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
+- `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats.
 NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.
 
 - `create_directory`[default: false]: when set, the exporter will create the parent directory of the configured `path` if it does not exist.
@@ -89,7 +89,7 @@ NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and
 Telemetry data is exported to a single file by default.
 `fileexporter` only enables file rotation when the user specifies `rotation:` in the config. However, if specified, related default settings would apply.
 
-Telemetry is first written to a file that exactly matches the `path` setting. 
+Telemetry is first written to a file that exactly matches the `path` setting.
 When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
 
 When a file is rotated, **it is renamed by putting the current time in a timestamp**
@@ -106,10 +106,14 @@ Telemetry data is compressed according to the `compression` setting.
 > An alpha feature gate `exporter.file.nativeCompression` is available that switches from
 > per-message compression to native file-level compression, producing standard `.zst` files
 > compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
+>
+> With this gate enabled, JSON output and any stream-decodable `encoding` extension (one
+> implementing the streaming logs decoder, such as `text_encoding`) are written
+> newline-delimited, so the decompressed file is clean text.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
-##  File Format 
+##  File Format
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
@@ -157,7 +161,7 @@ exporters:
 
 ## Get Started in an existing cluster
 We will follow the [documentation](https://opentelemetry.io/docs/k8s-operator/) to first install the operator in an existing cluster
-and then create an OpenTelemetry Collector (otelcol) instance, 
+and then create an OpenTelemetry Collector (otelcol) instance,
 mounting an additional volume under `/data` under which the file exporter will write `metrics.json`:
 ``` shell
 kubectl apply -f - <<EOF
@@ -188,7 +192,7 @@ spec:
   volumes:
     - name: file
       emptyDir: {}
-  volumeMounts: 
+  volumeMounts:
     - name: file
       mountPath: /data
 EOF

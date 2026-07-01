@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // Marshaler configuration used for marshaling Protobuf
@@ -47,6 +48,10 @@ type marshaller struct {
 	compressor  compressFunc
 
 	formatType string
+
+	// encodingUnframed is true when the encoding can be stream-decoded on
+	// read-back, so length-prefix framing is unnecessary.
+	encodingUnframed bool
 }
 
 func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
@@ -60,15 +65,17 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 	}
 
 	if conf.Encoding != nil {
-		encoding := host.GetExtensions()[*conf.Encoding]
-		if encoding == nil {
+		encodingExt := host.GetExtensions()[*conf.Encoding]
+		if encodingExt == nil {
 			return nil, fmt.Errorf("unknown encoding %q", conf.Encoding)
 		}
 		// cast with ok to avoid panics.
-		tm, _ := encoding.(ptrace.Marshaler)
-		mm, _ := encoding.(pmetric.Marshaler)
-		lm, _ := encoding.(plog.Marshaler)
-		pm, _ := encoding.(pprofile.Marshaler)
+		tm, _ := encodingExt.(ptrace.Marshaler)
+		mm, _ := encodingExt.(pmetric.Marshaler)
+		lm, _ := encodingExt.(plog.Marshaler)
+		pm, _ := encodingExt.(pprofile.Marshaler)
+		// Stream-decodable encodings are self-delimiting, so no framing is needed.
+		_, unframed := encodingExt.(encoding.LogsDecoderFactory)
 		return &marshaller{
 			tracesMarshaler:   tm,
 			metricsMarshaler:  mm,
@@ -76,6 +83,7 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 			profilesMarshaler: pm,
 			compression:       compression,
 			compressor:        compressor,
+			encodingUnframed:  unframed,
 		}, nil
 	}
 	return &marshaller{

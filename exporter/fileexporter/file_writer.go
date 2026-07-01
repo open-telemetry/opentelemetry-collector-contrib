@@ -107,14 +107,14 @@ func (w *fileWriter) shutdown() error {
 	return w.file.Close()
 }
 
-func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
+// buildExportFunc selects the framing used to write encoded telemetry.
+// encodingUnframed omits length-prefix framing for stream-decodable encodings.
+func buildExportFunc(cfg *Config, encodingUnframed bool) func(w *fileWriter, buf []byte) error {
 	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && cfg.Compression != "" {
-		// Native compression: the compression stream handles framing, so
-		// JSON can use newline-delimited output (human-readable after decompression).
-		// Proto still needs length-prefix for message boundary detection.
-		// When a custom encoding extension is set, the actual wire format may be
-		// binary regardless of FormatType, so length-prefix framing is required.
-		if cfg.FormatType == formatTypeJSON && cfg.Encoding == nil {
+		// The compression stream handles framing: JSON and stream-decodable
+		// encodings use newline-delimited output; other encodings and proto keep
+		// length-prefix framing for message boundary detection.
+		if (cfg.FormatType == formatTypeJSON && cfg.Encoding == nil) || encodingUnframed {
 			return exportMessageAsLine
 		}
 		return exportMessageAsBuffer
