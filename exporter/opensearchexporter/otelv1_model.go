@@ -77,6 +77,7 @@ type otelV1LogRecord struct {
 	ObservedTime           time.Time      `json:"observedTime"`
 	Severity               otelV1Severity `json:"severity"`
 	Body                   string         `json:"body,omitempty"`
+	EventName              string         `json:"eventName,omitempty"`
 	TraceID                string         `json:"traceId,omitempty"`
 	SpanID                 string         `json:"spanId,omitempty"`
 	Flags                  int64          `json:"flags"`

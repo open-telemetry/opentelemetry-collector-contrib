@@ -4,6 +4,78 @@ $defs:
     description: MetricsConfig provides config for oracledb metrics.
     type: object
     properties:
+      oracledb.buffer.inspected:
+        description: "OracledbBufferInspectedMetricConfig provides config for the oracledb.buffer.inspected metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer.requests:
+        description: "OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer_cache.block.changes:
+        description: "OracledbBufferCacheBlockChangesMetricConfig provides config for the oracledb.buffer_cache.block.changes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.buffer_cache.block.gets:
+        description: "OracledbBufferCacheBlockGetsMetricConfig provides config for the oracledb.buffer_cache.block.gets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.call.count:
+        description: "OracledbCallCountMetricConfig provides config for the oracledb.call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.call.type"
+            default:
+              - "oracledb.call.type"
+      oracledb.call.recursive.cpu.time:
+        description: "OracledbCallRecursiveCPUTimeMetricConfig provides config for the oracledb.call.recursive.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.checkpoint.buffers:
+        description: "OracledbCheckpointBuffersMetricConfig provides config for the oracledb.checkpoint.buffers metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.checkpoint.completed:
+        description: "OracledbCheckpointCompletedMetricConfig provides config for the oracledb.checkpoint.completed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.consistent_gets:
         description: "OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric."
         type: object
@@ -18,6 +90,27 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.cursor.cache.hits:
+        description: "OracledbCursorCacheHitsMetricConfig provides config for the oracledb.cursor.cache.hits metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.cache.size:
+        description: "OracledbCursorCacheSizeMetricConfig provides config for the oracledb.cursor.cache.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.open:
+        description: "OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.data_dictionary.hit_ratio:
         description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
         type: object
@@ -25,6 +118,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.db.time:
+        description: "OracledbDbTimeMetricConfig provides config for the oracledb.db.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.session.type"
+            default:
+              - "oracledb.session.type"
       oracledb.db_block_gets:
         description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
         type: object
@@ -60,6 +176,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.enqueue.operations:
+        description: "OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.enqueue.type"
+            default:
+              - "oracledb.enqueue.type"
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -116,6 +255,29 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.lob.operations:
+        description: "OracledbLobOperationsMetricConfig provides config for the oracledb.lob.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+            default:
+              - "disk.io.direction"
       oracledb.jvm.memory.committed:
         description: "OracledbJvmMemoryCommittedMetricConfig provides config for the oracledb.jvm.memory.committed metric."
         type: object
@@ -195,6 +357,20 @@ $defs:
             default: false
       oracledb.parallel_operations_not_downgraded:
         description: "OracledbParallelOperationsNotDowngradedMetricConfig provides config for the oracledb.parallel_operations_not_downgraded metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.parse.cpu.time:
+        description: "OracledbParseCPUTimeMetricConfig provides config for the oracledb.parse.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.parse.elapsed.time:
+        description: "OracledbParseElapsedTimeMetricConfig provides config for the oracledb.parse.elapsed.time metric."
         type: object
         properties:
           enabled:
@@ -341,6 +517,80 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.redo.blocks:
+        description: "OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.operations:
+        description: "OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.requests:
+        description: "OracledbRedoRequestsMetricConfig provides config for the oracledb.redo.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.retries:
+        description: "OracledbRedoRetriesMetricConfig provides config for the oracledb.redo.retries metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.size:
+        description: "OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.time:
+        description: "OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.scan.count:
+        description: "OracledbScanCountMetricConfig provides config for the oracledb.scan.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.scan.type"
+                - "oracledb.scan.mode"
+            default:
+              - "oracledb.scan.type"
+              - "oracledb.scan.mode"
+      oracledb.scan.table.rows:
+        description: "OracledbScanTableRowsMetricConfig provides config for the oracledb.scan.table.rows metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.session.stored_procedure.usage:
         description: "OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric."
         type: object
@@ -394,6 +644,36 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.sort.operations:
+        description: "OracledbSortOperationsMetricConfig provides config for the oracledb.sort.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.sort.type"
+            default:
+              - "oracledb.sort.type"
+      oracledb.sort.rows:
+        description: "OracledbSortRowsMetricConfig provides config for the oracledb.sort.rows metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sqlnet.io.transferred:
         description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
         type: object
@@ -732,6 +1012,60 @@ $defs:
           enabled:
             type: boolean
             default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      service.name:
+        description: ResourceAttributeConfig provides common config for a service.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      service.namespace:
+        description: ResourceAttributeConfig provides common config for a service.namespace resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
