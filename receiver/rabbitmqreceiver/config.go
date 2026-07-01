@@ -47,7 +47,7 @@ func (cfg *Config) Validate() error {
 
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
-		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
+		wrappedErr := fmt.Errorf("%w: %s", errInvalidEndpoint, parseErr)
 		err = append(err, wrappedErr)
 	}
 
