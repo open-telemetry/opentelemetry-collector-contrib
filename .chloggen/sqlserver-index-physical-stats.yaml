@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add per-index physical stats metrics sourced from `sys.dm_db_index_physical_stats`.
+note: Add index physical stats metrics
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49350]
@@ -18,8 +18,9 @@ issues: [49350]
 subtext: |
   Adds the following metrics, all disabled by default: `sqlserver.index.fragmentation`,
   `sqlserver.index.page.count`, `sqlserver.index.size`, `sqlserver.index.avg_page_space_used`,
-  and `sqlserver.index.record.count`. Collecting these metrics requires the `VIEW ANY DEFINITION`
-  permission in addition to the existing direct-connection permissions.
+  and `sqlserver.index.record.count`. Collecting these metrics requires the `CONNECT ANY
+  DATABASE` and `VIEW ANY DEFINITION` permissions in addition to the existing direct-connection
+  permissions.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
