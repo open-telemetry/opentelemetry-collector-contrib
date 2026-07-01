@@ -329,6 +329,55 @@ func (ms *ProcessMemoryVirtualMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
+// ProcessNetworkConnectionCountMetricAttributeKey specifies the key of an attribute for the process.network.connection.count metric.
+type ProcessNetworkConnectionCountMetricAttributeKey string
+
+const (
+	ProcessNetworkConnectionCountMetricAttributeKeyServerAddress ProcessNetworkConnectionCountMetricAttributeKey = "server.address"
+	ProcessNetworkConnectionCountMetricAttributeKeyServerPort    ProcessNetworkConnectionCountMetricAttributeKey = "server.port"
+)
+
+// ProcessNetworkConnectionCountMetricConfig provides config for the process.network.connection.count metric.
+type ProcessNetworkConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ProcessNetworkConnectionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ProcessNetworkConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ProcessNetworkConnectionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ProcessNetworkConnectionCountMetricAttributeKeyServerAddress, ProcessNetworkConnectionCountMetricAttributeKeyServerPort:
+		default:
+			return fmt.Errorf("metric process.network.connection.count doesn't have an attribute %v, valid attributes: [server.address, server.port]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // ProcessOpenFileDescriptorsMetricConfig provides config for the process.open_file_descriptors metric.
 type ProcessOpenFileDescriptorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -459,20 +508,21 @@ func (ms *ProcessUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for process metrics.
 type MetricsConfig struct {
-	ProcessContextSwitches     ProcessContextSwitchesMetricConfig     `mapstructure:"process.context_switches"`
-	ProcessCPUTime             ProcessCPUTimeMetricConfig             `mapstructure:"process.cpu.time"`
-	ProcessCPUUtilization      ProcessCPUUtilizationMetricConfig      `mapstructure:"process.cpu.utilization"`
-	ProcessDiskIo              ProcessDiskIoMetricConfig              `mapstructure:"process.disk.io"`
-	ProcessDiskOperations      ProcessDiskOperationsMetricConfig      `mapstructure:"process.disk.operations"`
-	ProcessHandles             ProcessHandlesMetricConfig             `mapstructure:"process.handles"`
-	ProcessMemoryUsage         ProcessMemoryUsageMetricConfig         `mapstructure:"process.memory.usage"`
-	ProcessMemoryUtilization   ProcessMemoryUtilizationMetricConfig   `mapstructure:"process.memory.utilization"`
-	ProcessMemoryVirtual       ProcessMemoryVirtualMetricConfig       `mapstructure:"process.memory.virtual"`
-	ProcessOpenFileDescriptors ProcessOpenFileDescriptorsMetricConfig `mapstructure:"process.open_file_descriptors"`
-	ProcessPagingFaults        ProcessPagingFaultsMetricConfig        `mapstructure:"process.paging.faults"`
-	ProcessSignalsPending      ProcessSignalsPendingMetricConfig      `mapstructure:"process.signals_pending"`
-	ProcessThreads             ProcessThreadsMetricConfig             `mapstructure:"process.threads"`
-	ProcessUptime              ProcessUptimeMetricConfig              `mapstructure:"process.uptime"`
+	ProcessContextSwitches        ProcessContextSwitchesMetricConfig        `mapstructure:"process.context_switches"`
+	ProcessCPUTime                ProcessCPUTimeMetricConfig                `mapstructure:"process.cpu.time"`
+	ProcessCPUUtilization         ProcessCPUUtilizationMetricConfig         `mapstructure:"process.cpu.utilization"`
+	ProcessDiskIo                 ProcessDiskIoMetricConfig                 `mapstructure:"process.disk.io"`
+	ProcessDiskOperations         ProcessDiskOperationsMetricConfig         `mapstructure:"process.disk.operations"`
+	ProcessHandles                ProcessHandlesMetricConfig                `mapstructure:"process.handles"`
+	ProcessMemoryUsage            ProcessMemoryUsageMetricConfig            `mapstructure:"process.memory.usage"`
+	ProcessMemoryUtilization      ProcessMemoryUtilizationMetricConfig      `mapstructure:"process.memory.utilization"`
+	ProcessMemoryVirtual          ProcessMemoryVirtualMetricConfig          `mapstructure:"process.memory.virtual"`
+	ProcessNetworkConnectionCount ProcessNetworkConnectionCountMetricConfig `mapstructure:"process.network.connection.count"`
+	ProcessOpenFileDescriptors    ProcessOpenFileDescriptorsMetricConfig    `mapstructure:"process.open_file_descriptors"`
+	ProcessPagingFaults           ProcessPagingFaultsMetricConfig           `mapstructure:"process.paging.faults"`
+	ProcessSignalsPending         ProcessSignalsPendingMetricConfig         `mapstructure:"process.signals_pending"`
+	ProcessThreads                ProcessThreadsMetricConfig                `mapstructure:"process.threads"`
+	ProcessUptime                 ProcessUptimeMetricConfig                 `mapstructure:"process.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -513,6 +563,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ProcessMemoryVirtual: ProcessMemoryVirtualMetricConfig{
 			Enabled: true,
+		},
+		ProcessNetworkConnectionCount: ProcessNetworkConnectionCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ProcessNetworkConnectionCountMetricAttributeKey{ProcessNetworkConnectionCountMetricAttributeKeyServerAddress, ProcessNetworkConnectionCountMetricAttributeKeyServerPort},
 		},
 		ProcessOpenFileDescriptors: ProcessOpenFileDescriptorsMetricConfig{
 			Enabled: false,

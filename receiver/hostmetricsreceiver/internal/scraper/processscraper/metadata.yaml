@@ -69,13 +69,20 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [read, write]
-
   paging_fault_type:
     name_override: type
     description: Type of memory paging fault.
     type: string
     requirement_level: recommended
     enum: [major, minor]
+  server.address:
+    description: The remote address of the network connection.
+    type: string
+    requirement_level: recommended
+  server.port:
+    description: The remote port of the network connection.
+    type: int
+    requirement_level: recommended
   state:
     description: Breakdown of CPU usage by type.
     type: string
@@ -175,6 +182,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
+  process.network.connection.count:
+    enabled: false
+    description: The number of established network connections opened by the process, grouped by remote endpoint.
+    unit: "{connections}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: [server.address, server.port]
 
   process.open_file_descriptors:
     enabled: false

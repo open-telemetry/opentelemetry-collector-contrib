@@ -24,6 +24,9 @@ all_set:
       enabled: true
     process.memory.virtual:
       enabled: true
+    process.network.connection.count:
+      enabled: true
+      attributes: ["server.address","server.port"]
     process.open_file_descriptors:
       enabled: true
     process.paging.faults:
@@ -77,6 +80,9 @@ reaggregate_set:
       enabled: true
     process.memory.virtual:
       enabled: true
+    process.network.connection.count:
+      enabled: true
+      attributes: []
     process.open_file_descriptors:
       enabled: true
     process.paging.faults:
@@ -130,6 +136,9 @@ none_set:
       enabled: false
     process.memory.virtual:
       enabled: false
+    process.network.connection.count:
+      enabled: false
+      attributes: ["server.address","server.port"]
     process.open_file_descriptors:
       enabled: false
     process.paging.faults:

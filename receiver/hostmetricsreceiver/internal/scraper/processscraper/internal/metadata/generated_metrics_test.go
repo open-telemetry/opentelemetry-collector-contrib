@@ -72,6 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["process.cpu.utilization"] = mb.metricProcessCPUUtilization.config.AggregationStrategy
 			aggMap["process.disk.io"] = mb.metricProcessDiskIo.config.AggregationStrategy
 			aggMap["process.disk.operations"] = mb.metricProcessDiskOperations.config.AggregationStrategy
+			aggMap["process.network.connection.count"] = mb.metricProcessNetworkConnectionCount.config.AggregationStrategy
 			aggMap["process.paging.faults"] = mb.metricProcessPagingFaults.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -125,6 +126,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordProcessNetworkConnectionCountDataPoint(ts, 1, "server.address-val", 11)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessNetworkConnectionCountDataPoint(ts, 3, "server.address-val-2", 12)
+			}
+
+			allMetricsCount++
 			mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -159,6 +166,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricProcessCPUUtilization.aggDataPoints)
 				assert.Empty(t, mb.metricProcessDiskIo.aggDataPoints)
 				assert.Empty(t, mb.metricProcessDiskOperations.aggDataPoints)
+				assert.Empty(t, mb.metricProcessNetworkConnectionCount.aggDataPoints)
 				assert.Empty(t, mb.metricProcessPagingFaults.aggDataPoints)
 			}
 
@@ -457,6 +465,51 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "process.network.connection.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.network.connection.count"], "Found a duplicate in the metrics slice: process.network.connection.count")
+						validatedMetrics["process.network.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of established network connections opened by the process, grouped by remote endpoint.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						serverAddressAttrVal, ok := dp.Attributes().Get("server.address")
+						assert.True(t, ok)
+						assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+						serverPortAttrVal, ok := dp.Attributes().Get("server.port")
+						assert.True(t, ok)
+						assert.EqualValues(t, 11, serverPortAttrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["process.network.connection.count"], "Found a duplicate in the metrics slice: process.network.connection.count")
+						validatedMetrics["process.network.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of established network connections opened by the process, grouped by remote endpoint.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.network.connection.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("server.address")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("server.port")
+						assert.False(t, ok)
+					}
 				case "process.open_file_descriptors":
 					assert.False(t, validatedMetrics["process.open_file_descriptors"], "Found a duplicate in the metrics slice: process.open_file_descriptors")
 					validatedMetrics["process.open_file_descriptors"] = true
