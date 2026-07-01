@@ -176,6 +176,11 @@ attributes:
     description: Deadlock priority value for the session.
     type: int
     requirement_level: recommended
+  sqlserver.error.category:
+    description: The category of the SQL Server error.
+    type: string
+    requirement_level: required
+    enum: [db_offline, info, kill_connection, user]
   sqlserver.estimated_completion_time:
     description: Estimated time remaining for the request to complete, in seconds.
     type: double
@@ -184,6 +189,16 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
+  sqlserver.lock.block.type:
+    description: The type of lock block tracked by the lock manager.
+    type: string
+    requirement_level: required
+    enum: [allocated, blocks, owner, owner_allocated]
+  sqlserver.lock.timeout.type:
+    description: The type of lock timeout being reported. `all` includes immediate (zero-wait) timeouts; `nonzero` excludes them.
+    type: string
+    requirement_level: required
+    enum: [all, nonzero]
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
@@ -482,6 +497,15 @@ metrics:
     gauge:
       value_type: int
       input_type: string
+  sqlserver.connection.reset.rate:
+    enabled: false
+    description: Number of logical connections reset per second.
+    stability: development
+    unit: "{connection}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.cpu.count:
     enabled: false
     description: Number of CPUs.
@@ -585,6 +609,15 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.error.rate:
+    enabled: false
+    description: Number of errors raised per second.
+    stability: development
+    unit: "{error}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.error.category]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -640,14 +673,51 @@ metrics:
       value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.lock.timeout.rate:
+  sqlserver.lock.block.count:
     enabled: false
-    description: Total number of lock timeouts.
+    description: Number of lock blocks tracked by the lock manager.
     stability: development
-    unit: “{timeouts}/s”
+    unit: "{block}"
+    gauge:
+      value_type: int
+    attributes: [sqlserver.lock.block.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.lock.escalation.rate:
+    enabled: false
+    description: Number of lock escalations per second (locks on a table escalated to a larger granularity).
+    stability: development
+    unit: "{escalation}/s"
     gauge:
       value_type: double
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.lock.memory:
+    enabled: false
+    description: Total amount of memory used for locks.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.lock.request.rate:
+    enabled: false
+    description: Number of new locks and lock conversions per second requested from the lock manager.
+    stability: development
+    unit: "{request}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.lock.timeout.rate:
+    enabled: false
+    description: Number of lock timeouts per second.
+    stability: development
+    unit: "{timeout}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.lock.timeout.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.count:
     enabled: false
     description: Cumulative count of lock waits that occurred.
@@ -673,6 +743,17 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.lock.wait_time.total:
+    enabled: false
+    description: Total wait time in seconds for locks since the last server restart.
+    stability: development
+    unit: s
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.login.rate:
     enabled: false
     description: Total number of logins.
