@@ -26,8 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
-	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
-	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
+	informerobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/informer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -40,6 +39,7 @@ type k8sobjectsreceiver struct {
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
 	storageClient   storage.Client
+	registry        *informerobserver.FactoryRegistry
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
@@ -84,20 +84,20 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
 	return func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
 		obsConf := k8sinventory.Config{
-			Gvr:             *object.gvr,
-			Namespaces:      object.Namespaces,
-			LabelSelector:   object.LabelSelector,
-			FieldSelector:   object.FieldSelector,
-			ResourceVersion: object.ResourceVersion,
+			Gvr:           *object.gvr,
+			Namespaces:    object.Namespaces,
+			LabelSelector: object.LabelSelector,
+			FieldSelector: object.FieldSelector,
 		}
 
 		switch object.Mode {
 		case k8sinventory.PullMode:
-			return pullobserver.New(
-				kr.client,
-				pullobserver.Config{
-					Config:   obsConf,
-					Interval: object.Interval,
+			return informerobserver.NewPull(
+				kr.registry,
+				informerobserver.PullConfig{
+					Config:           obsConf,
+					Interval:         object.Interval,
+					CacheSyncTimeout: kr.config.InformerCacheSyncTimeout,
 				},
 				kr.setting.Logger,
 				func(objects *unstructured.UnstructuredList) {
@@ -109,21 +109,16 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 				},
 			)
 		case k8sinventory.WatchMode:
-			return watchobserver.New(
-				kr.client,
-				watchobserver.Config{
-					Config: k8sinventory.Config{
-						Gvr:             *object.gvr,
-						Namespaces:      object.Namespaces,
-						LabelSelector:   object.LabelSelector,
-						FieldSelector:   object.FieldSelector,
-						ResourceVersion: object.ResourceVersion,
-					},
+			return informerobserver.NewWatch(
+				kr.registry,
+				informerobserver.WatchConfig{
+					Config:              obsConf,
 					IncludeInitialState: kr.config.IncludeInitialState,
 					Exclude:             object.exclude,
+					CacheSyncTimeout:    kr.config.InformerCacheSyncTimeout,
+					StorageClient:       kr.storageClient,
 				},
 				kr.setting.Logger,
-				kr.storageClient,
 				func(data *apiWatch.Event) {
 					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
 					if err != nil {
@@ -194,6 +189,21 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
+	for _, object := range validConfigs {
+		if object.ResourceVersion != "" {
+			kr.setting.Logger.Warn("resource_version is no longer used; the informer manages watch resumption internally")
+			break
+		}
+	}
+	if kr.config.IncludeInitialState {
+		for _, object := range validConfigs {
+			if object.Mode == k8sinventory.PullMode {
+				kr.setting.Logger.Warn("include_initial_state is ignored in pull mode; pull mode always emits a full snapshot on the first tick")
+				break
+			}
+		}
+	}
+
 	if kr.config.K8sLeaderElector != nil {
 		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
 		if k8sLeaderElector == nil {
@@ -212,10 +222,28 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
 				kr.cancel = cancel
+				kr.registry = informerobserver.NewFactoryRegistry(kr.client)
+				var (
+					startWg sync.WaitGroup
+					hasErr  bool
+					errMu   sync.Mutex
+				)
 				for _, object := range validConfigs {
-					if err = kr.start(cctx, object); err != nil {
-						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
-					}
+					startWg.Add(1)
+					go func(obj *K8sObjectsConfig) {
+						defer startWg.Done()
+						if startErr := kr.start(cctx, obj); startErr != nil {
+							kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", obj.Name), zap.Error(startErr))
+							errMu.Lock()
+							hasErr = true
+							errMu.Unlock()
+						}
+					}(object)
+				}
+				startWg.Wait()
+				if hasErr {
+					cancel()
+					return
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
@@ -231,10 +259,30 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel
+		kr.registry = informerobserver.NewFactoryRegistry(kr.client)
+		var (
+			startWg  sync.WaitGroup
+			firstErr error
+			errMu    sync.Mutex
+		)
 		for _, object := range validConfigs {
-			if err := kr.start(cctx, object); err != nil {
-				return err
-			}
+			startWg.Add(1)
+			go func(obj *K8sObjectsConfig) {
+				defer startWg.Done()
+				if startErr := kr.start(cctx, obj); startErr != nil {
+					kr.setting.Logger.Error("failed to start observer for object", zap.String("object", obj.Name), zap.Error(startErr))
+					errMu.Lock()
+					if firstErr == nil {
+						firstErr = startErr
+					}
+					errMu.Unlock()
+				}
+			}(object)
+		}
+		startWg.Wait()
+		if firstErr != nil {
+			cancel()
+			return firstErr
 		}
 	}
 
@@ -248,7 +296,11 @@ func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
 	}
 	kr.stopWatches()
 
-	// Close storage client if it exists
+	if kr.registry != nil {
+		kr.registry.Shutdown()
+		kr.registry = nil
+	}
+
 	if kr.storageClient != nil {
 		if err := kr.storageClient.Close(ctx); err != nil {
 			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
@@ -265,11 +317,12 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	}
 	kr.mu.Unlock()
 	kr.wg.Wait()
+	kr.mu.Lock()
+	kr.stopperChanList = nil
+	kr.mu.Unlock()
 }
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
-	// Handle exclude_namespaces: compile regexes and filter namespaces
-	// TODO: when using informers, we should find a way to get just the metadata.name of the namespace, and then filter on that
 	if len(object.ExcludeNamespaces) > 0 {
 		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -285,6 +338,8 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 			compiledRegexes = append(compiledRegexes, re)
 		}
+		// Rebuild each call to avoid duplicate namespaces on re-election.
+		var includedNamespaces []string
 		for _, ns := range allNamespaces.Items {
 			excluded := false
 			for _, re := range compiledRegexes {
@@ -294,9 +349,10 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 				}
 			}
 			if !excluded {
-				object.Namespaces = append(object.Namespaces, ns.GetName())
+				includedNamespaces = append(includedNamespaces, ns.GetName())
 			}
 		}
+		object.Namespaces = includedNamespaces
 
 		kr.setting.Logger.Info("Collecting from namespaces", zap.Strings("namespaces", object.Namespaces))
 	}
@@ -306,13 +362,18 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := kr.startObserver(ctx, obs, object)
+	stopChan, err := kr.startObserver(ctx, obs, object)
+	if err != nil {
+		return err
+	}
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
+	kr.mu.Unlock()
 
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
 	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
 		return obs.Start(ctx, &kr.wg)
 	}
@@ -334,7 +395,12 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 			return
 		}
 
-		observerStopChan := obs.Start(ctx, &kr.wg)
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err != nil {
+			kr.setting.Logger.Error("failed to start observer after initial delay",
+				zap.String("object", object.Name), zap.Error(err))
+			return
+		}
 
 		select {
 		case <-stopChan:
@@ -343,7 +409,7 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 		}
 	}()
 
-	return stopChan
+	return stopChan, nil
 }
 
 // handleError handles errors according to the configured error mode

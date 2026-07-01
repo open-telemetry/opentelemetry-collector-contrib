@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
 
 func TestObserver(t *testing.T) {
@@ -56,8 +57,8 @@ func TestObserver(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -107,8 +108,8 @@ func TestObserverWithInitialState(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
 
 	wg.Wait()
@@ -142,8 +143,8 @@ func TestObserverExcludeDelete(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	<-time.After(time.Millisecond * 100)
 
 	pod := generatePod("pod1", "default", map[string]any{
@@ -183,8 +184,8 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -221,8 +222,8 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -263,8 +264,8 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Since fake client doesn't filter, it will return all, but the code path is covered
@@ -308,8 +309,8 @@ func TestObserverInitialStateError(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events should be received due to error
@@ -350,8 +351,8 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events since no objects
@@ -423,14 +424,14 @@ func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(200 * time.Millisecond)
 
 	close(stopChan)
 	wg.Wait()
 
-	cp := newCheckpointer(storageClient, zap.NewNop())
+	cp := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := cp.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "999", rv, "checkpoint should hold the list RV, not a lower individual object RV")
@@ -445,7 +446,7 @@ func TestSendInitialStateUnparsableRVEmitsEvent(t *testing.T) {
 	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 
 	// Persist a checkpoint so the deduplication path is active.
-	cp := newCheckpointer(storageClient, zap.NewNop())
+	cp := checkpoint.New(storageClient, zap.NewNop())
 	require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", "100"))
 	require.NoError(t, cp.Flush(t.Context()))
 
@@ -664,8 +665,8 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -687,7 +688,7 @@ func TestObserverWithPersistence(t *testing.T) {
 	wg.Wait()
 
 	// Verify resourceVersion was persisted
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv)
@@ -719,8 +720,8 @@ func TestObserverWithoutStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -764,8 +765,8 @@ func TestObserverPersistenceNilStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -810,8 +811,8 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces
@@ -836,13 +837,13 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 	wg.Wait()
 
 	// Verify single key for cluster-wide watch (no namespace suffix)
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "", "pods")
 	require.NoError(t, err)
 	assert.NotEmpty(t, rv) // Should have a value
 
 	// Verify key format
-	key := checkpointer.getCheckpointKey("", "pods")
+	key := checkpointer.CheckpointKey("", "pods")
 	assert.Equal(t, "latestResourceVersion/pods", key)
 }
 
@@ -871,8 +872,8 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces
@@ -897,7 +898,7 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	wg.Wait()
 
 	// Verify separate keys for each namespace
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 
 	rv1, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
@@ -908,10 +909,10 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	assert.Equal(t, "200", rv2)
 
 	// Verify key formats
-	key1 := checkpointer.getCheckpointKey("default", "pods")
+	key1 := checkpointer.CheckpointKey("default", "pods")
 	assert.Equal(t, "latestResourceVersion/pods.default", key1)
 
-	key2 := checkpointer.getCheckpointKey("other", "pods")
+	key2 := checkpointer.CheckpointKey("other", "pods")
 	assert.Equal(t, "latestResourceVersion/pods.other", key2)
 }
 
@@ -955,7 +956,7 @@ func TestGetResourceVersion(t *testing.T) {
 
 				storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 				if tt.persistedVersion != "" {
-					cp := newCheckpointer(storageClient, zap.NewNop())
+					cp := checkpoint.New(storageClient, zap.NewNop())
 					require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion))
 					require.NoError(t, cp.Flush(t.Context()))
 				}
@@ -977,7 +978,7 @@ func TestGetResourceVersion(t *testing.T) {
 
 				// When no persisted RV was set, verify the list version was persisted.
 				if tt.persistedVersion == "" && tt.listVersion != "" {
-					cp := newCheckpointer(storageClient, zap.NewNop())
+					cp := checkpoint.New(storageClient, zap.NewNop())
 					persisted, err := cp.GetCheckpoint(t.Context(), "default", "pods")
 					require.NoError(t, err)
 					assert.Equal(t, tt.expectedVersion, persisted, "list version should have been persisted")
