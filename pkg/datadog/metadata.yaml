@@ -6,7 +6,16 @@ status:
     beta: [traces, metrics, logs]
   disable_codecov_badge: true
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
+    active:
+      [
+        mx-psi,
+        dineshg13,
+        liustanley,
+        songy23,
+        mackjmr,
+        jade-guiton-dd,
+        IbraheemA,
+      ]
     emeritus: [jackgopack4, ankitpatel96]
 
 feature_gates:
@@ -24,6 +33,14 @@ feature_gates:
       When enabled, use a refactored implementation of the span receiver which improves performance by 10% and deprecates some not-to-spec functionality.
     from_version: v0.118.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37171
+    skip_strict_validation: true
+
+  - id: datadog.EnableScopeConvention
+    stage: beta
+    description: >-
+      When enabled, use otel.scope.name and otel.scope.version convention to set scope name and version instead of the deprecated otel.library.name and otel.library.version.
+    from_version: v0.155.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49001
     skip_strict_validation: true
 
   - id: exporter.datadogexporter.DisableAllMetricRemapping
