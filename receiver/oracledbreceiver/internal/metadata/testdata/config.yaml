@@ -1,7 +1,20 @@
 default:
 all_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: true
+      attributes: ["oracledb.buffer.state"]
+    oracledb.buffer.requests:
+      enabled: true
+    oracledb.buffer_cache.block.changes:
+      enabled: true
+    oracledb.buffer_cache.block.gets:
+      enabled: true
     oracledb.buffer_cache.utilization:
+      enabled: true
+    oracledb.checkpoint.buffers:
+      enabled: true
+    oracledb.checkpoint.completed:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
@@ -212,7 +225,20 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: true
+      attributes: []
+    oracledb.buffer.requests:
+      enabled: true
+    oracledb.buffer_cache.block.changes:
+      enabled: true
+    oracledb.buffer_cache.block.gets:
+      enabled: true
     oracledb.buffer_cache.utilization:
+      enabled: true
+    oracledb.checkpoint.buffers:
+      enabled: true
+    oracledb.checkpoint.completed:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
@@ -423,7 +449,20 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: false
+      attributes: ["oracledb.buffer.state"]
+    oracledb.buffer.requests:
+      enabled: false
+    oracledb.buffer_cache.block.changes:
+      enabled: false
+    oracledb.buffer_cache.block.gets:
+      enabled: false
     oracledb.buffer_cache.utilization:
+      enabled: false
+    oracledb.checkpoint.buffers:
+      enabled: false
+    oracledb.checkpoint.completed:
       enabled: false
     oracledb.consistent_gets:
       enabled: false
