@@ -5,6 +5,7 @@ package container // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -156,8 +157,8 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
 	mdata := map[string]string{}
 
-	imageStr := cs.Image
-	image, err := docker.ParseImageName(cs.Image)
+	imageStr := resolveImageString(cs.Image, specImageForContainer(pod, cs.Name))
+	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, logger)
 	} else {
@@ -196,6 +197,71 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 		ResourceID:    metadataPkg.ResourceID(stripContainerID(cs.ContainerID)),
 		Metadata:      mdata,
 	}
+}
+
+// resolveImageString returns the image string to use for extracting
+// container.image.name and container.image.tag. It prefers statusImage
+// (from ContainerStatus.Image), but falls back to specImage (from the
+// container spec) when the status image appears to be a bare digest
+// reference (e.g. "sha256:<hex>"). Some container runtimes populate
+// ContainerStatus.Image with only the digest rather than the full
+// image reference. See https://github.com/kubernetes/kubernetes/issues/115199.
+func resolveImageString(statusImage, specImage string) string {
+	if statusImage != "" && !isBareDigest(statusImage) {
+		return statusImage
+	}
+	if specImage != "" {
+		return specImage
+	}
+	return statusImage
+}
+
+// isBareDigest reports whether image looks like a bare digest reference
+// of the form "algorithm:hex" (e.g. "sha256:e3b0c44...") rather than a
+// proper image name. These strings are not valid image references for
+// extracting a meaningful repository name and tag.
+func isBareDigest(image string) bool {
+	// A bare digest has no "/" (no registry or path component) and
+	// contains exactly one ":" separating the algorithm from the hex.
+	if strings.Contains(image, "/") || strings.Contains(image, "@") {
+		return false
+	}
+	// Require exactly one ":" — bare digests are "algorithm:hex".
+	// Images like "name:tag:extra" are not bare digests.
+	if strings.Count(image, ":") != 1 {
+		return false
+	}
+	algo, hex, _ := strings.Cut(image, ":")
+	if algo == "" || hex == "" {
+		return false
+	}
+	// Algorithm: lowercase alphanumeric with optional separators.
+	// Hex: lowercase hex digits, at least 32 characters.
+	if len(hex) < 32 {
+		return false
+	}
+	for _, c := range hex {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// specImageForContainer returns the image string from the pod spec for
+// the container with the given name.
+func specImageForContainer(pod *corev1.Pod, containerName string) string {
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Name == containerName {
+			return pod.Spec.Containers[i].Image
+		}
+	}
+	for i := range pod.Spec.InitContainers {
+		if pod.Spec.InitContainers[i].Name == containerName {
+			return pod.Spec.InitContainers[i].Image
+		}
+	}
+	return ""
 }
 
 func boolToInt64(b bool) int64 {
