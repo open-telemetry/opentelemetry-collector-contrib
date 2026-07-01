@@ -330,20 +330,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-<<<<<<< HEAD
-      sqlserver.latch.superlatch.count:
-        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      sqlserver.latch.superlatch.transition.rate:
-        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
-=======
       sqlserver.index.size:
         description: "SqlserverIndexSizeMetricConfig provides config for the sqlserver.index.size metric."
->>>>>>> b47db40ae5 ([receiver/sqlserverreceiver] Add per-index physical stats metrics)
         type: object
         properties:
           enabled:
@@ -362,8 +350,42 @@ $defs:
             items:
               type: string
               enum:
-<<<<<<< HEAD
-<<<<<<< HEAD
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.latch.superlatch.count:
+        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.superlatch.transition.rate:
+        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
                 - "transition.direction"
             default:
               - "transition.direction"
@@ -388,19 +410,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-=======
-=======
-                - "db.namespace"
->>>>>>> 1535d555c8 ([receiver/sqlserverreceiver] Add db.namespace attribute to index physical stats metrics)
-                - "sqlserver.index.id"
-                - "sqlserver.object.name"
-                - "sqlserver.schema.name"
-            default:
-              - "db.namespace"
-              - "sqlserver.index.id"
-              - "sqlserver.object.name"
-              - "sqlserver.schema.name"
->>>>>>> b47db40ae5 ([receiver/sqlserverreceiver] Add per-index physical stats metrics)
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object
