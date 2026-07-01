@@ -301,6 +301,10 @@ attributes:
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
+  oracledb.smon.type:
+    description: Type of recovery SMON was posted to perform.
+    type: string
+    enum: [instance, transaction]
   oracledb.sort.type:
     description: Type of sort operation (e.g., memory, disk).
     type: string
@@ -1174,18 +1178,10 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.smon.instance_recovery.posts:
-    description: Number of times SMON was posted to perform instance recovery.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{post}"
-  oracledb.smon.txn_recovery.posts:
-    description: Number of times SMON was posted to perform transaction recovery for other instances.
+  oracledb.smon.posts:
+    attributes:
+      - oracledb.smon.type
+    description: Number of times SMON was posted to perform recovery.
     enabled: false
     stability: development
     sum:

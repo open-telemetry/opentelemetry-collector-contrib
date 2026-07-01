@@ -812,21 +812,19 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### oracledb.smon.instance_recovery.posts
+### oracledb.smon.posts
 
-Number of times SMON was posted to perform instance recovery.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {post} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.smon.txn_recovery.posts
-
-Number of times SMON was posted to perform transaction recovery for other instances.
+Number of times SMON was posted to perform recovery.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {post} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.smon.type | Type of recovery SMON was posted to perform. | Str: ``instance``, ``transaction`` | Recommended | - |
 
 ### oracledb.sort.operations
 

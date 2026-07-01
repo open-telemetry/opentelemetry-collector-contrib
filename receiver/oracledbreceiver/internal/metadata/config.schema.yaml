@@ -616,15 +616,8 @@ $defs:
             default:
               - "session_type"
               - "session_status"
-      oracledb.smon.instance_recovery.posts:
-        description: "OracledbSmonInstanceRecoveryPostsMetricConfig provides config for the oracledb.smon.instance_recovery.posts metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.smon.txn_recovery.posts:
-        description: "OracledbSmonTxnRecoveryPostsMetricConfig provides config for the oracledb.smon.txn_recovery.posts metric."
+      oracledb.smon.posts:
+        description: "OracledbSmonPostsMetricConfig provides config for the oracledb.smon.posts metric."
         type: object
         properties:
           enabled:

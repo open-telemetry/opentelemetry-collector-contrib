@@ -389,8 +389,7 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
 	cfg.Metrics.OracledbLockTime.Enabled = true
 	cfg.Metrics.OracledbRecoveryBlocksRead.Enabled = true
-	cfg.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled = true
-	cfg.Metrics.OracledbSmonTxnRecoveryPosts.Enabled = true
+	cfg.Metrics.OracledbSmonPosts.Enabled = true
 	cfg.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled = true
 
 	m := scrapeWithConfig(t, cfg)
@@ -425,18 +424,27 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 		case "oracledb.recovery.blocks_read":
 			seen++
 			assert.Equal(t, int64(8800), dps.At(0).IntValue())
-		case "oracledb.smon.instance_recovery.posts":
+		case "oracledb.smon.posts":
 			seen++
-			assert.Equal(t, int64(12), dps.At(0).IntValue())
-		case "oracledb.smon.txn_recovery.posts":
-			seen++
-			assert.Equal(t, int64(7), dps.At(0).IntValue())
+			// one data point per oracledb.smon.type
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				smonType, _ := dp.Attributes().Get("oracledb.smon.type")
+				switch smonType.Str() {
+				case "instance":
+					assert.Equal(t, int64(12), dp.IntValue())
+				case "transaction":
+					assert.Equal(t, int64(7), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
+				}
+			}
 		case "oracledb.gc.current_block.receive.time":
 			seen++
 			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
 		}
 	}
-	assert.Equal(t, 6, seen)
+	assert.Equal(t, 5, seen)
 }
 
 func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {

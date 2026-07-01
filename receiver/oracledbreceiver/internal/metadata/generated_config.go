@@ -2050,13 +2050,23 @@ func (ms *OracledbSharedPoolUtilizationMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// OracledbSmonInstanceRecoveryPostsMetricConfig provides config for the oracledb.smon.instance_recovery.posts metric.
-type OracledbSmonInstanceRecoveryPostsMetricConfig struct {
+// OracledbSmonPostsMetricAttributeKey specifies the key of an attribute for the oracledb.smon.posts metric.
+type OracledbSmonPostsMetricAttributeKey string
+
+const (
+	OracledbSmonPostsMetricAttributeKeyOracledbSmonType OracledbSmonPostsMetricAttributeKey = "oracledb.smon.type"
+)
+
+// OracledbSmonPostsMetricConfig provides config for the oracledb.smon.posts metric.
+type OracledbSmonPostsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSmonPostsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbSmonInstanceRecoveryPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSmonPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2070,23 +2080,21 @@ func (ms *OracledbSmonInstanceRecoveryPostsMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// OracledbSmonTxnRecoveryPostsMetricConfig provides config for the oracledb.smon.txn_recovery.posts metric.
-type OracledbSmonTxnRecoveryPostsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbSmonTxnRecoveryPostsMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
+func (ms *OracledbSmonPostsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSmonPostsMetricAttributeKeyOracledbSmonType:
+		default:
+			return fmt.Errorf("metric oracledb.smon.posts doesn't have an attribute %v, valid attributes: [oracledb.smon.type]", val)
+		}
 	}
 
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2591,8 +2599,7 @@ type MetricsConfig struct {
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
-	OracledbSmonInstanceRecoveryPosts             OracledbSmonInstanceRecoveryPostsMetricConfig             `mapstructure:"oracledb.smon.instance_recovery.posts"`
-	OracledbSmonTxnRecoveryPosts                  OracledbSmonTxnRecoveryPostsMetricConfig                  `mapstructure:"oracledb.smon.txn_recovery.posts"`
+	OracledbSmonPosts                             OracledbSmonPostsMetricConfig                             `mapstructure:"oracledb.smon.posts"`
 	OracledbSortOperations                        OracledbSortOperationsMetricConfig                        `mapstructure:"oracledb.sort.operations"`
 	OracledbSortRatio                             OracledbSortRatioMetricConfig                             `mapstructure:"oracledb.sort.ratio"`
 	OracledbSortRows                              OracledbSortRowsMetricConfig                              `mapstructure:"oracledb.sort.rows"`
@@ -2879,11 +2886,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbSmonInstanceRecoveryPosts: OracledbSmonInstanceRecoveryPostsMetricConfig{
-			Enabled: false,
-		},
-		OracledbSmonTxnRecoveryPosts: OracledbSmonTxnRecoveryPostsMetricConfig{
-			Enabled: false,
+		OracledbSmonPosts: OracledbSmonPostsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSmonPostsMetricAttributeKey{OracledbSmonPostsMetricAttributeKeyOracledbSmonType},
 		},
 		OracledbSortOperations: OracledbSortOperationsMetricConfig{
 			Enabled:             false,

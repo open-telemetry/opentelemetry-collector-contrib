@@ -16,10 +16,7 @@ issues: [49064]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds oracledb.transaction.rollbacks, oracledb.lock.time (attribute oracledb.lock.kind),
-  oracledb.recovery.blocks_read, oracledb.smon.instance_recovery.posts,
-  oracledb.smon.txn_recovery.posts, and oracledb.gc.current_block.receive.time. All are disabled
-  by default and add no new database queries.
+  The new metrics are disabled by default and add no new database queries.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -468,6 +468,32 @@ var MapAttributeOracledbSessionType = map[string]AttributeOracledbSessionType{
 	"foreground": AttributeOracledbSessionTypeForeground,
 }
 
+// AttributeOracledbSmonType specifies the value oracledb.smon.type attribute.
+type AttributeOracledbSmonType int
+
+const (
+	_ AttributeOracledbSmonType = iota
+	AttributeOracledbSmonTypeInstance
+	AttributeOracledbSmonTypeTransaction
+)
+
+// String returns the string representation of the AttributeOracledbSmonType.
+func (av AttributeOracledbSmonType) String() string {
+	switch av {
+	case AttributeOracledbSmonTypeInstance:
+		return "instance"
+	case AttributeOracledbSmonTypeTransaction:
+		return "transaction"
+	}
+	return ""
+}
+
+// MapAttributeOracledbSmonType is a helper map of string to AttributeOracledbSmonType attribute value.
+var MapAttributeOracledbSmonType = map[string]AttributeOracledbSmonType{
+	"instance":    AttributeOracledbSmonTypeInstance,
+	"transaction": AttributeOracledbSmonTypeTransaction,
+}
+
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
 type AttributeOracledbSortType int
 
@@ -746,11 +772,9 @@ var MetricsInfo = metricsInfo{
 	OracledbSharedPoolUtilization: metricInfo{
 		Name: "oracledb.shared_pool.utilization",
 	},
-	OracledbSmonInstanceRecoveryPosts: metricInfo{
-		Name: "oracledb.smon.instance_recovery.posts",
-	},
-	OracledbSmonTxnRecoveryPosts: metricInfo{
-		Name: "oracledb.smon.txn_recovery.posts",
+	OracledbSmonPosts: metricInfo{
+		Name:       "oracledb.smon.posts",
+		Attributes: []string{"oracledb.smon.type"},
 	},
 	OracledbSortOperations: metricInfo{
 		Name:       "oracledb.sort.operations",
@@ -880,8 +904,7 @@ type metricsInfo struct {
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
 	OracledbSharedPoolUtilization                 metricInfo
-	OracledbSmonInstanceRecoveryPosts             metricInfo
-	OracledbSmonTxnRecoveryPosts                  metricInfo
+	OracledbSmonPosts                             metricInfo
 	OracledbSortOperations                        metricInfo
 	OracledbSortRatio                             metricInfo
 	OracledbSortRows                              metricInfo
@@ -5586,102 +5609,89 @@ func newMetricOracledbSharedPoolUtilization(cfg OracledbSharedPoolUtilizationMet
 	return m
 }
 
-type metricOracledbSmonInstanceRecoveryPosts struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   OracledbSmonInstanceRecoveryPostsMetricConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+type metricOracledbSmonPosts struct {
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        OracledbSmonPostsMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.smon.instance_recovery.posts metric with initial data.
-func (m *metricOracledbSmonInstanceRecoveryPosts) init() {
-	m.data.SetName("oracledb.smon.instance_recovery.posts")
-	m.data.SetDescription("Number of times SMON was posted to perform instance recovery.")
+// init fills oracledb.smon.posts metric with initial data.
+func (m *metricOracledbSmonPosts) init() {
+	m.data.SetName("oracledb.smon.posts")
+	m.data.SetDescription("Number of times SMON was posted to perform recovery.")
 	m.data.SetUnit("{post}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbSmonInstanceRecoveryPosts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSmonPosts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSmonTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbSmonPostsMetricAttributeKeyOracledbSmonType) {
+		dp.Attributes().PutStr("oracledb.smon.type", oracledbSmonTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSmonInstanceRecoveryPosts) updateCapacity() {
+func (m *metricOracledbSmonPosts) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSmonInstanceRecoveryPosts) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbSmonPosts) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbSmonInstanceRecoveryPosts(cfg OracledbSmonInstanceRecoveryPostsMetricConfig) metricOracledbSmonInstanceRecoveryPosts {
-	m := metricOracledbSmonInstanceRecoveryPosts{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbSmonTxnRecoveryPosts struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   OracledbSmonTxnRecoveryPostsMetricConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.smon.txn_recovery.posts metric with initial data.
-func (m *metricOracledbSmonTxnRecoveryPosts) init() {
-	m.data.SetName("oracledb.smon.txn_recovery.posts")
-	m.data.SetDescription("Number of times SMON was posted to perform transaction recovery for other instances.")
-	m.data.SetUnit("{post}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbSmonTxnRecoveryPosts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSmonTxnRecoveryPosts) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSmonTxnRecoveryPosts) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbSmonTxnRecoveryPosts(cfg OracledbSmonTxnRecoveryPostsMetricConfig) metricOracledbSmonTxnRecoveryPosts {
-	m := metricOracledbSmonTxnRecoveryPosts{config: cfg}
+func newMetricOracledbSmonPosts(cfg OracledbSmonPostsMetricConfig) metricOracledbSmonPosts {
+	m := metricOracledbSmonPosts{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6688,8 +6698,7 @@ type MetricsBuilder struct {
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
 	metricOracledbSharedPoolUtilization                 metricOracledbSharedPoolUtilization
-	metricOracledbSmonInstanceRecoveryPosts             metricOracledbSmonInstanceRecoveryPosts
-	metricOracledbSmonTxnRecoveryPosts                  metricOracledbSmonTxnRecoveryPosts
+	metricOracledbSmonPosts                             metricOracledbSmonPosts
 	metricOracledbSortOperations                        metricOracledbSortOperations
 	metricOracledbSortRatio                             metricOracledbSortRatio
 	metricOracledbSortRows                              metricOracledbSortRows
@@ -6807,8 +6816,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
 		metricOracledbSharedPoolUtilization:                 newMetricOracledbSharedPoolUtilization(mbc.Metrics.OracledbSharedPoolUtilization),
-		metricOracledbSmonInstanceRecoveryPosts:             newMetricOracledbSmonInstanceRecoveryPosts(mbc.Metrics.OracledbSmonInstanceRecoveryPosts),
-		metricOracledbSmonTxnRecoveryPosts:                  newMetricOracledbSmonTxnRecoveryPosts(mbc.Metrics.OracledbSmonTxnRecoveryPosts),
+		metricOracledbSmonPosts:                             newMetricOracledbSmonPosts(mbc.Metrics.OracledbSmonPosts),
 		metricOracledbSortOperations:                        newMetricOracledbSortOperations(mbc.Metrics.OracledbSortOperations),
 		metricOracledbSortRatio:                             newMetricOracledbSortRatio(mbc.Metrics.OracledbSortRatio),
 		metricOracledbSortRows:                              newMetricOracledbSortRows(mbc.Metrics.OracledbSortRows),
@@ -7033,8 +7041,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
 	mb.metricOracledbSharedPoolUtilization.emit(ils.Metrics())
-	mb.metricOracledbSmonInstanceRecoveryPosts.emit(ils.Metrics())
-	mb.metricOracledbSmonTxnRecoveryPosts.emit(ils.Metrics())
+	mb.metricOracledbSmonPosts.emit(ils.Metrics())
 	mb.metricOracledbSortOperations.emit(ils.Metrics())
 	mb.metricOracledbSortRatio.emit(ils.Metrics())
 	mb.metricOracledbSortRows.emit(ils.Metrics())
@@ -7760,23 +7767,13 @@ func (mb *MetricsBuilder) RecordOracledbSharedPoolUtilizationDataPoint(ts pcommo
 	mb.metricOracledbSharedPoolUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbSmonInstanceRecoveryPostsDataPoint adds a data point to oracledb.smon.instance_recovery.posts metric.
-func (mb *MetricsBuilder) RecordOracledbSmonInstanceRecoveryPostsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordOracledbSmonPostsDataPoint adds a data point to oracledb.smon.posts metric.
+func (mb *MetricsBuilder) RecordOracledbSmonPostsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbSmonTypeAttributeValue AttributeOracledbSmonType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbSmonInstanceRecoveryPosts, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for OracledbSmonPosts, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbSmonInstanceRecoveryPosts.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbSmonTxnRecoveryPostsDataPoint adds a data point to oracledb.smon.txn_recovery.posts metric.
-func (mb *MetricsBuilder) RecordOracledbSmonTxnRecoveryPostsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbSmonTxnRecoveryPosts, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbSmonTxnRecoveryPosts.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbSmonPosts.recordDataPoint(mb.startTime, ts, val, oracledbSmonTypeAttributeValue.String())
 	return nil
 }
 

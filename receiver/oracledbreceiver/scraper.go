@@ -374,8 +374,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocksRead.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSmonInstanceRecoveryPosts.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSmonTxnRecoveryPosts.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
@@ -824,11 +823,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case smonInstanceRecoveryPosts:
-				if err := s.mb.RecordOracledbSmonInstanceRecoveryPostsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeInstance); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case smonTxnRecoveryPosts:
-				if err := s.mb.RecordOracledbSmonTxnRecoveryPostsDataPoint(now, row["VALUE"]); err != nil {
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeTransaction); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case gcCurrentBlockReceiveTime:
