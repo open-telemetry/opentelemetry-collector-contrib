@@ -447,6 +447,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	// Emit metrics and post-process to remove http.status_code when value is 0
 	metrics := h.mb.Emit()
 	removeStatusCodeForZeroValues(metrics)
+	addTargetAttributes(metrics, h.cfg.Targets)
 
 	return metrics, nil
 }
@@ -473,6 +474,78 @@ func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
 								dp.Attributes().Remove("http.status_code")
 							}
 						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// addTargetAttributes annotates each data point with the static attributes
+// configured on the target that produced it. Targets are matched by the
+// http.url attribute, which every httpcheck metric carries and which equals the
+// target endpoint. A configured attribute that collides with one already set by
+// the receiver is left untouched.
+func addTargetAttributes(metrics pmetric.Metrics, targets []*targetConfig) {
+	endpointAttributes := make(map[string]map[string]string, len(targets))
+	for _, target := range targets {
+		if len(target.Attributes) > 0 {
+			endpointAttributes[target.Endpoint] = target.Attributes
+		}
+	}
+	if len(endpointAttributes) == 0 {
+		return
+	}
+
+	annotate := func(attrs pcommon.Map) {
+		url, ok := attrs.Get("http.url")
+		if !ok {
+			return
+		}
+		attributes, ok := endpointAttributes[url.Str()]
+		if !ok {
+			return
+		}
+		for key, value := range attributes {
+			if _, exists := attrs.Get(key); exists {
+				continue
+			}
+			attrs.PutStr(key, value)
+		}
+	}
+
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					dps := m.Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeSum:
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := m.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := m.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeSummary:
+					dps := m.Summary().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
 					}
 				}
 			}

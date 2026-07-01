@@ -57,6 +57,7 @@ type targetConfig struct {
 	Body                    string             `mapstructure:"body"`              // Request body content
 	AutoContentType         bool               `mapstructure:"auto_content_type"` // Whether to automatically set Content-Type based on body
 	Validations             []validationConfig `mapstructure:"validations"`       // Response validation rules
+	Attributes              map[string]string  `mapstructure:"attributes"`        // Static attributes added to every metric for this target
 }
 
 // Validate validates an individual targetConfig.
