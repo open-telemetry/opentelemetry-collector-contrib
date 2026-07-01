@@ -94,6 +94,13 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 GRANT pg_monitor TO otelu;
 ```
 
+The `postgresql.backends` metric reports the number of PostgreSQL backend processes associated with each database,
+as counted from `pg_stat_activity`. It applies no filter on connection state or backend type, so it counts active,
+idle, and idle-in-transaction client connections as well as non-client backends such as autovacuum workers and
+parallel query workers. Background processes that are not associated with a database (e.g. the background writer and
+WAL writer, which have a `NULL` `datname`) are not attributed to any database. This differs from query sample events,
+which include each backend's `postgresql.state`.
+
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.
