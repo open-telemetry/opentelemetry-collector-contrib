@@ -25,14 +25,14 @@ data:
           - k8s.cluster.uid
           - k8s.container.name
           - container.image.name
-          - container.image.tag
+          - container.image.tags
           labels:
           - from: pod
             key: app
             tag_name: k8s.labels.app
           - from: namespace
             key: test-namespace
-            tag_name: k8s.namespace.labels.test-namespace
+            tag_name: k8s.namespace.label.test-namespace
         pod_association:
         - sources:
           - from: resource_attribute
