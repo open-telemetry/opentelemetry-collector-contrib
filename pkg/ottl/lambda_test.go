@@ -81,13 +81,13 @@ func TestLambdaExpression_ValidateArity(t *testing.T) {
 			name:    "too few arguments",
 			formals: makeLocalIdentifiers("a", "b"),
 			arity:   1,
-			wantErr: "lambda expects exactly 1 argument(s), got 2",
+			wantErr: "lambda should be defined with exactly 1 formal(s), but has 2",
 		},
 		{
 			name:    "too many arguments",
 			formals: makeLocalIdentifiers("a"),
 			arity:   3,
-			wantErr: "lambda expects exactly 3 argument(s), got 1",
+			wantErr: "lambda should be defined with exactly 3 formal(s), but has 1",
 		},
 	}
 
