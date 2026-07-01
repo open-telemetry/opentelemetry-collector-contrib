@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
@@ -60,13 +61,13 @@ func mapMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivation[K
 	var builder xpdata.MapBuilder
 	builder.EnsureCapacity(source.Len())
 	for k, v := range source.All() {
-		newVal, err := funcutil.EvaluateBiFunction[K, any](tCtx, lb, k, v)
+		val, err := funcutil.EvaluateBiFunction[K, any](tCtx, lb, k, v)
 		if err != nil {
-			return pcommon.Map{}, err
+			return pcommon.Map{}, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 		}
-		err = builder.AppendEmpty(k).FromRaw(newVal)
+		err = ottlcommon.CopyValueTo(val, builder.AppendEmpty(k))
 		if err != nil {
-			return pcommon.Map{}, err
+			return pcommon.Map{}, fmt.Errorf("error while converting lambda function result on map item (%s, %v): %w", k, val, err)
 		}
 	}
 	res := pcommon.NewMap()
@@ -80,11 +81,11 @@ func mapSliceValues[K any](tCtx K, source pcommon.Slice, lb *ottl.LambdaActivati
 	for i, v := range source.All() {
 		val, err := funcutil.EvaluateBiFunction[K, any](tCtx, lb, int64(i), v)
 		if err != nil {
-			return pcommon.Slice{}, err
+			return pcommon.Slice{}, fmt.Errorf("error while evaluating lambda function on slice item (%d, %v): %w", i, v, err)
 		}
-		err = res.AppendEmpty().FromRaw(val)
+		err = ottlcommon.CopyValueTo(val, res.AppendEmpty())
 		if err != nil {
-			return pcommon.Slice{}, err
+			return pcommon.Slice{}, fmt.Errorf("error while converting lambda function result on slice item (%d, %v): %w", i, val, err)
 		}
 	}
 	return res, nil

@@ -62,7 +62,58 @@ func NormalizeValue(val any) any {
 		return int64(typedVal)
 	case uint64:
 		return int64(typedVal)
+	case []string:
+		return convertAnySlice(typedVal)
+	case []bool:
+		return convertAnySlice(typedVal)
+	case []float64:
+		return convertAnySlice(typedVal)
+	case []int64:
+		return convertAnySlice(typedVal)
 	default:
 		return typedVal
 	}
+}
+
+func convertAnySlice[Slice ~[]E, E any](s Slice) []any {
+	res := make([]any, len(s))
+	for i, v := range s {
+		res[i] = v
+	}
+	return res
+}
+
+// CopyValueTo copies the value to the dest pcommon.Value overriding the destination.
+// It handles known types that are not compatible with pcommon.Value.FromRaw.
+func CopyValueTo(value any, dest pcommon.Value) error {
+	switch typedVal := value.(type) {
+	case pcommon.Map:
+		typedVal.CopyTo(dest.SetEmptyMap())
+	case pcommon.Slice:
+		typedVal.CopyTo(dest.SetEmptySlice())
+	case pcommon.Value:
+		typedVal.CopyTo(dest)
+	case []string:
+		return copyValuesTo(typedVal, dest.SetEmptySlice())
+	case []bool:
+		return copyValuesTo(typedVal, dest.SetEmptySlice())
+	case []float64:
+		return copyValuesTo(typedVal, dest.SetEmptySlice())
+	case []int64:
+		return copyValuesTo(typedVal, dest.SetEmptySlice())
+	default:
+		return dest.FromRaw(value)
+	}
+	return nil
+}
+
+func copyValuesTo[Slice ~[]E, E any](s Slice, dest pcommon.Slice) error {
+	dest.EnsureCapacity(len(s))
+	for _, v := range s {
+		err := dest.AppendEmpty().FromRaw(v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

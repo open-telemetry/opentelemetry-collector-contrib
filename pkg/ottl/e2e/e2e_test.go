@@ -1620,6 +1620,23 @@ func Test_e2e_converters(t *testing.T) {
 				mapped.PutStr("nested", `nested:{"test":"pass"}`)
 			},
 		},
+		{
+			statement: `set(attributes["pdata"], MapEach(["things"], (_, v) => {"result":v}))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("pdata")
+				mapped.AppendEmpty().SetEmptyMap().PutStr("result", "things")
+			},
+		},
+		{
+			statement: `set(attributes["pdata"], MapEach({"key":"val"}, (_, _) => attributes))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				orig := pcommon.NewMap()
+				tCtx.GetLogRecord().Attributes().CopyTo(orig)
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("pdata")
+				v := m.PutEmptyMap("key")
+				orig.CopyTo(v)
+			},
+		},
 	}
 
 	for _, tt := range tests {
