@@ -64,12 +64,6 @@ BEGIN
 END;
 "
 
-# VIEW SERVER PERFORMANCE STATE covers the server-level DMVs the other scrapers read. The
-# index physical stats query additionally loops over user databases, entering each one and
-# joining sys.dm_db_index_physical_stats against its sys.indexes/objects/schemas catalog
-# views, so it needs CONNECT ANY DATABASE (to enter every database) and VIEW ANY DEFINITION
-# (to see the dbo-owned tables/indexes in the catalog views). These server-level grants match
-# the permissions documented in the receiver README.
 $SQLCMD -Q "
 CREATE LOGIN otelcollectoruser WITH PASSWORD = 'otel-password123';
 CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
