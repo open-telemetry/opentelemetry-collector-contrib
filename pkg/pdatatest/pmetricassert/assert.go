@@ -152,12 +152,6 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 		}
 		matched[idx] = true
 
-		if edp.Value != nil {
-			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
-				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
-			}
-		}
-
 		if err := compareDatapointValues(edp, actual[idx]); err != nil {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
@@ -185,6 +179,20 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 
 func compareDatapointValues(expected, actual datapointAssertion) error {
 	var errs []error
+	if expected.IntValue != nil {
+		if actual.IntValue == nil {
+			errs = append(errs, errors.New("missing expected int_value"))
+		} else if *expected.IntValue != *actual.IntValue {
+			errs = append(errs, fmt.Errorf("int_value mismatch: expected %v, got %v", *expected.IntValue, *actual.IntValue))
+		}
+	}
+	if expected.DoubleValue != nil {
+		if actual.DoubleValue == nil {
+			errs = append(errs, errors.New("missing expected double_value"))
+		} else if *expected.DoubleValue != *actual.DoubleValue {
+			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
+		}
+	}
 	if expected.Count != nil {
 		if actual.Count == nil {
 			errs = append(errs, errors.New("missing expected count"))
@@ -228,61 +236,6 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 		}
 	}
 	return errors.Join(errs...)
-}
-
-func compareValue(expected, actual any) error {
-	if expected == actual {
-		return nil
-	}
-
-	expFloat, expIsFloat := toFloat64(expected)
-	actFloat, actIsFloat := toFloat64(actual)
-
-	expInt, expIsInt := toInt64(expected)
-	actInt, actIsInt := toInt64(actual)
-
-	if expIsInt && actIsInt && expInt == actInt {
-		return nil
-	}
-
-	if expIsFloat && actIsFloat && expFloat == actFloat {
-		return nil
-	}
-
-	return fmt.Errorf("value mismatch: expected %v, got %v", expected, actual)
-}
-
-func toFloat64(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case float32:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case int64:
-		return float64(x), true
-	case uint64:
-		return float64(x), true
-	default:
-		return 0, false
-	}
-}
-
-func toInt64(v any) (int64, bool) {
-	switch x := v.(type) {
-	case int:
-		return int64(x), true
-	case int64:
-		return x, true
-	case uint64:
-		return int64(x), true
-	case float64:
-		if float64(int64(x)) == x {
-			return int64(x), true
-		}
-	}
-	return 0, false
 }
 
 // findMatchingAttributes returns the first unmatched index whose attributes

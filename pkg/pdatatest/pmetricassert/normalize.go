@@ -78,8 +78,11 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 					key := dpKey{attrs: canonKey(raw)}
 					dp := datapointAssertion{Attributes: raw}
 					if opts.includeValues {
-						if extDP.value != nil {
-							dp.Value = extDP.value
+						if extDP.intValue != nil {
+							dp.IntValue = extDP.intValue
+						}
+						if extDP.doubleValue != nil {
+							dp.DoubleValue = extDP.doubleValue
 						}
 						if extDP.count != nil {
 							dp.Count = extDP.count
@@ -201,7 +204,8 @@ func temporalityString(t pmetric.AggregationTemporality) string {
 
 type extractedDatapoint struct {
 	attributes     pcommon.Map
-	value          any
+	intValue       *int64
+	doubleValue    *float64
 	count          *uint64
 	sum            *float64
 	minVal         *float64
@@ -217,13 +221,17 @@ func extractDatapoints(metric pmetric.Metric) []extractedDatapoint {
 		dps := metric.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
+			edp := extractedDatapoint{attributes: dp.Attributes()}
+			edp.intValue, edp.doubleValue = extractValue(dp)
+			out = append(out, edp)
 		}
 	case pmetric.MetricTypeSum:
 		dps := metric.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
+			edp := extractedDatapoint{attributes: dp.Attributes()}
+			edp.intValue, edp.doubleValue = extractValue(dp)
+			out = append(out, edp)
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := metric.Histogram().DataPoints()
@@ -268,15 +276,16 @@ func extractDatapoints(metric pmetric.Metric) []extractedDatapoint {
 	return out
 }
 
-func getDatapointValue(dp pmetric.NumberDataPoint) any {
+func extractValue(dp pmetric.NumberDataPoint) (intVal *int64, doubleVal *float64) {
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		return dp.IntValue()
+		v := dp.IntValue()
+		return &v, nil
 	case pmetric.NumberDataPointValueTypeDouble:
-		return dp.DoubleValue()
-	default:
-		return nil
+		v := dp.DoubleValue()
+		return nil, &v
 	}
+	return nil, nil
 }
 
 func attrMapToRaw(m pcommon.Map) map[string]any {
