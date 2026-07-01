@@ -284,32 +284,17 @@ clickhouse only use one value of float64 to store them.
 
 > [!IMPORTANT]
 > Profiles support is at `development` stability. The OpenTelemetry profiling signal itself is
-> pre-GA (the OTLP profiles protocol is in `v1development`), so the schema and behaviour may change
+> pre-GA (the OTLP profiles protocol is in `v1development`), so the schema and behavior may change
 > in a backwards-incompatible way. To send profiles through a collector pipeline you must enable the
 > `service.profilesSupport` feature gate (`--feature-gates=+service.profilesSupport`).
+>
+> **The profiles table requires ClickHouse 26.2 or newer.** It always uses `text` (full-text-search)
+> indexes and does not fall back to `bloom_filter` on older server versions. If you manage the schema
+> yourself (`create_schema: false`), you can adapt the DDL for an older version.
 
 Profiles are stored as one denormalized row per OTLP `Sample`. The interned `ProfilesDictionary`
 (strings, functions, locations, mappings, links, attributes) is resolved at write time so each row
-is self-contained and can be queried without joins. The call stack is flattened, leaf-first, into
-parallel `Array` columns (`FunctionNames`, `FileNames`, `LineNumbers`, `Addresses`,
-`MappingFileNames`); inlined frames are expanded into individual array elements. The `StackHash`
-column holds a stable hash of the resolved frames so identical stacks group cheaply (e.g. for
-flamegraphs). The trace correlation `Link` is resolved into `TraceId`/`SpanId`.
-
-- Top functions by self value for a CPU profile:
-```sql
-SELECT arrayJoin(FunctionNames) AS function, sum(arraySum(Values)) AS total
-FROM otel_profiles
-WHERE ServiceName = 'my-service' AND SampleType = 'cpu'
-GROUP BY function ORDER BY total DESC LIMIT 20
-```
-
-- Find the profile samples correlated to a given trace:
-```sql
-SELECT Timestamp, SampleType, FunctionNames, Values
-FROM otel_profiles
-WHERE TraceId = 'a1b2c3...' LIMIT 100
-```
+is self-contained and can be queried without joins.
 
 ## Performance Guide
 

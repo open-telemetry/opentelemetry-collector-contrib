@@ -182,6 +182,11 @@ func TestRenderProfilesSQL(t *testing.T) {
 	assert.Contains(t, createSQL, `"default"."otel_profiles"`)
 	assert.Contains(t, createSQL, "ENGINE = MergeTree()")
 	assert.Contains(t, createSQL, "ORDER BY (ServiceName, SampleType, toDateTime(Timestamp))")
+
+	assert.Contains(t, createSQL, "FunctionNames Array(LowCardinality(String))")
+	assert.Contains(t, createSQL, "INDEX idx_function_names FunctionNames TYPE text(tokenizer = 'splitByNonAlpha')")
+
+	assert.Contains(t, createSQL, "`__otel_materialized_k8s.pod.name`")
 }
 
 func TestRenderProfilesSQLCustomTableName(t *testing.T) {

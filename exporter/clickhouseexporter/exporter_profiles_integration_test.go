@@ -9,15 +9,38 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func testProfilesExporter(t *testing.T, endpoint string) {
+	requireFullTextSearch(t, endpoint)
 	exporter := newTestProfilesExporter(t, endpoint)
 	verifyExportProfiles(t, exporter)
+}
+
+func requireFullTextSearch(t *testing.T, endpoint string) {
+	cfg := withTestExporterConfig()(endpoint)
+
+	opt, err := cfg.buildClickHouseOptions()
+	require.NoError(t, err)
+
+	db, err := internal.NewClickhouseClientFromOptions(opt)
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	sv, err := db.ServerVersion()
+	require.NoError(t, err)
+
+	if !proto.CheckMinVersion(versionFullTextSearch, sv.Version) {
+		t.Skipf("profiles require ClickHouse %s+ for text indexes; server is %s", versionFullTextSearch, sv.Version)
+	}
 }
 
 func newTestProfilesExporter(t *testing.T, dsn string, fns ...func(*Config)) *profilesExporter {
@@ -71,7 +94,7 @@ func verifyExportProfiles(t *testing.T, exporter *profilesExporter) {
 		SampleType:         "cpu",
 		SampleUnit:         "nanoseconds",
 		ServiceName:        "test-service",
-		ResourceAttributes: map[string]string{"service.name": "test-service"},
+		ResourceAttributes: map[string]string{"service.name": "test-service", "k8s.pod.name": "pod-1", "k8s.namespace.name": "prod"},
 		ScopeName:          "io.opentelemetry.contrib.clickhouse",
 		ScopeVersion:       "1.0.0",
 		ProfileAttributes:  map[string]string{"profile.tag": "prod"},
@@ -98,6 +121,19 @@ func verifyExportProfiles(t *testing.T, exporter *profilesExporter) {
 	var actualProfile profile
 	require.NoError(t, row.ScanStruct(&actualProfile))
 	require.Equal(t, expectedProfile, actualProfile)
+
+	// The materialized k8s columns are derived from ResourceAttributes and are
+	// excluded from SELECT *, so query one explicitly
+	var podName string
+	require.NoError(t, exporter.db.QueryRow(t.Context(),
+		"SELECT `__otel_materialized_k8s.pod.name` FROM otel_int_test.otel_profiles LIMIT 1").Scan(&podName))
+	assert.Equal(t, "pod-1", podName)
+
+	// The full-text index on FunctionNames makes the stack searchable by symbol
+	var matches uint64
+	require.NoError(t, exporter.db.QueryRow(t.Context(),
+		"SELECT count() FROM otel_int_test.otel_profiles WHERE has(FunctionNames, 'main')").Scan(&matches))
+	assert.NotZero(t, matches)
 }
 
 func simpleProfiles(count int) pprofile.Profiles {
@@ -107,6 +143,8 @@ func simpleProfiles(count int) pprofile.Profiles {
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
 	rp.Resource().Attributes().PutStr("service.name", "test-service")
+	rp.Resource().Attributes().PutStr("k8s.pod.name", "pod-1")
+	rp.Resource().Attributes().PutStr("k8s.namespace.name", "prod")
 
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
