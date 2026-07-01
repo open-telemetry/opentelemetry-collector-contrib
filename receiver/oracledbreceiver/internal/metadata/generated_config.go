@@ -346,13 +346,13 @@ func (ms *OracledbCursorCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric.
-type OracledbCursorOpenMetricConfig struct {
+// OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric.
+type OracledbCursorCacheUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbCursorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbCursorCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -366,13 +366,13 @@ func (ms *OracledbCursorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor_cache.utilization metric.
-type OracledbCursorCacheUtilizationMetricConfig struct {
+// OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric.
+type OracledbCursorOpenMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbCursorCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbCursorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2539,8 +2539,8 @@ type MetricsConfig struct {
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
 	OracledbCursorCacheHits                       OracledbCursorCacheHitsMetricConfig                       `mapstructure:"oracledb.cursor.cache.hits"`
 	OracledbCursorCacheSize                       OracledbCursorCacheSizeMetricConfig                       `mapstructure:"oracledb.cursor.cache.size"`
+	OracledbCursorCacheUtilization                OracledbCursorCacheUtilizationMetricConfig                `mapstructure:"oracledb.cursor.cache.utilization"`
 	OracledbCursorOpen                            OracledbCursorOpenMetricConfig                            `mapstructure:"oracledb.cursor.open"`
-	OracledbCursorCacheUtilization                OracledbCursorCacheUtilizationMetricConfig                `mapstructure:"oracledb.cursor_cache.utilization"`
 	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDatabaseCPUUtilization                OracledbDatabaseCPUUtilizationMetricConfig                `mapstructure:"oracledb.database.cpu.utilization"`
 	OracledbDatabaseWaitUtilization               OracledbDatabaseWaitUtilizationMetricConfig               `mapstructure:"oracledb.database.wait.utilization"`
@@ -2671,10 +2671,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
 			Enabled: false,
 		},
-		OracledbCursorOpen: OracledbCursorOpenMetricConfig{
+		OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbCursorCacheUtilization: OracledbCursorCacheUtilizationMetricConfig{
+		OracledbCursorOpen: OracledbCursorOpenMetricConfig{
 			Enabled: false,
 		},
 		OracledbDataDictionaryHitRatio: OracledbDataDictionaryHitRatioMetricConfig{

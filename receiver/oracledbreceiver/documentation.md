@@ -357,6 +357,14 @@ Number of cursors currently held in the session cursor cache.
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
 
+### oracledb.cursor.cache.utilization
+
+Percentage of cursor executions that reused a cursor in the session cursor cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.cursor.open
 
 Number of currently open cursors in the Oracle instance.
@@ -364,14 +372,6 @@ Number of currently open cursors in the Oracle instance.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
-
-### oracledb.cursor_cache.utilization
-
-Percentage of cursor executions that reused a cursor in the session cursor cache.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | Development |
 
 ### oracledb.data_dictionary.hit_ratio
 

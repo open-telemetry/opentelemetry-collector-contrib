@@ -31,9 +31,9 @@ all_set:
       enabled: true
     oracledb.cursor.cache.size:
       enabled: true
-    oracledb.cursor.open:
+    oracledb.cursor.cache.utilization:
       enabled: true
-    oracledb.cursor_cache.utilization:
+    oracledb.cursor.open:
       enabled: true
     oracledb.data_dictionary.hit_ratio:
       enabled: true
@@ -274,9 +274,9 @@ reaggregate_set:
       enabled: true
     oracledb.cursor.cache.size:
       enabled: true
-    oracledb.cursor.open:
+    oracledb.cursor.cache.utilization:
       enabled: true
-    oracledb.cursor_cache.utilization:
+    oracledb.cursor.open:
       enabled: true
     oracledb.data_dictionary.hit_ratio:
       enabled: true
@@ -517,9 +517,9 @@ none_set:
       enabled: false
     oracledb.cursor.cache.size:
       enabled: false
-    oracledb.cursor.open:
+    oracledb.cursor.cache.utilization:
       enabled: false
-    oracledb.cursor_cache.utilization:
+    oracledb.cursor.open:
       enabled: false
     oracledb.data_dictionary.hit_ratio:
       enabled: false

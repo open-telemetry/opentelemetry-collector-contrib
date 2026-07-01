@@ -513,11 +513,11 @@ var MetricsInfo = metricsInfo{
 	OracledbCursorCacheSize: metricInfo{
 		Name: "oracledb.cursor.cache.size",
 	},
+	OracledbCursorCacheUtilization: metricInfo{
+		Name: "oracledb.cursor.cache.utilization",
+	},
 	OracledbCursorOpen: metricInfo{
 		Name: "oracledb.cursor.open",
-	},
-	OracledbCursorCacheUtilization: metricInfo{
-		Name: "oracledb.cursor_cache.utilization",
 	},
 	OracledbDataDictionaryHitRatio: metricInfo{
 		Name: "oracledb.data_dictionary.hit_ratio",
@@ -795,8 +795,8 @@ type metricsInfo struct {
 	OracledbCPUTime                               metricInfo
 	OracledbCursorCacheHits                       metricInfo
 	OracledbCursorCacheSize                       metricInfo
-	OracledbCursorOpen                            metricInfo
 	OracledbCursorCacheUtilization                metricInfo
+	OracledbCursorOpen                            metricInfo
 	OracledbDataDictionaryHitRatio                metricInfo
 	OracledbDatabaseCPUUtilization                metricInfo
 	OracledbDatabaseWaitUtilization               metricInfo
@@ -1684,6 +1684,56 @@ func newMetricOracledbCursorCacheSize(cfg OracledbCursorCacheSizeMetricConfig) m
 	return m
 }
 
+type metricOracledbCursorCacheUtilization struct {
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   OracledbCursorCacheUtilizationMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.cursor.cache.utilization metric with initial data.
+func (m *metricOracledbCursorCacheUtilization) init() {
+	m.data.SetName("oracledb.cursor.cache.utilization")
+	m.data.SetDescription("Percentage of cursor executions that reused a cursor in the session cursor cache.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbCursorCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbCursorCacheUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbCursorCacheUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbCursorCacheUtilization(cfg OracledbCursorCacheUtilizationMetricConfig) metricOracledbCursorCacheUtilization {
+	m := metricOracledbCursorCacheUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbCursorOpen struct {
 	data     pmetric.Metric                 // data buffer for generated metric.
 	config   OracledbCursorOpenMetricConfig // metric config provided by user.
@@ -1726,56 +1776,6 @@ func (m *metricOracledbCursorOpen) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbCursorOpen(cfg OracledbCursorOpenMetricConfig) metricOracledbCursorOpen {
 	m := metricOracledbCursorOpen{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbCursorCacheUtilization struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   OracledbCursorCacheUtilizationMetricConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.cursor_cache.utilization metric with initial data.
-func (m *metricOracledbCursorCacheUtilization) init() {
-	m.data.SetName("oracledb.cursor_cache.utilization")
-	m.data.SetDescription("Percentage of cursor executions that reused a cursor in the session cursor cache.")
-	m.data.SetUnit("%")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricOracledbCursorCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbCursorCacheUtilization) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbCursorCacheUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbCursorCacheUtilization(cfg OracledbCursorCacheUtilizationMetricConfig) metricOracledbCursorCacheUtilization {
-	m := metricOracledbCursorCacheUtilization{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6654,8 +6654,8 @@ type MetricsBuilder struct {
 	metricOracledbCPUTime                               metricOracledbCPUTime
 	metricOracledbCursorCacheHits                       metricOracledbCursorCacheHits
 	metricOracledbCursorCacheSize                       metricOracledbCursorCacheSize
-	metricOracledbCursorOpen                            metricOracledbCursorOpen
 	metricOracledbCursorCacheUtilization                metricOracledbCursorCacheUtilization
+	metricOracledbCursorOpen                            metricOracledbCursorOpen
 	metricOracledbDataDictionaryHitRatio                metricOracledbDataDictionaryHitRatio
 	metricOracledbDatabaseCPUUtilization                metricOracledbDatabaseCPUUtilization
 	metricOracledbDatabaseWaitUtilization               metricOracledbDatabaseWaitUtilization
@@ -6775,8 +6775,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbCPUTime:                               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
 		metricOracledbCursorCacheHits:                       newMetricOracledbCursorCacheHits(mbc.Metrics.OracledbCursorCacheHits),
 		metricOracledbCursorCacheSize:                       newMetricOracledbCursorCacheSize(mbc.Metrics.OracledbCursorCacheSize),
-		metricOracledbCursorOpen:                            newMetricOracledbCursorOpen(mbc.Metrics.OracledbCursorOpen),
 		metricOracledbCursorCacheUtilization:                newMetricOracledbCursorCacheUtilization(mbc.Metrics.OracledbCursorCacheUtilization),
+		metricOracledbCursorOpen:                            newMetricOracledbCursorOpen(mbc.Metrics.OracledbCursorOpen),
 		metricOracledbDataDictionaryHitRatio:                newMetricOracledbDataDictionaryHitRatio(mbc.Metrics.OracledbDataDictionaryHitRatio),
 		metricOracledbDatabaseCPUUtilization:                newMetricOracledbDatabaseCPUUtilization(mbc.Metrics.OracledbDatabaseCPUUtilization),
 		metricOracledbDatabaseWaitUtilization:               newMetricOracledbDatabaseWaitUtilization(mbc.Metrics.OracledbDatabaseWaitUtilization),
@@ -7003,8 +7003,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
 	mb.metricOracledbCursorCacheHits.emit(ils.Metrics())
 	mb.metricOracledbCursorCacheSize.emit(ils.Metrics())
-	mb.metricOracledbCursorOpen.emit(ils.Metrics())
 	mb.metricOracledbCursorCacheUtilization.emit(ils.Metrics())
+	mb.metricOracledbCursorOpen.emit(ils.Metrics())
 	mb.metricOracledbDataDictionaryHitRatio.emit(ils.Metrics())
 	mb.metricOracledbDatabaseCPUUtilization.emit(ils.Metrics())
 	mb.metricOracledbDatabaseWaitUtilization.emit(ils.Metrics())
@@ -7236,6 +7236,11 @@ func (mb *MetricsBuilder) RecordOracledbCursorCacheSizeDataPoint(ts pcommon.Time
 	return nil
 }
 
+// RecordOracledbCursorCacheUtilizationDataPoint adds a data point to oracledb.cursor.cache.utilization metric.
+func (mb *MetricsBuilder) RecordOracledbCursorCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbCursorCacheUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordOracledbCursorOpenDataPoint adds a data point to oracledb.cursor.open metric.
 func (mb *MetricsBuilder) RecordOracledbCursorOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -7244,11 +7249,6 @@ func (mb *MetricsBuilder) RecordOracledbCursorOpenDataPoint(ts pcommon.Timestamp
 	}
 	mb.metricOracledbCursorOpen.recordDataPoint(mb.startTime, ts, val)
 	return nil
-}
-
-// RecordOracledbCursorCacheUtilizationDataPoint adds a data point to oracledb.cursor_cache.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbCursorCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbCursorCacheUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbDataDictionaryHitRatioDataPoint adds a data point to oracledb.data_dictionary.hit_ratio metric.

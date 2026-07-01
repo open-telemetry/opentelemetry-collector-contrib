@@ -111,15 +111,15 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.cursor.open:
-        description: "OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric."
+      oracledb.cursor.cache.utilization:
+        description: "OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      oracledb.cursor_cache.utilization:
-        description: "OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor_cache.utilization metric."
+      oracledb.cursor.open:
+        description: "OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric."
         type: object
         properties:
           enabled:

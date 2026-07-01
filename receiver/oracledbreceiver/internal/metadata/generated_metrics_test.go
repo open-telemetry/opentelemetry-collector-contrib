@@ -146,10 +146,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbCursorCacheSizeDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbCursorOpenDataPoint(ts, "1")
+			mb.RecordOracledbCursorCacheUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbCursorCacheUtilizationDataPoint(ts, 1)
+			mb.RecordOracledbCursorOpenDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbDataDictionaryHitRatioDataPoint(ts, 1)
@@ -760,6 +760,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.cursor.cache.utilization":
+					assert.False(t, validatedMetrics["oracledb.cursor.cache.utilization"], "Found a duplicate in the metrics slice: oracledb.cursor.cache.utilization")
+					validatedMetrics["oracledb.cursor.cache.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of cursor executions that reused a cursor in the session cursor cache.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.cursor.open":
 					assert.False(t, validatedMetrics["oracledb.cursor.open"], "Found a duplicate in the metrics slice: oracledb.cursor.open")
 					validatedMetrics["oracledb.cursor.open"] = true
@@ -772,18 +784,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.cursor_cache.utilization":
-					assert.False(t, validatedMetrics["oracledb.cursor_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.cursor_cache.utilization")
-					validatedMetrics["oracledb.cursor_cache.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of cursor executions that reused a cursor in the session cursor cache.", mi.Description())
-					assert.Equal(t, "%", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.data_dictionary.hit_ratio":
 					assert.False(t, validatedMetrics["oracledb.data_dictionary.hit_ratio"], "Found a duplicate in the metrics slice: oracledb.data_dictionary.hit_ratio")
 					validatedMetrics["oracledb.data_dictionary.hit_ratio"] = true
