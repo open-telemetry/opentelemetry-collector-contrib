@@ -121,19 +121,59 @@ func Test_filter(t *testing.T) {
 }
 
 func Test_filter_error(t *testing.T) {
-	exprFunc := filter(
-		ottl.StandardGetSetter[any]{
-			Getter: func(_ context.Context, _ any) (any, error) {
-				return "not a collection", nil
+	t.Run("unsupported source type", func(t *testing.T) {
+		exprFunc := filter(
+			ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "not a collection", nil
+				},
 			},
-		},
-		ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-			return true, nil
-		}),
-	)
-	_, err := exprFunc(t.Context(), nil)
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "unsupported type")
+			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+				return true, nil
+			}),
+		)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "unsupported type")
+	})
+
+	t.Run("non-boolean predicate on map item", func(t *testing.T) {
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				m := pcommon.NewMap()
+				m.PutInt("a", 1)
+				return m, nil
+			},
+		}
+		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return 123, nil
+		})
+
+		exprFunc := filter(source, predicate)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+
+	t.Run("non-boolean predicate on slice item", func(t *testing.T) {
+		s := pcommon.NewSlice()
+		require.NoError(t, s.FromRaw([]any{int64(1)}))
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return s, nil
+			},
+		}
+		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return 123, nil
+		})
+
+		exprFunc := filter(source, predicate)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
 }
 
 func Test_createFilterFunction(t *testing.T) {
