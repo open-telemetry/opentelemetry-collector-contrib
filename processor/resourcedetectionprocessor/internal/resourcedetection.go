@@ -17,7 +17,11 @@ import (
 	backoff "github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 type DetectorType string
@@ -33,6 +37,13 @@ type ResourceDetectorConfig interface {
 }
 
 type DetectorFactory func(processor.Settings, DetectorConfig) (Detector, error)
+
+// detectorEntry pairs a detector with its type so detection telemetry can be
+// attributed to the specific detector.
+type detectorEntry struct {
+	detectorType DetectorType
+	detector     Detector
+}
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -54,12 +65,29 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	provider := NewResourceProvider(params.Logger, telemetryBuilder, timeout, detectors...)
+
+	// Register observer for the detected-attribute count.
+	if err := telemetryBuilder.RegisterResourcedetectionAttributesDetectedCallback(func(_ context.Context, o metric.Int64Observer) error {
+		if r := provider.detectedResource.Load(); r != nil {
+			o.Observe(int64(r.resource.Attributes().Len()))
+		}
+		return nil
+	}); err != nil {
+		telemetryBuilder.Shutdown()
+		return nil, err
+	}
+
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
-	detectors := make([]Detector, 0, len(detectorTypes))
+func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]detectorEntry, error) {
+	detectors := make([]detectorEntry, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
@@ -71,7 +99,7 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
 
-		detectors = append(detectors, detector)
+		detectors = append(detectors, detectorEntry{detectorType: detectorType, detector: detector})
 	}
 
 	return detectors, nil
@@ -79,8 +107,9 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 
 type ResourceProvider struct {
 	logger           *zap.Logger
+	telemetry        *metadata.TelemetryBuilder
 	timeout          time.Duration
-	detectors        []Detector
+	detectors        []detectorEntry
 	detectedResource atomic.Pointer[resourceResult]
 
 	// Refresh loop control
@@ -98,9 +127,10 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, telemetry *metadata.TelemetryBuilder, timeout time.Duration, detectors ...detectorEntry) *ResourceProvider {
 	return &ResourceProvider{
 		logger:          logger,
+		telemetry:       telemetry,
 		timeout:         timeout,
 		detectors:       detectors,
 		refreshInterval: 0, // No periodic refresh by default
@@ -154,11 +184,21 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	p.logger.Info("began detecting resource information")
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
-	for i, detector := range p.detectors {
+	for i, entry := range p.detectors {
 		ch := make(chan resourceResult, 1)
 		resultsChan[i] = ch
 
-		go func(detector Detector, ch chan resourceResult) {
+		go func(entry detectorEntry, ch chan resourceResult) {
+			startTime := time.Now()
+			detectorAttr := attribute.String("detector", string(entry.detectorType))
+
+			// record emits the per-detector result and duration.
+			record := func(outcome string) {
+				attrs := metric.WithAttributes(detectorAttr, attribute.String("outcome", outcome))
+				p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, attrs)
+				p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), attrs)
+			}
+
 			sleep := backoff.ExponentialBackOff{
 				InitialInterval:     1 * time.Second,
 				RandomizationFactor: 1.5,
@@ -167,16 +207,18 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			sleep.Reset()
 
 			for {
-				r, schemaURL, err := detector.Detect(ctx)
+				r, schemaURL, err := entry.detector.Detect(ctx)
 				if err == nil {
+					record("success")
 					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return
 				}
 
-				p.logger.Warn("failed to detect resource", zap.Error(err))
+				p.logger.Warn("failed to detect resource", zap.String("detector", string(entry.detectorType)), zap.Error(err))
 
 				next := sleep.NextBackOff()
 				if next == backoff.Stop {
+					record("failure")
 					ch <- resourceResult{err: err}
 					return
 				}
@@ -186,13 +228,14 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 				case <-ctx.Done():
 					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
 					timer.Stop()
+					record("failure")
 					ch <- resourceResult{err: err}
 					return
 				case <-timer.C:
 					// retry
 				}
 			}
-		}(detector, ch)
+		}(entry, ch)
 	}
 
 	for _, ch := range resultsChan {
@@ -298,6 +341,7 @@ func (p *ResourceProvider) StopRefreshing() {
 			close(p.stopCh)
 			p.wg.Wait()
 		}
+		p.telemetry.Shutdown()
 	})
 }
 
