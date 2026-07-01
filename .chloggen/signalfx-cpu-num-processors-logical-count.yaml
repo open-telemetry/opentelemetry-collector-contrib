@@ -1,0 +1,15 @@
+change_type: breaking
+component: exporter/signalfx
+note: "Translate `cpu.num_processors` from `system.cpu.logical.count`."
+issues: [49296]
+subtext: |
+  The exporter no longer derives `cpu.num_processors` by counting per-core `system.cpu.time` series.
+  Enable `system.cpu.logical.count` in the host_metrics receiver CPU scraper to emit `cpu.num_processors` with the default SignalFx translations.
+  `system.cpu.logical.count` is excluded by default. To also send it, add it to the SignalFx exporter's `include_metrics` list:
+  ```yaml
+  exporters:
+    signalfx:
+      include_metrics:
+        - metric_name: system.cpu.logical.count
+  ```
+change_logs: [user]
