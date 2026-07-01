@@ -28,6 +28,8 @@ $defs:
         items:
           $ref: sort
       top_n:
+        description: 'TopN uses a pointer so the matcher can distinguish between "unset" and "explicitly zero". When sort_by is configured, top_n must be set explicitly: zero means "match all files" and a positive value caps the match count.'
+        x-pointer: true
         type: integer
   sort:
     type: object
