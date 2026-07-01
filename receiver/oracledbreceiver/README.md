@@ -103,6 +103,20 @@ GRANT SELECT ON DBA_DATA_FILES TO <username>;
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
 ```
 
+### Per-PDB metrics (CDB multitenant deployments)
+
+When connected to a CDB root (Oracle 12c+), the receiver can collect per-PDB metrics
+by opting in to the `oracle.db.pdb` attribute. The following additional grants are required
+for the common user (with `CONTAINER=ALL`):
+
+```sql
+GRANT SELECT ON V_$CON_SYSSTAT TO <username> CONTAINER=ALL;
+GRANT SELECT ON V_$CON_SYSMETRIC TO <username> CONTAINER=ALL;
+GRANT SELECT ON V_$CONTAINERS TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_TABLESPACE_USAGE_METRICS TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_TABLESPACES TO <username> CONTAINER=ALL;
+```
+
 ### Events collection
 
 These grants are required for the `db.server.query_sample`, `db.server.top_query`,

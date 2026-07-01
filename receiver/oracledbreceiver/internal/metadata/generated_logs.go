@@ -249,12 +249,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
 	}
-	if lbc.ResourceAttributes.OracleDbPdb.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsInclude)
-	}
-	if lbc.ResourceAttributes.OracleDbPdb.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsExclude)
-	}
 	if lbc.ResourceAttributes.OracleDbRole.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
 	}

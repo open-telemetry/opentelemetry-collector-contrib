@@ -145,6 +145,36 @@ var queryResponses = map[string][]metricRow{
 	},
 }
 
+// queryCDBResponses mirrors queryResponses but for the CDB-root SQL variants.
+// Each row includes PDB_NAME to simulate the v$containers join output.
+var queryCDBResponses = map[string][]metricRow{
+	statsCDBSQL: {
+		{"NAME": enqueueDeadlocks, "VALUE": "18", "PDB_NAME": "PDB1"},
+		{"NAME": exchangeDeadlocks, "VALUE": "88898", "PDB_NAME": "PDB1"},
+		{"NAME": executeCount, "VALUE": "178878", "PDB_NAME": "PDB1"},
+		{"NAME": parseCountTotal, "VALUE": "1999", "PDB_NAME": "PDB1"},
+		{"NAME": parseCountHard, "VALUE": "1", "PDB_NAME": "PDB1"},
+		{"NAME": userCommits, "VALUE": "187778888", "PDB_NAME": "PDB1"},
+		{"NAME": userRollbacks, "VALUE": "1898979879789", "PDB_NAME": "PDB1"},
+		{"NAME": physicalReads, "VALUE": "1887777", "PDB_NAME": "PDB1"},
+		{"NAME": physicalReadsDirect, "VALUE": "31337", "PDB_NAME": "PDB1"},
+		{"NAME": sessionLogicalReads, "VALUE": "189", "PDB_NAME": "PDB1"},
+		{"NAME": cpuTime, "VALUE": "1887", "PDB_NAME": "PDB1"},
+		{"NAME": pgaMemory, "VALUE": "1999887", "PDB_NAME": "PDB1"},
+		{"NAME": dbBlockGets, "VALUE": "42", "PDB_NAME": "PDB1"},
+		{"NAME": consistentGets, "VALUE": "78944", "PDB_NAME": "PDB1"},
+	},
+	sessionCountCDBSQL: {{"VALUE": "1", "STATUS": "ACTIVE", "TYPE": "USER", "PDB_NAME": "PDB1"}},
+	systemResourceLimitsSQL: {
+		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
+		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
+	},
+	tablespaceUsageCDBSQL: {{"PDB_NAME": "PDB1", "TABLESPACE_NAME": "USERS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
+	dataDictHitRatioSQL:   {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	recycleBinSizeSQL:     {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	storageUsageSQL:       {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+}
+
 var cacheValue = map[string]int64{
 	"APPLICATION_WAIT_TIME":   0,
 	"BUFFER_GETS":             3808197,
@@ -292,6 +322,62 @@ func TestScraper_Scrape(t *testing.T) {
 			}
 			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
 		})
+	}
+}
+
+// TestScraper_ScrapeCDBRoot verifies that when the scraper is in CDB-root mode (isCDBRoot=true)
+// it uses the CDB-aware SQL variants and propagates the oracle.db.pdb attribute on tablespace metrics.
+func TestScraper_ScrapeCDBRoot(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbConsistentGets.Enabled = true
+	cfg.Metrics.OracledbDbBlockGets.Enabled = true
+	// Enable the opt_in pdb_name attribute so it is written to data points.
+	cfg.Metrics.OracledbTablespaceSizeLimit.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceSizeLimit.EnabledAttributes,
+		metadata.OracledbTablespaceSizeLimitMetricAttributeKeyOracleDbPdb,
+	)
+	cfg.Metrics.OracledbTablespaceSizeUsage.EnabledAttributes = append(
+		cfg.Metrics.OracledbTablespaceSizeUsage.EnabledAttributes,
+		metadata.OracledbTablespaceSizeUsageMetricAttributeKeyOracleDbPdb,
+	)
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryCDBResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		// Simulate CDB root detection: isCDB=true, connectedToPDB=false.
+		instanceInfo: oracleInstanceInfo{isCDB: true, connectedToPDB: false},
+	}
+
+	// start() reads instanceInfo and sets isCDBRoot, then wires CDB-aware clients.
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	assert.True(t, scrpr.isCDBRoot, "expected isCDBRoot to be true for CDB root connection")
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	assert.Equal(t, 18, metrics.Len())
+
+	// Verify pdb_name is set on tablespace metrics.
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Name() == "oracledb.tablespace_size.usage" || metric.Name() == "oracledb.tablespace_size.limit" {
+			dp := metric.Gauge().DataPoints().At(0)
+			pdbAttr, ok := dp.Attributes().Get("oracle.db.pdb")
+			assert.True(t, ok, "expected oracle.db.pdb attribute on %s", metric.Name())
+			assert.Equal(t, "PDB1", pdbAttr.Str())
+		}
 	}
 }
 
@@ -1230,6 +1316,62 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
 		})
 	}
+}
+
+// On a CDB root with oracle.db.pdb not enabled, the per-PDB sysmetric query
+// must be skipped and values must come from the instance-wide fallback.
+func TestScraper_ScrapeSysMetrics_CDBRoot_PdbAttrDisabled(t *testing.T) {
+	const floatDelta = 0.001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbBufferCacheUtilization.Enabled = true
+	cfg.Metrics.OracledbHostCPUUtilization.Enabled = true
+	cfg.Metrics.OracledbDatabaseCPUUtilization.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if s == sysmetricCDBSQL {
+				return &fakeDbClient{Err: errors.New("should not be called")}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: false},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.True(t, scrpr.isCDBRoot)
+	require.False(t, scrpr.anySysmetricPdbAttrEnabled())
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			dp := metric.Gauge().DataPoints().At(0)
+			_, hasPdb := dp.Attributes().Get("oracle.db.pdb")
+			assert.Falsef(t, hasPdb, "oracle.db.pdb should not be set on %s", metric.Name())
+			metricMap[metric.Name()] = dp.DoubleValue()
+		}
+	}
+
+	assert.InDelta(t, 98.75, metricMap["oracledb.buffer_cache.utilization"], floatDelta)
+	assert.InDelta(t, 12.34, metricMap["oracledb.host.cpu.utilization"], floatDelta)
+	assert.InDelta(t, 55.66, metricMap["oracledb.database.cpu.utilization"], floatDelta)
 }
 
 func TestGetInstanceId(t *testing.T) {
