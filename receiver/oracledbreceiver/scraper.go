@@ -164,8 +164,8 @@ const (
 	colUsedDBSize          = "USED_DB_SIZE"
 	colValue               = "VALUE"
 
-	// sgaMaxSize is the row routed to oracledb.sga.limit; other non-component
-	// rows are filtered via MapAttributeOracledbSgaComponentName.
+	// sgaMaxSize is the row name routed to oracledb.sga.limit; other rows
+	// are looked up in sgaComponentNames.
 	sgaMaxSize = "Maximum SGA Size"
 
 	sqlIDAttr        = "SQL_ID"
@@ -218,6 +218,23 @@ var (
 	//go:embed templates/oracleSessionEventSql.tmpl
 	sessionEventQuery string
 )
+
+// sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
+// declared for oracledb.sga.component.name in metadata.yaml. Rows whose name
+// is not in this map are skipped so that sum(oracledb.sga.usage) stays
+// consistent with oracledb.sga.limit.
+var sgaComponentNames = map[string]metadata.AttributeOracledbSgaComponentName{
+	"Fixed SGA Size":           metadata.AttributeOracledbSgaComponentNameFixedSgaSize,
+	"Redo Buffers":             metadata.AttributeOracledbSgaComponentNameRedoBuffers,
+	"Buffer Cache Size":        metadata.AttributeOracledbSgaComponentNameBufferCacheSize,
+	"Shared Pool Size":         metadata.AttributeOracledbSgaComponentNameSharedPoolSize,
+	"Large Pool Size":          metadata.AttributeOracledbSgaComponentNameLargePoolSize,
+	"Java Pool Size":           metadata.AttributeOracledbSgaComponentNameJavaPoolSize,
+	"Streams Pool Size":        metadata.AttributeOracledbSgaComponentNameStreamsPoolSize,
+	"Shared IO Pool Size":      metadata.AttributeOracledbSgaComponentNameSharedIoPoolSize,
+	"Data Transfer Cache Size": metadata.AttributeOracledbSgaComponentNameDataTransferCacheSize,
+	"In-Memory Area Size":      metadata.AttributeOracledbSgaComponentNameInMemoryAreaSize,
+}
 
 type dbProviderFunc func() (*sql.DB, error)
 
@@ -1001,22 +1018,21 @@ func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]erro
 		return
 	}
 	for _, row := range rows {
+		name := row[colSGAInfoName]
+		isLimit := name == sgaMaxSize
+		component, isComponent := sgaComponentNames[name]
+		if !isLimit && !isComponent {
+			// Not an allocated component and not the limit row; skip without
+			// parsing so sum(oracledb.sga.usage) stays consistent with the limit.
+			continue
+		}
 		val, err := strconv.ParseInt(row[colSGAInfoBytes], 10, 64)
 		if err != nil {
-			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSgaUsage, value was %s: %w", row[colSGAInfoBytes], err))
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SGA row %q, value was %q: %w", name, row[colSGAInfoBytes], err))
 			continue
 		}
-		name := row[colSGAInfoName]
-		if name == sgaMaxSize {
+		if isLimit {
 			s.mb.RecordOracledbSgaLimitDataPoint(now, val)
-			continue
-		}
-		// Skip rows that are not allocated SGA components. Filtering these out
-		// keeps sum(oracledb.sga.usage) consistent with oracledb.sga.limit per
-		// OTel semantic conventions. Unknown future component names are also
-		// skipped via the MapAttributeOracledbSgaComponentName lookup below.
-		component, ok := metadata.MapAttributeOracledbSgaComponentName[name]
-		if !ok {
 			continue
 		}
 		s.mb.RecordOracledbSgaUsageDataPoint(now, val, component)

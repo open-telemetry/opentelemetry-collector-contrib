@@ -447,14 +447,14 @@ type AttributeOracledbSgaComponentName int
 
 const (
 	_ AttributeOracledbSgaComponentName = iota
-	AttributeOracledbSgaComponentNameFixedSGASize
+	AttributeOracledbSgaComponentNameFixedSgaSize
 	AttributeOracledbSgaComponentNameRedoBuffers
 	AttributeOracledbSgaComponentNameBufferCacheSize
 	AttributeOracledbSgaComponentNameSharedPoolSize
 	AttributeOracledbSgaComponentNameLargePoolSize
 	AttributeOracledbSgaComponentNameJavaPoolSize
 	AttributeOracledbSgaComponentNameStreamsPoolSize
-	AttributeOracledbSgaComponentNameSharedIOPoolSize
+	AttributeOracledbSgaComponentNameSharedIoPoolSize
 	AttributeOracledbSgaComponentNameDataTransferCacheSize
 	AttributeOracledbSgaComponentNameInMemoryAreaSize
 )
@@ -462,42 +462,42 @@ const (
 // String returns the string representation of the AttributeOracledbSgaComponentName.
 func (av AttributeOracledbSgaComponentName) String() string {
 	switch av {
-	case AttributeOracledbSgaComponentNameFixedSGASize:
-		return "Fixed SGA Size"
+	case AttributeOracledbSgaComponentNameFixedSgaSize:
+		return "fixed_sga_size"
 	case AttributeOracledbSgaComponentNameRedoBuffers:
-		return "Redo Buffers"
+		return "redo_buffers"
 	case AttributeOracledbSgaComponentNameBufferCacheSize:
-		return "Buffer Cache Size"
+		return "buffer_cache_size"
 	case AttributeOracledbSgaComponentNameSharedPoolSize:
-		return "Shared Pool Size"
+		return "shared_pool_size"
 	case AttributeOracledbSgaComponentNameLargePoolSize:
-		return "Large Pool Size"
+		return "large_pool_size"
 	case AttributeOracledbSgaComponentNameJavaPoolSize:
-		return "Java Pool Size"
+		return "java_pool_size"
 	case AttributeOracledbSgaComponentNameStreamsPoolSize:
-		return "Streams Pool Size"
-	case AttributeOracledbSgaComponentNameSharedIOPoolSize:
-		return "Shared IO Pool Size"
+		return "streams_pool_size"
+	case AttributeOracledbSgaComponentNameSharedIoPoolSize:
+		return "shared_io_pool_size"
 	case AttributeOracledbSgaComponentNameDataTransferCacheSize:
-		return "Data Transfer Cache Size"
+		return "data_transfer_cache_size"
 	case AttributeOracledbSgaComponentNameInMemoryAreaSize:
-		return "In-Memory Area Size"
+		return "in_memory_area_size"
 	}
 	return ""
 }
 
 // MapAttributeOracledbSgaComponentName is a helper map of string to AttributeOracledbSgaComponentName attribute value.
 var MapAttributeOracledbSgaComponentName = map[string]AttributeOracledbSgaComponentName{
-	"Fixed SGA Size":           AttributeOracledbSgaComponentNameFixedSGASize,
-	"Redo Buffers":             AttributeOracledbSgaComponentNameRedoBuffers,
-	"Buffer Cache Size":        AttributeOracledbSgaComponentNameBufferCacheSize,
-	"Shared Pool Size":         AttributeOracledbSgaComponentNameSharedPoolSize,
-	"Large Pool Size":          AttributeOracledbSgaComponentNameLargePoolSize,
-	"Java Pool Size":           AttributeOracledbSgaComponentNameJavaPoolSize,
-	"Streams Pool Size":        AttributeOracledbSgaComponentNameStreamsPoolSize,
-	"Shared IO Pool Size":      AttributeOracledbSgaComponentNameSharedIOPoolSize,
-	"Data Transfer Cache Size": AttributeOracledbSgaComponentNameDataTransferCacheSize,
-	"In-Memory Area Size":      AttributeOracledbSgaComponentNameInMemoryAreaSize,
+	"fixed_sga_size":           AttributeOracledbSgaComponentNameFixedSgaSize,
+	"redo_buffers":             AttributeOracledbSgaComponentNameRedoBuffers,
+	"buffer_cache_size":        AttributeOracledbSgaComponentNameBufferCacheSize,
+	"shared_pool_size":         AttributeOracledbSgaComponentNameSharedPoolSize,
+	"large_pool_size":          AttributeOracledbSgaComponentNameLargePoolSize,
+	"java_pool_size":           AttributeOracledbSgaComponentNameJavaPoolSize,
+	"streams_pool_size":        AttributeOracledbSgaComponentNameStreamsPoolSize,
+	"shared_io_pool_size":      AttributeOracledbSgaComponentNameSharedIoPoolSize,
+	"data_transfer_cache_size": AttributeOracledbSgaComponentNameDataTransferCacheSize,
+	"in_memory_area_size":      AttributeOracledbSgaComponentNameInMemoryAreaSize,
 }
 
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.

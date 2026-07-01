@@ -1669,7 +1669,7 @@ func TestScraper_ScrapeSGAInfo(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for OracledbSgaUsage, value was not_a_number`,
+			errWanted: `failed to parse int64 for SGA row "Buffer Cache Size", value was "not_a_number"`,
 		},
 	}
 	for _, test := range tests {
@@ -1701,24 +1701,16 @@ func TestScraper_ScrapeSGAInfo(t *testing.T) {
 			}
 			require.NoError(t, err)
 			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			// Names that must never appear as oracledb.sga.usage components.
-			excluded := map[string]struct{}{
-				"Maximum SGA Size":                {},
-				"Granule Size":                    {},
-				"Free SGA Memory Available":       {},
-				"Startup overhead in Shared Pool": {},
-			}
-			// Components we expect (with their fixture sizes).
 			wantUsage := map[string]int64{
-				"Fixed SGA Size":           9292416,
-				"Redo Buffers":             14598144,
-				"Buffer Cache Size":        1375731712,
-				"Shared Pool Size":         536870912,
-				"Large Pool Size":          33554432,
-				"Java Pool Size":           0,
-				"Streams Pool Size":        0,
-				"Shared IO Pool Size":      134217728,
-				"Data Transfer Cache Size": 0,
+				"fixed_sga_size":           9292416,
+				"redo_buffers":             14598144,
+				"buffer_cache_size":        1375731712,
+				"shared_pool_size":         536870912,
+				"large_pool_size":          33554432,
+				"java_pool_size":           0,
+				"streams_pool_size":        0,
+				"shared_io_pool_size":      134217728,
+				"data_transfer_cache_size": 0,
 			}
 			gotUsage := map[string]int64{}
 			var sgaLimit int64
@@ -1729,8 +1721,6 @@ func TestScraper_ScrapeSGAInfo(t *testing.T) {
 					for j := 0; j < metric.Sum().DataPoints().Len(); j++ {
 						dp := metric.Sum().DataPoints().At(j)
 						name, _ := dp.Attributes().Get("oracledb.sga.component.name")
-						_, isExcluded := excluded[name.Str()]
-						assert.Falsef(t, isExcluded, "row %q must not be emitted as oracledb.sga.usage", name.Str())
 						gotUsage[name.Str()] = dp.IntValue()
 					}
 				case "oracledb.sga.limit":

@@ -372,7 +372,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSgaLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbSgaUsageDataPoint(ts, 1, AttributeOracledbSgaComponentNameFixedSGASize)
+			mb.RecordOracledbSgaUsageDataPoint(ts, 1, AttributeOracledbSgaComponentNameFixedSgaSize)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSgaUsageDataPoint(ts, 3, AttributeOracledbSgaComponentNameRedoBuffers)
 			}
@@ -2010,7 +2010,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						oracledbSgaComponentNameAttrVal, ok := dp.Attributes().Get("oracledb.sga.component.name")
 						assert.True(t, ok)
-						assert.Equal(t, "Fixed SGA Size", oracledbSgaComponentNameAttrVal.Str())
+						assert.Equal(t, "fixed_sga_size", oracledbSgaComponentNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.sga.usage"], "Found a duplicate in the metrics slice: oracledb.sga.usage")
 						validatedMetrics["oracledb.sga.usage"] = true
