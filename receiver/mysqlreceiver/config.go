@@ -4,6 +4,7 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
@@ -25,6 +26,7 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Username                       string              `mapstructure:"username,omitempty"`
 	Password                       configopaque.String `mapstructure:"password,omitempty"`
+	PasswordFile                   string              `mapstructure:"password_file,omitempty"` // #nosec G101 - not hardcoded credentials
 	Database                       string              `mapstructure:"database,omitempty"`
 	AllowNativePasswords           bool                `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.AddrConfig           `mapstructure:",squash"`
@@ -56,6 +58,13 @@ type StatementEventsConfig struct {
 	DigestTextLimit int           `mapstructure:"digest_text_limit"`
 	Limit           int           `mapstructure:"limit"`
 	TimeLimit       time.Duration `mapstructure:"time_limit"`
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.Password != "" && cfg.PasswordFile != "" {
+		return errors.New("invalid config: 'password' and 'password_file' are mutually exclusive") // #nosec G101
+	}
+	return nil
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {

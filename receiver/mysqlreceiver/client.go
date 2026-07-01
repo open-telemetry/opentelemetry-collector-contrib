@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -121,6 +122,8 @@ type client interface {
 
 type mySQLClient struct {
 	connStr                        string
+	passwordFile                   string
+	baseDriverConf                 *mysql.Config // kept for DSN rebuild when passwordFile is set
 	client                         *sql.DB
 	statementEventsDigestTextLimit int
 	statementEventsLimit           int
@@ -328,7 +331,6 @@ func newMySQLClient(conf *Config) (client, error) {
 
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               string(conf.Password),
 		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
@@ -336,18 +338,37 @@ func newMySQLClient(conf *Config) (client, error) {
 		TLS:                  tls,
 		TLSConfig:            tlsConfig,
 	}
-	connStr := driverConf.FormatDSN()
 
-	return &mySQLClient{
-		connStr:                        connStr,
+	c := &mySQLClient{
 		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}, nil
+	}
+
+	if conf.PasswordFile != "" {
+		// Keep the base config without a password; Connect() reads the file each time.
+		c.passwordFile = conf.PasswordFile
+		c.baseDriverConf = &driverConf
+	} else {
+		driverConf.Passwd = string(conf.Password)
+		c.connStr = driverConf.FormatDSN()
+	}
+
+	return c, nil
 }
 
 func (c *mySQLClient) Connect() error {
-	clientDB, err := sql.Open("mysql", c.connStr)
+	connStr := c.connStr
+	if c.passwordFile != "" {
+		data, fileErr := os.ReadFile(c.passwordFile)
+		if fileErr != nil {
+			return fmt.Errorf("reading password_file %q: %w", c.passwordFile, fileErr)
+		}
+		conf := *c.baseDriverConf
+		conf.Passwd = strings.TrimRight(string(data), "\r\n")
+		connStr = conf.FormatDSN()
+	}
+	clientDB, err := sql.Open("mysql", connStr)
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %w", err)
 	}
