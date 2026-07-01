@@ -15,6 +15,7 @@
 package structure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -228,6 +229,139 @@ func TestAscendingSequence(t *testing.T) {
 					testAscendingSequence(t, maxSize, offset, initScale)
 				}
 			}
+		})
+	}
+}
+
+func TestCodec(t *testing.T) {
+	cases := []struct {
+		name string
+		// src builds the histogram that gets encoded.
+		src func() *Float64
+		// dst builds the histogram that gets decoded into.
+		dst func() *Float64
+		// mutateBuf, if non-nil, runs against the encoded bytes before decode
+		// and returns the buffer to pass to UnmarshalBinary; it may shrink or
+		// rewrite the slice to simulate truncation or corruption.
+		mutateBuf func([]byte) []byte
+		// wantErr expects UnmarshalBinary to return a non-nil error; equality
+		// checks against src are skipped in that case.
+		wantErr bool
+	}{
+		{
+			name: "RandomRoundTrip",
+			src: func() *Float64 {
+				rnd := rand.New(rand.NewPCG(8584838584, 8584838584))
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				totalCount := 512 + rnd.IntN(512)
+				for range totalCount {
+					h.Update(rnd.ExpFloat64())
+					h.Update(-1 * rnd.ExpFloat64())
+				}
+				return h
+			},
+			dst: func() *Float64 { return NewFloat64(NewConfig()) },
+		},
+		{
+			// Decoding an empty histogram into a populated one must leave the
+			// destination equivalent to the source; any prior bucket state in
+			// the destination must not bleed through.
+			name: "EmptyIntoPopulatedClearsBacking",
+			src:  func() *Float64 { return NewFloat64(NewConfig(WithMaxSize(1024))) },
+			dst: func() *Float64 {
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				h.Update(1.0)
+				h.Update(-1.0)
+				return h
+			},
+		},
+		{
+			// A corrupt or forward-incompatible width tag must surface as an
+			// error rather than crash the decoder.
+			name: "UnknownWidthTypeReturnsError",
+			src: func() *Float64 {
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				h.Update(1.0)
+				return h
+			},
+			dst: func() *Float64 { return NewFloat64(NewConfig()) },
+			mutateBuf: func(buf []byte) []byte {
+				// Header layout up to positive.widthType:
+				//   version(1)+maxSize(4)+count(8)+zeroCount(8)+sum(8)+min(8)+max(8)
+				//   +scale(4)+indexStart(4)+indexEnd(4) = 57
+				buf[57] = 99
+				return buf
+			},
+			wantErr: true,
+		},
+		{
+			// A short buffer must surface as an error rather than panic on a
+			// bounds-violating slice read.
+			name: "TruncatedBufferReturnsError",
+			src: func() *Float64 {
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				h.Update(1.0)
+				return h
+			},
+			dst:       func() *Float64 { return NewFloat64(NewConfig()) },
+			mutateBuf: func(buf []byte) []byte { return buf[:30] },
+			wantErr:   true,
+		},
+		{
+			// A bucket-counts length larger than the remaining buffer must
+			// surface as an error rather than panic in make() or downstream
+			// reads.
+			name: "CorruptCountsLengthReturnsError",
+			src: func() *Float64 {
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				h.Update(1.0)
+				return h
+			},
+			dst: func() *Float64 { return NewFloat64(NewConfig()) },
+			mutateBuf: func(buf []byte) []byte {
+				// positive.countsLen sits at offset 58..62 (1 byte widthType
+				// at 57, then 4-byte uint32 length).
+				binary.BigEndian.PutUint32(buf[58:62], math.MaxUint32)
+				return buf
+			},
+			wantErr: true,
+		},
+		{
+			// A buffer produced by a future/incompatible encoder must surface
+			// as a version error rather than be silently misinterpreted.
+			name: "UnsupportedVersionReturnsError",
+			src: func() *Float64 {
+				h := NewFloat64(NewConfig(WithMaxSize(1024)))
+				h.Update(1.0)
+				return h
+			},
+			dst: func() *Float64 { return NewFloat64(NewConfig()) },
+			mutateBuf: func(buf []byte) []byte {
+				buf[0] = 99
+				return buf
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			src := tc.src()
+			dst := tc.dst()
+			buf := src.AppendBinary(nil)
+			if tc.mutateBuf != nil {
+				buf = tc.mutateBuf(buf)
+			}
+			var err error
+			require.NotPanics(t, func() {
+				err = dst.UnmarshalBinary(buf)
+			})
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			requireEqual(t, src, dst)
 		})
 	}
 }
@@ -768,6 +902,20 @@ func BenchmarkExponential(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		x := rnd.ExpFloat64()
 		agg.Update(x)
+	}
+}
+
+// Benchmarks AppendBinary on a densely populated histogram.
+func BenchmarkAppendBinary(b *testing.B) {
+	rnd := rand.New(rand.NewPCG(77777677777, 77777677777))
+	agg := NewFloat64(NewConfig(WithMaxSize(1024)))
+	for range 1024 {
+		agg.Update(rnd.ExpFloat64())
+		agg.Update(-rnd.ExpFloat64())
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = agg.AppendBinary(nil)
 	}
 }
 
