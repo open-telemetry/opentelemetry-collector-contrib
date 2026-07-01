@@ -14,6 +14,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1076,8 +1077,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	now := pcommon.NewTimestampFromTime(time.Now())
 	seenInContainerMetrics := make(map[string]bool)
 
-	// Query V$CON_SYSMETRIC for per-PDB breakdown; track seen metrics to avoid duplicates.
-	if s.isCDBRoot && s.sysmetricCDBClient != nil {
+	// Skip per-PDB rows when oracle.db.pdb is not enabled on any sysmetric
+	// metric; otherwise the rows collapse to an average instead of the
+	// instance-wide value.
+	if s.isCDBRoot && s.sysmetricCDBClient != nil && s.anySysmetricPdbAttrEnabled() {
 		rows, err := s.sysmetricCDBClient.metricRows(ctx)
 		if err != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricCDBSQL, err))
@@ -1119,11 +1122,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 }
 
-// pdbNameForRow resolves the PDB name to attach to a data point. For CDB-root queries
-// (V$CON_SYSSTAT / CDB_TABLESPACE_USAGE_METRICS / V$CON_SYSMETRIC) the row already
-// carries PDB_NAME. For direct-PDB connections the row has no PDB column, so fall
-// back to the connection's PDB name. Returns empty string for non-CDB instances and
-// for CDB-wide aggregate metrics.
+// pdbNameForRow returns the PDB name to attach to a data point: the row's
+// PDB_NAME when present (per-PDB queries), the connection's PDB name for
+// direct-PDB connections, or empty otherwise. Ignored by Record* methods when
+// the oracle.db.pdb attribute is not enabled.
 func (s *oracleScraper) pdbNameForRow(row map[string]string) string {
 	if name := row["PDB_NAME"]; name != "" {
 		return name
@@ -1132,6 +1134,30 @@ func (s *oracleScraper) pdbNameForRow(row map[string]string) string {
 		return s.instanceInfo.pdbName
 	}
 	return ""
+}
+
+// anySysmetricPdbAttrEnabled reports whether oracle.db.pdb is enabled on any
+// sysmetric-based metric.
+func (s *oracleScraper) anySysmetricPdbAttrEnabled() bool {
+	m := s.metricsBuilderConfig.Metrics
+	return hasPdbAttr(m.OracledbBufferCacheUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbHostCPUUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbDatabaseCPUUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbLibraryCacheUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbSharedPoolUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbDatabaseWaitUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbParseUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbSQLServiceResponseDuration.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbSortRatio.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbRedoAllocationUtilization.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbParseRate.EnabledAttributes) ||
+		hasPdbAttr(m.OracledbExecutionUtilization.EnabledAttributes)
+}
+
+// hasPdbAttr reports whether the generated EnabledAttributes slice contains
+// the oracle.db.pdb key. Generic over the per-metric string-typed key alias.
+func hasPdbAttr[T ~string](keys []T) bool {
+	return slices.Contains(keys, T("oracle.db.pdb"))
 }
 
 // recordSysmetric records a single sysmetric data point based on the Oracle metric name.

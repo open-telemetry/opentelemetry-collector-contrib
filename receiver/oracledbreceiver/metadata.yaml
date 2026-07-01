@@ -92,7 +92,7 @@ attributes:
     description: TCP port used by the peer client.
     type: int
   oracle.db.pdb:
-    description: The name of the pluggable database (PDB) the data point belongs to. Populated for per-PDB rows from CDB-root queries and for direct-PDB connections. Empty for non-CDB instances and for CDB-wide aggregate metrics that have no per-PDB dimension.
+    description: The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point.
     type: string
     requirement_level: opt_in
   oracle.db.service:

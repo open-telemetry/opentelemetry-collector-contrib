@@ -1318,6 +1318,62 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 	}
 }
 
+// On a CDB root with oracle.db.pdb not enabled, the per-PDB sysmetric query
+// must be skipped and values must come from the instance-wide fallback.
+func TestScraper_ScrapeSysMetrics_CDBRoot_PdbAttrDisabled(t *testing.T) {
+	const floatDelta = 0.001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbBufferCacheUtilization.Enabled = true
+	cfg.Metrics.OracledbHostCPUUtilization.Enabled = true
+	cfg.Metrics.OracledbDatabaseCPUUtilization.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if s == sysmetricCDBSQL {
+				return &fakeDbClient{Err: errors.New("should not be called")}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: false},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.True(t, scrpr.isCDBRoot)
+	require.False(t, scrpr.anySysmetricPdbAttrEnabled())
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			dp := metric.Gauge().DataPoints().At(0)
+			_, hasPdb := dp.Attributes().Get("oracle.db.pdb")
+			assert.Falsef(t, hasPdb, "oracle.db.pdb should not be set on %s", metric.Name())
+			metricMap[metric.Name()] = dp.DoubleValue()
+		}
+	}
+
+	assert.InDelta(t, 98.75, metricMap["oracledb.buffer_cache.utilization"], floatDelta)
+	assert.InDelta(t, 12.34, metricMap["oracledb.host.cpu.utilization"], floatDelta)
+	assert.InDelta(t, 55.66, metricMap["oracledb.database.cpu.utilization"], floatDelta)
+}
+
 func TestGetInstanceId(t *testing.T) {
 	localhostName, _ := os.Hostname()
 
