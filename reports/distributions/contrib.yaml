@@ -23,8 +23,8 @@ components:
         - awss3
         - awsxray
         - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
         - bmc_helix
         - cassandra
         - clickhouse

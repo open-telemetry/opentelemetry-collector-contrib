@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -34,12 +35,14 @@ func NewFactory() exporter.Factory {
 	f := &factory{
 		loggerInitOnce: sync.Once{},
 	}
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability))
+		xexporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
