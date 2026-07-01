@@ -220,7 +220,6 @@ Age of the oldest WAL file.
 
 This metric requires WAL to be enabled with at least one replica.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
@@ -230,7 +229,6 @@ This metric requires WAL to be enabled with at least one replica.
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
 This metric requires WAL to be enabled with at least one replica.
-
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -377,7 +375,6 @@ Time between flushing recent WAL locally and receiving notification that the sta
 
 This metric requires WAL to be enabled with at least one replica.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
@@ -460,13 +457,15 @@ top query
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| postgresql.database.name | The name of the database. | Any Str | true | - |
-| postgresql.index.name | The name of the index on a table. | Any Str | true | - |
-| postgresql.schema.name | The schema name. | Any Str | true | - |
-| postgresql.table.name | The table name. | Any Str | true | - |
-| service.instance.id | A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value). | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| postgresql.database.name | The name of the database. | Any Str | true | - | - |
+| postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
+| postgresql.schema.name | The schema name. | Any Str | true | - | - |
+| postgresql.table.name | The table name. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value). | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:postgresql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 
 ## Feature Gates
 

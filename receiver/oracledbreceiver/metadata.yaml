@@ -4,7 +4,7 @@ type: oracledb
 description: |
   This receiver periodically queries an Oracle Database host to collect metrics.
 
-reaggregation_enabled: true
+override_value_enabled: true
 
 status:
   class: receiver
@@ -47,6 +47,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value)
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:oracle."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
@@ -130,9 +138,17 @@ attributes:
   oracledb.blocking.wait_duration:
     description: The number of seconds this session has been waiting for the current wait event.
     type: int
+  oracledb.buffer.state:
+    description: The state of a buffer encountered while inspecting the LRU queue for a reusable buffer (free = a reusable buffer that was skipped; dirty = a dirty buffer found).
+    type: string
+    enum: [free, dirty]
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
+  oracledb.call.type:
+    description: Type of call reported by Oracle.
+    type: string
+    enum: [recursive, user]
   oracledb.child_address:
     description: Address of the child cursor.
     type: string
@@ -167,6 +183,10 @@ attributes:
   oracledb.elapsed_time:
     description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
     type: double
+  oracledb.enqueue.type:
+    description: Type of enqueue (lock) operation reported by Oracle.
+    type: string
+    enum: [conversions, releases, requests, timeouts, waits]
   oracledb.event:
     description: The specific wait event that a query or session is currently experiencing.
     type: string
@@ -239,9 +259,29 @@ attributes:
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+  oracledb.redo.request.type:
+    description: The type of redo log buffer space request.
+    type: string
+    enum: [log_space]
+  oracledb.redo.retry.type:
+    description: The type of redo buffer allocation retry.
+    type: string
+    enum: [buffer_allocation]
+  oracledb.redo.type:
+    description: The phase of the redo pipeline that a redo time measurement is attributed to.
+    type: string
+    enum: [write, log_space_wait, sync]
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
+  oracledb.scan.mode:
+    description: Execution mode of the scan reported by Oracle.
+    type: string
+    enum: [direct_read, full, long_tables, rowid_ranges]
+  oracledb.scan.type:
+    description: Type of scan operation reported by Oracle.
+    type: string
+    enum: [index_fast_full, table]
   oracledb.schemaname:
     description: Oracle schema under which SQL statements are being executed
     type: string
@@ -254,13 +294,17 @@ attributes:
   oracledb.session.started:
     description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
+  oracledb.session.type:
+    description: Class of session the database time is attributed to.
+    type: string
+    enum: [foreground]
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
   oracledb.sort.type:
     description: Type of sort operation (e.g., memory, disk).
     type: string
-    enum: [memory]
+    enum: [disk, memory]
   oracledb.sql_id:
     description: The SQL ID of the query.
     type: string
@@ -396,6 +440,47 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.buffer.inspected:
+    description: Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffer}"
+    attributes: [oracledb.buffer.state]
+  oracledb.buffer.requests:
+    description: Number of times a reusable or free buffer was requested to create or load a block.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{request}"
+  oracledb.buffer_cache.block.changes:
+    description: Number of changes that were part of an update or delete operation made to blocks in the buffer cache.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{change}"
+  oracledb.buffer_cache.block.gets:
+    description: Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{get}"
   oracledb.buffer_cache.utilization:
     description: Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
     enabled: false
@@ -403,6 +488,46 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.call.count:
+    description: Total count of calls issued to the database.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{call}"
+    attributes: [oracledb.call.type]
+  oracledb.call.recursive.cpu.time:
+    description: Total CPU time spent on recursive (internal) calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+  oracledb.checkpoint.buffers:
+    description: Number of buffers written by the Database Writer (DBWR) for checkpoints.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffer}"
+  oracledb.checkpoint.completed:
+    description: Number of checkpoints completed by the Database Writer (DBWR).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{checkpoint}"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
@@ -422,6 +547,32 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.cursor.cache.hits:
+    description: Total count of session cursor cache hits, where an existing cached cursor is reused to avoid a soft parse.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{hit}"
+  oracledb.cursor.cache.size:
+    description: Number of cursors currently held in the session cursor cache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{cursor}"
+  oracledb.cursor.open:
+    description: Number of currently open cursors in the Oracle instance.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{cursor}"
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -443,6 +594,16 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.db.time:
+    description: Total wall-clock time spent in database calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+    attributes: [oracledb.session.type]
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -489,6 +650,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{statements}"
+  oracledb.enqueue.operations:
+    description: Total count of enqueue (lock) operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [oracledb.enqueue.type]
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
@@ -593,6 +765,17 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.lob.operations:
+    description: Total count of LOB (large object) I/O operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [disk.io.direction]
   oracledb.lock.time:
     attributes:
       - oracledb.lock.type
@@ -684,6 +867,24 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.parse.cpu.time:
+    description: Total CPU time spent on SQL parsing.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+  oracledb.parse.elapsed.time:
+    description: Total wall-clock time spent on SQL parsing.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.parse.rate:
     attributes:
       - oracledb.parse.result
@@ -855,6 +1056,70 @@ metrics:
     gauge:
       value_type: double
     unit: By
+  oracledb.redo.blocks:
+    description: Number of redo blocks moved between the redo log and storage.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{block}"
+    attributes: [disk.io.direction]
+  oracledb.redo.operations:
+    description: Number of redo I/O operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [disk.io.direction]
+  oracledb.redo.requests:
+    description: Number of times a process requested space in the redo log buffer and had to wait.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{request}"
+    attributes: [oracledb.redo.request.type]
+  oracledb.redo.retries:
+    description: Number of times a process waited and retried to allocate space in the redo buffer.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{retry}"
+    attributes: [oracledb.redo.retry.type]
+  oracledb.redo.size:
+    description: Amount of redo generated.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+  oracledb.redo.time:
+    description: Time spent in each phase of the redo pipeline.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+    attributes: [oracledb.redo.type]
   oracledb.redo_allocation.utilization:
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false
@@ -862,6 +1127,27 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.scan.count:
+    description: Total count of scan operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [oracledb.scan.type, oracledb.scan.mode]
+  oracledb.scan.table.rows:
+    description: Total number of rows returned by full-table scans.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{row}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -908,6 +1194,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{post}"
+  oracledb.sort.operations:
+    description: Total count of sort operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+    attributes: [oracledb.sort.type]
   oracledb.sort.ratio:
     attributes:
       - oracledb.sort.type
@@ -917,6 +1214,16 @@ metrics:
     gauge:
       value_type: double
     unit: "1"
+  oracledb.sort.rows:
+    description: Total number of rows sorted across all sort operations.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{row}"
   oracledb.sql_service.response.duration:
     description: Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).
     enabled: false
