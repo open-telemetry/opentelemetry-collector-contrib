@@ -80,7 +80,7 @@ all_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.io.single_block_read.latency:
+    oracledb.io.single_block.read.latency:
       enabled: true
     oracledb.library_cache.utilization:
       enabled: true
@@ -114,7 +114,7 @@ all_set:
       enabled: true
     oracledb.parse_calls:
       enabled: true
-    oracledb.pga_cache.utilization:
+    oracledb.pga.cache.utilization:
       enabled: true
     oracledb.pga_memory:
       enabled: true
@@ -323,7 +323,7 @@ reaggregate_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
-    oracledb.io.single_block_read.latency:
+    oracledb.io.single_block.read.latency:
       enabled: true
     oracledb.library_cache.utilization:
       enabled: true
@@ -357,7 +357,7 @@ reaggregate_set:
       enabled: true
     oracledb.parse_calls:
       enabled: true
-    oracledb.pga_cache.utilization:
+    oracledb.pga.cache.utilization:
       enabled: true
     oracledb.pga_memory:
       enabled: true
@@ -566,7 +566,7 @@ none_set:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
-    oracledb.io.single_block_read.latency:
+    oracledb.io.single_block.read.latency:
       enabled: false
     oracledb.library_cache.utilization:
       enabled: false
@@ -600,7 +600,7 @@ none_set:
       enabled: false
     oracledb.parse_calls:
       enabled: false
-    oracledb.pga_cache.utilization:
+    oracledb.pga.cache.utilization:
       enabled: false
     oracledb.pga_memory:
       enabled: false

@@ -479,7 +479,7 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### oracledb.io.single_block_read.latency
+### oracledb.io.single_block.read.latency
 
 Average latency of a synchronous single-block read.
 
@@ -603,7 +603,7 @@ Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
-### oracledb.pga_cache.utilization
+### oracledb.pga.cache.utilization
 
 Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
 

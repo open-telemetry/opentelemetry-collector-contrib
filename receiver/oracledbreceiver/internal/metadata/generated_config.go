@@ -890,7 +890,7 @@ func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block_read.latency metric.
+// OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric.
 type OracledbIoSingleBlockReadLatencyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -1266,7 +1266,7 @@ func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga_cache.utilization metric.
+// OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric.
 type OracledbPgaCacheUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -2562,7 +2562,7 @@ type MetricsConfig struct {
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUsageRate                      OracledbHostCPUUsageRateMetricConfig                      `mapstructure:"oracledb.host.cpu.usage.rate"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
-	OracledbIoSingleBlockReadLatency              OracledbIoSingleBlockReadLatencyMetricConfig              `mapstructure:"oracledb.io.single_block_read.latency"`
+	OracledbIoSingleBlockReadLatency              OracledbIoSingleBlockReadLatencyMetricConfig              `mapstructure:"oracledb.io.single_block.read.latency"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
 	OracledbLobOperations                         OracledbLobOperationsMetricConfig                         `mapstructure:"oracledb.lob.operations"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
@@ -2578,7 +2578,7 @@ type MetricsConfig struct {
 	OracledbParseRate                             OracledbParseRateMetricConfig                             `mapstructure:"oracledb.parse.rate"`
 	OracledbParseUtilization                      OracledbParseUtilizationMetricConfig                      `mapstructure:"oracledb.parse.utilization"`
 	OracledbParseCalls                            OracledbParseCallsMetricConfig                            `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaCacheUtilization                   OracledbPgaCacheUtilizationMetricConfig                   `mapstructure:"oracledb.pga_cache.utilization"`
+	OracledbPgaCacheUtilization                   OracledbPgaCacheUtilizationMetricConfig                   `mapstructure:"oracledb.pga.cache.utilization"`
 	OracledbPgaMemory                             OracledbPgaMemoryMetricConfig                             `mapstructure:"oracledb.pga_memory"`
 	OracledbPhysicalIoCacheWrites                 OracledbPhysicalIoCacheWritesMetricConfig                 `mapstructure:"oracledb.physical_io.cache_writes"`
 	OracledbPhysicalIoRequests                    OracledbPhysicalIoRequestsMetricConfig                    `mapstructure:"oracledb.physical_io.requests"`

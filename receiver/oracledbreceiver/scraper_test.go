@@ -1252,11 +1252,11 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
 			assert.InDelta(t, 2.50, metricMap["oracledb.session.active.average"], floatDelta)
 			// 0.85 ms -> 0.00085 s
-			assert.InDelta(t, 0.00085, metricMap["oracledb.io.single_block_read.latency"], floatDelta)
+			assert.InDelta(t, 0.00085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
 			// 12.34 cs -> 0.1234 s
 			assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
 			assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
-			assert.InDelta(t, 92.10, metricMap["oracledb.pga_cache.utilization"], floatDelta)
+			assert.InDelta(t, 92.10, metricMap["oracledb.pga.cache.utilization"], floatDelta)
 			// 150 cs/s -> 1.5 CPU cores
 			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
 			// 320 cs/s -> 3.2 CPU cores

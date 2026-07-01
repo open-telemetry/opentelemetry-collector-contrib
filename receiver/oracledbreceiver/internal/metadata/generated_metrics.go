@@ -586,7 +586,7 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.host.cpu.utilization",
 	},
 	OracledbIoSingleBlockReadLatency: metricInfo{
-		Name: "oracledb.io.single_block_read.latency",
+		Name: "oracledb.io.single_block.read.latency",
 	},
 	OracledbLibraryCacheUtilization: metricInfo{
 		Name: "oracledb.library_cache.utilization",
@@ -636,7 +636,7 @@ var MetricsInfo = metricsInfo{
 		Name: "oracledb.parse_calls",
 	},
 	OracledbPgaCacheUtilization: metricInfo{
-		Name: "oracledb.pga_cache.utilization",
+		Name: "oracledb.pga.cache.utilization",
 	},
 	OracledbPgaMemory: metricInfo{
 		Name: "oracledb.pga_memory",
@@ -2975,9 +2975,9 @@ type metricOracledbIoSingleBlockReadLatency struct {
 	capacity int                                          // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.io.single_block_read.latency metric with initial data.
+// init fills oracledb.io.single_block.read.latency metric with initial data.
 func (m *metricOracledbIoSingleBlockReadLatency) init() {
-	m.data.SetName("oracledb.io.single_block_read.latency")
+	m.data.SetName("oracledb.io.single_block.read.latency")
 	m.data.SetDescription("Average latency of a synchronous single-block read.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
@@ -3877,9 +3877,9 @@ type metricOracledbPgaCacheUtilization struct {
 	capacity int                                     // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.pga_cache.utilization metric with initial data.
+// init fills oracledb.pga.cache.utilization metric with initial data.
 func (m *metricOracledbPgaCacheUtilization) init() {
-	m.data.SetName("oracledb.pga_cache.utilization")
+	m.data.SetName("oracledb.pga.cache.utilization")
 	m.data.SetDescription("Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
@@ -7426,7 +7426,7 @@ func (mb *MetricsBuilder) RecordOracledbHostCPUUtilizationDataPoint(ts pcommon.T
 	mb.metricOracledbHostCPUUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordOracledbIoSingleBlockReadLatencyDataPoint adds a data point to oracledb.io.single_block_read.latency metric.
+// RecordOracledbIoSingleBlockReadLatencyDataPoint adds a data point to oracledb.io.single_block.read.latency metric.
 func (mb *MetricsBuilder) RecordOracledbIoSingleBlockReadLatencyDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbIoSingleBlockReadLatency.recordDataPoint(mb.startTime, ts, val)
 }
@@ -7556,7 +7556,7 @@ func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp
 	return nil
 }
 
-// RecordOracledbPgaCacheUtilizationDataPoint adds a data point to oracledb.pga_cache.utilization metric.
+// RecordOracledbPgaCacheUtilizationDataPoint adds a data point to oracledb.pga.cache.utilization metric.
 func (mb *MetricsBuilder) RecordOracledbPgaCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbPgaCacheUtilization.recordDataPoint(mb.startTime, ts, val)
 }

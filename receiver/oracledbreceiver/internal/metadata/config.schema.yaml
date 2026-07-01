@@ -276,8 +276,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.io.single_block_read.latency:
-        description: "OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block_read.latency metric."
+      oracledb.io.single_block.read.latency:
+        description: "OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric."
         type: object
         properties:
           enabled:
@@ -383,8 +383,8 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.pga_cache.utilization:
-        description: "OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga_cache.utilization metric."
+      oracledb.pga.cache.utilization:
+        description: "OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric."
         type: object
         properties:
           enabled:

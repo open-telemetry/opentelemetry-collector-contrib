@@ -1142,9 +1142,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.io.single_block_read.latency":
-					assert.False(t, validatedMetrics["oracledb.io.single_block_read.latency"], "Found a duplicate in the metrics slice: oracledb.io.single_block_read.latency")
-					validatedMetrics["oracledb.io.single_block_read.latency"] = true
+				case "oracledb.io.single_block.read.latency":
+					assert.False(t, validatedMetrics["oracledb.io.single_block.read.latency"], "Found a duplicate in the metrics slice: oracledb.io.single_block.read.latency")
+					validatedMetrics["oracledb.io.single_block.read.latency"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average latency of a synchronous single-block read.", mi.Description())
@@ -1416,9 +1416,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.pga_cache.utilization":
-					assert.False(t, validatedMetrics["oracledb.pga_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.pga_cache.utilization")
-					validatedMetrics["oracledb.pga_cache.utilization"] = true
+				case "oracledb.pga.cache.utilization":
+					assert.False(t, validatedMetrics["oracledb.pga.cache.utilization"], "Found a duplicate in the metrics slice: oracledb.pga.cache.utilization")
+					validatedMetrics["oracledb.pga.cache.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.", mi.Description())

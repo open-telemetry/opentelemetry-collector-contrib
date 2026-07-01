@@ -766,7 +766,7 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-  oracledb.io.single_block_read.latency:
+  oracledb.io.single_block.read.latency:
     description: Average latency of a synchronous single-block read.
     enabled: false
     stability: development
@@ -915,7 +915,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
-  oracledb.pga_cache.utilization:
+  oracledb.pga.cache.utilization:
     description: Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
     enabled: false
     stability: development

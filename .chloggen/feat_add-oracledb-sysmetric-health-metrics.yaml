@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add 8 V$SYSMETRIC health and efficiency gauge metrics (average active sessions, single-block read latency, response time per transaction, cursor/PGA cache hit ratios, CPU usage rates, and session count).
+note: Add real-time database health and efficiency indicator metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49087]
