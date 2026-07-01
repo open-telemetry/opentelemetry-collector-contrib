@@ -1,7 +1,20 @@
 default:
 all_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: true
+      attributes: ["oracledb.buffer.state"]
+    oracledb.buffer.requests:
+      enabled: true
+    oracledb.buffer_cache.block.changes:
+      enabled: true
+    oracledb.buffer_cache.block.gets:
+      enabled: true
     oracledb.buffer_cache.utilization:
+      enabled: true
+    oracledb.checkpoint.buffers:
+      enabled: true
+    oracledb.checkpoint.completed:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
@@ -99,6 +112,23 @@ all_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo.blocks:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    oracledb.redo.operations:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    oracledb.redo.requests:
+      enabled: true
+      attributes: ["oracledb.redo.request.type"]
+    oracledb.redo.retries:
+      enabled: true
+      attributes: ["oracledb.redo.retry.type"]
+    oracledb.redo.size:
+      enabled: true
+    oracledb.redo.time:
+      enabled: true
+      attributes: ["oracledb.redo.type"]
     oracledb.redo_allocation.utilization:
       enabled: true
     oracledb.sessions.limit:
@@ -160,7 +190,20 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: true
+      attributes: []
+    oracledb.buffer.requests:
+      enabled: true
+    oracledb.buffer_cache.block.changes:
+      enabled: true
+    oracledb.buffer_cache.block.gets:
+      enabled: true
     oracledb.buffer_cache.utilization:
+      enabled: true
+    oracledb.checkpoint.buffers:
+      enabled: true
+    oracledb.checkpoint.completed:
       enabled: true
     oracledb.consistent_gets:
       enabled: true
@@ -258,6 +301,23 @@ reaggregate_set:
       enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
+    oracledb.redo.blocks:
+      enabled: true
+      attributes: []
+    oracledb.redo.operations:
+      enabled: true
+      attributes: []
+    oracledb.redo.requests:
+      enabled: true
+      attributes: []
+    oracledb.redo.retries:
+      enabled: true
+      attributes: []
+    oracledb.redo.size:
+      enabled: true
+    oracledb.redo.time:
+      enabled: true
+      attributes: []
     oracledb.redo_allocation.utilization:
       enabled: true
     oracledb.sessions.limit:
@@ -319,7 +379,20 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.buffer.inspected:
+      enabled: false
+      attributes: ["oracledb.buffer.state"]
+    oracledb.buffer.requests:
+      enabled: false
+    oracledb.buffer_cache.block.changes:
+      enabled: false
+    oracledb.buffer_cache.block.gets:
+      enabled: false
     oracledb.buffer_cache.utilization:
+      enabled: false
+    oracledb.checkpoint.buffers:
+      enabled: false
+    oracledb.checkpoint.completed:
       enabled: false
     oracledb.consistent_gets:
       enabled: false
@@ -417,6 +490,23 @@ none_set:
       enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
+    oracledb.redo.blocks:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    oracledb.redo.operations:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    oracledb.redo.requests:
+      enabled: false
+      attributes: ["oracledb.redo.request.type"]
+    oracledb.redo.retries:
+      enabled: false
+      attributes: ["oracledb.redo.retry.type"]
+    oracledb.redo.size:
+      enabled: false
+    oracledb.redo.time:
+      enabled: false
+      attributes: ["oracledb.redo.type"]
     oracledb.redo_allocation.utilization:
       enabled: false
     oracledb.sessions.limit:

@@ -241,6 +241,44 @@ metrics:
     enabled: true
 ```
 
+### oracledb.buffer.inspected
+
+Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffer} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.buffer.state | The state of a buffer encountered while inspecting the LRU queue for a reusable buffer (free = a reusable buffer that was skipped; dirty = a dirty buffer found). | Str: ``free``, ``dirty`` | Recommended | - |
+
+### oracledb.buffer.requests
+
+Number of times a reusable or free buffer was requested to create or load a block.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.buffer_cache.block.changes
+
+Number of changes that were part of an update or delete operation made to blocks in the buffer cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {change} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.buffer_cache.block.gets
+
+Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {get} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.buffer_cache.utilization
 
 Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
@@ -248,6 +286,22 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.checkpoint.buffers
+
+Number of buffers written by the Database Writer (DBWR) for checkpoints.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffer} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.checkpoint.completed
+
+Number of checkpoints completed by the Database Writer (DBWR).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {checkpoint} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.consistent_gets
 
@@ -506,6 +560,84 @@ Total size of the recycle bin.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
+
+### oracledb.redo.blocks
+
+Number of redo blocks moved between the redo log and storage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {block} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.redo.operations
+
+Number of redo I/O operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.redo.requests
+
+Number of times a process requested space in the redo log buffer and had to wait.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.request.type | The type of redo log buffer space request. | Str: ``log_space`` | Recommended | - |
+
+### oracledb.redo.retries
+
+Number of times a process waited and retried to allocate space in the redo buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {retry} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.retry.type | The type of redo buffer allocation retry. | Str: ``buffer_allocation`` | Recommended | - |
+
+### oracledb.redo.size
+
+Amount of redo generated.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+### oracledb.redo.time
+
+Time spent in each phase of the redo pipeline.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.redo.type | The phase of the redo pipeline that a redo time measurement is attributed to. | Str: ``write``, ``log_space_wait``, ``sync`` | Recommended | - |
 
 ### oracledb.redo_allocation.utilization
 
