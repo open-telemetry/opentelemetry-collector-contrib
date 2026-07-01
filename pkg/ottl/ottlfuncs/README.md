@@ -588,6 +588,7 @@ Available Converters:
 - [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
+- [When](#when)
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
@@ -2805,6 +2806,35 @@ The returned range is 0-6 (Sun-Sat)
 Examples:
 
 - `Weekday(Now())`
+
+### When
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`When(condition, trueValue, falseValue)`
+
+The `When` converter returns `trueValue` when `condition` evaluates to true, otherwise it returns `falseValue`.
+
+`condition` is a lambda expression with no parameters that returns a `boolean`.
+
+`trueValue` and `falseValue` are OTTL expressions or literal values.
+
+If `condition` does not return a `boolean`, it returns an error.
+
+Examples:
+
+Select a value based on a type check:
+
+- `When(() => IsMap(log.attributes), "map", "not map")`
+
+Select a value based on a comparison:
+
+- `When(() => attributes["int_value"] > 0, "positive", "negative")`
+
+Store the result:
+
+- `set(log.attributes["result"], When(() => IsMap(log.attributes), "yes", "no"))`
 
 ### XXH3
 

@@ -1627,6 +1627,8 @@ func Test_e2e_converters(t *testing.T) {
 }
 
 func Test_e2e_ottl_features(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
+		true))
 	tests := []struct {
 		name      string
 		statement string
@@ -1884,6 +1886,24 @@ func Test_e2e_ottl_features(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], SliceToMap(["pass", "fail"])[attributes["int_value_str"]])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => attributes["int_value"] > 0, "positive", "negative"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "negative")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), attributes["foo"]["bar"], "fail"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), When(() => attributes["foo"]["bar"] == "pass", "pass", "fail"), "fail"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
