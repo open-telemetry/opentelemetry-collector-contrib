@@ -12,7 +12,9 @@ import (
 type SystemCPUFrequencyMetricAttributeKey string
 
 const (
-	SystemCPUFrequencyMetricAttributeKeyCPU SystemCPUFrequencyMetricAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyCPU             SystemCPUFrequencyMetricAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID SystemCPUFrequencyMetricAttributeKey = "host.cpu.socket.id"
+	SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID   SystemCPUFrequencyMetricAttributeKey = "host.cpu.core.id"
 )
 
 // SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric.
@@ -41,9 +43,9 @@ func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error 
 func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUFrequencyMetricAttributeKeyCPU:
+		case SystemCPUFrequencyMetricAttributeKeyCPU, SystemCPUFrequencyMetricAttributeKeyHostCPUSocketID, SystemCPUFrequencyMetricAttributeKeyHostCPUCoreID:
 		default:
-			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu]", val)
+			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
 	}
 
@@ -100,8 +102,10 @@ func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 type SystemCPUTimeMetricAttributeKey string
 
 const (
-	SystemCPUTimeMetricAttributeKeyCPU   SystemCPUTimeMetricAttributeKey = "cpu"
-	SystemCPUTimeMetricAttributeKeyState SystemCPUTimeMetricAttributeKey = "state"
+	SystemCPUTimeMetricAttributeKeyCPU             SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyState           SystemCPUTimeMetricAttributeKey = "state"
+	SystemCPUTimeMetricAttributeKeyHostCPUSocketID SystemCPUTimeMetricAttributeKey = "host.cpu.socket.id"
+	SystemCPUTimeMetricAttributeKeyHostCPUCoreID   SystemCPUTimeMetricAttributeKey = "host.cpu.core.id"
 )
 
 // SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
@@ -130,9 +134,9 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SystemCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState:
+		case SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState, SystemCPUTimeMetricAttributeKeyHostCPUSocketID, SystemCPUTimeMetricAttributeKeyHostCPUCoreID:
 		default:
-			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state]", val)
+			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
 	}
 
@@ -149,8 +153,10 @@ func (ms *SystemCPUTimeMetricConfig) Validate() error {
 type SystemCPUUtilizationMetricAttributeKey string
 
 const (
-	SystemCPUUtilizationMetricAttributeKeyCPU   SystemCPUUtilizationMetricAttributeKey = "cpu"
-	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
+	SystemCPUUtilizationMetricAttributeKeyCPU             SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyState           SystemCPUUtilizationMetricAttributeKey = "state"
+	SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID SystemCPUUtilizationMetricAttributeKey = "host.cpu.socket.id"
+	SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID   SystemCPUUtilizationMetricAttributeKey = "host.cpu.core.id"
 )
 
 // SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.
@@ -179,9 +185,9 @@ func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState:
+		case SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState, SystemCPUUtilizationMetricAttributeKeyHostCPUSocketID, SystemCPUUtilizationMetricAttributeKeyHostCPUCoreID:
 		default:
-			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
+			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]", val)
 		}
 	}
 

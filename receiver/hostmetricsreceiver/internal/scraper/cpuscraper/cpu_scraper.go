@@ -35,17 +35,28 @@ type cpuScraper struct {
 	// for mocking
 	bootTime func(context.Context) (uint64, error)
 	times    func(context.Context, bool) ([]cpu.TimesStat, error)
+	info     func() ([]cpuInfo, error)
 	now      func() time.Time
 }
 
 type cpuInfo struct {
 	frequency float64
 	processor uint
+	socket    string
+	core      string
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *cpuScraper {
-	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+	return &cpuScraper{
+		settings: settings,
+		config:   cfg,
+		bootTime: host.BootTimeWithContext,
+		times:    cpu.TimesWithContext,
+		info:     getCPUInfo,
+		ucal:     &ucal.CPUUtilizationCalculator{},
+		now:      time.Now,
+	}
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
@@ -63,12 +74,25 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-
-	for _, cpuTime := range cpuTimes {
-		s.recordCPUTimeStateDataPoints(now, cpuTime)
+	cpuInfos, err := s.info()
+	if err != nil {
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
+	cpuInfoMap := make(map[string]cpuInfo)
+	for _, cInfo := range cpuInfos {
+		cpuInfoMap[s.formatCPUID(cInfo.processor)] = cInfo
+	}
+
+	for _, cpuTime := range cpuTimes {
+		timeCInfo := cpuInfoMap[cpuTime.CPU]
+		s.recordCPUTimeStateDataPoints(now, cpuTime, timeCInfo.socket, timeCInfo.core)
+	}
+
+	err = s.ucal.CalculateAndRecord(now, cpuTimes, func(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
+		utilCInfo := cpuInfoMap[cpuUtilization.CPU]
+		s.recordCPUUtilization(now, cpuUtilization, utilCInfo.socket, utilCInfo.core)
+	})
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
@@ -90,14 +114,14 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.config.Metrics.SystemCPUFrequency.Enabled {
-		cpuInfos, err := s.getCPUInfo()
-		if err != nil {
-			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
-		}
 		for _, cInfo := range cpuInfos {
-			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, fmt.Sprintf("cpu%d", cInfo.processor))
+			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, s.formatCPUID(cInfo.processor), cInfo.socket, cInfo.core)
 		}
 	}
 
 	return s.mb.Emit(), nil
+}
+
+func (*cpuScraper) formatCPUID(cpuID uint) string {
+	return fmt.Sprintf("cpu%d", cpuID)
 }

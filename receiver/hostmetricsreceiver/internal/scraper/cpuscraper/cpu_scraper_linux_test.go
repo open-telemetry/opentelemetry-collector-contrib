@@ -6,9 +6,11 @@
 package cpuscraper
 
 import (
+	"context"
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -91,5 +93,54 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 		require.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
 
 		require.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
+	}
+}
+
+func TestScrape_CpuTopologyAttributes(t *testing.T) {
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemCPUTime.Enabled = true
+	cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeMetricAttributeKey{
+		metadata.SystemCPUTimeMetricAttributeKeyCpu,
+		metadata.SystemCPUTimeMetricAttributeKeyState,
+		metadata.SystemCPUTimeMetricAttributeKeyHostCPUSocketID,
+		metadata.SystemCPUTimeMetricAttributeKeyHostCPUCoreID,
+	}
+
+	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+		&Config{MetricsBuilderConfig: cfg})
+	scraper.info = func() ([]cpuInfo, error) {
+		return []cpuInfo{
+			{processor: 0, socket: "0", core: "0"},
+			{processor: 1, socket: "0", core: "1"},
+		}, nil
+	}
+	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
+		return []cpu.TimesStat{
+			{CPU: "cpu0", User: 1, System: 1, Idle: 1, Irq: 1},
+			{CPU: "cpu1", User: 2, System: 2, Idle: 2, Irq: 2},
+		}, nil
+	}
+
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to initialize CPU scraper")
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err, "Failed to scrape metrics")
+
+	require.Equal(t, 1, md.MetricCount(), "Expected 1 metric")
+
+	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metric := metrics.At(0)
+
+	for i := range metric.Sum().DataPoints().Len() {
+		dp := metric.Sum().DataPoints().At(i)
+
+		socketAttr, hasSocket := dp.Attributes().Get("host.cpu.socket.id")
+		require.True(t, hasSocket, "Data point should have 'host.cpu.socket.id' attribute")
+		require.NotEmpty(t, socketAttr.Str(), "Socket attribute should not be empty")
+
+		coreAttr, hasCore := dp.Attributes().Get("host.cpu.core.id")
+		require.True(t, hasCore, "Data point should have 'host.cpu.core.id' attribute")
+		require.NotEmpty(t, coreAttr.Str(), "Core attribute should not be empty")
 	}
 }

@@ -71,9 +71,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val")
+			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val", "host.cpu.socket.id-val", "host.cpu.core.id-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2")
+				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2", "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
 			}
 
 			allMetricsCount++
@@ -83,15 +83,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemCPUPhysicalCountDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
+				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt, "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
+				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt, "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -165,6 +165,10 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
 						_, ok := dp.Attributes().Get("cpu")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.socket.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.core.id")
 						assert.False(t, ok)
 					}
 				case "system.cpu.logical.count":
@@ -243,6 +247,10 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("state")
 						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.socket.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.core.id")
+						assert.False(t, ok)
 					}
 				case "system.cpu.utilization":
 					if tt.name != "reaggregate_set" {
@@ -287,6 +295,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cpu")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("state")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.socket.id")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("host.cpu.core.id")
 						assert.False(t, ok)
 					}
 				}

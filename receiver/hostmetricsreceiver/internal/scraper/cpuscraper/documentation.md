@@ -26,6 +26,8 @@ Total seconds each logical CPU spent on each mode.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
+| host.cpu.socket.id | Socket number of the CPU. | Any Str | Opt-In | - |
+| host.cpu.core.id | Core number of the CPU. | Any Str | Opt-In | - |
 
 ## Optional Metrics
 
@@ -50,6 +52,8 @@ Current frequency of the CPU core in Hz.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
+| host.cpu.socket.id | Socket number of the CPU. | Any Str | Opt-In | - |
+| host.cpu.core.id | Core number of the CPU. | Any Str | Opt-In | - |
 
 ### system.cpu.logical.count
 
@@ -81,3 +85,5 @@ Difference in system.cpu.time since the last measurement per logical CPU, divide
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | cpu | Logical CPU number starting at 0. | Any Str | Recommended | - |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
+| host.cpu.socket.id | Socket number of the CPU. | Any Str | Opt-In | - |
+| host.cpu.core.id | Core number of the CPU. | Any Str | Opt-In | - |
