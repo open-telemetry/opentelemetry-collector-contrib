@@ -46,6 +46,14 @@ var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = f
 	featuregate.WithRegisterFromVersion("v0.147.0"),
 )
 
+var InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0NetworkV125Conventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.25.0 attributes (net.host.port, net.peer.name, net.peer.port, net.transport)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
+)
+
 var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0RPCConventions",
 	featuregate.StageBeta,
@@ -92,6 +100,14 @@ var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featu
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.local.address, network.peer.address, and server.address (semconv v1.38.0) instead of the deprecated net.host.ip, net.peer.ip, http.host, http.server_name (semconv v1.12.0). Enable together with pkg.translator.zipkin.EmitV1NetworkConventions for consistent round-trip translation in tests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1NetworkV125Conventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.transport, server.address, server.port, client.address, and client.port instead of the deprecated net.transport, net.peer.name, net.host.port, and net.peer.port (semconv v1.25.0)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
