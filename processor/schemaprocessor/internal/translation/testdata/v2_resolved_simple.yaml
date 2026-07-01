@@ -1,0 +1,52 @@
+file_format: resolved/2.0
+schema_url: https://opentelemetry.io/schemas/2.0.0
+attribute_catalog:
+  - key: old.attr.name
+    type: string
+    brief: Old attribute, renamed
+    stability: development
+    deprecated:
+      reason: renamed
+      renamed_to: new.attr.name
+      note: "Renamed in v2.0.0"
+  - key: new.attr.name
+    type: string
+    brief: Current attribute
+    stability: stable
+  - key: dropped.attr
+    type: string
+    brief: Removed attribute
+    stability: development
+    deprecated:
+      reason: obsoleted
+      note: "Removed without replacement"
+registry:
+  metrics:
+    - name: old.sum.metric
+      instrument: counter
+      unit: "1"
+      brief: Old metric, renamed
+      stability: development
+      deprecated:
+        reason: renamed
+        renamed_to: new.sum.metric
+        note: "Renamed in v2.0.0"
+  spans:
+    - name: http.server.old
+      type: http.server
+      kind: server
+      brief: Old span, renamed
+      stability: development
+      deprecated:
+        reason: renamed
+        renamed_to: http.server.request
+        note: "Renamed in v2.0.0"
+  events:
+    - name: old_stack_trace
+      brief: Old event, renamed
+      stability: development
+      deprecated:
+        reason: renamed
+        renamed_to: stack_trace
+        note: "Renamed in v2.0.0"
+refinements: {}

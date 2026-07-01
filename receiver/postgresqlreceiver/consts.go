@@ -35,6 +35,14 @@ const (
 	querySampleColumnUsename              = "usename"
 	querySampleColumnWaitEvent            = "wait_event"
 	querySampleColumnWaitEventType        = "wait_event_type"
+	// Blocking session columns
+	querySampleColumnBlockingPIDs         = "blocking_pids"
+	querySampleColumnBlockingStartTime    = "blocking_start_time"
+	querySampleColumnBlockingWaitDuration = "blocking_wait_duration"
+	querySampleColumnBlockingLockMode     = "blocking_lock_mode"
+	querySampleColumnBlockingLockType     = "blocking_lock_type"
+	querySampleColumnBlockingLockRelation = "blocking_lock_relation"
+	querySampleColumnBlockingTxnStartTime = "blocking_transaction_start"
 )
 
 const (

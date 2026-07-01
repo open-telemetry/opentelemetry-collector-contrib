@@ -3,7 +3,6 @@
 
 The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -107,6 +106,9 @@ receivers:
 | `target_allocator` | | Optional Target Allocator client configuration used to fetch dynamically assigned scrape targets. See [OpenTelemetry Operator](#opentelemetry-operator). |
 | `trim_metric_suffixes` | `false` | [**Experimental**] Trims unit and some counter type suffixes from metric names, for example `singing_duration_seconds_total` -> `singing_duration`. Useful when trying to restore metric names closer to OpenTelemetry instrumentation. |
 | `api_server` | | Optional nested block for a local Prometheus agent-mode API server (debugging targets, configuration, and service discovery). See [Prometheus API Server](#prometheus-api-server). |
+| `scrape_on_shutdown` | `false` | Enables a final scrape before the receiver closes. This final scrape ignores the configured scrape interval. |
+| `discovery_reload_on_startup` | `false` | Enables discovering targets immediately on start up as opposed to waiting for the configured interval before initializing the scrape pools. |
+| `initial_scrape_offset` | `0s` | Adds a fixed delay before the initial scrape of targets. This duration is applied on top of the receiver's internal load balancing offset. It avoids readiness races and backend rate limits immediately after startup. |
 
 At least one of `config.scrape_configs`, `config.scrape_config_files`, or `target_allocator` must be set.
 
@@ -274,15 +276,22 @@ additional scrape metadata metrics are emitted as described in the same Promethe
 documentation.
 
 ## Prometheus API Server
-The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+The Prometheus API server hosts information about active targets, service discovery, metrics, and the rendered Prometheus config. Set `api_server.enabled: true` to expose these debugging endpoints. The server is disabled by default.
 
-```
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `false` | Whether the API server is enabled. |
+| `max_connections` | int | `512` | Maximum number of simultaneous HTTP connections the server accepts. |
+| `server_config` | [confighttp.ServerConfig](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp) | endpoint: `127.0.0.1:9090`, read_timeout: `10m` | HTTP server settings including endpoint, TLS, CORS, and timeouts. |
+
+```yaml
 receivers:
   prometheus:
     api_server:
       enabled: true
+      max_connections: 512
       server_config:
-        endpoint: "localhost:9090"
+        endpoint: "127.0.0.1:9090"
 ```
 
 The API server hosts the same paths as the Prometheus agent-mode API. These include:
@@ -293,7 +302,6 @@ The API server hosts the same paths as the Prometheus agent-mode API. These incl
 - /metrics
 
 More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
-
 
 ## Feature gates
 
