@@ -32,6 +32,8 @@ import (
 const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
+
+	defaultServiceName = "unknown_service:postgresql"
 )
 
 type postgreSQLScraper struct {
@@ -221,6 +223,33 @@ func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval t
 	return false
 }
 
+func attrString(atts map[string]any, key string) string {
+	if v, ok := atts[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func attrInt64(atts map[string]any, key string) int64 {
+	if v, ok := atts[key]; ok {
+		if i, ok := v.(int64); ok {
+			return i
+		}
+	}
+	return 0
+}
+
+func attrFloat64(atts map[string]any, key string) float64 {
+	if v, ok := atts[key]; ok {
+		if f, ok := v.(float64); ok {
+			return f
+		}
+	}
+	return 0
+}
+
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
@@ -241,20 +270,27 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		p.lb.RecordDbServerQuerySampleEvent(logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			atts[string(semconv.DBNamespaceKey)].(string),
-			atts[string(semconv.DBQueryTextKey)].(string),
-			atts[string(semconv.UserNameKey)].(string),
-			atts[dbAttributePrefix+querySampleColumnState].(string),
-			atts[dbAttributePrefix+querySampleColumnPID].(int64),
-			atts[dbAttributePrefix+querySampleColumnApplicationName].(string),
-			atts[string(semconv.NetworkPeerAddressKey)].(string),
-			atts[string(semconv.NetworkPeerPortKey)].(int64),
-			atts[dbAttributePrefix+querySampleColumnClientHostname].(string),
-			atts[dbAttributePrefix+querySampleColumnQueryStart].(string),
-			atts[dbAttributePrefix+querySampleColumnWaitEvent].(string),
-			atts[dbAttributePrefix+querySampleColumnWaitEventType].(string),
-			atts[dbAttributePrefix+querySampleColumnQueryID].(string),
-			atts[postgresqlTotalExecTimeAttributeName].(float64),
+			attrString(atts, string(semconv.DBNamespaceKey)),
+			attrString(atts, string(semconv.DBQueryTextKey)),
+			attrString(atts, string(semconv.UserNameKey)),
+			attrString(atts, dbAttributePrefix+querySampleColumnState),
+			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
+			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
+			attrString(atts, string(semconv.NetworkPeerAddressKey)),
+			attrInt64(atts, string(semconv.NetworkPeerPortKey)),
+			attrString(atts, dbAttributePrefix+querySampleColumnClientHostname),
+			attrString(atts, dbAttributePrefix+querySampleColumnQueryStart),
+			attrString(atts, dbAttributePrefix+querySampleColumnWaitEvent),
+			attrString(atts, dbAttributePrefix+querySampleColumnWaitEventType),
+			attrString(atts, dbAttributePrefix+querySampleColumnQueryID),
+			attrFloat64(atts, postgresqlTotalExecTimeAttributeName),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingPIDs),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingStartTime),
+			attrInt64(atts, dbAttributePrefix+querySampleColumnBlockingWaitDuration),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockMode),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockType),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockRelation),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingTxnStartTime),
 		)
 	}
 }
@@ -733,6 +769,8 @@ func (*postgreSQLScraper) retrieveBackends(
 
 func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}
