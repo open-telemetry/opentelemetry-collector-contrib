@@ -75,7 +75,7 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2")
 			}
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
 

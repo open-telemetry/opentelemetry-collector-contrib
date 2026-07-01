@@ -41,6 +41,7 @@ func TestScrape_CpuFrequency(t *testing.T) {
 
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.SystemCPUTime.Enabled = false
+			cfg.Metrics.SystemCPULogicalCount.Enabled = false
 			cfg.Metrics.SystemCPUFrequency.Enabled = test.enabledFrequency
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),

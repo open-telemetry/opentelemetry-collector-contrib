@@ -43,13 +43,13 @@ func TestScrape(t *testing.T) {
 		{
 			name:                "Standard",
 			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 1,
+			expectedMetricCount: 2,
 		},
 		{
 			name:                "Validate Start Time",
 			bootTimeFunc:        func(context.Context) (uint64, error) { return 100, nil },
 			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 1,
+			expectedMetricCount: 2,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
@@ -63,13 +63,13 @@ func TestScrape(t *testing.T) {
 			name:                "Times Error",
 			timesFunc:           func(context.Context, bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
 			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
-			expectedMetricCount: 1,
+			expectedMetricCount: 2,
 			expectedErr:         "err2",
 		},
 		{
 			name:                "SystemCPUTime metric is disabled ",
 			metricsConfig:       disabledMetric,
-			expectedMetricCount: 0,
+			expectedMetricCount: 1,
 		},
 	}
 
@@ -110,10 +110,14 @@ func TestScrape(t *testing.T) {
 
 			if test.expectedMetricCount > 0 {
 				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-				assertCPUMetricValid(t, metrics.At(0), test.expectedStartTime)
+				assertCPULogicalCountMetricValid(t, metrics.At(0))
 
-				if runtime.GOOS == "linux" {
-					assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+				if test.metricsConfig.Metrics.SystemCPUTime.Enabled {
+					cpuTimeMetric := metrics.At(1)
+					assertCPUMetricValid(t, cpuTimeMetric, test.expectedStartTime)
+					if runtime.GOOS == "linux" {
+						assertCPUMetricHasLinuxSpecificStateLabels(t, cpuTimeMetric)
+					}
 				}
 
 				internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -230,10 +234,13 @@ func TestScrape_CpuUtilization(t *testing.T) {
 		utilizationIndex    int
 	}
 
+	defaultMetrics := metadata.NewDefaultMetricsBuilderConfig()
+	defaultMetrics.Metrics.SystemCPULogicalCount.Enabled = false
+
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.NewDefaultMetricsBuilderConfig(),
+			metricsConfig:       defaultMetrics,
 			expectedMetricCount: 1,
 			times:               true,
 			utilization:         false,
@@ -267,6 +274,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				settings = metadata.NewDefaultMetricsBuilderConfig()
 				settings.Metrics.SystemCPUTime.Enabled = test.times
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
+				settings.Metrics.SystemCPULogicalCount.Enabled = false
 			}
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: settings})
@@ -331,6 +339,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 	overriddenMetricsSettings := metadata.NewDefaultMetricsBuilderConfig()
 	overriddenMetricsSettings.Metrics.SystemCPUUtilization.Enabled = true
 	overriddenMetricsSettings.Metrics.SystemCPUTime.Enabled = false
+	overriddenMetricsSettings.Metrics.SystemCPULogicalCount.Enabled = false
 
 	// datapoint data
 	type dpData struct {
