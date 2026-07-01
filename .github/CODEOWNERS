@@ -154,7 +154,7 @@ internal/k8sinventory/                                           @open-telemetry
 internal/k8sleaderelectortest/                                   @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
 internal/kafka/                                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw @paulojmdias
 internal/kubelet/                                                @open-telemetry/collector-contrib-approvers @dmitryax
-internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 internal/otelarrow/                                              @open-telemetry/collector-contrib-approvers @jmacd @JakeDern
 internal/pdatautil/                                              @open-telemetry/collector-contrib-approvers
 internal/rabbitmq/                                               @open-telemetry/collector-contrib-approvers @atoulme
@@ -220,7 +220,7 @@ processor/metricstransformprocessor/                             @open-telemetry
 processor/probabilisticsamplerprocessor/                         @open-telemetry/collector-contrib-approvers @jmacd
 processor/redactionprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth @iblancasa
 processor/remotetapprocessor/                                    @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
-processor/resourcedetectionprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+processor/resourcedetectionprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/akamai/            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/alibaba/ecs/       @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/azure/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
