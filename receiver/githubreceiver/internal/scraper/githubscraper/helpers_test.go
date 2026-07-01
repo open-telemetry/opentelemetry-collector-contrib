@@ -389,11 +389,17 @@ func TestCheckOwnerExists(t *testing.T) {
 }
 
 func TestGetPullRequests(t *testing.T) {
+	now := time.Now()
+	type prCount struct {
+		open   int
+		merged int
+	}
 	testCases := []struct {
 		desc            string
 		server          *http.ServeMux
+		lookbackDays    int
 		expectedErr     error
-		expectedPrCount int
+		expectedPrCount prCount
 	}{
 		{
 			desc: "TestSinglePageResponse",
@@ -422,7 +428,7 @@ func TestGetPullRequests(t *testing.T) {
 				},
 			}),
 			expectedErr:     nil,
-			expectedPrCount: 3, // 3 PRs per page, 1 pages
+			expectedPrCount: prCount{open: 3}, // 3 PRs per page, 1 page
 		},
 		{
 			desc: "TestMultiPageResponse",
@@ -467,7 +473,83 @@ func TestGetPullRequests(t *testing.T) {
 				},
 			}),
 			expectedErr:     nil,
-			expectedPrCount: 6, // 3 PRs per page, 2 pages
+			expectedPrCount: prCount{open: 6}, // 3 PRs per page, 2 pages
+		},
+		{
+			desc: "TestSinglePageResponseWithLookback",
+			server: MockServer(&responses{
+				prResponse: prResponse{
+					prs: []getPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasNextPage: false,
+							},
+							Nodes: []PullRequestNode{},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+				mergedPRResponse: mergedPRResponse{
+					prs: []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: false,
+							},
+							Nodes: []MergedPullRequestNode{
+								{MergedAt: now.AddDate(0, 0, -10)}, // before cutoff — oldest first in page
+								{MergedAt: now.AddDate(0, 0, -5)},  // within cutoff
+								{MergedAt: now.AddDate(0, 0, -1)},  // within cutoff
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			lookbackDays:    7,
+			expectedPrCount: prCount{merged: 2},
+		},
+		{
+			desc: "TestMultiPageResponseWithLookback",
+			server: MockServer(&responses{
+				prResponse: prResponse{
+					prs: []getPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasNextPage: false,
+							},
+							Nodes: []PullRequestNode{},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+				mergedPRResponse: mergedPRResponse{
+					prs: []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							// most recent page — both nodes within cutoff
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: true,
+							},
+							Nodes: []MergedPullRequestNode{
+								{MergedAt: now.AddDate(0, 0, -3)},
+								{MergedAt: now.AddDate(0, 0, -1)},
+							},
+						},
+						{
+							// older page — all nodes before cutoff, stops pagination
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: false,
+							},
+							Nodes: []MergedPullRequestNode{
+								{MergedAt: now.AddDate(0, 0, -12)},
+								{MergedAt: now.AddDate(0, 0, -9)},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			lookbackDays:    7,
+			expectedPrCount: prCount{merged: 2},
 		},
 		{
 			desc: "Test404Response",
@@ -477,8 +559,7 @@ func TestGetPullRequests(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr:     errors.New("returned error 404"),
-			expectedPrCount: 0,
+			expectedErr: errors.New("returned error 404"),
 		},
 	}
 
@@ -488,18 +569,19 @@ func TestGetPullRequests(t *testing.T) {
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
+			ghs.cfg.MergedPRLookbackDays = tc.lookbackDays
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			openPRs, _, err := ghs.getPullRequests(t.Context(), client, "repo name")
-
-			assert.Len(t, openPRs, tc.expectedPrCount)
+			openPRs, mergedPRs, err := ghs.getPullRequests(t.Context(), client, "repo name")
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
 				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
+
+			assert.Equal(t, prCount{open: len(openPRs), merged: len(mergedPRs)}, tc.expectedPrCount)
 		})
 	}
 }
