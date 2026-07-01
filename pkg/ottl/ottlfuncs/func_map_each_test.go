@@ -347,7 +347,7 @@ func Test_createMapEachFunction(t *testing.T) {
 	t.Run("creates function with valid args", func(t *testing.T) {
 		fn, err := createMapEachFunction[any](fCtx, &MapEachArguments[any]{
 			Source: source,
-			Mapper: *mapper,
+			Mapper: mapper,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, fn)

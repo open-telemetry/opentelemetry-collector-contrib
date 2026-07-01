@@ -18,7 +18,7 @@ import (
 
 type MapEachArguments[K any] struct {
 	Source ottl.Getter[K]
-	Mapper ottl.LambdaExpression[K]
+	Mapper *ottl.LambdaExpression[K]
 }
 
 func NewMapEachFactory[K any]() ottl.Factory[K] {
@@ -30,7 +30,7 @@ func createMapEachFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	if !ok {
 		return nil, errors.New("MapEachFactory args must be of type *MapEachArguments[K]")
 	}
-	return mapEach(args.Source, &args.Mapper), nil
+	return mapEach(args.Source, args.Mapper), nil
 }
 
 func mapEach[K any](source ottl.Getter[K], mapper *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
