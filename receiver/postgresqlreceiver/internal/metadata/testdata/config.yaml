@@ -46,6 +46,9 @@ all_set:
     postgresql.operations:
       enabled: true
       attributes: ["operation"]
+    postgresql.query.conflicts:
+      enabled: true
+      attributes: ["postgresql.conflict.type"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
@@ -145,6 +148,9 @@ reaggregate_set:
     postgresql.index.size:
       enabled: true
     postgresql.operations:
+      enabled: true
+      attributes: []
+    postgresql.query.conflicts:
       enabled: true
       attributes: []
     postgresql.replication.data_delay:
@@ -248,6 +254,9 @@ none_set:
     postgresql.operations:
       enabled: false
       attributes: ["operation"]
+    postgresql.query.conflicts:
+      enabled: false
+      attributes: ["postgresql.conflict.type"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
