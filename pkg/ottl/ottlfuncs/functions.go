@@ -90,6 +90,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseKeyValueFactory[K](),
 		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
+		NewReduceFactory[K](),
 		NewRemoveXMLFactory[K](),
 		NewSecondFactory[K](),
 		NewSecondsFactory[K](),

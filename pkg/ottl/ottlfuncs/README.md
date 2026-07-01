@@ -554,6 +554,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
+- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -2045,6 +2046,46 @@ Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
 - `ProfileID("a389023abaa839283293ed323892389d")`
+
+### Reduce
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Reduce(source, seed, accumulator)`
+
+The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`seed` is the initial accumulator value.
+
+`accumulator` is a lambda expression with exactly three parameters. 
+The first parameter is the current accumulator value. 
+The second parameter is the element index when reducing a slice (`int64`), or the element 
+key when reducing a map (`string`). The third parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `seed` unchanged.
+
+For maps, element processing order follows map iteration and is not guaranteed to be stable. 
+This matters when `accumulator` is not commutative.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Sum a slice of numbers:
+
+- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
+
+Build a semicolon-separated key=value string:
+
+- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
+
+Store the result:
+
+- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 
