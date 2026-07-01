@@ -266,7 +266,17 @@ func sendTraces(t *testing.T, endpoint string) {
 	time.Sleep(1 * time.Second)
 }
 
+// getGzipReader returns a reader over the gzip-decompressed reqBytes. It doubles
+// as the compression guard for the trace, APM stats, and native-client series
+// payloads: the Datadog exporter MUST gzip every signal it sends (see the
+// compression contract in the exporter's compression_test.go), so a payload that
+// arrives uncompressed fails here. gzip streams begin with the magic bytes
+// 0x1f 0x8b; asserting them explicitly makes a regression read as "payload not
+// gzip-compressed" rather than an opaque decode error.
 func getGzipReader(t *testing.T, reqBytes []byte) io.Reader {
+	t.Helper()
+	require.GreaterOrEqual(t, len(reqBytes), 2, "payload too short to be gzip-compressed")
+	assert.Equal(t, []byte{0x1f, 0x8b}, reqBytes[:2], "payload must be gzip-compressed")
 	buf := bytes.NewBuffer(reqBytes)
 	reader, err := gzip.NewReader(buf)
 	require.NoError(t, err)
