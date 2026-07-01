@@ -939,12 +939,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
-	}); err != nil {
-		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
+	}); tmplErr != nil {
+		logger.Error("failed to execute template", zap.Error(tmplErr))
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -978,6 +978,12 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			querySampleColumnQueryID,
 			querySampleColumnState,
 			querySampleColumnApplicationName,
+			querySampleColumnBlockingPIDs,
+			querySampleColumnBlockingStartTime,
+			querySampleColumnBlockingLockMode,
+			querySampleColumnBlockingLockType,
+			querySampleColumnBlockingLockRelation,
+			querySampleColumnBlockingTxnStartTime,
 		}
 
 		for _, col := range querySampleSimpleColumns {
@@ -1034,6 +1040,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			}
 		}
 
+		blockingWaitDuration := int64(0)
+		if row[querySampleColumnBlockingWaitDuration] != "" {
+			blockingWaitDuration, err = strconv.ParseInt(row[querySampleColumnBlockingWaitDuration], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert blocking_wait_duration to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
@@ -1047,6 +1062,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
 		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
+		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
