@@ -2187,33 +2187,13 @@ func (ms *OracledbStorageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// OracledbSystemCPULoadMetricConfig provides config for the oracledb.system.cpu.load metric.
-type OracledbSystemCPULoadMetricConfig struct {
+// OracledbSystemCPUCountMetricConfig provides config for the oracledb.system.cpu.count metric.
+type OracledbSystemCPUCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbSystemCPULoadMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// OracledbSystemCPUPhysicalCountMetricConfig provides config for the oracledb.system.cpu.physical.count metric.
-type OracledbSystemCPUPhysicalCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbSystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSystemCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2234,6 +2214,26 @@ type OracledbSystemMemoryLimitMetricConfig struct {
 }
 
 func (ms *OracledbSystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSystemProcessCountMetricConfig provides config for the oracledb.system.process.count metric.
+type OracledbSystemProcessCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSystemProcessCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2507,9 +2507,9 @@ type MetricsConfig struct {
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
-	OracledbSystemCPULoad                         OracledbSystemCPULoadMetricConfig                         `mapstructure:"oracledb.system.cpu.load"`
-	OracledbSystemCPUPhysicalCount                OracledbSystemCPUPhysicalCountMetricConfig                `mapstructure:"oracledb.system.cpu.physical.count"`
+	OracledbSystemCPUCount                        OracledbSystemCPUCountMetricConfig                        `mapstructure:"oracledb.system.cpu.count"`
 	OracledbSystemMemoryLimit                     OracledbSystemMemoryLimitMetricConfig                     `mapstructure:"oracledb.system.memory.limit"`
+	OracledbSystemProcessCount                    OracledbSystemProcessCountMetricConfig                    `mapstructure:"oracledb.system.process.count"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
@@ -2804,13 +2804,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbSystemCPULoad: OracledbSystemCPULoadMetricConfig{
-			Enabled: false,
-		},
-		OracledbSystemCPUPhysicalCount: OracledbSystemCPUPhysicalCountMetricConfig{
+		OracledbSystemCPUCount: OracledbSystemCPUCountMetricConfig{
 			Enabled: false,
 		},
 		OracledbSystemMemoryLimit: OracledbSystemMemoryLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
 			Enabled: false,
 		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{

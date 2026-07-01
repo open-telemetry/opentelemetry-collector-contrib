@@ -857,17 +857,9 @@ Fraction of allocated database storage that is used.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
-### oracledb.system.cpu.load
+### oracledb.system.cpu.count
 
-Current OS load average as reported by the operating system.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
-### oracledb.system.cpu.physical.count
-
-Number of physical CPUs available to the Oracle server.
+Number of CPUs or processors available to the Oracle server, as reported by the operating system.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -880,6 +872,14 @@ Total physical memory available to the Oracle server.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+### oracledb.system.process.count
+
+Current number of processes that are either running or in the ready state, waiting to be selected by the operating-system scheduler to run.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {processes} | Gauge | Double | Development |
 
 ## Default Events
 

@@ -408,7 +408,7 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for OracledbSystemCPUPhysicalCount, value was bad`,
+			errWanted: `failed to parse int64 for OracledbSystemCPUCount, value was bad`,
 		},
 		{
 			name: "bad LOAD value",
@@ -420,7 +420,7 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse float64 for OracledbSystemCPULoad, value was bad`,
+			errWanted: `failed to parse float64 for OracledbSystemProcessCount, value was bad`,
 		},
 		{
 			name: "bad PHYSICAL_MEMORY_BYTES value",
@@ -438,9 +438,9 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
-			cfg.Metrics.OracledbSystemCPUPhysicalCount.Enabled = true
-			cfg.Metrics.OracledbSystemCPULoad.Enabled = true
+			cfg.Metrics.OracledbSystemCPUCount.Enabled = true
 			cfg.Metrics.OracledbSystemMemoryLimit.Enabled = true
+			cfg.Metrics.OracledbSystemProcessCount.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -471,12 +471,12 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 					}
 					dp := metric.Gauge().DataPoints().At(0)
 					switch metric.Name() {
-					case "oracledb.system.cpu.physical.count":
+					case "oracledb.system.cpu.count":
 						assert.Equal(t, int64(8), dp.IntValue())
-					case "oracledb.system.cpu.load":
-						assert.InDelta(t, 1.5, dp.DoubleValue(), floatDelta)
 					case "oracledb.system.memory.limit":
 						assert.Equal(t, int64(17179869184), dp.IntValue())
+					case "oracledb.system.process.count":
+						assert.InDelta(t, 1.5, dp.DoubleValue(), floatDelta)
 					}
 				}
 			}

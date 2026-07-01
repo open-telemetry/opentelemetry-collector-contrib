@@ -184,11 +184,11 @@ all_set:
       enabled: true
     oracledb.storage.utilization:
       enabled: true
-    oracledb.system.cpu.load:
-      enabled: true
-    oracledb.system.cpu.physical.count:
+    oracledb.system.cpu.count:
       enabled: true
     oracledb.system.memory.limit:
+      enabled: true
+    oracledb.system.process.count:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -417,11 +417,11 @@ reaggregate_set:
       enabled: true
     oracledb.storage.utilization:
       enabled: true
-    oracledb.system.cpu.load:
-      enabled: true
-    oracledb.system.cpu.physical.count:
+    oracledb.system.cpu.count:
       enabled: true
     oracledb.system.memory.limit:
+      enabled: true
+    oracledb.system.process.count:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -650,11 +650,11 @@ none_set:
       enabled: false
     oracledb.storage.utilization:
       enabled: false
-    oracledb.system.cpu.load:
-      enabled: false
-    oracledb.system.cpu.physical.count:
+    oracledb.system.cpu.count:
       enabled: false
     oracledb.system.memory.limit:
+      enabled: false
+    oracledb.system.process.count:
       enabled: false
     oracledb.tablespace_size.limit:
       enabled: false

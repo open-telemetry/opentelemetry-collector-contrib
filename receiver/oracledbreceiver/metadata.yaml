@@ -1202,15 +1202,8 @@ metrics:
     gauge:
       value_type: double
     unit: "1"
-  oracledb.system.cpu.load:
-    description: Current OS load average as reported by the operating system.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: double
-    unit: "1"
-  oracledb.system.cpu.physical.count:
-    description: Number of physical CPUs available to the Oracle server.
+  oracledb.system.cpu.count:
+    description: Number of CPUs or processors available to the Oracle server, as reported by the operating system.
     enabled: false
     stability: development
     gauge:
@@ -1223,6 +1216,13 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  oracledb.system.process.count:
+    description: Current number of processes that are either running or in the ready state, waiting to be selected by the operating-system scheduler to run.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{processes}"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

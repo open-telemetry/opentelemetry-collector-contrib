@@ -926,9 +926,9 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	s.collectDataDictHitRatio(ctx, &scrapeErrors)
-	if s.metricsBuilderConfig.Metrics.OracledbSystemCPUPhysicalCount.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled {
+	if s.metricsBuilderConfig.Metrics.OracledbSystemCPUCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSystemProcessCount.Enabled {
 		s.collectOSStat(ctx, &scrapeErrors)
 	}
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
@@ -984,20 +984,20 @@ func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error
 		statName := row[colOSStatName]
 		statValue := row[colValue]
 		switch statName {
-		case osStatNameNumCPUs:
-			val, err := strconv.ParseInt(statValue, 10, 64)
-			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemCPUPhysicalCount, value was %s: %w", statValue, err))
-				continue
-			}
-			s.mb.RecordOracledbSystemCPUPhysicalCountDataPoint(now, val)
 		case osStatNameLoad:
 			val, err := strconv.ParseFloat(statValue, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemCPULoad, value was %s: %w", statValue, err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemProcessCount, value was %s: %w", statValue, err))
 				continue
 			}
-			s.mb.RecordOracledbSystemCPULoadDataPoint(now, val)
+			s.mb.RecordOracledbSystemProcessCountDataPoint(now, val)
+		case osStatNameNumCPUs:
+			val, err := strconv.ParseInt(statValue, 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemCPUCount, value was %s: %w", statValue, err))
+				continue
+			}
+			s.mb.RecordOracledbSystemCPUCountDataPoint(now, val)
 		case osStatNamePhysicalMemory:
 			val, err := strconv.ParseInt(statValue, 10, 64)
 			if err != nil {
