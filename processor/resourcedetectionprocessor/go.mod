@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.26
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.29
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.309.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.310.0
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
