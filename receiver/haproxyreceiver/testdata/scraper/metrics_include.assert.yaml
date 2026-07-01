@@ -1,0 +1,448 @@
+version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        haproxy.proxy_name: myfrontend
+        haproxy.service_name: FRONTEND
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.rate
+              type: gauge
+              unit: '{connections}'
+            - name: haproxy.requests.denied
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.rate
+              type: gauge
+              unit: '{requests}'
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'
+    - attributes/include:
+        haproxy.proxy_name: stats
+        haproxy.service_name: FRONTEND
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.rate
+              type: gauge
+              unit: '{connections}'
+            - name: haproxy.requests.denied
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.rate
+              type: gauge
+              unit: '{requests}'
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'
+    - attributes/include:
+        haproxy.proxy_name: webservers
+        haproxy.service_name: BACKEND
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.retries
+              type: sum
+              unit: '{retries}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.denied
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.queued
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.redispatched
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.responses.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.server_selected.total
+              type: sum
+              unit: '{selections}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.average
+              type: gauge
+              unit: ms
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'
+    - attributes/include:
+        haproxy.proxy_name: webservers
+        haproxy.service_name: s1
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.retries
+              type: sum
+              unit: '{retries}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.queued
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.redispatched
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.responses.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.server_selected.total
+              type: sum
+              unit: '{selections}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.average
+              type: gauge
+              unit: ms
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'
+    - attributes/include:
+        haproxy.proxy_name: webservers
+        haproxy.service_name: s2
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.retries
+              type: sum
+              unit: '{retries}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.queued
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.redispatched
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.responses.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.server_selected.total
+              type: sum
+              unit: '{selections}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.average
+              type: gauge
+              unit: ms
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'
+    - attributes/include:
+        haproxy.proxy_name: webservers
+        haproxy.service_name: s3
+      scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+          version: latest
+          metrics:
+            - name: haproxy.bytes.input
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.bytes.output
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.connections.retries
+              type: sum
+              unit: '{retries}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.queued
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.redispatched
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.requests.total
+              type: sum
+              unit: '{requests}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    status_code: 1xx
+                - attributes:
+                    status_code: 2xx
+                - attributes:
+                    status_code: 3xx
+                - attributes:
+                    status_code: 4xx
+                - attributes:
+                    status_code: 5xx
+                - attributes:
+                    status_code: other
+            - name: haproxy.responses.denied
+              type: sum
+              unit: '{responses}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.responses.errors
+              type: sum
+              unit: '{errors}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.server_selected.total
+              type: sum
+              unit: '{selections}'
+              temporality: cumulative
+              monotonic: true
+            - name: haproxy.sessions.average
+              type: gauge
+              unit: ms
+            - name: haproxy.sessions.count
+              type: gauge
+              unit: '{sessions}'
+            - name: haproxy.sessions.rate
+              type: gauge
+              unit: '{sessions}'

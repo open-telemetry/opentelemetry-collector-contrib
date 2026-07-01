@@ -96,6 +96,26 @@ assertion, so omitting a key is the way to assert that it must not appear.
 `/exists: true` is the only supported value; any other value is a schema
 error.
 
+### Attribute include matcher
+
+Use `attributes/include` instead of `attributes` when you want to assert a
+subset of the attribute map. Every expected key must be present and match, but
+additional actual keys are allowed:
+
+```yaml
+attributes/include:
+  service.name: app
+  service.instance.id/exists: true
+```
+
+This is useful when the environment or component configuration adds extra
+attributes that the test does not care about. `/exists` can be combined with
+`/include`.
+
+`attributes/include` may be applied to both resource attributes and datapoint
+attributes. Specifying both `attributes` and `attributes/include` on the same
+element is an error.
+
 ### Attribute regex matcher
 
 Attribute keys can use the `/regex` suffix when the attribute value is a
@@ -139,7 +159,8 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
-`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
-(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
-histogram fields) are tracked as follow-ups under that issue.
+extensions beyond attribute `/exists`, `/regex`, and `attributes/include`
+(`/exclude`, `/all`, `/count`, `/approx`, `/gt|gte|lt|lte`)
+and opt-in fields (`IncludeValues()`, `IncludeTimestamps()`,
+`IncludeExemplars()`, type-specific histogram fields) are tracked as
+follow-ups under that issue.

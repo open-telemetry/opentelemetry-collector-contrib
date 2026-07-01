@@ -34,7 +34,7 @@ func compareDocuments(expected, actual *document) error {
 	matched := make([]bool, len(actual.Resources))
 
 	for _, er := range expected.Resources {
-		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
+		idx := findMatchingAttributes(er.Attributes, er.AttributeMode, matched, len(actual.Resources), func(i int) map[string]any {
 			return actual.Resources[i].Attributes
 		})
 		if idx < 0 {
@@ -143,7 +143,7 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	var valErrs []error
 
 	for _, edp := range expected {
-		idx := findMatchingAttributes(edp.Attributes, matched, len(actual), func(i int) map[string]any {
+		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(i int) map[string]any {
 			return actual[i].Attributes
 		})
 		if idx < 0 {
@@ -287,19 +287,19 @@ func toInt64(v any) (int64, bool) {
 
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
-func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
+func findMatchingAttributes(expected map[string]any, mode attributeMode, matched []bool, n int, attrsAt func(int) map[string]any) int {
 	for i := range n {
 		if matched[i] {
 			continue
 		}
-		if compareAttributes(expected, attrsAt(i)) == nil {
+		if compareAttributes(expected, attrsAt(i), mode) == nil {
 			return i
 		}
 	}
 	return -1
 }
 
-func compareAttributes(expected, actual map[string]any) error {
+func compareAttributes(expected, actual map[string]any, mode attributeMode) error {
 	var errs []error
 	seen := make(map[string]struct{}, len(expected))
 	for rawKey, expectedValue := range expected {
@@ -336,9 +336,12 @@ func compareAttributes(expected, actual map[string]any) error {
 			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
 		}
 	}
-	for key := range actual {
-		if _, ok := seen[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+	// In include mode, extra actual attributes are allowed.
+	if mode != attributeModeInclude {
+		for key := range actual {
+			if _, ok := seen[key]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+			}
 		}
 	}
 	return errors.Join(errs...)

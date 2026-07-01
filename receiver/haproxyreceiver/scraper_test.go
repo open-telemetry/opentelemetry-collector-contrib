@@ -55,6 +55,44 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, m))
 }
 
+// Test_scraper_readStatsAttributeInclude demonstrates the attributes/include
+// matcher on resource attributes. The assertion file uses attributes/include
+// to assert only proxy_name and service_name while allowing the volatile
+// haproxy.addr key as an extra attribute.
+func Test_scraper_readStatsAttributeInclude(t *testing.T) {
+	l, socketAddr := listenUnix(t)
+	go func() {
+		c, err2 := l.Accept()
+		assert.NoError(t, err2)
+
+		buf := make([]byte, 512)
+		nr, err2 := c.Read(buf)
+		assert.NoError(t, err2)
+
+		data := string(buf[0:nr])
+		switch data {
+		case "show stat\n":
+			stats, err2 := os.ReadFile(filepath.Join("testdata", "stats.txt"))
+			assert.NoError(t, err2)
+			_, err2 = c.Write(stats)
+			assert.NoError(t, err2)
+			assert.NoError(t, c.Close())
+		default:
+			assert.Fail(t, fmt.Sprintf("invalid message: %v", data))
+		}
+	}()
+
+	haProxyCfg := newDefaultConfig().(*Config)
+	haProxyCfg.Endpoint = socketAddr
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
+	m, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, m)
+
+	expectedFile := filepath.Join("testdata", "scraper", "metrics_include.assert.yaml")
+	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, m))
+}
+
 func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 	l, socketAddr := listenUnix(t)
 	go func() {
