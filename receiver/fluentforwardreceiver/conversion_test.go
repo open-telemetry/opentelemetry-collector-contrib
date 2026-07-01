@@ -280,4 +280,3 @@ func TestDecodeMsgLimits(t *testing.T) {
 		require.ErrorContains(t, err, "exceeds maximum")
 	})
 }
-
