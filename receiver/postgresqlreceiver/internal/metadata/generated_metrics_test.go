@@ -86,36 +86,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBackendsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 1, AttributeBgBufferSourceBackend)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 3, AttributeBgBufferSourceBackendFsync)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 1, AttributeBgCheckpointTypeRequested)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 3, AttributeBgCheckpointTypeScheduled)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterDurationDataPoint(ts, 1, AttributeBgDurationTypeSync)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterDurationDataPoint(ts, 3, AttributeBgDurationTypeWrite)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(ts, 1)
@@ -125,22 +119,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordPostgresqlBlksReadDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBlocksReadDataPoint(ts, 3, AttributeSourceHeapHit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlCommitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlConnectionMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
@@ -150,7 +140,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDbSizeDataPoint(ts, 1)
@@ -163,33 +152,27 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlFunctionCallsDataPoint(ts, 3, "function-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlIndexScansDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlIndexSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlOperationsDataPoint(ts, 3, AttributeOperationUpd)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 1, "replication_client-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 3, "replication_client-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlRollbacksDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlRowsDataPoint(ts, 1, AttributeStateDead)
@@ -199,15 +182,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordPostgresqlSequentialScansDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1)
@@ -232,7 +212,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupUpdatedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalAgeDataPoint(ts, 1)
@@ -242,7 +221,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlWalDelayDataPoint(ts, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
@@ -256,6 +234,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

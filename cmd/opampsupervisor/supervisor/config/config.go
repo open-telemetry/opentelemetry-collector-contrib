@@ -359,8 +359,9 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -376,8 +377,6 @@ type Telemetry struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
-
-type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
@@ -436,6 +435,15 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+	}
 	return Supervisor{
 		Capabilities: Capabilities{
 			AcceptsRemoteConfig:            false,
@@ -470,11 +478,7 @@ func DefaultSupervisor() Supervisor {
 			},
 		},
 		HealthCheck: HealthCheck{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
+			ServerConfig: serverConfig,
 		},
 	}
 }
