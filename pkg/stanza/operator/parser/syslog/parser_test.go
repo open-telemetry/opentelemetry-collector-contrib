@@ -4,6 +4,7 @@
 package syslog_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -136,6 +137,102 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 		require.Equal(t, body, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
+// TestSyslogParseRFC3164_OctetCounting exercises RFC6587 octet counting framing
+// with an RFC3164 message format. The octetcounting parser reads exactly the
+// number of octets declared by the frame prefix, so the declared length must
+// agree with the payload and embedded newlines are unambiguous.
+func TestSyslogParseRFC3164_OctetCounting(t *testing.T) {
+	// frame prepends the RFC6587 octet count to an RFC3164 payload.
+	frame := func(payload string) string {
+		return fmt.Sprintf("%d %s", len(payload), payload)
+	}
+
+	tests := []struct {
+		name      string
+		body      string
+		maxOctets int
+		// expectErr, when set, is a substring required in the returned error.
+		expectErr string
+		// expectMsg is the expected parsed "message" attribute (checked only when expectErr is empty).
+		expectMsg string
+	}{
+		{
+			name:      "valid frame",
+			body:      frame("<34>Oct 11 22:14:15 mymachine su: su root"),
+			expectMsg: "su root",
+		},
+		{
+			name: "embedded newline preserved",
+			// The exact octet count makes the embedded newline part of the message,
+			// not a frame boundary.
+			body:      frame("<34>Oct 11 22:14:15 host app: line1\nline2"),
+			expectMsg: "line1\nline2",
+		},
+		{
+			name: "trailing newline stripped",
+			// A single trailing newline is a framing convention and is dropped,
+			// even though it is included in the declared octet count.
+			body:      frame("<34>Oct 11 22:14:15 host app: hello\n"),
+			expectMsg: "hello",
+		},
+		{
+			name: "message exceeds max_octets",
+			// frame is rejected (matching the RFC5424 octet counting path).
+			body:      frame("<34>Oct 11 22:14:15 mymachine su: su root"),
+			maxOctets: 10,
+			expectErr: "exceeds maximum length",
+		},
+		{
+			name: "declared length shorter than payload",
+			// A count smaller than the payload leaves trailing bytes that cannot
+			// begin a new frame.
+			body:      "5 <34>Oct 11 22:14:15 mymachine su: su root",
+			expectErr: "expecting a MSGLEN",
+		},
+		{
+			name: "declared length longer than payload",
+			// Underflow: the frame promises more octets than are present.
+			body:      "200 <34>Oct 11 22:14:15 mymachine su: su root",
+			expectErr: "expecting a SYSLOGMSG containing 200 octets",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.RFC3164
+			cfg.EnableOctetCounting = true
+			if tt.maxOctets > 0 {
+				cfg.MaxOctets = tt.maxOctets
+			}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			fake := testutil.NewFakeOutput(t)
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+			newEntry := entry.New()
+			newEntry.Body = tt.body
+			err = op.Process(t.Context(), newEntry)
+
+			if tt.expectErr != "" {
+				require.ErrorContains(t, err, tt.expectErr)
+				return
+			}
+			require.NoError(t, err)
+
+			select {
+			case e := <-fake.Received:
+				require.Equal(t, tt.expectMsg, e.Attributes["message"])
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for entry to be processed")
+			}
+		})
 	}
 }
 

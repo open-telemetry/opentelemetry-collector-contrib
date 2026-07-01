@@ -137,3 +137,26 @@ func (l *LambdaActivation[K]) Close() {
 	clear(l.argValues)
 	l.expr.activationPool.Put(l)
 }
+
+// NewTestingLambdaExpression creates a LambdaExpression with a value body for use in tests.
+// eval is called with resolveBinding to resolve local identifier values from the active scope.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func NewTestingLambdaExpression[K any](
+	params []string,
+	eval func(ctx context.Context, tCtx K, resolveBinding func(string) any) (any, error),
+) *LambdaExpression[K] {
+	getter := exprGetter[K]{
+		expr: Expr[K]{exprFunc: func(ctx context.Context, tCtx K) (any, error) {
+			resolveBinding := func(name string) any {
+				v, err := resolveLocalIdentifierBinding(ctx, name)
+				if err != nil {
+					return nil
+				}
+				return v
+			}
+			return eval(ctx, tCtx, resolveBinding)
+		}},
+	}
+	return newLambdaExpression(makeLocalIdentifiers(params...), &getter, nil)
+}

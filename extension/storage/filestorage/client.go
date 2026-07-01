@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
@@ -38,25 +39,29 @@ type fileStorageClient struct {
 	logger          *zap.Logger
 	compactionMutex sync.RWMutex
 	db              *bbolt.DB
+	dbOptions       bbolt.Options
 	compactionCfg   *CompactionConfig
-	openTimeout     time.Duration
 	stopCh          chan struct{}
 	wg              sync.WaitGroup
 	closed          bool
 }
 
-func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
-	return &bbolt.Options{
-		Timeout:        timeout,
-		NoSync:         noSync,
+func bboltOptions(cfg *Config) bbolt.Options {
+	options := bbolt.Options{
+		Timeout:        cfg.Timeout,
+		NoSync:         !cfg.FSync,
 		NoFreelistSync: true,
 		FreelistType:   bbolt.FreelistMapType,
 	}
+	if cfg.MaxSize > 0 {
+		options.MaxSize = int(cfg.MaxSize)
+	}
+	return options
 }
 
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
-	options := bboltOptions(timeout, noSync)
-	db, err := bbolt.Open(filePath, 0o600, options)
+func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
+	options := bboltOptions(cfg)
+	db, err := bbolt.Open(filePath, 0o600, &options)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +78,12 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 	client := &fileStorageClient{
 		logger:        logger,
 		db:            db,
-		compactionCfg: compactionCfg,
-		openTimeout:   timeout,
+		dbOptions:     options,
+		compactionCfg: cfg.Compaction,
 		stopCh:        make(chan struct{}),
 		wg:            sync.WaitGroup{},
 	}
-	if compactionCfg.OnRebound {
+	if cfg.Compaction.OnRebound {
 		client.startCompactionLoop()
 	}
 
@@ -119,7 +124,7 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
-	return c.db.Update(batch)
+	return normalizeStorageError(c.db.Update(batch))
 }
 
 // Walk implements storage.Walker.
@@ -135,7 +140,7 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 		return errors.New("storage is closed")
 	}
 
-	return c.db.Update(func(tx *bbolt.Tx) error {
+	return normalizeStorageError(c.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
@@ -157,8 +162,9 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 			}
 			opBatch = append(opBatch, ops...)
 		}
+
 		return updateBucket(bucket, opBatch...)
-	})
+	}))
 }
 
 // updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
@@ -212,7 +218,6 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Duration, maxTransactionSize int64) error {
 	var err error
 	var file *os.File
-	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
 	file, err = os.CreateTemp(compactionDirectory, TempDbPrefix)
@@ -235,7 +240,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}()
 
 	// use temporary file as compaction target
-	options := bboltOptions(timeout, c.db.NoSync)
+	options := c.dbOptions
+	options.Timeout = timeout
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
@@ -249,7 +255,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		zap.String(tempDirectoryKey, file.Name()))
 
 	// cannot reuse newClient as db shouldn't contain any bucket
-	compactedDb, err = bbolt.Open(file.Name(), 0o600, options)
+	compactedDb, err := bbolt.Open(file.Name(), 0o600, &options)
 	if err != nil {
 		return err
 	}
@@ -258,6 +264,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
 	if err != nil {
+		_ = compactedDb.Close()
 		return err
 	}
 
@@ -270,7 +277,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	// replace current db file with compacted db file
 	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed
 	moveErr := moveFileWithFallback(compactedDbPath, dbPath)
-	newDb, openErr := bbolt.Open(dbPath, 0o600, options)
+	newDb, openErr := bbolt.Open(dbPath, 0o600, &options)
 	if openErr != nil {
 		// Leave c.db pointing at the old (closed) DB so that callers get
 		// errors from the closed DB instead of panicking on a nil pointer.
@@ -314,7 +321,7 @@ func (c *fileStorageClient) startCompactionLoop() {
 			select {
 			case <-compactionTicker.C:
 				if c.shouldCompact() {
-					err := c.Compact(c.compactionCfg.Directory, c.openTimeout, c.compactionCfg.MaxTransactionSize)
+					err := c.Compact(c.compactionCfg.Directory, c.dbOptions.Timeout, c.compactionCfg.MaxTransactionSize)
 					if err != nil {
 						c.logger.Error("compaction failure",
 							zap.String(directoryKey, c.compactionCfg.Directory),
@@ -327,6 +334,13 @@ func (c *fileStorageClient) startCompactionLoop() {
 			}
 		}
 	})
+}
+
+func normalizeStorageError(err error) error {
+	if errors.Is(err, berrors.ErrMaxSizeReached) {
+		return storage.ErrStorageFull
+	}
+	return err
 }
 
 // shouldCompact checks whether the conditions for online compaction are met
