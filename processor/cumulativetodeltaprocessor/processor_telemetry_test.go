@@ -60,22 +60,20 @@ func TestProcessorTelemetry(t *testing.T) {
 		{
 			// Three histogram points: first is the baseline (initial drop),
 			// second is a valid conversion, third's count drops below the
-			// previous one which counts as a reset. Note that for histograms
-			// the reset point is forwarded with the full cumulative value as
-			// if it were a delta (the conversion counter is incremented and
-			// no drop is recorded). This is incorrect behavior — see #48278
-			name: "histogram: reset does not drop",
+			// previous one which counts as a reset.
+			name: "histogram: reset drops",
 			inputs: []pmetric.Metrics{
 				newHistogramMetrics("metric_1", now, 0, 10, 100, []uint64{10}),
 				newHistogramMetrics("metric_1", now, 1, 20, 200, []uint64{20}),
 				newHistogramMetrics("metric_1", now, 2, 5, 50, []uint64{5}),
 			},
 			wantConv: []metricdata.DataPoint[int64]{
-				{Attributes: histAttrs, Value: 2},
+				{Attributes: histAttrs, Value: 1},
 			},
 			wantStrm: []metricdata.DataPoint[int64]{{Value: 1}},
 			wantDrop: []metricdata.DataPoint[int64]{
 				{Attributes: dropAttrs("histogram", "initial"), Value: 1},
+				{Attributes: dropAttrs("histogram", "reset"), Value: 1},
 			},
 		},
 		{
