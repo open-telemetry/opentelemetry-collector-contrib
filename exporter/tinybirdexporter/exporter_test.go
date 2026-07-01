@@ -25,6 +25,12 @@ import (
 )
 
 func TestNewExporter(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://localhost:8080"
 	tests := []struct {
 		name   string
 		config *Config
@@ -33,10 +39,8 @@ func TestNewExporter(t *testing.T) {
 		{
 			name: "build exporter",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:8080",
-				},
-				Token: "test-token",
+				ClientConfig: clientConfig,
+				Token:        "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
 					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
@@ -74,6 +78,16 @@ func TestExportTraces(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig1.MaxIdleConns = 0
+	clientConfig1.IdleConnTimeout = 0
+	clientConfig1.ForceAttemptHTTP2 = false
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig2.MaxIdleConns = 0
+	clientConfig2.IdleConnTimeout = 0
+	clientConfig2.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -89,7 +103,7 @@ func TestExportTraces(t *testing.T) {
 					return traces
 				}(),
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Traces:       SignalConfig{Datasource: "traces_test"},
 					Wait:         false,
@@ -111,7 +125,7 @@ func TestExportTraces(t *testing.T) {
 			args: args{
 				opts: []option{},
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Traces:       SignalConfig{Datasource: "traces_test"},
 					Wait:         false,
@@ -224,6 +238,31 @@ func TestExportMetrics(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig1.MaxIdleConns = 0
+	clientConfig1.IdleConnTimeout = 0
+	clientConfig1.ForceAttemptHTTP2 = false
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig2.MaxIdleConns = 0
+	clientConfig2.IdleConnTimeout = 0
+	clientConfig2.ForceAttemptHTTP2 = false
+	clientConfig3 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig3.MaxIdleConns = 0
+	clientConfig3.IdleConnTimeout = 0
+	clientConfig3.ForceAttemptHTTP2 = false
+	clientConfig4 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig4.MaxIdleConns = 0
+	clientConfig4.IdleConnTimeout = 0
+	clientConfig4.ForceAttemptHTTP2 = false
+	clientConfig5 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig5.MaxIdleConns = 0
+	clientConfig5.IdleConnTimeout = 0
+	clientConfig5.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -233,7 +272,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export without metrics",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -301,7 +340,7 @@ func TestExportMetrics(t *testing.T) {
 					return metrics
 				}(),
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -325,7 +364,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with sum metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig3,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -381,7 +420,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with histogram metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig4,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsHistogram: SignalConfig{Datasource: "metrics_histogram"},
@@ -440,7 +479,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with exponential histogram metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig5,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
@@ -550,6 +589,21 @@ func TestExportLogs(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig1.MaxIdleConns = 0
+	clientConfig1.IdleConnTimeout = 0
+	clientConfig1.ForceAttemptHTTP2 = false
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig2.MaxIdleConns = 0
+	clientConfig2.IdleConnTimeout = 0
+	clientConfig2.ForceAttemptHTTP2 = false
+	clientConfig3 := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig3.MaxIdleConns = 0
+	clientConfig3.IdleConnTimeout = 0
+	clientConfig3.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -559,7 +613,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export without logs",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -587,7 +641,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export with full log",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -637,7 +691,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export with multiple requests",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig3,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -783,11 +837,15 @@ func TestExportErrorHandling(t *testing.T) {
 			}))
 			defer server.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.Endpoint = server.URL
 			config := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: server.URL,
-				},
-				Token: "test-token",
+				ClientConfig: clientConfig,
+				Token:        "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
 					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
@@ -903,12 +961,16 @@ func TestExportBuffers(t *testing.T) {
 			defer server.Close()
 
 			// Create exporter with test server
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.Endpoint = server.URL
 			config := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: server.URL,
-				},
-				Token: "test-token",
-				Wait:  false,
+				ClientConfig: clientConfig,
+				Token:        "test-token",
+				Wait:         false,
 			}
 			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))

@@ -102,6 +102,7 @@ components:
         - zipkin_encoding
     processor:
         - attributes
+        - cardinality_guardian
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
@@ -137,11 +138,12 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
         - apache_spark
+        - aws_cloudwatch
         - aws_lambda
-        - awscloudwatch
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
@@ -165,7 +167,7 @@ components:
         - faro
         - file_log
         - file_stats
-        - flinkmetrics
+        - flink_metrics
         - fluent_forward
         - github
         - gitlab
@@ -220,8 +222,8 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
         - sqlquery
         - sqlserver
         - ssh_check

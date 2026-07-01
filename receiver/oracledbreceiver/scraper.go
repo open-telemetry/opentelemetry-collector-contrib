@@ -31,6 +31,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
@@ -81,6 +82,25 @@ const (
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
 
+	// Buffer cache and DBWR v$sysstat names
+	dbBlockChanges               = "db block changes"
+	dbBlockGetsFromCache         = "db block gets from cache"
+	dbwrCheckpointBuffersWritten = "DBWR checkpoint buffers written"
+	dbwrCheckpoints              = "DBWR checkpoints"
+	dirtyBuffersInspected        = "dirty buffers inspected"
+	freeBufferInspected          = "free buffer inspected"
+	freeBufferRequested          = "free buffer requested"
+
+	// Redo log v$sysstat names
+	redoBlocksWritten      = "redo blocks written"
+	redoBufferAllocRetries = "redo buffer allocation retries"
+	redoLogSpaceRequests   = "redo log space requests"
+	redoLogSpaceWaitTime   = "redo log space wait time"
+	redoSize               = "redo size"
+	redoSynchTime          = "redo synch time"
+	redoWriteTime          = "redo write time"
+	redoWrites             = "redo writes"
+
 	// I/O performance v$sysstat names
 	physicalReadBytesStat            = "physical read bytes"
 	physicalWriteBytesStat           = "physical write bytes"
@@ -115,6 +135,8 @@ const (
 	childAddressAttr = "CHILD_ADDRESS"
 	childNumberAttr  = "CHILD_NUMBER"
 	sqlTextAttr      = "SQL_FULLTEXT"
+	serviceAttr      = "SERVICE"
+	dbNamespaceAttr  = "DB_NAMESPACE"
 	dbSystemNameVal  = "oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
@@ -142,6 +164,7 @@ const (
 	commandTypeAttr = "COMMAND_TYPE"
 
 	// Plan metadata columns
+	firstLoadTimeAttr = "FIRST_LOAD_TIME"
 	lastLoadTimeAttr  = "LAST_LOAD_TIME"
 	planHashValueAttr = "PLAN_HASH_VALUE"
 )
@@ -307,7 +330,19 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoCacheWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoBlocks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRedoRetries.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -513,6 +548,77 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
+			// Buffer cache and DBWR v$sysstat statistics
+			case dbBlockChanges:
+				if err := s.mb.RecordOracledbBufferCacheBlockChangesDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbBlockGetsFromCache:
+				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpointBuffersWritten:
+				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpoints:
+				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dirtyBuffersInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateDirty); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferRequested:
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Redo log v$sysstat statistics
+			case redoBlocksWritten:
+				if err := s.mb.RecordOracledbRedoBlocksDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoBufferAllocRetries:
+				if err := s.mb.RecordOracledbRedoRetriesDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRetryTypeBufferAllocation); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoLogSpaceRequests:
+				if err := s.mb.RecordOracledbRedoRequestsDataPoint(now, row["VALUE"], metadata.AttributeOracledbRedoRequestTypeLogSpace); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoLogSpaceWaitTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeLogSpaceWait)
+				}
+			case redoSize:
+				if err := s.mb.RecordOracledbRedoSizeDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case redoSynchTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeSync)
+				}
+			case redoWriteTime:
+				// redo time is reported in centiseconds; convert to seconds.
+				if value, err := parseFloat("oracledb.redo.time", row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				} else {
+					s.mb.RecordOracledbRedoTimeDataPoint(now, value/100, metadata.AttributeOracledbRedoTypeWrite)
+				}
+			case redoWrites:
+				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
 			}
 		}
 	}
@@ -659,6 +765,14 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
 	return out, nil
+}
+
+func parseFloat(metricName, rawValue string) (float64, error) {
+	value, err := strconv.ParseFloat(rawValue, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%s value: %q, %w", metricName, rawValue, err)
+	}
+	return value, nil
 }
 
 func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeErrors *[]error) {
@@ -824,13 +938,17 @@ type queryMetricCacheHit struct {
 	childNumber   string
 	childAddress  string
 	queryText     string
+	queryComments string
 	metrics       map[string]int64
 	objectID      int64
 	objectName    string
 	objectType    string
 	commandType   int64
+	firstLoadTime string
 	lastLoadTime  string
 	planHashValue string
+	service       string
+	dbNamespace   string
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -911,9 +1029,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				commandType, _ = strconv.ParseInt(row[commandTypeAttr], 10, 64)
 			}
 
+			// Extract and filter comments from original SQL before obfuscation
+			queryComments := sqlcomments.ExtractAndFilterComments(row[sqlTextAttr], s.topQueryCollectCfg.AllowedCommentKeys)
+
 			hit := queryMetricCacheHit{
 				sqlID:         row[sqlIDAttr],
 				queryText:     row[sqlTextAttr],
+				queryComments: queryComments,
 				childNumber:   row[childNumberAttr],
 				childAddress:  row[childAddressAttr],
 				metrics:       make(map[string]int64, len(metricNames)),
@@ -921,8 +1043,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectName:    row[objectNameAttr],
 				objectType:    row[objectTypeAttr],
 				commandType:   commandType,
+				firstLoadTime: row[firstLoadTimeAttr],
 				lastLoadTime:  row[lastLoadTimeAttr],
 				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
+				service:       row[serviceAttr],
+				dbNamespace:   row[dbNamespaceAttr],
 			}
 
 			var possiblePurge bool
@@ -985,6 +1110,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
 			s.hostName,
+			hit.dbNamespace,
+			hit.service,
 			hit.queryText,
 			planString, hit.sqlID, hit.childNumber,
 			hit.childAddress,
@@ -1009,7 +1136,9 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.objectID,
 			hit.objectName,
 			hit.objectType,
+			hit.queryComments,
 			hit.planHashValue,
+			hit.firstLoadTime,
 			hit.lastLoadTime)
 	}
 
@@ -1050,6 +1179,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const waitTimeSec = "WAIT_TIME_SEC"
 	const port = "PORT"
 	const serviceName = "SERVICE_NAME"
+	const dbNamespaceCol = "DB_NAMESPACE"
 	const sqlExecStart = "SQL_EXEC_START"
 	const logonTime = "LOGON_TIME"
 	const sessionDuration = "SESSION_DURATION_SEC"
@@ -1129,10 +1259,13 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			"traceparent": row[action],
 		})
 
-		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
+		// Extract and filter query comments from original SQL (before obfuscation)
+		queryComments := sqlcomments.ExtractAndFilterComments(row[sqlText], s.querySampleCfg.AllowedCommentKeys)
+
+		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[dbNamespaceCol], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
-			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec,
+			row[osUser], queryDuration, queryComments, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
 	}

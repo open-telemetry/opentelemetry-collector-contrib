@@ -286,6 +286,14 @@ $(ALL_MODS):
 	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
 	$(MAKE) --no-print-directory -C $@ $(TARGET)
 
+# datadogexporter and its integrationtest are the two heaviest modules to
+# type-check. Under `make -jN` they can run concurrently and the combined
+# memory peak OOM-kills the CI runner, so serialize them relative to each
+# other (each may still run alongside a lighter module). A plain prerequisite
+# is used so it works on the runner's GNU Make 4.3 (`.WAIT`/`.NOTPARALLEL`
+# prereqs need 4.4+).
+exporter/datadogexporter/integrationtest: exporter/datadogexporter
+
 # Trigger each module's delegation target
 .PHONY: for-all-target
 for-all-target: $(ALL_MODS)
@@ -724,7 +732,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
