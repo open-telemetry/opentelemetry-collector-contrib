@@ -12,6 +12,11 @@ all_set:
       enabled: true
     oracledb.buffer_cache.utilization:
       enabled: true
+    oracledb.call.count:
+      enabled: true
+      attributes: ["oracledb.call.type"]
+    oracledb.call.recursive.cpu.time:
+      enabled: true
     oracledb.checkpoint.buffers:
       enabled: true
     oracledb.checkpoint.completed:
@@ -129,10 +134,6 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
-    oracledb.recursive_call.count:
-      enabled: true
-    oracledb.recursive_call.cpu.time:
-      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo.blocks:
@@ -192,8 +193,6 @@ all_set:
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
-      enabled: true
-    oracledb.user_call.count:
       enabled: true
     oracledb.user_commits:
       enabled: true
@@ -236,6 +235,11 @@ reaggregate_set:
       enabled: true
     oracledb.buffer_cache.utilization:
       enabled: true
+    oracledb.call.count:
+      enabled: true
+      attributes: []
+    oracledb.call.recursive.cpu.time:
+      enabled: true
     oracledb.checkpoint.buffers:
       enabled: true
     oracledb.checkpoint.completed:
@@ -353,10 +357,6 @@ reaggregate_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
-    oracledb.recursive_call.count:
-      enabled: true
-    oracledb.recursive_call.cpu.time:
-      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo.blocks:
@@ -417,8 +417,6 @@ reaggregate_set:
       enabled: true
     oracledb.transactions.usage:
       enabled: true
-    oracledb.user_call.count:
-      enabled: true
     oracledb.user_commits:
       enabled: true
     oracledb.user_rollbacks:
@@ -459,6 +457,11 @@ none_set:
     oracledb.buffer_cache.block.gets:
       enabled: false
     oracledb.buffer_cache.utilization:
+      enabled: false
+    oracledb.call.count:
+      enabled: false
+      attributes: ["oracledb.call.type"]
+    oracledb.call.recursive.cpu.time:
       enabled: false
     oracledb.checkpoint.buffers:
       enabled: false
@@ -577,10 +580,6 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
-    oracledb.recursive_call.count:
-      enabled: false
-    oracledb.recursive_call.cpu.time:
-      enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
     oracledb.redo.blocks:
@@ -640,8 +639,6 @@ none_set:
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:
-      enabled: false
-    oracledb.user_call.count:
       enabled: false
     oracledb.user_commits:
       enabled: false

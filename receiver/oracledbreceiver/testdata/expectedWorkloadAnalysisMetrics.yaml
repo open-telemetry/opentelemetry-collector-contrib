@@ -12,6 +12,37 @@ resourceMetrics:
             stringValue: ""
     scopeMetrics:
       - metrics:
+          - description: Total count of calls issued to the database.
+            name: oracledb.call.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "123456"
+                  attributes:
+                    - key: oracledb.call.type
+                      value:
+                        stringValue: recursive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "987654"
+                  attributes:
+                    - key: oracledb.call.type
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{call}'
+          - description: Total CPU time spent on recursive (internal) calls.
+            name: oracledb.call.recursive.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 50
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: Cumulative CPU time, in seconds
             name: oracledb.cpu_time
             sum:
@@ -241,26 +272,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: oracledb.processes.usage
             unit: '{processes}'
-          - description: Total count of recursive calls.
-            name: oracledb.recursive_call.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "123456"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{call}'
-          - description: Total CPU time spent on recursive (internal) calls.
-            name: oracledb.recursive_call.cpu.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asDouble: 50
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
           - description: Total count of scan operations.
             name: oracledb.scan.count
             sum:
@@ -408,16 +419,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: oracledb.tablespace_size.usage
             unit: By
-          - description: Total count of user calls issued to the database.
-            name: oracledb.user_call.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "987654"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{call}'
           - description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
             name: oracledb.user_commits
             sum:

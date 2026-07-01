@@ -361,6 +361,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorCacheSize.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
@@ -369,13 +371,10 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRecursiveCallCount.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRecursiveCallCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbUserCallCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
@@ -689,11 +688,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case userCallsStat:
-				if err := s.mb.RecordOracledbUserCallCountDataPoint(now, row[colValue]); err != nil {
+				if err := s.mb.RecordOracledbCallCountDataPoint(now, row[colValue], metadata.AttributeOracledbCallTypeUser); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case recursiveCallsStat:
-				if err := s.mb.RecordOracledbRecursiveCallCountDataPoint(now, row[colValue]); err != nil {
+				if err := s.mb.RecordOracledbCallCountDataPoint(now, row[colValue], metadata.AttributeOracledbCallTypeRecursive); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			case recursiveCPUUsageStat:
@@ -702,7 +701,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", recursiveCPUUsageStat, row[colValue], err))
 				} else {
 					value /= 100
-					s.mb.RecordOracledbRecursiveCallCPUTimeDataPoint(now, value)
+					s.mb.RecordOracledbCallRecursiveCPUTimeDataPoint(now, value)
 				}
 			case dbTimeStat:
 				value, err := strconv.ParseFloat(row[colValue], 64)

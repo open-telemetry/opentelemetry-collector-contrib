@@ -32,6 +32,36 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.call.count:
+        description: "OracledbCallCountMetricConfig provides config for the oracledb.call.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.call.type"
+            default:
+              - "oracledb.call.type"
+      oracledb.call.recursive.cpu.time:
+        description: "OracledbCallRecursiveCPUTimeMetricConfig provides config for the oracledb.call.recursive.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.checkpoint.buffers:
         description: "OracledbCheckpointBuffersMetricConfig provides config for the oracledb.checkpoint.buffers metric."
         type: object
@@ -452,20 +482,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.recursive_call.count:
-        description: "OracledbRecursiveCallCountMetricConfig provides config for the oracledb.recursive_call.count metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.recursive_call.cpu.time:
-        description: "OracledbRecursiveCallCPUTimeMetricConfig provides config for the oracledb.recursive_call.cpu.time metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -708,13 +724,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.user_call.count:
-        description: "OracledbUserCallCountMetricConfig provides config for the oracledb.user_call.count metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
       oracledb.user_commits:
         description: "OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric."
         type: object

@@ -287,6 +287,28 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.call.count
+
+Total count of calls issued to the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {call} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.call.type | Type of call reported by Oracle. | Str: ``recursive``, ``user`` | Recommended | - |
+
+### oracledb.call.recursive.cpu.time
+
+Total CPU time spent on recursive (internal) calls.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.checkpoint.buffers
 
 Number of buffers written by the Database Writer (DBWR) for checkpoints.
@@ -635,22 +657,6 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.recursive_call.count
-
-Total count of recursive calls.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {call} | Sum | Int | Cumulative | true | Development |
-
-### oracledb.recursive_call.cpu.time
-
-Total CPU time spent on recursive (internal) calls.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
-
 ### oracledb.recycle_bin.limit
 
 Total size of the recycle bin.
@@ -850,14 +856,6 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
-
-### oracledb.user_call.count
-
-Total count of user calls issued to the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {call} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

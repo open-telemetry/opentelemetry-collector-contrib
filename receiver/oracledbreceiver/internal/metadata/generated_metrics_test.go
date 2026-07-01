@@ -68,6 +68,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["oracledb.buffer.inspected"] = mb.metricOracledbBufferInspected.config.AggregationStrategy
+			aggMap["oracledb.call.count"] = mb.metricOracledbCallCount.config.AggregationStrategy
 			aggMap["oracledb.db.time"] = mb.metricOracledbDbTime.config.AggregationStrategy
 			aggMap["oracledb.enqueue.operations"] = mb.metricOracledbEnqueueOperations.config.AggregationStrategy
 			aggMap["oracledb.execution.utilization"] = mb.metricOracledbExecutionUtilization.config.AggregationStrategy
@@ -113,6 +114,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbBufferCacheUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbCallCountDataPoint(ts, "1", AttributeOracledbCallTypeRecursive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbCallCountDataPoint(ts, "3", AttributeOracledbCallTypeUser)
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbCallRecursiveCPUTimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordOracledbCheckpointBuffersDataPoint(ts, "1")
@@ -301,12 +311,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbRecursiveCallCountDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbRecursiveCallCPUTimeDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -413,9 +417,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordOracledbUserCallCountDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbUserCommitsDataPoint(ts, "1")
@@ -436,6 +437,7 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricOracledbBufferInspected.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbCallCount.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbDbTime.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbEnqueueOperations.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbExecutionUtilization.aggDataPoints)
@@ -576,6 +578,64 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).", mi.Description())
 					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.call.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.call.count"], "Found a duplicate in the metrics slice: oracledb.call.count")
+						validatedMetrics["oracledb.call.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total count of calls issued to the database.", mi.Description())
+						assert.Equal(t, "{call}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						oracledbCallTypeAttrVal, ok := dp.Attributes().Get("oracledb.call.type")
+						assert.True(t, ok)
+						assert.Equal(t, "recursive", oracledbCallTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.call.count"], "Found a duplicate in the metrics slice: oracledb.call.count")
+						validatedMetrics["oracledb.call.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total count of calls issued to the database.", mi.Description())
+						assert.Equal(t, "{call}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.call.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracledb.call.type")
+						assert.False(t, ok)
+					}
+				case "oracledb.call.recursive.cpu.time":
+					assert.False(t, validatedMetrics["oracledb.call.recursive.cpu.time"], "Found a duplicate in the metrics slice: oracledb.call.recursive.cpu.time")
+					validatedMetrics["oracledb.call.recursive.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU time spent on recursive (internal) calls.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -1530,34 +1590,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.recursive_call.count":
-					assert.False(t, validatedMetrics["oracledb.recursive_call.count"], "Found a duplicate in the metrics slice: oracledb.recursive_call.count")
-					validatedMetrics["oracledb.recursive_call.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total count of recursive calls.", mi.Description())
-					assert.Equal(t, "{call}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.recursive_call.cpu.time":
-					assert.False(t, validatedMetrics["oracledb.recursive_call.cpu.time"], "Found a duplicate in the metrics slice: oracledb.recursive_call.cpu.time")
-					validatedMetrics["oracledb.recursive_call.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU time spent on recursive (internal) calls.", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.recycle_bin.limit":
 					assert.False(t, validatedMetrics["oracledb.recycle_bin.limit"], "Found a duplicate in the metrics slice: oracledb.recycle_bin.limit")
 					validatedMetrics["oracledb.recycle_bin.limit"] = true
@@ -2231,20 +2263,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Current count of active transactions.", mi.Description())
 					assert.Equal(t, "{transactions}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.user_call.count":
-					assert.False(t, validatedMetrics["oracledb.user_call.count"], "Found a duplicate in the metrics slice: oracledb.user_call.count")
-					validatedMetrics["oracledb.user_call.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total count of user calls issued to the database.", mi.Description())
-					assert.Equal(t, "{call}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

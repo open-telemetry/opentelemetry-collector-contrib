@@ -137,6 +137,74 @@ func (ms *OracledbBufferCacheUtilizationMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
+// OracledbCallCountMetricAttributeKey specifies the key of an attribute for the oracledb.call.count metric.
+type OracledbCallCountMetricAttributeKey string
+
+const (
+	OracledbCallCountMetricAttributeKeyOracledbCallType OracledbCallCountMetricAttributeKey = "oracledb.call.type"
+)
+
+// OracledbCallCountMetricConfig provides config for the oracledb.call.count metric.
+type OracledbCallCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbCallCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbCallCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbCallCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbCallCountMetricAttributeKeyOracledbCallType:
+		default:
+			return fmt.Errorf("metric oracledb.call.count doesn't have an attribute %v, valid attributes: [oracledb.call.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbCallRecursiveCPUTimeMetricConfig provides config for the oracledb.call.recursive.cpu.time metric.
+type OracledbCallRecursiveCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCallRecursiveCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbCheckpointBuffersMetricConfig provides config for the oracledb.checkpoint.buffers metric.
 type OracledbCheckpointBuffersMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1435,46 +1503,6 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// OracledbRecursiveCallCountMetricConfig provides config for the oracledb.recursive_call.count metric.
-type OracledbRecursiveCallCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRecursiveCallCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// OracledbRecursiveCallCPUTimeMetricConfig provides config for the oracledb.recursive_call.cpu.time metric.
-type OracledbRecursiveCallCPUTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbRecursiveCallCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric.
 type OracledbRecycleBinLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2294,26 +2322,6 @@ func (ms *OracledbTransactionsUsageMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// OracledbUserCallCountMetricConfig provides config for the oracledb.user_call.count metric.
-type OracledbUserCallCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *OracledbUserCallCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric.
 type OracledbUserCommitsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2361,6 +2369,8 @@ type MetricsConfig struct {
 	OracledbBufferCacheBlockChanges               OracledbBufferCacheBlockChangesMetricConfig               `mapstructure:"oracledb.buffer_cache.block.changes"`
 	OracledbBufferCacheBlockGets                  OracledbBufferCacheBlockGetsMetricConfig                  `mapstructure:"oracledb.buffer_cache.block.gets"`
 	OracledbBufferCacheUtilization                OracledbBufferCacheUtilizationMetricConfig                `mapstructure:"oracledb.buffer_cache.utilization"`
+	OracledbCallCount                             OracledbCallCountMetricConfig                             `mapstructure:"oracledb.call.count"`
+	OracledbCallRecursiveCPUTime                  OracledbCallRecursiveCPUTimeMetricConfig                  `mapstructure:"oracledb.call.recursive.cpu.time"`
 	OracledbCheckpointBuffers                     OracledbCheckpointBuffersMetricConfig                     `mapstructure:"oracledb.checkpoint.buffers"`
 	OracledbCheckpointCompleted                   OracledbCheckpointCompletedMetricConfig                   `mapstructure:"oracledb.checkpoint.completed"`
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
@@ -2416,8 +2426,6 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
-	OracledbRecursiveCallCount                    OracledbRecursiveCallCountMetricConfig                    `mapstructure:"oracledb.recursive_call.count"`
-	OracledbRecursiveCallCPUTime                  OracledbRecursiveCallCPUTimeMetricConfig                  `mapstructure:"oracledb.recursive_call.cpu.time"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
@@ -2442,7 +2450,6 @@ type MetricsConfig struct {
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
 	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCallCount                         OracledbUserCallCountMetricConfig                         `mapstructure:"oracledb.user_call.count"`
 	OracledbUserCommits                           OracledbUserCommitsMetricConfig                           `mapstructure:"oracledb.user_commits"`
 	OracledbUserRollbacks                         OracledbUserRollbacksMetricConfig                         `mapstructure:"oracledb.user_rollbacks"`
 }
@@ -2464,6 +2471,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbCallCount: OracledbCallCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbCallCountMetricAttributeKey{OracledbCallCountMetricAttributeKeyOracledbCallType},
+		},
+		OracledbCallRecursiveCPUTime: OracledbCallRecursiveCPUTimeMetricConfig{
 			Enabled: false,
 		},
 		OracledbCheckpointBuffers: OracledbCheckpointBuffersMetricConfig{
@@ -2645,12 +2660,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbRecursiveCallCount: OracledbRecursiveCallCountMetricConfig{
-			Enabled: false,
-		},
-		OracledbRecursiveCallCPUTime: OracledbRecursiveCallCPUTimeMetricConfig{
-			Enabled: false,
-		},
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
@@ -2746,9 +2755,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbTransactionsUsage: OracledbTransactionsUsageMetricConfig{
 			Enabled: true,
-		},
-		OracledbUserCallCount: OracledbUserCallCountMetricConfig{
-			Enabled: false,
 		},
 		OracledbUserCommits: OracledbUserCommitsMetricConfig{
 			Enabled: true,

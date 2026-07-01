@@ -135,6 +135,10 @@ attributes:
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
+  oracledb.call.type:
+    description: Type of call reported by Oracle.
+    type: string
+    enum: [recursive, user]
   oracledb.child_address:
     description: Address of the child cursor.
     type: string
@@ -470,6 +474,26 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.call.count:
+    description: Total count of calls issued to the database.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{call}"
+    attributes: [oracledb.call.type]
+  oracledb.call.recursive.cpu.time:
+    description: Total CPU time spent on recursive (internal) calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.checkpoint.buffers:
     description: Number of buffers written by the Database Writer (DBWR) for checkpoints.
     enabled: false
@@ -981,25 +1005,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
-  oracledb.recursive_call.count:
-    description: Total count of recursive calls.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{call}"
-  oracledb.recursive_call.cpu.time:
-    description: Total CPU time spent on recursive (internal) calls.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
-    unit: s
   oracledb.recycle_bin.limit:
     description: Total size of the recycle bin.
     enabled: false
@@ -1221,16 +1226,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{transactions}"
-  oracledb.user_call.count:
-    description: Total count of user calls issued to the database.
-    enabled: false
-    stability: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{call}"
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true

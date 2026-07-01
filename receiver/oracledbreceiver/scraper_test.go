@@ -375,10 +375,7 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
-// scrapeWithConfig builds an oracleScraper backed by the shared fake query
-// responses, runs a single scrape, and returns the collected metrics. It
-// centralizes the DB-provider / client-provider / start / shutdown boilerplate
-// shared by the metric scrape tests.
+// scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
 func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
 	t.Helper()
 	scrpr := oracleScraper{
@@ -402,9 +399,9 @@ func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.M
 
 func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
 	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
 	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
 
 	m := scrapeWithConfig(t, cfg)
@@ -454,6 +451,8 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 
 func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbCallCount.Enabled = true
+	cfg.Metrics.OracledbCallRecursiveCPUTime.Enabled = true
 	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
 	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
 	cfg.Metrics.OracledbCursorOpen.Enabled = true
@@ -462,13 +461,10 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 	cfg.Metrics.OracledbLobOperations.Enabled = true
 	cfg.Metrics.OracledbParseCPUTime.Enabled = true
 	cfg.Metrics.OracledbParseElapsedTime.Enabled = true
-	cfg.Metrics.OracledbRecursiveCallCount.Enabled = true
-	cfg.Metrics.OracledbRecursiveCallCPUTime.Enabled = true
 	cfg.Metrics.OracledbScanCount.Enabled = true
 	cfg.Metrics.OracledbScanTableRows.Enabled = true
 	cfg.Metrics.OracledbSortOperations.Enabled = true
 	cfg.Metrics.OracledbSortRows.Enabled = true
-	cfg.Metrics.OracledbUserCallCount.Enabled = true
 
 	actualMetrics := scrapeWithConfig(t, cfg)
 
@@ -486,11 +482,7 @@ func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
 		pmetrictest.IgnoreTimestamp()))
 }
 
-// TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled verifies that a
-// workload metric whose distinguishing attribute is turned off reaggregates its
-// data points by summing, which is the correct behavior for a cumulative
-// monotonic counter. With oracledb.enqueue.type disabled, the five per-type rows
-// (11+22+33+44+55) must collapse into a single attribute-less data point of 165.
+// Disabling oracledb.enqueue.type collapses its five per-type rows into one summed data point (165).
 func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
@@ -515,11 +507,7 @@ func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
 	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
 }
 
-// TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled verifies that, for a
-// metric with more than one attribute, disabling a single attribute reaggregates
-// correctly across the remaining one. With oracledb.scan.mode disabled but
-// oracledb.scan.type kept, oracledb.scan.count collapses to one data point per
-// type: table = 100+200+50 = 350, index_fast_full = 10+20+5 = 35.
+// Disabling oracledb.scan.mode (keeping oracledb.scan.type) reaggregates per type: table=350, index_fast_full=35.
 func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbScanCount.Enabled = true

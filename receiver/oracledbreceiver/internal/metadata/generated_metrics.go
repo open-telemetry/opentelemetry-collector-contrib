@@ -178,6 +178,32 @@ var MapAttributeOracledbBufferState = map[string]AttributeOracledbBufferState{
 	"dirty": AttributeOracledbBufferStateDirty,
 }
 
+// AttributeOracledbCallType specifies the value oracledb.call.type attribute.
+type AttributeOracledbCallType int
+
+const (
+	_ AttributeOracledbCallType = iota
+	AttributeOracledbCallTypeRecursive
+	AttributeOracledbCallTypeUser
+)
+
+// String returns the string representation of the AttributeOracledbCallType.
+func (av AttributeOracledbCallType) String() string {
+	switch av {
+	case AttributeOracledbCallTypeRecursive:
+		return "recursive"
+	case AttributeOracledbCallTypeUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeOracledbCallType is a helper map of string to AttributeOracledbCallType attribute value.
+var MapAttributeOracledbCallType = map[string]AttributeOracledbCallType{
+	"recursive": AttributeOracledbCallTypeRecursive,
+	"user":      AttributeOracledbCallTypeUser,
+}
+
 // AttributeOracledbEnqueueType specifies the value oracledb.enqueue.type attribute.
 type AttributeOracledbEnqueueType int
 
@@ -459,6 +485,13 @@ var MetricsInfo = metricsInfo{
 	OracledbBufferCacheUtilization: metricInfo{
 		Name: "oracledb.buffer_cache.utilization",
 	},
+	OracledbCallCount: metricInfo{
+		Name:       "oracledb.call.count",
+		Attributes: []string{"oracledb.call.type"},
+	},
+	OracledbCallRecursiveCPUTime: metricInfo{
+		Name: "oracledb.call.recursive.cpu.time",
+	},
 	OracledbCheckpointBuffers: metricInfo{
 		Name: "oracledb.checkpoint.buffers",
 	},
@@ -631,12 +664,6 @@ var MetricsInfo = metricsInfo{
 	OracledbQueriesParallelized: metricInfo{
 		Name: "oracledb.queries_parallelized",
 	},
-	OracledbRecursiveCallCount: metricInfo{
-		Name: "oracledb.recursive_call.count",
-	},
-	OracledbRecursiveCallCPUTime: metricInfo{
-		Name: "oracledb.recursive_call.cpu.time",
-	},
 	OracledbRecycleBinLimit: metricInfo{
 		Name: "oracledb.recycle_bin.limit",
 	},
@@ -721,9 +748,6 @@ var MetricsInfo = metricsInfo{
 	OracledbTransactionsUsage: metricInfo{
 		Name: "oracledb.transactions.usage",
 	},
-	OracledbUserCallCount: metricInfo{
-		Name: "oracledb.user_call.count",
-	},
 	OracledbUserCommits: metricInfo{
 		Name: "oracledb.user_commits",
 	},
@@ -738,6 +762,8 @@ type metricsInfo struct {
 	OracledbBufferCacheBlockChanges               metricInfo
 	OracledbBufferCacheBlockGets                  metricInfo
 	OracledbBufferCacheUtilization                metricInfo
+	OracledbCallCount                             metricInfo
+	OracledbCallRecursiveCPUTime                  metricInfo
 	OracledbCheckpointBuffers                     metricInfo
 	OracledbCheckpointCompleted                   metricInfo
 	OracledbConsistentGets                        metricInfo
@@ -793,8 +819,6 @@ type metricsInfo struct {
 	OracledbProcessesLimit                        metricInfo
 	OracledbProcessesUsage                        metricInfo
 	OracledbQueriesParallelized                   metricInfo
-	OracledbRecursiveCallCount                    metricInfo
-	OracledbRecursiveCallCPUTime                  metricInfo
 	OracledbRecycleBinLimit                       metricInfo
 	OracledbRedoBlocks                            metricInfo
 	OracledbRedoOperations                        metricInfo
@@ -819,7 +843,6 @@ type metricsInfo struct {
 	OracledbTablespaceSizeUsage                   metricInfo
 	OracledbTransactionsLimit                     metricInfo
 	OracledbTransactionsUsage                     metricInfo
-	OracledbUserCallCount                         metricInfo
 	OracledbUserCommits                           metricInfo
 	OracledbUserRollbacks                         metricInfo
 }
@@ -1118,6 +1141,149 @@ func (m *metricOracledbBufferCacheUtilization) emit(metrics pmetric.MetricSlice)
 
 func newMetricOracledbBufferCacheUtilization(cfg OracledbBufferCacheUtilizationMetricConfig) metricOracledbBufferCacheUtilization {
 	m := metricOracledbBufferCacheUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbCallCount struct {
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        OracledbCallCountMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.call.count metric with initial data.
+func (m *metricOracledbCallCount) init() {
+	m.data.SetName("oracledb.call.count")
+	m.data.SetDescription("Total count of calls issued to the database.")
+	m.data.SetUnit("{call}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbCallCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbCallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbCallCountMetricAttributeKeyOracledbCallType) {
+		dp.Attributes().PutStr("oracledb.call.type", oracledbCallTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbCallCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbCallCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbCallCount(cfg OracledbCallCountMetricConfig) metricOracledbCallCount {
+	m := metricOracledbCallCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbCallRecursiveCPUTime struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   OracledbCallRecursiveCPUTimeMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.call.recursive.cpu.time metric with initial data.
+func (m *metricOracledbCallRecursiveCPUTime) init() {
+	m.data.SetName("oracledb.call.recursive.cpu.time")
+	m.data.SetDescription("Total CPU time spent on recursive (internal) calls.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbCallRecursiveCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbCallRecursiveCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbCallRecursiveCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbCallRecursiveCPUTime(cfg OracledbCallRecursiveCPUTimeMetricConfig) metricOracledbCallRecursiveCPUTime {
+	m := metricOracledbCallRecursiveCPUTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4229,110 +4395,6 @@ func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedMetricC
 	return m
 }
 
-type metricOracledbRecursiveCallCount struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   OracledbRecursiveCallCountMetricConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.recursive_call.count metric with initial data.
-func (m *metricOracledbRecursiveCallCount) init() {
-	m.data.SetName("oracledb.recursive_call.count")
-	m.data.SetDescription("Total count of recursive calls.")
-	m.data.SetUnit("{call}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbRecursiveCallCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbRecursiveCallCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbRecursiveCallCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbRecursiveCallCount(cfg OracledbRecursiveCallCountMetricConfig) metricOracledbRecursiveCallCount {
-	m := metricOracledbRecursiveCallCount{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricOracledbRecursiveCallCPUTime struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   OracledbRecursiveCallCPUTimeMetricConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.recursive_call.cpu.time metric with initial data.
-func (m *metricOracledbRecursiveCallCPUTime) init() {
-	m.data.SetName("oracledb.recursive_call.cpu.time")
-	m.data.SetDescription("Total CPU time spent on recursive (internal) calls.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbRecursiveCallCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbRecursiveCallCPUTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbRecursiveCallCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbRecursiveCallCPUTime(cfg OracledbRecursiveCallCPUTimeMetricConfig) metricOracledbRecursiveCallCPUTime {
-	m := metricOracledbRecursiveCallCPUTime{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbRecycleBinLimit struct {
 	data     pmetric.Metric                      // data buffer for generated metric.
 	config   OracledbRecycleBinLimitMetricConfig // metric config provided by user.
@@ -6032,58 +6094,6 @@ func newMetricOracledbTransactionsUsage(cfg OracledbTransactionsUsageMetricConfi
 	return m
 }
 
-type metricOracledbUserCallCount struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   OracledbUserCallCountMetricConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
-}
-
-// init fills oracledb.user_call.count metric with initial data.
-func (m *metricOracledbUserCallCount) init() {
-	m.data.SetName("oracledb.user_call.count")
-	m.data.SetDescription("Total count of user calls issued to the database.")
-	m.data.SetUnit("{call}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricOracledbUserCallCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbUserCallCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbUserCallCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricOracledbUserCallCount(cfg OracledbUserCallCountMetricConfig) metricOracledbUserCallCount {
-	m := metricOracledbUserCallCount{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricOracledbUserCommits struct {
 	data     pmetric.Metric                  // data buffer for generated metric.
 	config   OracledbUserCommitsMetricConfig // metric config provided by user.
@@ -6203,6 +6213,8 @@ type MetricsBuilder struct {
 	metricOracledbBufferCacheBlockChanges               metricOracledbBufferCacheBlockChanges
 	metricOracledbBufferCacheBlockGets                  metricOracledbBufferCacheBlockGets
 	metricOracledbBufferCacheUtilization                metricOracledbBufferCacheUtilization
+	metricOracledbCallCount                             metricOracledbCallCount
+	metricOracledbCallRecursiveCPUTime                  metricOracledbCallRecursiveCPUTime
 	metricOracledbCheckpointBuffers                     metricOracledbCheckpointBuffers
 	metricOracledbCheckpointCompleted                   metricOracledbCheckpointCompleted
 	metricOracledbConsistentGets                        metricOracledbConsistentGets
@@ -6258,8 +6270,6 @@ type MetricsBuilder struct {
 	metricOracledbProcessesLimit                        metricOracledbProcessesLimit
 	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
 	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
-	metricOracledbRecursiveCallCount                    metricOracledbRecursiveCallCount
-	metricOracledbRecursiveCallCPUTime                  metricOracledbRecursiveCallCPUTime
 	metricOracledbRecycleBinLimit                       metricOracledbRecycleBinLimit
 	metricOracledbRedoBlocks                            metricOracledbRedoBlocks
 	metricOracledbRedoOperations                        metricOracledbRedoOperations
@@ -6284,7 +6294,6 @@ type MetricsBuilder struct {
 	metricOracledbTablespaceSizeUsage                   metricOracledbTablespaceSizeUsage
 	metricOracledbTransactionsLimit                     metricOracledbTransactionsLimit
 	metricOracledbTransactionsUsage                     metricOracledbTransactionsUsage
-	metricOracledbUserCallCount                         metricOracledbUserCallCount
 	metricOracledbUserCommits                           metricOracledbUserCommits
 	metricOracledbUserRollbacks                         metricOracledbUserRollbacks
 }
@@ -6317,6 +6326,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbBufferCacheBlockChanges:               newMetricOracledbBufferCacheBlockChanges(mbc.Metrics.OracledbBufferCacheBlockChanges),
 		metricOracledbBufferCacheBlockGets:                  newMetricOracledbBufferCacheBlockGets(mbc.Metrics.OracledbBufferCacheBlockGets),
 		metricOracledbBufferCacheUtilization:                newMetricOracledbBufferCacheUtilization(mbc.Metrics.OracledbBufferCacheUtilization),
+		metricOracledbCallCount:                             newMetricOracledbCallCount(mbc.Metrics.OracledbCallCount),
+		metricOracledbCallRecursiveCPUTime:                  newMetricOracledbCallRecursiveCPUTime(mbc.Metrics.OracledbCallRecursiveCPUTime),
 		metricOracledbCheckpointBuffers:                     newMetricOracledbCheckpointBuffers(mbc.Metrics.OracledbCheckpointBuffers),
 		metricOracledbCheckpointCompleted:                   newMetricOracledbCheckpointCompleted(mbc.Metrics.OracledbCheckpointCompleted),
 		metricOracledbConsistentGets:                        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
@@ -6372,8 +6383,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbProcessesLimit:                        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
 		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
-		metricOracledbRecursiveCallCount:                    newMetricOracledbRecursiveCallCount(mbc.Metrics.OracledbRecursiveCallCount),
-		metricOracledbRecursiveCallCPUTime:                  newMetricOracledbRecursiveCallCPUTime(mbc.Metrics.OracledbRecursiveCallCPUTime),
 		metricOracledbRecycleBinLimit:                       newMetricOracledbRecycleBinLimit(mbc.Metrics.OracledbRecycleBinLimit),
 		metricOracledbRedoBlocks:                            newMetricOracledbRedoBlocks(mbc.Metrics.OracledbRedoBlocks),
 		metricOracledbRedoOperations:                        newMetricOracledbRedoOperations(mbc.Metrics.OracledbRedoOperations),
@@ -6398,7 +6407,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbTablespaceSizeUsage:                   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
 		metricOracledbTransactionsLimit:                     newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
 		metricOracledbTransactionsUsage:                     newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
-		metricOracledbUserCallCount:                         newMetricOracledbUserCallCount(mbc.Metrics.OracledbUserCallCount),
 		metricOracledbUserCommits:                           newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
 		metricOracledbUserRollbacks:                         newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
 		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
@@ -6526,6 +6534,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbBufferCacheBlockChanges.emit(ils.Metrics())
 	mb.metricOracledbBufferCacheBlockGets.emit(ils.Metrics())
 	mb.metricOracledbBufferCacheUtilization.emit(ils.Metrics())
+	mb.metricOracledbCallCount.emit(ils.Metrics())
+	mb.metricOracledbCallRecursiveCPUTime.emit(ils.Metrics())
 	mb.metricOracledbCheckpointBuffers.emit(ils.Metrics())
 	mb.metricOracledbCheckpointCompleted.emit(ils.Metrics())
 	mb.metricOracledbConsistentGets.emit(ils.Metrics())
@@ -6581,8 +6591,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
-	mb.metricOracledbRecursiveCallCount.emit(ils.Metrics())
-	mb.metricOracledbRecursiveCallCPUTime.emit(ils.Metrics())
 	mb.metricOracledbRecycleBinLimit.emit(ils.Metrics())
 	mb.metricOracledbRedoBlocks.emit(ils.Metrics())
 	mb.metricOracledbRedoOperations.emit(ils.Metrics())
@@ -6607,7 +6615,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbTablespaceSizeUsage.emit(ils.Metrics())
 	mb.metricOracledbTransactionsLimit.emit(ils.Metrics())
 	mb.metricOracledbTransactionsUsage.emit(ils.Metrics())
-	mb.metricOracledbUserCallCount.emit(ils.Metrics())
 	mb.metricOracledbUserCommits.emit(ils.Metrics())
 	mb.metricOracledbUserRollbacks.emit(ils.Metrics())
 
@@ -6684,6 +6691,21 @@ func (mb *MetricsBuilder) RecordOracledbBufferCacheBlockGetsDataPoint(ts pcommon
 // RecordOracledbBufferCacheUtilizationDataPoint adds a data point to oracledb.buffer_cache.utilization metric.
 func (mb *MetricsBuilder) RecordOracledbBufferCacheUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbBufferCacheUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbCallCountDataPoint adds a data point to oracledb.call.count metric.
+func (mb *MetricsBuilder) RecordOracledbCallCountDataPoint(ts pcommon.Timestamp, inputVal string, oracledbCallTypeAttributeValue AttributeOracledbCallType) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbCallCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbCallCount.recordDataPoint(mb.startTime, ts, val, oracledbCallTypeAttributeValue.String())
+	return nil
+}
+
+// RecordOracledbCallRecursiveCPUTimeDataPoint adds a data point to oracledb.call.recursive.cpu.time metric.
+func (mb *MetricsBuilder) RecordOracledbCallRecursiveCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbCallRecursiveCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbCheckpointBuffersDataPoint adds a data point to oracledb.checkpoint.buffers metric.
@@ -7176,21 +7198,6 @@ func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.
 	return nil
 }
 
-// RecordOracledbRecursiveCallCountDataPoint adds a data point to oracledb.recursive_call.count metric.
-func (mb *MetricsBuilder) RecordOracledbRecursiveCallCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbRecursiveCallCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbRecursiveCallCount.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbRecursiveCallCPUTimeDataPoint adds a data point to oracledb.recursive_call.cpu.time metric.
-func (mb *MetricsBuilder) RecordOracledbRecursiveCallCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbRecursiveCallCPUTime.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordOracledbRecycleBinLimitDataPoint adds a data point to oracledb.recycle_bin.limit metric.
 func (mb *MetricsBuilder) RecordOracledbRecycleBinLimitDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbRecycleBinLimit.recordDataPoint(mb.startTime, ts, val)
@@ -7378,16 +7385,6 @@ func (mb *MetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Ti
 		return fmt.Errorf("failed to parse int64 for OracledbTransactionsUsage, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbTransactionsUsage.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordOracledbUserCallCountDataPoint adds a data point to oracledb.user_call.count metric.
-func (mb *MetricsBuilder) RecordOracledbUserCallCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbUserCallCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricOracledbUserCallCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
