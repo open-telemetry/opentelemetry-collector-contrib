@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -38,6 +39,17 @@ func newTestRetryRT(base http.RoundTripper) *retryRoundTripper {
 		base:   base,
 		cfg:    fastRetryConfig(),
 		logger: zap.NewNop(),
+	}
+}
+
+// recordingSleep returns a sleep seam that records the last duration it was
+// called with into *out and yields immediately so tests do not actually wait.
+func recordingSleep(out *time.Duration) func(time.Duration) <-chan time.Time {
+	return func(d time.Duration) <-chan time.Time {
+		*out = d
+		ch := make(chan time.Time, 1)
+		ch <- time.Time{}
+		return ch
 	}
 }
 
@@ -135,8 +147,11 @@ func TestRetryOn403WithRetryAfter(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// Retry-After of 1s is respected as-is (not capped).
+	// Retry-After of 1s is respected as-is (not capped). Use the fake sleep
+	// seam so the test does not actually wait a second in CI.
+	var sleptFor time.Duration
 	rt := newTestRetryRT(http.DefaultTransport)
+	rt.sleep = recordingSleep(&sleptFor)
 	client := &http.Client{Transport: rt}
 
 	resp, err := client.Get(srv.URL)
@@ -145,6 +160,126 @@ func TestRetryOn403WithRetryAfter(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(2), call.Load())
+	assert.Equal(t, 1*time.Second, sleptFor)
+}
+
+// TestPrimaryRateLimitHonorsResetAt verifies the retry delay equals
+// resetAt - now (not the exponential-backoff schedule), using a fake clock so
+// the test does not actually sleep.
+func TestPrimaryRateLimitHonorsResetAt(t *testing.T) {
+	var call atomic.Int32
+	fakeNow := time.Unix(1_700_000_000, 0)
+	resetEpoch := fakeNow.Add(30 * time.Second).Unix()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if call.Add(1) == 1 {
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(resetEpoch, 10))
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	var sleptFor time.Duration
+	rt := newTestRetryRT(http.DefaultTransport)
+	rt.now = func() time.Time { return fakeNow }
+	rt.sleep = recordingSleep(&sleptFor)
+
+	client := &http.Client{Transport: rt}
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), call.Load())
+	assert.Equal(t, 30*time.Second, sleptFor)
+}
+
+// TestPrimaryRateLimitOn429 verifies primary rate-limit retries also fire
+// when GitHub signals via 429 (alternate shape on some endpoints) rather than
+// the more common 403.
+func TestPrimaryRateLimitOn429(t *testing.T) {
+	var call atomic.Int32
+	fakeNow := time.Unix(1_700_000_000, 0)
+	resetEpoch := fakeNow.Add(15 * time.Second).Unix()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if call.Add(1) == 1 {
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(resetEpoch, 10))
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	var sleptFor time.Duration
+	rt := newTestRetryRT(http.DefaultTransport)
+	rt.now = func() time.Time { return fakeNow }
+	rt.sleep = recordingSleep(&sleptFor)
+
+	client := &http.Client{Transport: rt}
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), call.Load())
+	assert.Equal(t, 15*time.Second, sleptFor)
+}
+
+// TestNoRetryOnPrimaryRateLimitWithoutReset verifies that a primary
+// rate-limit response (X-RateLimit-Remaining: 0) without a usable
+// X-RateLimit-Reset header is NOT retried. Retrying against an
+// exhausted budget with no wait hint just burns the remaining attempts
+// against the same closed window — better to surface the failure now.
+func TestNoRetryOnPrimaryRateLimitWithoutReset(t *testing.T) {
+	var call atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		call.Add(1)
+		w.Header().Set("X-RateLimit-Remaining", "0")
+		// No X-RateLimit-Reset header set.
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	rt := newTestRetryRT(http.DefaultTransport)
+	client := &http.Client{Transport: rt}
+
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	assert.Equal(t, int32(1), call.Load()) // No retry
+}
+
+// TestParseRateLimitReset locks in the four observable behaviors of the
+// header parser: missing, unparseable, past/at-now, and future.
+func TestParseRateLimitReset(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	for _, tc := range []struct {
+		name   string
+		header string
+		want   time.Duration
+	}{
+		{"missing", "", 0},
+		{"garbage", "not-a-number", 0},
+		{"past", strconv.FormatInt(now.Add(-1*time.Second).Unix(), 10), 0},
+		{"exactly_now", strconv.FormatInt(now.Unix(), 10), 0},
+		{"future", strconv.FormatInt(now.Add(30*time.Second).Unix(), 10), 30 * time.Second},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := http.Header{}
+			if tc.header != "" {
+				h.Set("X-RateLimit-Reset", tc.header)
+			}
+			assert.Equal(t, tc.want, parseRateLimitReset(h, now))
+		})
+	}
 }
 
 func TestNoRetryOn403WithoutRetryAfter(t *testing.T) {
