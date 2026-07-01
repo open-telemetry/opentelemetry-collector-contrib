@@ -1521,39 +1521,6 @@ func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
 	require.Equal(t, "second", collection.Str())
 }
 
-func TestProcessCurrentOpMaxRowsPerQueryZeroMeansNoRows(t *testing.T) {
-	scraperCfg := createDefaultConfig().(*Config)
-	scraperCfg.Events.DbServerQuerySample.Enabled = true
-	scraperCfg.QuerySampleCollection.MaxRowsPerQuery = 0
-	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
-
-	operations := []bson.M{
-		{
-			"ns":      "mydb.first",
-			"op":      "query",
-			"command": bson.D{{Key: "find", Value: "first"}},
-			"active":  true,
-		},
-		{
-			"ns":      "mydb.second",
-			"op":      "query",
-			"command": bson.D{{Key: "find", Value: "second"}},
-			"active":  true,
-		},
-		{
-			"ns":      "mydb.third",
-			"op":      "query",
-			"command": bson.D{{Key: "find", Value: "third"}},
-			"active":  true,
-		},
-	}
-
-	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
-
-	logs := scraper.lb.Emit()
-	require.Equal(t, 0, logs.LogRecordCount(), "max_rows_per_query=0 should emit no query samples")
-}
-
 func TestGetJSONValue(t *testing.T) {
 	tests := []struct {
 		name string

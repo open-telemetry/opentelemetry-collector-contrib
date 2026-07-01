@@ -40,12 +40,12 @@ func (o *obfuscator) obfuscateMongoDBString(command string) string {
 	return (*obfuscate.Obfuscator)(o).ObfuscateMongoDBString(command)
 }
 
-func (o *obfuscator) obfuscateCommand(command bson.D) string {
+func (o *obfuscator) obfuscateCommand(command bson.D) (string, error) {
 	serialized, err := bson.MarshalExtJSON(command, false, false)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return o.obfuscateMongoDBString(string(serialized))
+	return o.obfuscateMongoDBString(string(serialized)), nil
 }
 
 func cleanCommand(command bson.D) bson.D {

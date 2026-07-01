@@ -28,7 +28,8 @@ func TestObfuscateCommand(t *testing.T) {
 		{Key: "filter", Value: bson.M{"name": "test", "age": 30}},
 	}, cleanedCommand)
 
-	obfuscated := o.obfuscateCommand(cleanedCommand)
+	obfuscated, err := o.obfuscateCommand(cleanedCommand)
+	require.NoError(t, err)
 	require.Contains(t, obfuscated, "find")
 	require.NotContains(t, obfuscated, "comment")
 	require.NotContains(t, obfuscated, "lsid")
@@ -51,7 +52,8 @@ func TestObfuscateCommandUsesRelaxedExtendedJSON(t *testing.T) {
 		{Key: "$db", Value: "sample_business"},
 	}
 
-	obfuscated := o.obfuscateCommand(command)
+	obfuscated, err := o.obfuscateCommand(command)
+	require.NoError(t, err)
 	require.Contains(t, obfuscated, `"getMore":"?"`)
 	require.NotContains(t, obfuscated, "$numberLong")
 }

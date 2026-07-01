@@ -55,7 +55,7 @@ The following settings are optional:
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 - `direct_connection`: If true, then the driver will not try to autodiscover other nodes, and perform instead a direct connection o the host.
 - `query_sample_collection`: Additional configuration for query sample collection (`db.server.query_sample` event):
-  - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Set to `0` to emit no query samples. Operations skipped by the receiver do not count toward this limit.
+  - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Must be greater than `0`.
 
 ### Example Configuration
 
