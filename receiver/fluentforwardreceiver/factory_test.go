@@ -20,6 +20,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assert.Equal(t, maxMsgpackRawBytes, cfg.(*Config).MaxPackedForwardBytes)
 }
 
 func TestCreateReceiver(t *testing.T) {

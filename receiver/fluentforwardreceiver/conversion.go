@@ -18,7 +18,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-const tagAttributeKey = "fluent.tag"
+const (
+	tagAttributeKey = "fluent.tag"
+
+	// Fluent Forward record/option maps and batches are normally much smaller;
+	// 64K keeps legitimate large batches possible while bounding forged
+	// msgpack array/map headers before they can drive large allocations.
+	maxMsgpackElements = 64 * 1024
+
+	// Tags are identifiers and should be small; 128K preserves existing str32
+	// handling without allowing mode detection to peek unbounded tag lengths.
+	maxMsgpackTagBytes = 128 * 1024
+
+	// Packed-forward payloads can carry batches, so allow larger raw payloads
+	// while still rejecting forged str/bin lengths before allocation.
+	maxMsgpackRawBytes = 16 * 1024 * 1024
+)
 
 // Most of this logic is derived directly from
 // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1,
@@ -32,6 +47,49 @@ type event interface {
 }
 
 type optionsMap map[string]any
+
+func setMsgpackReaderLimits(dc *msgp.Reader) {
+	// msgp also uses MaxElements to cap bin/ext byte allocations.
+	// Packed-forward payloads are the only place this receiver intentionally allows larger raw bytes.
+	dc.SetMaxElements(maxMsgpackElements)
+	dc.SetMaxStringLength(maxMsgpackRawBytes)
+}
+
+func validateMsgpackElementCount(count uint32) error {
+	if count > maxMsgpackElements {
+		return msgp.ErrLimitExceeded
+	}
+	return nil
+}
+
+func readPackedForwardPayload(dc *msgp.Reader, typ msgp.Type, maxBytes int) ([]byte, error) {
+	if maxBytes <= 0 {
+		maxBytes = maxMsgpackRawBytes
+	}
+	if uint64(maxBytes) > uint64(^uint32(0)) {
+		return nil, fmt.Errorf("packed-forward payload limit %d exceeds MessagePack size limit", maxBytes)
+	}
+
+	switch typ {
+	case msgp.StrType:
+		prevMaxStringLength := dc.GetMaxStringLength()
+		dc.SetMaxStringLength(uint64(maxBytes))
+		defer dc.SetMaxStringLength(prevMaxStringLength)
+
+		entriesStr, err := dc.ReadString()
+		if err != nil {
+			return nil, err
+		}
+		return []byte(entriesStr), nil
+	case msgp.BinType:
+		prevMaxElements := dc.GetMaxElements()
+		dc.SetMaxElements(uint32(maxBytes))
+		defer dc.SetMaxElements(prevMaxElements)
+		return dc.ReadBytesLimit(nil, int64(maxBytes))
+	default:
+		return nil, fmt.Errorf("invalid type %d", typ)
+	}
+}
 
 // Chunk returns the `chunk` option or blank string if it was not set.
 func (om optionsMap) Chunk() string {
@@ -157,6 +215,9 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
+	if err := validateMsgpackElementCount(recordLen); err != nil {
+		return msgp.WrapError(err, "Record")
+	}
 
 	for recordLen > 0 {
 		recordLen--
@@ -196,6 +257,8 @@ func (melr *messageEventLogRecord) LogRecords() plog.LogRecordSlice {
 }
 
 func (melr *messageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
+	setMsgpackReaderLimits(dc)
+
 	melr.LogRecordSlice = plog.NewLogRecordSlice()
 	var arrLen uint32
 	var err error
@@ -234,6 +297,9 @@ func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
+	if err := validateMsgpackElementCount(optionLen); err != nil {
+		return nil, msgp.WrapError(err, "Option")
+	}
 	out := make(optionsMap, optionLen)
 
 	for optionLen > 0 {
@@ -261,6 +327,8 @@ func (fe *forwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 }
 
 func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
+	setMsgpackReaderLimits(dc)
+
 	fe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
@@ -277,6 +345,10 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	entryLen, err := dc.ReadArrayHeader()
+	if err != nil {
+		return msgp.WrapError(err, "Record")
+	}
+	err = validateMsgpackElementCount(entryLen)
 	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
@@ -314,6 +386,7 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 type packedForwardEventLogRecords struct {
 	plog.LogRecordSlice
 	optionsMap
+	maxRawBytes int
 }
 
 func (pfe *packedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
@@ -323,6 +396,8 @@ func (pfe *packedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
 func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
+	setMsgpackReaderLimits(dc)
+
 	pfe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
@@ -349,22 +424,9 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	// comes after.  I guess we could use some kind of detection logic to
 	// determine if it is gzipped by peeking and just ignoring options, but
 	// this seems simpler for now.
-	var entriesRaw []byte
-	switch entriesType {
-	case msgp.StrType:
-		var entriesStr string
-		entriesStr, err = dc.ReadString()
-		if err != nil {
-			return msgp.WrapError(err, "EntriesRaw")
-		}
-		entriesRaw = []byte(entriesStr)
-	case msgp.BinType:
-		entriesRaw, err = dc.ReadBytes(nil)
-		if err != nil {
-			return msgp.WrapError(err, "EntriesRaw")
-		}
-	default:
-		return msgp.WrapError(fmt.Errorf("invalid type %d", entriesType), "EntriesRaw")
+	entriesRaw, err := readPackedForwardPayload(dc, entriesType, pfe.maxRawBytes)
+	if err != nil {
+		return msgp.WrapError(err, "EntriesRaw")
 	}
 
 	if arrLen == 3 {
@@ -396,8 +458,10 @@ func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 	}
 
 	msgpReader := msgp.NewReader(reader)
+	setMsgpackReaderLimits(msgpReader)
 	// Allocate only once, since the MoveTo cleans the lr, so we can reuse.
 	lr := plog.NewLogRecord()
+	var entries uint32
 	for {
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {
@@ -406,6 +470,10 @@ func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 			}
 			return err
 		}
+		if entries == maxMsgpackElements {
+			return msgp.WrapError(msgp.ErrLimitExceeded, "Entries")
+		}
+		entries++
 		lr.Attributes().PutStr(tagAttributeKey, tag)
 		lr.MoveTo(pfe.AppendEmpty())
 	}

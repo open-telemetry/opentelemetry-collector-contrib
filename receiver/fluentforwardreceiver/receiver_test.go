@@ -39,9 +39,8 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = logger
 
-	conf := &Config{
-		ListenAddress: "127.0.0.1:0",
-	}
+	conf := createDefaultConfig().(*Config)
+	conf.ListenAddress = "127.0.0.1:0"
 
 	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
@@ -59,6 +58,22 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	}()
 
 	return connect, next, logObserver, cancel, receiver
+}
+
+func TestCreateReceiverAppliesMaxPackedForwardBytes(t *testing.T) {
+	const maxPackedForwardBytes = 1024
+
+	conf := createDefaultConfig().(*Config)
+	conf.ListenAddress = "127.0.0.1:0"
+	conf.MaxPackedForwardBytes = maxPackedForwardBytes
+
+	receiver, err := newFluentReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		conf,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.Equal(t, maxPackedForwardBytes, receiver.(*fluentReceiver).server.maxPackedForwardBytes)
 }
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
@@ -335,9 +350,8 @@ func TestUnixEndpoint(t *testing.T) {
 
 	tmpdir := t.TempDir()
 
-	conf := &Config{
-		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
-	}
+	conf := createDefaultConfig().(*Config)
+	conf.ListenAddress = "unix://" + filepath.Join(tmpdir, "fluent.sock")
 
 	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)

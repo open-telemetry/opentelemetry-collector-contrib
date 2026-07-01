@@ -4,3 +4,6 @@ properties:
   endpoint:
     description: The address to listen on for incoming Fluent Forward events.  Should be of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix domain socket).
     type: string
+  max_packed_forward_bytes:
+    description: MaxPackedForwardBytes is the maximum number of bytes accepted for a packed-forward raw payload (the entries blob before decompression). Defaults to 16 MiB. Increase this if senders produce large uncompressed PackedForward frames.
+    type: integer
