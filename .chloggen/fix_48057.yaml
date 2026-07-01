@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: cmd/telemetrygen
+note: Allow OTLP HTTP endpoints to include a base URL path by splitting endpoint host and joining the path prefix with otlp-http-url-path.
+issues: [48057]
+subtext:
+change_logs: [user]
