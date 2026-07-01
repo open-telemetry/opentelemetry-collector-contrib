@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -707,4 +709,64 @@ func TestSyncBulkIndexer_SuppressConflictErrors(t *testing.T) {
 
 	messages := observed.FilterMessage("failed to index document")
 	assert.Equal(t, 0, messages.Len(), "expected no error logs for version_conflict_engine_exception when SuppressConflictErrors is true")
+}
+
+// TestPooledBulkIndexerIsolation verifies that a BulkIndexer returned to the
+// pool after a successful flush carries no data from the previous session into
+// the next one. It runs with gzip compression enabled so that the compressor
+// state is exercised as well.
+func TestPooledBulkIndexerIsolation(t *testing.T) {
+	var capturedBodies [][]byte
+
+	cfg := Config{}
+	cfg.Compression = configcompression.TypeGzip
+	cfg.CompressionParams = configcompression.CompressionParams{Level: gzip.BestSpeed}
+
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+				body, err := io.ReadAll(req.Body)
+				require.NoError(t, err)
+				capturedBodies = append(capturedBodies, body)
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader(successResp)),
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(ct).TelemetrySettings)
+	require.NoError(t, err)
+
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop(), nil)
+	ctx := t.Context()
+
+	// Session 1 — simulate tenant A.
+	s1 := bi.StartSession(ctx)
+	require.NoError(t, s1.Add(ctx, "tenant-a", "", "", strings.NewReader(`{"tenant":"a"}`), nil, docappender.ActionCreate))
+	require.NoError(t, s1.Flush(ctx))
+	s1.End()
+
+	// Session 2 — simulate tenant B. May reuse the pooled indexer from session 1.
+	s2 := bi.StartSession(ctx)
+	require.NoError(t, s2.Add(ctx, "tenant-b", "", "", strings.NewReader(`{"tenant":"b"}`), nil, docappender.ActionCreate))
+	require.NoError(t, s2.Flush(ctx))
+	s2.End()
+
+	require.Len(t, capturedBodies, 2)
+
+	// Decompress session 2's request body and verify it contains only tenant B's
+	// data — no bytes from session 1 are present.
+	gr, err := gzip.NewReader(bytes.NewReader(capturedBodies[1]))
+	require.NoError(t, err)
+	body, err := io.ReadAll(gr)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(body), "tenant-b")
+	assert.NotContains(t, string(body), "tenant-a")
 }
