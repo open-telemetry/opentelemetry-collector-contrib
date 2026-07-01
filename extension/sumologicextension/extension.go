@@ -61,13 +61,13 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan               chan struct{}
-	closeOnce               sync.Once
-	backOff                 *backoff.ExponentialBackOff
-	backOffMaxElapsedTime   time.Duration
-	id                      component.ID
-	collectorCredentials credentials.CollectorCredentials
-	procx                *procx.Procx
+	closeChan             chan struct{}
+	closeOnce             sync.Once
+	backOff               *backoff.ExponentialBackOff
+	backOffMaxElapsedTime time.Duration
+	id                    component.ID
+	collectorCredentials  credentials.CollectorCredentials
+	procx                 *procx.Procx
 }
 
 const (
