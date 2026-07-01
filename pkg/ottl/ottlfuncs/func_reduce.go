@@ -18,7 +18,7 @@ import (
 type ReduceArguments[K any] struct {
 	Source      ottl.Getter[K]
 	Seed        ottl.Getter[K]
-	Accumulator ottl.LambdaExpression[K]
+	Accumulator *ottl.LambdaExpression[K]
 }
 
 func NewReduceFactory[K any]() ottl.Factory[K] {
@@ -30,7 +30,7 @@ func createReduceFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	if !ok {
 		return nil, errors.New("ReduceFactory args must be of type *ReduceArguments[K]")
 	}
-	return reduce(args.Source, args.Seed, &args.Accumulator), nil
+	return reduce(args.Source, args.Seed, args.Accumulator), nil
 }
 
 func reduce[K any](source, seed ottl.Getter[K], accumulator *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
@@ -70,7 +70,7 @@ func reduceMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivatio
 	acc := seedVal
 	for k, v := range source.All() {
 		if acc, err = accumulateValue(tCtx, lb, acc, k, v); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error while evaluating accumulator function on map item (%s, %v): %w", k, v, err)
 		}
 	}
 	return acc, nil
@@ -84,7 +84,7 @@ func reduceSliceValues[K any](tCtx K, source pcommon.Slice, lb *ottl.LambdaActiv
 	acc := seedVal
 	for i, v := range source.All() {
 		if acc, err = accumulateValue(tCtx, lb, acc, int64(i), v); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error while evaluating accumulator function on slice item (%d, %v): %w", i, v, err)
 		}
 	}
 	return acc, nil
