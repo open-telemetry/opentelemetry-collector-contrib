@@ -109,6 +109,28 @@ func TestLoadConfig(t *testing.T) {
 		expected: jsonCfg,
 	})
 
+	batchCfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
+			queue := exporterhelper.NewDefaultQueueConfig()
+			queue.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				FlushTimeout: 5 * time.Second,
+				Sizer:        exporterhelper.RequestSizerTypeItems,
+				MinSize:      5000,
+				MaxSize:      10000,
+			})
+			return queue
+		}())
+	})
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "batch"),
+		expected: batchCfg,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
