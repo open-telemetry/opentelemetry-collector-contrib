@@ -420,9 +420,10 @@ func TestLoadMetricsConfig(t *testing.T) {
 					Period:           300 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
-						Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
-						Limit:   100,
-						Stats:   []string{"Sum", "Average"},
+						Filters:        configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
+						Limit:          100,
+						Stats:          []string{"Sum", "Average"},
+						RecentlyActive: true,
 					},
 				},
 			},

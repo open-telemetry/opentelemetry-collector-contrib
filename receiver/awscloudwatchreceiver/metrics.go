@@ -164,6 +164,11 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			input.MetricName = aws.String(f.MetricName)
 		}
 	}
+	if s.discovery.RecentlyActive {
+		// Restrict discovery to metrics active in the last three hours. PT3H is the only
+		// value AWS accepts for this filter.
+		input.RecentlyActive = types.RecentlyActivePt3h
+	}
 
 	var out []MetricQuery
 	var nextToken *string

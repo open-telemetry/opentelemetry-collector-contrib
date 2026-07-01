@@ -58,6 +58,11 @@ type MetricsDiscoveryConfig struct {
 	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
+	// RecentlyActive restricts discovery to metrics that have published data
+	// in the past three hours. By default this receiver returns every metric that reported data in the
+	// past two weeks, which includes metrics from terminated resources.
+	// Enabling this dramatically reduces the number of discovered metrics high resource churn.
+	RecentlyActive bool `mapstructure:"recently_active"`
 }
 
 // MetricsDiscoveryFilters optionally narrows which metrics are discovered.
