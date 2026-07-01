@@ -278,7 +278,7 @@ func Test_parseELF(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseELF(tt.target, zap.NewNop())
-			result, err := exprFunc(context.Background(), &ottllog.TransformContext{})
+			result, err := exprFunc(t.Context(), &ottllog.TransformContext{})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -440,5 +440,5 @@ func Test_parseELFDirective(t *testing.T) {
 
 func Test_NewParseELFFactory(t *testing.T) {
 	factory := NewParseELFFactory()
-	assert.Equal(t, "ParseELF", string(factory.Name()))
+	assert.Equal(t, "ParseELF", factory.Name())
 }

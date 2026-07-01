@@ -109,7 +109,7 @@ func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 				if len(trimmed) >= 6 && strings.EqualFold(trimmed[:6], "fields") {
 					return pcommon.Map{}, fmt.Errorf("invalid ELF: malformed #Fields directive %q: %w", line, err)
 				}
-				// Other unrecognised directives (e.g. bare #Remark) are skipped.
+				// Other unrecognized directives (e.g. bare #Remark) are skipped.
 				continue
 			}
 			switch {
@@ -179,7 +179,7 @@ func parseELFDirective(line string) (string, string, error) {
 	return strings.TrimSpace(body[:idx]), strings.TrimSpace(body[idx+1:]), nil
 }
 
-// parseELFDataLine splits a single ELF data line into tokens, honouring double-quoted
+// parseELFDataLine splits a single ELF data line into tokens, honoring double-quoted
 // strings as used by real-world ELF producers (e.g. Microsoft IIS).
 // Whitespace (space or tab) separates tokens; embedded double-quotes inside a quoted
 // string are represented by "" per the W3C ELF spec §2.
@@ -200,19 +200,19 @@ func parseELFDataLine(line string) ([]string, error) {
 			var sb strings.Builder
 			closed := false
 			for i < n {
-				if line[i] == '"' {
-					if i+1 < n && line[i+1] == '"' {
-						// escaped double-quote: "" → "
-						sb.WriteByte('"')
-						i += 2
-					} else {
-						i++ // skip closing '"'
-						closed = true
-						break
-					}
-				} else {
+				if line[i] != '"' {
 					sb.WriteByte(line[i])
 					i++
+					continue
+				}
+				if i+1 < n && line[i+1] == '"' {
+					// escaped double-quote: "" → "
+					sb.WriteByte('"')
+					i += 2
+				} else {
+					i++ // skip closing '"'
+					closed = true
+					break
 				}
 			}
 			if !closed {
