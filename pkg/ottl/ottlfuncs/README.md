@@ -510,6 +510,7 @@ Available Converters:
 - [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [Filter](#filter)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -991,6 +992,37 @@ Examples:
      - `user.name`: smith
      - `user.password`: pass123
 
+### Filter
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Filter(source, predicate)`
+
+The `Filter` converter returns a new `pcommon.Slice` or `pcommon.Map` containing only the elements for which
+`predicate` evaluates to `true`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. The first parameter is
+the element index when filtering a slice (`int64`), or the element key when filtering a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Filter a slice by value:
+
+- `Filter(log.attributes["tags"], (_, v) => v == "prod")`
+
+Filter a map by key:
+
+- `Filter(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Store the filtered result:
+
+- `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
