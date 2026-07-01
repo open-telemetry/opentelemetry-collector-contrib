@@ -1003,11 +1003,13 @@ func TestAutodiscoverTags(t *testing.T) {
 	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
 		LogGroups: []types.LogGroup{
 			{
-				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/working-group"),
+				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/working-group:*"),
+				LogGroupArn:  aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/working-group"),
 				LogGroupName: aws.String("/aws/working-group"),
 			},
 			{
-				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/not-in-tags-group"),
+				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/not-in-tags-group:*"),
+				LogGroupArn:  aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/not-in-tags-group"),
 				LogGroupName: aws.String("/aws/not-in-tags-group"),
 			},
 		},
@@ -1047,11 +1049,16 @@ func TestAutodiscoverTags(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() > 0
+		return sink.LogRecordCount() >= 1
 	}, 2*time.Second, 10*time.Millisecond)
 
 	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
+
+	require.Equal(t, 1, sink.LogRecordCount(), "log group whose tags do not match should be excluded")
+	mc.AssertNotCalled(t, "FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/not-in-tags-group"
+	}), mock.Anything)
 }
 
 func defaultMockClient() client {
