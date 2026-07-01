@@ -241,6 +241,44 @@ metrics:
     enabled: true
 ```
 
+### oracledb.buffer.inspected
+
+Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffer} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.buffer.state | The state of a buffer encountered while inspecting the LRU queue for a reusable buffer (free = a reusable buffer that was skipped; dirty = a dirty buffer found). | Str: ``free``, ``dirty`` | Recommended | - |
+
+### oracledb.buffer.requests
+
+Number of times a reusable or free buffer was requested to create or load a block.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.buffer_cache.block.changes
+
+Number of changes that were part of an update or delete operation made to blocks in the buffer cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {change} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.buffer_cache.block.gets
+
+Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {get} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.buffer_cache.utilization
 
 Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
@@ -248,6 +286,22 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.checkpoint.buffers
+
+Number of buffers written by the Database Writer (DBWR) for checkpoints.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {buffer} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.checkpoint.completed
+
+Number of checkpoints completed by the Database Writer (DBWR).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {checkpoint} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.consistent_gets
 

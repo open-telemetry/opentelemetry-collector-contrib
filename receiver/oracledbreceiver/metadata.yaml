@@ -128,6 +128,10 @@ attributes:
   oracledb.blocking.wait_duration:
     description: The number of seconds this session has been waiting for the current wait event.
     type: int
+  oracledb.buffer.state:
+    description: The state of a buffer encountered while inspecting the LRU queue for a reusable buffer (free = a reusable buffer that was skipped; dirty = a dirty buffer found).
+    type: string
+    enum: [free, dirty]
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
@@ -402,6 +406,47 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.buffer.inspected:
+    description: Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffer}"
+    attributes: [oracledb.buffer.state]
+  oracledb.buffer.requests:
+    description: Number of times a reusable or free buffer was requested to create or load a block.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{request}"
+  oracledb.buffer_cache.block.changes:
+    description: Number of changes that were part of an update or delete operation made to blocks in the buffer cache.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{change}"
+  oracledb.buffer_cache.block.gets:
+    description: Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{get}"
   oracledb.buffer_cache.utilization:
     description: Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
     enabled: false
@@ -409,6 +454,26 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.checkpoint.buffers:
+    description: Number of buffers written by the Database Writer (DBWR) for checkpoints.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{buffer}"
+  oracledb.checkpoint.completed:
+    description: Number of checkpoints completed by the Database Writer (DBWR).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{checkpoint}"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false

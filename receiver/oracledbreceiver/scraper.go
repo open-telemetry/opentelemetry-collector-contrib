@@ -82,6 +82,15 @@ const (
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
 
+	// Buffer cache and DBWR v$sysstat names
+	dbBlockChanges               = "db block changes"
+	dbBlockGetsFromCache         = "db block gets from cache"
+	dbwrCheckpointBuffersWritten = "DBWR checkpoint buffers written"
+	dbwrCheckpoints              = "DBWR checkpoints"
+	dirtyBuffersInspected        = "dirty buffers inspected"
+	freeBufferInspected          = "free buffer inspected"
+	freeBufferRequested          = "free buffer requested"
+
 	// Redo log v$sysstat names
 	redoBlocksWritten      = "redo blocks written"
 	redoBufferAllocRetries = "redo buffer allocation retries"
@@ -322,6 +331,12 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbBufferRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointBuffers.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCheckpointCompleted.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoSize.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbRedoOperations.Enabled ||
@@ -531,6 +546,35 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case sqlnetBytesSentToDBLink:
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Buffer cache and DBWR v$sysstat statistics
+			case dbBlockChanges:
+				if err := s.mb.RecordOracledbBufferCacheBlockChangesDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbBlockGetsFromCache:
+				if err := s.mb.RecordOracledbBufferCacheBlockGetsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpointBuffersWritten:
+				if err := s.mb.RecordOracledbCheckpointBuffersDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbwrCheckpoints:
+				if err := s.mb.RecordOracledbCheckpointCompletedDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dirtyBuffersInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateDirty); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferInspected:
+				if err := s.mb.RecordOracledbBufferInspectedDataPoint(now, row["VALUE"], metadata.AttributeOracledbBufferStateFree); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case freeBufferRequested:
+				if err := s.mb.RecordOracledbBufferRequestsDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			// Redo log v$sysstat statistics
