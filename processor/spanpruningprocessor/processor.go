@@ -182,204 +182,414 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	}
 }
 
-// analyzeAggregationsWithTree performs Phase 1 using tree structure
-// Uses markedForRemoval field on nodes instead of separate map for better performance
-// Optimized to walk up from marked nodes instead of scanning all nodes
+// analyzeAggregationsWithTree plans the candidate aggregation groups, then
+// detects and protects outliers within them, then aggregates the non-protected
+// spans. Planning runs once and feeds both detection and execution.
 func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, tree *traceTree) map[string]aggregationGroup {
-	// Step 1: Get pre-computed leaf nodes
+	// Step 1: plan the groups that would aggregate.
+	groups := p.planCandidateGroups(tree)
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// Step 2: detect outliers at every level and sample exemplars at the top of
+	// each aggregation tree, protecting both as whole subtrees before any
+	// aggregation runs.
+	outlierResultByKey, protectedRootsByKey, exemplarByKey := p.detectAndProtect(ctx, groups)
+
+	// Step 3: aggregate. planCandidateGroups returns groups bottom-up (leaves
+	// first, then parents by increasing depth), so processing them in order
+	// marks a group's children before the parent group is evaluated.
+	aggregationGroups := make(map[string]aggregationGroup, len(groups))
+
+	for _, g := range groups {
+		nodes := g.nodes
+		if g.depth == 0 {
+			// Leaf group: drop protected (preserved outlier or exemplar) subtrees,
+			// then re-check the floor.
+			nodes = excludeProtectedNodes(nodes)
+			if len(nodes) < p.config.MinSpansToAggregate {
+				continue
+			}
+		} else {
+			// Parent group: protection, or a child group that fell below the
+			// floor, can leave a planned parent with an un-aggregated child, so
+			// re-check eligibility against the marks set by the deeper groups.
+			nodes = p.eligibleParents(nodes)
+			if len(nodes) < 2 {
+				continue
+			}
+		}
+
+		templateNode := findLongestDurationNode(nodes)
+		lossInfo := p.recordAttributeLoss(ctx, g.depth == 0, nodes, templateNode)
+
+		preserved := protectedRootsByKey[g.key]
+		sel := exemplarByKey[g.key]
+		aggregationGroups[g.key] = aggregationGroup{
+			nodes:                  nodes,
+			depth:                  g.depth,
+			lossInfo:               lossInfo,
+			templateNode:           templateNode,
+			outlierAnalysis:        outlierResultByKey[g.key],
+			preservedOutliers:      preserved,
+			exemplars:              sel.roots,
+			exemplarPopulationSize: sel.populationSize,
+			exemplarSampleSize:     sel.sampleSize,
+		}
+		for _, n := range nodes {
+			n.markedForRemoval = true
+		}
+		p.recordPreserved(ctx, preserved)
+		p.recordExemplars(ctx, sel.roots)
+	}
+
+	return aggregationGroups
+}
+
+// eligibleParents returns the parents of a planned parent group that are still
+// eligible to aggregate, in a stable order so the summary's parent is chosen
+// deterministically. Protection, or a child group that fell below
+// MinSpansToAggregate, can make a planned parent ineligible by the time it is
+// executed.
+func (p *spanPruningProcessor) eligibleParents(nodes []*spanNode) []*spanNode {
+	out := make([]*spanNode, 0, len(nodes))
+	for _, n := range nodes {
+		if p.isEligibleForParentAggregation(n) {
+			out = append(out, n)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return nodeOrderLess(out[i], out[j])
+	})
+	return out
+}
+
+// recordAttributeLoss computes attribute loss for a group and records the
+// matching leaf or parent telemetry, returning the loss summary.
+func (p *spanPruningProcessor) recordAttributeLoss(ctx context.Context, isLeaf bool, nodes []*spanNode, templateNode *spanNode) attributeLossSummary {
+	if !p.enableAttributeLossAnalysis {
+		return attributeLossSummary{}
+	}
+	lossInfo := analyzeAttributeLoss(nodes, templateNode)
+	if lossInfo.isEmpty() {
+		return lossInfo
+	}
+	recordCtx := ctx
+	if p.shouldSampleAttributeLossExemplar() {
+		recordCtx = createExemplarContext(ctx, templateNode.span.TraceID(), templateNode.span.SpanID())
+	}
+	if isLeaf {
+		p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
+		p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
+	} else {
+		p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
+		p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
+	}
+	return lossInfo
+}
+
+// detectAndProtect runs outlier detection at every level and exemplar sampling
+// at the top of each aggregation tree, protecting both as whole subtrees before
+// aggregation. It returns per-group outlier detection results (to annotate the
+// matching summary), the preserved-outlier roots grouped by key, and the
+// exemplar selection grouped by key (both linked to their summary during
+// execution).
+//
+// Groups are processed shallowest-first so a higher group's protected subtrees
+// land before any deeper group is examined. Top-level groups (closest to the
+// root) sort first, so each exemplar's whole subtree is protected before deeper
+// outlier detection runs and skips it. Within a top-level group, that group's
+// outliers are protected before exemplars are drawn, so exemplars come from the
+// remaining (non-outlier) spans and the two never overlap.
+func (p *spanPruningProcessor) detectAndProtect(ctx context.Context, groups []candidateGroup) (map[string]*outlierAnalysisResult, map[string][]*spanNode, map[string]exemplarSelection) {
+	outliersEnabled := p.config.EnableOutlierAnalysis
+	exemplarsEnabled := p.config.EnableExemplarSampling
+	if !outliersEnabled && !exemplarsEnabled {
+		return nil, nil, nil
+	}
+
+	var inGroup map[*spanNode]struct{}
+	if exemplarsEnabled {
+		inGroup = make(map[*spanNode]struct{})
+		for _, g := range groups {
+			for _, n := range g.nodes {
+				inGroup[n] = struct{}{}
+			}
+		}
+	}
+
+	outlierResultByKey := make(map[string]*outlierAnalysisResult)
+	protectedRootsByKey := make(map[string][]*spanNode)
+	exemplarByKey := make(map[string]exemplarSelection)
+	preserve := outliersEnabled && p.config.OutlierAnalysis.PreserveOutliers
+
+	ordered := append([]candidateGroup(nil), groups...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].nodes[0].depth() < ordered[j].nodes[0].depth()
+	})
+
+	for _, group := range ordered {
+		// Groups whose spans are all inside an already-protected subtree have
+		// nothing left to aggregate or preserve; skip them so detection metrics
+		// don't count spans that are already kept.
+		if !anyUnprotected(group.nodes) {
+			continue
+		}
+
+		if outliersEnabled {
+			if res := analyzeOutliers(group.nodes, p.config.OutlierAnalysis); res != nil {
+				outlierResultByKey[group.key] = res
+				if res.hasOutliers {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(res.outlierIndices)))
+					if len(res.correlations) > 0 {
+						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+					}
+				}
+				if preserve {
+					p.protectOutliers(group, res, protectedRootsByKey)
+				}
+			}
+		}
+
+		// Exemplar sampling runs only at the top of each aggregation tree, after
+		// that group's outliers are protected, drawing from the remaining
+		// (non-outlier) spans. Doing it here, before any deeper group is
+		// examined, protects each exemplar's whole subtree so deeper detection
+		// skips it.
+		if exemplarsEnabled && isTopLevelGroup(group, inGroup) {
+			if sel, ok := p.sampleExemplarsFromGroup(group.nodes); ok {
+				exemplarByKey[group.key] = sel
+			}
+		}
+	}
+	return outlierResultByKey, protectedRootsByKey, exemplarByKey
+}
+
+// protectOutliers selects and protects the outlier subtrees for a single group,
+// appending the preserved roots to protectedRootsByKey under the group key.
+func (p *spanPruningProcessor) protectOutliers(group candidateGroup, res *outlierAnalysisResult, protectedRootsByKey map[string][]*spanNode) {
+	// filterOutlierNodes applies correlation gating and orders outliers most
+	// extreme first. Ask it for all of them (cap 0) and apply
+	// MaxPreservedOutliers here, after dropping outliers already kept by an
+	// enclosing protected subtree. Letting filterOutlierNodes cap first would
+	// spend a budget slot on an already-covered outlier and starve a
+	// not-yet-preserved one further down the order.
+	unlimited := p.config.OutlierAnalysis
+	unlimited.MaxPreservedOutliers = 0
+	_, outliers := filterOutlierNodes(group.nodes, res, unlimited)
+	limit := p.config.OutlierAnalysis.MaxPreservedOutliers
+	for _, o := range outliers {
+		// Skip outliers already kept by an enclosing protected subtree.
+		if o.protected {
+			continue
+		}
+		if limit > 0 && len(protectedRootsByKey[group.key]) >= limit {
+			break
+		}
+		markOutlierSubtree(o)
+		protectedRootsByKey[group.key] = append(protectedRootsByKey[group.key], o)
+	}
+}
+
+// exemplarSelection is the result of sampling exemplars from one top-level
+// group: the sampled subtree roots plus the population size (N) and draw size
+// (D) the executor uses to compose each exemplar's CPS threshold (D/N).
+type exemplarSelection struct {
+	roots          []*spanNode
+	populationSize int
+	sampleSize     int
+}
+
+// sampleExemplarsFromGroup draws random exemplars over the full top-level group
+// (keeping is "outlier OR sampled") and protects each sampled span's whole
+// subtree so it is kept intact instead of aggregated. A drawn span that is
+// already a preserved outlier is kept via the outlier rule (deterministic, so
+// its threshold is left untouched) and is not additionally treated as an
+// exemplar. The draw size D is taken over the full group N and reported as the
+// threshold numerator, because a non-outlier's inclusion probability is D/N
+// regardless of how many draws land on outliers. Lower groups are never
+// sampled: an exemplar is a complete representative tree, taken once at the top.
+func (p *spanPruningProcessor) sampleExemplarsFromGroup(nodes []*spanNode) (exemplarSelection, bool) {
+	if len(nodes) < 2 {
+		return exemplarSelection{}, false
+	}
+	_, sampled := sampleExemplars(nodes, p.config.ExemplarSampling.PrecisionMultiplier)
+	if len(sampled) == 0 {
+		return exemplarSelection{}, false
+	}
+	roots := make([]*spanNode, 0, len(sampled))
+	for _, s := range sampled {
+		// A drawn outlier is already kept deterministically; don't double-tag it.
+		if s.protected {
+			continue
+		}
+		markExemplarSubtree(s)
+		roots = append(roots, s)
+	}
+	if len(roots) == 0 {
+		return exemplarSelection{}, false
+	}
+	return exemplarSelection{roots: roots, populationSize: len(nodes), sampleSize: len(sampled)}, true
+}
+
+// isTopLevelGroup reports whether a candidate group sits at the top of its
+// aggregation tree: none of its members' parents are themselves members of a
+// candidate group, so no higher group aggregates above it.
+func isTopLevelGroup(g candidateGroup, inGroup map[*spanNode]struct{}) bool {
+	for _, n := range g.nodes {
+		if n.parent == nil {
+			continue
+		}
+		if _, ok := inGroup[n.parent]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+// recordExemplars emits exemplar telemetry: one count per sampled exemplar
+// subtree kept in the output.
+func (p *spanPruningProcessor) recordExemplars(ctx context.Context, roots []*spanNode) {
+	if len(roots) == 0 {
+		return
+	}
+	p.telemetryBuilder.ProcessorSpanpruningExemplarsSampled.Add(ctx, int64(len(roots)))
+}
+
+// candidateGroup is a group of sibling spans that would aggregate, paired with
+// the key and aggregation depth the executor will use for it (depth 0 for a leaf
+// group, >=1 for a parent group). Carrying these from planning means detection
+// and execution agree without recomputing them.
+type candidateGroup struct {
+	key   string
+	depth int
+	nodes []*spanNode
+}
+
+// planCandidateGroups computes the groups that would aggregate (leaf groups at
+// or above MinSpansToAggregate and eligible parent groups), ignoring outlier
+// protection. It mutates no node state, tracking would-aggregate membership in a
+// local set, so detection runs over the same groups the executor later forms.
+func (p *spanPruningProcessor) planCandidateGroups(tree *traceTree) []candidateGroup {
 	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {
 		return nil
 	}
 
-	// Step 2: Group similar leaf nodes
-	leafGroups := p.groupLeafNodesByKey(leafNodes)
+	var groups []candidateGroup
+	would := make(map[*spanNode]bool)
+	var marked []*spanNode
 
-	// Step 3: Filter groups meeting minimum threshold and mark nodes
-	// Pre-size based on expected number of groups
-	aggregationGroups := make(map[string]aggregationGroup, len(leafGroups)/2)
-
-	// Track nodes marked in this round for candidate collection
-	var markedNodes []*spanNode
-
-	for groupKey, nodes := range leafGroups {
+	for key, nodes := range p.groupLeafNodesByKey(leafNodes) {
 		if len(nodes) < p.config.MinSpansToAggregate {
 			continue
 		}
-
-		// Outlier analysis and filtering FIRST (before attribute loss).
-		var outlierResult *outlierAnalysisResult
-		var preservedOutliers []*spanNode
-		aggregateNodes := nodes
-
-		if p.config.EnableOutlierAnalysis {
-			outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
-
-			// Record outlier metrics.
-			if outlierResult != nil && outlierResult.hasOutliers {
-				p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
-				if len(outlierResult.correlations) > 0 {
-					p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
-				}
-			}
-
-			// Filter outliers when preservation is enabled.
-			if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
-				aggregateNodes, preservedOutliers = filterOutlierNodes(
-					nodes,
-					outlierResult,
-					p.config.OutlierAnalysis,
-				)
-
-				if len(preservedOutliers) > 0 {
-					p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(len(preservedOutliers)))
-				}
-
-				// Skip aggregation if too few normal spans remain.
-				if len(aggregateNodes) < p.config.MinSpansToAggregate {
-					continue
-				}
-			}
-		}
-
-		// Find template from filtered nodes (excludes preserved outliers).
-		templateNode := findLongestDurationNode(aggregateNodes)
-		var lossInfo attributeLossSummary
-		if p.enableAttributeLossAnalysis {
-			lossInfo = analyzeAttributeLoss(aggregateNodes, templateNode)
-			if !lossInfo.isEmpty() {
-				recordCtx := ctx
-				if p.shouldSampleAttributeLossExemplar() {
-					recordCtx = createExemplarContext(ctx, templateNode.span.TraceID(), templateNode.span.SpanID())
-				}
-				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
-				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
-			}
-		}
-
-		aggregationGroups[groupKey] = aggregationGroup{
-			nodes:             aggregateNodes,
-			depth:             0,
-			lossInfo:          lossInfo,
-			templateNode:      templateNode,
-			outlierAnalysis:   outlierResult,
-			preservedOutliers: preservedOutliers,
-		}
-
-		// Mark only aggregated spans for removal.
-		for _, node := range aggregateNodes {
-			node.markedForRemoval = true
-		}
-		markedNodes = append(markedNodes, aggregateNodes...)
-
-		// Mark outliers as preserved (not removed).
-		for _, outlier := range preservedOutliers {
-			outlier.isPreservedOutlier = true
+		groups = append(groups, candidateGroup{key: key, depth: 0, nodes: nodes})
+		for _, n := range nodes {
+			would[n] = true
+			marked = append(marked, n)
 		}
 	}
 
-	if len(aggregationGroups) == 0 {
-		return nil
-	}
-
-	// Step 4: Walk up the tree to find eligible parent spans recursively
-	// Respect MaxParentDepth: 0 = no parent aggregation, -1 = unlimited, >0 = limit
 	if p.config.MaxParentDepth == 0 {
-		return aggregationGroups
+		return groups
 	}
 
-	// Collect initial parent candidates from marked leaf nodes
-	candidates := collectParentCandidates(markedNodes)
-
+	candidates := collectParentCandidates(marked)
 	depth := 1
 	for len(candidates) > 0 {
-		// Check if we've reached the maximum parent depth limit
 		if p.config.MaxParentDepth > 0 && depth > p.config.MaxParentDepth {
 			break
 		}
 
-		// Find eligible parents from candidates (walks up from marked nodes)
-		eligibleParents := p.findEligibleParentNodesFromCandidates(candidates)
-		if len(eligibleParents) == 0 {
+		var eligible []*spanNode
+		for _, n := range candidates {
+			if planEligibleForParentAggregation(n, would) {
+				eligible = append(eligible, n)
+			}
+		}
+		if len(eligible) == 0 {
 			break
 		}
 
-		// Candidates derive from leaf groups visited in map order, so sort them
-		// into a stable order before grouping. This keeps the summary anchor
-		// (group.nodes[0]) deterministic when same-named parents under different
-		// parents merge into one group.
-		sort.Slice(eligibleParents, func(i, j int) bool {
-			return nodeOrderLess(eligibleParents[i], eligibleParents[j])
-		})
-
-		// Group parent candidates by name + status, keyed on the node's tree
-		// depth (not the loop iteration). Branches of unequal height can make
-		// same-named ancestors at different tree depths eligible in the same
-		// round; keying on iteration depth would merge them and anchor the
-		// summary at a non-deterministic depth.
 		parentGroups := make(map[string][]*spanNode)
-		for _, node := range eligibleParents {
-			parentKey := p.buildParentGroupKey(node.span, node.depth())
-			parentGroups[parentKey] = append(parentGroups[parentKey], node)
+		for _, n := range eligible {
+			key := p.buildParentGroupKey(n.span, n.depth())
+			parentGroups[key] = append(parentGroups[key], n)
 		}
 
-		// Add parent groups (at least 2 parents to aggregate)
-		markedNodes = markedNodes[:0] // reset for this round
-		for parentKey, nodes := range parentGroups {
+		marked = marked[:0]
+		for key, nodes := range parentGroups {
 			if len(nodes) < 2 {
 				continue
 			}
-
-			// Outlier analysis FIRST (before attribute loss).
-			var outlierResult *outlierAnalysisResult
-			if p.config.EnableOutlierAnalysis {
-				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
-
-				if outlierResult != nil && outlierResult.hasOutliers {
-					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
-					if len(outlierResult.correlations) > 0 {
-						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
-					}
-				}
+			groups = append(groups, candidateGroup{key: key, depth: depth, nodes: nodes})
+			for _, n := range nodes {
+				would[n] = true
+				marked = append(marked, n)
 			}
-
-			// Find the template node (longest duration) for this group.
-			templateNode := findLongestDurationNode(nodes)
-			var lossInfo attributeLossSummary
-			if p.enableAttributeLossAnalysis {
-				lossInfo = analyzeAttributeLoss(nodes, templateNode)
-				if !lossInfo.isEmpty() {
-					recordCtx := ctx
-					if p.shouldSampleAttributeLossExemplar() {
-						recordCtx = createExemplarContext(ctx, templateNode.span.TraceID(), templateNode.span.SpanID())
-					}
-					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(recordCtx, int64(len(lossInfo.diverse)))
-					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(recordCtx, int64(len(lossInfo.missing)))
-				}
-			}
-
-			aggregationGroups[parentKey] = aggregationGroup{
-				nodes:           nodes,
-				depth:           depth,
-				lossInfo:        lossInfo,
-				templateNode:    templateNode,
-				outlierAnalysis: outlierResult,
-			}
-			// Mark parent nodes for removal
-			for _, node := range nodes {
-				node.markedForRemoval = true
-			}
-			markedNodes = append(markedNodes, nodes...)
 		}
-
-		if len(markedNodes) == 0 {
+		if len(marked) == 0 {
 			break
 		}
-
-		// Collect next round of candidates from newly marked nodes
-		candidates = collectParentCandidates(markedNodes)
+		candidates = collectParentCandidates(marked)
 		depth++
 	}
+	return groups
+}
 
-	return aggregationGroups
+// recordPreserved emits preserved-outlier telemetry: every span kept across the
+// preserved subtrees rooted at the given outlier roots, not just the roots.
+func (p *spanPruningProcessor) recordPreserved(ctx context.Context, roots []*spanNode) {
+	if len(roots) == 0 {
+		return
+	}
+	p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(preservedSpanCount(roots)))
+}
+
+// planEligibleForParentAggregation mirrors isEligibleForParentAggregation for
+// the planning phase, using the local would-aggregate set rather than node
+// flags and ignoring protection (not yet decided during planning).
+func planEligibleForParentAggregation(node *spanNode, would map[*spanNode]bool) bool {
+	if node.isLeaf || node.parent == nil || would[node] {
+		return false
+	}
+	for _, child := range node.children {
+		if !would[child] {
+			return false
+		}
+	}
+	return true
+}
+
+// anyUnprotected reports whether at least one node is not protected.
+func anyUnprotected(nodes []*spanNode) bool {
+	for _, n := range nodes {
+		if !n.protected {
+			return true
+		}
+	}
+	return false
+}
+
+// excludeProtectedNodes returns the subset of nodes that are not protected,
+// allocating only when at least one node is protected.
+func excludeProtectedNodes(nodes []*spanNode) []*spanNode {
+	protectedCount := 0
+	for _, n := range nodes {
+		if n.protected {
+			protectedCount++
+		}
+	}
+	if protectedCount == 0 {
+		return nodes
+	}
+	out := make([]*spanNode, 0, len(nodes)-protectedCount)
+	for _, n := range nodes {
+		if !n.protected {
+			out = append(out, n)
+		}
+	}
+	return out
 }

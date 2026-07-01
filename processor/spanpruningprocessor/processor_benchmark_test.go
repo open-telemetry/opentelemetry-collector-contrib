@@ -75,7 +75,7 @@ func BenchmarkGroupLeafNodes(b *testing.B) {
 }
 
 // BenchmarkFindEligibleParents benchmarks parent candidate discovery.
-func BenchmarkFindEligibleParents(b *testing.B) {
+func BenchmarkEligibleParents(b *testing.B) {
 	proc := newBenchmarkProcessor(b, 5)
 	spans := generateTestSpans(1000, 50)
 	tree := proc.buildTraceTree(spans)
@@ -91,7 +91,7 @@ func BenchmarkFindEligibleParents(b *testing.B) {
 		for _, c := range candidates {
 			c.markedForRemoval = false
 		}
-		_ = proc.findEligibleParentNodesFromCandidates(candidates)
+		_ = proc.eligibleParents(candidates)
 	}
 }
 

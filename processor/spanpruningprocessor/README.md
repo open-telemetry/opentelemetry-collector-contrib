@@ -28,7 +28,9 @@ Spans are grouped by:
 
 Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name, kind, and status code, and they are not root spans.
 
-Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier spans** as individual spans for debugging while still aggregating normal spans.
+Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier subtrees** for debugging while still aggregating normal spans. Detection runs at every aggregation level, so a slow interior span (for example one slow `handler` among many) is caught and its whole subtree is kept intact.
+
+Optionally, the processor can also randomly preserve a small sub-linear number of **exemplar subtrees** at the top of each aggregation tree. Each sampled span is kept whole (with its descendants) as a sibling of the summary span.
 
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
@@ -130,13 +132,15 @@ processors:
       # Default: 5
       max_correlated_attributes: 5
 
-      # Preserve outlier spans as individual spans instead of aggregating
-      # When true, only normal spans are aggregated; outliers remain in the trace
+      # Preserve outlier subtrees instead of aggregating them
+      # When true, each detected outlier and its whole subtree are kept; only
+      # normal spans are aggregated. Detection runs at every level, so slow
+      # interior spans (not just leaves) are preserved with their subtree.
       # Default: false
       preserve_outliers: false
 
-      # Maximum number of outlier spans to preserve per aggregation group
-      # Spans are selected by most extreme duration first
+      # Maximum number of outlier subtrees to preserve per aggregation group
+      # Outliers are selected by most extreme duration first
       # 0 = preserve all detected outliers
       # Default: 2
       max_preserved_outliers: 2
@@ -151,6 +155,21 @@ processors:
       # Range: [0.0, 1.0+]
       # Default: 0.1 (10%)
       min_outlier_threshold_percent: 0.1
+
+    # Enable random exemplar sampling. When enabled, ceil(precision_multiplier * sqrt(N))
+    # spans are sampled from the top-level group of each aggregation tree and kept as
+    # whole subtrees (siblings of the summary), with their TraceState threshold updated
+    # so consumers can extrapolate.
+    # Default: false
+    enable_exemplar_sampling: false
+
+    # Exemplar sampling configuration (optional)
+    exemplar_sampling:
+      # Multiplier applied to the sqrt(N) sample size. Standard error of cross-trace
+      # estimators scales as 1/sqrt(precision_multiplier). This is a precision knob,
+      # not a strict confidence-interval level.
+      # Default: 1.0
+      precision_multiplier: 1.0
 ```
 
 ## Configuration Options
@@ -172,10 +191,12 @@ processors:
 | `outlier_analysis.correlation_min_occurrence` | float64 | 0.75 | Minimum outlier occurrence fraction for correlation |
 | `outlier_analysis.correlation_max_normal_occurrence` | float64 | 0.25 | Maximum normal occurrence fraction for correlation |
 | `outlier_analysis.max_correlated_attributes` | int | 5 | Maximum correlated attributes to report |
-| `outlier_analysis.preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
-| `outlier_analysis.max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all) |
+| `outlier_analysis.preserve_outliers` | bool | false | Keep outlier subtrees instead of aggregating |
+| `outlier_analysis.max_preserved_outliers` | int | 2 | Max outlier subtrees to preserve per group (0=preserve all) |
 | `outlier_analysis.preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong correlation is found |
 | `outlier_analysis.min_outlier_threshold_percent` | float64 | 0.1 | Minimum percentage above median required before a span is considered an outlier |
+| `enable_exemplar_sampling` | bool | false | Enable random exemplar sampling |
+| `exemplar_sampling.precision_multiplier` | float64 | 1.0 | Multiplier applied to `sqrt(N)` sample size |
 
 ### Glob Pattern Support
 
@@ -284,10 +305,10 @@ Preserved outlier spans are annotated with:
 | `<prefix>is_preserved_outlier` | bool | Identifies span as a preserved outlier |
 | `<prefix>summary_span_id` | string | SpanID of the associated summary span |
 
-A preserved outlier becomes a sibling of its summary span. Grouping is
-depth-aware — leaves and parents are never grouped with same-named ancestors at
-a different depth — so an outlier stays at its original depth and the summary it
-links to (via `summary_span_id`) sits where its group was.
+A preserved outlier (the root of its subtree) becomes a sibling of its summary
+span, and its whole subtree moves with it. The outlier keeps everything beneath it,
+but its aggregated ancestors are replaced by the summary it now hangs from
+(linked via `summary_span_id`).
 
 ### Histogram Buckets
 
@@ -389,13 +410,15 @@ This helps identify root causes of latency issues:
 - **Minimal when disabled**: Zero overhead (no sorting or calculations)
 - **Recommended**: Use `min_group_size: 7` or higher to skip analysis on small groups
 
-### Preserving Outlier Spans (Optional)
+### Preserving Outlier Subtrees (Optional)
 
-When `outlier_analysis.preserve_outliers: true`, detected outlier spans are **kept as individual spans** instead of being aggregated. This provides:
+When `outlier_analysis.preserve_outliers: true`, each detected outlier is **kept along with its whole subtree** instead of being aggregated. A leaf outlier (e.g. a slow query) is the degenerate single-span case; an interior outlier (e.g. a slow `handler`) keeps every span beneath it. This provides:
 
-- **Full visibility** into slow operations for debugging
-- **Preserved context**: Original attributes, events, and links remain intact
-- **Selective aggregation**: Only prune repetitive normal spans
+- **Full visibility** into slow operations for debugging, including everything the slow span did
+- **Preserved context**: original attributes, events, links, and tree structure remain intact
+- **Selective aggregation**: only prune repetitive normal spans
+
+Preservation keeps everything **beneath** an outlier, not above it: the outlier's subtree is kept, but its ancestors still aggregate normally. The preserved subtree is reparented as a sibling of its summary span (the whole subtree moves with its root), so a slow leaf ends up under the same summary its normal siblings collapsed into, and a slow interior span hangs off the summary that replaced its peers.
 
 #### Configuration
 
@@ -413,8 +436,8 @@ processors:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
-| `max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all detected) |
+| `preserve_outliers` | bool | false | Keep outlier subtrees instead of aggregating |
+| `max_preserved_outliers` | int | 2 | Max outlier subtrees to preserve per group (0=preserve all detected) |
 | `preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong attribute correlation is found |
 
 #### Example Output
@@ -452,9 +475,87 @@ handler
 
 #### Behavior Notes
 
-- **Parent aggregation**: Parents can still be aggregated if all their children are either aggregated or preserved as outliers
-- **Skip aggregation**: If preserving outliers leaves too few normal spans (below `min_spans_to_aggregate`), the entire group is left unchanged
-- **Selection order**: Outliers are preserved starting with the most extreme (longest duration) first
+- **Multi-level detection**: outliers are detected within each sibling group at every level (leaf groups and eligible parent groups) that meets `min_group_size`.
+- **Subtree, not ancestors**: a preserved outlier keeps everything beneath it (its whole subtree), but its ancestors still aggregate; the subtree is reparented as a sibling of its summary.
+- **Nested outliers**: an outlier already inside a preserved subtree is not preserved (or counted) again, since the enclosing subtree already keeps it.
+- **Skip aggregation**: if protection leaves a group below `min_spans_to_aggregate`, that group is left unchanged.
+- **Selection order**: outliers are preserved starting with the most extreme (longest duration) first, capped by `max_preserved_outliers` subtrees per group.
+
+### Random Exemplar Sampling (Optional)
+
+When `enable_exemplar_sampling: true`, the processor preserves a randomly
+selected, sub-linear sample of **exemplars** at the top of each aggregation
+tree. Sampling runs only on the top-level group (the spans closest to the root
+that would aggregate); each sampled span is kept as a whole subtree, so an
+exemplar is a complete representative tree rather than an isolated span. Lower
+groups in the same tree are not sampled separately. Exemplar roots are kept as
+siblings of the summary span (same parent) and their TraceState threshold is
+updated to reflect the additional sampling step.
+
+This is complementary to outlier preservation: outliers ensure the tail of the
+duration distribution is represented, while exemplars sample the body.
+Cross-trace consumers can then estimate properties of the aggregated-away
+population (e.g. attribute-value frequencies) by pooling exemplars across many
+traces.
+
+#### Sample Size
+
+For a top-level group of `N` spans, the processor draws
+`D = ceil(precision_multiplier * sqrt(N))` spans without replacement and keeps
+each drawn span's whole subtree. `sqrt(N)` is sub-linear in storage and gives
+bounded relative error for cross-trace analysis. The draw is taken over the full
+group (see *Interaction with outliers* below), so the number of spans that
+become exemplars may be slightly below `D` when some draws land on spans already
+preserved as outliers.
+
+#### Configuration
+
+```yaml
+processors:
+  spanpruning:
+    enable_exemplar_sampling: true
+    exemplar_sampling:
+      precision_multiplier: 1.0
+```
+
+#### Exemplar Span Attributes
+
+The root of each preserved exemplar subtree is annotated with:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>is_exemplar` | bool | Identifies span as a sampled exemplar (root of a kept subtree) |
+| `<prefix>summary_span_id` | string | SpanID of the associated summary span |
+
+#### Summary Span Attributes (When Sampling Exemplars)
+
+When at least one exemplar is preserved, the summary span gets:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>exemplar_count` | int64 | Number of exemplar subtrees preserved |
+| `<prefix>exemplar_span_ids` | []string | SpanIDs of the preserved exemplar roots |
+
+#### Behavior Notes
+
+- **Top level only**: Sampling runs once per aggregation tree, on its top-level
+  group. A group is top-level when none of its members' parents are themselves
+  aggregated into a higher group.
+- **Whole subtree**: Each sampled span keeps its entire subtree; nothing beneath
+  an exemplar is aggregated, and deeper outlier detection skips the protected
+  subtree.
+- **Parent aggregation**: The remaining (non-exemplar) top-level spans still
+  aggregate, and exemplar roots become siblings of that summary.
+- **Small groups**: For `N <= 1` no exemplars are sampled. For small `N` where
+  `D >= N`, the whole group is kept and aggregation is skipped.
+- **Interaction with outliers**: When both features are enabled, a span is kept
+  individually if it is a preserved outlier **OR** it is sampled. Outliers in the
+  top-level group are protected first; the draw is then taken over the full group
+  (outliers included), but the keep is an OR: a span that is both an outlier and
+  drawn is kept once, tagged only as an outlier, and its threshold is left
+  untouched (it is kept deterministically, so its effective keep-probability is
+  1). Non-outlier exemplars compose their threshold by `D/N` over the full group,
+  so adjusted counts remain consistent.
 
 ## Pipeline Placement
 
@@ -605,8 +706,9 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
-| `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept as individual spans (when `preserve_outliers: true`) |
+| `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
+| `otelcol_processor_spanpruning_exemplars_sampled` | Total spans randomly sampled as exemplars (when `enable_exemplar_sampling: true`) |
 
 ### Histograms
 
