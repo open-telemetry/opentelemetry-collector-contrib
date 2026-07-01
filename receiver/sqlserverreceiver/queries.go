@@ -236,6 +236,17 @@ SELECT DISTINCT
 			,'Query Store logical reads'
 			,'Query Store logical writes'
 			,'Execution Errors'
+			,'Active cursors'
+			,'Cached Cursor Counts'
+			,'Number of active cursor plans'
+			,'Cursor memory usage'
+			,'Cursor Requests/sec'
+			,'CLR Execution'
+			,'Tasks Running'
+			,'Task Limit Reached'
+			,'Tasks Started/sec'
+			,'Tasks Aborted/sec'
+			,'Stored Procedures Invoked/sec'
 		) OR (
 			spi.[object_name] LIKE '%User Settable%'
 			OR spi.[object_name] LIKE '%SQL Errors%'
@@ -1065,6 +1076,43 @@ ELSE
 	AND wait_time_ms > 100
 {filter_instance_name};
 `
+
+// sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
+const sqlServerWorkerThreadsQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_worker_threads' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,si.max_workers_count AS [total_threads]
+	,SUM(s.active_workers_count) AS [active_threads]
+	,si.max_workers_count - SUM(s.active_workers_count) AS [available_threads]
+	,SUM(s.runnable_tasks_count) AS [waiting_for_cpu_threads]
+	,SUM(s.work_queue_count) AS [requests_waiting_for_threads]
+FROM sys.dm_os_schedulers s
+CROSS JOIN sys.dm_os_sys_info si
+WHERE s.status = 'VISIBLE ONLINE'
+{filter_instance_name}
+GROUP BY si.max_workers_count
+OPTION(RECOMPILE)
+`
+
+func getSQLServerWorkerThreadsQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerWorkerThreadsQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerWorkerThreadsQuery)
+}
 
 func getSQLServerWaitStatsQuery(instanceName string) string {
 	if instanceName != "" {

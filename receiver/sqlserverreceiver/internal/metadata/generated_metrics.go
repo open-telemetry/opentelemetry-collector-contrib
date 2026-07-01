@@ -48,6 +48,32 @@ var MapAttributeCacheState = map[string]AttributeCacheState{
 	"total":  AttributeCacheStateTotal,
 }
 
+// AttributeCursorState specifies the value cursor.state attribute.
+type AttributeCursorState int
+
+const (
+	_ AttributeCursorState = iota
+	AttributeCursorStateActive
+	AttributeCursorStateCached
+)
+
+// String returns the string representation of the AttributeCursorState.
+func (av AttributeCursorState) String() string {
+	switch av {
+	case AttributeCursorStateActive:
+		return "active"
+	case AttributeCursorStateCached:
+		return "cached"
+	}
+	return ""
+}
+
+// MapAttributeCursorState is a helper map of string to AttributeCursorState attribute value.
+var MapAttributeCursorState = map[string]AttributeCursorState{
+	"active": AttributeCursorStateActive,
+	"cached": AttributeCursorStateCached,
+}
+
 // AttributeDatabaseStatus specifies the value database.status attribute.
 type AttributeDatabaseStatus int
 
@@ -260,6 +286,28 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
+// AttributeRequestState specifies the value request.state attribute.
+type AttributeRequestState int
+
+const (
+	_ AttributeRequestState = iota
+	AttributeRequestStateWaiting
+)
+
+// String returns the string representation of the AttributeRequestState.
+func (av AttributeRequestState) String() string {
+	switch av {
+	case AttributeRequestStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeRequestState is a helper map of string to AttributeRequestState attribute value.
+var MapAttributeRequestState = map[string]AttributeRequestState{
+	"waiting": AttributeRequestStateWaiting,
+}
+
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
 type AttributeSqlserverParameterizationResult int
 
@@ -376,6 +424,58 @@ var MapAttributeTableStatus = map[string]AttributeTableStatus{
 	"permanent": AttributeTableStatusPermanent,
 }
 
+// AttributeTaskResult specifies the value task.result attribute.
+type AttributeTaskResult int
+
+const (
+	_ AttributeTaskResult = iota
+	AttributeTaskResultStarted
+	AttributeTaskResultAborted
+)
+
+// String returns the string representation of the AttributeTaskResult.
+func (av AttributeTaskResult) String() string {
+	switch av {
+	case AttributeTaskResultStarted:
+		return "started"
+	case AttributeTaskResultAborted:
+		return "aborted"
+	}
+	return ""
+}
+
+// MapAttributeTaskResult is a helper map of string to AttributeTaskResult attribute value.
+var MapAttributeTaskResult = map[string]AttributeTaskResult{
+	"started": AttributeTaskResultStarted,
+	"aborted": AttributeTaskResultAborted,
+}
+
+// AttributeTaskState specifies the value task.state attribute.
+type AttributeTaskState int
+
+const (
+	_ AttributeTaskState = iota
+	AttributeTaskStateRunning
+	AttributeTaskStateLimitReached
+)
+
+// String returns the string representation of the AttributeTaskState.
+func (av AttributeTaskState) String() string {
+	switch av {
+	case AttributeTaskStateRunning:
+		return "running"
+	case AttributeTaskStateLimitReached:
+		return "limit_reached"
+	}
+	return ""
+}
+
+// MapAttributeTaskState is a helper map of string to AttributeTaskState attribute value.
+var MapAttributeTaskState = map[string]AttributeTaskState{
+	"running":       AttributeTaskStateRunning,
+	"limit_reached": AttributeTaskStateLimitReached,
+}
+
 // AttributeTempdbState specifies the value tempdb.state attribute.
 type AttributeTempdbState int
 
@@ -428,6 +528,40 @@ var MapAttributeTransitionDirection = map[string]AttributeTransitionDirection{
 	"demotion":  AttributeTransitionDirectionDemotion,
 }
 
+// AttributeWorkerState specifies the value worker.state attribute.
+type AttributeWorkerState int
+
+const (
+	_ AttributeWorkerState = iota
+	AttributeWorkerStateMaximum
+	AttributeWorkerStateActive
+	AttributeWorkerStateAvailable
+	AttributeWorkerStateWaitingForCPU
+)
+
+// String returns the string representation of the AttributeWorkerState.
+func (av AttributeWorkerState) String() string {
+	switch av {
+	case AttributeWorkerStateMaximum:
+		return "maximum"
+	case AttributeWorkerStateActive:
+		return "active"
+	case AttributeWorkerStateAvailable:
+		return "available"
+	case AttributeWorkerStateWaitingForCPU:
+		return "waiting_for_cpu"
+	}
+	return ""
+}
+
+// MapAttributeWorkerState is a helper map of string to AttributeWorkerState attribute value.
+var MapAttributeWorkerState = map[string]AttributeWorkerState{
+	"maximum":         AttributeWorkerStateMaximum,
+	"active":          AttributeWorkerStateActive,
+	"available":       AttributeWorkerStateAvailable,
+	"waiting_for_cpu": AttributeWorkerStateWaitingForCPU,
+}
+
 var MetricsInfo = metricsInfo{
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
@@ -441,11 +575,27 @@ var MetricsInfo = metricsInfo{
 	SqlserverBatchSQLRecompilationRate: metricInfo{
 		Name: "sqlserver.batch.sql_recompilation.rate",
 	},
+	SqlserverClrExecutionTime: metricInfo{
+		Name: "sqlserver.clr.execution.time",
+	},
 	SqlserverComputerUptime: metricInfo{
 		Name: "sqlserver.computer.uptime",
 	},
 	SqlserverCPUCount: metricInfo{
 		Name: "sqlserver.cpu.count",
+	},
+	SqlserverCursorCount: metricInfo{
+		Name:       "sqlserver.cursor.count",
+		Attributes: []string{"cursor.state"},
+	},
+	SqlserverCursorMemory: metricInfo{
+		Name: "sqlserver.cursor.memory",
+	},
+	SqlserverCursorPlanCount: metricInfo{
+		Name: "sqlserver.cursor.plan.count",
+	},
+	SqlserverCursorRequestRate: metricInfo{
+		Name: "sqlserver.cursor.request.rate",
 	},
 	SqlserverDatabaseBackupOrRestoreRate: metricInfo{
 		Name: "sqlserver.database.backup_or_restore.rate",
@@ -595,9 +745,20 @@ var MetricsInfo = metricsInfo{
 	SqlserverResourcePoolDiskThrottledWriteRate: metricInfo{
 		Name: "sqlserver.resource_pool.disk.throttled.write.rate",
 	},
+	SqlserverStoredProcedureInvocationRate: metricInfo{
+		Name: "sqlserver.stored_procedure.invocation.rate",
+	},
 	SqlserverTableCount: metricInfo{
 		Name:       "sqlserver.table.count",
 		Attributes: []string{"table.state", "table.status"},
+	},
+	SqlserverTaskCount: metricInfo{
+		Name:       "sqlserver.task.count",
+		Attributes: []string{"task.state"},
+	},
+	SqlserverTaskRate: metricInfo{
+		Name:       "sqlserver.task.rate",
+		Attributes: []string{"task.result"},
 	},
 	SqlserverTransactionDelay: metricInfo{
 		Name: "sqlserver.transaction.delay",
@@ -632,6 +793,14 @@ var MetricsInfo = metricsInfo{
 	SqlserverUserConnectionCount: metricInfo{
 		Name: "sqlserver.user.connection.count",
 	},
+	SqlserverWorkerRequestCount: metricInfo{
+		Name:       "sqlserver.worker.request.count",
+		Attributes: []string{"request.state"},
+	},
+	SqlserverWorkerThreadCount: metricInfo{
+		Name:       "sqlserver.worker.thread.count",
+		Attributes: []string{"worker.state"},
+	},
 }
 
 type metricsInfo struct {
@@ -639,8 +808,13 @@ type metricsInfo struct {
 	SqlserverBatchRequestRate                   metricInfo
 	SqlserverBatchSQLCompilationRate            metricInfo
 	SqlserverBatchSQLRecompilationRate          metricInfo
+	SqlserverClrExecutionTime                   metricInfo
 	SqlserverComputerUptime                     metricInfo
 	SqlserverCPUCount                           metricInfo
+	SqlserverCursorCount                        metricInfo
+	SqlserverCursorMemory                       metricInfo
+	SqlserverCursorPlanCount                    metricInfo
+	SqlserverCursorRequestRate                  metricInfo
 	SqlserverDatabaseBackupOrRestoreRate        metricInfo
 	SqlserverDatabaseCount                      metricInfo
 	SqlserverDatabaseExecutionErrors            metricInfo
@@ -685,7 +859,10 @@ type metricsInfo struct {
 	SqlserverResourcePoolDiskOperations         metricInfo
 	SqlserverResourcePoolDiskThrottledReadRate  metricInfo
 	SqlserverResourcePoolDiskThrottledWriteRate metricInfo
+	SqlserverStoredProcedureInvocationRate      metricInfo
 	SqlserverTableCount                         metricInfo
+	SqlserverTaskCount                          metricInfo
+	SqlserverTaskRate                           metricInfo
 	SqlserverTransactionDelay                   metricInfo
 	SqlserverTransactionMirrorWriteRate         metricInfo
 	SqlserverTransactionRate                    metricInfo
@@ -697,6 +874,8 @@ type metricsInfo struct {
 	SqlserverTransactionLogShrinkCount          metricInfo
 	SqlserverTransactionLogUsage                metricInfo
 	SqlserverUserConnectionCount                metricInfo
+	SqlserverWorkerRequestCount                 metricInfo
+	SqlserverWorkerThreadCount                  metricInfo
 }
 
 type metricInfo struct {
@@ -904,6 +1083,58 @@ func newMetricSqlserverBatchSQLRecompilationRate(cfg SqlserverBatchSQLRecompilat
 	return m
 }
 
+type metricSqlserverClrExecutionTime struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SqlserverClrExecutionTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.clr.execution.time metric with initial data.
+func (m *metricSqlserverClrExecutionTime) init() {
+	m.data.SetName("sqlserver.clr.execution.time")
+	m.data.SetDescription("Cumulative time spent executing in the CLR. Sourced from the SQLServer:CLR performance counter object. Only non-zero when CLR integration is enabled and CLR code has been executed.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSqlserverClrExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverClrExecutionTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverClrExecutionTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverClrExecutionTime(cfg SqlserverClrExecutionTimeMetricConfig) metricSqlserverClrExecutionTime {
+	m := metricSqlserverClrExecutionTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverComputerUptime struct {
 	data     pmetric.Metric                      // data buffer for generated metric.
 	config   SqlserverComputerUptimeMetricConfig // metric config provided by user.
@@ -996,6 +1227,245 @@ func (m *metricSqlserverCPUCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverCPUCount(cfg SqlserverCPUCountMetricConfig) metricSqlserverCPUCount {
 	m := metricSqlserverCPUCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverCursorCount struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SqlserverCursorCountMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.cursor.count metric with initial data.
+func (m *metricSqlserverCursorCount) init() {
+	m.data.SetName("sqlserver.cursor.count")
+	m.data.SetDescription("Number of cursors by state (active or cached).")
+	m.data.SetUnit("{cursor}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverCursorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cursorStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverCursorCountMetricAttributeKeyCursorState) {
+		dp.Attributes().PutStr("cursor.state", cursorStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverCursorCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverCursorCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverCursorCount(cfg SqlserverCursorCountMetricConfig) metricSqlserverCursorCount {
+	m := metricSqlserverCursorCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverCursorMemory struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SqlserverCursorMemoryMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.cursor.memory metric with initial data.
+func (m *metricSqlserverCursorMemory) init() {
+	m.data.SetName("sqlserver.cursor.memory")
+	m.data.SetDescription("Memory used by cursors.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverCursorMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverCursorMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverCursorMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverCursorMemory(cfg SqlserverCursorMemoryMetricConfig) metricSqlserverCursorMemory {
+	m := metricSqlserverCursorMemory{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverCursorPlanCount struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   SqlserverCursorPlanCountMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.cursor.plan.count metric with initial data.
+func (m *metricSqlserverCursorPlanCount) init() {
+	m.data.SetName("sqlserver.cursor.plan.count")
+	m.data.SetDescription("Number of active cursor plans.")
+	m.data.SetUnit("{plan}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverCursorPlanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverCursorPlanCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverCursorPlanCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverCursorPlanCount(cfg SqlserverCursorPlanCountMetricConfig) metricSqlserverCursorPlanCount {
+	m := metricSqlserverCursorPlanCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverCursorRequestRate struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SqlserverCursorRequestRateMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.cursor.request.rate metric with initial data.
+func (m *metricSqlserverCursorRequestRate) init() {
+	m.data.SetName("sqlserver.cursor.request.rate")
+	m.data.SetDescription("Rate of cursor requests per second.")
+	m.data.SetUnit("{request}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverCursorRequestRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverCursorRequestRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverCursorRequestRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverCursorRequestRate(cfg SqlserverCursorRequestRateMetricConfig) metricSqlserverCursorRequestRate {
+	m := metricSqlserverCursorRequestRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3876,6 +4346,56 @@ func newMetricSqlserverResourcePoolDiskThrottledWriteRate(cfg SqlserverResourceP
 	return m
 }
 
+type metricSqlserverStoredProcedureInvocationRate struct {
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   SqlserverStoredProcedureInvocationRateMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.stored_procedure.invocation.rate metric with initial data.
+func (m *metricSqlserverStoredProcedureInvocationRate) init() {
+	m.data.SetName("sqlserver.stored_procedure.invocation.rate")
+	m.data.SetDescription("Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetUnit("{invocation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverStoredProcedureInvocationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverStoredProcedureInvocationRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverStoredProcedureInvocationRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverStoredProcedureInvocationRate(cfg SqlserverStoredProcedureInvocationRateMetricConfig) metricSqlserverStoredProcedureInvocationRate {
+	m := metricSqlserverStoredProcedureInvocationRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverTableCount struct {
 	data          pmetric.Metric                  // data buffer for generated metric.
 	config        SqlserverTableCountMetricConfig // metric config provided by user.
@@ -3962,6 +4482,184 @@ func (m *metricSqlserverTableCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverTableCount(cfg SqlserverTableCountMetricConfig) metricSqlserverTableCount {
 	m := metricSqlserverTableCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverTaskCount struct {
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SqlserverTaskCountMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.task.count metric with initial data.
+func (m *metricSqlserverTaskCount) init() {
+	m.data.SetName("sqlserver.task.count")
+	m.data.SetDescription("Number of Service Broker activation tasks by state (running or limit_reached). Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetUnit("{task}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverTaskCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, taskStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverTaskCountMetricAttributeKeyTaskState) {
+		dp.Attributes().PutStr("task.state", taskStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverTaskCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverTaskCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverTaskCount(cfg SqlserverTaskCountMetricConfig) metricSqlserverTaskCount {
+	m := metricSqlserverTaskCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverTaskRate struct {
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SqlserverTaskRateMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.task.rate metric with initial data.
+func (m *metricSqlserverTaskRate) init() {
+	m.data.SetName("sqlserver.task.rate")
+	m.data.SetDescription("Rate of Service Broker activation tasks by type (started or aborted) per second. Sourced from the SQLServer:Broker Activation performance counter object.")
+	m.data.SetUnit("{task}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverTaskRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, taskResultAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverTaskRateMetricAttributeKeyTaskResult) {
+		dp.Attributes().PutStr("task.result", taskResultAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverTaskRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverTaskRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverTaskRate(cfg SqlserverTaskRateMetricConfig) metricSqlserverTaskRate {
+	m := metricSqlserverTaskRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4526,6 +5224,184 @@ func newMetricSqlserverUserConnectionCount(cfg SqlserverUserConnectionCountMetri
 	return m
 }
 
+type metricSqlserverWorkerRequestCount struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SqlserverWorkerRequestCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.worker.request.count metric with initial data.
+func (m *metricSqlserverWorkerRequestCount) init() {
+	m.data.SetName("sqlserver.worker.request.count")
+	m.data.SetDescription("Number of worker requests by state.")
+	m.data.SetUnit("{request}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverWorkerRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverWorkerRequestCountMetricAttributeKeyRequestState) {
+		dp.Attributes().PutStr("request.state", requestStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverWorkerRequestCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverWorkerRequestCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverWorkerRequestCount(cfg SqlserverWorkerRequestCountMetricConfig) metricSqlserverWorkerRequestCount {
+	m := metricSqlserverWorkerRequestCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverWorkerThreadCount struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SqlserverWorkerThreadCountMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.worker.thread.count metric with initial data.
+func (m *metricSqlserverWorkerThreadCount) init() {
+	m.data.SetName("sqlserver.worker.thread.count")
+	m.data.SetDescription("Number of worker threads by state.")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverWorkerThreadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, workerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverWorkerThreadCountMetricAttributeKeyWorkerState) {
+		dp.Attributes().PutStr("worker.state", workerStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverWorkerThreadCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverWorkerThreadCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverWorkerThreadCount(cfg SqlserverWorkerThreadCountMetricConfig) metricSqlserverWorkerThreadCount {
+	m := metricSqlserverWorkerThreadCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -4540,8 +5416,13 @@ type MetricsBuilder struct {
 	metricSqlserverBatchRequestRate                   metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate            metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate          metricSqlserverBatchSQLRecompilationRate
+	metricSqlserverClrExecutionTime                   metricSqlserverClrExecutionTime
 	metricSqlserverComputerUptime                     metricSqlserverComputerUptime
 	metricSqlserverCPUCount                           metricSqlserverCPUCount
+	metricSqlserverCursorCount                        metricSqlserverCursorCount
+	metricSqlserverCursorMemory                       metricSqlserverCursorMemory
+	metricSqlserverCursorPlanCount                    metricSqlserverCursorPlanCount
+	metricSqlserverCursorRequestRate                  metricSqlserverCursorRequestRate
 	metricSqlserverDatabaseBackupOrRestoreRate        metricSqlserverDatabaseBackupOrRestoreRate
 	metricSqlserverDatabaseCount                      metricSqlserverDatabaseCount
 	metricSqlserverDatabaseExecutionErrors            metricSqlserverDatabaseExecutionErrors
@@ -4586,7 +5467,10 @@ type MetricsBuilder struct {
 	metricSqlserverResourcePoolDiskOperations         metricSqlserverResourcePoolDiskOperations
 	metricSqlserverResourcePoolDiskThrottledReadRate  metricSqlserverResourcePoolDiskThrottledReadRate
 	metricSqlserverResourcePoolDiskThrottledWriteRate metricSqlserverResourcePoolDiskThrottledWriteRate
+	metricSqlserverStoredProcedureInvocationRate      metricSqlserverStoredProcedureInvocationRate
 	metricSqlserverTableCount                         metricSqlserverTableCount
+	metricSqlserverTaskCount                          metricSqlserverTaskCount
+	metricSqlserverTaskRate                           metricSqlserverTaskRate
 	metricSqlserverTransactionDelay                   metricSqlserverTransactionDelay
 	metricSqlserverTransactionMirrorWriteRate         metricSqlserverTransactionMirrorWriteRate
 	metricSqlserverTransactionRate                    metricSqlserverTransactionRate
@@ -4598,6 +5482,8 @@ type MetricsBuilder struct {
 	metricSqlserverTransactionLogShrinkCount          metricSqlserverTransactionLogShrinkCount
 	metricSqlserverTransactionLogUsage                metricSqlserverTransactionLogUsage
 	metricSqlserverUserConnectionCount                metricSqlserverUserConnectionCount
+	metricSqlserverWorkerRequestCount                 metricSqlserverWorkerRequestCount
+	metricSqlserverWorkerThreadCount                  metricSqlserverWorkerThreadCount
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -4627,8 +5513,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverBatchRequestRate:                   newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:            newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
 		metricSqlserverBatchSQLRecompilationRate:          newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverClrExecutionTime:                   newMetricSqlserverClrExecutionTime(mbc.Metrics.SqlserverClrExecutionTime),
 		metricSqlserverComputerUptime:                     newMetricSqlserverComputerUptime(mbc.Metrics.SqlserverComputerUptime),
 		metricSqlserverCPUCount:                           newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
+		metricSqlserverCursorCount:                        newMetricSqlserverCursorCount(mbc.Metrics.SqlserverCursorCount),
+		metricSqlserverCursorMemory:                       newMetricSqlserverCursorMemory(mbc.Metrics.SqlserverCursorMemory),
+		metricSqlserverCursorPlanCount:                    newMetricSqlserverCursorPlanCount(mbc.Metrics.SqlserverCursorPlanCount),
+		metricSqlserverCursorRequestRate:                  newMetricSqlserverCursorRequestRate(mbc.Metrics.SqlserverCursorRequestRate),
 		metricSqlserverDatabaseBackupOrRestoreRate:        newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
 		metricSqlserverDatabaseCount:                      newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
 		metricSqlserverDatabaseExecutionErrors:            newMetricSqlserverDatabaseExecutionErrors(mbc.Metrics.SqlserverDatabaseExecutionErrors),
@@ -4673,7 +5564,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverResourcePoolDiskOperations:         newMetricSqlserverResourcePoolDiskOperations(mbc.Metrics.SqlserverResourcePoolDiskOperations),
 		metricSqlserverResourcePoolDiskThrottledReadRate:  newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
 		metricSqlserverResourcePoolDiskThrottledWriteRate: newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
+		metricSqlserverStoredProcedureInvocationRate:      newMetricSqlserverStoredProcedureInvocationRate(mbc.Metrics.SqlserverStoredProcedureInvocationRate),
 		metricSqlserverTableCount:                         newMetricSqlserverTableCount(mbc.Metrics.SqlserverTableCount),
+		metricSqlserverTaskCount:                          newMetricSqlserverTaskCount(mbc.Metrics.SqlserverTaskCount),
+		metricSqlserverTaskRate:                           newMetricSqlserverTaskRate(mbc.Metrics.SqlserverTaskRate),
 		metricSqlserverTransactionDelay:                   newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
 		metricSqlserverTransactionMirrorWriteRate:         newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
 		metricSqlserverTransactionRate:                    newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
@@ -4685,6 +5579,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTransactionLogShrinkCount:          newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:                newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
 		metricSqlserverUserConnectionCount:                newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
+		metricSqlserverWorkerRequestCount:                 newMetricSqlserverWorkerRequestCount(mbc.Metrics.SqlserverWorkerRequestCount),
+		metricSqlserverWorkerThreadCount:                  newMetricSqlserverWorkerThreadCount(mbc.Metrics.SqlserverWorkerThreadCount),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
@@ -4815,8 +5711,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
+	mb.metricSqlserverClrExecutionTime.emit(ils.Metrics())
 	mb.metricSqlserverComputerUptime.emit(ils.Metrics())
 	mb.metricSqlserverCPUCount.emit(ils.Metrics())
+	mb.metricSqlserverCursorCount.emit(ils.Metrics())
+	mb.metricSqlserverCursorMemory.emit(ils.Metrics())
+	mb.metricSqlserverCursorPlanCount.emit(ils.Metrics())
+	mb.metricSqlserverCursorRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseBackupOrRestoreRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseExecutionErrors.emit(ils.Metrics())
@@ -4861,7 +5762,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverResourcePoolDiskOperations.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledReadRate.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledWriteRate.emit(ils.Metrics())
+	mb.metricSqlserverStoredProcedureInvocationRate.emit(ils.Metrics())
 	mb.metricSqlserverTableCount.emit(ils.Metrics())
+	mb.metricSqlserverTaskCount.emit(ils.Metrics())
+	mb.metricSqlserverTaskRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionDelay.emit(ils.Metrics())
 	mb.metricSqlserverTransactionMirrorWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionRate.emit(ils.Metrics())
@@ -4873,6 +5777,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
+	mb.metricSqlserverWorkerRequestCount.emit(ils.Metrics())
+	mb.metricSqlserverWorkerThreadCount.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -4924,6 +5830,11 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts p
 	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverClrExecutionTimeDataPoint adds a data point to sqlserver.clr.execution.time metric.
+func (mb *MetricsBuilder) RecordSqlserverClrExecutionTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverClrExecutionTime.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSqlserverComputerUptimeDataPoint adds a data point to sqlserver.computer.uptime metric.
 func (mb *MetricsBuilder) RecordSqlserverComputerUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -4942,6 +5853,26 @@ func (mb *MetricsBuilder) RecordSqlserverCPUCountDataPoint(ts pcommon.Timestamp,
 	}
 	mb.metricSqlserverCPUCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
+}
+
+// RecordSqlserverCursorCountDataPoint adds a data point to sqlserver.cursor.count metric.
+func (mb *MetricsBuilder) RecordSqlserverCursorCountDataPoint(ts pcommon.Timestamp, val int64, cursorStateAttributeValue AttributeCursorState) {
+	mb.metricSqlserverCursorCount.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue.String())
+}
+
+// RecordSqlserverCursorMemoryDataPoint adds a data point to sqlserver.cursor.memory metric.
+func (mb *MetricsBuilder) RecordSqlserverCursorMemoryDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverCursorMemory.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverCursorPlanCountDataPoint adds a data point to sqlserver.cursor.plan.count metric.
+func (mb *MetricsBuilder) RecordSqlserverCursorPlanCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverCursorPlanCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverCursorRequestRateDataPoint adds a data point to sqlserver.cursor.request.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverCursorRequestRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverCursorRequestRate.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverDatabaseBackupOrRestoreRateDataPoint adds a data point to sqlserver.database.backup_or_restore.rate metric.
@@ -5194,9 +6125,24 @@ func (mb *MetricsBuilder) RecordSqlserverResourcePoolDiskThrottledWriteRateDataP
 	return nil
 }
 
+// RecordSqlserverStoredProcedureInvocationRateDataPoint adds a data point to sqlserver.stored_procedure.invocation.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverStoredProcedureInvocationRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverStoredProcedureInvocationRate.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSqlserverTableCountDataPoint adds a data point to sqlserver.table.count metric.
 func (mb *MetricsBuilder) RecordSqlserverTableCountDataPoint(ts pcommon.Timestamp, val int64, tableStateAttributeValue AttributeTableState, tableStatusAttributeValue AttributeTableStatus) {
 	mb.metricSqlserverTableCount.recordDataPoint(mb.startTime, ts, val, tableStateAttributeValue.String(), tableStatusAttributeValue.String())
+}
+
+// RecordSqlserverTaskCountDataPoint adds a data point to sqlserver.task.count metric.
+func (mb *MetricsBuilder) RecordSqlserverTaskCountDataPoint(ts pcommon.Timestamp, val int64, taskStateAttributeValue AttributeTaskState) {
+	mb.metricSqlserverTaskCount.recordDataPoint(mb.startTime, ts, val, taskStateAttributeValue.String())
+}
+
+// RecordSqlserverTaskRateDataPoint adds a data point to sqlserver.task.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverTaskRateDataPoint(ts pcommon.Timestamp, val float64, taskResultAttributeValue AttributeTaskResult) {
+	mb.metricSqlserverTaskRate.recordDataPoint(mb.startTime, ts, val, taskResultAttributeValue.String())
 }
 
 // RecordSqlserverTransactionDelayDataPoint adds a data point to sqlserver.transaction.delay metric.
@@ -5252,6 +6198,16 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon
 // RecordSqlserverUserConnectionCountDataPoint adds a data point to sqlserver.user.connection.count metric.
 func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverWorkerRequestCountDataPoint adds a data point to sqlserver.worker.request.count metric.
+func (mb *MetricsBuilder) RecordSqlserverWorkerRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestStateAttributeValue AttributeRequestState) {
+	mb.metricSqlserverWorkerRequestCount.recordDataPoint(mb.startTime, ts, val, requestStateAttributeValue.String())
+}
+
+// RecordSqlserverWorkerThreadCountDataPoint adds a data point to sqlserver.worker.thread.count metric.
+func (mb *MetricsBuilder) RecordSqlserverWorkerThreadCountDataPoint(ts pcommon.Timestamp, val int64, workerStateAttributeValue AttributeWorkerState) {
+	mb.metricSqlserverWorkerThreadCount.recordDataPoint(mb.startTime, ts, val, workerStateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
