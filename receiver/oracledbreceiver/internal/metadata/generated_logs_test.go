@@ -38,6 +38,8 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetOracleDbVersion("oracle.db.version-val")
 	rb.SetOracledbInstanceName("oracledb.instance.name-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -151,6 +153,8 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetOracleDbVersion("oracle.db.version-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
