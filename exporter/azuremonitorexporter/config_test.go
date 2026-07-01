@@ -46,12 +46,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				ConnectionString:   "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
-				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				MaxBatchSize:       100,
-				MaxBatchInterval:   10 * time.Second,
-				SpanEventsEnabled:  false,
-				ClientConfig:       clientConfig,
+				ConnectionString:                          "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
+				InstrumentationKey:                        "00000000-0000-0000-0000-000000000000",
+				MaxBatchSize:                              100,
+				MaxBatchInterval:                          10 * time.Second,
+				SpanEventsEnabled:                         false,
+				NonErrorHTTPStatusCodes:                   []int{404, 409},
+				AlignHTTPServerRequestSuccessWithOTelSpec: true,
+				ClientConfig:                              clientConfig,
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
@@ -117,6 +119,20 @@ func TestConfigValidate(t *testing.T) {
 				CloudRoleInstance:  []string{"host.name", "service.instance.id"},
 				ApplicationVersion: []string{"service.version", "v0.0.0"},
 			}},
+		},
+		{
+			name: "configured non_error_http_status_codes are valid",
+			cfg:  &Config{NonErrorHTTPStatusCodes: []int{404, 409}},
+		},
+		{
+			name:    "non_error_http_status_codes rejects status code below valid range",
+			cfg:     &Config{NonErrorHTTPStatusCodes: []int{99}},
+			wantErr: "non_error_http_status_codes contains invalid HTTP status code 99",
+		},
+		{
+			name:    "non_error_http_status_codes rejects status code above valid range",
+			cfg:     &Config{NonErrorHTTPStatusCodes: []int{600}},
+			wantErr: "non_error_http_status_codes contains invalid HTTP status code 600",
 		},
 		{
 			name: "explicit empty cloud_role_instance is rejected",

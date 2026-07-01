@@ -348,6 +348,91 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	assert.Equal(t, "12345", envelope.Tags[contracts.UserId])
 }
 
+func TestHTTPStatusSuccessConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		span              ptrace.Span
+		httpSuccessConfig httpStatusCodeSuccessConfig
+		wantSuccess       bool
+	}{
+		{
+			name:        "default server 404 remains failure",
+			span:        getHTTPSpanWithStatusCode(ptrace.SpanKindServer, http.StatusNotFound),
+			wantSuccess: false,
+		},
+		{
+			name:        "default client 404 remains failure",
+			span:        getHTTPSpanWithStatusCode(ptrace.SpanKindClient, http.StatusNotFound),
+			wantSuccess: false,
+		},
+		{
+			name: "non-error status code applies to server",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindServer, http.StatusNotFound),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				NonErrorHTTPStatusCodes: []int{http.StatusNotFound},
+			},
+			wantSuccess: true,
+		},
+		{
+			name: "non-error status code applies to client",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindClient, http.StatusNotFound),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				NonErrorHTTPStatusCodes: []int{http.StatusNotFound},
+			},
+			wantSuccess: true,
+		},
+		{
+			name: "server otel alignment treats server 404 as success",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindServer, http.StatusNotFound),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				AlignHTTPServerRequestSuccessWithOTelSpec: true,
+			},
+			wantSuccess: true,
+		},
+		{
+			name: "server otel alignment does not affect client 404",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindClient, http.StatusNotFound),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				AlignHTTPServerRequestSuccessWithOTelSpec: true,
+			},
+			wantSuccess: false,
+		},
+		{
+			name: "server otel alignment does not affect consumer 404",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindConsumer, http.StatusNotFound),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				AlignHTTPServerRequestSuccessWithOTelSpec: true,
+			},
+			wantSuccess: false,
+		},
+		{
+			name: "server otel alignment does not affect server 500",
+			span: getHTTPSpanWithStatusCode(ptrace.SpanKindServer, http.StatusInternalServerError),
+			httpSuccessConfig: httpStatusCodeSuccessConfig{
+				AlignHTTPServerRequestSuccessWithOTelSpec: true,
+			},
+			wantSuccess: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envelopes, err := spanToEnvelopesWithHTTPSuccessConfig(defaultResource, defaultInstrumentationLibrary, tt.span, true, tt.httpSuccessConfig, nil, zap.NewNop())
+			assert.NoError(t, err)
+
+			data := envelopes[0].Data.(*contracts.Data).BaseData
+			switch typedData := data.(type) {
+			case *contracts.RequestData:
+				assert.Equal(t, tt.wantSuccess, typedData.Success)
+			case *contracts.RemoteDependencyData:
+				assert.Equal(t, tt.wantSuccess, typedData.Success)
+			default:
+				assert.Failf(t, "unexpected envelope data type", "%T", typedData)
+			}
+		})
+	}
+}
+
 // Tests proper assignment for an RPC server span
 func TestRPCServerSpanToRequestData(t *testing.T) {
 	span := getDefaultRPCServerSpan()
@@ -912,6 +997,12 @@ func getDefaultHTTPClientSpan() ptrace.Span {
 	return getClientSpan(
 		defaultHTTPClientSpanName,
 		requiredHTTPAttributes)
+}
+
+func getHTTPSpanWithStatusCode(spanKind ptrace.SpanKind, statusCode int) ptrace.Span {
+	span := getSpan(defaultHTTPClientSpanName, spanKind, requiredHTTPAttributes)
+	span.Attributes().PutInt("http.response.status_code", int64(statusCode))
+	return span
 }
 
 func getDefaultRPCServerSpan() ptrace.Span {
