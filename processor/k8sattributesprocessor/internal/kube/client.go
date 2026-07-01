@@ -35,26 +35,33 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                      sync.RWMutex
-	deleteMut              sync.Mutex
-	logger                 *zap.Logger
-	kc                     kubernetes.Interface
-	mc                     clientmeta.Interface
-	informer               cache.SharedInformer
-	namespaceInformer      cache.SharedInformer
-	nodeInformer           cache.SharedInformer
-	deploymentInformer     cache.SharedInformer
-	statefulsetInformer    cache.SharedInformer
-	daemonsetInformer      cache.SharedInformer
-	jobInformer            cache.SharedInformer
-	replicasetInformer     cache.SharedInformer
-	cronJobRegex           *regexp.Regexp
-	deleteQueue            []deleteRequest
-	stopCh                 chan struct{}
-	waitForMetadata        bool
-	waitForMetadataTimeout time.Duration
-	watchSyncPeriod        time.Duration
-	podDeleteGracePeriod   time.Duration
+	m                              sync.RWMutex
+	deleteMut                      sync.Mutex
+	logger                         *zap.Logger
+	kc                             kubernetes.Interface
+	mc                             clientmeta.Interface
+	informer                       cache.SharedInformer
+	additionalPodInformers         []cache.SharedInformer
+	namespaceInformer              cache.SharedInformer
+	nodeInformer                   cache.SharedInformer
+	deploymentInformer             cache.SharedInformer
+	additionalDeploymentInformers  []cache.SharedInformer
+	statefulsetInformer            cache.SharedInformer
+	additionalStatefulSetInformers []cache.SharedInformer
+	daemonsetInformer              cache.SharedInformer
+	additionalDaemonSetInformers   []cache.SharedInformer
+	jobInformer                    cache.SharedInformer
+	additionalJobInformers         []cache.SharedInformer
+	replicasetInformer             cache.SharedInformer
+	additionalReplicaSetInformers  []cache.SharedInformer
+	replicasetRegex                *regexp.Regexp
+	cronJobRegex                   *regexp.Regexp
+	deleteQueue                    []deleteRequest
+	stopCh                         chan struct{}
+	waitForMetadata                bool
+	waitForMetadataTimeout         time.Duration
+	watchSyncPeriod                time.Duration
+	podDeleteGracePeriod           time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -213,7 +220,9 @@ func New(
 		}
 	}
 
-	c.informer = informersFactory.newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	namespaces := normalizedFilterNamespaces(c.Filters)
+
+	c.informer = informersFactory.newInformer(c.kc, namespaces[0], labelSelector, fieldSelector)
 	err = c.informer.SetTransform(
 		func(object any) (any, error) {
 			originalPod, success := object.(*api_v1.Pod)
@@ -226,6 +235,24 @@ func New(
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, namespace := range namespaces[1:] {
+		informer := informersFactory.newInformer(c.kc, namespace, labelSelector, fieldSelector)
+		err = informer.SetTransform(
+			func(object any) (any, error) {
+				originalPod, success := object.(*api_v1.Pod)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryPodData(originalPod, c.Rules), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		c.additionalPodInformers = append(c.additionalPodInformers, informer)
 	}
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
@@ -246,9 +273,17 @@ func New(
 			}
 		}
 
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, namespaces[0])
 		if c.replicasetInformer == nil {
 			return nil, errors.New("failed to create ReplicaSet informer")
+		}
+
+		for _, namespace := range namespaces[1:] {
+			informer := informersFactory.newReplicaSetInformer(c.mc, namespace)
+			if informer == nil {
+				return nil, errors.New("failed to create ReplicaSet informer")
+			}
+			c.additionalReplicaSetInformers = append(c.additionalReplicaSetInformers, informer)
 		}
 	}
 
@@ -257,19 +292,31 @@ func New(
 	}
 
 	if c.extractDeploymentLabelsAnnotations() {
-		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+		c.deploymentInformer = newDeploymentSharedInformer(c.mc, namespaces[0], watchSyncPeriod)
+		for _, namespace := range namespaces[1:] {
+			c.additionalDeploymentInformers = append(c.additionalDeploymentInformers, newDeploymentSharedInformer(c.mc, namespace, watchSyncPeriod))
+		}
 	}
 
 	if c.extractStatefulSetLabelsAnnotations() {
-		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, namespaces[0], watchSyncPeriod)
+		for _, namespace := range namespaces[1:] {
+			c.additionalStatefulSetInformers = append(c.additionalStatefulSetInformers, newStatefulSetSharedInformer(c.mc, namespace, watchSyncPeriod))
+		}
 	}
 
 	if c.extractDaemonSetLabelsAnnotations() {
-		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, namespaces[0], watchSyncPeriod)
+		for _, namespace := range namespaces[1:] {
+			c.additionalDaemonSetInformers = append(c.additionalDaemonSetInformers, newDaemonSetSharedInformer(c.mc, namespace, watchSyncPeriod))
+		}
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+		c.jobInformer = newJobSharedInformer(c.mc, namespaces[0], watchSyncPeriod)
+		for _, namespace := range namespaces[1:] {
+			c.additionalJobInformers = append(c.additionalJobInformers, newJobSharedInformer(c.mc, namespace, watchSyncPeriod))
+		}
 	}
 	return c, err
 }
@@ -283,16 +330,19 @@ func (c *WatchClient) Start() error {
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.replicasetInformer != nil {
-		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleReplicaSetAdd,
-			UpdateFunc: c.handleReplicaSetUpdate,
-			DeleteFunc: c.handleReplicaSetDelete,
-		})
-		if err != nil {
-			return err
+		allReplicaSetInformers := append([]cache.SharedInformer{c.replicasetInformer}, c.additionalReplicaSetInformers...)
+		for _, informer := range allReplicaSetInformers {
+			reg, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.handleReplicaSetAdd,
+				UpdateFunc: c.handleReplicaSetUpdate,
+				DeleteFunc: c.handleReplicaSetDelete,
+			})
+			if err != nil {
+				return err
+			}
+			synced = append(synced, reg.HasSynced)
+			go informer.Run(c.stopCh)
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
 	}
 
 	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -320,68 +370,85 @@ func (c *WatchClient) Start() error {
 	}
 
 	if c.deploymentInformer != nil {
-		reg, err = c.deploymentInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleDeploymentAdd,
-			UpdateFunc: c.handleDeploymentUpdate,
-			DeleteFunc: c.handleDeploymentDelete,
-		})
-		if err != nil {
-			return err
+		allDeploymentInformers := append([]cache.SharedInformer{c.deploymentInformer}, c.additionalDeploymentInformers...)
+		for _, informer := range allDeploymentInformers {
+			reg, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.handleDeploymentAdd,
+				UpdateFunc: c.handleDeploymentUpdate,
+				DeleteFunc: c.handleDeploymentDelete,
+			})
+			if err != nil {
+				return err
+			}
+			synced = append(synced, reg.HasSynced)
+			go informer.Run(c.stopCh)
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.deploymentInformer.Run(c.stopCh)
 	}
 
 	if c.statefulsetInformer != nil {
-		reg, err = c.statefulsetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleStatefulSetAdd,
-			UpdateFunc: c.handleStatefulSetUpdate,
-			DeleteFunc: c.handleStatefulSetDelete,
-		})
-		if err != nil {
-			return err
+		allStatefulSetInformers := append([]cache.SharedInformer{c.statefulsetInformer}, c.additionalStatefulSetInformers...)
+		for _, informer := range allStatefulSetInformers {
+			reg, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.handleStatefulSetAdd,
+				UpdateFunc: c.handleStatefulSetUpdate,
+				DeleteFunc: c.handleStatefulSetDelete,
+			})
+			if err != nil {
+				return err
+			}
+			synced = append(synced, reg.HasSynced)
+			go informer.Run(c.stopCh)
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.statefulsetInformer.Run(c.stopCh)
 	}
 
 	if c.daemonsetInformer != nil {
-		reg, err = c.daemonsetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleDaemonSetAdd,
-			UpdateFunc: c.handleDaemonSetUpdate,
-			DeleteFunc: c.handleDaemonSetDelete,
-		})
-		if err != nil {
-			return err
+		allDaemonSetInformers := append([]cache.SharedInformer{c.daemonsetInformer}, c.additionalDaemonSetInformers...)
+		for _, informer := range allDaemonSetInformers {
+			reg, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.handleDaemonSetAdd,
+				UpdateFunc: c.handleDaemonSetUpdate,
+				DeleteFunc: c.handleDaemonSetDelete,
+			})
+			if err != nil {
+				return err
+			}
+			synced = append(synced, reg.HasSynced)
+			go informer.Run(c.stopCh)
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.daemonsetInformer.Run(c.stopCh)
 	}
 
 	if c.jobInformer != nil {
-		reg, err = c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleJobAdd,
-			UpdateFunc: c.handleJobUpdate,
-			DeleteFunc: c.handleJobDelete,
+		allJobInformers := append([]cache.SharedInformer{c.jobInformer}, c.additionalJobInformers...)
+		for _, informer := range allJobInformers {
+			reg, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.handleJobAdd,
+				UpdateFunc: c.handleJobUpdate,
+				DeleteFunc: c.handleJobDelete,
+			})
+			if err != nil {
+				return err
+			}
+			synced = append(synced, reg.HasSynced)
+			go informer.Run(c.stopCh)
+		}
+	}
+
+	podSyncHandlers := make([]cache.InformerSynced, 0, 1+len(c.additionalPodInformers))
+	allPodInformers := append([]cache.SharedInformer{c.informer}, c.additionalPodInformers...)
+	for _, informer := range allPodInformers {
+		reg, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handlePodAdd,
+			UpdateFunc: c.handlePodUpdate,
+			DeleteFunc: c.handlePodDelete,
 		})
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.jobInformer.Run(c.stopCh)
-	}
+		podSyncHandlers = append(podSyncHandlers, reg.HasSynced)
 
-	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		return err
+		// start each pod informer with the prerequisite of the other informers to be finished first
+		go c.runInformerWithDependencies(informer, synced)
 	}
-
-	// start the podInformer with the prerequisite of the other informers to be finished first
-	go c.runInformerWithDependencies(c.informer, synced)
 
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
@@ -392,7 +459,7 @@ func (c *WatchClient) Start() error {
 		// Wait for the Pod informer to be completed.
 		// The other informers will already be finished at this point, as the pod informer
 		// waits for them be finished before it can run
-		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
+		if !cache.WaitForCacheSync(timeoutCh, podSyncHandlers...) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
@@ -1829,6 +1896,37 @@ func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, er
 		selectors = append(selectors, fields.OneTermEqualSelector(podNodeField, filters.Node))
 	}
 	return labelSelector, fields.AndSelectors(selectors...), nil
+}
+
+func normalizedFilterNamespaces(filters Filters) []string {
+	namespaces := filters.Namespaces
+	if len(namespaces) == 0 {
+		namespaces = []string{filters.Namespace}
+	}
+
+	if len(namespaces) == 0 {
+		return []string{""}
+	}
+
+	normalized := make([]string, 0, len(namespaces))
+	seen := make(map[string]struct{}, len(namespaces))
+	for _, namespace := range namespaces {
+		namespace = strings.TrimSpace(namespace)
+		if namespace == "" {
+			return []string{""}
+		}
+		if _, ok := seen[namespace]; ok {
+			continue
+		}
+		seen[namespace] = struct{}{}
+		normalized = append(normalized, namespace)
+	}
+
+	if len(normalized) == 0 {
+		return []string{""}
+	}
+
+	return normalized
 }
 
 func (c *WatchClient) addOrUpdateNamespace(namespace *meta_v1.PartialObjectMetadata) {

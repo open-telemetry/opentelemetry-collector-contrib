@@ -189,6 +189,12 @@ k8s_attributes/filter_label_does_not_exist:
       - key: deprecated-label
         op: does-not-exist
 
+k8s_attributes/multi_namespace:
+  filter:
+    namespace:
+      - team-a
+      - team-b
+
 k8s_attributes/extract_from_namespace:
   extract:
     labels:

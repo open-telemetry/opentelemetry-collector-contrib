@@ -6,6 +6,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
@@ -306,10 +307,41 @@ func withFilterNode(node, nodeFromEnvVar string) option {
 	}
 }
 
-// withFilterNamespace allows specifying options to control filtering pods by a namespace.
-func withFilterNamespace(ns string) option {
+func normalizeFilterNamespaces(namespaces []string) []string {
+	if len(namespaces) == 0 {
+		return nil
+	}
+
+	filtered := make([]string, 0, len(namespaces))
+	seen := make(map[string]struct{}, len(namespaces))
+	for _, namespace := range namespaces {
+		namespace = strings.TrimSpace(namespace)
+		if namespace == "" {
+			return []string{""}
+		}
+		if _, ok := seen[namespace]; ok {
+			continue
+		}
+		seen[namespace] = struct{}{}
+		filtered = append(filtered, namespace)
+	}
+
+	if len(filtered) == 0 {
+		return []string{""}
+	}
+
+	return filtered
+}
+
+// withFilterNamespace allows specifying options to control filtering pods by namespace(s).
+func withFilterNamespace(namespaces ...string) option {
 	return func(p *kubernetesprocessor) error {
-		p.filters.Namespace = ns
+		p.filters.Namespaces = normalizeFilterNamespaces(namespaces)
+		if len(p.filters.Namespaces) == 1 {
+			p.filters.Namespace = p.filters.Namespaces[0]
+		} else {
+			p.filters.Namespace = ""
+		}
 		return nil
 	}
 }
