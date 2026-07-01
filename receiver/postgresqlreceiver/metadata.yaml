@@ -131,6 +131,27 @@ attributes:
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+  postgresql.blocking.lock.mode:
+    description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
+    type: string
+  postgresql.blocking.lock.relation:
+    description: The name of the relation (table) being waited on. Empty string when not blocked or when lock is not on a relation.
+    type: string
+  postgresql.blocking.lock.type:
+    description: The type of lock resource being waited on (e.g. relation, transactionid, tuple). Empty string when not blocked.
+    type: string
+  postgresql.blocking.pids:
+    description: Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked.
+    type: string
+  postgresql.blocking.start_time:
+    description: UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked.
+    type: string
+  postgresql.blocking.transaction.start_time:
+    description: UTC timestamp (RFC3339) when the current transaction started. Empty string when no active transaction.
+    type: string
+  postgresql.blocking.wait_duration:
+    description: Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked.
+    type: int
   postgresql.calls:
     description: Number of times the statement was executed, reported in delta value.
     type: int
@@ -247,6 +268,13 @@ events:
       - postgresql.wait_event_type
       - postgresql.query_id
       - postgresql.total_exec_time
+      - postgresql.blocking.pids
+      - postgresql.blocking.start_time
+      - postgresql.blocking.wait_duration
+      - postgresql.blocking.lock.mode
+      - postgresql.blocking.lock.type
+      - postgresql.blocking.lock.relation
+      - postgresql.blocking.transaction.start_time
   db.server.top_query:
     enabled: false
     description: top query
