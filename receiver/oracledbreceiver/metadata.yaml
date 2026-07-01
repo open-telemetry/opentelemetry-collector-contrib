@@ -534,6 +534,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
+  oracledb.cpu.usage.rate:
+    description: Oracle database CPU consumption rate, in CPU-seconds used per second.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds
     enabled: true
@@ -561,6 +568,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{cursor}"
+  oracledb.cursor.cache.utilization:
+    description: Percentage of cursor executions that reused a cursor in the session cursor cache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.cursor.open:
     description: Number of currently open cursors in the Oracle instance.
     enabled: false
@@ -738,6 +752,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.host.cpu.usage.rate:
+    description: Host CPU consumption rate across all cores, in CPU-seconds used per second.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.host.cpu.utilization:
     description: Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
     enabled: false
@@ -745,6 +766,13 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.io.single_block.read.latency:
+    description: Average latency of a synchronous single-block read.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: s
   oracledb.library_cache.utilization:
     description: Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
     enabled: false
@@ -887,6 +915,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.pga.cache.utilization:
+    description: Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.pga_memory:
     description: Session PGA (Program Global Area) memory
     enabled: true
@@ -1114,6 +1149,20 @@ metrics:
       value_type: int
       input_type: string
     unit: "{row}"
+  oracledb.session.active.average:
+    description: Average number of active sessions over the metric interval.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{session}"
+  oracledb.session.count:
+    description: Number of sessions.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{session}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -1220,6 +1269,13 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  oracledb.transaction.response.time:
+    description: Average response time per transaction.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: s
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true

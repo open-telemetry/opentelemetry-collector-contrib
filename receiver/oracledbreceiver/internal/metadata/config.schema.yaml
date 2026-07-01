@@ -83,6 +83,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.cpu.usage.rate:
+        description: "OracledbCPUUsageRateMetricConfig provides config for the oracledb.cpu.usage.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.cpu_time:
         description: "OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric."
         type: object
@@ -99,6 +106,13 @@ $defs:
             default: false
       oracledb.cursor.cache.size:
         description: "OracledbCursorCacheSizeMetricConfig provides config for the oracledb.cursor.cache.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.cache.utilization:
+        description: "OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric."
         type: object
         properties:
           enabled:
@@ -255,6 +269,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.host.cpu.usage.rate:
+        description: "OracledbHostCPUUsageRateMetricConfig provides config for the oracledb.host.cpu.usage.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.io.single_block.read.latency:
+        description: "OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.lob.operations:
         description: "OracledbLobOperationsMetricConfig provides config for the oracledb.lob.operations metric."
         type: object
@@ -355,6 +383,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.pga.cache.utilization:
+        description: "OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.pga_memory:
         description: "OracledbPgaMemoryMetricConfig provides config for the oracledb.pga_memory metric."
         type: object
@@ -563,6 +598,20 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.session.active.average:
+        description: "OracledbSessionActiveAverageMetricConfig provides config for the oracledb.session.active.average metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.count:
+        description: "OracledbSessionCountMetricConfig provides config for the oracledb.session.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
@@ -710,6 +759,13 @@ $defs:
                 - "tablespace_name"
             default:
               - "tablespace_name"
+      oracledb.transaction.response.time:
+        description: "OracledbTransactionResponseTimeMetricConfig provides config for the oracledb.transaction.response.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.transactions.limit:
         description: "OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric."
         type: object
