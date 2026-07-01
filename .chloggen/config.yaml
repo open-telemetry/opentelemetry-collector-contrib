@@ -165,6 +165,7 @@ components:
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/semconvtest
     - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald

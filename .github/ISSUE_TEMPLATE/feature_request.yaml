@@ -170,6 +170,7 @@ body:
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
+      - pkg/semconvtest
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
