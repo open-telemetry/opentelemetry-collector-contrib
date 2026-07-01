@@ -15,6 +15,9 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
+reaggregation_enabled: true
+override_value_enabled: true
+
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
     description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.
@@ -55,6 +58,14 @@ resource_attributes:
   service.instance.id:
     description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
     enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:postgresql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
