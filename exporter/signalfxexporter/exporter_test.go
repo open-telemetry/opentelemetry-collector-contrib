@@ -47,6 +47,18 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	successClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	successClientConfig.MaxIdleConns = 0
+	successClientConfig.IdleConnTimeout = 0
+	successClientConfig.ForceAttemptHTTP2 = false
+	successClientConfig.Timeout = 1 * time.Second
+	hostMetadataClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	hostMetadataClientConfig.MaxIdleConns = 0
+	hostMetadataClientConfig.IdleConnTimeout = 0
+	hostMetadataClientConfig.ForceAttemptHTTP2 = false
+	hostMetadataClientConfig.Timeout = 1 * time.Second
 	tests := []struct {
 		name           string
 		config         *Config
@@ -72,7 +84,7 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				AccessToken:  "someToken",
 				Realm:        "xyz",
-				ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
+				ClientConfig: successClientConfig,
 			},
 		},
 		{
@@ -80,7 +92,7 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				AccessToken:      "someToken",
 				Realm:            "xyz",
-				ClientConfig:     confighttp.ClientConfig{Timeout: 1 * time.Second},
+				ClientConfig:     hostMetadataClientConfig,
 				SyncHostMetadata: true,
 			},
 		},
@@ -184,13 +196,17 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.Timeout = 1 * time.Second
+			clientConfig.Headers = configopaque.MapList{
+				{Name: "test_header_", Value: "test"},
+			}
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 1 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "test_header_", Value: "test"},
-					},
-				},
+				ClientConfig: clientConfig,
 			}
 
 			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
@@ -814,10 +830,16 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 1 * time.Second
 	cfg := &Config{
 		AccessToken:  "someToken",
 		Realm:        "xyz",
-		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
+		ClientConfig: clientConfig,
 	}
 
 	exp, err = newEventExporter(cfg, exportertest.NewNopSettings(componentmetadata.Type))
@@ -922,13 +944,17 @@ func TestConsumeEventData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.Timeout = 1 * time.Second
+			clientConfig.Headers = configopaque.MapList{
+				{Name: "test_header_", Value: "test"},
+			}
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 1 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "test_header_", Value: "test"},
-					},
-				},
+				ClientConfig: clientConfig,
 			}
 
 			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
@@ -2006,13 +2032,17 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.Timeout = 1 * time.Second
+			clientConfig.Headers = configopaque.MapList{
+				{Name: "test_header_", Value: "test"},
+			}
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 1 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "test_header_", Value: "test"},
-					},
-				},
+				ClientConfig: clientConfig,
 			}
 
 			client, err := cfg.ToClient(t.Context(), nil, exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
