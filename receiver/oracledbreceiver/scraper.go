@@ -1259,7 +1259,10 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	hits = hits[:maxHitsSize]
 
 	hits = s.obfuscateCacheHits(hits)
-	childAddressToPlanMap := s.getChildAddressToPlanMap(ctx, hits)
+	childAddressToPlanMap, err := s.getChildAddressToPlanMap(ctx, hits)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
@@ -1500,10 +1503,10 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 	return obfuscatedHits
 }
 
-func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []queryMetricCacheHit) map[string][]metricRow {
+func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []queryMetricCacheHit) (map[string][]metricRow, error) {
 	childAddressToPlanMap := map[string][]metricRow{}
 	if len(hits) == 0 {
-		return childAddressToPlanMap
+		return childAddressToPlanMap, nil
 	}
 
 	var childAddressSlice []any
@@ -1518,7 +1521,10 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 
 	s.logger.Debug("Fetching execution plans")
 	s.oraclePlanDataClient = s.clientProviderFunc(s.db, sqlQuery, s.logger)
-	planData, _ := s.oraclePlanDataClient.metricRows(ctx, childAddressSlice...)
+	planData, err := s.oraclePlanDataClient.metricRows(ctx, childAddressSlice...)
+	if err != nil {
+		return childAddressToPlanMap, fmt.Errorf("failed to fetch Oracle execution plan data: %w", err)
+	}
 
 	for _, row := range planData {
 		currentChildAddress := row[childAddressAttr]
@@ -1532,7 +1538,7 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 		}
 	}
 
-	return childAddressToPlanMap
+	return childAddressToPlanMap, nil
 }
 
 func (*oracleScraper) getTopNMetricNames() []string {
