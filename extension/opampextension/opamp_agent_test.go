@@ -305,6 +305,53 @@ func TestReportFuncReachesStatusAggregatorRegardlessOfHostReporter(t *testing.T)
 	require.NoError(t, o.Shutdown(t.Context()))
 }
 
+// reporterHost is a component.Host that also implements componentstatus.Reporter,
+// recording every event routed through it.
+type reporterHost struct {
+	component.Host
+	mtx      sync.Mutex
+	reported []*componentstatus.Event
+}
+
+func (h *reporterHost) Report(e *componentstatus.Event) {
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+	h.reported = append(h.reported, e)
+}
+
+// TestReportFuncPrefersHostReporter verifies that when the host implements
+// componentstatus.Reporter (as the real collector service host does), o.reportFunc
+// routes self-reported events through that reporter. This preserves the production
+// path where the status notification also forwards a StatusFatalError to the
+// service's AsyncErrorChannel, so an orphaned collector actually shuts down.
+func TestReportFuncPrefersHostReporter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	sa := &mockStatusAggregator{mtx: &sync.RWMutex{}}
+
+	o := newTestOpampAgent(cfg, set, &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error { return nil },
+	}, sa)
+
+	o.initHealthReporting()
+
+	host := &reporterHost{Host: componenttest.NewNopHost()}
+	require.NoError(t, o.Start(t.Context(), host))
+	require.NoError(t, o.Ready())
+
+	fatalErr := errors.New("collector was orphaned")
+	o.reportFunc(componentstatus.NewFatalErrorEvent(fatalErr))
+
+	host.mtx.Lock()
+	require.Len(t, host.reported, 1)
+	require.Equal(t, componentstatus.StatusFatalError, host.reported[0].Status())
+	require.Equal(t, fatalErr, host.reported[0].Err())
+	host.mtx.Unlock()
+
+	require.NoError(t, o.Shutdown(t.Context()))
+}
+
 // availableComponentsHost mocks a receiver.ReceiverHost for test purposes.
 type availableComponentsHost struct {
 	t *testing.T
