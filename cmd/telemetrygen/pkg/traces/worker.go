@@ -38,7 +38,6 @@ type worker struct {
 	spanDuration     time.Duration         // duration of generated spans
 	numSpanLinks     int                   // number of span links to generate per span
 	logger           *zap.Logger
-	allowFailures    bool                // whether to continue on export failures
 	spanContexts     []trace.SpanContext // collection of span contexts for linking
 	spanContextsMu   sync.RWMutex        // mutex for spanContexts slice
 }

@@ -91,6 +91,22 @@ func Start(cfg *Config) error {
 	var attributes []attribute.KeyValue
 	attributes = append(attributes, cfg.GetAttributes()...)
 
+	// SpanProcessors surface export errors via the global otel error handler
+	// rather than returning them from OnEnd, so honor --allow-export-failures
+	// by installing a handler that matches the logs/metrics worker behavior.
+	// Note: the global handler receives every error reported by the otel SDK,
+	// not only export failures, so any other SDK error is treated the same way
+	// (fatal by default, logged-and-continue with --allow-export-failures).
+	if cfg.AllowExportFailures {
+		otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+			logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+		}))
+	} else {
+		otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+			logger.Fatal("exporter failed", zap.Error(err))
+		}))
+	}
+
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
@@ -159,7 +175,6 @@ func run(c *Config, logger *zap.Logger) error {
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
-			allowFailures:    c.AllowExportFailures,
 			numSpanLinks:     c.NumSpanLinks,
 			spanContexts:     make([]trace.SpanContext, 0),
 		}

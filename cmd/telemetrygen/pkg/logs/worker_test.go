@@ -5,6 +5,7 @@ package logs
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
@@ -46,6 +48,46 @@ func (*mockExporter) Shutdown(context.Context) error {
 
 func (*mockExporter) ForceFlush(context.Context) error {
 	return nil
+}
+
+// failingExporter fails every Export call.
+type failingExporter struct {
+	mockExporter
+}
+
+func (*failingExporter) Export(context.Context, []sdklog.Record) error {
+	return errors.New("export failed")
+}
+
+// TestFlushBufferFailureAllowed verifies that a failed batch export does not
+// abort the worker when --allow-export-failures is set.
+func TestFlushBufferFailureAllowed(t *testing.T) {
+	w := &worker{
+		batchSize:     1,
+		batchBuffer:   make([]sdklog.Record, 0),
+		allowFailures: true,
+		logger:        zap.NewNop(),
+	}
+
+	assert.NotPanics(t, func() {
+		w.addToBuffer(sdklog.Record{}, &failingExporter{})
+	})
+	assert.Empty(t, w.batchBuffer, "buffer should be cleared even when export fails")
+}
+
+// TestFlushBufferFailureFatal verifies that a failed batch export aborts the
+// worker when --allow-export-failures is not set. The fatal hook converts
+// logger.Fatal's os.Exit into a panic so the test can observe it.
+func TestFlushBufferFailureFatal(t *testing.T) {
+	w := &worker{
+		batchSize:   1,
+		batchBuffer: make([]sdklog.Record, 0),
+		logger:      zap.NewNop().WithOptions(zap.WithFatalHook(zapcore.WriteThenPanic)),
+	}
+
+	assert.Panics(t, func() {
+		w.addToBuffer(sdklog.Record{}, &failingExporter{})
+	})
 }
 
 func TestFixedNumberOfLogs(t *testing.T) {
