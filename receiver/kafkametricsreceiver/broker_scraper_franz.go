@@ -78,14 +78,16 @@ func (s *brokerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
-	// ---- brokers count ----
-	bdetails, err := s.adm.ListBrokers(ctx)
+	// BrokerMetadata returns the broker list and cluster ID in one topic-less request.
+	meta, err := s.adm.BrokerMetadata(ctx)
 	if err != nil {
-		// If we cannot list brokers, emit what we have (resource attrs) and return the error
 		scrapeErrs.Add(err)
 		return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 	}
-	brokerIDs := bdetails.NodeIDs()
+	if meta.Cluster != "" { // skip empty IDs so we never emit an empty-string attribute
+		rb.SetKafkaClusterID(meta.Cluster)
+	}
+	brokerIDs := meta.Brokers.NodeIDs()
 	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokerIDs)))
 
 	// If log retention metric is disabled, we are done.

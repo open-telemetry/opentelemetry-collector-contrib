@@ -80,12 +80,15 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	scrapeErrs := scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// 1) list topics (with metadata details)
-	td, err := s.adm.ListTopics(ctx)
+	// Metadata returns the topic list and cluster ID in one response. FilterInternal
+	// (below) reproduces ListTopics, which drops internal topics when none are named.
+	meta, err := s.adm.Metadata(ctx)
 	if err != nil {
-		s.settings.Logger.Error("franz-go: ListTopics failed", zap.Error(err))
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListTopics failed: %w", err)
+		s.settings.Logger.Error("franz-go: Metadata failed", zap.Error(err))
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: Metadata failed: %w", err)
 	}
+	td := meta.Topics
+	td.FilterInternal()
 
 	// filter topic names first
 	var matched []string
@@ -209,6 +212,9 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+	if meta.Cluster != "" { // reuse cluster ID from metadata above; skip empty IDs
+		rb.SetKafkaClusterID(meta.Cluster)
+	}
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }
 

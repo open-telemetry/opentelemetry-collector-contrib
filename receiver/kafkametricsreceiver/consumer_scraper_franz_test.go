@@ -143,6 +143,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 		GroupMatch:           ".*",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -157,6 +158,11 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "test-cluster", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	// We produced 1 record at partition 0, and committed offset = 0. End offset is 1 (record offset 0 + 1),
 	// so lag = 1 - 0 = 1.
@@ -209,6 +215,57 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	} {
 		require.True(t, seen[name], "metric %s not emitted", name)
 	}
+
+	// Clean up the group so the kfake goroutine exits.
+	_, err = adm.DeleteGroups(t.Context(), group)
+	require.NoError(t, err)
+}
+
+func TestConsumerScraperFranz_EmptyClusterID(t *testing.T) {
+	// An empty cluster_id in metadata must not yield an empty-string attribute, even when enabled.
+	const (
+		topic = "topic-a"
+		group = "test-group-empty-id"
+	)
+
+	cluster, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, topic),
+		kfake.ClusterID(""),
+	)
+	cl, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	adm := kadm.NewClient(cl)
+
+	// Produce + commit an offset so the consumer scraper emits a resource for the group.
+	produceResults := cl.ProduceSync(t.Context(), &kgo.Record{Topic: topic, Value: []byte("payload")})
+	require.NoError(t, produceResults.FirstErr())
+	var os kadm.Offsets
+	os.AddOffset(topic, 0, 0, -1)
+	_, err = adm.CommitOffsets(t.Context(), group, os)
+	require.NoError(t, err)
+
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		TopicMatch:           ".*",
+		GroupMatch:           ".*",
+	}
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
 
 	// Clean up the group so the kfake goroutine exits.
 	_, err = adm.DeleteGroups(t.Context(), group)
