@@ -365,13 +365,15 @@ var MetricsInfo = metricsInfo{
 		Name: "redis.net.output",
 	},
 	RedisPubsubChannelStatus: metricInfo{
-		Name: "redis.pubsub.channel.status",
+		Name:       "redis.pubsub.channel.status",
+		Attributes: []string{"redis.pubsub.channel.state"},
 	},
 	RedisPubsubConnectionCount: metricInfo{
 		Name: "redis.pubsub.connection.count",
 	},
 	RedisPubsubPatternStatus: metricInfo{
-		Name: "redis.pubsub.pattern.status",
+		Name:       "redis.pubsub.pattern.status",
+		Attributes: []string{"redis.pubsub.pattern.state"},
 	},
 	RedisRdbChangesSinceLastSave: metricInfo{
 		Name: "redis.rdb.changes_since_last_save",

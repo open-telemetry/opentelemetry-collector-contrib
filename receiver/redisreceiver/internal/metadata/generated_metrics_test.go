@@ -255,14 +255,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisPubsubConnectionCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisPubsubPatternStatusDataPoint(ts, 1, AttributeRedisPubsubPatternStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisPubsubPatternStatusDataPoint(ts, 3, AttributeRedisPubsubPatternStateActive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)

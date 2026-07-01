@@ -578,6 +578,30 @@ func TestRedisModeMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestRedisPubsubChannelStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisPubsubChannelStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisPubsubChannelStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.pubsub.channel.status doesn't have an attribute invalid, valid attributes: [redis.pubsub.channel.state]")
+
+	cfg = DefaultMetricsConfig().RedisPubsubChannelStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisPubsubPatternStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisPubsubPatternStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisPubsubPatternStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.pubsub.pattern.status doesn't have an attribute invalid, valid attributes: [redis.pubsub.pattern.state]")
+
+	cfg = DefaultMetricsConfig().RedisPubsubPatternStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestRedisRoleMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().RedisRole
 	require.NoError(t, cfg.Validate())
