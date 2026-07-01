@@ -371,6 +371,82 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
 
+### sqlserver.index.avg_page_space_used
+
+Average percentage of available data storage space used in all pages of the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
+| sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
+
+### sqlserver.index.fragmentation
+
+Average fragmentation percentage of the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
+| sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
+
+### sqlserver.index.page.count
+
+Number of pages in the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pages} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
+| sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
+
+### sqlserver.index.record.count
+
+Total number of records in the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
+| sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
+
 ### sqlserver.index.search.rate
 
 Total number of index searches.
@@ -378,6 +454,25 @@ Total number of index searches.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{searches}/s” | Gauge | Double | Development |
+
+### sqlserver.index.size
+
+Total size of the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.index.id | The ID of the index within a table or indexed view. | Any Int | Recommended | - |
+| sqlserver.object.name | The name of the object the index belongs to. | Any Str | Recommended | - |
+| sqlserver.schema.name | The name of the schema the object belongs to. | Any Str | Recommended | - |
 
 ### sqlserver.latch.superlatch.count
 

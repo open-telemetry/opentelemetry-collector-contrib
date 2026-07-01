@@ -38,8 +38,23 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.index.avg_page_space_used:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.fragmentation:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.count:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.record.count:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.index.size:
+      enabled: true
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.latch.superlatch.count:
       enabled: true
     sqlserver.latch.superlatch.transition.rate:
@@ -205,8 +220,23 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.index.avg_page_space_used:
+      enabled: true
+      attributes: []
+    sqlserver.index.fragmentation:
+      enabled: true
+      attributes: []
+    sqlserver.index.page.count:
+      enabled: true
+      attributes: []
+    sqlserver.index.record.count:
+      enabled: true
+      attributes: []
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.index.size:
+      enabled: true
+      attributes: []
     sqlserver.latch.superlatch.count:
       enabled: true
     sqlserver.latch.superlatch.transition.rate:
@@ -372,8 +402,23 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.index.avg_page_space_used:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.fragmentation:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.page.count:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
+    sqlserver.index.record.count:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.index.search.rate:
       enabled: false
+    sqlserver.index.size:
+      enabled: false
+      attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
     sqlserver.latch.superlatch.count:
       enabled: false
     sqlserver.latch.superlatch.transition.rate:

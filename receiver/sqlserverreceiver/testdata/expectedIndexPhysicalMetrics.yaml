@@ -1,0 +1,273 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - description: Average percentage of available data storage space used in all pages of the index.
+            gauge:
+              dataPoints:
+                - asDouble: 75
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "1"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.avg_page_space_used
+            unit: "%"
+          - description: Average fragmentation percentage of the index.
+            gauge:
+              dataPoints:
+                - asDouble: 12.5
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "1"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.fragmentation
+            unit: "%"
+          - description: Number of pages in the index.
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "1"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.page.count
+            unit: "{pages}"
+          - description: Total number of records in the index.
+            gauge:
+              dataPoints:
+                - asInt: "5000"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "1"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.record.count
+            unit: "{records}"
+          - description: Total size of the index.
+            gauge:
+              dataPoints:
+                - asInt: "819200"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "1"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.size
+            unit: "By"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - description: Average percentage of available data storage space used in all pages of the index.
+            gauge:
+              dataPoints:
+                - asDouble: 88.5
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "2"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.avg_page_space_used
+            unit: "%"
+          - description: Average fragmentation percentage of the index.
+            gauge:
+              dataPoints:
+                - asDouble: 3.2
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "2"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.fragmentation
+            unit: "%"
+          - description: Number of pages in the index.
+            gauge:
+              dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "2"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.page.count
+            unit: "{pages}"
+          - description: Total number of records in the index.
+            gauge:
+              dataPoints:
+                - asInt: "5000"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "2"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.record.count
+            unit: "{records}"
+          - description: Total size of the index.
+            gauge:
+              dataPoints:
+                - asInt: "163840"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: sqlserver.index.id
+                      value:
+                        intValue: "2"
+                    - key: sqlserver.object.name
+                      value:
+                        stringValue: TestTable
+                    - key: sqlserver.schema.name
+                      value:
+                        stringValue: dbo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.size
+            unit: "By"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
