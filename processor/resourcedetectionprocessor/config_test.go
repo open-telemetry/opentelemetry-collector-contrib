@@ -243,6 +243,7 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"ElasticBeanstalk", "elastic_beanstalk"},
 		{"Azure", "azure"},
 		{"AKS", "aks"},
+		{"AzureContainerApps", "azurecontainerapps"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},
@@ -281,6 +282,7 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.LambdaConfig)
 	assert.NotNil(t, config.AzureConfig)
 	assert.NotNil(t, config.AksConfig)
+	assert.NotNil(t, config.AzureContainerAppsConfig)
 	assert.NotNil(t, config.ConsulConfig)
 	assert.NotNil(t, config.DigitalOceanConfig)
 	assert.NotNil(t, config.DockerConfig)

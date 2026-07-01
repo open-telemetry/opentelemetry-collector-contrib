@@ -482,6 +482,8 @@ go.opentelemetry.io/collector/receiver/receivertest v0.155.1-0.20260625204839-97
 go.opentelemetry.io/collector/receiver/receivertest v0.155.1-0.20260625204839-9782f9e8a3d6/go.mod h1:eBl5iImBqIs9pQNdwyqypDiThJWn1L1G3N1Z1m9BcYY=
 go.opentelemetry.io/collector/receiver/xreceiver v0.155.1-0.20260625204839-9782f9e8a3d6 h1:oQMLoA7zOFCgIAOAW/P/vHuFbv3KVUv2qzYZsM4Kfs8=
 go.opentelemetry.io/collector/receiver/xreceiver v0.155.1-0.20260625204839-9782f9e8a3d6/go.mod h1:oCB455B5Qs7tiyO6JThT+Zv20H5XeNKJQ+u4jHyCFbI=
+go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.0.0-20260609111520-6ab93c423bba h1:zm/no/fuJhY1iBpEiKfOKnSyjhVr80D+kZZRT5qdiq4=
+go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.0.0-20260609111520-6ab93c423bba/go.mod h1:ziBQh1F1rccmIASp+4QzP0KDbx9XT+X7QSJYWqliaWo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0 h1:2yEATaop1/a1I4psnSLgWVPLWwCzkqWakgJy7xTDVy0=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0/go.mod h1:D7J12YRapIekYyPWgGPlA/23pRmpSEZC5xJC/TTLI9U=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 h1:8tvICD4vSTOOsNrsI4Ljf6C+6UKvpTEH5XY3JMoyPoo=

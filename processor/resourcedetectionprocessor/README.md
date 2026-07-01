@@ -510,6 +510,23 @@ The cluster name is detected if it does not contain underscores and if a custom 
 
 If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to uniquely identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group name.
 
+### Azure Container Apps
+
+Uses the [Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/) [injected environment variables](https://learn.microsoft.com/en-us/azure/container-apps/environment-variables?tabs=portal#built-in-environment-variables) to retrieve related resource attributes.
+
+Note: Azure Container Apps jobs are not supported.
+
+The list of the populated resource attributes can be found at [Azure Container Apps Detector Resource Attributes](./internal/azure/containerapps/documentation.md).
+
+Example:
+```yaml
+processors:
+  resourcedetection/azurecontainerapps:
+    detectors: [env, azurecontainerapps]
+    timeout: 2s
+    override: false
+```
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
@@ -971,7 +988,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
