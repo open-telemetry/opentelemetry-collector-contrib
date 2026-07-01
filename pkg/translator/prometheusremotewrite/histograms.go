@@ -4,18 +4,86 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/prometheus/prometheus/util/convertnhcb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
 const defaultZeroThreshold = 1e-128
+
+// explicitToNHCB converts an OTLP explicit-bucket histogram data point to a
+// Prometheus histogram with custom buckets (schema -53) via Prometheus' own
+// convertnhcb helper. Exactly one of the returned histograms is non-nil.
+func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
+	th := convertnhcb.NewTempHistogram()
+	bounds := pt.ExplicitBounds()
+	counts := pt.BucketCounts()
+	// OTLP buckets are non-cumulative; convertnhcb wants cumulative counts.
+	var cumulative uint64
+	for i := 0; i < bounds.Len() && i < counts.Len(); i++ {
+		cumulative += counts.At(i)
+		if err := th.SetBucketCount(bounds.At(i), float64(cumulative)); err != nil {
+			return nil, nil, err
+		}
+	}
+	// Reconcile the total with the buckets. Convert derives the +Inf bucket as
+	// total - last cumulative, so clamp up to the bucket sum to keep it non-negative
+	// (some sources report a Count below their buckets), but preserve a larger
+	// pt.Count() when the source reports more observations than its buckets account for.
+	total := cumulative
+	if counts.Len() > bounds.Len() { // +Inf overflow bucket
+		total += counts.At(counts.Len() - 1)
+	}
+	if pt.Count() > total {
+		total = pt.Count()
+	}
+	if err := th.SetCount(float64(total)); err != nil {
+		return nil, nil, err
+	}
+	if pt.HasSum() {
+		if err := th.SetSum(pt.Sum()); err != nil {
+			return nil, nil, err
+		}
+	}
+	return th.Convert()
+}
+
+// explicitToNHCBHistogram is the RW1 wrapper around explicitToNHCB.
+func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, error) {
+	timestamp := convertTimeStamp(pt.Timestamp())
+
+	if pt.Flags().NoRecordedValue() {
+		// Emit a stale marker, mirroring the classic and exponential paths.
+		return prompb.Histogram{
+			Schema:    histogram.CustomBucketsSchema,
+			Count:     &prompb.Histogram_CountInt{CountInt: value.StaleNaN},
+			Sum:       math.Float64frombits(value.StaleNaN),
+			Timestamp: timestamp,
+		}, nil
+	}
+
+	h, fh, err := explicitToNHCB(pt)
+	if err != nil {
+		return prompb.Histogram{}, err
+	}
+	switch {
+	case h != nil:
+		return prompb.FromIntHistogram(timestamp, h), nil
+	case fh != nil:
+		return prompb.FromFloatHistogram(timestamp, fh), nil
+	default:
+		return prompb.Histogram{}, errors.New("convertnhcb produced neither an integer nor a float histogram")
+	}
+}
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
