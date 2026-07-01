@@ -9,20 +9,118 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// OracledbBufferCacheUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.buffer_cache.utilization metric.
-type OracledbBufferCacheUtilizationMetricAttributeKey string
+// OracledbBufferInspectedMetricAttributeKey specifies the key of an attribute for the oracledb.buffer.inspected metric.
+type OracledbBufferInspectedMetricAttributeKey string
 
 const (
-	OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb OracledbBufferCacheUtilizationMetricAttributeKey = "oracle.db.pdb"
+	OracledbBufferInspectedMetricAttributeKeyOracledbBufferState OracledbBufferInspectedMetricAttributeKey = "oracledb.buffer.state"
 )
+
+// OracledbBufferInspectedMetricConfig provides config for the oracledb.buffer.inspected metric.
+type OracledbBufferInspectedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbBufferInspectedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbBufferInspectedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbBufferInspectedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbBufferInspectedMetricAttributeKeyOracledbBufferState:
+		default:
+			return fmt.Errorf("metric oracledb.buffer.inspected doesn't have an attribute %v, valid attributes: [oracledb.buffer.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbBufferRequestsMetricConfig provides config for the oracledb.buffer.requests metric.
+type OracledbBufferRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbBufferRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbBufferCacheBlockChangesMetricConfig provides config for the oracledb.buffer_cache.block.changes metric.
+type OracledbBufferCacheBlockChangesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbBufferCacheBlockChangesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbBufferCacheBlockGetsMetricConfig provides config for the oracledb.buffer_cache.block.gets metric.
+type OracledbBufferCacheBlockGetsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbBufferCacheBlockGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
 // OracledbBufferCacheUtilizationMetricConfig provides config for the oracledb.buffer_cache.utilization metric.
 type OracledbBufferCacheUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbBufferCacheUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbBufferCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -39,12 +137,42 @@ func (ms *OracledbBufferCacheUtilizationMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *OracledbBufferCacheUtilizationMetricConfig) Validate() error {
+// OracledbCallCountMetricAttributeKey specifies the key of an attribute for the oracledb.call.count metric.
+type OracledbCallCountMetricAttributeKey string
+
+const (
+	OracledbCallCountMetricAttributeKeyOracledbCallType OracledbCallCountMetricAttributeKey = "oracledb.call.type"
+)
+
+// OracledbCallCountMetricConfig provides config for the oracledb.call.count metric.
+type OracledbCallCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbCallCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbCallCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbCallCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbBufferCacheUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbCallCountMetricAttributeKeyOracledbCallType:
 		default:
-			return fmt.Errorf("metric oracledb.buffer_cache.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.call.count doesn't have an attribute %v, valid attributes: [oracledb.call.type]", val)
 		}
 	}
 
@@ -57,20 +185,70 @@ func (ms *OracledbBufferCacheUtilizationMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbConsistentGetsMetricAttributeKey specifies the key of an attribute for the oracledb.consistent_gets metric.
-type OracledbConsistentGetsMetricAttributeKey string
+// OracledbCallRecursiveCPUTimeMetricConfig provides config for the oracledb.call.recursive.cpu.time metric.
+type OracledbCallRecursiveCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
 
-const (
-	OracledbConsistentGetsMetricAttributeKeyOracleDbPdb OracledbConsistentGetsMetricAttributeKey = "oracle.db.pdb"
-)
+func (ms *OracledbCallRecursiveCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCheckpointBuffersMetricConfig provides config for the oracledb.checkpoint.buffers metric.
+type OracledbCheckpointBuffersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCheckpointBuffersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCheckpointCompletedMetricConfig provides config for the oracledb.checkpoint.completed metric.
+type OracledbCheckpointCompletedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCheckpointCompletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
 // OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric.
 type OracledbConsistentGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbConsistentGetsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbConsistentGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -87,38 +265,10 @@ func (ms *OracledbConsistentGetsMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *OracledbConsistentGetsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbConsistentGetsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.consistent_gets doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbCPUTimeMetricAttributeKey specifies the key of an attribute for the oracledb.cpu_time metric.
-type OracledbCPUTimeMetricAttributeKey string
-
-const (
-	OracledbCPUTimeMetricAttributeKeyOracleDbPdb OracledbCPUTimeMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric.
 type OracledbCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbCPUTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -135,21 +285,63 @@ func (ms *OracledbCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OracledbCPUTimeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbCPUTimeMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.cpu_time doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
+// OracledbCursorCacheHitsMetricConfig provides config for the oracledb.cursor.cache.hits metric.
+type OracledbCursorCacheHitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCursorCacheHitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
 	}
 
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCursorCacheSizeMetricConfig provides config for the oracledb.cursor.cache.size metric.
+type OracledbCursorCacheSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCursorCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric.
+type OracledbCursorOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbCursorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -173,20 +365,10 @@ func (ms *OracledbDataDictionaryHitRatioMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// OracledbDatabaseCPUUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.database.cpu.utilization metric.
-type OracledbDatabaseCPUUtilizationMetricAttributeKey string
-
-const (
-	OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb OracledbDatabaseCPUUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbDatabaseCPUUtilizationMetricConfig provides config for the oracledb.database.cpu.utilization metric.
 type OracledbDatabaseCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbDatabaseCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDatabaseCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -203,38 +385,10 @@ func (ms *OracledbDatabaseCPUUtilizationMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *OracledbDatabaseCPUUtilizationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbDatabaseCPUUtilizationMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.database.cpu.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbDatabaseWaitUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.database.wait.utilization metric.
-type OracledbDatabaseWaitUtilizationMetricAttributeKey string
-
-const (
-	OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb OracledbDatabaseWaitUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbDatabaseWaitUtilizationMetricConfig provides config for the oracledb.database.wait.utilization metric.
 type OracledbDatabaseWaitUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbDatabaseWaitUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -251,12 +405,42 @@ func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Validate() error {
+// OracledbDbTimeMetricAttributeKey specifies the key of an attribute for the oracledb.db.time metric.
+type OracledbDbTimeMetricAttributeKey string
+
+const (
+	OracledbDbTimeMetricAttributeKeyOracledbSessionType OracledbDbTimeMetricAttributeKey = "oracledb.session.type"
+)
+
+// OracledbDbTimeMetricConfig provides config for the oracledb.db.time metric.
+type OracledbDbTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbDbTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbDbTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbDbTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbDatabaseWaitUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbDbTimeMetricAttributeKeyOracledbSessionType:
 		default:
-			return fmt.Errorf("metric oracledb.database.wait.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.db.time doesn't have an attribute %v, valid attributes: [oracledb.session.type]", val)
 		}
 	}
 
@@ -269,20 +453,10 @@ func (ms *OracledbDatabaseWaitUtilizationMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbDbBlockGetsMetricAttributeKey specifies the key of an attribute for the oracledb.db_block_gets metric.
-type OracledbDbBlockGetsMetricAttributeKey string
-
-const (
-	OracledbDbBlockGetsMetricAttributeKeyOracleDbPdb OracledbDbBlockGetsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric.
 type OracledbDbBlockGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbDbBlockGetsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDbBlockGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -299,38 +473,10 @@ func (ms *OracledbDbBlockGetsMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *OracledbDbBlockGetsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbDbBlockGetsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.db_block_gets doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbDdlStatementsParallelizedMetricAttributeKey specifies the key of an attribute for the oracledb.ddl_statements_parallelized metric.
-type OracledbDdlStatementsParallelizedMetricAttributeKey string
-
-const (
-	OracledbDdlStatementsParallelizedMetricAttributeKeyOracleDbPdb OracledbDdlStatementsParallelizedMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbDdlStatementsParallelizedMetricConfig provides config for the oracledb.ddl_statements_parallelized metric.
 type OracledbDdlStatementsParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbDdlStatementsParallelizedMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDdlStatementsParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -344,24 +490,6 @@ func (ms *OracledbDdlStatementsParallelizedMetricConfig) Unmarshal(parser *confm
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *OracledbDdlStatementsParallelizedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbDdlStatementsParallelizedMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.ddl_statements_parallelized doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -405,20 +533,10 @@ func (ms *OracledbDmlLocksUsageMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbDmlStatementsParallelizedMetricAttributeKey specifies the key of an attribute for the oracledb.dml_statements_parallelized metric.
-type OracledbDmlStatementsParallelizedMetricAttributeKey string
-
-const (
-	OracledbDmlStatementsParallelizedMetricAttributeKeyOracleDbPdb OracledbDmlStatementsParallelizedMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbDmlStatementsParallelizedMetricConfig provides config for the oracledb.dml_statements_parallelized metric.
 type OracledbDmlStatementsParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbDmlStatementsParallelizedMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbDmlStatementsParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -435,41 +553,23 @@ func (ms *OracledbDmlStatementsParallelizedMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *OracledbDmlStatementsParallelizedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbDmlStatementsParallelizedMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.dml_statements_parallelized doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbEnqueueDeadlocksMetricAttributeKey specifies the key of an attribute for the oracledb.enqueue_deadlocks metric.
-type OracledbEnqueueDeadlocksMetricAttributeKey string
+// OracledbEnqueueOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.enqueue.operations metric.
+type OracledbEnqueueOperationsMetricAttributeKey string
 
 const (
-	OracledbEnqueueDeadlocksMetricAttributeKeyOracleDbPdb OracledbEnqueueDeadlocksMetricAttributeKey = "oracle.db.pdb"
+	OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType OracledbEnqueueOperationsMetricAttributeKey = "oracledb.enqueue.type"
 )
 
-// OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric.
-type OracledbEnqueueDeadlocksMetricConfig struct {
+// OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric.
+type OracledbEnqueueOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbEnqueueDeadlocksMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbEnqueueOperationsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbEnqueueDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -483,12 +583,12 @@ func (ms *OracledbEnqueueDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *OracledbEnqueueDeadlocksMetricConfig) Validate() error {
+func (ms *OracledbEnqueueOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbEnqueueDeadlocksMetricAttributeKeyOracleDbPdb:
+		case OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType:
 		default:
-			return fmt.Errorf("metric oracledb.enqueue_deadlocks doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.enqueue.operations doesn't have an attribute %v, valid attributes: [oracledb.enqueue.type]", val)
 		}
 	}
 
@@ -498,6 +598,26 @@ func (ms *OracledbEnqueueDeadlocksMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric.
+type OracledbEnqueueDeadlocksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbEnqueueDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -581,20 +701,10 @@ func (ms *OracledbEnqueueResourcesUsageMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// OracledbExchangeDeadlocksMetricAttributeKey specifies the key of an attribute for the oracledb.exchange_deadlocks metric.
-type OracledbExchangeDeadlocksMetricAttributeKey string
-
-const (
-	OracledbExchangeDeadlocksMetricAttributeKeyOracleDbPdb OracledbExchangeDeadlocksMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbExchangeDeadlocksMetricConfig provides config for the oracledb.exchange_deadlocks metric.
 type OracledbExchangeDeadlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbExchangeDeadlocksMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbExchangeDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -611,30 +721,11 @@ func (ms *OracledbExchangeDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *OracledbExchangeDeadlocksMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbExchangeDeadlocksMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.exchange_deadlocks doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // OracledbExecutionUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.execution.utilization metric.
 type OracledbExecutionUtilizationMetricAttributeKey string
 
 const (
 	OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType OracledbExecutionUtilizationMetricAttributeKey = "oracledb.parse.type"
-	OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb       OracledbExecutionUtilizationMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbExecutionUtilizationMetricConfig provides config for the oracledb.execution.utilization metric.
@@ -663,9 +754,9 @@ func (ms *OracledbExecutionUtilizationMetricConfig) Unmarshal(parser *confmap.Co
 func (ms *OracledbExecutionUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType, OracledbExecutionUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType:
 		default:
-			return fmt.Errorf("metric oracledb.execution.utilization doesn't have an attribute %v, valid attributes: [oracledb.parse.type, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.execution.utilization doesn't have an attribute %v, valid attributes: [oracledb.parse.type]", val)
 		}
 	}
 
@@ -678,20 +769,10 @@ func (ms *OracledbExecutionUtilizationMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbExecutionsMetricAttributeKey specifies the key of an attribute for the oracledb.executions metric.
-type OracledbExecutionsMetricAttributeKey string
-
-const (
-	OracledbExecutionsMetricAttributeKeyOracleDbPdb OracledbExecutionsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbExecutionsMetricConfig provides config for the oracledb.executions metric.
 type OracledbExecutionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbExecutionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -708,38 +789,10 @@ func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *OracledbExecutionsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbExecutionsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.executions doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbHardParsesMetricAttributeKey specifies the key of an attribute for the oracledb.hard_parses metric.
-type OracledbHardParsesMetricAttributeKey string
-
-const (
-	OracledbHardParsesMetricAttributeKeyOracleDbPdb OracledbHardParsesMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric.
 type OracledbHardParsesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbHardParsesMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbHardParsesMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -756,38 +809,10 @@ func (ms *OracledbHardParsesMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *OracledbHardParsesMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbHardParsesMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.hard_parses doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbHostCPUUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.host.cpu.utilization metric.
-type OracledbHostCPUUtilizationMetricAttributeKey string
-
-const (
-	OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb OracledbHostCPUUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbHostCPUUtilizationMetricConfig provides config for the oracledb.host.cpu.utilization metric.
 type OracledbHostCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbHostCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -804,38 +829,10 @@ func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *OracledbHostCPUUtilizationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbHostCPUUtilizationMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.host.cpu.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbLibraryCacheUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.library_cache.utilization metric.
-type OracledbLibraryCacheUtilizationMetricAttributeKey string
-
-const (
-	OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb OracledbLibraryCacheUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbLibraryCacheUtilizationMetricConfig provides config for the oracledb.library_cache.utilization metric.
 type OracledbLibraryCacheUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbLibraryCacheUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbLibraryCacheUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -852,12 +849,42 @@ func (ms *OracledbLibraryCacheUtilizationMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *OracledbLibraryCacheUtilizationMetricConfig) Validate() error {
+// OracledbLobOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.lob.operations metric.
+type OracledbLobOperationsMetricAttributeKey string
+
+const (
+	OracledbLobOperationsMetricAttributeKeyDiskIoDirection OracledbLobOperationsMetricAttributeKey = "disk.io.direction"
+)
+
+// OracledbLobOperationsMetricConfig provides config for the oracledb.lob.operations metric.
+type OracledbLobOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbLobOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbLobOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbLobOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbLibraryCacheUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbLobOperationsMetricAttributeKeyDiskIoDirection:
 		default:
-			return fmt.Errorf("metric oracledb.library_cache.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.lob.operations doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
 		}
 	}
 
@@ -870,20 +897,10 @@ func (ms *OracledbLibraryCacheUtilizationMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbLogicalReadsMetricAttributeKey specifies the key of an attribute for the oracledb.logical_reads metric.
-type OracledbLogicalReadsMetricAttributeKey string
-
-const (
-	OracledbLogicalReadsMetricAttributeKeyOracleDbPdb OracledbLogicalReadsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric.
 type OracledbLogicalReadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbLogicalReadsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbLogicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -900,38 +917,10 @@ func (ms *OracledbLogicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *OracledbLogicalReadsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbLogicalReadsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.logical_reads doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbLogonsMetricAttributeKey specifies the key of an attribute for the oracledb.logons metric.
-type OracledbLogonsMetricAttributeKey string
-
-const (
-	OracledbLogonsMetricAttributeKeyOracleDbPdb OracledbLogonsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbLogonsMetricConfig provides config for the oracledb.logons metric.
 type OracledbLogonsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbLogonsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -948,38 +937,10 @@ func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OracledbLogonsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbLogonsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.logons doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_downgraded_1_to_25_pct metric.
-type OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsDowngraded1To25PctMetricAttributeKeyOracleDbPdb OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsDowngraded1To25PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_1_to_25_pct metric.
 type OracledbParallelOperationsDowngraded1To25PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsDowngraded1To25PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -996,38 +957,10 @@ func (ms *OracledbParallelOperationsDowngraded1To25PctMetricConfig) Unmarshal(pa
 	return nil
 }
 
-func (ms *OracledbParallelOperationsDowngraded1To25PctMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsDowngraded1To25PctMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_downgraded_1_to_25_pct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_downgraded_25_to_50_pct metric.
-type OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsDowngraded25To50PctMetricAttributeKeyOracleDbPdb OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsDowngraded25To50PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_25_to_50_pct metric.
 type OracledbParallelOperationsDowngraded25To50PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsDowngraded25To50PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1044,38 +977,10 @@ func (ms *OracledbParallelOperationsDowngraded25To50PctMetricConfig) Unmarshal(p
 	return nil
 }
 
-func (ms *OracledbParallelOperationsDowngraded25To50PctMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsDowngraded25To50PctMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_downgraded_25_to_50_pct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_downgraded_50_to_75_pct metric.
-type OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsDowngraded50To75PctMetricAttributeKeyOracleDbPdb OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsDowngraded50To75PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_50_to_75_pct metric.
 type OracledbParallelOperationsDowngraded50To75PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsDowngraded50To75PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1092,38 +997,10 @@ func (ms *OracledbParallelOperationsDowngraded50To75PctMetricConfig) Unmarshal(p
 	return nil
 }
 
-func (ms *OracledbParallelOperationsDowngraded50To75PctMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsDowngraded50To75PctMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_downgraded_50_to_75_pct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_downgraded_75_to_99_pct metric.
-type OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsDowngraded75To99PctMetricAttributeKeyOracleDbPdb OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsDowngraded75To99PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_75_to_99_pct metric.
 type OracledbParallelOperationsDowngraded75To99PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsDowngraded75To99PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1140,38 +1017,10 @@ func (ms *OracledbParallelOperationsDowngraded75To99PctMetricConfig) Unmarshal(p
 	return nil
 }
 
-func (ms *OracledbParallelOperationsDowngraded75To99PctMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsDowngraded75To99PctMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_downgraded_75_to_99_pct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsDowngradedToSerialMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_downgraded_to_serial metric.
-type OracledbParallelOperationsDowngradedToSerialMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsDowngradedToSerialMetricAttributeKeyOracleDbPdb OracledbParallelOperationsDowngradedToSerialMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsDowngradedToSerialMetricConfig provides config for the oracledb.parallel_operations_downgraded_to_serial metric.
 type OracledbParallelOperationsDowngradedToSerialMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsDowngradedToSerialMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsDowngradedToSerialMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1188,38 +1037,10 @@ func (ms *OracledbParallelOperationsDowngradedToSerialMetricConfig) Unmarshal(pa
 	return nil
 }
 
-func (ms *OracledbParallelOperationsDowngradedToSerialMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsDowngradedToSerialMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_downgraded_to_serial doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParallelOperationsNotDowngradedMetricAttributeKey specifies the key of an attribute for the oracledb.parallel_operations_not_downgraded metric.
-type OracledbParallelOperationsNotDowngradedMetricAttributeKey string
-
-const (
-	OracledbParallelOperationsNotDowngradedMetricAttributeKeyOracleDbPdb OracledbParallelOperationsNotDowngradedMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParallelOperationsNotDowngradedMetricConfig provides config for the oracledb.parallel_operations_not_downgraded metric.
 type OracledbParallelOperationsNotDowngradedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParallelOperationsNotDowngradedMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParallelOperationsNotDowngradedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1236,21 +1057,43 @@ func (ms *OracledbParallelOperationsNotDowngradedMetricConfig) Unmarshal(parser 
 	return nil
 }
 
-func (ms *OracledbParallelOperationsNotDowngradedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParallelOperationsNotDowngradedMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parallel_operations_not_downgraded doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
+// OracledbParseCPUTimeMetricConfig provides config for the oracledb.parse.cpu.time metric.
+type OracledbParseCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbParseCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
 	}
 
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbParseElapsedTimeMetricConfig provides config for the oracledb.parse.elapsed.time metric.
+type OracledbParseElapsedTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbParseElapsedTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1259,7 +1102,6 @@ type OracledbParseRateMetricAttributeKey string
 
 const (
 	OracledbParseRateMetricAttributeKeyOracledbParseResult OracledbParseRateMetricAttributeKey = "oracledb.parse.result"
-	OracledbParseRateMetricAttributeKeyOracleDbPdb         OracledbParseRateMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbParseRateMetricConfig provides config for the oracledb.parse.rate metric.
@@ -1288,9 +1130,9 @@ func (ms *OracledbParseRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbParseRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbParseRateMetricAttributeKeyOracledbParseResult, OracledbParseRateMetricAttributeKeyOracleDbPdb:
+		case OracledbParseRateMetricAttributeKeyOracledbParseResult:
 		default:
-			return fmt.Errorf("metric oracledb.parse.rate doesn't have an attribute %v, valid attributes: [oracledb.parse.result, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.parse.rate doesn't have an attribute %v, valid attributes: [oracledb.parse.result]", val)
 		}
 	}
 
@@ -1303,20 +1145,10 @@ func (ms *OracledbParseRateMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbParseUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.parse.utilization metric.
-type OracledbParseUtilizationMetricAttributeKey string
-
-const (
-	OracledbParseUtilizationMetricAttributeKeyOracleDbPdb OracledbParseUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParseUtilizationMetricConfig provides config for the oracledb.parse.utilization metric.
 type OracledbParseUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParseUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParseUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1333,38 +1165,10 @@ func (ms *OracledbParseUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *OracledbParseUtilizationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParseUtilizationMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parse.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbParseCallsMetricAttributeKey specifies the key of an attribute for the oracledb.parse_calls metric.
-type OracledbParseCallsMetricAttributeKey string
-
-const (
-	OracledbParseCallsMetricAttributeKeyOracleDbPdb OracledbParseCallsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbParseCallsMetricConfig provides config for the oracledb.parse_calls metric.
 type OracledbParseCallsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbParseCallsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1381,38 +1185,10 @@ func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *OracledbParseCallsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbParseCallsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.parse_calls doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPgaMemoryMetricAttributeKey specifies the key of an attribute for the oracledb.pga_memory metric.
-type OracledbPgaMemoryMetricAttributeKey string
-
-const (
-	OracledbPgaMemoryMetricAttributeKeyOracleDbPdb OracledbPgaMemoryMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPgaMemoryMetricConfig provides config for the oracledb.pga_memory metric.
 type OracledbPgaMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPgaMemoryMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPgaMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1429,38 +1205,10 @@ func (ms *OracledbPgaMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OracledbPgaMemoryMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPgaMemoryMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.pga_memory doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalIoCacheWritesMetricAttributeKey specifies the key of an attribute for the oracledb.physical_io.cache_writes metric.
-type OracledbPhysicalIoCacheWritesMetricAttributeKey string
-
-const (
-	OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb OracledbPhysicalIoCacheWritesMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalIoCacheWritesMetricConfig provides config for the oracledb.physical_io.cache_writes metric.
 type OracledbPhysicalIoCacheWritesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalIoCacheWritesMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1477,31 +1225,12 @@ func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *OracledbPhysicalIoCacheWritesMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalIoCacheWritesMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_io.cache_writes doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // OracledbPhysicalIoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.physical_io.requests metric.
 type OracledbPhysicalIoRequestsMetricAttributeKey string
 
 const (
 	OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection OracledbPhysicalIoRequestsMetricAttributeKey = "disk.io.direction"
 	OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize OracledbPhysicalIoRequestsMetricAttributeKey = "disk.io.block_size"
-	OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb     OracledbPhysicalIoRequestsMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbPhysicalIoRequestsMetricConfig provides config for the oracledb.physical_io.requests metric.
@@ -1530,9 +1259,9 @@ func (ms *OracledbPhysicalIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *OracledbPhysicalIoRequestsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize, OracledbPhysicalIoRequestsMetricAttributeKeyOracleDbPdb:
+		case OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoRequestsMetricAttributeKeyDiskIoBlockSize:
 		default:
-			return fmt.Errorf("metric oracledb.physical_io.requests doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.physical_io.requests doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.block_size]", val)
 		}
 	}
 
@@ -1551,7 +1280,6 @@ type OracledbPhysicalIoTransferredMetricAttributeKey string
 const (
 	OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection OracledbPhysicalIoTransferredMetricAttributeKey = "disk.io.direction"
 	OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType      OracledbPhysicalIoTransferredMetricAttributeKey = "disk.io.type"
-	OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb     OracledbPhysicalIoTransferredMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric.
@@ -1580,9 +1308,9 @@ func (ms *OracledbPhysicalIoTransferredMetricConfig) Unmarshal(parser *confmap.C
 func (ms *OracledbPhysicalIoTransferredMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType, OracledbPhysicalIoTransferredMetricAttributeKeyOracleDbPdb:
+		case OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType:
 		default:
-			return fmt.Errorf("metric oracledb.physical_io.transferred doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.type, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.physical_io.transferred doesn't have an attribute %v, valid attributes: [disk.io.direction, disk.io.type]", val)
 		}
 	}
 
@@ -1595,20 +1323,10 @@ func (ms *OracledbPhysicalIoTransferredMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbPhysicalReadIoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.physical_read_io_requests metric.
-type OracledbPhysicalReadIoRequestsMetricAttributeKey string
-
-const (
-	OracledbPhysicalReadIoRequestsMetricAttributeKeyOracleDbPdb OracledbPhysicalReadIoRequestsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric.
 type OracledbPhysicalReadIoRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalReadIoRequestsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalReadIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1625,38 +1343,10 @@ func (ms *OracledbPhysicalReadIoRequestsMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *OracledbPhysicalReadIoRequestsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalReadIoRequestsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_read_io_requests doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalReadsMetricAttributeKey specifies the key of an attribute for the oracledb.physical_reads metric.
-type OracledbPhysicalReadsMetricAttributeKey string
-
-const (
-	OracledbPhysicalReadsMetricAttributeKeyOracleDbPdb OracledbPhysicalReadsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalReadsMetricConfig provides config for the oracledb.physical_reads metric.
 type OracledbPhysicalReadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalReadsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1673,38 +1363,10 @@ func (ms *OracledbPhysicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *OracledbPhysicalReadsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalReadsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_reads doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalReadsDirectMetricAttributeKey specifies the key of an attribute for the oracledb.physical_reads_direct metric.
-type OracledbPhysicalReadsDirectMetricAttributeKey string
-
-const (
-	OracledbPhysicalReadsDirectMetricAttributeKeyOracleDbPdb OracledbPhysicalReadsDirectMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalReadsDirectMetricConfig provides config for the oracledb.physical_reads_direct metric.
 type OracledbPhysicalReadsDirectMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalReadsDirectMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalReadsDirectMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1721,38 +1383,10 @@ func (ms *OracledbPhysicalReadsDirectMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *OracledbPhysicalReadsDirectMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalReadsDirectMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_reads_direct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalWriteIoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.physical_write_io_requests metric.
-type OracledbPhysicalWriteIoRequestsMetricAttributeKey string
-
-const (
-	OracledbPhysicalWriteIoRequestsMetricAttributeKeyOracleDbPdb OracledbPhysicalWriteIoRequestsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalWriteIoRequestsMetricConfig provides config for the oracledb.physical_write_io_requests metric.
 type OracledbPhysicalWriteIoRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalWriteIoRequestsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalWriteIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1769,38 +1403,10 @@ func (ms *OracledbPhysicalWriteIoRequestsMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *OracledbPhysicalWriteIoRequestsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalWriteIoRequestsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_write_io_requests doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalWritesMetricAttributeKey specifies the key of an attribute for the oracledb.physical_writes metric.
-type OracledbPhysicalWritesMetricAttributeKey string
-
-const (
-	OracledbPhysicalWritesMetricAttributeKeyOracleDbPdb OracledbPhysicalWritesMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalWritesMetricConfig provides config for the oracledb.physical_writes metric.
 type OracledbPhysicalWritesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalWritesMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1817,38 +1423,10 @@ func (ms *OracledbPhysicalWritesMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *OracledbPhysicalWritesMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalWritesMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_writes doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbPhysicalWritesDirectMetricAttributeKey specifies the key of an attribute for the oracledb.physical_writes_direct metric.
-type OracledbPhysicalWritesDirectMetricAttributeKey string
-
-const (
-	OracledbPhysicalWritesDirectMetricAttributeKeyOracleDbPdb OracledbPhysicalWritesDirectMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbPhysicalWritesDirectMetricConfig provides config for the oracledb.physical_writes_direct metric.
 type OracledbPhysicalWritesDirectMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbPhysicalWritesDirectMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbPhysicalWritesDirectMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1862,24 +1440,6 @@ func (ms *OracledbPhysicalWritesDirectMetricConfig) Unmarshal(parser *confmap.Co
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *OracledbPhysicalWritesDirectMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbPhysicalWritesDirectMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.physical_writes_direct doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -1923,20 +1483,10 @@ func (ms *OracledbProcessesUsageMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// OracledbQueriesParallelizedMetricAttributeKey specifies the key of an attribute for the oracledb.queries_parallelized metric.
-type OracledbQueriesParallelizedMetricAttributeKey string
-
-const (
-	OracledbQueriesParallelizedMetricAttributeKeyOracleDbPdb OracledbQueriesParallelizedMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbQueriesParallelizedMetricConfig provides config for the oracledb.queries_parallelized metric.
 type OracledbQueriesParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbQueriesParallelizedMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1950,24 +1500,6 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *OracledbQueriesParallelizedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbQueriesParallelizedMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.queries_parallelized doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -1991,20 +1523,270 @@ func (ms *OracledbRecycleBinLimitMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// OracledbRedoAllocationUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.redo_allocation.utilization metric.
-type OracledbRedoAllocationUtilizationMetricAttributeKey string
+// OracledbRedoBlocksMetricAttributeKey specifies the key of an attribute for the oracledb.redo.blocks metric.
+type OracledbRedoBlocksMetricAttributeKey string
 
 const (
-	OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb OracledbRedoAllocationUtilizationMetricAttributeKey = "oracle.db.pdb"
+	OracledbRedoBlocksMetricAttributeKeyDiskIoDirection OracledbRedoBlocksMetricAttributeKey = "disk.io.direction"
 )
+
+// OracledbRedoBlocksMetricConfig provides config for the oracledb.redo.blocks metric.
+type OracledbRedoBlocksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoBlocksMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoBlocksMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoBlocksMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.redo.blocks doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.operations metric.
+type OracledbRedoOperationsMetricAttributeKey string
+
+const (
+	OracledbRedoOperationsMetricAttributeKeyDiskIoDirection OracledbRedoOperationsMetricAttributeKey = "disk.io.direction"
+)
+
+// OracledbRedoOperationsMetricConfig provides config for the oracledb.redo.operations metric.
+type OracledbRedoOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoOperationsMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.redo.operations doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoRequestsMetricAttributeKey specifies the key of an attribute for the oracledb.redo.requests metric.
+type OracledbRedoRequestsMetricAttributeKey string
+
+const (
+	OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType OracledbRedoRequestsMetricAttributeKey = "oracledb.redo.request.type"
+)
+
+// OracledbRedoRequestsMetricConfig provides config for the oracledb.redo.requests metric.
+type OracledbRedoRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoRequestsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoRequestsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType:
+		default:
+			return fmt.Errorf("metric oracledb.redo.requests doesn't have an attribute %v, valid attributes: [oracledb.redo.request.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoRetriesMetricAttributeKey specifies the key of an attribute for the oracledb.redo.retries metric.
+type OracledbRedoRetriesMetricAttributeKey string
+
+const (
+	OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType OracledbRedoRetriesMetricAttributeKey = "oracledb.redo.retry.type"
+)
+
+// OracledbRedoRetriesMetricConfig provides config for the oracledb.redo.retries metric.
+type OracledbRedoRetriesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoRetriesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoRetriesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoRetriesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType:
+		default:
+			return fmt.Errorf("metric oracledb.redo.retries doesn't have an attribute %v, valid attributes: [oracledb.redo.retry.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric.
+type OracledbRedoSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbRedoSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbRedoTimeMetricAttributeKey specifies the key of an attribute for the oracledb.redo.time metric.
+type OracledbRedoTimeMetricAttributeKey string
+
+const (
+	OracledbRedoTimeMetricAttributeKeyOracledbRedoType OracledbRedoTimeMetricAttributeKey = "oracledb.redo.type"
+)
+
+// OracledbRedoTimeMetricConfig provides config for the oracledb.redo.time metric.
+type OracledbRedoTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbRedoTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbRedoTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbRedoTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbRedoTimeMetricAttributeKeyOracledbRedoType:
+		default:
+			return fmt.Errorf("metric oracledb.redo.time doesn't have an attribute %v, valid attributes: [oracledb.redo.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
 
 // OracledbRedoAllocationUtilizationMetricConfig provides config for the oracledb.redo_allocation.utilization metric.
 type OracledbRedoAllocationUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbRedoAllocationUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbRedoAllocationUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2021,12 +1803,43 @@ func (ms *OracledbRedoAllocationUtilizationMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *OracledbRedoAllocationUtilizationMetricConfig) Validate() error {
+// OracledbScanCountMetricAttributeKey specifies the key of an attribute for the oracledb.scan.count metric.
+type OracledbScanCountMetricAttributeKey string
+
+const (
+	OracledbScanCountMetricAttributeKeyOracledbScanType OracledbScanCountMetricAttributeKey = "oracledb.scan.type"
+	OracledbScanCountMetricAttributeKeyOracledbScanMode OracledbScanCountMetricAttributeKey = "oracledb.scan.mode"
+)
+
+// OracledbScanCountMetricConfig provides config for the oracledb.scan.count metric.
+type OracledbScanCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbScanCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbScanCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbRedoAllocationUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode:
 		default:
-			return fmt.Errorf("metric oracledb.redo_allocation.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.scan.count doesn't have an attribute %v, valid attributes: [oracledb.scan.type, oracledb.scan.mode]", val)
 		}
 	}
 
@@ -2036,6 +1849,26 @@ func (ms *OracledbRedoAllocationUtilizationMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// OracledbScanTableRowsMetricConfig provides config for the oracledb.scan.table.rows metric.
+type OracledbScanTableRowsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2065,7 +1898,6 @@ type OracledbSessionsUsageMetricAttributeKey string
 const (
 	OracledbSessionsUsageMetricAttributeKeySessionType   OracledbSessionsUsageMetricAttributeKey = "session_type"
 	OracledbSessionsUsageMetricAttributeKeySessionStatus OracledbSessionsUsageMetricAttributeKey = "session_status"
-	OracledbSessionsUsageMetricAttributeKeyOracleDbPdb   OracledbSessionsUsageMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbSessionsUsageMetricConfig provides config for the oracledb.sessions.usage metric.
@@ -2094,9 +1926,9 @@ func (ms *OracledbSessionsUsageMetricConfig) Unmarshal(parser *confmap.Conf) err
 func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus, OracledbSessionsUsageMetricAttributeKeyOracleDbPdb:
+		case OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus:
 		default:
-			return fmt.Errorf("metric oracledb.sessions.usage doesn't have an attribute %v, valid attributes: [session_type, session_status, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.sessions.usage doesn't have an attribute %v, valid attributes: [session_type, session_status]", val)
 		}
 	}
 
@@ -2109,20 +1941,10 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbSharedPoolUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.shared_pool.utilization metric.
-type OracledbSharedPoolUtilizationMetricAttributeKey string
-
-const (
-	OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb OracledbSharedPoolUtilizationMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbSharedPoolUtilizationMetricConfig provides config for the oracledb.shared_pool.utilization metric.
 type OracledbSharedPoolUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbSharedPoolUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbSharedPoolUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2139,12 +1961,42 @@ func (ms *OracledbSharedPoolUtilizationMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *OracledbSharedPoolUtilizationMetricConfig) Validate() error {
+// OracledbSortOperationsMetricAttributeKey specifies the key of an attribute for the oracledb.sort.operations metric.
+type OracledbSortOperationsMetricAttributeKey string
+
+const (
+	OracledbSortOperationsMetricAttributeKeyOracledbSortType OracledbSortOperationsMetricAttributeKey = "oracledb.sort.type"
+)
+
+// OracledbSortOperationsMetricConfig provides config for the oracledb.sort.operations metric.
+type OracledbSortOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSortOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSortOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSortOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSharedPoolUtilizationMetricAttributeKeyOracleDbPdb:
+		case OracledbSortOperationsMetricAttributeKeyOracledbSortType:
 		default:
-			return fmt.Errorf("metric oracledb.shared_pool.utilization doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.sort.operations doesn't have an attribute %v, valid attributes: [oracledb.sort.type]", val)
 		}
 	}
 
@@ -2162,7 +2014,6 @@ type OracledbSortRatioMetricAttributeKey string
 
 const (
 	OracledbSortRatioMetricAttributeKeyOracledbSortType OracledbSortRatioMetricAttributeKey = "oracledb.sort.type"
-	OracledbSortRatioMetricAttributeKeyOracleDbPdb      OracledbSortRatioMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbSortRatioMetricConfig provides config for the oracledb.sort.ratio metric.
@@ -2191,9 +2042,9 @@ func (ms *OracledbSortRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbSortRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSortRatioMetricAttributeKeyOracledbSortType, OracledbSortRatioMetricAttributeKeyOracleDbPdb:
+		case OracledbSortRatioMetricAttributeKeyOracledbSortType:
 		default:
-			return fmt.Errorf("metric oracledb.sort.ratio doesn't have an attribute %v, valid attributes: [oracledb.sort.type, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.sort.ratio doesn't have an attribute %v, valid attributes: [oracledb.sort.type]", val)
 		}
 	}
 
@@ -2206,20 +2057,30 @@ func (ms *OracledbSortRatioMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbSQLServiceResponseDurationMetricAttributeKey specifies the key of an attribute for the oracledb.sql_service.response.duration metric.
-type OracledbSQLServiceResponseDurationMetricAttributeKey string
+// OracledbSortRowsMetricConfig provides config for the oracledb.sort.rows metric.
+type OracledbSortRowsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
 
-const (
-	OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb OracledbSQLServiceResponseDurationMetricAttributeKey = "oracle.db.pdb"
-)
+func (ms *OracledbSortRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
 // OracledbSQLServiceResponseDurationMetricConfig provides config for the oracledb.sql_service.response.duration metric.
 type OracledbSQLServiceResponseDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbSQLServiceResponseDurationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbSQLServiceResponseDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2236,31 +2097,12 @@ func (ms *OracledbSQLServiceResponseDurationMetricConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *OracledbSQLServiceResponseDurationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbSQLServiceResponseDurationMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.sql_service.response.duration doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // OracledbSqlnetIoTransferredMetricAttributeKey specifies the key of an attribute for the oracledb.sqlnet.io.transferred metric.
 type OracledbSqlnetIoTransferredMetricAttributeKey string
 
 const (
 	OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection OracledbSqlnetIoTransferredMetricAttributeKey = "network.io.direction"
 	OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType    OracledbSqlnetIoTransferredMetricAttributeKey = "destination.type"
-	OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb        OracledbSqlnetIoTransferredMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric.
@@ -2289,9 +2131,9 @@ func (ms *OracledbSqlnetIoTransferredMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *OracledbSqlnetIoTransferredMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType, OracledbSqlnetIoTransferredMetricAttributeKeyOracleDbPdb:
+		case OracledbSqlnetIoTransferredMetricAttributeKeyNetworkIoDirection, OracledbSqlnetIoTransferredMetricAttributeKeyDestinationType:
 		default:
-			return fmt.Errorf("metric oracledb.sqlnet.io.transferred doesn't have an attribute %v, valid attributes: [network.io.direction, destination.type, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.sqlnet.io.transferred doesn't have an attribute %v, valid attributes: [network.io.direction, destination.type]", val)
 		}
 	}
 
@@ -2349,7 +2191,6 @@ type OracledbTablespaceSizeLimitMetricAttributeKey string
 
 const (
 	OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName OracledbTablespaceSizeLimitMetricAttributeKey = "tablespace_name"
-	OracledbTablespaceSizeLimitMetricAttributeKeyOracleDbPdb    OracledbTablespaceSizeLimitMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbTablespaceSizeLimitMetricConfig provides config for the oracledb.tablespace_size.limit metric.
@@ -2378,9 +2219,9 @@ func (ms *OracledbTablespaceSizeLimitMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *OracledbTablespaceSizeLimitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName, OracledbTablespaceSizeLimitMetricAttributeKeyOracleDbPdb:
+		case OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName:
 		default:
-			return fmt.Errorf("metric oracledb.tablespace_size.limit doesn't have an attribute %v, valid attributes: [tablespace_name, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.tablespace_size.limit doesn't have an attribute %v, valid attributes: [tablespace_name]", val)
 		}
 	}
 
@@ -2398,7 +2239,6 @@ type OracledbTablespaceSizeUsageMetricAttributeKey string
 
 const (
 	OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName OracledbTablespaceSizeUsageMetricAttributeKey = "tablespace_name"
-	OracledbTablespaceSizeUsageMetricAttributeKeyOracleDbPdb    OracledbTablespaceSizeUsageMetricAttributeKey = "oracle.db.pdb"
 )
 
 // OracledbTablespaceSizeUsageMetricConfig provides config for the oracledb.tablespace_size.usage metric.
@@ -2427,9 +2267,9 @@ func (ms *OracledbTablespaceSizeUsageMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *OracledbTablespaceSizeUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName, OracledbTablespaceSizeUsageMetricAttributeKeyOracleDbPdb:
+		case OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName:
 		default:
-			return fmt.Errorf("metric oracledb.tablespace_size.usage doesn't have an attribute %v, valid attributes: [tablespace_name, oracle.db.pdb]", val)
+			return fmt.Errorf("metric oracledb.tablespace_size.usage doesn't have an attribute %v, valid attributes: [tablespace_name]", val)
 		}
 	}
 
@@ -2482,20 +2322,10 @@ func (ms *OracledbTransactionsUsageMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// OracledbUserCommitsMetricAttributeKey specifies the key of an attribute for the oracledb.user_commits metric.
-type OracledbUserCommitsMetricAttributeKey string
-
-const (
-	OracledbUserCommitsMetricAttributeKeyOracleDbPdb OracledbUserCommitsMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric.
 type OracledbUserCommitsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbUserCommitsMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbUserCommitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2512,38 +2342,10 @@ func (ms *OracledbUserCommitsMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *OracledbUserCommitsMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbUserCommitsMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.user_commits doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// OracledbUserRollbacksMetricAttributeKey specifies the key of an attribute for the oracledb.user_rollbacks metric.
-type OracledbUserRollbacksMetricAttributeKey string
-
-const (
-	OracledbUserRollbacksMetricAttributeKeyOracleDbPdb OracledbUserRollbacksMetricAttributeKey = "oracle.db.pdb"
-)
-
 // OracledbUserRollbacksMetricConfig provides config for the oracledb.user_rollbacks metric.
 type OracledbUserRollbacksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbUserRollbacksMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2560,37 +2362,32 @@ func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *OracledbUserRollbacksMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbUserRollbacksMetricAttributeKeyOracleDbPdb:
-		default:
-			return fmt.Errorf("metric oracledb.user_rollbacks doesn't have an attribute %v, valid attributes: [oracle.db.pdb]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
+	OracledbBufferInspected                       OracledbBufferInspectedMetricConfig                       `mapstructure:"oracledb.buffer.inspected"`
+	OracledbBufferRequests                        OracledbBufferRequestsMetricConfig                        `mapstructure:"oracledb.buffer.requests"`
+	OracledbBufferCacheBlockChanges               OracledbBufferCacheBlockChangesMetricConfig               `mapstructure:"oracledb.buffer_cache.block.changes"`
+	OracledbBufferCacheBlockGets                  OracledbBufferCacheBlockGetsMetricConfig                  `mapstructure:"oracledb.buffer_cache.block.gets"`
 	OracledbBufferCacheUtilization                OracledbBufferCacheUtilizationMetricConfig                `mapstructure:"oracledb.buffer_cache.utilization"`
+	OracledbCallCount                             OracledbCallCountMetricConfig                             `mapstructure:"oracledb.call.count"`
+	OracledbCallRecursiveCPUTime                  OracledbCallRecursiveCPUTimeMetricConfig                  `mapstructure:"oracledb.call.recursive.cpu.time"`
+	OracledbCheckpointBuffers                     OracledbCheckpointBuffersMetricConfig                     `mapstructure:"oracledb.checkpoint.buffers"`
+	OracledbCheckpointCompleted                   OracledbCheckpointCompletedMetricConfig                   `mapstructure:"oracledb.checkpoint.completed"`
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
+	OracledbCursorCacheHits                       OracledbCursorCacheHitsMetricConfig                       `mapstructure:"oracledb.cursor.cache.hits"`
+	OracledbCursorCacheSize                       OracledbCursorCacheSizeMetricConfig                       `mapstructure:"oracledb.cursor.cache.size"`
+	OracledbCursorOpen                            OracledbCursorOpenMetricConfig                            `mapstructure:"oracledb.cursor.open"`
 	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDatabaseCPUUtilization                OracledbDatabaseCPUUtilizationMetricConfig                `mapstructure:"oracledb.database.cpu.utilization"`
 	OracledbDatabaseWaitUtilization               OracledbDatabaseWaitUtilizationMetricConfig               `mapstructure:"oracledb.database.wait.utilization"`
+	OracledbDbTime                                OracledbDbTimeMetricConfig                                `mapstructure:"oracledb.db.time"`
 	OracledbDbBlockGets                           OracledbDbBlockGetsMetricConfig                           `mapstructure:"oracledb.db_block_gets"`
 	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
 	OracledbDmlLocksLimit                         OracledbDmlLocksLimitMetricConfig                         `mapstructure:"oracledb.dml_locks.limit"`
 	OracledbDmlLocksUsage                         OracledbDmlLocksUsageMetricConfig                         `mapstructure:"oracledb.dml_locks.usage"`
 	OracledbDmlStatementsParallelized             OracledbDmlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.dml_statements_parallelized"`
+	OracledbEnqueueOperations                     OracledbEnqueueOperationsMetricConfig                     `mapstructure:"oracledb.enqueue.operations"`
 	OracledbEnqueueDeadlocks                      OracledbEnqueueDeadlocksMetricConfig                      `mapstructure:"oracledb.enqueue_deadlocks"`
 	OracledbEnqueueLocksLimit                     OracledbEnqueueLocksLimitMetricConfig                     `mapstructure:"oracledb.enqueue_locks.limit"`
 	OracledbEnqueueLocksUsage                     OracledbEnqueueLocksUsageMetricConfig                     `mapstructure:"oracledb.enqueue_locks.usage"`
@@ -2602,6 +2399,7 @@ type MetricsConfig struct {
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
+	OracledbLobOperations                         OracledbLobOperationsMetricConfig                         `mapstructure:"oracledb.lob.operations"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
@@ -2610,6 +2408,8 @@ type MetricsConfig struct {
 	OracledbParallelOperationsDowngraded75To99Pct OracledbParallelOperationsDowngraded75To99PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
 	OracledbParallelOperationsDowngradedToSerial  OracledbParallelOperationsDowngradedToSerialMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
 	OracledbParallelOperationsNotDowngraded       OracledbParallelOperationsNotDowngradedMetricConfig       `mapstructure:"oracledb.parallel_operations_not_downgraded"`
+	OracledbParseCPUTime                          OracledbParseCPUTimeMetricConfig                          `mapstructure:"oracledb.parse.cpu.time"`
+	OracledbParseElapsedTime                      OracledbParseElapsedTimeMetricConfig                      `mapstructure:"oracledb.parse.elapsed.time"`
 	OracledbParseRate                             OracledbParseRateMetricConfig                             `mapstructure:"oracledb.parse.rate"`
 	OracledbParseUtilization                      OracledbParseUtilizationMetricConfig                      `mapstructure:"oracledb.parse.utilization"`
 	OracledbParseCalls                            OracledbParseCallsMetricConfig                            `mapstructure:"oracledb.parse_calls"`
@@ -2627,11 +2427,21 @@ type MetricsConfig struct {
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
+	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
+	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
+	OracledbRedoRequests                          OracledbRedoRequestsMetricConfig                          `mapstructure:"oracledb.redo.requests"`
+	OracledbRedoRetries                           OracledbRedoRetriesMetricConfig                           `mapstructure:"oracledb.redo.retries"`
+	OracledbRedoSize                              OracledbRedoSizeMetricConfig                              `mapstructure:"oracledb.redo.size"`
+	OracledbRedoTime                              OracledbRedoTimeMetricConfig                              `mapstructure:"oracledb.redo.time"`
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
+	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
+	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
+	OracledbSortOperations                        OracledbSortOperationsMetricConfig                        `mapstructure:"oracledb.sort.operations"`
 	OracledbSortRatio                             OracledbSortRatioMetricConfig                             `mapstructure:"oracledb.sort.ratio"`
+	OracledbSortRows                              OracledbSortRowsMetricConfig                              `mapstructure:"oracledb.sort.rows"`
 	OracledbSQLServiceResponseDuration            OracledbSQLServiceResponseDurationMetricConfig            `mapstructure:"oracledb.sql_service.response.duration"`
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
@@ -2646,43 +2456,71 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
+		OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbBufferCacheUtilizationMetricAttributeKey{},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbBufferInspectedMetricAttributeKey{OracledbBufferInspectedMetricAttributeKeyOracledbBufferState},
+		},
+		OracledbBufferRequests: OracledbBufferRequestsMetricConfig{
+			Enabled: false,
+		},
+		OracledbBufferCacheBlockChanges: OracledbBufferCacheBlockChangesMetricConfig{
+			Enabled: false,
+		},
+		OracledbBufferCacheBlockGets: OracledbBufferCacheBlockGetsMetricConfig{
+			Enabled: false,
+		},
+		OracledbBufferCacheUtilization: OracledbBufferCacheUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbCallCount: OracledbCallCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbCallCountMetricAttributeKey{OracledbCallCountMetricAttributeKeyOracledbCallType},
+		},
+		OracledbCallRecursiveCPUTime: OracledbCallRecursiveCPUTimeMetricConfig{
+			Enabled: false,
+		},
+		OracledbCheckpointBuffers: OracledbCheckpointBuffersMetricConfig{
+			Enabled: false,
+		},
+		OracledbCheckpointCompleted: OracledbCheckpointCompletedMetricConfig{
+			Enabled: false,
 		},
 		OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbConsistentGetsMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbCPUTime: OracledbCPUTimeMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbCPUTimeMetricAttributeKey{},
+			Enabled: true,
+		},
+		OracledbCursorCacheHits: OracledbCursorCacheHitsMetricConfig{
+			Enabled: false,
+		},
+		OracledbCursorCacheSize: OracledbCursorCacheSizeMetricConfig{
+			Enabled: false,
+		},
+		OracledbCursorOpen: OracledbCursorOpenMetricConfig{
+			Enabled: false,
 		},
 		OracledbDataDictionaryHitRatio: OracledbDataDictionaryHitRatioMetricConfig{
 			Enabled: false,
 		},
 		OracledbDatabaseCPUUtilization: OracledbDatabaseCPUUtilizationMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbDatabaseCPUUtilizationMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbDatabaseWaitUtilization: OracledbDatabaseWaitUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbDbTime: OracledbDbTimeMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbDatabaseWaitUtilizationMetricAttributeKey{},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbDbTimeMetricAttributeKey{OracledbDbTimeMetricAttributeKeyOracledbSessionType},
 		},
 		OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbDbBlockGetsMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbDdlStatementsParallelizedMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbDmlLocksLimit: OracledbDmlLocksLimitMetricConfig{
 			Enabled: true,
@@ -2691,14 +2529,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedMetricConfig{
+			Enabled: false,
+		},
+		OracledbEnqueueOperations: OracledbEnqueueOperationsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbDmlStatementsParallelizedMetricAttributeKey{},
+			EnabledAttributes:   []OracledbEnqueueOperationsMetricAttributeKey{OracledbEnqueueOperationsMetricAttributeKeyOracledbEnqueueType},
 		},
 		OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbEnqueueDeadlocksMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitMetricConfig{
 			Enabled: true,
@@ -2713,9 +2552,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbExchangeDeadlocks: OracledbExchangeDeadlocksMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbExchangeDeadlocksMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbExecutionUtilization: OracledbExecutionUtilizationMetricConfig{
 			Enabled:             false,
@@ -2723,64 +2560,51 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbExecutionUtilizationMetricAttributeKey{OracledbExecutionUtilizationMetricAttributeKeyOracledbParseType},
 		},
 		OracledbExecutions: OracledbExecutionsMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbExecutionsMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbHardParses: OracledbHardParsesMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbHardParsesMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbHostCPUUtilizationMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbLobOperations: OracledbLobOperationsMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbLibraryCacheUtilizationMetricAttributeKey{},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbLobOperationsMetricAttributeKey{OracledbLobOperationsMetricAttributeKeyDiskIoDirection},
 		},
 		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbLogicalReadsMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbLogons: OracledbLogonsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbLogonsMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsDowngraded1To25PctMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsDowngraded25To50PctMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsDowngraded50To75PctMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsDowngraded75To99PctMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsDowngradedToSerialMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParallelOperationsNotDowngradedMetricAttributeKey{},
+			Enabled: false,
+		},
+		OracledbParseCPUTime: OracledbParseCPUTimeMetricConfig{
+			Enabled: false,
+		},
+		OracledbParseElapsedTime: OracledbParseElapsedTimeMetricConfig{
+			Enabled: false,
 		},
 		OracledbParseRate: OracledbParseRateMetricConfig{
 			Enabled:             false,
@@ -2788,24 +2612,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbParseRateMetricAttributeKey{OracledbParseRateMetricAttributeKeyOracledbParseResult},
 		},
 		OracledbParseUtilization: OracledbParseUtilizationMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbParseUtilizationMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbParseCalls: OracledbParseCallsMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbParseCallsMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPgaMemoryMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbPhysicalIoCacheWrites: OracledbPhysicalIoCacheWritesMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalIoCacheWritesMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbPhysicalIoRequests: OracledbPhysicalIoRequestsMetricConfig{
 			Enabled:             false,
@@ -2818,34 +2634,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbPhysicalIoTransferredMetricAttributeKey{OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoDirection, OracledbPhysicalIoTransferredMetricAttributeKeyDiskIoType},
 		},
 		OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalReadIoRequestsMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbPhysicalReads: OracledbPhysicalReadsMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalReadsMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalReadsDirectMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalWriteIoRequestsMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbPhysicalWrites: OracledbPhysicalWritesMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalWritesMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbPhysicalWritesDirectMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbProcessesLimit: OracledbProcessesLimitMetricConfig{
 			Enabled: true,
@@ -2854,17 +2658,49 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbQueriesParallelizedMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
-		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+		OracledbRedoBlocks: OracledbRedoBlocksMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbRedoAllocationUtilizationMetricAttributeKey{},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoBlocksMetricAttributeKey{OracledbRedoBlocksMetricAttributeKeyDiskIoDirection},
+		},
+		OracledbRedoOperations: OracledbRedoOperationsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoOperationsMetricAttributeKey{OracledbRedoOperationsMetricAttributeKeyDiskIoDirection},
+		},
+		OracledbRedoRequests: OracledbRedoRequestsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoRequestsMetricAttributeKey{OracledbRedoRequestsMetricAttributeKeyOracledbRedoRequestType},
+		},
+		OracledbRedoRetries: OracledbRedoRetriesMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoRetriesMetricAttributeKey{OracledbRedoRetriesMetricAttributeKeyOracledbRedoRetryType},
+		},
+		OracledbRedoSize: OracledbRedoSizeMetricConfig{
+			Enabled: false,
+		},
+		OracledbRedoTime: OracledbRedoTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbRedoTimeMetricAttributeKey{OracledbRedoTimeMetricAttributeKeyOracledbRedoType},
+		},
+		OracledbRedoAllocationUtilization: OracledbRedoAllocationUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbScanCount: OracledbScanCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbScanCountMetricAttributeKey{OracledbScanCountMetricAttributeKeyOracledbScanType, OracledbScanCountMetricAttributeKeyOracledbScanMode},
+		},
+		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
+			Enabled: false,
 		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,
@@ -2875,19 +2711,23 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
 		OracledbSharedPoolUtilization: OracledbSharedPoolUtilizationMetricConfig{
+			Enabled: false,
+		},
+		OracledbSortOperations: OracledbSortOperationsMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbSharedPoolUtilizationMetricAttributeKey{},
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSortOperationsMetricAttributeKey{OracledbSortOperationsMetricAttributeKeyOracledbSortType},
 		},
 		OracledbSortRatio: OracledbSortRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSortRatioMetricAttributeKey{OracledbSortRatioMetricAttributeKeyOracledbSortType},
 		},
+		OracledbSortRows: OracledbSortRowsMetricConfig{
+			Enabled: false,
+		},
 		OracledbSQLServiceResponseDuration: OracledbSQLServiceResponseDurationMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbSQLServiceResponseDurationMetricAttributeKey{},
+			Enabled: false,
 		},
 		OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 			Enabled:             false,
@@ -2917,14 +2757,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbUserCommits: OracledbUserCommitsMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbUserCommitsMetricAttributeKey{},
+			Enabled: true,
 		},
 		OracledbUserRollbacks: OracledbUserRollbacksMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbUserRollbacksMetricAttributeKey{},
+			Enabled: true,
 		},
 	}
 }
@@ -3007,6 +2843,7 @@ type ResourceAttributesConfig struct {
 	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
 	OracleDbHostingType  ResourceAttributeConfig `mapstructure:"oracle.db.hosting_type"`
 	OracleDbOpenMode     ResourceAttributeConfig `mapstructure:"oracle.db.open_mode"`
+	OracleDbPdb          ResourceAttributeConfig `mapstructure:"oracle.db.pdb"`
 	OracleDbRole         ResourceAttributeConfig `mapstructure:"oracle.db.role"`
 	OracleDbVersion      ResourceAttributeConfig `mapstructure:"oracle.db.version"`
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
@@ -3022,6 +2859,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OracleDbOpenMode: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracleDbPdb: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OracleDbRole: ResourceAttributeConfig{

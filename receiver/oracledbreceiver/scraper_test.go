@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
@@ -74,6 +75,50 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Workload analysis v$sysstat rows
+		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
+		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
+		{"NAME": tableScansRowidRangesStat, "VALUE": "50"},
+		{"NAME": tableScanRowsGottenStat, "VALUE": "999999"},
+		{"NAME": indexFastFullScansDirectStat, "VALUE": "10"},
+		{"NAME": indexFastFullScansFullStat, "VALUE": "20"},
+		{"NAME": indexFastFullScansRowidStat, "VALUE": "5"},
+		{"NAME": enqueueConversionsStat, "VALUE": "11"},
+		{"NAME": enqueueReleasesStat, "VALUE": "22"},
+		{"NAME": enqueueRequestsStat, "VALUE": "33"},
+		{"NAME": enqueueTimeoutsStat, "VALUE": "44"},
+		{"NAME": enqueueWaitsStat, "VALUE": "55"},
+		{"NAME": lobReadsStat, "VALUE": "120"},
+		{"NAME": lobWritesStat, "VALUE": "240"},
+		{"NAME": parseTimeCPUStat, "VALUE": "1500"},
+		{"NAME": parseTimeElapsedStat, "VALUE": "3000"},
+		{"NAME": sortsDiskStat, "VALUE": "7"},
+		{"NAME": sortsMemoryStat, "VALUE": "777"},
+		{"NAME": sortsRowsStat, "VALUE": "888888"},
+		{"NAME": sessionCursorCacheHitsStat, "VALUE": "65535"},
+		{"NAME": sessionCursorCacheCountStat, "VALUE": "1024"},
+		{"NAME": openedCursorsCurrentStat, "VALUE": "128"},
+		{"NAME": userCallsStat, "VALUE": "987654"},
+		{"NAME": recursiveCallsStat, "VALUE": "123456"},
+		{"NAME": recursiveCPUUsageStat, "VALUE": "5000"},
+		{"NAME": dbTimeStat, "VALUE": "60000"},
+		// Buffer cache and DBWR v$sysstat rows
+		{"NAME": dbBlockChanges, "VALUE": "8800000"},
+		{"NAME": dbBlockGetsFromCache, "VALUE": "7700000"},
+		{"NAME": dbwrCheckpointBuffersWritten, "VALUE": "12000"},
+		{"NAME": dbwrCheckpoints, "VALUE": "320"},
+		{"NAME": freeBufferRequested, "VALUE": "6100"},
+		{"NAME": freeBufferInspected, "VALUE": "55000"},
+		{"NAME": dirtyBuffersInspected, "VALUE": "1200"},
+		// Redo log v$sysstat rows (redo time values are in centiseconds)
+		{"NAME": redoWriteTime, "VALUE": "1500"},
+		{"NAME": redoLogSpaceWaitTime, "VALUE": "250"},
+		{"NAME": redoSynchTime, "VALUE": "900"},
+		{"NAME": redoSize, "VALUE": "104857600"},
+		{"NAME": redoWrites, "VALUE": "45000"},
+		{"NAME": redoBlocksWritten, "VALUE": "210000"},
+		{"NAME": redoBufferAllocRetries, "VALUE": "12"},
+		{"NAME": redoLogSpaceRequests, "VALUE": "34"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -416,13 +461,9 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 }
 
-func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
-	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
-	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
-	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
-
+// scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
+func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
+	t.Helper()
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
@@ -436,10 +477,20 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
-
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
+	return m
+}
+
+func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbPhysicalIoCacheWrites.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoRequests.Enabled = true
+	cfg.Metrics.OracledbPhysicalIoTransferred.Enabled = true
+	cfg.Metrics.OracledbSqlnetIoTransferred.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
 
 	// metricName -> attrSignature -> int value
 	got := map[string]map[string]int64{}
@@ -482,6 +533,257 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
 	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
+func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbCallCount.Enabled = true
+	cfg.Metrics.OracledbCallRecursiveCPUTime.Enabled = true
+	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
+	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
+	cfg.Metrics.OracledbCursorOpen.Enabled = true
+	cfg.Metrics.OracledbDbTime.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbLobOperations.Enabled = true
+	cfg.Metrics.OracledbParseCPUTime.Enabled = true
+	cfg.Metrics.OracledbParseElapsedTime.Enabled = true
+	cfg.Metrics.OracledbScanCount.Enabled = true
+	cfg.Metrics.OracledbScanTableRows.Enabled = true
+	cfg.Metrics.OracledbSortOperations.Enabled = true
+	cfg.Metrics.OracledbSortRows.Enabled = true
+
+	actualMetrics := scrapeWithConfig(t, cfg)
+
+	expectedFile := filepath.Join("testdata", "expectedWorkloadAnalysisMetrics.yaml")
+	// Uncomment the line below to regenerate the expected golden file.
+	// require.NoError(t, golden.WriteMetrics(t, expectedFile, actualMetrics))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp()))
+}
+
+// Disabling oracledb.enqueue.type collapses its five per-type rows into one summed data point (165).
+func TestScraper_WorkloadMetricReaggregatesWhenAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.EnabledAttributes = nil
+
+	m := scrapeWithConfig(t, cfg)
+
+	var found bool
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Name() != "oracledb.enqueue.operations" {
+			continue
+		}
+		found = true
+		dps := me.Sum().DataPoints()
+		require.Equal(t, 1, dps.Len(), "disabling the attribute should collapse all types into one data point")
+		dp := dps.At(0)
+		assert.Equal(t, 0, dp.Attributes().Len(), "no attribute should be emitted when oracledb.enqueue.type is disabled")
+		assert.Equal(t, int64(165), dp.IntValue(), "data points should reaggregate by sum (11+22+33+44+55)")
+	}
+	require.True(t, found, "oracledb.enqueue.operations not found in scrape output")
+}
+
+// Disabling oracledb.scan.mode (keeping oracledb.scan.type) reaggregates per type: table=350, index_fast_full=35.
+func TestScraper_ScanCountReaggregatesWhenOneAttributeDisabled(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbScanCount.Enabled = true
+	cfg.Metrics.OracledbScanCount.EnabledAttributes = []metadata.OracledbScanCountMetricAttributeKey{
+		metadata.OracledbScanCountMetricAttributeKeyOracledbScanType,
+	}
+
+	m := scrapeWithConfig(t, cfg)
+
+	want := map[string]int64{"table": 350, "index_fast_full": 35}
+	got := map[string]int64{}
+	var found bool
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Name() != "oracledb.scan.count" {
+			continue
+		}
+		found = true
+		dps := me.Sum().DataPoints()
+		for j := 0; j < dps.Len(); j++ {
+			dp := dps.At(j)
+			require.Equal(t, 1, dp.Attributes().Len(), "only oracledb.scan.type should remain")
+			scanType, ok := dp.Attributes().Get("oracledb.scan.type")
+			require.True(t, ok, "oracledb.scan.type should be present")
+			got[scanType.Str()] = dp.IntValue()
+		}
+	}
+	require.True(t, found, "oracledb.scan.count not found in scrape output")
+	assert.Equal(t, want, got, "scan modes should reaggregate by sum within each scan type")
+}
+
+func TestScraper_ScrapeBufferAndCheckpointMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbBufferCacheBlockChanges.Enabled = true
+	cfg.Metrics.OracledbBufferCacheBlockGets.Enabled = true
+	cfg.Metrics.OracledbBufferInspected.Enabled = true
+	cfg.Metrics.OracledbCheckpointBuffers.Enabled = true
+	cfg.Metrics.OracledbCheckpointCompleted.Enabled = true
+	cfg.Metrics.OracledbBufferRequests.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Loop the scraped metrics and switch on the metric name; assert each metric's value(s) and
+	// attribute(s) in place, using the mdatagen-generated name/attribute constants.
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbBufferCacheBlockChanges.Name:
+			assert.Equal(t, int64(8800000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferCacheBlockGets.Name:
+			assert.Equal(t, int64(7700000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointBuffers.Name:
+			assert.Equal(t, int64(12000), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbCheckpointCompleted.Name:
+			assert.Equal(t, int64(320), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferRequests.Name:
+			assert.Equal(t, int64(6100), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbBufferInspected.Name:
+			// one data point per buffer state.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.Attributes().Get("oracledb.buffer.state")
+				switch state.Str() {
+				case metadata.AttributeOracledbBufferStateFree.String():
+					assert.Equal(t, int64(55000), dp.IntValue())
+				case metadata.AttributeOracledbBufferStateDirty.String():
+					assert.Equal(t, int64(1200), dp.IntValue())
+				default:
+					t.Errorf("unexpected oracledb.buffer.state: %q", state.Str())
+				}
+			}
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 buffer/checkpoint metrics to be emitted")
+}
+
+func TestScraper_ScrapeRedoMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbRedoTime.Enabled = true
+	cfg.Metrics.OracledbRedoSize.Enabled = true
+	cfg.Metrics.OracledbRedoOperations.Enabled = true
+	cfg.Metrics.OracledbRedoBlocks.Enabled = true
+	cfg.Metrics.OracledbRedoRequests.Enabled = true
+	cfg.Metrics.OracledbRedoRetries.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		if me.Type() != pmetric.MetricTypeSum {
+			continue
+		}
+		dps := me.Sum().DataPoints()
+		switch me.Name() {
+		case metadata.MetricsInfo.OracledbRedoTime.Name:
+			// centiseconds converted to seconds (value / 100), one data point per redo.type.
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				redoType, _ := dp.Attributes().Get("oracledb.redo.type")
+				switch redoType.Str() {
+				case metadata.AttributeOracledbRedoTypeWrite.String():
+					assert.InDelta(t, 15.0, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeLogSpaceWait.String():
+					assert.InDelta(t, 2.5, dp.DoubleValue(), floatDelta)
+				case metadata.AttributeOracledbRedoTypeSync.String():
+					assert.InDelta(t, 9.0, dp.DoubleValue(), floatDelta)
+				default:
+					t.Errorf("unexpected oracledb.redo.type: %q", redoType.Str())
+				}
+			}
+			seen++
+		case metadata.MetricsInfo.OracledbRedoSize.Name:
+			assert.Equal(t, int64(104857600), dps.At(0).IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoOperations.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(45000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoBlocks.Name:
+			dp := dps.At(0)
+			dir, _ := dp.Attributes().Get("disk.io.direction")
+			assert.Equal(t, metadata.AttributeDiskIoDirectionWrite.String(), dir.Str())
+			assert.Equal(t, int64(210000), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRequests.Name:
+			dp := dps.At(0)
+			reqType, _ := dp.Attributes().Get("oracledb.redo.request.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRequestTypeLogSpace.String(), reqType.Str())
+			assert.Equal(t, int64(34), dp.IntValue())
+			seen++
+		case metadata.MetricsInfo.OracledbRedoRetries.Name:
+			dp := dps.At(0)
+			retryType, _ := dp.Attributes().Get("oracledb.redo.retry.type")
+			assert.Equal(t, metadata.AttributeOracledbRedoRetryTypeBufferAllocation.String(), retryType.Str())
+			assert.Equal(t, int64(12), dp.IntValue())
+			seen++
+		}
+	}
+	assert.Equal(t, 6, seen, "expected all 6 redo metrics to be emitted")
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
