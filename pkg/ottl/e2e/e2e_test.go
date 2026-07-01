@@ -2853,7 +2853,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 }
 
 type lambdaEvalArguments[K any] struct {
-	Expr   ottl.LambdaExpression[K]
+	Expr   *ottl.LambdaExpression[K]
 	Params []ottl.Getter[K]
 }
 
