@@ -407,17 +407,29 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname as schema, relname AS table,
-	n_live_tup AS live,
-	n_dead_tup AS dead,
-	n_tup_ins AS ins,
-	n_tup_upd AS upd,
-	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd,
-	seq_scan AS seq_scans,
-	pg_relation_size(relid) AS table_size,
-	vacuum_count
-	FROM pg_stat_user_tables;`
+	// explicitly ignore the relations which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	query := `SELECT
+    s.schemaname AS schema,
+    s.relname AS table,
+    s.n_live_tup AS live,
+    s.n_dead_tup AS dead,
+    s.n_tup_ins AS ins,
+    s.n_tup_upd AS upd,
+    s.n_tup_del AS del,
+    s.n_tup_hot_upd AS hot_upd,
+    s.seq_scan AS seq_scans,
+    pg_relation_size(s.relid) AS table_size,
+    s.vacuum_count
+FROM pg_stat_user_tables s
+LEFT JOIN (
+    SELECT DISTINCT relation
+    FROM pg_locks
+    WHERE locktype = 'relation'
+      AND mode = 'AccessExclusiveLock'
+      AND granted = true
+) l ON s.relid = l.relation
+WHERE l.relation IS NULL;`
 
 	ts := map[tableIdentifier]tableStats{}
 	var errors error
@@ -518,10 +530,20 @@ type indexStat struct {
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	// explicitly ignore indexes which have an active `AccessExclusiveLock`
+	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
-	FROM pg_stat_user_indexes;`
+	FROM pg_stat_user_indexes s
+	LEFT JOIN (
+		SELECT DISTINCT relation
+		FROM pg_locks
+		WHERE locktype = 'relation'
+		  AND mode = 'AccessExclusiveLock'
+		  AND granted = true
+	) l ON s.indexrelid = l.relation
+	WHERE l.relation IS NULL;`
 
 	stats := map[indexIdentifer]indexStat{}
 

@@ -6,6 +6,7 @@
 package postgresqlreceiver
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tj/assert"
@@ -152,6 +154,146 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run
+}
+
+func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		})
+	require.NoError(t, err)
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	tx, err := lockDB.Begin()
+	require.NoError(t, err)
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = tx.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
+	require.NoError(t, err)
+
+	clientDB, err := getDB(postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+	require.NoError(t, err)
+	require.NotContains(t, tableMetrics, tableKey("otel", "public", "table1"))
+	require.Contains(t, tableMetrics, tableKey("otel", "public", "table2"))
+}
+
+func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		})
+	require.NoError(t, err)
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	tx, err := lockDB.Begin()
+	require.NoError(t, err)
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = tx.Exec("REINDEX INDEX table1_pkey")
+	require.NoError(t, err)
+
+	clientDB, err := getDB(postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	indexStats, err := client.getIndexStats(ctx, "otel")
+	require.NoError(t, err)
+	require.NotContains(t, indexStats, indexKey("otel", "public", "table1", "table1_pkey"))
+	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {
