@@ -12,12 +12,6 @@
 
 # AWS ECS Attributes Processor
 
-> [!NOTE]
-> This is the initial skeleton donation of the component. The processors are
-> currently no-op passthroughs; the ECS metadata enrichment logic is added in a
-> follow-up pull request. See issue
-> [#44476](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44476).
-
 The `awsecsattributes` processor enriches logs, metrics, traces and profiles with
 AWS ECS metadata for daemonset-style deployments on EC2, where a single collector
 runs per host and processes telemetry for all containers on that host. It discovers
@@ -68,6 +62,50 @@ sequenceDiagram
   configured via `container_id.sources`. If no container ID can be determined, no
   metadata is added.
 
+When the Docker daemon is not reachable, the processor falls back to the ECS task
+metadata endpoint (`ECS_CONTAINER_METADATA_URI_V4`) to discover the containers
+running in the task. The metadata cache is refreshed every 60 seconds, and also
+whenever the Docker API reports a new container. Failures during a refresh are
+logged and the last-known-good cache is preserved; the collector is not halted.
+
+## Attributes
+
+The processor can attach the following resource attributes. By default (when
+`attributes` is omitted) all of them are collected; otherwise only the keys
+matching the configured `attributes` regex patterns are kept.
+
+Where an OpenTelemetry [semantic convention](https://opentelemetry.io/docs/specs/semconv/registry/attributes/)
+exists for an attribute it is used; ECS-specific values that have no convention
+keep an `aws.ecs.*` (or legacy) key.
+
+| Attribute                      | Description                                                              |
+|--------------------------------|--------------------------------------------------------------------------|
+| `container.id`                 | The container (Docker) ID                                                |
+| `container.name`               | The container name from the ECS task definition (e.g. `cadvisor`)        |
+| `container.image.name`         | The container image name                                                 |
+| `container.image.id`           | The container image ID                                                   |
+| `container.label.*`            | User-defined (non-ECS) container labels                                 |
+| `aws.ecs.container.arn`        | The ECS container instance ARN                                          |
+| `aws.ecs.task.arn`             | The ECS task ARN                                                         |
+| `aws.ecs.task.family`          | The ECS task definition family                                          |
+| `aws.ecs.task.revision`        | The ECS task definition revision (version)                              |
+| `aws.ecs.cluster`              | The ECS cluster name                                                     |
+| `aws.ecs.container.name`       | The container name assigned by the ECS Agent                            |
+| `aws.ecs.task.known.status`    | The lifecycle state of the container                                    |
+| `docker.name`                  | The runtime Docker container name the ECS Agent assigns (e.g. `ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800`), as shown by `docker ps` — distinct from `container.name` above |
+| `container.cpu.limit` / `container.memory.limit` | The CPU and memory limits of the container             |
+| `created.at` / `started.at`    | Container creation and start timestamps                                 |
+| `desired.status`               | The desired status of the container                                     |
+| `aws.ecs.container.type`       | The ECS container type (e.g. `NORMAL`, `CNI_PAUSE`)                     |
+| `networks.*`                   | The network mode(s) and IPv4 address(es) of the container              |
+| `ports.*`                      | The published container ports                                           |
+| `volumes.*`                       | The container volume mounts                                             |
+| `labels.*`                        | User-defined (non-ECS) Docker labels                                    |
+
+Only containers with a valid ECS metadata endpoint are enriched; all others are
+ignored. A container has a valid endpoint when either `ECS_CONTAINER_METADATA_URI`
+or `ECS_CONTAINER_METADATA_URI_V4` is present in its environment.
+
 ## Configuration
 
 | Config                 | Description                                                                                                                                                  |
@@ -75,6 +113,10 @@ sequenceDiagram
 | `attributes`           | A list of regex patterns matching the attribute keys to collect. When omitted, all available attributes are collected.                                       |
 | `container_id.sources` | The **resource** attribute key(s) that contain the container ID. If multiple keys are provided, the first non-empty value is used.                            |
 | `cache_ttl`            | The time to live, in seconds, for the metadata cache. Must be at least 60 seconds.                                                                           |
+
+When a container ID is sourced from a value such as `log.file.name`
+(e.g. `<container-id>-json.log`), the surrounding text is stripped and the
+64-character container ID is used to correlate metadata.
 
 Example configuration:
 
@@ -89,6 +131,6 @@ processors:
     # collect attributes whose keys match these patterns
     attributes:
       - '^aws.ecs.*'
-      - '^docker.*'
+      - '^container.*'
     cache_ttl: 300
 ```

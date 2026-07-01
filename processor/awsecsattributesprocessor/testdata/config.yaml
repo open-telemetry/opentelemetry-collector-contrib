@@ -8,5 +8,5 @@ awsecsattributes:
   # regex patterns matching the attribute keys to collect
   attributes:
     - '^aws.ecs.*'
-    - '^docker.*'
+    - '^container.*'
   cache_ttl: 300
