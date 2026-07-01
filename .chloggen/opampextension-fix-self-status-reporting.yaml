@@ -20,10 +20,11 @@ subtext: |
   discarded and never reached the extension's status aggregator, leaving the
   collector reporting healthy despite being orphaned.
 
-  The extension now tracks its own component.ID and routes self-reported
-  events through its own ComponentStatusChanged handler
-  (o.ComponentStatusChanged(selfInstanceID, event)), which always forwards to
-  the status aggregator regardless of whether the host implements
-  componentstatus.Reporter.
+  reportFunc now prefers the host's reporter when the host implements
+  componentstatus.Reporter (preserving the production path, where the status
+  notification also forwards a StatusFatalError to the service's
+  AsyncErrorChannel so an orphaned collector actually shuts down), and only
+  falls back to the extension's own ComponentStatusChanged handler for
+  non-Reporter hosts, where ReportStatus would otherwise be a silent no-op.
 
 change_logs: [user]
