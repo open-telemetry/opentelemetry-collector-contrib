@@ -15,6 +15,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -117,6 +118,7 @@ type WALConfig struct {
 	BufferSize         int           `mapstructure:"buffer_size"`
 	TruncateFrequency  time.Duration `mapstructure:"truncate_frequency"`
 	LagRecordFrequency time.Duration `mapstructure:"lag_record_frequency"`
+	SegmentCacheSize   int           `mapstructure:"segment_cache_size"`
 }
 
 func (wc *WALConfig) bufferSize() int {
@@ -138,6 +140,13 @@ func (wc *WALConfig) lagRecordInterval() time.Duration {
 		return wc.LagRecordFrequency
 	}
 	return defaultWALLagRecordFrequency
+}
+
+func (wc *WALConfig) segmentCacheSize() int {
+	if wc.SegmentCacheSize > 0 {
+		return wc.SegmentCacheSize
+	}
+	return wc.bufferSize()
 }
 
 func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
@@ -168,7 +177,10 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
 	log, err := wal.Open(walPath, &wal.Options{
-		SegmentCacheSize: wc.bufferSize(),
+		// SegmentCacheSize controls how many WAL segments are kept in memory.
+		// Lower values significantly reduce memory usage at the cost of extra
+		// disk reads when the WAL reader needs evicted segments during replay.
+		SegmentCacheSize: wc.segmentCacheSize(),
 		NoCopy:           true,
 		AllowEmpty:       true,
 	})
@@ -271,6 +283,17 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 					if errS := prweWAL.retrieveWALIndices(); errS != nil {
 						logger.Error("unable to re-start write-ahead log after error", zap.Error(errS))
 						return
+					}
+					// Brief backoff before retrying to avoid a tight loop on persistent WAL errors.
+					retryTimer := time.NewTimer(5 * time.Second)
+					select {
+					case <-runCtx.Done():
+						retryTimer.Stop()
+						return
+					case <-prweWAL.stopChan:
+						retryTimer.Stop()
+						return
+					case <-retryTimer.C:
 					}
 				}
 			}
@@ -405,8 +428,25 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 		return nil
 	}
 
-	if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
-		return errL
+	// Retry export indefinitely until the backend becomes available.
+	// While retrying, no new data is read from the WAL — this prevents unbounded memory growth.
+	for {
+		if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
+			// Permanent errors (e.g., 400 Bad Request) mean the data is rejected
+			// by the backend and retrying won't help. Skip and truncate.
+			if consumererror.IsPermanent(errL) {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-prweWAL.stopChan:
+				return nil
+			case <-time.After(5 * time.Second):
+				continue
+			}
+		}
+		break
 	}
 	if err := prweWAL.syncAndTruncateFront(); err != nil {
 		return err
