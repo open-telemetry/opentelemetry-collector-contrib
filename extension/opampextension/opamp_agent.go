@@ -62,6 +62,7 @@ type opampAgent struct {
 	resourceAttrs     map[string]string
 
 	instanceUID uuid.UUID
+	extensionID component.ID
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -106,8 +107,9 @@ var (
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	selfInstanceID := componentstatus.NewInstanceID(o.extensionID, component.KindExtension)
 	o.reportFunc = func(event *componentstatus.Event) {
-		componentstatus.ReportStatus(host, event)
+		o.ComponentStatusChanged(selfInstanceID, event)
 	}
 
 	header := http.Header{}
@@ -332,6 +334,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		serviceVersion:           serviceVersion,
 		serviceInstanceID:        serviceInstanceID,
 		instanceUID:              uid,
+		extensionID:              set.ID,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
