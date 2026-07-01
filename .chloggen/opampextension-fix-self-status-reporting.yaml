@@ -1,0 +1,29 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: extension/opamp
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Fix opampextension self-reported status events (e.g. the fatal error emitted when the parent process disappears) being silently dropped when the component.Host does not implement componentstatus.Reporter"
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [49412]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext: |
+  Previously, opampAgent.Start wired its internal reportFunc to call
+  componentstatus.ReportStatus(host, event) directly. That helper is a no-op
+  when the given host does not implement componentstatus.Reporter, so
+  self-reported status changes -- most notably the fatal error monitorPPID
+  emits when the collector's parent process disappears -- were silently
+  discarded and never reached the extension's status aggregator, leaving the
+  collector reporting healthy despite being orphaned.
+
+  The extension now tracks its own component.ID and routes self-reported
+  events through its own ComponentStatusChanged handler
+  (o.ComponentStatusChanged(selfInstanceID, event)), which always forwards to
+  the status aggregator regardless of whether the host implements
+  componentstatus.Reporter.
+
+change_logs: [user]
