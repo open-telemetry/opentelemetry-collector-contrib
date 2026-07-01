@@ -74,6 +74,12 @@ all_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
+    oracledb.jvm.memory.committed:
+      enabled: true
+    oracledb.jvm.memory.live:
+      enabled: true
+    oracledb.jvm.memory.used:
+      enabled: true
     oracledb.library_cache.utilization:
       enabled: true
     oracledb.lob.operations:
@@ -82,6 +88,8 @@ all_set:
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
+      enabled: true
+    oracledb.os.swaps:
       enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
@@ -160,6 +168,14 @@ all_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: true
+    oracledb.session.stored_procedure.usage:
+      enabled: true
+    oracledb.session.wait.time:
+      enabled: true
+      attributes: ["oracledb.session.wait.state"]
+    oracledb.session.waits:
+      enabled: true
+      attributes: ["oracledb.session.wait.state"]
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -301,6 +317,12 @@ reaggregate_set:
       enabled: true
     oracledb.host.cpu.utilization:
       enabled: true
+    oracledb.jvm.memory.committed:
+      enabled: true
+    oracledb.jvm.memory.live:
+      enabled: true
+    oracledb.jvm.memory.used:
+      enabled: true
     oracledb.library_cache.utilization:
       enabled: true
     oracledb.lob.operations:
@@ -309,6 +331,8 @@ reaggregate_set:
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
+      enabled: true
+    oracledb.os.swaps:
       enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
@@ -387,6 +411,14 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
+    oracledb.session.stored_procedure.usage:
+      enabled: true
+    oracledb.session.wait.time:
+      enabled: true
+      attributes: []
+    oracledb.session.waits:
+      enabled: true
+      attributes: []
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -528,6 +560,12 @@ none_set:
       enabled: false
     oracledb.host.cpu.utilization:
       enabled: false
+    oracledb.jvm.memory.committed:
+      enabled: false
+    oracledb.jvm.memory.live:
+      enabled: false
+    oracledb.jvm.memory.used:
+      enabled: false
     oracledb.library_cache.utilization:
       enabled: false
     oracledb.lob.operations:
@@ -536,6 +574,8 @@ none_set:
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:
+      enabled: false
+    oracledb.os.swaps:
       enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: false
@@ -614,6 +654,14 @@ none_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: false
+    oracledb.session.stored_procedure.usage:
+      enabled: false
+    oracledb.session.wait.time:
+      enabled: false
+      attributes: ["oracledb.session.wait.state"]
+    oracledb.session.waits:
+      enabled: false
+      attributes: ["oracledb.session.wait.state"]
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:

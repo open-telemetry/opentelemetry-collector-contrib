@@ -830,6 +830,66 @@ func (ms *OracledbHostCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// OracledbJvmMemoryCommittedMetricConfig provides config for the oracledb.jvm.memory.committed metric.
+type OracledbJvmMemoryCommittedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJvmMemoryLiveMetricConfig provides config for the oracledb.jvm.memory.live metric.
+type OracledbJvmMemoryLiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryLiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbJvmMemoryUsedMetricConfig provides config for the oracledb.jvm.memory.used metric.
+type OracledbJvmMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbJvmMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbLibraryCacheUtilizationMetricConfig provides config for the oracledb.library_cache.utilization metric.
 type OracledbLibraryCacheUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -925,6 +985,26 @@ type OracledbLogonsMetricConfig struct {
 }
 
 func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbOsSwapsMetricConfig provides config for the oracledb.os.swaps metric.
+type OracledbOsSwapsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbOsSwapsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1873,6 +1953,122 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric.
+type OracledbSessionStoredProcedureUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSessionStoredProcedureUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSessionWaitTimeMetricAttributeKey specifies the key of an attribute for the oracledb.session.wait.time metric.
+type OracledbSessionWaitTimeMetricAttributeKey string
+
+const (
+	OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState OracledbSessionWaitTimeMetricAttributeKey = "oracledb.session.wait.state"
+)
+
+// OracledbSessionWaitTimeMetricConfig provides config for the oracledb.session.wait.time metric.
+type OracledbSessionWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionWaitTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionWaitTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState:
+		default:
+			return fmt.Errorf("metric oracledb.session.wait.time doesn't have an attribute %v, valid attributes: [oracledb.session.wait.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbSessionWaitsMetricAttributeKey specifies the key of an attribute for the oracledb.session.waits metric.
+type OracledbSessionWaitsMetricAttributeKey string
+
+const (
+	OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState OracledbSessionWaitsMetricAttributeKey = "oracledb.session.wait.state"
+)
+
+// OracledbSessionWaitsMetricConfig provides config for the oracledb.session.waits metric.
+type OracledbSessionWaitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionWaitsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSessionWaitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionWaitsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState:
+		default:
+			return fmt.Errorf("metric oracledb.session.waits doesn't have an attribute %v, valid attributes: [oracledb.session.wait.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
 type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2399,10 +2595,14 @@ type MetricsConfig struct {
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
+	OracledbJvmMemoryCommitted                    OracledbJvmMemoryCommittedMetricConfig                    `mapstructure:"oracledb.jvm.memory.committed"`
+	OracledbJvmMemoryLive                         OracledbJvmMemoryLiveMetricConfig                         `mapstructure:"oracledb.jvm.memory.live"`
+	OracledbJvmMemoryUsed                         OracledbJvmMemoryUsedMetricConfig                         `mapstructure:"oracledb.jvm.memory.used"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
 	OracledbLobOperations                         OracledbLobOperationsMetricConfig                         `mapstructure:"oracledb.lob.operations"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
+	OracledbOsSwaps                               OracledbOsSwapsMetricConfig                               `mapstructure:"oracledb.os.swaps"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
 	OracledbParallelOperationsDowngraded25To50Pct OracledbParallelOperationsDowngraded25To50PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
 	OracledbParallelOperationsDowngraded50To75Pct OracledbParallelOperationsDowngraded50To75PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
@@ -2437,6 +2637,9 @@ type MetricsConfig struct {
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
+	OracledbSessionStoredProcedureUsage           OracledbSessionStoredProcedureUsageMetricConfig           `mapstructure:"oracledb.session.stored_procedure.usage"`
+	OracledbSessionWaitTime                       OracledbSessionWaitTimeMetricConfig                       `mapstructure:"oracledb.session.wait.time"`
+	OracledbSessionWaits                          OracledbSessionWaitsMetricConfig                          `mapstructure:"oracledb.session.waits"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbSharedPoolUtilization                 OracledbSharedPoolUtilizationMetricConfig                 `mapstructure:"oracledb.shared_pool.utilization"`
@@ -2569,6 +2772,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbHostCPUUtilization: OracledbHostCPUUtilizationMetricConfig{
 			Enabled: false,
 		},
+		OracledbJvmMemoryCommitted: OracledbJvmMemoryCommittedMetricConfig{
+			Enabled: false,
+		},
+		OracledbJvmMemoryLive: OracledbJvmMemoryLiveMetricConfig{
+			Enabled: false,
+		},
+		OracledbJvmMemoryUsed: OracledbJvmMemoryUsedMetricConfig{
+			Enabled: false,
+		},
 		OracledbLibraryCacheUtilization: OracledbLibraryCacheUtilizationMetricConfig{
 			Enabled: false,
 		},
@@ -2581,6 +2793,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbLogons: OracledbLogonsMetricConfig{
+			Enabled: false,
+		},
+		OracledbOsSwaps: OracledbOsSwapsMetricConfig{
 			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
@@ -2702,6 +2917,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,
+		},
+		OracledbSessionStoredProcedureUsage: OracledbSessionStoredProcedureUsageMetricConfig{
+			Enabled: false,
+		},
+		OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSessionWaitTimeMetricAttributeKey{OracledbSessionWaitTimeMetricAttributeKeyOracledbSessionWaitState},
+		},
+		OracledbSessionWaits: OracledbSessionWaitsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbSessionWaitsMetricAttributeKey{OracledbSessionWaitsMetricAttributeKeyOracledbSessionWaitState},
 		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,

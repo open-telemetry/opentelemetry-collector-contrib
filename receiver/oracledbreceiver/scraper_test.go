@@ -75,6 +75,14 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// Session, JVM & OS resource v$sysstat rows
+		{"NAME": sessionNonIdleWaitCount, "VALUE": "98765"},
+		{"NAME": sessionNonIdleWaitTime, "VALUE": "4500"}, // cs -> 45 s
+		{"NAME": sessionStoredProcedureSpace, "VALUE": "262144"},
+		{"NAME": javaCallHeapUsedSize, "VALUE": "2097152"},
+		{"NAME": javaCallHeapTotalSize, "VALUE": "4194304"},
+		{"NAME": javaCallHeapLiveSize, "VALUE": "1048576"},
+		{"NAME": osSwaps, "VALUE": "17"},
 		// Workload analysis v$sysstat rows
 		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
 		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
@@ -376,6 +384,55 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 }
 
 // scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
+func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbSessionWaits.Enabled = true
+	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
+	cfg.Metrics.OracledbSessionStoredProcedureUsage.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
+	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
+	cfg.Metrics.OracledbOsSwaps.Enabled = true
+
+	m := scrapeWithConfig(t, cfg)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	seen := 0
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		switch me.Name() {
+		case "oracledb.session.waits":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.Equal(t, int64(98765), dp.IntValue())
+		case "oracledb.session.wait.time":
+			seen++
+			dp := me.Sum().DataPoints().At(0)
+			state, _ := dp.Attributes().Get("oracledb.session.wait.state")
+			assert.Equal(t, "non_idle", state.Str())
+			assert.InDelta(t, 45.0, dp.DoubleValue(), 1e-9) // 4500 cs ÷ 100
+		case "oracledb.os.swaps":
+			seen++
+			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
+		case "oracledb.session.stored_procedure.usage":
+			seen++
+			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.used":
+			seen++
+			assert.Equal(t, int64(2097152), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.committed":
+			seen++
+			assert.Equal(t, int64(4194304), me.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.jvm.memory.live":
+			seen++
+			assert.Equal(t, int64(1048576), me.Gauge().DataPoints().At(0).IntValue())
+		}
+	}
+	assert.Equal(t, 7, seen)
+}
+
 func scrapeWithConfig(t *testing.T, cfg metadata.MetricsBuilderConfig) pmetric.Metrics {
 	t.Helper()
 	scrpr := oracleScraper{
