@@ -1071,6 +1071,70 @@ func TestE2EOpenShiftDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EOpenShiftRealCluster tests the OpenShift detector against a real
+// MicroShift or OpenShift cluster. The test is automatically skipped when
+// running against a plain Kubernetes cluster (e.g., kind) that does not
+// expose the config.openshift.io API group.
+func TestE2EOpenShiftRealCluster(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+	skipIfNotOpenShift(t, k8sClient)
+
+	expectedFile := filepath.Join("testdata", "e2e", "openshift-real", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
+
+	testID := uuid.NewString()[:8]
+	host := os.Getenv("HOST_ENDPOINT")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-real", "collector"), map[string]string{}, host)
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+			// Cluster name varies per real cluster instance
+			pmetrictest.IgnoreResourceAttributeValue("k8s.cluster.name"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
+// skipIfNotOpenShift skips the test if the cluster does not expose the
+// config.openshift.io API group, which indicates it is not an OpenShift
+// or MicroShift cluster.
+func skipIfNotOpenShift(t *testing.T, client *k8stest.K8sClient) {
+	t.Helper()
+	groups, err := client.DiscoveryClient.ServerGroups()
+	require.NoError(t, err)
+	for _, g := range groups.Groups {
+		if g.Name == "config.openshift.io" {
+			return
+		}
+	}
+	t.Skip("not an OpenShift cluster: config.openshift.io API group not found")
+}
+
 // TestE2EDynatraceDetector tests the Dynatrace detector by mounting a mock
 // dt_host_metadata.properties file and verifying that the resource attributes
 // are correctly detected and attached to metrics.
