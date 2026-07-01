@@ -62,6 +62,7 @@ type opampAgent struct {
 	resourceAttrs     map[string]string
 
 	instanceUID uuid.UUID
+	extensionID component.ID
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -106,8 +107,19 @@ var (
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	selfInstanceID := componentstatus.NewInstanceID(o.extensionID, component.KindExtension)
 	o.reportFunc = func(event *componentstatus.Event) {
-		componentstatus.ReportStatus(host, event)
+		// Prefer the host's reporter: in the real collector service it routes
+		// through the status notification path (which also forwards a
+		// StatusFatalError to the service's AsyncErrorChannel so an orphaned
+		// collector actually shuts down). Only when the host does not implement
+		// componentstatus.Reporter -- where ReportStatus silently no-ops -- fall
+		// back to this extension's own aggregator so the event is not dropped.
+		if _, ok := host.(componentstatus.Reporter); ok {
+			componentstatus.ReportStatus(host, event)
+			return
+		}
+		o.ComponentStatusChanged(selfInstanceID, event)
 	}
 
 	header := http.Header{}
@@ -332,6 +344,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		serviceVersion:           serviceVersion,
 		serviceInstanceID:        serviceInstanceID,
 		instanceUID:              uid,
+		extensionID:              set.ID,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
