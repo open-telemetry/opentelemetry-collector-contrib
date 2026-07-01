@@ -103,13 +103,13 @@ func (r *indexResolver) resolveIndexName(indexPattern, fallback string, itemAttr
 	}
 	indexName := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
 		key := r.placeholderPattern.FindStringSubmatch(match)[1]
-		if val, ok := itemAttributes[key]; ok && val != "" {
+		if val, ok := itemAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
-		if val, ok := scopeAttributes[key]; ok && val != "" {
+		if val, ok := scopeAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
-		if val, ok := resourceAttributes[key]; ok && val != "" {
+		if val, ok := resourceAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
 		if fallback != "" {
@@ -127,6 +127,23 @@ func (*indexResolver) calculateTimeSuffix(timeFormat string, timestamp time.Time
 		return "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
 	return ""
+}
+
+// safeIndexSegmentPattern matches a placeholder value that is safe to splice
+// into an index name. It is stricter than OpenSearch's own naming rules
+// (lowercase letters, digits, and `_`, `.`, `-`), which is enough to reject
+// the documented forbidden characters (space, `,`, `:`, `"`, `*`, `+`, `/`,
+// `\`, `|`, `?`, `#`, `>`, `<`).
+var safeIndexSegmentPattern = regexp.MustCompile(`^[a-z0-9_.-]+$`)
+
+// isSafeIndexSegment reports whether an attribute value can be substituted into
+// an index name. A leading dot would target system indices (e.g. `.kibana`),
+// and `..` enables path traversal in the index API, so both are rejected even
+// though their individual characters are otherwise allowed.
+func isSafeIndexSegment(val string) bool {
+	return safeIndexSegmentPattern.MatchString(val) &&
+		!strings.HasPrefix(val, ".") &&
+		!strings.Contains(val, "..")
 }
 
 // convertGoTimeFormat converts a Java-style date format to Go's time format
