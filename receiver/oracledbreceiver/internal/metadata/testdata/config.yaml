@@ -70,6 +70,8 @@ all_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: true
+    oracledb.gc.current_block.receive.time:
+      enabled: true
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
@@ -79,6 +81,9 @@ all_set:
     oracledb.lob.operations:
       enabled: true
       attributes: ["disk.io.direction"]
+    oracledb.lock.time:
+      enabled: true
+      attributes: ["oracledb.lock.type"]
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
@@ -134,6 +139,8 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recovery.blocks_read:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo.blocks:
@@ -167,6 +174,9 @@ all_set:
       attributes: ["session_type","session_status"]
     oracledb.shared_pool.utilization:
       enabled: true
+    oracledb.smon.posts:
+      enabled: true
+      attributes: ["oracledb.smon.type"]
     oracledb.sort.operations:
       enabled: true
       attributes: ["oracledb.sort.type"]
@@ -190,6 +200,8 @@ all_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: ["tablespace_name"]
+    oracledb.transaction.rollbacks:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -297,6 +309,8 @@ reaggregate_set:
       attributes: []
     oracledb.executions:
       enabled: true
+    oracledb.gc.current_block.receive.time:
+      enabled: true
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
@@ -304,6 +318,9 @@ reaggregate_set:
     oracledb.library_cache.utilization:
       enabled: true
     oracledb.lob.operations:
+      enabled: true
+      attributes: []
+    oracledb.lock.time:
       enabled: true
       attributes: []
     oracledb.logical_reads:
@@ -361,6 +378,8 @@ reaggregate_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recovery.blocks_read:
+      enabled: true
     oracledb.recycle_bin.limit:
       enabled: true
     oracledb.redo.blocks:
@@ -394,6 +413,9 @@ reaggregate_set:
       attributes: []
     oracledb.shared_pool.utilization:
       enabled: true
+    oracledb.smon.posts:
+      enabled: true
+      attributes: []
     oracledb.sort.operations:
       enabled: true
       attributes: []
@@ -417,6 +439,8 @@ reaggregate_set:
     oracledb.tablespace_size.usage:
       enabled: true
       attributes: []
+    oracledb.transaction.rollbacks:
+      enabled: true
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -524,6 +548,8 @@ none_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: false
+    oracledb.gc.current_block.receive.time:
+      enabled: false
     oracledb.hard_parses:
       enabled: false
     oracledb.host.cpu.utilization:
@@ -533,6 +559,9 @@ none_set:
     oracledb.lob.operations:
       enabled: false
       attributes: ["disk.io.direction"]
+    oracledb.lock.time:
+      enabled: false
+      attributes: ["oracledb.lock.type"]
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:
@@ -588,6 +617,8 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
+    oracledb.recovery.blocks_read:
+      enabled: false
     oracledb.recycle_bin.limit:
       enabled: false
     oracledb.redo.blocks:
@@ -621,6 +652,9 @@ none_set:
       attributes: ["session_type","session_status"]
     oracledb.shared_pool.utilization:
       enabled: false
+    oracledb.smon.posts:
+      enabled: false
+      attributes: ["oracledb.smon.type"]
     oracledb.sort.operations:
       enabled: false
       attributes: ["oracledb.sort.type"]
@@ -644,6 +678,8 @@ none_set:
     oracledb.tablespace_size.usage:
       enabled: false
       attributes: ["tablespace_name"]
+    oracledb.transaction.rollbacks:
+      enabled: false
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:

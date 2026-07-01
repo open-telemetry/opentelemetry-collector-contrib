@@ -447,6 +447,14 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
+### oracledb.gc.current_block.receive.time
+
+Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.host.cpu.utilization
 
 Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
@@ -476,6 +484,20 @@ Total count of LOB (large object) I/O operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.lock.time
+
+Cumulative time spent on transaction lock activity, in seconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.lock.type | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.logons
 
@@ -657,6 +679,14 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.recovery.blocks_read
+
+Number of blocks read during instance or media recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {block} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.recycle_bin.limit
 
 Total size of the recycle bin.
@@ -782,6 +812,20 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.smon.posts
+
+Number of times SMON was posted to perform recovery.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {post} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.smon.type | Type of recovery SMON was posted to perform. | Str: ``instance``, ``transaction`` | Recommended | - |
+
 ### oracledb.sort.operations
 
 Total count of sort operations.
@@ -856,6 +900,14 @@ Fraction of allocated database storage that is used.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### oracledb.transaction.rollbacks
+
+Number of transactions rolled back.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rollback} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 

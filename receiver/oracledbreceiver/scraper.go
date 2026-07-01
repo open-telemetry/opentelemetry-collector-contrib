@@ -116,32 +116,40 @@ const (
 	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	dbTimeStat                   = "DB time"
-	enqueueConversionsStat       = "enqueue conversions"
-	enqueueReleasesStat          = "enqueue releases"
-	enqueueRequestsStat          = "enqueue requests"
-	enqueueTimeoutsStat          = "enqueue timeouts"
-	enqueueWaitsStat             = "enqueue waits"
-	indexFastFullScansDirectStat = "index fast full scans (direct read)"
-	indexFastFullScansFullStat   = "index fast full scans (full)"
-	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
-	lobReadsStat                 = "lob reads"
-	lobWritesStat                = "lob writes"
-	openedCursorsCurrentStat     = "opened cursors current"
-	parseTimeCPUStat             = "parse time cpu"
-	parseTimeElapsedStat         = "parse time elapsed"
-	recursiveCallsStat           = "recursive calls"
-	recursiveCPUUsageStat        = "recursive cpu usage"
-	sessionCursorCacheCountStat  = "session cursor cache count"
-	sessionCursorCacheHitsStat   = "session cursor cache hits"
-	sortsDiskStat                = "sorts (disk)"
-	sortsMemoryStat              = "sorts (memory)"
-	sortsRowsStat                = "sorts (rows)"
-	tableScanRowsGottenStat      = "table scan rows gotten"
-	tableScansDirectReadStat     = "table scans (direct read)"
-	tableScansLongTablesStat     = "table scans (long tables)"
-	tableScansRowidRangesStat    = "table scans (rowid ranges)"
-	userCallsStat                = "user calls"
+	// Transactions, Locks & Recovery v$sysstat names
+	transactionRollbacks          = "transaction rollbacks"
+	transactionLockBackgroundTime = "transaction lock background get time"
+	transactionLockForegroundTime = "transaction lock foreground wait time"
+	recoveryBlocksRead            = "recovery blocks read"
+	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
+	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
+	gcCurrentBlockReceiveTime     = "gc current block receive time"
+	dbTimeStat                    = "DB time"
+	enqueueConversionsStat        = "enqueue conversions"
+	enqueueReleasesStat           = "enqueue releases"
+	enqueueRequestsStat           = "enqueue requests"
+	enqueueTimeoutsStat           = "enqueue timeouts"
+	enqueueWaitsStat              = "enqueue waits"
+	indexFastFullScansDirectStat  = "index fast full scans (direct read)"
+	indexFastFullScansFullStat    = "index fast full scans (full)"
+	indexFastFullScansRowidStat   = "index fast full scans (rowid ranges)"
+	lobReadsStat                  = "lob reads"
+	lobWritesStat                 = "lob writes"
+	openedCursorsCurrentStat      = "opened cursors current"
+	parseTimeCPUStat              = "parse time cpu"
+	parseTimeElapsedStat          = "parse time elapsed"
+	recursiveCallsStat            = "recursive calls"
+	recursiveCPUUsageStat         = "recursive cpu usage"
+	sessionCursorCacheCountStat   = "session cursor cache count"
+	sessionCursorCacheHitsStat    = "session cursor cache hits"
+	sortsDiskStat                 = "sorts (disk)"
+	sortsMemoryStat               = "sorts (memory)"
+	sortsRowsStat                 = "sorts (rows)"
+	tableScanRowsGottenStat       = "table scan rows gotten"
+	tableScansDirectReadStat      = "table scans (direct read)"
+	tableScansLongTablesStat      = "table scans (long tables)"
+	tableScansRowidRangesStat     = "table scans (rowid ranges)"
+	userCallsStat                 = "user calls"
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
@@ -363,6 +371,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocksRead.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
@@ -783,6 +796,47 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			case redoWrites:
 				if err := s.mb.RecordOracledbRedoOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
+				}
+			// Transactions, Locks & Recovery
+			case transactionRollbacks:
+				if err := s.mb.RecordOracledbTransactionRollbacksDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case transactionLockBackgroundTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockBackgroundTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockTypeBackground)
+				}
+			case transactionLockForegroundTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", transactionLockForegroundTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbLockTimeDataPoint(now, value/100, metadata.AttributeOracledbLockTypeForeground)
+				}
+			case recoveryBlocksRead:
+				if err := s.mb.RecordOracledbRecoveryBlocksReadDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonInstanceRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeInstance); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case smonTxnRecoveryPosts:
+				if err := s.mb.RecordOracledbSmonPostsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSmonTypeTransaction); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case gcCurrentBlockReceiveTime:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row["VALUE"], err))
+				} else {
+					// divide by 100 as the value is expressed in centiseconds
+					s.mb.RecordOracledbGcCurrentBlockReceiveTimeDataPoint(now, value/100)
 				}
 			}
 		}
