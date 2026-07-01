@@ -395,7 +395,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.error.category | The error category as reported by the `SQLServer:SQL Errors` performance counter object. | Str: ``db_offline``, ``info``, ``kill_connection``, ``user`` | Required | - |
+| sqlserver.error.category | The category of the SQL Server error. | Str: ``db_offline``, ``info``, ``kill_connection``, ``user`` | Required | - |
 
 ### sqlserver.index.search.rate
 

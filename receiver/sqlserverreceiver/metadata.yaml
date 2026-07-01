@@ -177,7 +177,7 @@ attributes:
     type: int
     requirement_level: recommended
   sqlserver.error.category:
-    description: The error category as reported by the `SQLServer:SQL Errors` performance counter object.
+    description: The category of the SQL Server error.
     type: string
     requirement_level: required
     enum: [db_offline, info, kill_connection, user]
