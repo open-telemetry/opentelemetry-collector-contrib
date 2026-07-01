@@ -32,6 +32,8 @@ func createDefaultConfig() component.Config {
 		MaxNodeChildren:   100,
 		MaxClusters:       0,
 		TemplateAttribute: "log.record.template",
+		ExtractParameters: false,
+		ParamsAttribute:   "log.record.template.params",
 		WarmupMinClusters: 0,
 	}
 }
