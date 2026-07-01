@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata"
@@ -16,7 +17,7 @@ import (
 
 type MapKeysArguments[K any] struct {
 	Source    ottl.PMapGetter[K]
-	KeyMapper ottl.LambdaExpression[K]
+	KeyMapper *ottl.LambdaExpression[K]
 }
 
 func NewMapKeysFactory[K any]() ottl.Factory[K] {
@@ -28,7 +29,7 @@ func createMapKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	if !ok {
 		return nil, errors.New("MapKeysFactory args must be of type *MapKeysArguments[K]")
 	}
-	return mapKeys(args.Source, &args.KeyMapper), nil
+	return mapKeys(args.Source, args.KeyMapper), nil
 }
 
 func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
@@ -49,7 +50,7 @@ func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[
 		for k, v := range sourceVal.All() {
 			newKey, err := funcutil.EvaluateBiFunction[K, string](tCtx, lb, k, v)
 			if err != nil {
-				return pcommon.Map{}, err
+				return pcommon.Map{}, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 			}
 			v.CopyTo(builder.AppendEmpty(newKey))
 		}
