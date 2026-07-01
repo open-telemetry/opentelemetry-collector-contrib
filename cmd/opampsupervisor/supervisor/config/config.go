@@ -247,6 +247,8 @@ type Agent struct {
 	// StartupFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
+	// Package configures how collector executable updates are formatted and verified.
+	Package AgentPackage `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -295,6 +297,10 @@ func (a Agent) Validate() error {
 	}
 
 	if err := a.validateFallbackConfigs(); err != nil {
+		return err
+	}
+
+	if err := a.Package.Validate(); err != nil {
 		return err
 	}
 
@@ -469,6 +475,9 @@ func DefaultSupervisor() Supervisor {
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
 			ValidateConfig:          false,
+			Package: AgentPackage{
+				Verifier: Verifier{Type: VerifierTypeNone},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
