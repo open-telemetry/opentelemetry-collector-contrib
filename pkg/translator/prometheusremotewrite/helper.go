@@ -132,8 +132,11 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
 	labels := make([]prompb.Label, 0, maxLabelCount)
-	// XXX: Should we always drop service namespace/service name/service instance ID from the labels
-	// (as they get mapped to other Prometheus labels)?
+	// service.namespace/name/instance.id are mapped to the job and instance
+	// labels and may also be stripped from target_info via the ignoreAttrs
+	// argument; Settings.KeepIdentifyingResourceAttributes opts out of the
+	// strip to keep target_info compliant with the OpenTelemetry service
+	// resource semantic conventions.
 	for key, value := range attributes.All() {
 		if !slices.Contains(ignoreAttrs, key) {
 			strVal := value.AsString()
@@ -568,7 +571,16 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
+	// service.name/namespace/instance.id are mapped to job and instance, and
+	// stripped from the target_info labels unless KeepIdentifyingResourceAttributes
+	// is set, which preserves them per the OpenTelemetry service resource
+	// semantic conventions.
+	ignoreAttrs := identifyingAttrs
+	if settings.KeepIdentifyingResourceAttributes {
+		ignoreAttrs = nil
+	}
+
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, ignoreAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}

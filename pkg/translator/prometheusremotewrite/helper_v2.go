@@ -48,7 +48,16 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+	// service.name/namespace/instance.id are mapped to job and instance, and
+	// stripped from the target_info labels unless KeepIdentifyingResourceAttributes
+	// is set, which preserves them per the OpenTelemetry service resource
+	// semantic conventions.
+	ignoreAttrs := identifyingAttrs
+	if settings.KeepIdentifyingResourceAttributes {
+		ignoreAttrs = nil
+	}
+
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, ignoreAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
