@@ -25,16 +25,20 @@ import (
 const readBufferSize = 10 * 1024
 
 type server struct {
-	outCh            chan<- event
+	outCh            chan<- eventWithACK
+	ackWaitTimeout   time.Duration
+	ackWaiters       chan struct{}
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
 	conns            map[net.Conn]struct{}
 	mu               sync.Mutex
 }
 
-func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
+func newServer(outCh chan<- eventWithACK, ackWaitTimeout time.Duration, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
 	return &server{
 		outCh:            outCh,
+		ackWaitTimeout:   ackWaitTimeout,
+		ackWaiters:       make(chan struct{}, maxPendingACKs),
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,
 		conns:            make(map[net.Conn]struct{}),
@@ -125,18 +129,91 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 
 		s.telemetryBuilder.FluentEventsParsed.Add(ctx, 1)
 
-		s.outCh <- e
-
-		// We must acknowledge the 'chunk' option if given. We could do this in
-		// another goroutine if it is too much of a bottleneck to reading
-		// messages -- this is the only thing that sends data back to the
-		// client.
-		if e.Chunk() != "" {
-			err := msgp.Encode(conn, internal.AckResponse{Ack: e.Chunk()})
-			if err != nil {
-				return fmt.Errorf("failed to acknowledge chunk %s: %w", e.Chunk(), err)
+		chunk := e.Chunk()
+		if chunk == "" {
+			if err = s.enqueueEvent(ctx, eventWithACK{event: e}, 0); err != nil {
+				return err
 			}
+			continue
 		}
+
+		if !s.acquireACKWaiter(ctx) {
+			return fmt.Errorf("too many pending acknowledgments")
+		}
+		ackCh := make(chan error, 1)
+		err = s.enqueueEvent(ctx, eventWithACK{event: e, ackCh: ackCh}, s.ackWaitTimeout)
+		if err != nil {
+			s.releaseACKWaiter()
+			return err
+		}
+
+		err = s.waitForACK(ctx, conn, chunk, ackCh)
+		s.releaseACKWaiter()
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (s *server) enqueueEvent(ctx context.Context, e eventWithACK, timeout time.Duration) error {
+	if timeout <= 0 {
+		select {
+		case s.outCh <- e:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case s.outCh <- e:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return fmt.Errorf("timed out waiting to enqueue chunk for acknowledgment")
+	}
+}
+
+func (s *server) waitForACK(ctx context.Context, conn net.Conn, chunk string, ackCh <-chan error) error {
+	timer := time.NewTimer(s.ackWaitTimeout)
+	defer timer.Stop()
+
+	select {
+	case err := <-ackCh:
+		if err != nil {
+			return fmt.Errorf("downstream consumer failed processing chunk %s: %w", chunk, err)
+		}
+		err = msgp.Encode(conn, internal.AckResponse{Ack: chunk})
+		if err != nil {
+			return fmt.Errorf("failed to acknowledge chunk %s: %w", chunk, err)
+		}
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return fmt.Errorf("timed out waiting for downstream consumer to process chunk %s", chunk)
+	}
+}
+
+func (s *server) acquireACKWaiter(ctx context.Context) bool {
+	select {
+	case s.ackWaiters <- struct{}{}:
+		return true
+	case <-ctx.Done():
+		return false
+	default:
+		return false
+	}
+}
+
+func (s *server) releaseACKWaiter() {
+	select {
+	case <-s.ackWaiters:
+	default:
 	}
 }
 
