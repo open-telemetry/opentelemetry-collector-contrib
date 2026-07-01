@@ -111,6 +111,44 @@ func Test_allMatch(t *testing.T) {
 	}
 }
 
+func Test_allMatch_eval_error(t *testing.T) {
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		return 123, nil
+	})
+
+	t.Run("map", func(t *testing.T) {
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				m := pcommon.NewMap()
+				m.PutInt("a", 1)
+				return m, nil
+			},
+		}
+
+		exprFunc := allMatch(source, predicate)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+
+	t.Run("slice", func(t *testing.T) {
+		s := pcommon.NewSlice()
+		require.NoError(t, s.FromRaw([]any{int64(1)}))
+		source := ottl.StandardGetSetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return s, nil
+			},
+		}
+
+		exprFunc := allMatch(source, predicate)
+		_, err := exprFunc(t.Context(), nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
+		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
+	})
+}
+
 func Test_createAllFunction(t *testing.T) {
 	fCtx := ottl.FunctionContext{}
 	predicated := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
@@ -125,7 +163,7 @@ func Test_createAllFunction(t *testing.T) {
 	t.Run("valid args", func(t *testing.T) {
 		fn, err := createAllFunction[any](fCtx, &AllArguments[any]{
 			Source:    source,
-			Predicate: *predicated,
+			Predicate: predicated,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, fn)

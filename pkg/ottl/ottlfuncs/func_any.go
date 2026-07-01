@@ -16,7 +16,7 @@ import (
 
 type AnyArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate ottl.LambdaExpression[K]
+	Predicate *ottl.LambdaExpression[K]
 }
 
 func NewAnyFactory[K any]() ottl.Factory[K] {
@@ -28,7 +28,7 @@ func createAnyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	if !ok {
 		return nil, errors.New("AnyFactory args must be of type *AnyArguments[K]")
 	}
-	return anyMatch(args.Source, &args.Predicate), nil
+	return anyMatch(args.Source, args.Predicate), nil
 }
 
 func anyMatch[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
@@ -59,7 +59,7 @@ func anySliceValueMatch[K any](tCtx K, source pcommon.Slice, lambda *ottl.Lambda
 	for i, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, int64(i), v)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error while evaluating lambda function on slice item (%d, %v): %w", i, v, err)
 		}
 		if match {
 			return true, nil
@@ -72,7 +72,7 @@ func anyMapValueMatch[K any](tCtx K, source pcommon.Map, lambda *ottl.LambdaActi
 	for k, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, k, v)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 		}
 		if match {
 			return true, nil
