@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/looku
 go 1.25.0
 
 require (
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.155.0
 	github.com/stretchr/testify v1.11.1
