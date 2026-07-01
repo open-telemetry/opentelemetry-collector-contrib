@@ -78,12 +78,12 @@ func TestValidate(t *testing.T) {
 					TLS: tlsConfig,
 				},
 				Agent: Agent{
-					Executable:                    "${file_path}",
-					OrphanDetectionInterval:       5 * time.Second,
-					ConfigApplyTimeout:            2 * time.Second,
-					BootstrapTimeout:              5 * time.Second,
-					CollectorCrashLogSnippetBytes: 0,
-					UseHUPConfigReload:            false,
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: 0,
+					UseHUPConfigReload:          false,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -270,7 +270,7 @@ func TestValidate(t *testing.T) {
 			expectedErrorFunc: simpleError("agent::orphan_detection_interval must be positive"),
 		},
 		{
-			name: "Invalid collector crash log snippet bytes",
+			name: "Invalid collector crash log snippet KiB",
 			config: Supervisor{
 				Server: OpAMPServer{
 					Endpoint: "wss://localhost:9090/opamp",
@@ -280,11 +280,11 @@ func TestValidate(t *testing.T) {
 					TLS: tlsConfig,
 				},
 				Agent: Agent{
-					Executable:                    "${file_path}",
-					OrphanDetectionInterval:       5 * time.Second,
-					ConfigApplyTimeout:            2 * time.Second,
-					BootstrapTimeout:              5 * time.Second,
-					CollectorCrashLogSnippetBytes: -1,
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: -1,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -293,10 +293,10 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
-			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_bytes must be non-negative"),
+			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_kib must be non-negative"),
 		},
 		{
-			name: "collector crash log snippet bytes too large",
+			name: "collector crash log snippet KiB too large",
 			config: Supervisor{
 				Server: OpAMPServer{
 					Endpoint: "wss://localhost:9090/opamp",
@@ -306,11 +306,11 @@ func TestValidate(t *testing.T) {
 					TLS: tlsConfig,
 				},
 				Agent: Agent{
-					Executable:                    "${file_path}",
-					OrphanDetectionInterval:       5 * time.Second,
-					ConfigApplyTimeout:            2 * time.Second,
-					BootstrapTimeout:              5 * time.Second,
-					CollectorCrashLogSnippetBytes: 1024*1024 + 1,
+					Executable:                  "${file_path}",
+					OrphanDetectionInterval:     5 * time.Second,
+					ConfigApplyTimeout:          2 * time.Second,
+					BootstrapTimeout:            5 * time.Second,
+					CollectorCrashLogSnippetKiB: 1025,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -319,7 +319,7 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
-			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_bytes must be less than or equal to 1048576"),
+			expectedErrorFunc: simpleError("agent::collector_crash_log_snippet_kib must be less than or equal to 1024"),
 		},
 		{
 			name: "Zero value health check port number",
@@ -964,12 +964,12 @@ agent:
 					Capabilities: DefaultSupervisor().Capabilities,
 					Storage:      DefaultSupervisor().Storage,
 					Agent: Agent{
-						Executable:                    executablePath,
-						OrphanDetectionInterval:       DefaultSupervisor().Agent.OrphanDetectionInterval,
-						ConfigApplyTimeout:            DefaultSupervisor().Agent.ConfigApplyTimeout,
-						BootstrapTimeout:              DefaultSupervisor().Agent.BootstrapTimeout,
-						CollectorCrashLogSnippetBytes: DefaultSupervisor().Agent.CollectorCrashLogSnippetBytes,
-						ValidateConfig:                DefaultSupervisor().Agent.ValidateConfig,
+						Executable:                  executablePath,
+						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,
@@ -1014,7 +1014,7 @@ agent:
   bootstrap_timeout: 8s
   opamp_server_port: 8090
   passthrough_logs: true
-  collector_crash_log_snippet_bytes: 102400
+  collector_crash_log_snippet_kib: 100
 
 telemetry:
   logs:
@@ -1057,13 +1057,13 @@ telemetry:
 								"os.type": "darwin",
 							},
 						},
-						OrphanDetectionInterval:       10 * time.Second,
-						ConfigApplyTimeout:            8 * time.Second,
-						BootstrapTimeout:              8 * time.Second,
-						OpAMPServerPort:               8090,
-						PassthroughLogs:               true,
-						CollectorCrashLogSnippetBytes: 100 * 1024,
-						ValidateConfig:                DefaultSupervisor().Agent.ValidateConfig,
+						OrphanDetectionInterval:     10 * time.Second,
+						ConfigApplyTimeout:          8 * time.Second,
+						BootstrapTimeout:            8 * time.Second,
+						OpAMPServerPort:             8090,
+						PassthroughLogs:             true,
+						CollectorCrashLogSnippetKiB: 100,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
@@ -1096,12 +1096,12 @@ agent:
 					Capabilities: DefaultSupervisor().Capabilities,
 					Storage:      DefaultSupervisor().Storage,
 					Agent: Agent{
-						Executable:                    executablePath,
-						OrphanDetectionInterval:       DefaultSupervisor().Agent.OrphanDetectionInterval,
-						ConfigApplyTimeout:            DefaultSupervisor().Agent.ConfigApplyTimeout,
-						BootstrapTimeout:              DefaultSupervisor().Agent.BootstrapTimeout,
-						CollectorCrashLogSnippetBytes: DefaultSupervisor().Agent.CollectorCrashLogSnippetBytes,
-						ValidateConfig:                DefaultSupervisor().Agent.ValidateConfig,
+						Executable:                  executablePath,
+						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
+						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,

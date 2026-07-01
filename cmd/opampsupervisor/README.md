@@ -101,11 +101,11 @@ Visit [localhost:4321](http://localhost:4321) again to verify that your Collecto
 
 ## Collector crash log snippets
 
-The Supervisor can include the tail of the Collector's logs in health and remote config failure messages when the Collector process exits unexpectedly. This is disabled by default because Collector logs may contain sensitive data. To enable it, set `agent::collector_crash_log_snippet_bytes` to the maximum number of log bytes to include, such as `102400` for 100 KiB. A value of `0` disables the feature. The maximum value is `1048576` (1 MiB).
+The Supervisor can include the tail of the Collector's logs in health and remote config failure messages when the Collector process exits unexpectedly. This is disabled by default because Collector logs may contain sensitive data. To enable it, set `agent::collector_crash_log_snippet_kib` to the maximum number of log KiB to include. A value of `0` disables the feature. `4` is a reasonable starting point. The maximum value is `1024` (1 MiB).
 
 ```yaml
 agent:
-  collector_crash_log_snippet_bytes: 102400
+  collector_crash_log_snippet_kib: 4
 ```
 
 ## Persistent data storage

@@ -29,7 +29,7 @@ func (s *Supervisor) agentLogFilePath() string {
 }
 
 func (s *Supervisor) collectorCrashLogSnippet() string {
-	if s.config.Agent.CollectorCrashLogSnippetBytes <= 0 {
+	if s.config.Agent.CollectorCrashLogSnippetKiB <= 0 {
 		return ""
 	}
 	return strings.ToValidUTF8(strings.TrimSpace(s.collectorLogTail()), "")
@@ -45,7 +45,7 @@ func (s *Supervisor) appendCollectorCrashDetails(msg string) string {
 
 func (s *Supervisor) collectorLogTail() string {
 	if path := s.agentLogFilePath(); path != "" {
-		data, err := readFileTail(path, int64(s.config.Agent.CollectorCrashLogSnippetBytes))
+		data, err := readFileTail(path, int64(s.config.Agent.CollectorCrashLogSnippetKiB*1024))
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				s.telemetrySettings.Logger.Debug("Could not read collector log tail", zap.Error(err))
@@ -64,11 +64,11 @@ func (s *Supervisor) passthroughLogTail() string {
 	if buf == nil {
 		return ""
 	}
-	return buf.Tail(s.config.Agent.CollectorCrashLogSnippetBytes)
+	return buf.Tail(s.config.Agent.CollectorCrashLogSnippetKiB * 1024)
 }
 
 func (s *Supervisor) appendPassthroughLogLine(line string) {
-	if line == "" || s.config.Agent.CollectorCrashLogSnippetBytes <= 0 {
+	if line == "" || s.config.Agent.CollectorCrashLogSnippetKiB <= 0 {
 		return
 	}
 	buf := s.ensurePassthroughLogBuffer()
@@ -79,7 +79,7 @@ func (s *Supervisor) ensurePassthroughLogBuffer() *logRingBuffer {
 	s.passthroughLogMu.Lock()
 	defer s.passthroughLogMu.Unlock()
 	if s.passthroughLogBuffer == nil {
-		s.passthroughLogBuffer = newLogRingBuffer(s.config.Agent.CollectorCrashLogSnippetBytes)
+		s.passthroughLogBuffer = newLogRingBuffer(s.config.Agent.CollectorCrashLogSnippetKiB * 1024)
 	}
 	return s.passthroughLogBuffer
 }

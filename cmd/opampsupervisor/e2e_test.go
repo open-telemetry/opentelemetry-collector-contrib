@@ -2692,8 +2692,9 @@ func TestSupervisorReportsCollectorLogTailOnRemoteConfigCrash(t *testing.T) {
 
 	storageDir := t.TempDir()
 	s, _ := newSupervisor(t, "basic", map[string]string{
-		"url":         server.addr,
-		"storage_dir": storageDir,
+		"url":                             server.addr,
+		"storage_dir":                     storageDir,
+		"collector_crash_log_snippet_kib": "4",
 	})
 	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
