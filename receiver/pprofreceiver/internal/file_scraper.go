@@ -10,17 +10,21 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/pprof/profile"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 type FileScraper struct {
-	Include string
-	Logger  *zap.Logger
+	Include   string
+	Logger    *zap.Logger
+	BuildInfo component.BuildInfo
 }
 
 func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
@@ -46,7 +50,7 @@ func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
 			continue
 		}
 
-		profiles, err := pprof.ConvertPprofToProfiles(pprofProfile)
+		profiles, err := pprof.ConvertPprofToProfiles(pprofProfile, pprof.ScopeInfo{Name: metadata.ScopeName + "/filescraper", Version: fs.BuildInfo.Version})
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to convert pprof to profiles from %s: %w", match, err))
 			continue

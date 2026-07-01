@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/xscraper"
 
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 var _ xscraper.Profiles = &SelfScraper{}
@@ -23,6 +25,7 @@ var _ xscraper.Profiles = &SelfScraper{}
 type SelfScraper struct {
 	BlockProfileFraction int
 	MutexProfileFraction int
+	BuildInfo            component.BuildInfo
 	buf                  *bytes.Buffer
 	writer               *bufio.Writer
 }
@@ -47,7 +50,13 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 	pprofProfile, parseErr := profile.Parse(hcs.buf)
 	hcs.buf.Reset()
 	if parseErr == nil {
-		p, err := translator.ConvertPprofToProfiles(pprofProfile)
+		p, err := translator.ConvertPprofToProfiles(
+			pprofProfile,
+			translator.ScopeInfo{
+				Name:    metadata.ScopeName + "/selfscraper",
+				Version: hcs.BuildInfo.Version,
+			},
+		)
 		_ = pprof.StartCPUProfile(hcs.writer)
 		if p == nil {
 			return pprofile.Profiles{}, err
