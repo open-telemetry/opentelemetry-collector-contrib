@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestLogsExporter_New(t *testing.T) {
@@ -121,4 +124,106 @@ func TestRenderCreateLogsJSONTableSQL(t *testing.T) {
 
 	require.Contains(t, sql, "TYPE bloom_filter")
 	require.NotContains(t, sql, "TYPE text(")
+}
+
+// TestLogsExporter_PushDeferredOnSchemaUnknown is the sister of
+// TestTracesJSONExporter_PushDeferredOnSchemaUnknown for the default (non-JSON)
+// logs exporter. Verifies that #48875's fix is applied to logs.go: when the
+// schema detector is still schemaUnknown (transient ClickHouse outage at start),
+// pushLogsData re-probes via ensureDetected and on continued failure returns a
+// retryable plain error so exporterhelper's retry_on_failure defers the batch.
+func TestLogsExporter_PushDeferredOnSchemaUnknown(t *testing.T) {
+	cfg := withDefaultConfig()
+	cfg.Endpoint = defaultEndpoint
+	exp := newLogsExporter(zaptest.NewLogger(t), cfg)
+	exp.db = &stubFailingConn{}
+
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr("hello")
+
+	err := exp.pushLogsData(t.Context(), ld)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "schema detection deferred",
+		"push must return a retryable error wrapping the DESC failure")
+	require.Equal(t, schemaUnknown, schemaDetectionState(exp.detector.state.Load()))
+	require.Empty(t, exp.insertSQL)
+}
+
+// TestLogsJSONExporter_PushDeferredOnSchemaUnknown is the sister of
+// TestTracesJSONExporter_PushDeferredOnSchemaUnknown for the JSON logs
+// exporter. See #48875.
+func TestLogsJSONExporter_PushDeferredOnSchemaUnknown(t *testing.T) {
+	cfg := withDefaultConfig()
+	cfg.Endpoint = defaultEndpoint
+	exp := newLogsJSONExporter(zaptest.NewLogger(t), cfg)
+	exp.db = &stubFailingConn{}
+
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr("hello")
+
+	err := exp.pushLogsData(t.Context(), ld)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "schema detection deferred",
+		"push must return a retryable error wrapping the DESC failure")
+	require.Equal(t, schemaUnknown, schemaDetectionState(exp.detector.state.Load()))
+	require.Empty(t, exp.insertSQL)
+}
+
+// makeMinimalLogs returns the smallest possible plog.Logs value that can
+// exercise pushLogsData without nil-derefs.
+func makeMinimalLogs() plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr("hello")
+	return ld
+}
+
+// TestLogsExporter_PermanentFailureFallsBack verifies that a write-only
+// ClickHouse user does not lose data via the non-JSON logs exporter. When
+// DESC TABLE returns ACCESS_DENIED the exporter must fall back to a degraded
+// INSERT (without the EventName column) and deliver rows.
+func TestLogsExporter_PermanentFailureFallsBack(t *testing.T) {
+	cfg := withDefaultConfig()
+	cfg.Endpoint = defaultEndpoint
+	exp := newLogsExporter(zaptest.NewLogger(t), cfg)
+	exp.db = &stubAccessDeniedConn{}
+
+	err := exp.pushLogsData(t.Context(), makeMinimalLogs())
+	require.NoError(t, err, "push must succeed after falling back to degraded INSERT")
+	require.Equal(t, schemaDetected, schemaDetectionState(exp.detector.state.Load()))
+	require.NotEmpty(t, exp.insertSQL)
+	assert.NotContains(t, exp.insertSQL, logsColumnEventName,
+		"degraded INSERT must NOT include EventName column")
+
+	// Subsequent pushes succeed without re-probing.
+	require.NoError(t, exp.pushLogsData(t.Context(), makeMinimalLogs()))
+}
+
+// TestLogsJSONExporter_PermanentFailureFallsBack verifies write-only user
+// support for the JSON logs exporter.
+func TestLogsJSONExporter_PermanentFailureFallsBack(t *testing.T) {
+	cfg := withDefaultConfig()
+	cfg.Endpoint = defaultEndpoint
+	exp := newLogsJSONExporter(zaptest.NewLogger(t), cfg)
+	exp.db = &stubAccessDeniedConn{}
+
+	err := exp.pushLogsData(t.Context(), makeMinimalLogs())
+	require.NoError(t, err, "push must succeed after falling back to degraded INSERT")
+	require.Equal(t, schemaDetected, schemaDetectionState(exp.detector.state.Load()))
+	require.NotEmpty(t, exp.insertSQL)
+	assert.NotContains(t, exp.insertSQL, logsJSONColumnResourceAttributesKeys,
+		"degraded INSERT must NOT include keys columns")
+	assert.NotContains(t, exp.insertSQL, logsJSONColumnEventName,
+		"degraded INSERT must NOT include EventName column")
+
+	// Subsequent pushes succeed without re-probing.
+	require.NoError(t, exp.pushLogsData(t.Context(), makeMinimalLogs()))
 }
