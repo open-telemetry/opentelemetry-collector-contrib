@@ -774,6 +774,28 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.sga.limit
+
+Maximum size of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.sga.usage
+
+Size of each component of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.sga.component.name | Name of the SGA component. | Str: ``fixed_sga_size``, ``redo_buffers``, ``buffer_cache_size``, ``shared_pool_size``, ``large_pool_size``, ``java_pool_size``, ``streams_pool_size``, ``shared_io_pool_size``, ``data_transfer_cache_size``, ``in_memory_area_size`` | Recommended | - |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.

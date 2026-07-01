@@ -128,7 +128,22 @@ var queryResponses = map[string][]metricRow{
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
 	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
-	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	sgaInfoSQL: {
+		{"NAME": "Fixed SGA Size", "BYTES": "9292416"},
+		{"NAME": "Redo Buffers", "BYTES": "14598144"},
+		{"NAME": "Buffer Cache Size", "BYTES": "1375731712"},
+		{"NAME": "Shared Pool Size", "BYTES": "536870912"},
+		{"NAME": "Large Pool Size", "BYTES": "33554432"},
+		{"NAME": "Java Pool Size", "BYTES": "0"},
+		{"NAME": "Streams Pool Size", "BYTES": "0"},
+		{"NAME": "Shared IO Pool Size", "BYTES": "134217728"},
+		{"NAME": "Data Transfer Cache Size", "BYTES": "0"},
+		{"NAME": "Granule Size", "BYTES": "16777216"},
+		{"NAME": "Maximum SGA Size", "BYTES": "2147483648"},
+		{"NAME": "Startup overhead in Shared Pool", "BYTES": "209715200"},
+		{"NAME": "Free SGA Memory Available", "BYTES": "41943040"},
+	},
+	storageUsageSQL: {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 	sysmetricSQL: {
 		{"METRIC_NAME": "Buffer Cache Hit Ratio", "VALUE": "98.75"},
 		{"METRIC_NAME": "Host CPU Utilization (%)", "VALUE": "12.34"},
@@ -1630,6 +1645,92 @@ func TestCalculateLookbackSeconds(t *testing.T) {
 	lookbackTime := scrpr.calculateLookbackSeconds()
 
 	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
+}
+
+func TestScraper_ScrapeSGAInfo(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+		},
+		{
+			name: "bad bytes value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == sgaInfoSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"NAME": "Buffer Cache Size", "BYTES": "not_a_number"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for SGA row "Buffer Cache Size", value was "not_a_number"`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbSgaUsage.Enabled = true
+			cfg.Metrics.OracledbSgaLimit.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+				return
+			}
+			require.NoError(t, err)
+			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			wantUsage := map[string]int64{
+				"fixed_sga_size":           9292416,
+				"redo_buffers":             14598144,
+				"buffer_cache_size":        1375731712,
+				"shared_pool_size":         536870912,
+				"large_pool_size":          33554432,
+				"java_pool_size":           0,
+				"streams_pool_size":        0,
+				"shared_io_pool_size":      134217728,
+				"data_transfer_cache_size": 0,
+			}
+			gotUsage := map[string]int64{}
+			var sgaLimit int64
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				switch metric.Name() {
+				case "oracledb.sga.usage":
+					for j := 0; j < metric.Sum().DataPoints().Len(); j++ {
+						dp := metric.Sum().DataPoints().At(j)
+						name, _ := dp.Attributes().Get("oracledb.sga.component.name")
+						gotUsage[name.Str()] = dp.IntValue()
+					}
+				case "oracledb.sga.limit":
+					sgaLimit = metric.Gauge().DataPoints().At(0).IntValue()
+				}
+			}
+			assert.Equal(t, wantUsage, gotUsage)
+			assert.Equal(t, int64(2147483648), sgaLimit)
+		})
+	}
 }
 
 func readFile(fname string) []byte {

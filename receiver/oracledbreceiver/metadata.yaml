@@ -294,6 +294,21 @@ attributes:
     description: Class of session the database time is attributed to.
     type: string
     enum: [foreground]
+  oracledb.sga.component.name:
+    description: Name of the SGA component.
+    type: string
+    enum:
+      - fixed_sga_size
+      - redo_buffers
+      - buffer_cache_size
+      - shared_pool_size
+      - large_pool_size
+      - java_pool_size
+      - streams_pool_size
+      - shared_io_pool_size
+      - data_transfer_cache_size
+      - in_memory_area_size
+    requirement_level: recommended
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
@@ -1133,6 +1148,24 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.sga.limit:
+    description: Maximum size of the System Global Area (SGA).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.sga.usage:
+    attributes:
+      - oracledb.sga.component.name
+    description: Size of each component of the System Global Area (SGA).
+    enabled: false
+    stability: development
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    unit: By
   oracledb.shared_pool.utilization:
     description: Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
     enabled: false

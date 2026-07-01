@@ -442,6 +442,64 @@ var MapAttributeOracledbSessionType = map[string]AttributeOracledbSessionType{
 	"foreground": AttributeOracledbSessionTypeForeground,
 }
 
+// AttributeOracledbSgaComponentName specifies the value oracledb.sga.component.name attribute.
+type AttributeOracledbSgaComponentName int
+
+const (
+	_ AttributeOracledbSgaComponentName = iota
+	AttributeOracledbSgaComponentNameFixedSgaSize
+	AttributeOracledbSgaComponentNameRedoBuffers
+	AttributeOracledbSgaComponentNameBufferCacheSize
+	AttributeOracledbSgaComponentNameSharedPoolSize
+	AttributeOracledbSgaComponentNameLargePoolSize
+	AttributeOracledbSgaComponentNameJavaPoolSize
+	AttributeOracledbSgaComponentNameStreamsPoolSize
+	AttributeOracledbSgaComponentNameSharedIoPoolSize
+	AttributeOracledbSgaComponentNameDataTransferCacheSize
+	AttributeOracledbSgaComponentNameInMemoryAreaSize
+)
+
+// String returns the string representation of the AttributeOracledbSgaComponentName.
+func (av AttributeOracledbSgaComponentName) String() string {
+	switch av {
+	case AttributeOracledbSgaComponentNameFixedSgaSize:
+		return "fixed_sga_size"
+	case AttributeOracledbSgaComponentNameRedoBuffers:
+		return "redo_buffers"
+	case AttributeOracledbSgaComponentNameBufferCacheSize:
+		return "buffer_cache_size"
+	case AttributeOracledbSgaComponentNameSharedPoolSize:
+		return "shared_pool_size"
+	case AttributeOracledbSgaComponentNameLargePoolSize:
+		return "large_pool_size"
+	case AttributeOracledbSgaComponentNameJavaPoolSize:
+		return "java_pool_size"
+	case AttributeOracledbSgaComponentNameStreamsPoolSize:
+		return "streams_pool_size"
+	case AttributeOracledbSgaComponentNameSharedIoPoolSize:
+		return "shared_io_pool_size"
+	case AttributeOracledbSgaComponentNameDataTransferCacheSize:
+		return "data_transfer_cache_size"
+	case AttributeOracledbSgaComponentNameInMemoryAreaSize:
+		return "in_memory_area_size"
+	}
+	return ""
+}
+
+// MapAttributeOracledbSgaComponentName is a helper map of string to AttributeOracledbSgaComponentName attribute value.
+var MapAttributeOracledbSgaComponentName = map[string]AttributeOracledbSgaComponentName{
+	"fixed_sga_size":           AttributeOracledbSgaComponentNameFixedSgaSize,
+	"redo_buffers":             AttributeOracledbSgaComponentNameRedoBuffers,
+	"buffer_cache_size":        AttributeOracledbSgaComponentNameBufferCacheSize,
+	"shared_pool_size":         AttributeOracledbSgaComponentNameSharedPoolSize,
+	"large_pool_size":          AttributeOracledbSgaComponentNameLargePoolSize,
+	"java_pool_size":           AttributeOracledbSgaComponentNameJavaPoolSize,
+	"streams_pool_size":        AttributeOracledbSgaComponentNameStreamsPoolSize,
+	"shared_io_pool_size":      AttributeOracledbSgaComponentNameSharedIoPoolSize,
+	"data_transfer_cache_size": AttributeOracledbSgaComponentNameDataTransferCacheSize,
+	"in_memory_area_size":      AttributeOracledbSgaComponentNameInMemoryAreaSize,
+}
+
 // AttributeOracledbSortType specifies the value oracledb.sort.type attribute.
 type AttributeOracledbSortType int
 
@@ -707,6 +765,13 @@ var MetricsInfo = metricsInfo{
 		Name:       "oracledb.sessions.usage",
 		Attributes: []string{"session_type", "session_status"},
 	},
+	OracledbSgaLimit: metricInfo{
+		Name: "oracledb.sga.limit",
+	},
+	OracledbSgaUsage: metricInfo{
+		Name:       "oracledb.sga.usage",
+		Attributes: []string{"oracledb.sga.component.name"},
+	},
 	OracledbSharedPoolUtilization: metricInfo{
 		Name: "oracledb.shared_pool.utilization",
 	},
@@ -831,6 +896,8 @@ type metricsInfo struct {
 	OracledbScanTableRows                         metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
+	OracledbSgaLimit                              metricInfo
+	OracledbSgaUsage                              metricInfo
 	OracledbSharedPoolUtilization                 metricInfo
 	OracledbSortOperations                        metricInfo
 	OracledbSortRatio                             metricInfo
@@ -5290,6 +5357,147 @@ func newMetricOracledbSessionsUsage(cfg OracledbSessionsUsageMetricConfig) metri
 	return m
 }
 
+type metricOracledbSgaLimit struct {
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   OracledbSgaLimitMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.sga.limit metric with initial data.
+func (m *metricOracledbSgaLimit) init() {
+	m.data.SetName("oracledb.sga.limit")
+	m.data.SetDescription("Maximum size of the System Global Area (SGA).")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbSgaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbSgaLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbSgaLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbSgaLimit(cfg OracledbSgaLimitMetricConfig) metricOracledbSgaLimit {
+	m := metricOracledbSgaLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbSgaUsage struct {
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        OracledbSgaUsageMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+}
+
+// init fills oracledb.sga.usage metric with initial data.
+func (m *metricOracledbSgaUsage) init() {
+	m.data.SetName("oracledb.sga.usage")
+	m.data.SetDescription("Size of each component of the System Global Area (SGA).")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricOracledbSgaUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName) {
+		dp.Attributes().PutStr("oracledb.sga.component.name", oracledbSgaComponentNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbSgaUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbSgaUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbSgaUsage(cfg OracledbSgaUsageMetricConfig) metricOracledbSgaUsage {
+	m := metricOracledbSgaUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbSharedPoolUtilization struct {
 	data     pmetric.Metric                            // data buffer for generated metric.
 	config   OracledbSharedPoolUtilizationMetricConfig // metric config provided by user.
@@ -6282,6 +6490,8 @@ type MetricsBuilder struct {
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
+	metricOracledbSgaLimit                              metricOracledbSgaLimit
+	metricOracledbSgaUsage                              metricOracledbSgaUsage
 	metricOracledbSharedPoolUtilization                 metricOracledbSharedPoolUtilization
 	metricOracledbSortOperations                        metricOracledbSortOperations
 	metricOracledbSortRatio                             metricOracledbSortRatio
@@ -6395,6 +6605,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
+		metricOracledbSgaLimit:                              newMetricOracledbSgaLimit(mbc.Metrics.OracledbSgaLimit),
+		metricOracledbSgaUsage:                              newMetricOracledbSgaUsage(mbc.Metrics.OracledbSgaUsage),
 		metricOracledbSharedPoolUtilization:                 newMetricOracledbSharedPoolUtilization(mbc.Metrics.OracledbSharedPoolUtilization),
 		metricOracledbSortOperations:                        newMetricOracledbSortOperations(mbc.Metrics.OracledbSortOperations),
 		metricOracledbSortRatio:                             newMetricOracledbSortRatio(mbc.Metrics.OracledbSortRatio),
@@ -6615,6 +6827,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
+	mb.metricOracledbSgaLimit.emit(ils.Metrics())
+	mb.metricOracledbSgaUsage.emit(ils.Metrics())
 	mb.metricOracledbSharedPoolUtilization.emit(ils.Metrics())
 	mb.metricOracledbSortOperations.emit(ils.Metrics())
 	mb.metricOracledbSortRatio.emit(ils.Metrics())
@@ -7313,6 +7527,16 @@ func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timest
 	}
 	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
 	return nil
+}
+
+// RecordOracledbSgaLimitDataPoint adds a data point to oracledb.sga.limit metric.
+func (mb *MetricsBuilder) RecordOracledbSgaLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbSgaLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbSgaUsageDataPoint adds a data point to oracledb.sga.usage metric.
+func (mb *MetricsBuilder) RecordOracledbSgaUsageDataPoint(ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue AttributeOracledbSgaComponentName) {
+	mb.metricOracledbSgaUsage.recordDataPoint(mb.startTime, ts, val, oracledbSgaComponentNameAttributeValue.String())
 }
 
 // RecordOracledbSharedPoolUtilizationDataPoint adds a data point to oracledb.shared_pool.utilization metric.
