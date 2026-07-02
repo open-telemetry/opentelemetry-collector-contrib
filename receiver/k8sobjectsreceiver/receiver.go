@@ -306,13 +306,16 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := kr.startObserver(ctx, obs, object)
+	stopChan, err := kr.startObserver(ctx, obs, object)
+	if err != nil {
+		return err
+	}
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
 	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
 		return obs.Start(ctx, &kr.wg)
 	}
@@ -334,8 +337,12 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 			return
 		}
 
-		observerStopChan := obs.Start(ctx, &kr.wg)
-
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err != nil {
+			kr.setting.Logger.Error("failed to start observer after initial delay",
+				zap.String("object", object.Name), zap.Error(err))
+			return
+		}
 		select {
 		case <-stopChan:
 			close(observerStopChan)
@@ -343,7 +350,7 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 		}
 	}()
 
-	return stopChan
+	return stopChan, nil
 }
 
 // handleError handles errors according to the configured error mode
