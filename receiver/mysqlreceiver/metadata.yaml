@@ -12,7 +12,6 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
-reaggregation_enabled: true
 override_value_enabled: true
 
 resource_attributes:
