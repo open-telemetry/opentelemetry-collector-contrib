@@ -220,6 +220,22 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.access.scan.rate
+
+Rate of access method scans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {scan}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
+
 ### sqlserver.attention.rate
 
 Number of SQL attentions (client cancellation interrupts) received per second.
@@ -253,52 +269,6 @@ Number of CPUs.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {CPUs} | Gauge | Int | Development |
-
-### sqlserver.cursor.count
-
-Number of cursors by state (active or cached).
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {cursor} | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cursor.state | The state of the cursor. | Str: ``active``, ``cached`` | Recommended | - |
-
-### sqlserver.cursor.memory
-
-Memory used by cursors.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
-### sqlserver.cursor.plan.count
-
-Number of active cursor plans.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {plan} | Gauge | Int | Development |
-
-### sqlserver.cursor.request.rate
-
-Rate of cursor requests per second.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request}/s | Gauge | Double | Development |
 
 ### sqlserver.database.backup_or_restore.rate
 
@@ -426,6 +396,32 @@ Total number of deadlocks.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
+
+### sqlserver.extent.operation.rate
+
+Rate of extent operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {extent}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.extent.operation.type | The type of extent allocation operation. | Str: ``allocated``, ``deallocated`` | Required | - |
+
+### sqlserver.ghost_record.skipped.rate
+
+Rate of ghosted records skipped during scans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {record}/s | Gauge | Double | Development |
 
 ### sqlserver.index.search.rate
 
@@ -606,6 +602,22 @@ This metric is only available when the receiver is configured to directly connec
 | wait.category | Category of the reason for a wait. | Any Str | Recommended | - |
 | wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str | Recommended | - |
 
+### sqlserver.page.allocation.rate
+
+Rate of page allocation operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.allocation.type | The type of page allocation operation. | Str: ``allocated``, ``deallocated``, ``mixed`` | Required | - |
+
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
 Number of free list stalls.
@@ -614,6 +626,22 @@ Number of free list stalls.
 | ---- | ----------- | ---------- | --------- |
 | “{stalls}/s” | Gauge | Int | Development |
 
+### sqlserver.page.compression.rate
+
+Rate of page compression operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.compression.type | The type of page compression operation. | Str: ``attempted``, ``succeeded`` | Required | - |
+
 ### sqlserver.page.lookup.rate
 
 Total number of page lookups.
@@ -621,6 +649,16 @@ Total number of page lookups.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
+
+### sqlserver.page.read_ahead.rate
+
+Rate of pages read from disk by the read-ahead manager.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 
@@ -718,6 +756,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
 
+### sqlserver.scan_point.revalidation.rate
+
+Rate at which scan points needed to be revalidated.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {revalidate}/s | Gauge | Double | Development |
+
 ### sqlserver.stored_procedure.invocation.rate
 
 Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.
@@ -790,6 +838,16 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
+
+### sqlserver.worktable.cache.hit_ratio
+
+Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
 
 ### sqlserver.worker.request.count
 

@@ -10,6 +10,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// SqlserverAccessScanRateMetricConfig provides config for the sqlserver.access.scan.rate metric.
+type SqlserverAccessScanRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverAttentionRateMetricConfig provides config for the sqlserver.attention.rate metric.
 type SqlserverAttentionRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -607,6 +627,46 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// SqlserverExtentOperationRateMetricConfig provides config for the sqlserver.extent.operation.rate metric.
+type SqlserverExtentOperationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverExtentOperationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverGhostRecordSkippedRateMetricConfig provides config for the sqlserver.ghost_record.skipped.rate metric.
+type SqlserverGhostRecordSkippedRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric.
 type SqlserverIndexSearchRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1108,6 +1168,26 @@ func (ms *SqlserverOsWaitDurationMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverPageAllocationRateMetricConfig provides config for the sqlserver.page.allocation.rate metric.
+type SqlserverPageAllocationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageAllocationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverPageBufferCacheFreeListStallsRateMetricConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric.
 type SqlserverPageBufferCacheFreeListStallsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1155,6 +1235,26 @@ type SqlserverPageCheckpointFlushRateMetricConfig struct {
 }
 
 func (ms *SqlserverPageCheckpointFlushRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverPageCompressionRateMetricConfig provides config for the sqlserver.page.compression.rate metric.
+type SqlserverPageCompressionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageCompressionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1301,6 +1401,26 @@ func (ms *SqlserverPageOperationRateMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// SqlserverPageReadAheadRateMetricConfig provides config for the sqlserver.page.read_ahead.rate metric.
+type SqlserverPageReadAheadRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageReadAheadRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1583,6 +1703,26 @@ type SqlserverResourcePoolDiskThrottledWriteRateMetricConfig struct {
 }
 
 func (ms *SqlserverResourcePoolDiskThrottledWriteRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverScanPointRevalidationRateMetricConfig provides config for the sqlserver.scan_point.revalidation.rate metric.
+type SqlserverScanPointRevalidationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverScanPointRevalidationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1981,6 +2121,26 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
+// SqlserverWorktableCacheHitRatioMetricConfig provides config for the sqlserver.worktable.cache.hit_ratio metric.
+type SqlserverWorktableCacheHitRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverWorkerRequestCountMetricAttributeKey specifies the key of an attribute for the sqlserver.worker.request.count metric.
 type SqlserverWorkerRequestCountMetricAttributeKey string
 
@@ -2079,6 +2239,7 @@ func (ms *SqlserverWorkerThreadCountMetricConfig) Validate() error {
 
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
+	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
 	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
 	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
@@ -2100,6 +2261,8 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
+	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
 	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLatchSuperlatchCount               SqlserverLatchSuperlatchCountMetricConfig               `mapstructure:"sqlserver.latch.superlatch.count"`
 	SqlserverLatchSuperlatchTransitionRate      SqlserverLatchSuperlatchTransitionRateMetricConfig      `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
@@ -2118,13 +2281,16 @@ type MetricsConfig struct {
 	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
 	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
 	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
+	SqlserverPageAllocationRate                 SqlserverPageAllocationRateMetricConfig                 `mapstructure:"sqlserver.page.allocation.rate"`
 	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageCompressionRate                SqlserverPageCompressionRateMetricConfig                `mapstructure:"sqlserver.page.compression.rate"`
 	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
 	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
 	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
 	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageReadAheadRate                  SqlserverPageReadAheadRateMetricConfig                  `mapstructure:"sqlserver.page.read_ahead.rate"`
 	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
 	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
@@ -2134,6 +2300,7 @@ type MetricsConfig struct {
 	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverScanPointRevalidationRate          SqlserverScanPointRevalidationRateMetricConfig          `mapstructure:"sqlserver.scan_point.revalidation.rate"`
 	SqlserverStoredProcedureInvocationRate      SqlserverStoredProcedureInvocationRateMetricConfig      `mapstructure:"sqlserver.stored_procedure.invocation.rate"`
 	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
 	SqlserverTaskCount                          SqlserverTaskCountMetricConfig                          `mapstructure:"sqlserver.task.count"`
@@ -2151,10 +2318,14 @@ type MetricsConfig struct {
 	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
 	SqlserverWorkerRequestCount                 SqlserverWorkerRequestCountMetricConfig                 `mapstructure:"sqlserver.worker.request.count"`
 	SqlserverWorkerThreadCount                  SqlserverWorkerThreadCountMetricConfig                  `mapstructure:"sqlserver.worker.thread.count"`
+	SqlserverWorktableCacheHitRatio             SqlserverWorktableCacheHitRatioMetricConfig             `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SqlserverAccessScanRate: SqlserverAccessScanRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,
 		},
@@ -2230,6 +2401,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
 			Enabled: false,
 		},
+		SqlserverExtentOperationRate: SqlserverExtentOperationRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 			Enabled: false,
 		},
@@ -2294,6 +2471,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SqlserverOsWaitDurationMetricAttributeKey{SqlserverOsWaitDurationMetricAttributeKeyWaitCategory, SqlserverOsWaitDurationMetricAttributeKeyWaitType},
 		},
+		SqlserverPageAllocationRate: SqlserverPageAllocationRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverPageBufferCacheFreeListStallsRate: SqlserverPageBufferCacheFreeListStallsRateMetricConfig{
 			Enabled: false,
 		},
@@ -2302,6 +2482,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverPageCheckpointFlushRate: SqlserverPageCheckpointFlushRateMetricConfig{
 			Enabled: true,
+		},
+		SqlserverPageCompressionRate: SqlserverPageCompressionRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverPageLazyWriteRate: SqlserverPageLazyWriteRateMetricConfig{
 			Enabled: true,
@@ -2318,6 +2501,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverPageOperationRateMetricAttributeKey{SqlserverPageOperationRateMetricAttributeKeyPageOperations},
+		},
+		SqlserverPageReadAheadRate: SqlserverPageReadAheadRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverPageSplitRate: SqlserverPageSplitRateMetricConfig{
 			Enabled: true,
@@ -2352,6 +2538,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverScanPointRevalidationRate: SqlserverScanPointRevalidationRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverStoredProcedureInvocationRate: SqlserverStoredProcedureInvocationRateMetricConfig{
@@ -2404,6 +2593,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 			Enabled: true,
+		},
+		SqlserverWorktableCacheHitRatio: SqlserverWorktableCacheHitRatioMetricConfig{
+			Enabled: false,
 		},
 		SqlserverWorkerRequestCount: SqlserverWorkerRequestCountMetricConfig{
 			Enabled:             false,

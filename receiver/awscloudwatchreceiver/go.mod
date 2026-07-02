@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.26
-	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.60.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.61.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.78.1
 	github.com/goccy/go-json v0.10.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.155.0
