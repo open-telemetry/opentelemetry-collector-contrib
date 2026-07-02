@@ -13,6 +13,7 @@ import (
 
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 	"golang.org/x/text/encoding"
 
@@ -66,6 +67,7 @@ type BaseConfig struct {
 	MaxLogSize       helper.ByteSize         `mapstructure:"max_log_size,omitempty"`
 	ListenAddress    string                  `mapstructure:"listen_address,omitempty"`
 	TLS              *configtls.ServerConfig `mapstructure:"tls,omitempty"`
+	Auth             *configauth.Config      `mapstructure:"auth,omitempty"`
 	AddAttributes    bool                    `mapstructure:"add_attributes,omitempty"`
 	OneLogPerPacket  bool                    `mapstructure:"one_log_per_packet,omitempty"`
 	Encoding         string                  `mapstructure:"encoding,omitempty"`
@@ -137,7 +139,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
 		},
-		resolver: resolver,
+		resolver:   resolver,
+		authConfig: c.Auth,
 	}
 
 	if c.TLS != nil {
