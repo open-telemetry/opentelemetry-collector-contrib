@@ -936,3 +936,20 @@ func TestConvertPprofToProfiles_AllTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertPprofToProfiles_SetsScopeName(t *testing.T) {
+	prof := &profile.Profile{
+		SampleType: []*profile.ValueType{{Type: "cpu", Unit: "nanoseconds"}},
+		Sample: []*profile.Sample{
+			{Value: []int64{1}},
+		},
+		PeriodType: &profile.ValueType{Type: "cpu", Unit: "nanoseconds"},
+		Period:     1,
+	}
+
+	out, err := ConvertPprofToProfiles(prof)
+	require.NoError(t, err)
+
+	sp := out.ResourceProfiles().At(0).ScopeProfiles().At(0)
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof", sp.Scope().Name())
+}
