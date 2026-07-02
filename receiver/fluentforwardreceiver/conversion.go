@@ -18,7 +18,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-const tagAttributeKey = "fluent.tag"
+const (
+	tagAttributeKey = "fluent.tag"
+	maxEntryCount   = 1_000_000
+	maxOptionCount  = 1_000
+)
 
 // Most of this logic is derived directly from
 // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1,
@@ -234,6 +238,9 @@ func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
+	if optionLen > maxOptionCount {
+		return nil, fmt.Errorf("option count %d exceeds maximum %d", optionLen, maxOptionCount)
+	}
 	out := make(optionsMap, optionLen)
 
 	for optionLen > 0 {
@@ -279,6 +286,9 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	entryLen, err := dc.ReadArrayHeader()
 	if err != nil {
 		return msgp.WrapError(err, "Record")
+	}
+	if entryLen > maxEntryCount {
+		return fmt.Errorf("entry count %d exceeds maximum %d", entryLen, maxEntryCount)
 	}
 
 	fe.EnsureCapacity(int(entryLen))

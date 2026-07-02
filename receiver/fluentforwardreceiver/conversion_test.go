@@ -246,3 +246,37 @@ func TestBodyConversion(t *testing.T) {
 		},
 	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
 }
+
+func TestDecodeMsgLimits(t *testing.T) {
+	t.Run("Entry count exceeds limit", func(t *testing.T) {
+		var b []byte
+		// Forward mode is an array of size 3 (tag, entries array, options) or 2 (tag, entries array)
+		b = msgp.AppendArrayHeader(b, 2)
+		b = msgp.AppendString(b, "my-tag")
+		// Specify too large an entries array
+		b = msgp.AppendArrayHeader(b, maxEntryCount+1)
+
+		reader := msgp.NewReader(bytes.NewReader(b))
+		var event forwardEventLogRecords
+		err := event.DecodeMsg(reader)
+		require.ErrorContains(t, err, "exceeds maximum")
+	})
+
+	t.Run("Option count exceeds limit", func(t *testing.T) {
+		var b []byte
+		// Message mode: arrLen 4, tag, time, record map, options map
+		b = msgp.AppendArrayHeader(b, 4)
+		b = msgp.AppendString(b, "my-tag")
+		b = msgp.AppendInt(b, 5000)
+		b = msgp.AppendMapHeader(b, 1)
+		b = msgp.AppendString(b, "a")
+		b = msgp.AppendFloat64(b, 5.0)
+		// Options map with excessive size
+		b = msgp.AppendMapHeader(b, maxOptionCount+1)
+
+		reader := msgp.NewReader(bytes.NewReader(b))
+		var event messageEventLogRecord
+		err := event.DecodeMsg(reader)
+		require.ErrorContains(t, err, "exceeds maximum")
+	})
+}
