@@ -239,6 +239,27 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 - `pod_delete_grace_period` (`default: 120s`): The grace period to wait before deleting a pod's metadata from the lookup cache after a deletion event.
 
+## Kubelet Pod Metadata Source
+
+The processor can experimentally poll the node-local kubelet `https://<node>:10250/pods` endpoint for pod metadata instead of using the Kubernetes API server pod informer. This is disabled by default and is intended for daemonset collectors in large clusters where pod watches create excessive API server load.
+
+Kubelet mode lists pods on a timer and applies namespace, node, label, and field filters locally because kubelet `/pods` is not a watch API and does not support server-side selectors. It only returns pods visible to one kubelet. The processor may still use Kubernetes API server informers for namespace, node, and workload metadata when configured extraction rules require them.
+
+Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.endpoint`. The collector service account must be allowed by kubelet authentication and authorization to read `/pods`, and the kubelet serving certificate must be trusted by the configured Kubernetes auth/TLS material. If your cluster does not make the kubelet serving CA available to the collector, `kubelet.insecure_skip_verify` can be used to skip kubelet TLS verification. Plaintext `http` endpoints require `kubelet.allow_insecure_http`.
+
+```yaml
+processors:
+  k8sattributes:
+    auth_type: serviceAccount
+    filter:
+      node_from_env_var: K8S_NODE_NAME
+    kubelet:
+      enabled: true
+      poll_interval: 10s
+      request_timeout: 30s
+      insecure_skip_verify: false
+      allow_insecure_http: false
+```
 
 ## Extracting attributes from pod labels and annotations
 
@@ -727,6 +748,16 @@ k8s_attributes:
   # Grace period to wait before removing deleted pods from the cache.
   # Default: 120s
   pod_delete_grace_period: 120s
+
+  # Experimental: use direct kubelet HTTPS /pods polling as the pod metadata source.
+  # Requires filter.node, filter.node_from_env_var, or kubelet.endpoint.
+  kubelet:
+    enabled: false
+    poll_interval: 10s
+    request_timeout: 30s
+    endpoint: ""
+    insecure_skip_verify: false
+    allow_insecure_http: false
   
   # Extract configuration - defines what metadata to extract
   extract:
@@ -901,6 +932,7 @@ k8s_attributes:
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
 | `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
 | `pod_delete_grace_period` | duration | `120s` | Grace period to wait before deleting pod metadata from the cache on deletion |
+| `kubelet` | KubeletConfig | disabled | Experimental direct kubelet HTTPS `/pods` polling for pod metadata |
 
 #### Extract Options
 

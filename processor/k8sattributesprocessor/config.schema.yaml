@@ -90,6 +90,24 @@ $defs:
       node_from_env_var:
         description: 'NodeFromEnv can be used to extract the node name from an environment variable. The value must be the name of the environment variable. This is useful when the node a Otel agent will run on cannot be predicted. In such cases, the Kubernetes downward API can be used to add the node name to each pod as an environment variable. K8s tagger can then read this value and filter pods by it. For example, node name can be passed to each agent with the downward API as follows env: - name: K8S_NODE_NAME valueFrom: fieldRef: fieldPath: spec.nodeName Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that the agent is running on. More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/'
         type: string
+  kubelet_config:
+    description: KubeletConfig configures direct kubelet /pods polling.
+    type: object
+    properties:
+      allow_insecure_http:
+        type: boolean
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
+      insecure_skip_verify:
+        type: boolean
+      poll_interval:
+        type: string
+        format: duration
+      request_timeout:
+        type: string
+        format: duration
   pod_association_config:
     description: PodAssociationConfig contain single rule how to associate Pod metadata with logs, spans and metrics
     type: object
@@ -120,6 +138,9 @@ properties:
   filter:
     description: Filter section allows specifying filters to filter pods by labels, fields, namespaces, nodes, etc.
     $ref: filter_config
+  kubelet:
+    description: Kubelet configures experimental direct kubelet /pods polling as the pod metadata source.
+    $ref: kubelet_config
   passthrough:
     description: Passthrough mode only annotates resources with the pod IP and does not try to extract any other metadata. It does not need access to the K8S cluster API. Agent/Collector must receive spans directly from services to be able to correctly detect the pod IPs.
     type: boolean

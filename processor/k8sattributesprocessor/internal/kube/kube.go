@@ -95,7 +95,17 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration, KubeletConfig) (Client, error)
+
+// KubeletConfig configures direct kubelet /pods polling.
+type KubeletConfig struct {
+	Enabled            bool
+	PollInterval       time.Duration
+	RequestTimeout     time.Duration
+	Endpoint           string
+	InsecureSkipVerify bool
+	AllowInsecureHTTP  bool
+}
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
