@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.ID = component.NewID(component.MustNewType("loadbalancing"))
+	set.ID = component.NewID(component.MustNewType("load_balancing"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

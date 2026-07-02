@@ -59,11 +59,28 @@ func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse)
 
 // newMockMetricsDefinitionListPager is a helper function to create a list pager for metrics definitions.
 // Don't use it, it's designed to be called in the newMockClientOptionsResolver ctor only.
+//
+// The map key is either a plain resourceURI (for the default no-filter call) or
+// "resourceURI::namespace" (for namespace-filtered calls). When a namespace-filtered
+// call is made and no namespace-specific key exists, an empty response is returned
+// rather than falling back to the plain-URI key, which prevents duplicate definitions.
 func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-	return func(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+	return func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		for _, page := range metricDefinitionsPagesByResourceURI[resourceURI] {
-			resp.AddPage(http.StatusOK, page, nil)
+		key := resourceURI
+		if options != nil && options.Metricnamespace != nil {
+			key = resourceURI + "::" + *options.Metricnamespace
+		}
+		pages, found := metricDefinitionsPagesByResourceURI[key]
+		if found {
+			for _, page := range pages {
+				resp.AddPage(http.StatusOK, page, nil)
+			}
+		} else {
+			// Return an empty success page so the fake transport removes this tracker entry,
+			// allowing subsequent calls with different query params (e.g. metricnamespace) to
+			// create a fresh tracker entry and invoke the mock handler again.
+			resp.AddPage(http.StatusOK, armmonitor.MetricDefinitionsClientListResponse{}, nil)
 		}
 		return resp
 	}
@@ -387,7 +404,7 @@ func newQueryResourcesResponseMockData(inputSlice []queryResourceMockInput) azme
 
 type metricsClientListResponseMockInput struct {
 	Name       string
-	Unit       armmonitor.Unit
+	Unit       armmonitor.MetricUnit
 	TimeSeries []*armmonitor.TimeSeriesElement
 }
 

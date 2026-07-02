@@ -18,7 +18,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var patchPathRegexp = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)/_/sfxagent`)
+var (
+	patchPathRegexp = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)/_/sfxagent`)
+	putPathRegexp   = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)$`)
+)
 
 type dim struct {
 	Key          string             `json:"key"`
@@ -29,12 +32,15 @@ type dim struct {
 }
 
 type testServer struct {
-	startCh      chan struct{}
-	finishCh     chan struct{}
-	acceptedDims []dim
-	server       *httptest.Server
-	respCode     int
-	requestCount *atomic.Int32
+	startCh       chan struct{}
+	finishCh      chan struct{}
+	acceptedDims  []dim
+	requestBodies []map[string]json.RawMessage
+	methods       []string
+	paths         []string
+	server        *httptest.Server
+	respCode      int
+	requestCount  *atomic.Int32
 }
 
 func (ts *testServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -47,15 +53,39 @@ func (ts *testServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match := patchPathRegexp.FindStringSubmatch(r.URL.Path)
+	var match []string
+	switch r.Method {
+	case http.MethodPatch:
+		match = patchPathRegexp.FindStringSubmatch(r.URL.Path)
+	case http.MethodPut:
+		match = putPathRegexp.FindStringSubmatch(r.URL.Path)
+	default:
+		rw.WriteHeader(http.StatusMethodNotAllowed)
+		ts.finishCh <- struct{}{}
+		return
+	}
 	if match == nil {
 		rw.WriteHeader(http.StatusNotFound)
 		ts.finishCh <- struct{}{}
 		return
 	}
 
+	var requestBody map[string]json.RawMessage
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+		ts.finishCh <- struct{}{}
+		return
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+		ts.finishCh <- struct{}{}
+		return
+	}
+
 	var bodyDim dim
-	if err := json.NewDecoder(r.Body).Decode(&bodyDim); err != nil {
+	if err := json.Unmarshal(bodyBytes, &bodyDim); err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		ts.finishCh <- struct{}{}
 		return
@@ -64,6 +94,9 @@ func (ts *testServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	bodyDim.Value = match[2]
 
 	ts.acceptedDims = append(ts.acceptedDims, bodyDim)
+	ts.requestBodies = append(ts.requestBodies, requestBody)
+	ts.methods = append(ts.methods, r.Method)
+	ts.paths = append(ts.paths, r.URL.Path)
 
 	ts.finishCh <- struct{}{}
 	rw.WriteHeader(http.StatusOK)
@@ -92,6 +125,9 @@ func (ts *testServer) reset() {
 		ts.finishCh = make(chan struct{})
 	}
 	ts.acceptedDims = nil
+	ts.requestBodies = nil
+	ts.methods = nil
+	ts.paths = nil
 	ts.respCode = http.StatusOK
 	ts.requestCount.Store(0)
 }
@@ -157,6 +193,87 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}, server.acceptedDims)
 		require.EqualValues(t, 1, server.requestCount.Load())
+	})
+
+	t.Run("send replacement dimension update with properties and tags", func(t *testing.T) {
+		server.reset()
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:  "k8s.pod.uid",
+			Value: "pod-123",
+			Properties: map[string]*string{
+				"k8s.pod.name":       newString("test-pod"),
+				"k8s.namespace.name": newString("default"),
+			},
+			Tags: map[string]bool{
+				"active":     true,
+				"terminated": false,
+			},
+			Replace: true,
+		}))
+
+		server.handleRequest()
+		require.Equal(t, []dim{
+			{
+				Key:   "k8s.pod.uid",
+				Value: "pod-123",
+				Properties: map[string]*string{
+					"k8s.pod.name":       newString("test-pod"),
+					"k8s.namespace.name": newString("default"),
+				},
+				Tags: []string{"active"},
+			},
+		}, server.acceptedDims)
+		require.Equal(t, []string{http.MethodPut}, server.methods)
+		require.Equal(t, []string{"/v2/dimension/k8s.pod.uid/pod-123"}, server.paths)
+		require.NotContains(t, server.requestBodies[0], "key")
+		require.NotContains(t, server.requestBodies[0], "value")
+		require.EqualValues(t, 1, server.requestCount.Load())
+	})
+
+	t.Run("does not merge patch and replacement updates for the same dimension", func(t *testing.T) {
+		server.reset()
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:  "k8s.pod.uid",
+			Value: "pod-456",
+			Properties: map[string]*string{
+				"patch.property": newString("patch"),
+			},
+		}))
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:  "k8s.pod.uid",
+			Value: "pod-456",
+			Properties: map[string]*string{
+				"k8s.pod.name": newString("test-pod"),
+			},
+			Replace: true,
+		}))
+
+		server.handleRequest()
+		server.handleRequest()
+
+		require.ElementsMatch(t, []string{http.MethodPatch, http.MethodPut}, server.methods)
+		require.ElementsMatch(t, []string{
+			"/v2/dimension/k8s.pod.uid/pod-456/_/sfxagent",
+			"/v2/dimension/k8s.pod.uid/pod-456",
+		}, server.paths)
+		require.ElementsMatch(t, []dim{
+			{
+				Key:   "k8s.pod.uid",
+				Value: "pod-456",
+				Properties: map[string]*string{
+					"patch.property": newString("patch"),
+				},
+			},
+			{
+				Key:   "k8s.pod.uid",
+				Value: "pod-456",
+				Properties: map[string]*string{
+					"k8s.pod.name": newString("test-pod"),
+				},
+				Tags: []string{},
+			},
+		}, server.acceptedDims)
+		require.EqualValues(t, 2, server.requestCount.Load())
 	})
 
 	t.Run("same dimension with different values", func(t *testing.T) {
@@ -256,6 +373,38 @@ func TestDimensionClient(t *testing.T) {
 		require.EqualValues(t, 2, server.requestCount.Load())
 	})
 
+	t.Run("retry replacement dimension update on server error", func(t *testing.T) {
+		server.reset()
+		server.respCode = http.StatusInternalServerError
+
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:  "k8s.node.uid",
+			Value: "node-456",
+			Properties: map[string]*string{
+				"k8s.node.name": newString("worker-1"),
+			},
+			Replace: true,
+		}))
+		server.handleRequest()
+		require.Empty(t, server.acceptedDims)
+
+		server.respCode = http.StatusOK
+		server.handleRequest()
+
+		require.Equal(t, []dim{
+			{
+				Key:   "k8s.node.uid",
+				Value: "node-456",
+				Properties: map[string]*string{
+					"k8s.node.name": newString("worker-1"),
+				},
+				Tags: []string{},
+			},
+		}, server.acceptedDims)
+		require.Equal(t, []string{http.MethodPut}, server.methods)
+		require.EqualValues(t, 2, server.requestCount.Load())
+	})
+
 	t.Run("does not retry 4xx responses", func(t *testing.T) {
 		server.reset()
 		server.respCode = http.StatusBadRequest
@@ -275,6 +424,32 @@ func TestDimensionClient(t *testing.T) {
 		server.respCode = http.StatusOK
 
 		// there should be no retries
+		require.EqualValues(t, 1, server.requestCount.Load())
+	})
+
+	t.Run("does not retry replacement dimension update 400 responses without dropping tags", func(t *testing.T) {
+		server.reset()
+		server.respCode = http.StatusBadRequest
+
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:  "k8s.node.uid",
+			Value: "node-789",
+			Properties: map[string]*string{
+				"k8s.node.name": newString("worker-2"),
+			},
+			Tags: map[string]bool{
+				"active": true,
+			},
+			Replace: true,
+		}))
+		server.handleRequest()
+
+		server.respCode = http.StatusOK
+		time.Sleep(3 * client.sendDelay)
+		if server.requestCount.Load() > 1 {
+			server.handleRequest()
+		}
+		require.Empty(t, server.acceptedDims)
 		require.EqualValues(t, 1, server.requestCount.Load())
 	})
 

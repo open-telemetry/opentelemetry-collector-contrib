@@ -166,7 +166,8 @@ var MetricsInfo = metricsInfo{
 		Name: "memcached.bytes",
 	},
 	MemcachedCommands: metricInfo{
-		Name: "memcached.commands",
+		Name:       "memcached.commands",
+		Attributes: []string{"command"},
 	},
 	MemcachedConnectionsCurrent: metricInfo{
 		Name: "memcached.connections.current",
@@ -175,7 +176,8 @@ var MetricsInfo = metricsInfo{
 		Name: "memcached.connections.total",
 	},
 	MemcachedCPUUsage: metricInfo{
-		Name: "memcached.cpu.usage",
+		Name:       "memcached.cpu.usage",
+		Attributes: []string{"state"},
 	},
 	MemcachedCurrentItems: metricInfo{
 		Name: "memcached.current_items",
@@ -184,13 +186,16 @@ var MetricsInfo = metricsInfo{
 		Name: "memcached.evictions",
 	},
 	MemcachedNetwork: metricInfo{
-		Name: "memcached.network",
+		Name:       "memcached.network",
+		Attributes: []string{"direction"},
 	},
 	MemcachedOperationHitRatio: metricInfo{
-		Name: "memcached.operation_hit_ratio",
+		Name:       "memcached.operation_hit_ratio",
+		Attributes: []string{"operation"},
 	},
 	MemcachedOperations: metricInfo{
-		Name: "memcached.operations",
+		Name:       "memcached.operations",
+		Attributes: []string{"type", "operation"},
 	},
 	MemcachedThreads: metricInfo{
 		Name: "memcached.threads",
@@ -212,7 +217,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricMemcachedBytes struct {

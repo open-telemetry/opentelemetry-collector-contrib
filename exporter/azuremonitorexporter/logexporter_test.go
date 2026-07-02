@@ -220,7 +220,7 @@ func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChann
 		transportChannel,
 		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
-		newMetricPacker(zap.NewNop()),
+		newMetricPacker(zap.NewNop(), nil),
 	}
 }
 

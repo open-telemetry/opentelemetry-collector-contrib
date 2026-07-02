@@ -17,6 +17,7 @@ var (
 	api = windows.NewLazySystemDLL("wevtapi.dll")
 
 	subscribeProc             SyscallProc = api.NewProc("EvtSubscribe")
+	queryProc                 SyscallProc = api.NewProc("EvtQuery")
 	nextProc                  SyscallProc = api.NewProc("EvtNext")
 	renderProc                SyscallProc = api.NewProc("EvtRender")
 	closeProc                 SyscallProc = api.NewProc("EvtClose")
@@ -84,6 +85,13 @@ const (
 	// The properties are returned in the order defined in the EVT_SYSTEM_PROPERTY_ID enumeration.
 	// https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_render_context_flags
 	EvtRenderContextSystem uint32 = 1
+)
+
+const (
+	// EvtQueryChannelPath specifies that the query is against one or more channels.
+	EvtQueryChannelPath uint32 = 1
+	// EvtQueryFilePath specifies that the query is against one or more log files
+	EvtQueryFilePath uint32 = 2
 )
 
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
@@ -186,5 +194,15 @@ var evtOpenSession = func(loginClass uint32, login *EvtRPCLogin, timeout, flags 
 	if handle == 0 {
 		return handle, e1
 	}
+	return handle, nil
+}
+
+// evtQuery is the direct syscall implementation of EvtQuery (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtquery)
+var evtQuery = func(session uintptr, path, query *uint16, flags uint32) (uintptr, error) {
+	handle, _, err := queryProc.Call(session, uintptr(unsafe.Pointer(path)), uintptr(unsafe.Pointer(query)), uintptr(flags))
+	if !errors.Is(err, ErrorSuccess) {
+		return 0, err
+	}
+
 	return handle, nil
 }

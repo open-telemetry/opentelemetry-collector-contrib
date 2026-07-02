@@ -9,36 +9,53 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/custom"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// valueTransformer applies value-level normalization after an attribute is
-// renamed. Sources that do not need value normalization may leave this nil.
-// TODO [kylehounslow]: Review interface vs. typed function
-type valueTransformer interface {
-	TransformValue(targetKey, value string) string
+// valueTransformer applies source-specific value-level normalization into
+// dst. A nil transformer falls back to a plain src.CopyTo(dst).
+type valueTransformer func(targetKey string, src, dst pcommon.Value)
+
+// attributeAggregator reconstructs structured attributes from multiple
+// flat keys (e.g. flattened OpenInference messages → JSON string).
+type attributeAggregator interface {
+	AggregateAttributes(attrs pcommon.Map, removeOriginals, overwrite bool) bool
 }
 
 // sourceNormalizer holds per-source state used during normalization.
 type sourceNormalizer struct {
 	lookupTable     map[string]string
 	transformValue  valueTransformer
+	aggregators     []attributeAggregator
 	removeOriginals bool
 	overwrite       bool
 }
 
 // newSourceNormalizer wires up a sourceNormalizer from a validated Source
-// config. Unknown source names produce a no-op normalizer; Config validation
-// rejects them upstream.
+// config. Built-in source names use pre-defined mapping tables; any other
+// name is a user-defined source driven by the config's Mappings and
+// ValueMappings fields.
 func newSourceNormalizer(src Source) sourceNormalizer {
 	sn := sourceNormalizer{
 		removeOriginals: src.RemoveOriginals,
 		overwrite:       src.Overwrite,
 	}
-	if src.Name == SourceOpenInference {
+	switch src.Name {
+	case SourceOpenInference:
 		sn.lookupTable = openinference.LookupTable
-		sn.transformValue = openinference.Transformer{}
+		sn.transformValue = openinference.Transform
+		sn.aggregators = []attributeAggregator{openinference.MessageAggregator{}}
+	case SourceOpenLLMetry:
+		sn.lookupTable = openllmetry.LookupTable
+		sn.transformValue = openllmetry.Transform
+	default:
+		sn.lookupTable = src.Mappings
+		if len(src.ValueMappings) > 0 {
+			sn.transformValue = custom.Transform(src.ValueMappings)
+		}
 	}
 	return sn
 }
@@ -83,6 +100,16 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 // normalizeAttributes applies the source's rename rules to attrs. It returns
 // true if at least one attribute was written.
 func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
+	wrote := false
+
+	// Phase 1: aggregators (reconstruct structured data from flat keys)
+	for _, agg := range sn.aggregators {
+		if agg.AggregateAttributes(attrs, sn.removeOriginals, sn.overwrite) {
+			wrote = true
+		}
+	}
+
+	// Phase 2: simple key renames
 	type rename struct {
 		from string
 		to   string
@@ -97,10 +124,9 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 	})
 
 	if len(renames) == 0 {
-		return false
+		return wrote
 	}
 
-	wrote := false
 	for _, r := range renames {
 		val, ok := attrs.Get(r.from)
 		if !ok {
@@ -111,17 +137,14 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 			continue
 		}
 
-		switch val.Type() {
-		case pcommon.ValueTypeStr:
-			dest.SetStr(sn.applyValueTransform(r.to, val.Str()))
-		case pcommon.ValueTypeInt:
-			dest.SetInt(val.Int())
-		case pcommon.ValueTypeDouble:
-			dest.SetDouble(val.Double())
-		case pcommon.ValueTypeBool:
-			dest.SetBool(val.Bool())
-		default:
-			val.CopyTo(dest)
+		if !otelsemconv.Coerce(r.to, val, dest) {
+			if !existed {
+				attrs.Remove(r.to)
+			}
+			continue
+		}
+		if sn.transformValue != nil {
+			sn.transformValue(r.to, dest, dest)
 		}
 		wrote = true
 
@@ -130,12 +153,4 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		}
 	}
 	return wrote
-}
-
-// applyValueTransform runs the per-source value transformer if one is set.
-func (sn *sourceNormalizer) applyValueTransform(targetKey, value string) string {
-	if sn.transformValue == nil {
-		return value
-	}
-	return sn.transformValue.TransformValue(targetKey, value)
 }

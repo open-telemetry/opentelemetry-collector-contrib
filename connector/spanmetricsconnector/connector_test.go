@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
@@ -666,11 +667,11 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("ab", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := c.buildKey("a", span1, nil, pcommon.NewMap(), false)
+	k1 := c.buildKey("a", span1, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
@@ -686,7 +687,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key(""), k0)
 }
 
@@ -699,7 +700,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
 
@@ -712,7 +713,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []pdatautil.Dimension
+		optionalDims    dimensionList
 		resourceAttrMap map[string]any
 		spanAttrMap     map[string]any
 		wantKey         string
@@ -723,50 +724,98 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo", Value: &defaultFoo},
-			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
+			}},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			spanAttrMap: map[string]any{
 				"foo": 100,
 			},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:100",
+		},
+		{
+			name: "name and glob dimensions match attributes at both span and resource",
+			optionalDims: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			spanAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": "200",
+				"db.system":   "postgres",
+			},
+			resourceAttrMap: map[string]any{
+				"db.name": "users",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000http.method:GET\u0000db.system:postgres\u0000db.name:users",
+		},
+		{
+			name:         "span attribute wins over resource attribute on the same glob-matched key",
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("env")}},
+			spanAttrMap: map[string]any{
+				"env": "prod",
+			},
+			resourceAttrMap: map[string]any{
+				"env": "dev",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000env:prod",
+		},
+		{
+			name:         "no matching attribute: glob contributes nothing",
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("db.*")}},
+			spanAttrMap: map[string]any{
+				"http.method": "GET",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+		},
+		{
+			name: "two globs match signle attribute, single value added",
+			optionalDims: dimensionList{
+				globDimensions: []glob.Glob{
+					glob.MustCompile("db.*"),
+					glob.MustCompile("*.name"),
+				},
+			},
+			spanAttrMap: map[string]any{
+				"db.name": "users",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000db.name:users",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -775,8 +824,166 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			key := c.buildKey("ab", span0, tc.optionalDims, resAttr, false)
+			key := c.buildKey("ab", span0, dimensionList{}, tc.optionalDims, resAttr, false)
 			assert.Equal(t, metrics.Key(tc.wantKey), key)
+		})
+	}
+}
+
+func TestBuildAttributesWithDimensions(t *testing.T) {
+	tests := []struct {
+		name               string
+		spanAttrMap        map[string]any
+		resourceAttrMap    map[string]any
+		dimensions         dimensionList
+		optionalDimensions dimensionList
+		want               map[string]string
+	}{
+		{
+			name:        "no additional dimensions - common attributes only",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions:         dimensionList{},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+			},
+		},
+		{
+			name:        "named dimension added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+			},
+		},
+		{
+			name:        "named dimension and glob dimensions added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+				"db.name":            "test",
+				"db.system":          "postgres",
+			},
+		},
+		{
+			name:        "both common and optional dimensions are added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			optionalDimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.status"}},
+				globDimensions: []glob.Glob{glob.MustCompile("env")},
+			},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+				"http.status":        "200",
+				"db.name":            "test",
+				"db.system":          "postgres",
+				"env":                "dev",
+			},
+		},
+		{
+			name: "span attributes precede resource attributes",
+			spanAttrMap: map[string]any{
+				"env": "prod",
+			},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "env"}},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"env":                "prod",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: Config{}, instanceID: instanceID}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+			assert.NoError(t, span.Attributes().FromRaw(tt.spanAttrMap))
+			resAttr := pcommon.NewMap()
+			assert.NoError(t, resAttr.FromRaw(tt.resourceAttrMap))
+
+			attrs := p.buildAttributes("test_service", span, resAttr, tt.dimensions, tt.optionalDimensions, pcommon.NewInstrumentationScope(), false)
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.AsString())
+			}
 		})
 	}
 }
@@ -2342,7 +2549,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute when enabled
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2657,7 +2864,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute that's always added
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2713,7 +2920,7 @@ func TestBuildAttributes_AdjustedCount(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
 
 			val, ok := attrs.Get(metricAttrSamplingMethod)
 			assert.Equal(t, tt.expectAttribute, ok, "sampling.method attribute presence")

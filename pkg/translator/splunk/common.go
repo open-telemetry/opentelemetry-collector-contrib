@@ -58,12 +58,15 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
+	// Name informs the exporter to map the log record event name field to a specific HEC field.
+	Name string `mapstructure:"name"`
 }
 
 func DefaultOtelToHecFields() OtelToHecFields {
 	return OtelToHecFields{
 		SeverityText:   splunk.DefaultSeverityTextLabel,
 		SeverityNumber: splunk.DefaultSeverityNumberLabel,
+		Name:           splunk.DefaultNameLabel,
 	}
 }
 

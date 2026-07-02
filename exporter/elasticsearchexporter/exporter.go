@@ -54,13 +54,19 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 	}
 
 	allowedMappingModes := cfg.allowedMappingModes()
+	defaultMappingMode := MappingOTel
+
+	if _, ok := allowedMappingModes[MappingOTel.String()]; !ok && len(cfg.Mapping.AllowedModes) > 0 {
+		defaultMappingMode = allowedMappingModes[canonicalMappingModeName(cfg.Mapping.AllowedModes[0])]
+	}
+
 	exporter := &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
-		defaultMappingMode:  MappingOTel,
+		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
 		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
 		telemetryBuilder:    telemetryBuilder,
@@ -454,14 +460,15 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	if ctrl.noindex {
 		return nil
 	}
-	index, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
+	routerIndex, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
 	docID := ctrl.docID
-	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
+	index, err := encoder.encodeSpanEvent(ec, span, spanEvent, routerIndex, buf.Buffer)
+	if err != nil || buf.Buffer.Len() == 0 {
 		buf.Recycle()
 		return err
 	}

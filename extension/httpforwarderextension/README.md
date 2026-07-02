@@ -4,7 +4,6 @@
 This extension accepts HTTP requests, optionally adds headers to them and forwards them.
 The RequestURIs of the original requests are preserved by the extension.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -120,14 +119,13 @@ func (s *grpcService) emitMetrics(sm pmetric.ScopeMetrics, field *pb.TelemetryFi
 	if field.ValueByType != nil && len(field.Fields) == 0 && !strings.HasPrefix(currentPath, "keys") {
 		m := sm.Metrics().AppendEmpty()
 		cleanName := strings.TrimPrefix(currentPath, "content.")
-		metricLabels := cloneCtxBag(ctxBag)
 
 		if strVal, ok := field.ValueByType.(*pb.TelemetryField_StringValue); ok {
 			// Step/Info metrics for string states (e.g., Up/Down).
-			createStepMetric(m, cleanName, strVal.StringValue, timestamp, metricLabels)
+			createStepMetric(m, cleanName, strVal.StringValue, timestamp, ctxBag)
 		} else {
 			// Numeric metrics for counters and gauges.
-			createNumericMetric(m, cleanName, getNumericValue(field), timestamp, nil, metricLabels)
+			createNumericMetric(m, cleanName, getNumericValue(field), timestamp, nil, ctxBag)
 		}
 	}
 
@@ -207,12 +205,6 @@ func formatValueToString(f *pb.TelemetryField) string {
 		return strconv.FormatInt(v.Sint64Value, 10)
 	}
 	return ""
-}
-
-func cloneCtxBag(in map[string]string) map[string]string {
-	out := make(map[string]string, len(in))
-	maps.Copy(in, out)
-	return out
 }
 
 func applyCtxBag(attrs pcommon.Map, ctx map[string]string) {

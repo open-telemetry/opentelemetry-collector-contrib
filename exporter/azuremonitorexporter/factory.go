@@ -13,9 +13,11 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -46,13 +48,23 @@ type factory struct {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
+		ClientConfig:        clientConfig,
 		MaxBatchSize:        1024,
 		MaxBatchInterval:    10 * time.Second,
 		SpanEventsEnabled:   false,
 		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ShutdownTimeout:     1 * time.Second,
 		CustomEventsEnabled: false,
+		TagMappings: TagMappingsConfig{
+			CloudRoleInstance:  []string{string(conventions.ServiceInstanceIDKey)},
+			ApplicationVersion: []string{string(conventions.ServiceVersionKey)},
+		},
 	}
 }
 
@@ -131,7 +143,7 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 		return &azureMonitorExporter{
 			config:   conf,
 			logger:   set.Logger,
-			packer:   newMetricPacker(set.Logger),
+			packer:   newMetricPacker(set.Logger, conf),
 			settings: set.TelemetrySettings,
 		}
 	})

@@ -11,10 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed/components"
 )
 
 func TestNewInProcessPipeline(t *testing.T) {
-	factories, err := Components()
+	factories, err := components.All()
 	assert.NoError(t, err)
 	sender := NewOTLPTraceDataSender(DefaultHost, testutil.GetAvailablePort(t))
 	receiver := NewOTLPDataReceiver(DefaultOTLPPort)

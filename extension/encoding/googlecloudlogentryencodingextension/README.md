@@ -3,7 +3,6 @@
 
 This extension can be used to unmarshall a [Cloud Logging LogEntry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) message type.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

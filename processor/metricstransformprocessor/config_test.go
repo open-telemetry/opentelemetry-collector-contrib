@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
@@ -128,9 +129,10 @@ func TestLoadConfig(t *testing.T) {
 							Include:   "^regexp (?P<my_label>.*)$",
 							MatchType: "regexp",
 						},
-						Action:       "combine",
-						NewName:      "combined_metric_name",
-						SubmatchCase: "lower",
+						Action:          "combine",
+						NewName:         "combined_metric_name",
+						AggregationType: aggregateutil.Sum,
+						SubmatchCase:    "lower",
 					},
 					{
 						MetricIncludeFilter: filterConfig{

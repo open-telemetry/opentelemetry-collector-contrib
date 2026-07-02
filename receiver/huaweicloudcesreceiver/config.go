@@ -6,6 +6,7 @@ package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetr
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
@@ -82,7 +83,14 @@ type huaweiSessionConfig struct {
 var _ component.Config = (*Config)(nil)
 
 // These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
-var validPeriods = []int32{1, 300, 1200, 3600, 14400, 86400}
+var validPeriods = map[int32]model.ShowMetricDataRequestPeriod{
+	1:     model.GetShowMetricDataRequestPeriodEnum().E_1,
+	300:   model.GetShowMetricDataRequestPeriodEnum().E_300,
+	1200:  model.GetShowMetricDataRequestPeriodEnum().E_1200,
+	3600:  model.GetShowMetricDataRequestPeriodEnum().E_3600,
+	14400: model.GetShowMetricDataRequestPeriodEnum().E_14400,
+	86400: model.GetShowMetricDataRequestPeriodEnum().E_86400,
+}
 
 // These valid filters are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
 var validFilters = map[string]model.ShowMetricDataRequestFilter{
@@ -103,8 +111,8 @@ func (config *Config) Validate() error {
 	if config.ProjectID == "" {
 		err = multierr.Append(err, errMissingProjectID)
 	}
-	if index := slices.Index(validPeriods, config.Period); index == -1 {
-		err = multierr.Append(err, fmt.Errorf("invalid period: got %d; must be one of %v", config.Period, validPeriods))
+	if _, ok := validPeriods[config.Period]; !ok {
+		err = multierr.Append(err, fmt.Errorf("invalid period: got %d; must be one of %v", config.Period, slices.Sorted(maps.Keys(validPeriods))))
 	}
 	if _, ok := validFilters[config.Filter]; !ok {
 		var validFiltersSlice []string

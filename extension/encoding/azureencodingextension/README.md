@@ -3,7 +3,6 @@
 
 This extension is designed for unmarshaling logs/traces/metrics encoded in specific format produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

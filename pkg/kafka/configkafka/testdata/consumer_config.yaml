@@ -12,6 +12,10 @@ kafka/full:
   max_fetch_wait: 1s
   max_partition_fetch_size: 4096
   group_rebalance_strategy: cooperative-sticky
+kafka/group_rebalance_strategies:
+  group_rebalance_strategies:
+    - cooperative-sticky
+    - my_balancer
 kafka/zero_min_fetch_size:
   min_fetch_size: 0
   max_fetch_size: 1048576
@@ -25,3 +29,11 @@ kafka/invalid_fetch_size:
 kafka/negative_min_fetch_size:
   min_fetch_size: -100
   max_fetch_size: 1048576
+kafka/conflicting_group_rebalance_strategies:
+  group_rebalance_strategy: cooperative-sticky
+  group_rebalance_strategies:
+    - my_balancer
+kafka/empty_group_rebalance_strategies_entry:
+  group_rebalance_strategies:
+    - sticky
+    - ""

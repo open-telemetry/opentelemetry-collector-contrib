@@ -124,28 +124,16 @@ linters:
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
       - linters:
           - forbidigo
-        path: connector/servicegraphconnector/
-      - linters:
-          - forbidigo
         path: exporter/awsemfexporter/
       - linters:
           - forbidigo
         path: exporter/awsxrayexporter/
       - linters:
           - forbidigo
-        path: exporter/clickhouseexporter/
-      - linters:
-          - forbidigo
-        path: extension/encoding/awslogsencodingextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/datadogreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
@@ -193,6 +181,11 @@ linters:
 
             - pkg: sigs.k8s.io/yaml
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+
+            # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
+            # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+            - pkg: github.com/aws/aws-sdk-go/
+              desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
 
         semconv:
           list-mode: lax
@@ -247,6 +240,7 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.39.0
             - go.opentelemetry.io/otel/semconv/v1.40.0
             - go.opentelemetry.io/otel/semconv/v1.41.0
+            - go.opentelemetry.io/otel/semconv/v1.42.0
 
         semconv-in-test:
           list-mode: lax
@@ -266,6 +260,8 @@ linters:
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
             - "!**/*_test.go"
+
+
 
     forbidigo:
       analyze-types: true

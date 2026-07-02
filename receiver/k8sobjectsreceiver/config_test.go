@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 						Name:          "pods",
 						Mode:          k8sinventory.PullMode,
 						Interval:      time.Hour,
+						InitialDelay:  10 * time.Minute,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
 					},
@@ -66,6 +67,7 @@ func TestLoadConfig(t *testing.T) {
 						Mode:            k8sinventory.PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
+						InitialDelay:    5 * time.Minute,
 					},
 					{
 						Name:     "events",
@@ -99,6 +101,27 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "top_level_interval"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
+				Interval: 30 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:     "pods",
+						Mode:     k8sinventory.PullMode,
+						Interval: 30 * time.Minute, // resolved from top-level during Validate
+					},
+					{
+						Name:     "nodes",
+						Mode:     k8sinventory.PullMode,
+						Interval: 5 * time.Minute, // per-resource override
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -114,13 +137,13 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
-			assert.Equal(t, tt.expected.Objects, cfg.Objects)
 
 			err = cfg.Validate()
 			if tt.expected == nil {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expected.Objects, cfg.Objects)
 			}
 		})
 	}
@@ -128,9 +151,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		desc        string
-		cfg         *Config
-		expectedErr string
+		desc               string
+		cfg                *Config
+		expectedErr        string
+		expectedInterval   time.Duration
+		expectZeroInterval bool
 	}{
 		{
 			desc: "invalid mode",
@@ -188,6 +213,143 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "top-level interval is used when per-resource interval is unset",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  30 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: k8sinventory.PullMode,
+					},
+				},
+			},
+			expectedInterval: 30 * time.Minute,
+		},
+		{
+			desc: "per-resource interval takes precedence over top-level interval",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  30 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:     "pods",
+						Mode:     k8sinventory.PullMode,
+						Interval: 5 * time.Minute,
+					},
+				},
+			},
+			expectedInterval: 5 * time.Minute,
+		},
+		{
+			desc: "top-level interval has no effect on watch-mode objects",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  30 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "events",
+						Mode: k8sinventory.WatchMode,
+					},
+				},
+			},
+			expectZeroInterval: true,
+		},
+		{
+			desc: "negative top-level interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  -1 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: k8sinventory.PullMode,
+					},
+				},
+			},
+			expectedErr: "interval must not be negative",
+		},
+		{
+			desc: "negative per-resource interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:     "pods",
+						Mode:     k8sinventory.PullMode,
+						Interval: -1 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "objects[*].interval must not be negative",
+		},
+		{
+			desc: "initial delay with watch mode is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.WatchMode,
+						InitialDelay: time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay can only be used with pull mode",
+		},
+		{
+			desc: "negative initial delay is allowed",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						InitialDelay: -time.Second,
+					},
+				},
+			},
+		},
+		{
+			desc: "initial delay equal to interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						Interval:     10 * time.Minute,
+						InitialDelay: 10 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay must be less than interval",
+		},
+		{
+			desc: "initial delay greater than top-level interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  10 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:         "pods",
+						Mode:         k8sinventory.PullMode,
+						InitialDelay: 11 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "initial_delay must be less than interval",
+		},
 	}
 
 	for _, tt := range tests {
@@ -198,6 +360,12 @@ func TestValidate(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+			if tt.expectedInterval != 0 {
+				assert.Equal(t, tt.expectedInterval, tt.cfg.Objects[0].Interval)
+			}
+			if tt.expectZeroInterval {
+				assert.Zero(t, tt.cfg.Objects[0].Interval)
+			}
 		})
 	}
 }
@@ -219,6 +387,7 @@ func TestDeepCopy(t *testing.T) {
 				FieldSelector:    "status.phase=Running",
 				LabelSelector:    "environment in (production),tier in (frontend)",
 				Interval:         time.Hour,
+				InitialDelay:     10 * time.Minute,
 				ResourceVersion:  "1",
 				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
 				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
@@ -244,6 +413,7 @@ func TestDeepCopy(t *testing.T) {
 			actual.FieldSelector = "changed"
 			actual.LabelSelector = "changed"
 			actual.Interval = time.Minute
+			actual.InitialDelay = time.Second
 			actual.ResourceVersion = "changed"
 			actual.ExcludeWatchType[0] = apiWatch.Deleted
 			actual.exclude[apiWatch.Bookmark] = true

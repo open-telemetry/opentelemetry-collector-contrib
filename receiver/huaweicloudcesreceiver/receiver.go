@@ -239,7 +239,7 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 				Dim1:       internal.GetDimension(infoList.Dimensions, 1),
 				Dim2:       internal.GetDimension(infoList.Dimensions, 2),
 				Dim3:       internal.GetDimension(infoList.Dimensions, 3),
-				Period:     rcvr.config.Period,
+				Period:     validPeriods[rcvr.config.Period],
 				Filter:     validFilters[rcvr.config.Filter],
 				From:       from.UnixMilli(),
 				To:         to.UnixMilli(),

@@ -127,7 +127,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
@@ -154,7 +154,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 429
+	attributes["http.response.status_code"] = 429
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
@@ -883,7 +883,7 @@ func TestOriginEks(t *testing.T) {
 	attrs.PutStr("cloud.account.id", "123456789")
 	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
@@ -1992,7 +1992,7 @@ func constructDefaultResource() pcommon.Resource {
 	attrs.PutStr("service.version", "semver:1.1.4")
 	attrs.PutStr("container.name", "signup_aggregator")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")

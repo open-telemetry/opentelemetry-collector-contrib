@@ -14,10 +14,10 @@ import (
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	logsconfig "github.com/DataDog/datadog-agent/comp/logs/agent/config"
+	pkgconfigcreate "github.com/DataDog/datadog-agent/pkg/config/create"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
-	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
 	zlib "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zlib"
@@ -142,12 +142,20 @@ func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, 
 // This function uses the options pattern to allow different modules to configure
 // the component with their specific needs.
 func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
-	pkgconfig := viperconfig.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
+	pkgconfig := pkgconfigcreate.NewConfig("DD")
+
+	// Register all standard agent config keys so that subsequent Set calls work
+	// correctly with the nodetreemodel config backend.
+	pkgconfigsetup.InitConfig(pkgconfig)
 
 	// Apply all configuration options
 	for _, opt := range options {
 		opt(pkgconfig)
 	}
+
+	// Mark the config as ready for use. Without this, nodetreemodel silently
+	// returns zero values for all Get* calls (reads are blocked before BuildSchema).
+	pkgconfig.BuildSchema()
 
 	return pkgconfig
 }
@@ -174,10 +182,24 @@ func WithForwarderConfig() ConfigOption {
 	}
 }
 
+// WithCustomConfig sets an arbitrary key in the Datadog agent config.
+func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set(key, value, source)
+	}
+}
+
+// WithLoggingConfig sets logging_frequency to avoid a divide-by-zero panic in the agent logger.
+func WithLoggingConfig() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("logging_frequency", 1, pkgconfigmodel.SourceDefault)
+	}
+}
+
 // WithLogsEnabled enables logs for agent config
 func WithLogsEnabled() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceAgentRuntime)
 	}
 }
 
@@ -208,7 +230,6 @@ func WithLogsDefaults() ConfigOption {
 		pkgconfig.Set("logs_config.sender_recovery_interval", pkgconfigsetup.DefaultForwarderRecoveryInterval, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.stop_grace_period", 30, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.use_v2_api", true, pkgconfigmodel.SourceDefault)
-		pkgconfig.SetKnown("logs_config.dev_mode_no_ssl")
 		// add logs config pipelines config value, see https://github.com/DataDog/datadog-agent/pull/31190
 		logsPipelines := min(4, runtime.GOMAXPROCS(0))
 		pkgconfig.Set("logs_config.pipelines", logsPipelines, pkgconfigmodel.SourceDefault)
@@ -238,10 +259,10 @@ func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
-// WithCustomConfig allows setting arbitrary configuration values
-func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
+// WithTLSSetting propagates tls.insecure_skip_verify into the DD-agent forwarder's TLS config
+func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set(key, value, source)
+		setTLSSetting(cfg, pkgconfig)
 	}
 }
 
@@ -267,7 +288,15 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	for v := range strings.SplitSeq(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
-	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+	// Use SourceAgentRuntime because nodetreemodel's BuildSchema rebuilds the SourceEnvVar layer
+	// from actual DD_* env vars, which would erase a manually-set SourceEnvVar value.
+	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceAgentRuntime)
+}
+
+func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
+	if cfg.TLS.InsecureSkipVerify {
+		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
+	}
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend

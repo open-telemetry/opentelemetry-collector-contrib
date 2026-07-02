@@ -87,84 +87,72 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisPowerstateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisPowerstateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusHealthDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusStateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisStatusStateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanReadingDataPoint(ts, 1, "chassis.id-val", "fan.name-val", "fan.reading_units-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanReadingDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2", "fan.reading_units-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusHealthDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusStateDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanStatusStateDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPowerstateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPowerstateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusHealthDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemStatusHealthDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusStateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemStatusStateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureReadingDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordTemperatureReadingDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordTemperatureStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")

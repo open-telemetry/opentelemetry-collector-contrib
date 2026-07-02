@@ -8,6 +8,7 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -60,6 +61,27 @@ func TestScrape(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestAllMetricsDisabledScrape(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	disableAllMetricEnabledFlags(&cfg.Metrics)
+
+	scraper := newIisReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+
+	// Do not mock the watchers in this test, because if the metrics are all disabled,
+	// the scraper should not even attempt to create watchers
+
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, actualMetrics.MetricCount())
 }
 
 func TestScrapeFailure(t *testing.T) {
@@ -161,6 +183,35 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func disableAllMetricEnabledFlags(metricsConfig any) {
+	disableEnabledFieldsRecursively(reflect.ValueOf(metricsConfig))
+}
+
+func disableEnabledFieldsRecursively(v reflect.Value) {
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return
+		}
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := v.Type().Field(i)
+
+		if fieldType.Name == "Enabled" && field.Kind() == reflect.Bool && field.CanSet() {
+			field.SetBool(false)
+			continue
+		}
+
+		disableEnabledFieldsRecursively(field)
+	}
 }
 
 type mockPerfCounter struct {

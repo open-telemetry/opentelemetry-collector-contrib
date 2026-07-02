@@ -15,7 +15,7 @@ resourceLogs:
             stringValue: arn:aws:s3:::test-bucket
         - key: aws.s3.key
           value:
-            stringValue: test-file.txt
+            stringValue: test-file.txt.gz
     scopeLogs:
       - logRecords:
           - body:

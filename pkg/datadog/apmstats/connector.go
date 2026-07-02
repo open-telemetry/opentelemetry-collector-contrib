@@ -161,11 +161,11 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(ctx context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)
-	go c.run()
+	go c.run(ctx)
 	c.isStarted = true
 	return nil
 }
@@ -203,7 +203,7 @@ func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *traceToMetricConnector) run() {
+func (c *traceToMetricConnector) run(ctx context.Context) {
 	defer c.wg.Done()
 	for {
 		select {
@@ -221,8 +221,6 @@ func (c *traceToMetricConnector) run() {
 				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
 				continue
 			}
-			// APM stats as metrics
-			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
@@ -43,8 +44,20 @@ func createMetricsProcessor(
 		return nil, errors.New("configuration parsing error")
 	}
 
-	metricsProcessor, err := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
+		return nil, err
+	}
+
+	metricsProcessor, err := newCumulativeToDeltaProcessor(processorConfig, set.Logger, telemetryBuilder)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := telemetryBuilder.RegisterCumulativetodeltaStreamsTrackedCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(metricsProcessor.deltaCalculator.Streams())
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 

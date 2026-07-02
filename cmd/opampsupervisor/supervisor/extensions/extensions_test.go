@@ -285,6 +285,62 @@ func TestConfig_Unmarshal(t *testing.T) {
 	}
 }
 
+func TestConfig_Exists(t *testing.T) {
+	nopID := component.NewID(extensiontest.NopType)
+	namedNopID := component.MustNewIDWithName(extensiontest.NopType.String(), "myext")
+	cfg := nopConfig(t, nopID, namedNopID)
+
+	tests := []struct {
+		name string
+		cfg  Config
+		id   component.ID
+		want bool
+	}{
+		{
+			name: "id present",
+			cfg:  cfg,
+			id:   nopID,
+			want: true,
+		},
+		{
+			name: "named id present",
+			cfg:  cfg,
+			id:   namedNopID,
+			want: true,
+		},
+		{
+			name: "id missing",
+			cfg:  cfg,
+			id:   component.MustNewID("doesnotexist"),
+			want: false,
+		},
+		{
+			name: "zero-value id returns false even when configured",
+			cfg:  Config{{}: struct{}{}},
+			id:   component.ID{},
+			want: false,
+		},
+		{
+			name: "empty config",
+			cfg:  Config{},
+			id:   nopID,
+			want: false,
+		},
+		{
+			name: "nil config",
+			cfg:  nil,
+			id:   nopID,
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, tc.cfg.Exists(tc.id))
+		})
+	}
+}
+
 // TestConfig_TopLevelValidate confirms that confmap.Validate walks into a
 // Config map and reports the failing field path with the extension ID, so we
 // don't need to wrap per-extension errors ourselves.

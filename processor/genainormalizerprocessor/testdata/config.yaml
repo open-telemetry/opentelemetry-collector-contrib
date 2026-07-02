@@ -13,17 +13,95 @@ gen_ai_normalizer/openinference_only:
   sources:
     - name: openinference
 
+# Sources with only openllmetry defaults.
+gen_ai_normalizer/openllmetry_only:
+  sources:
+    - name: openllmetry
+
+# Both sources, applied in listed order.
+gen_ai_normalizer/openinference_and_openllmetry:
+  sources:
+    - name: openinference
+      remove_originals: true
+    - name: openllmetry
+      remove_originals: true
+
 # Explicit empty sources list: validation error.
 gen_ai_normalizer/empty_sources:
   sources: []
-
-# Unknown source name: validation error.
-gen_ai_normalizer/unknown_source:
-  sources:
-    - name: foobar
 
 # Same source listed twice: validation error.
 gen_ai_normalizer/duplicate_source:
   sources:
     - name: openinference
     - name: openinference
+
+# Single user-defined source with two mappings.
+gen_ai_normalizer/user_defined_only:
+  sources:
+    - name: my_vendor
+      remove_originals: true
+      mappings:
+        my_vendor.model: gen_ai.request.model
+        my_vendor.tokens.in: gen_ai.usage.input_tokens
+
+# Built-in source followed by a user-defined source.
+gen_ai_normalizer/user_defined_with_builtin:
+  sources:
+    - name: openinference
+      remove_originals: true
+    - name: my_vendor
+      remove_originals: true
+      mappings:
+        my_vendor.model: gen_ai.request.model
+
+# Two distinct user-defined sources in one config; built-in sources still
+# reject duplicates.
+gen_ai_normalizer/multiple_user_defined:
+  sources:
+    - name: vendor_a
+      remove_originals: true
+      mappings:
+        vendor_a.model: gen_ai.request.model
+    - name: vendor_b
+      remove_originals: true
+      overwrite: true
+      mappings:
+        vendor_b.model: gen_ai.request.model
+
+# User-defined source with empty mappings: validation error.
+gen_ai_normalizer/user_defined_empty_mappings:
+  sources:
+    - name: my_vendor
+
+# Built-in source with mappings set: validation error
+# (mappings only valid on user-defined sources).
+gen_ai_normalizer/openinference_with_mappings:
+  sources:
+    - name: openinference
+      mappings:
+        foo: gen_ai.request.model
+
+# User-defined source with a value_mappings key that is not a target
+# in mappings: validation error (the rule would never fire).
+gen_ai_normalizer/user_defined_unreachable_value_mapping:
+  sources:
+    - name: my_vendor
+      mappings:
+        my_vendor.model: gen_ai.request.model
+      value_mappings:
+        gen_ai.operation.name:
+          chat_completion: chat
+
+# User-defined source with mappings + value_mappings folding onto an OTel
+# GenAI enum target.
+gen_ai_normalizer/user_defined_with_value_mappings:
+  sources:
+    - name: my_vendor
+      remove_originals: true
+      mappings:
+        my_vendor.op: gen_ai.operation.name
+      value_mappings:
+        gen_ai.operation.name:
+          chat_completion: chat
+          tool_invoke: execute_tool

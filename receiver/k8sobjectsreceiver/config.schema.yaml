@@ -17,6 +17,9 @@ $defs:
         type: string
       group:
         type: string
+      initial_delay:
+        type: string
+        format: duration
       interval:
         type: string
         format: duration
@@ -38,6 +41,9 @@ properties:
     $ref: error_mode
   include_initial_state:
     type: boolean
+  interval:
+    type: string
+    format: duration
   k8s_leader_elector:
     x-pointer: true
     type: string

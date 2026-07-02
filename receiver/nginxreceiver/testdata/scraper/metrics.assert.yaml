@@ -1,0 +1,46 @@
+version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+          version: latest
+          metrics:
+            - name: nginx.connections_accepted
+              type: sum
+              unit: connections
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - value: 16630948
+            - name: nginx.connections_current
+              type: sum
+              unit: connections
+              temporality: cumulative
+              monotonic: false
+              datapoints:
+                - attributes:
+                    state: active
+                  value: 291
+                - attributes:
+                    state: reading
+                  value: 6
+                - attributes:
+                    state: waiting
+                  value: 106
+                - attributes:
+                    state: writing
+                  value: 179
+            - name: nginx.connections_handled
+              type: sum
+              unit: connections
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - value: 16630946
+            - name: nginx.requests
+              type: sum
+              unit: requests
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - value: 31070465

@@ -11,8 +11,6 @@ status:
   codeowners:
     active: [adrielp, crobert-1, TylerHelmuth]
 
-reaggregation_enabled: true
-
 feature_gates:
   - id: receiver.githubreceiver.UseCheckRunID
     description: >-
@@ -27,6 +25,7 @@ feature_gates:
     stage: beta
     from_version: "v0.151.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856
+    skip_strict_validation: true
 
 resource_attributes:
   vcs.owner.name:

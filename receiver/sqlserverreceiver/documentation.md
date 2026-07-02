@@ -220,6 +220,30 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.access.scan.rate
+
+Rate of access method scans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {scan}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
+
+### sqlserver.attention.rate
+
+Number of SQL attentions (client cancellation interrupts) received per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {attentions}/s | Gauge | Double | Development |
+
 ### sqlserver.computer.uptime
 
 Computer uptime.
@@ -363,6 +387,32 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
 
+### sqlserver.extent.operation.rate
+
+Rate of extent operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {extent}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.extent.operation.type | The type of extent allocation operation. | Str: ``allocated``, ``deallocated`` | Required | - |
+
+### sqlserver.ghost_record.skipped.rate
+
+Rate of ghosted records skipped during scans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {record}/s | Gauge | Double | Development |
+
 ### sqlserver.index.search.rate
 
 Total number of index searches.
@@ -370,6 +420,62 @@ Total number of index searches.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{searches}/s” | Gauge | Double | Development |
+
+### sqlserver.latch.superlatch.count
+
+Number of superlatches currently active.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {superlatch} | Gauge | Int | Development |
+
+### sqlserver.latch.superlatch.transition.rate
+
+Rate of superlatch promotions or demotions.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transition}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| transition.direction | The direction of a superlatch transition. | Str: ``promotion``, ``demotion`` | Recommended | - |
+
+### sqlserver.latch.wait.rate
+
+Number of latch waits per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {wait}/s | Gauge | Double | Development |
+
+### sqlserver.latch.wait_time.avg
+
+Average latch wait time.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+### sqlserver.latch.wait_time.total
+
+Total latch wait time.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### sqlserver.lock.timeout.rate
 
@@ -405,13 +511,61 @@ Total number of logouts.
 | ---- | ----------- | ---------- | --------- |
 | “{logouts}/s” | Gauge | Double | Development |
 
+### sqlserver.memory.area
+
+Amount of memory used by the SQL Server memory pool.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| memory.pool | The functional area of SQL Server memory. | Str: ``target``, ``total``, ``sql_cache``, ``optimizer``, ``connection``, ``granted_workspace``, ``max_workspace`` | Recommended | - |
+
+### sqlserver.memory.cache.object.count
+
+Number of cache objects in the SQL Server cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {object} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cache.state | The state of the cache objects. | Str: ``in_use``, ``total`` | Recommended | - |
+
 ### sqlserver.memory.grants.pending.count
 
 Total number of memory grants pending.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “{grants}” | Sum | Int | Cumulative | false | Development |
+| {grants} | Sum | Int | Cumulative | false | Development |
+
+### sqlserver.memory.page.count
+
+Number of pages in the SQL Server buffer pool.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| page.pool | The type of page pool in the SQL Server buffer manager. | Str: ``cache``, ``total``, ``target``, ``database``, ``stolen``, ``reserved``, ``free`` | Recommended | - |
 
 ### sqlserver.memory.usage
 
@@ -419,7 +573,7 @@ Total memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “KB” | Sum | Double | Cumulative | false | Development |
+| KB | Sum | Double | Cumulative | false | Development |
 
 ### sqlserver.os.wait.duration
 
@@ -438,6 +592,22 @@ This metric is only available when the receiver is configured to directly connec
 | wait.category | Category of the reason for a wait. | Any Str | Recommended | - |
 | wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str | Recommended | - |
 
+### sqlserver.page.allocation.rate
+
+Rate of page allocation operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.allocation.type | The type of page allocation operation. | Str: ``allocated``, ``deallocated``, ``mixed`` | Required | - |
+
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
 Number of free list stalls.
@@ -446,6 +616,22 @@ Number of free list stalls.
 | ---- | ----------- | ---------- | --------- |
 | “{stalls}/s” | Gauge | Int | Development |
 
+### sqlserver.page.compression.rate
+
+Rate of page compression operations.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.page.compression.type | The type of page compression operation. | Str: ``attempted``, ``succeeded`` | Required | - |
+
 ### sqlserver.page.lookup.rate
 
 Total number of page lookups.
@@ -453,6 +639,44 @@ Total number of page lookups.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
+
+### sqlserver.page.read_ahead.rate
+
+Rate of pages read from disk by the read-ahead manager.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page}/s | Gauge | Double | Development |
+
+### sqlserver.parameterization.rate
+
+Rate of auto-parameterization activity, broken down by result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {params}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.parameterization.result | The result of an auto-parameterization attempt by the SQL Server query optimizer. | Str: ``auto_attempted``, ``safe``, ``unsafe``, ``failed``, ``forced`` | Recommended | - |
+
+### sqlserver.plan.execution.rate
+
+Rate of plan executions, classified by plan guide result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {executions}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.plan.guidance.result | Whether a SQL plan execution successfully used a matching plan guide (guided) or did not (misguided). | Str: ``guided``, ``misguided`` | Recommended | - |
 
 ### sqlserver.processes.blocked
 
@@ -463,6 +687,14 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {processes} | Gauge | Int | Development |
+
+### sqlserver.recompilation.ratio
+
+Ratio of SQL recompilations to compilations, expressed as a percentage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### sqlserver.replica.data.rate
 
@@ -514,6 +746,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
 
+### sqlserver.scan_point.revalidation.rate
+
+Rate at which scan points needed to be revalidated.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {revalidate}/s | Gauge | Double | Development |
+
 ### sqlserver.table.count
 
 The number of tables.
@@ -544,6 +786,16 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
+
+### sqlserver.worktable.cache.hit_ratio
+
+Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
 
 ## Default Events
 
@@ -582,6 +834,7 @@ query sample
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
 | sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int | - |
 | sqlserver.blocking.start_time | Timestamp of when the current blocking wait began (ISO 8601 format). | Any Str | - |
+| sqlserver.client.app.name | Name of the client application that initiated the session. | Any Str | - |
 | sqlserver.context_info | Context information for the session, represented as a hexadecimal string. | Any Str | - |
 | sqlserver.command | SQL command type being executed. | Any Str | - |
 | sqlserver.cpu_time | CPU time consumed by the query, in seconds. | Any Double | - |
@@ -599,6 +852,8 @@ query sample
 | sqlserver.wait.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
+| sqlserver.session.duration | Total elapsed time in seconds the session has been actively executing requests. | Any Double | - |
+| sqlserver.session.start_time | Timestamp when the session was established (ISO 8601 format). | Any Str | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |
@@ -640,18 +895,21 @@ top query
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
 | sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
+| sqlserver.query.plan.creation_time | Timestamp of when the SQL query execution plan was compiled (ISO 8601 format). | Any Str | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| host.name | The host name of SQL Server | Any Str | true | - |
-| server.address | Name of the database host. | Any Str | false | - |
-| server.port | Server port number. | Any Int | false | - |
-| service.instance.id | A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server. | Any Str | true | - |
-| sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - |
-| sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - |
-| sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.name | The host name of SQL Server | Any Str | true | - | - |
+| server.address | Name of the database host. | Any Str | false | - | - |
+| server.port | Server port number. | Any Int | false | - | - |
+| service.instance.id | A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
+| sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
+| sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - | - |
+| sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
 
 ## Feature Gates
 

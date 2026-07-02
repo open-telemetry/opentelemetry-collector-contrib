@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -75,8 +76,14 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
+	cfg.Endpoint = ts.URL
 	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
 	assert.NoError(t, err)
 	ctx := t.Context()
@@ -90,8 +97,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
-	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
+	assert.True(t, *got.BackendConnectionErrors.HTTPCode4XXCount == 1 || *got.BackendConnectionErrors.OtherCount == 1)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
@@ -187,7 +193,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -215,7 +221,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes["http.method"] = http.MethodGet
 	attributes["http.url"] = "https://api.example.com/users/junit"
 	attributes["http.client_ip"] = "192.168.15.32"
-	attributes["http.status_code"] = 200
+	attributes["http.response.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

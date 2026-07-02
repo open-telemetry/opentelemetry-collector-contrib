@@ -41,10 +41,10 @@ The `awslambdareceiver` operates as follows:
 The receiver automatically detects the event source based on the Lambda invocation message format.
 Table below summarizes supported signals and their sources:
 
-| Signal  | Sources                          |
-|---------|----------------------------------|
-| Logs    | S3, CloudWatch Logs subscription |
-| Metrics | S3                               |
+| Signal  | Sources                                  |
+|---------|------------------------------------------|
+| Logs    | S3, CloudWatch Logs subscription, Custom |
+| Metrics | S3                                       |
 
 Sections below summarize how each event source is handled.
 
@@ -73,7 +73,7 @@ This metadata is added to the request context and can be accessed by any downstr
 > Static metadata such as `cloud.provider` are not available through `client.Info`.
 > These can be added using processors (for example, the resource processor).
 
-### CloudWatch Logs subscription
+### CloudWatch Logs subscription handling
 
 CloudWatch Logs events are handled in the following manner:
 
@@ -82,6 +82,34 @@ CloudWatch Logs events are handled in the following manner:
 - Decode payload using the configured encoding extension
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
+
+The following metadata is available through `client.Info` for CloudWatch Logs events.
+This metadata is added to the request context and can be accessed by any downstream component in the pipeline (for example, processors):
+
+| Metadata Key         | Description                |
+|----------------------|----------------------------|
+| cloud.account.id     | AWS account ID             |
+| aws.log.group.names  | CloudWatch log group name  |
+| aws.log.stream.names | CloudWatch log stream name |
+
+> [!NOTE]
+> Static metadata such as `cloud.provider` are not available through `client.Info`.
+> These can be added using processors (for example, the resource processor).
+
+### Custom event handling
+
+Events that are not recognized as S3 or CloudWatch Logs events are handled as custom events.
+For custom events, only the logs signal is supported.
+
+Custom events are handled in the following manner:
+
+- Receive the Lambda invocation payload
+- Decode the payload using the configured encoding extension 
+
+If an encoding extension is not configured, then the receiver will error out and return the error.
+
+The encoding used for custom events is configured through the `custom::encoding` option.
+See the [Configurations](#configurations) section for details.
 
 ## Deployment
 
@@ -211,10 +239,16 @@ See [Filter pattern syntax](https://docs.aws.amazon.com/AmazonCloudWatch/latest/
 
 The following receiver configuration parameters are supported.
 
-| Name                   | Description                                             |
-|:-----------------------|:--------------------------------------------------------|
-| `s3::encoding`         | Optional encoder to use for S3 event processing         | 
-| `cloudwatch::encoding` | Optional encoder to use for CloudWatch event processing | 
+| Name                    | Description                                                                                                                                      |
+|:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `s3::encoding`          | Optional encoder to use for S3 event processing                                                                                                  |
+| `s3::encodings`         | Optional list of path-based encoders for multi-format S3 routing (see [Multi-Format S3 Configuration](#multi-format-s3-configuration-encodings)) |
+| `s3::access_key_id`     | Optional static AWS access key ID for S3 access                                                                                                  |
+| `s3::secret_access_key` | Optional static AWS secret access key for S3 access                                                                                              |
+| `s3::session_token`     | Optional static AWS session token for S3 access                                                                                                  |
+| `cloudwatch::encoding`  | Optional encoder to use for CloudWatch event processing                                                                                          |
+| `custom::encoding`      | Optional encoder to use for custom event processing                                                                                              |
+| `failure_bucket_arn`    | Optional S3 bucket ARN holding failed Lambda records for replay                                                                                  | 
 
 Consider following notes on default behaviors:
 

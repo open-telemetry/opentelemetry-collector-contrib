@@ -11,10 +11,41 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
+)
+
+// metricTypeAttrs and droppedReasonAttrs hold the precomputed attribute sets
+// used by the processor's internal telemetry. They are static (independent of
+// per-processor configuration) so they live at package scope. Drop reasons
+// are surfaced by the tracker (see tracking.Reason*) and must match the
+// `reason` attribute enum declared in metadata.yaml.
+var (
+	metricTypeAttrs = map[pmetric.MetricType]metric.MeasurementOption{
+		pmetric.MetricTypeSum:                  metric.WithAttributes(attribute.String("metric_type", "sum")),
+		pmetric.MetricTypeHistogram:            metric.WithAttributes(attribute.String("metric_type", "histogram")),
+		pmetric.MetricTypeExponentialHistogram: metric.WithAttributes(attribute.String("metric_type", "exponential_histogram")),
+	}
+	droppedReasonAttrs = map[pmetric.MetricType]map[string]metric.MeasurementOption{
+		pmetric.MetricTypeSum: {
+			tracking.ReasonReset:   metric.WithAttributes(attribute.String("metric_type", "sum"), attribute.String("reason", tracking.ReasonReset)),
+			tracking.ReasonInitial: metric.WithAttributes(attribute.String("metric_type", "sum"), attribute.String("reason", tracking.ReasonInitial)),
+		},
+		pmetric.MetricTypeHistogram: {
+			tracking.ReasonReset:          metric.WithAttributes(attribute.String("metric_type", "histogram"), attribute.String("reason", tracking.ReasonReset)),
+			tracking.ReasonInitial:        metric.WithAttributes(attribute.String("metric_type", "histogram"), attribute.String("reason", tracking.ReasonInitial)),
+			tracking.ReasonBucketMismatch: metric.WithAttributes(attribute.String("metric_type", "histogram"), attribute.String("reason", tracking.ReasonBucketMismatch)),
+		},
+		pmetric.MetricTypeExponentialHistogram: {
+			tracking.ReasonReset:   metric.WithAttributes(attribute.String("metric_type", "exponential_histogram"), attribute.String("reason", tracking.ReasonReset)),
+			tracking.ReasonInitial: metric.WithAttributes(attribute.String("metric_type", "exponential_histogram"), attribute.String("reason", tracking.ReasonInitial)),
+		},
+	}
 )
 
 type cumulativeToDeltaProcessor struct {
@@ -25,14 +56,16 @@ type cumulativeToDeltaProcessor struct {
 	logger             *zap.Logger
 	deltaCalculator    *tracking.MetricTracker
 	cancelFunc         context.CancelFunc
+	telemetry          *metadata.TelemetryBuilder
 }
 
-func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) (*cumulativeToDeltaProcessor, error) {
+func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger, telemetry *metadata.TelemetryBuilder) (*cumulativeToDeltaProcessor, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	p := &cumulativeToDeltaProcessor{
 		logger:     logger,
 		cancelFunc: cancel,
+		telemetry:  telemetry,
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -80,7 +113,7 @@ func getMetricTypeFilter(types []string) (map[pmetric.MetricType]bool, error) {
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (ctdp *cumulativeToDeltaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		rm.ScopeMetrics().RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
 			ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
@@ -107,7 +140,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      ms.IsMonotonic(),
 					}
-					ctdp.convertNumberDataPoints(ms.DataPoints(), baseIdentity)
+					ctdp.convertNumberDataPoints(ctx, ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricTypeHistogram:
@@ -130,7 +163,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						MetricValueType:        pmetric.NumberDataPointValueTypeInt,
 					}
 
-					ctdp.convertHistogramDataPoints(ms.DataPoints(), baseIdentity)
+					ctdp.convertHistogramDataPoints(ctx, ms.DataPoints(), baseIdentity)
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
@@ -151,7 +184,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
 					}
-					ctdp.convertExponentialHistogramDataPoints(ms.DataPoints(), baseIdentity)
+					ctdp.convertExponentialHistogramDataPoints(ctx, ms.DataPoints(), baseIdentity)
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
@@ -169,6 +202,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 
 func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
+	ctdp.telemetry.Shutdown()
 	return nil
 }
 
@@ -179,7 +213,32 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metric pmetric.Metri
 		(len(ctdp.excludeMetricTypes) == 0 || !ctdp.excludeMetricTypes[metric.Type()])
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) recordDropped(ctx context.Context, id tracking.MetricIdentity, reason string) {
+	// Convert can return valid=false with an empty reason on internal-contract
+	// edge cases (unsupported metric type, NaN float). Don't record an empty
+	// reason — it isn't in the metadata.yaml enum and would create a useless
+	// `reason=""` series.
+	if reason == "" {
+		return
+	}
+	ctdp.telemetry.CumulativetodeltaDatapointsDropped.Add(ctx, 1, droppedReasonAttrs[id.MetricType][reason])
+	if reason == tracking.ReasonReset {
+		// Log at Debug alongside the metric: logs absorb the per-stream
+		// cardinality that would be prohibitive on the metric, while still
+		// letting operators identify which stream is wrapping/restarting.
+		// Logger.Check skips the AsRaw() allocation when Debug isn't enabled.
+		if ce := ctdp.logger.Check(zap.DebugLevel, "reset detected during cumulative-to-delta conversion"); ce != nil {
+			ce.Write(
+				zap.String("metric_name", id.MetricName),
+				zap.String("metric_type", id.MetricType.String()),
+				zap.Any("attributes", id.Attributes.AsRaw()),
+			)
+		}
+	}
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	attrs := metricTypeAttrs[pmetric.MetricTypeSum]
 	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 		id := baseIdentity
 		id.StartTimestamp = dp.StartTimestamp()
@@ -206,10 +265,12 @@ func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.Numb
 			Identity: id,
 			Value:    point,
 		}
-		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+		delta, valid, reason := ctdp.deltaCalculator.Convert(trackingPoint)
 		if !valid {
+			ctdp.recordDropped(ctx, id, reason)
 			return true
 		}
+		ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 		dp.SetStartTimestamp(delta.StartTimestamp)
 		if id.IsFloatVal() {
 			dp.SetDoubleValue(delta.FloatValue)
@@ -220,7 +281,8 @@ func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.Numb
 	})
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.HistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	attrs := metricTypeAttrs[pmetric.MetricTypeHistogram]
 	dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 		id := baseIdentity
 		id.StartTimestamp = dp.StartTimestamp()
@@ -245,9 +307,10 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.H
 			Identity: id,
 			Value:    point,
 		}
-		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+		delta, valid, reason := ctdp.deltaCalculator.Convert(trackingPoint)
 
 		if valid {
+			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.HistogramValue.Count)
 			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
@@ -260,11 +323,13 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.H
 			return false
 		}
 
+		ctdp.recordDropped(ctx, id, reason)
 		return !valid
 	})
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	attrs := metricTypeAttrs[pmetric.MetricTypeExponentialHistogram]
 	dps.RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
 		id := baseIdentity
 		id.StartTimestamp = dp.StartTimestamp()
@@ -297,9 +362,10 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(dp
 			Identity: id,
 			Value:    point,
 		}
-		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+		delta, valid, reason := ctdp.deltaCalculator.Convert(trackingPoint)
 
 		if valid {
+			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.ExponentialHistogramPoint.Count)
 			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
@@ -321,6 +387,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(dp
 			return false
 		}
 
+		ctdp.recordDropped(ctx, id, reason)
 		return !valid
 	})
 }

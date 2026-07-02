@@ -99,6 +99,7 @@ type Config struct {
 	Compression             string          `mapstructure:"compression,omitempty"`
 	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
+	FileCacheAdvise         bool            `mapstructure:"file_cache_advise,omitempty"`
 	OnTruncate              string          `mapstructure:"on_truncate,omitempty"`
 }
 
@@ -180,6 +181,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
 		AcquireFSLock:           c.AcquireFSLock,
+		FileCacheAdvise:         c.FileCacheAdvise,
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
