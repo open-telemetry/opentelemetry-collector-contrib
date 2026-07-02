@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 )
 
 func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
@@ -71,6 +72,45 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
+
+	t.Run("experimental detection", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"detection/development": map[string]any{
+				"detectors": []any{
+					map[string]any{"host": map[string]any{}},
+				},
+			},
+		})
+
+		var cfg ResourceConfig
+		require.NoError(t, conf.Unmarshal(&cfg))
+		require.NotNil(t, cfg.DetectionDevelopment)
+		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
+		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
+	})
+}
+
+func TestTelemetryResourceConfigLoadDetectionDevelopment(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"telemetry": map[string]any{
+			"resource": map[string]any{
+				"attributes": []any{
+					map[string]any{"name": "service.name", "value": "custom-supervisor"},
+				},
+				"detection/development": map[string]any{
+					"detectors": []any{
+						map[string]any{"host": map[string]any{}},
+					},
+				},
+			},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	require.NoError(t, conf.Unmarshal(&cfg))
+	require.NotNil(t, cfg.Telemetry.Resource.DetectionDevelopment)
+	assert.Equal(t, "custom-supervisor", cfg.Telemetry.Resource.Attributes[0].Value)
+	assert.Equal(t, xotelconf.ExperimentalHostResourceDetector{}, cfg.Telemetry.Resource.DetectionDevelopment.Detectors[0].Host)
 }
 
 func TestTelemetryResourceConfigMarshal(t *testing.T) {
