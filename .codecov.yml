@@ -477,6 +477,10 @@ component_management:
     name: processor_drain
     paths:
     - processor/drainprocessor/**
+  - component_id: processor_dynamicsampling
+    name: processor_dynamicsampling
+    paths:
+    - processor/dynamicsamplingprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:
