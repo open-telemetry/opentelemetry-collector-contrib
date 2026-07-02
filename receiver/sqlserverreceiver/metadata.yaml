@@ -135,6 +135,11 @@ attributes:
     description: The physical filename of the file being monitored.
     type: string
     requirement_level: recommended
+  replica.direction:
+    description: The direction of flow of bytes for replica.
+    type: string
+    requirement_level: recommended
+    enum: [transmit, receive]
   server.address:
     description: The network address of the server hosting the database.
     type: string
@@ -948,16 +953,7 @@ metrics:
     unit: By/s
     gauge:
       value_type: double
-    attributes: [sqlserver.replica.direction]
-  sqlserver.replica.flow_control.time:
-    enabled: false
-    description: Current flow control lag on the secondary replica, derived from secondary_lag_seconds.
-    stability: development
-    unit: s
-    gauge:
-      value_type: double
-    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
+    attributes: [replica.direction]
   sqlserver.replica.queue.size:
     enabled: false
     description: Amount of log data queued in the availability group replica pipeline.
@@ -966,7 +962,16 @@ metrics:
     gauge:
       value_type: int
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled. Queue type "send" reports log not yet sent to secondary replicas; queue type "redo" reports log received by the secondary replica but not yet applied.
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
+  sqlserver.replica.secondary_lag:
+    enabled: false
+    description: Number of seconds the secondary replica is lagging behind the primary replica.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
   sqlserver.resource_pool.disk.operations:
     enabled: false
     description: The rate of operations issued.

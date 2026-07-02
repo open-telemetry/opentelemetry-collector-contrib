@@ -77,37 +77,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.log_data.io.rate
             unit: By/s
-          - description: Current flow control lag on the secondary replica, derived from secondary_lag_seconds.
-            gauge:
-              dataPoints:
-                - asDouble: 2
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: InventoryDB
-                    - key: sqlserver.availability_group.name
-                      value:
-                        stringValue: AG_Primary
-                    - key: sqlserver.replica.name
-                      value:
-                        stringValue: sql-node-02
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 5
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: SalesDB
-                    - key: sqlserver.availability_group.name
-                      value:
-                        stringValue: AG_Primary
-                    - key: sqlserver.replica.name
-                      value:
-                        stringValue: sql-node-02
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.replica.flow_control.time
-            unit: s
           - description: Amount of log data queued in the availability group replica pipeline.
             gauge:
               dataPoints:
@@ -209,6 +178,37 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.replica.queue.size
             unit: By
+          - description: Number of seconds the secondary replica is lagging behind the primary replica.
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: InventoryDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 5
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.replica.secondary_lag
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

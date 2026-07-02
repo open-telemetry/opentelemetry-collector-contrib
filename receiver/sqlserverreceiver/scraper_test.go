@@ -37,7 +37,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
 	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
-	cfg.Metrics.SqlserverReplicaFlowControlTime.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaSecondaryLag.Enabled = enabled
 	cfg.Metrics.SqlserverLogDataIoRate.Enabled = enabled
 	cfg.Metrics.SqlserverReplicaQueueSize.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled

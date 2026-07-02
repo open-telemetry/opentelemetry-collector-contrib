@@ -551,7 +551,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeSqlserverReplicaDirectionReceive)
+				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeReplicaDirectionReceive)
 			}
 		case bytesSentForReplicaPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -559,7 +559,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeSqlserverReplicaDirectionTransmit)
+				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeReplicaDirectionTransmit)
 			}
 		case diskReadIOSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1244,7 +1244,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			if err != nil {
 				errs = append(errs, fmt.Errorf("availability_group=%q database=%q replica=%q: %w", agName, dbName, replicaName, err))
 			} else {
-				s.mb.RecordSqlserverReplicaFlowControlTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+				s.mb.RecordSqlserverReplicaSecondaryLagDataPoint(now, val.(float64), agName, dbName, replicaName)
 			}
 		}
 

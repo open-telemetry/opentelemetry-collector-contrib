@@ -1507,7 +1507,7 @@ func (ms *SqlserverRecompilationRatioMetricConfig) Unmarshal(parser *confmap.Con
 type SqlserverReplicaDataRateMetricAttributeKey string
 
 const (
-	SqlserverReplicaDataRateMetricAttributeKeySqlserverReplicaDirection SqlserverReplicaDataRateMetricAttributeKey = "sqlserver.replica.direction"
+	SqlserverReplicaDataRateMetricAttributeKeyReplicaDirection SqlserverReplicaDataRateMetricAttributeKey = "replica.direction"
 )
 
 // SqlserverReplicaDataRateMetricConfig provides config for the sqlserver.replica.data.rate metric.
@@ -1536,59 +1536,9 @@ func (ms *SqlserverReplicaDataRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 func (ms *SqlserverReplicaDataRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverReplicaDataRateMetricAttributeKeySqlserverReplicaDirection:
+		case SqlserverReplicaDataRateMetricAttributeKeyReplicaDirection:
 		default:
-			return fmt.Errorf("metric sqlserver.replica.data.rate doesn't have an attribute %v, valid attributes: [sqlserver.replica.direction]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverReplicaFlowControlTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.replica.flow_control.time metric.
-type SqlserverReplicaFlowControlTimeMetricAttributeKey string
-
-const (
-	SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaFlowControlTimeMetricAttributeKey = "sqlserver.availability_group.name"
-	SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace                    SqlserverReplicaFlowControlTimeMetricAttributeKey = "db.namespace"
-	SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName           SqlserverReplicaFlowControlTimeMetricAttributeKey = "sqlserver.replica.name"
-)
-
-// SqlserverReplicaFlowControlTimeMetricConfig provides config for the sqlserver.replica.flow_control.time metric.
-type SqlserverReplicaFlowControlTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverReplicaFlowControlTimeMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverReplicaFlowControlTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverReplicaFlowControlTimeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.replica.flow_control.time doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
+			return fmt.Errorf("metric sqlserver.replica.data.rate doesn't have an attribute %v, valid attributes: [replica.direction]", val)
 		}
 	}
 
@@ -1640,6 +1590,56 @@ func (ms *SqlserverReplicaQueueSizeMetricConfig) Validate() error {
 		case SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType:
 		default:
 			return fmt.Errorf("metric sqlserver.replica.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverReplicaSecondaryLagMetricAttributeKey specifies the key of an attribute for the sqlserver.replica.secondary_lag metric.
+type SqlserverReplicaSecondaryLagMetricAttributeKey string
+
+const (
+	SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaSecondaryLagMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace                    SqlserverReplicaSecondaryLagMetricAttributeKey = "db.namespace"
+	SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName           SqlserverReplicaSecondaryLagMetricAttributeKey = "sqlserver.replica.name"
+)
+
+// SqlserverReplicaSecondaryLagMetricConfig provides config for the sqlserver.replica.secondary_lag metric.
+type SqlserverReplicaSecondaryLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverReplicaSecondaryLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverReplicaSecondaryLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverReplicaSecondaryLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace, SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.replica.secondary_lag doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -2105,8 +2105,8 @@ type MetricsConfig struct {
 	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
 	SqlserverRecompilationRatio                 SqlserverRecompilationRatioMetricConfig                 `mapstructure:"sqlserver.recompilation.ratio"`
 	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`
-	SqlserverReplicaFlowControlTime             SqlserverReplicaFlowControlTimeMetricConfig             `mapstructure:"sqlserver.replica.flow_control.time"`
 	SqlserverReplicaQueueSize                   SqlserverReplicaQueueSizeMetricConfig                   `mapstructure:"sqlserver.replica.queue.size"`
+	SqlserverReplicaSecondaryLag                SqlserverReplicaSecondaryLagMetricConfig                `mapstructure:"sqlserver.replica.secondary_lag"`
 	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
@@ -2320,17 +2320,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverReplicaDataRate: SqlserverReplicaDataRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverReplicaDataRateMetricAttributeKey{SqlserverReplicaDataRateMetricAttributeKeySqlserverReplicaDirection},
-		},
-		SqlserverReplicaFlowControlTime: SqlserverReplicaFlowControlTimeMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
+			EnabledAttributes:   []SqlserverReplicaDataRateMetricAttributeKey{SqlserverReplicaDataRateMetricAttributeKeyReplicaDirection},
 		},
 		SqlserverReplicaQueueSize: SqlserverReplicaQueueSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
+		},
+		SqlserverReplicaSecondaryLag: SqlserverReplicaSecondaryLagMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverReplicaSecondaryLagMetricAttributeKey{SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace, SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName},
 		},
 		SqlserverResourcePoolDiskOperations: SqlserverResourcePoolDiskOperationsMetricConfig{
 			Enabled:             false,

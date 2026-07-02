@@ -609,7 +609,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0
                   attributes:
-                    - key: sqlserver.replica.direction
+                    - key: replica.direction
                       value:
                         stringValue: receive
                   startTimeUnixNano: "1000000"
@@ -649,7 +649,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0
                   attributes:
-                    - key: sqlserver.replica.direction
+                    - key: replica.direction
                       value:
                         stringValue: transmit
                   startTimeUnixNano: "1000000"
