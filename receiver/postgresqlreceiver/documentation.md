@@ -220,7 +220,6 @@ Age of the oldest WAL file.
 
 This metric requires WAL to be enabled with at least one replica.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
@@ -230,7 +229,6 @@ This metric requires WAL to be enabled with at least one replica.
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
 This metric requires WAL to be enabled with at least one replica.
-
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -377,7 +375,6 @@ Time between flushing recent WAL locally and receiving notification that the sta
 
 This metric requires WAL to be enabled with at least one replica.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
@@ -432,6 +429,13 @@ query sample
 | postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str | - |
 | postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str | - |
 | postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double | - |
+| postgresql.blocking.pids | Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked. | Any Str | - |
+| postgresql.blocking.start_time | UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked. | Any Str | - |
+| postgresql.blocking.wait_duration | Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked. | Any Int | - |
+| postgresql.blocking.lock.mode | The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked. | Any Str | - |
+| postgresql.blocking.lock.type | The type of lock resource being waited on (e.g. relation, transactionid, tuple). Empty string when not blocked. | Any Str | - |
+| postgresql.blocking.lock.relation | The name of the relation (table) being waited on. Empty string when not blocked or when lock is not on a relation. | Any Str | - |
+| postgresql.blocking.transaction.start_time | UTC timestamp (RFC3339) when the current transaction started. Empty string when no active transaction. | Any Str | - |
 
 ### db.server.top_query
 
@@ -460,13 +464,15 @@ top query
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| postgresql.database.name | The name of the database. | Any Str | true | - |
-| postgresql.index.name | The name of the index on a table. | Any Str | true | - |
-| postgresql.schema.name | The schema name. | Any Str | true | - |
-| postgresql.table.name | The table name. | Any Str | true | - |
-| service.instance.id | A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value). | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| postgresql.database.name | The name of the database. | Any Str | true | - | - |
+| postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
+| postgresql.schema.name | The schema name. | Any Str | true | - | - |
+| postgresql.table.name | The table name. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value). | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:postgresql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 
 ## Feature Gates
 
