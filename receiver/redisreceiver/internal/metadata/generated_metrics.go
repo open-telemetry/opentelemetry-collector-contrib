@@ -106,6 +106,54 @@ var MapAttributePercentile = map[string]AttributePercentile{
 	"p99.9": AttributePercentileP999,
 }
 
+// AttributeRedisPubsubChannelState specifies the value redis.pubsub.channel.state attribute.
+type AttributeRedisPubsubChannelState int
+
+const (
+	_ AttributeRedisPubsubChannelState = iota
+	AttributeRedisPubsubChannelStateActive
+	AttributeRedisPubsubChannelStateShard
+)
+
+// String returns the string representation of the AttributeRedisPubsubChannelState.
+func (av AttributeRedisPubsubChannelState) String() string {
+	switch av {
+	case AttributeRedisPubsubChannelStateActive:
+		return "active"
+	case AttributeRedisPubsubChannelStateShard:
+		return "shard"
+	}
+	return ""
+}
+
+// MapAttributeRedisPubsubChannelState is a helper map of string to AttributeRedisPubsubChannelState attribute value.
+var MapAttributeRedisPubsubChannelState = map[string]AttributeRedisPubsubChannelState{
+	"active": AttributeRedisPubsubChannelStateActive,
+	"shard":  AttributeRedisPubsubChannelStateShard,
+}
+
+// AttributeRedisPubsubPatternState specifies the value redis.pubsub.pattern.state attribute.
+type AttributeRedisPubsubPatternState int
+
+const (
+	_ AttributeRedisPubsubPatternState = iota
+	AttributeRedisPubsubPatternStateActive
+)
+
+// String returns the string representation of the AttributeRedisPubsubPatternState.
+func (av AttributeRedisPubsubPatternState) String() string {
+	switch av {
+	case AttributeRedisPubsubPatternStateActive:
+		return "active"
+	}
+	return ""
+}
+
+// MapAttributeRedisPubsubPatternState is a helper map of string to AttributeRedisPubsubPatternState attribute value.
+var MapAttributeRedisPubsubPatternState = map[string]AttributeRedisPubsubPatternState{
+	"active": AttributeRedisPubsubPatternStateActive,
+}
+
 // AttributeRole specifies the value role attribute.
 type AttributeRole int
 
@@ -316,6 +364,17 @@ var MetricsInfo = metricsInfo{
 	RedisNetOutput: metricInfo{
 		Name: "redis.net.output",
 	},
+	RedisPubsubChannelStatus: metricInfo{
+		Name:       "redis.pubsub.channel.status",
+		Attributes: []string{"redis.pubsub.channel.state"},
+	},
+	RedisPubsubConnectionCount: metricInfo{
+		Name: "redis.pubsub.connection.count",
+	},
+	RedisPubsubPatternStatus: metricInfo{
+		Name:       "redis.pubsub.pattern.status",
+		Attributes: []string{"redis.pubsub.pattern.state"},
+	},
 	RedisRdbChangesSinceLastSave: metricInfo{
 		Name: "redis.rdb.changes_since_last_save",
 	},
@@ -406,6 +465,9 @@ type metricsInfo struct {
 	RedisMode                                 metricInfo
 	RedisNetInput                             metricInfo
 	RedisNetOutput                            metricInfo
+	RedisPubsubChannelStatus                  metricInfo
+	RedisPubsubConnectionCount                metricInfo
+	RedisPubsubPatternStatus                  metricInfo
 	RedisRdbChangesSinceLastSave              metricInfo
 	RedisReplicationBacklogFirstByteOffset    metricInfo
 	RedisReplicationOffset                    metricInfo
@@ -3019,6 +3081,240 @@ func newMetricRedisNetOutput(cfg RedisNetOutputMetricConfig) metricRedisNetOutpu
 	return m
 }
 
+type metricRedisPubsubChannelStatus struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        RedisPubsubChannelStatusMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills redis.pubsub.channel.status metric with initial data.
+func (m *metricRedisPubsubChannelStatus) init() {
+	m.data.SetName("redis.pubsub.channel.status")
+	m.data.SetDescription("Number of pub/sub channels")
+	m.data.SetUnit("{channel}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricRedisPubsubChannelStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, redisPubsubChannelStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState) {
+		dp.Attributes().PutStr("redis.pubsub.channel.state", redisPubsubChannelStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisPubsubChannelStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisPubsubChannelStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisPubsubChannelStatus(cfg RedisPubsubChannelStatusMetricConfig) metricRedisPubsubChannelStatus {
+	m := metricRedisPubsubChannelStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisPubsubConnectionCount struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   RedisPubsubConnectionCountMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills redis.pubsub.connection.count metric with initial data.
+func (m *metricRedisPubsubConnectionCount) init() {
+	m.data.SetName("redis.pubsub.connection.count")
+	m.data.SetDescription("Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)")
+	m.data.SetUnit("{client}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricRedisPubsubConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisPubsubConnectionCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisPubsubConnectionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisPubsubConnectionCount(cfg RedisPubsubConnectionCountMetricConfig) metricRedisPubsubConnectionCount {
+	m := metricRedisPubsubConnectionCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisPubsubPatternStatus struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        RedisPubsubPatternStatusMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills redis.pubsub.pattern.status metric with initial data.
+func (m *metricRedisPubsubPatternStatus) init() {
+	m.data.SetName("redis.pubsub.pattern.status")
+	m.data.SetDescription("Number of pub/sub patterns")
+	m.data.SetUnit("{pattern}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricRedisPubsubPatternStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, redisPubsubPatternStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState) {
+		dp.Attributes().PutStr("redis.pubsub.pattern.state", redisPubsubPatternStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisPubsubPatternStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisPubsubPatternStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisPubsubPatternStatus(cfg RedisPubsubPatternStatusMetricConfig) metricRedisPubsubPatternStatus {
+	m := metricRedisPubsubPatternStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricRedisRdbChangesSinceLastSave struct {
 	data     pmetric.Metric                           // data buffer for generated metric.
 	config   RedisRdbChangesSinceLastSaveMetricConfig // metric config provided by user.
@@ -3824,6 +4120,9 @@ type MetricsBuilder struct {
 	metricRedisMode                                 metricRedisMode
 	metricRedisNetInput                             metricRedisNetInput
 	metricRedisNetOutput                            metricRedisNetOutput
+	metricRedisPubsubChannelStatus                  metricRedisPubsubChannelStatus
+	metricRedisPubsubConnectionCount                metricRedisPubsubConnectionCount
+	metricRedisPubsubPatternStatus                  metricRedisPubsubPatternStatus
 	metricRedisRdbChangesSinceLastSave              metricRedisRdbChangesSinceLastSave
 	metricRedisReplicationBacklogFirstByteOffset    metricRedisReplicationBacklogFirstByteOffset
 	metricRedisReplicationOffset                    metricRedisReplicationOffset
@@ -3907,6 +4206,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisMode:                                 newMetricRedisMode(mbc.Metrics.RedisMode),
 		metricRedisNetInput:                             newMetricRedisNetInput(mbc.Metrics.RedisNetInput),
 		metricRedisNetOutput:                            newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
+		metricRedisPubsubChannelStatus:                  newMetricRedisPubsubChannelStatus(mbc.Metrics.RedisPubsubChannelStatus),
+		metricRedisPubsubConnectionCount:                newMetricRedisPubsubConnectionCount(mbc.Metrics.RedisPubsubConnectionCount),
+		metricRedisPubsubPatternStatus:                  newMetricRedisPubsubPatternStatus(mbc.Metrics.RedisPubsubPatternStatus),
 		metricRedisRdbChangesSinceLastSave:              newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
 		metricRedisReplicationBacklogFirstByteOffset:    newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
 		metricRedisReplicationOffset:                    newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
@@ -4055,6 +4357,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisMode.emit(ils.Metrics())
 	mb.metricRedisNetInput.emit(ils.Metrics())
 	mb.metricRedisNetOutput.emit(ils.Metrics())
+	mb.metricRedisPubsubChannelStatus.emit(ils.Metrics())
+	mb.metricRedisPubsubConnectionCount.emit(ils.Metrics())
+	mb.metricRedisPubsubPatternStatus.emit(ils.Metrics())
 	mb.metricRedisRdbChangesSinceLastSave.emit(ils.Metrics())
 	mb.metricRedisReplicationBacklogFirstByteOffset.emit(ils.Metrics())
 	mb.metricRedisReplicationOffset.emit(ils.Metrics())
@@ -4318,6 +4623,21 @@ func (mb *MetricsBuilder) RecordRedisNetInputDataPoint(ts pcommon.Timestamp, val
 // RecordRedisNetOutputDataPoint adds a data point to redis.net.output metric.
 func (mb *MetricsBuilder) RecordRedisNetOutputDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisNetOutput.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisPubsubChannelStatusDataPoint adds a data point to redis.pubsub.channel.status metric.
+func (mb *MetricsBuilder) RecordRedisPubsubChannelStatusDataPoint(ts pcommon.Timestamp, val int64, redisPubsubChannelStateAttributeValue AttributeRedisPubsubChannelState) {
+	mb.metricRedisPubsubChannelStatus.recordDataPoint(mb.startTime, ts, val, redisPubsubChannelStateAttributeValue.String())
+}
+
+// RecordRedisPubsubConnectionCountDataPoint adds a data point to redis.pubsub.connection.count metric.
+func (mb *MetricsBuilder) RecordRedisPubsubConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisPubsubConnectionCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisPubsubPatternStatusDataPoint adds a data point to redis.pubsub.pattern.status metric.
+func (mb *MetricsBuilder) RecordRedisPubsubPatternStatusDataPoint(ts pcommon.Timestamp, val int64, redisPubsubPatternStateAttributeValue AttributeRedisPubsubPatternState) {
+	mb.metricRedisPubsubPatternStatus.recordDataPoint(mb.startTime, ts, val, redisPubsubPatternStateAttributeValue.String())
 }
 
 // RecordRedisRdbChangesSinceLastSaveDataPoint adds a data point to redis.rdb.changes_since_last_save metric.

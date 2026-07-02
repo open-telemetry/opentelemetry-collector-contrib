@@ -1142,6 +1142,122 @@ func (ms *RedisNetOutputMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// RedisPubsubChannelStatusMetricAttributeKey specifies the key of an attribute for the redis.pubsub.channel.status metric.
+type RedisPubsubChannelStatusMetricAttributeKey string
+
+const (
+	RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState RedisPubsubChannelStatusMetricAttributeKey = "redis.pubsub.channel.state"
+)
+
+// RedisPubsubChannelStatusMetricConfig provides config for the redis.pubsub.channel.status metric.
+type RedisPubsubChannelStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisPubsubChannelStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisPubsubChannelStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisPubsubChannelStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState:
+		default:
+			return fmt.Errorf("metric redis.pubsub.channel.status doesn't have an attribute %v, valid attributes: [redis.pubsub.channel.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisPubsubConnectionCountMetricConfig provides config for the redis.pubsub.connection.count metric.
+type RedisPubsubConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisPubsubConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisPubsubPatternStatusMetricAttributeKey specifies the key of an attribute for the redis.pubsub.pattern.status metric.
+type RedisPubsubPatternStatusMetricAttributeKey string
+
+const (
+	RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState RedisPubsubPatternStatusMetricAttributeKey = "redis.pubsub.pattern.state"
+)
+
+// RedisPubsubPatternStatusMetricConfig provides config for the redis.pubsub.pattern.status metric.
+type RedisPubsubPatternStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisPubsubPatternStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisPubsubPatternStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisPubsubPatternStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState:
+		default:
+			return fmt.Errorf("metric redis.pubsub.pattern.status doesn't have an attribute %v, valid attributes: [redis.pubsub.pattern.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // RedisRdbChangesSinceLastSaveMetricConfig provides config for the redis.rdb.changes_since_last_save metric.
 type RedisRdbChangesSinceLastSaveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1496,6 +1612,9 @@ type MetricsConfig struct {
 	RedisMode                                 RedisModeMetricConfig                                 `mapstructure:"redis.mode"`
 	RedisNetInput                             RedisNetInputMetricConfig                             `mapstructure:"redis.net.input"`
 	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
+	RedisPubsubChannelStatus                  RedisPubsubChannelStatusMetricConfig                  `mapstructure:"redis.pubsub.channel.status"`
+	RedisPubsubConnectionCount                RedisPubsubConnectionCountMetricConfig                `mapstructure:"redis.pubsub.connection.count"`
+	RedisPubsubPatternStatus                  RedisPubsubPatternStatusMetricConfig                  `mapstructure:"redis.pubsub.pattern.status"`
 	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset    RedisReplicationBacklogFirstByteOffsetMetricConfig    `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                    RedisReplicationOffsetMetricConfig                    `mapstructure:"redis.replication.offset"`
@@ -1663,6 +1782,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisNetOutput: RedisNetOutputMetricConfig{
 			Enabled: true,
+		},
+		RedisPubsubChannelStatus: RedisPubsubChannelStatusMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisPubsubChannelStatusMetricAttributeKey{RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState},
+		},
+		RedisPubsubConnectionCount: RedisPubsubConnectionCountMetricConfig{
+			Enabled: false,
+		},
+		RedisPubsubPatternStatus: RedisPubsubPatternStatusMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisPubsubPatternStatusMetricAttributeKey{RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState},
 		},
 		RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 			Enabled: true,

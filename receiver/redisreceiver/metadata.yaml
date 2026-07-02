@@ -60,6 +60,20 @@ attributes:
       - p50
       - p99
       - p99.9
+  redis.pubsub.channel.state:
+    description: The type of pub/sub channel
+    type: string
+    requirement_level: recommended
+    # Redis versions < 7.0 only have active channel
+    enum:
+      - active
+      - shard
+  redis.pubsub.pattern.state:
+    description: The state of pub/sub patterns
+    type: string
+    requirement_level: recommended
+    enum:
+      - active
   role:
     description: Redis node's role
     type: string
@@ -67,6 +81,7 @@ attributes:
     enum:
       - replica
       - primary
+
   state:
     description: Redis CPU usage state
     type: string
@@ -488,6 +503,38 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
+  redis.pubsub.channel.status:
+    enabled: true
+    description: Number of pub/sub channels
+    stability: development
+    unit: "{channel}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [redis.pubsub.channel.state]
+
+  redis.pubsub.connection.count:
+    enabled: false
+    description: Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
+    stability: development
+    unit: "{client}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.pubsub.pattern.status:
+    enabled: true
+    description: Number of pub/sub patterns
+    stability: development
+    unit: "{pattern}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [redis.pubsub.pattern.state]
 
   redis.rdb.changes_since_last_save:
     enabled: true

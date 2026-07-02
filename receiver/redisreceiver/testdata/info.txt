@@ -106,6 +106,8 @@ keyspace_hits:0
 keyspace_misses:0
 pubsub_channels:0
 pubsub_patterns:0
+pubsub_shardchannels:0
+pubsub_clients:0
 latest_fork_usec:0
 migrate_cached_sockets:0
 slave_expires_tracked_keys:0
