@@ -81,6 +81,14 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### apache.request.rate
+
+Average number of requests served per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
 ### apache.request.time
 
 Total time spent on handling requests.
@@ -121,6 +129,14 @@ Total HTTP server traffic.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+### apache.traffic.rate
+
+Average number of bytes transmitted per second since the server was started, as reported by mod_status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
 ### apache.uptime
 
 The amount of time that the server has been running in seconds.
@@ -128,6 +144,14 @@ The amount of time that the server has been running in seconds.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
+
+### apache.worker.limit
+
+The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {worker} | Gauge | Int | Development |
 
 ### apache.workers
 

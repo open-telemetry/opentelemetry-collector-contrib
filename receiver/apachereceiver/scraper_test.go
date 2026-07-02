@@ -179,6 +179,8 @@ CPUChildrenUser: 0.02
 CPUSystem: 0.03
 CPUUser: 0.04
 CPULoad: 0.66
+ReqPerSec: 719.771
+BytesPerSec: 73.12
 Load1: 0.9
 Load5: 0.4
 Load15: 0.3
