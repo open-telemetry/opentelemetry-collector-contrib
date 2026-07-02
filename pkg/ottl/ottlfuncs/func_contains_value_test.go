@@ -140,7 +140,7 @@ func Test_ContainsValue(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "not find pcommon.Value in target",
+			name: "find pcommon.Value in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
@@ -153,7 +153,7 @@ func Test_ContainsValue(t *testing.T) {
 					return pcommon.NewValueInt(4), nil
 				},
 			},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "Target is []string",
