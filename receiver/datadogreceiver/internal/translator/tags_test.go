@@ -159,6 +159,20 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 	assert.Equal(t, "http.response.header.content-type", translateDatadogKeyToOTel("http.response.headers.content-type"))
 }
 
+func TestTranslateKubernetesAppLabels(t *testing.T) {
+	// Datadog kube_app_* tags map to the Kubernetes recommended labels.
+	for ddKey, otelKey := range map[string]string{
+		"kube_app_name":       "app.kubernetes.io/name",
+		"kube_app_instance":   "app.kubernetes.io/instance",
+		"kube_app_version":    "app.kubernetes.io/version",
+		"kube_app_component":  "app.kubernetes.io/component",
+		"kube_app_part_of":    "app.kubernetes.io/part-of",
+		"kube_app_managed_by": "app.kubernetes.io/managed-by",
+	} {
+		assert.Equal(t, otelKey, translateDatadogKeyToOTel(ddKey))
+	}
+}
+
 func TestImageTags(t *testing.T) {
 	// make sure container.image.tags is a string[]
 	expected := "[\"tag1\"]"
