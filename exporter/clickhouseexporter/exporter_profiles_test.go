@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -131,8 +132,10 @@ func TestProfileAndSampleAttributesResolveSeparately(t *testing.T) {
 	sample := pprofile.NewSample()
 	sample.AttributeIndices().Append(1) // thread.name=worker-1
 
-	profileAttrs := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
-	sampleAttrs := pprofile.FromAttributeIndices(dic.AttributeTable(), sample, dic)
+	profileAttrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+	require.NoError(t, err)
+	sampleAttrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), sample, dic)
+	require.NoError(t, err)
 
 	assert.Equal(t, map[string]any{"profile.tag": "prod"}, profileAttrs.AsRaw())
 	assert.Equal(t, map[string]any{"thread.name": "worker-1"}, sampleAttrs.AsRaw())
