@@ -4,12 +4,6 @@ component: receiver/sqlserver
 
 note: Add opt-in Always On Availability Group metrics
 
-issues: [48369, 48377]
-
-subtext: |
-  Three new development-stability metrics (disabled by default):
-  - `sqlserver.replica.flow_control.time`: flow control time on the secondary replica
-  - `sqlserver.log_data.io.rate`: rate at which log data is received by the secondary replica from the primary replica
-  - `sqlserver.replica.queue.size`: log data queued in the availability group replica pipeline (send queue and redo queue)
+issues: [48369]
 
 change_logs: [user]
