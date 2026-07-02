@@ -11,6 +11,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 	"unicode/utf8"
@@ -57,8 +58,8 @@ func (c *Config) Validate() error {
 	if c.ReloadInterval < 0 {
 		return errors.New("reload_interval must not be negative")
 	}
-	if c.Delimiter != "" && len([]rune(c.Delimiter)) != 1 {
-		return errors.New("delimiter must be a single character")
+	if len([]rune(c.Delimiter)) != 1 {
+		return fmt.Errorf("delimiter must be a single character, got %q", c.Delimiter)
 	}
 
 	hasKeyName := c.KeyColumn != ""
@@ -70,8 +71,7 @@ func (c *Config) Validate() error {
 		return errors.New("one of key_column or key_column_index is required")
 	case hasKeyName && !c.HasHeader:
 		return errors.New("key_column (by name) requires has_header: true; use key_column_index for a headerless CSV")
-	}
-	if c.KeyColumnIndex != nil && *c.KeyColumnIndex < 0 {
+	case hasKeyIndex && *c.KeyColumnIndex < 0:
 		return errors.New("key_column_index must not be negative")
 	}
 
@@ -82,8 +82,7 @@ func (c *Config) Validate() error {
 		return errors.New("only one of value_column or value_column_index may be set")
 	case hasValueName && !c.HasHeader:
 		return errors.New("value_column (by name) requires has_header: true; use value_column_index for a headerless CSV")
-	}
-	if c.ValueColumnIndex != nil && *c.ValueColumnIndex < 0 {
+	case hasValueIndex && *c.ValueColumnIndex < 0:
 		return errors.New("value_column_index must not be negative")
 	}
 
@@ -209,10 +208,8 @@ func resolveColumn(what, name string, index *int, header []string) (int, error) 
 	if index != nil {
 		return *index, nil
 	}
-	for i, h := range header {
-		if h == name {
-			return i, nil
-		}
+	if idx := slices.Index(header, name); idx >= 0 {
+		return idx, nil
 	}
 	return 0, fmt.Errorf("%s column %q not found in CSV header", what, name)
 }

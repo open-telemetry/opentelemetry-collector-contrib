@@ -37,36 +37,41 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:   "valid by name",
-			config: &Config{Path: "f.csv", HasHeader: true, KeyColumn: "id"},
+			config: &Config{Path: "f.csv", HasHeader: true, Delimiter: ",", KeyColumn: "id"},
 		},
 		{
 			name:   "valid headerless by index",
-			config: &Config{Path: "f.csv", HasHeader: false, KeyColumnIndex: intPtr(0)},
+			config: &Config{Path: "f.csv", HasHeader: false, Delimiter: ",", KeyColumnIndex: intPtr(0)},
 		},
 		{
 			name:    "no key selector",
-			config:  &Config{Path: "f.csv", HasHeader: true},
+			config:  &Config{Path: "f.csv", HasHeader: true, Delimiter: ","},
 			wantErr: "one of key_column or key_column_index is required",
 		},
 		{
 			name:    "both key selectors",
-			config:  &Config{Path: "f.csv", HasHeader: true, KeyColumn: "id", KeyColumnIndex: intPtr(0)},
+			config:  &Config{Path: "f.csv", HasHeader: true, Delimiter: ",", KeyColumn: "id", KeyColumnIndex: intPtr(0)},
 			wantErr: "only one of key_column or key_column_index",
 		},
 		{
 			name:    "name selector without header",
-			config:  &Config{Path: "f.csv", HasHeader: false, KeyColumn: "id"},
+			config:  &Config{Path: "f.csv", HasHeader: false, Delimiter: ",", KeyColumn: "id"},
 			wantErr: "requires has_header: true",
 		},
 		{
 			name:    "negative index",
-			config:  &Config{Path: "f.csv", HasHeader: false, KeyColumnIndex: intPtr(-1)},
+			config:  &Config{Path: "f.csv", HasHeader: false, Delimiter: ",", KeyColumnIndex: intPtr(-1)},
 			wantErr: "key_column_index must not be negative",
 		},
 		{
 			name:    "multi-char delimiter",
 			config:  &Config{Path: "f.csv", HasHeader: true, KeyColumn: "id", Delimiter: "||"},
-			wantErr: "delimiter must be a single character",
+			wantErr: `delimiter must be a single character, got "||"`,
+		},
+		{
+			name:    "empty delimiter",
+			config:  &Config{Path: "f.csv", HasHeader: true, KeyColumn: "id", Delimiter: ""},
+			wantErr: `delimiter must be a single character, got ""`,
 		},
 		{
 			name:    "negative reload interval",
@@ -75,7 +80,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "both value selectors",
-			config:  &Config{Path: "f.csv", HasHeader: true, KeyColumn: "id", ValueColumn: "v", ValueColumnIndex: intPtr(1)},
+			config:  &Config{Path: "f.csv", HasHeader: true, Delimiter: ",", KeyColumn: "id", ValueColumn: "v", ValueColumnIndex: intPtr(1)},
 			wantErr: "only one of value_column or value_column_index",
 		},
 	}
@@ -187,7 +192,7 @@ func TestSemicolonDelimiter(t *testing.T) {
 
 func TestUnknownColumnNameFailsStart(t *testing.T) {
 	path := writeFile(t, "store_id,store_state\n1010,closed_store\n")
-	cfg := &Config{Path: path, HasHeader: true, KeyColumn: "does_not_exist"}
+	cfg := &Config{Path: path, HasHeader: true, Delimiter: ",", KeyColumn: "does_not_exist"}
 	require.NoError(t, cfg.Validate())
 
 	factory := NewFactory()
@@ -203,7 +208,7 @@ func TestUnknownColumnNameFailsStart(t *testing.T) {
 func TestReloadPicksUpChanges(t *testing.T) {
 	path := writeFile(t, "store_id,store_state\n1010,open_store\n")
 	source := newSource(t, &Config{
-		Path: path, HasHeader: true, KeyColumn: "store_id", ValueColumn: "store_state",
+		Path: path, HasHeader: true, Delimiter: ",", KeyColumn: "store_id", ValueColumn: "store_state",
 		ReloadInterval: 20 * time.Millisecond,
 	})
 
