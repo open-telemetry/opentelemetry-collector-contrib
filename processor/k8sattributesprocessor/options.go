@@ -442,3 +442,17 @@ func withPodDeleteGracePeriod(duration time.Duration) option {
 		return nil
 	}
 }
+
+func withKubeletConfig(cfg KubeletConfig) option {
+	return func(p *kubernetesprocessor) error {
+		p.kubelet = kube.KubeletConfig{
+			Enabled:            cfg.Enabled,
+			PollInterval:       cfg.PollInterval,
+			RequestTimeout:     cfg.RequestTimeout,
+			Endpoint:           cfg.Endpoint,
+			InsecureSkipVerify: cfg.InsecureSkipVerify,
+			AllowInsecureHTTP:  cfg.AllowInsecureHTTP,
+		}
+		return nil
+	}
+}

@@ -287,6 +287,16 @@ k8s_attributes/custom_intervals:
   watch_sync_period: 20s
   pod_delete_grace_period: 30s
 
+k8s_attributes/kubelet:
+  filter:
+    node: ip-111.us-west-2.compute.internal
+  kubelet:
+    enabled: true
+    poll_interval: 15s
+    request_timeout: 20s
+    insecure_skip_verify: true
+    allow_insecure_http: true
+
 k8s_attributes/bad_watch_sync_period:
   watch_sync_period: -20s
 
@@ -295,3 +305,17 @@ k8s_attributes/disable_watch_sync:
 
 k8s_attributes/bad_pod_delete_grace_period:
   pod_delete_grace_period: -30s
+
+k8s_attributes/bad_kubelet_poll_interval:
+  filter:
+    node: ip-111.us-west-2.compute.internal
+  kubelet:
+    poll_interval: 0s
+
+k8s_attributes/bad_kubelet_request_timeout:
+  kubelet:
+    request_timeout: 0s
+
+k8s_attributes/bad_kubelet_node:
+  kubelet:
+    enabled: true

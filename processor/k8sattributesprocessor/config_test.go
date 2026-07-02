@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -111,6 +112,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -137,6 +139,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -151,6 +154,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -165,6 +169,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -207,6 +212,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -222,6 +228,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 30 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -237,6 +244,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -256,6 +264,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -275,6 +284,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -295,6 +305,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -312,6 +323,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -329,6 +341,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -346,6 +359,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -363,6 +377,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -380,6 +395,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -403,6 +419,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -419,6 +436,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
@@ -436,6 +454,29 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        20 * time.Second,
 				PodDeleteGracePeriod:   30 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "kubelet"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Filter:                 FilterConfig{Node: "ip-111.us-west-2.compute.internal"},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet: KubeletConfig{
+					Enabled:            true,
+					PollInterval:       15 * time.Second,
+					RequestTimeout:     20 * time.Second,
+					InsecureSkipVerify: true,
+					AllowInsecureHTTP:  true,
+				},
 			},
 		},
 		{
@@ -453,10 +494,20 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        0,
 				PodDeleteGracePeriod:   120 * time.Second,
+				Kubelet:                KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 30 * time.Second},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_pod_delete_grace_period"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_poll_interval"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_request_timeout"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_node"),
 		},
 	}
 

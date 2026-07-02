@@ -6,6 +6,7 @@ package k8sattributesprocessor
 import (
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,6 +53,26 @@ func TestWithPassthrough(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withPassthrough()(p))
 	assert.True(t, p.passthroughMode)
+}
+
+func TestWithKubeletConfig(t *testing.T) {
+	p := &kubernetesprocessor{}
+	assert.NoError(t, withKubeletConfig(KubeletConfig{
+		Enabled:            true,
+		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
+		Endpoint:           "https://node:10250",
+		InsecureSkipVerify: true,
+		AllowInsecureHTTP:  true,
+	})(p))
+	assert.Equal(t, kube.KubeletConfig{
+		Enabled:            true,
+		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
+		Endpoint:           "https://node:10250",
+		InsecureSkipVerify: true,
+		AllowInsecureHTTP:  true,
+	}, p.kubelet)
 }
 
 func TestEnabledAttributes(t *testing.T) {
