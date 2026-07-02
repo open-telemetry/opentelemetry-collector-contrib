@@ -1167,15 +1167,6 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-  sqlserver.worktable.cache.hit_ratio:
-    enabled: false
-    description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
-    stability: development
-    unit: "1"
-    gauge:
-      value_type: double
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.worker.request.count:
     enabled: false
     description: Number of worker requests by state.
@@ -1193,6 +1184,15 @@ metrics:
     gauge:
       value_type: int
     attributes: [worker.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.worktable.cache.hit_ratio:
+    enabled: false
+    description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 feature_gates:

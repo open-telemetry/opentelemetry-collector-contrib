@@ -286,6 +286,28 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
+// AttributeRequestState specifies the value request.state attribute.
+type AttributeRequestState int
+
+const (
+	_ AttributeRequestState = iota
+	AttributeRequestStateWaiting
+)
+
+// String returns the string representation of the AttributeRequestState.
+func (av AttributeRequestState) String() string {
+	switch av {
+	case AttributeRequestStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeRequestState is a helper map of string to AttributeRequestState attribute value.
+var MapAttributeRequestState = map[string]AttributeRequestState{
+	"waiting": AttributeRequestStateWaiting,
+}
+
 // AttributeSqlserverAccessScanType specifies the value sqlserver.access.scan.type attribute.
 type AttributeSqlserverAccessScanType int
 
@@ -396,28 +418,6 @@ func (av AttributeSqlserverPageCompressionType) String() string {
 var MapAttributeSqlserverPageCompressionType = map[string]AttributeSqlserverPageCompressionType{
 	"attempted": AttributeSqlserverPageCompressionTypeAttempted,
 	"succeeded": AttributeSqlserverPageCompressionTypeSucceeded,
-}
-
-// AttributeRequestState specifies the value request.state attribute.
-type AttributeRequestState int
-
-const (
-	_ AttributeRequestState = iota
-	AttributeRequestStateWaiting
-)
-
-// String returns the string representation of the AttributeRequestState.
-func (av AttributeRequestState) String() string {
-	switch av {
-	case AttributeRequestStateWaiting:
-		return "waiting"
-	}
-	return ""
-}
-
-// MapAttributeRequestState is a helper map of string to AttributeRequestState attribute value.
-var MapAttributeRequestState = map[string]AttributeRequestState{
-	"waiting": AttributeRequestStateWaiting,
 }
 
 // AttributeSqlserverParameterizationResult specifies the value sqlserver.parameterization.result attribute.
@@ -879,11 +879,11 @@ var MetricsInfo = metricsInfo{
 	SqlserverResourcePoolDiskThrottledWriteRate: metricInfo{
 		Name: "sqlserver.resource_pool.disk.throttled.write.rate",
 	},
-	SqlserverStoredProcedureInvocationRate: metricInfo{
-		Name: "sqlserver.stored_procedure.invocation.rate",
-	},
 	SqlserverScanPointRevalidationRate: metricInfo{
 		Name: "sqlserver.scan_point.revalidation.rate",
+	},
+	SqlserverStoredProcedureInvocationRate: metricInfo{
+		Name: "sqlserver.stored_procedure.invocation.rate",
 	},
 	SqlserverTableCount: metricInfo{
 		Name:       "sqlserver.table.count",
@@ -930,9 +930,6 @@ var MetricsInfo = metricsInfo{
 	SqlserverUserConnectionCount: metricInfo{
 		Name: "sqlserver.user.connection.count",
 	},
-	SqlserverWorktableCacheHitRatio: metricInfo{
-		Name: "sqlserver.worktable.cache.hit_ratio",
-	},
 	SqlserverWorkerRequestCount: metricInfo{
 		Name:       "sqlserver.worker.request.count",
 		Attributes: []string{"request.state"},
@@ -940,6 +937,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverWorkerThreadCount: metricInfo{
 		Name:       "sqlserver.worker.thread.count",
 		Attributes: []string{"worker.state"},
+	},
+	SqlserverWorktableCacheHitRatio: metricInfo{
+		Name: "sqlserver.worktable.cache.hit_ratio",
 	},
 }
 
@@ -1021,9 +1021,9 @@ type metricsInfo struct {
 	SqlserverTransactionLogShrinkCount          metricInfo
 	SqlserverTransactionLogUsage                metricInfo
 	SqlserverUserConnectionCount                metricInfo
-	SqlserverWorktableCacheHitRatio             metricInfo
 	SqlserverWorkerRequestCount                 metricInfo
 	SqlserverWorkerThreadCount                  metricInfo
+	SqlserverWorktableCacheHitRatio             metricInfo
 }
 
 type metricInfo struct {
@@ -6045,9 +6045,9 @@ type MetricsBuilder struct {
 	metricSqlserverTransactionLogShrinkCount          metricSqlserverTransactionLogShrinkCount
 	metricSqlserverTransactionLogUsage                metricSqlserverTransactionLogUsage
 	metricSqlserverUserConnectionCount                metricSqlserverUserConnectionCount
-	metricSqlserverWorktableCacheHitRatio             metricSqlserverWorktableCacheHitRatio
 	metricSqlserverWorkerRequestCount                 metricSqlserverWorkerRequestCount
 	metricSqlserverWorkerThreadCount                  metricSqlserverWorkerThreadCount
+	metricSqlserverWorktableCacheHitRatio             metricSqlserverWorktableCacheHitRatio
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -6150,9 +6150,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTransactionLogShrinkCount:          newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:                newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
 		metricSqlserverUserConnectionCount:                newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
-		metricSqlserverWorktableCacheHitRatio:             newMetricSqlserverWorktableCacheHitRatio(mbc.Metrics.SqlserverWorktableCacheHitRatio),
 		metricSqlserverWorkerRequestCount:                 newMetricSqlserverWorkerRequestCount(mbc.Metrics.SqlserverWorkerRequestCount),
 		metricSqlserverWorkerThreadCount:                  newMetricSqlserverWorkerThreadCount(mbc.Metrics.SqlserverWorkerThreadCount),
+		metricSqlserverWorktableCacheHitRatio:             newMetricSqlserverWorktableCacheHitRatio(mbc.Metrics.SqlserverWorktableCacheHitRatio),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
@@ -6356,9 +6356,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
-	mb.metricSqlserverWorktableCacheHitRatio.emit(ils.Metrics())
 	mb.metricSqlserverWorkerRequestCount.emit(ils.Metrics())
 	mb.metricSqlserverWorkerThreadCount.emit(ils.Metrics())
+	mb.metricSqlserverWorktableCacheHitRatio.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -6815,11 +6815,6 @@ func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSqlserverWorktableCacheHitRatioDataPoint adds a data point to sqlserver.worktable.cache.hit_ratio metric.
-func (mb *MetricsBuilder) RecordSqlserverWorktableCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverWorktableCacheHitRatio.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordSqlserverWorkerRequestCountDataPoint adds a data point to sqlserver.worker.request.count metric.
 func (mb *MetricsBuilder) RecordSqlserverWorkerRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestStateAttributeValue AttributeRequestState) {
 	mb.metricSqlserverWorkerRequestCount.recordDataPoint(mb.startTime, ts, val, requestStateAttributeValue.String())
@@ -6828,6 +6823,11 @@ func (mb *MetricsBuilder) RecordSqlserverWorkerRequestCountDataPoint(ts pcommon.
 // RecordSqlserverWorkerThreadCountDataPoint adds a data point to sqlserver.worker.thread.count metric.
 func (mb *MetricsBuilder) RecordSqlserverWorkerThreadCountDataPoint(ts pcommon.Timestamp, val int64, workerStateAttributeValue AttributeWorkerState) {
 	mb.metricSqlserverWorkerThreadCount.recordDataPoint(mb.startTime, ts, val, workerStateAttributeValue.String())
+}
+
+// RecordSqlserverWorktableCacheHitRatioDataPoint adds a data point to sqlserver.worktable.cache.hit_ratio metric.
+func (mb *MetricsBuilder) RecordSqlserverWorktableCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverWorktableCacheHitRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

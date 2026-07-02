@@ -264,8 +264,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverAccessScanRate.Enabled ||
-		metrics.SqlserverBatchRequestRate.Enabled ||
-	    metrics.SqlserverAttentionRate.Enabled ||
+		metrics.SqlserverAttentionRate.Enabled ||
 		metrics.SqlserverBatchRequestRate.Enabled ||
 		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
@@ -303,21 +302,17 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||
 		metrics.SqlserverPageCompressionRate.Enabled ||
 		metrics.SqlserverPageLookupRate.Enabled ||
+		metrics.SqlserverPageReadAheadRate.Enabled ||
 		metrics.SqlserverParameterizationRate.Enabled ||
 		metrics.SqlserverPlanExecutionRate.Enabled ||
-		metrics.SqlserverPageReadAheadRate.Enabled ||
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverRecompilationRatio.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
-		metrics.SqlserverStoredProcedureInvocationRate.Enabled ||
 		metrics.SqlserverScanPointRevalidationRate.Enabled ||
-		metrics.SqlserverAttentionRate.Enabled ||
-		metrics.SqlserverParameterizationRate.Enabled ||
-		metrics.SqlserverPlanExecutionRate.Enabled ||
-		metrics.SqlserverRecompilationRatio.Enabled ||
+		metrics.SqlserverStoredProcedureInvocationRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTaskCount.Enabled ||
 		metrics.SqlserverTaskRate.Enabled ||

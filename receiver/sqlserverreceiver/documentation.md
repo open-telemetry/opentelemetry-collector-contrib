@@ -270,6 +270,52 @@ Number of CPUs.
 | ---- | ----------- | ---------- | --------- |
 | {CPUs} | Gauge | Int | Development |
 
+### sqlserver.cursor.count
+
+Number of cursors by state (active or cached).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursor} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cursor.state | The state of the cursor. | Str: ``active``, ``cached`` | Recommended | - |
+
+### sqlserver.cursor.memory
+
+Memory used by cursors.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### sqlserver.cursor.plan.count
+
+Number of active cursor plans.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {plan} | Gauge | Int | Development |
+
+### sqlserver.cursor.request.rate
+
+Rate of cursor requests per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
 ### sqlserver.database.backup_or_restore.rate
 
 Total number of backups/restores.
@@ -839,16 +885,6 @@ Total number of mirror write transactions.
 | ---- | ----------- | ---------- | --------- |
 | “{transactions}/s” | Gauge | Double | Development |
 
-### sqlserver.worktable.cache.hit_ratio
-
-Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
 ### sqlserver.worker.request.count
 
 Number of worker requests by state.
@@ -880,6 +916,16 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | worker.state | The state of the worker thread. | Str: ``maximum``, ``active``, ``available``, ``waiting_for_cpu`` | Recommended | - |
+
+### sqlserver.worktable.cache.hit_ratio
+
+Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
 
 ## Default Events
 

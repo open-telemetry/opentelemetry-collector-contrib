@@ -390,9 +390,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverWorktableCacheHitRatioDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 1, AttributeRequestStateWaiting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 3, AttributeRequestStateWaiting)
@@ -403,6 +400,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 3, AttributeWorkerStateActive)
 			}
+
+			allMetricsCount++
+			mb.RecordSqlserverWorktableCacheHitRatioDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -1766,18 +1766,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.stored_procedure.invocation.rate":
-					assert.False(t, validatedMetrics["sqlserver.stored_procedure.invocation.rate"], "Found a duplicate in the metrics slice: sqlserver.stored_procedure.invocation.rate")
-					validatedMetrics["sqlserver.stored_procedure.invocation.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
-					assert.Equal(t, "{invocation}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.scan_point.revalidation.rate":
 					assert.False(t, validatedMetrics["sqlserver.scan_point.revalidation.rate"], "Found a duplicate in the metrics slice: sqlserver.scan_point.revalidation.rate")
 					validatedMetrics["sqlserver.scan_point.revalidation.rate"] = true
@@ -1785,6 +1773,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Rate at which scan points needed to be revalidated.", mi.Description())
 					assert.Equal(t, "{revalidate}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.stored_procedure.invocation.rate":
+					assert.False(t, validatedMetrics["sqlserver.stored_procedure.invocation.rate"], "Found a duplicate in the metrics slice: sqlserver.stored_procedure.invocation.rate")
+					validatedMetrics["sqlserver.stored_procedure.invocation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate of Service Broker activated stored procedure invocations per second. Sourced from the SQLServer:Broker Activation performance counter object.", mi.Description())
+					assert.Equal(t, "{invocation}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -2057,18 +2057,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "sqlserver.worktable.cache.hit_ratio":
-					assert.False(t, validatedMetrics["sqlserver.worktable.cache.hit_ratio"], "Found a duplicate in the metrics slice: sqlserver.worktable.cache.hit_ratio")
-					validatedMetrics["sqlserver.worktable.cache.hit_ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.worker.request.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
@@ -2149,6 +2137,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("worker.state")
 						assert.False(t, ok)
 					}
+				case "sqlserver.worktable.cache.hit_ratio":
+					assert.False(t, validatedMetrics["sqlserver.worktable.cache.hit_ratio"], "Found a duplicate in the metrics slice: sqlserver.worktable.cache.hit_ratio")
+					validatedMetrics["sqlserver.worktable.cache.hit_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				}
 			}
 		})
