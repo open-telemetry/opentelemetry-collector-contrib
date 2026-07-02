@@ -14,6 +14,10 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -172,6 +176,7 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Statement[K]{
 		function:          function,
 		condition:         expression,
@@ -377,6 +382,8 @@ type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+	tracer            trace.Tracer
+	tracing           bool
 }
 
 // StatementSequenceOption is an option for a StatementSequence
@@ -401,6 +408,13 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 	for _, op := range options {
 		op(&s)
 	}
+	switch tp := telemetrySettings.TracerProvider.(type) {
+	case nil, noop.TracerProvider:
+		// do nothing - tracer remains nil, tracing stays false
+	default:
+		s.tracer = tp.Tracer("ottl")
+		s.tracing = true
+	}
 	return s
 }
 
@@ -409,18 +423,78 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
+	if s.tracing {
+		return s.executeWithTracing(ctx, tCtx)
+	}
+	return s.executeWithoutTracing(ctx, tCtx)
+}
+
+func (s *StatementSequence[K]) executeWithTracing(ctx context.Context, tCtx K) error {
+	ctx, sequenceSpan := s.tracer.Start(ctx, "ottl/StatementSequenceExecution")
+	defer sequenceSpan.End()
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
+		s.telemetrySettings.Logger.Debug(
+			"initial TransformContext before executing StatementSequence",
+			zap.Any("TransformContext", tCtx),
+			zap.Any("trace_id", sequenceSpan.SpanContext().TraceID()),
+			zap.Any("span_id", sequenceSpan.SpanContext().SpanID()),
+		)
+	}
+	for _, statement := range s.statements {
+		statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
+
+		_, condition, err := statement.Execute(statementCtx, tCtx)
+
+		statementSpan.SetAttributes(
+			attribute.String("statement", statement.origText),
+			attribute.Bool("condition.matched", condition),
+		)
+
+		if err != nil {
+			err = fmt.Errorf("failed to execute statement '%s': %w", statement.origText, err)
+			statementSpan.RecordError(err)
+			statementSpan.SetStatus(codes.Error, err.Error())
+			statementSpan.End()
+			if s.errorMode == PropagateError {
+				sequenceSpan.SetStatus(codes.Error, err.Error())
+				return err
+			}
+			if s.errorMode == IgnoreError {
+				s.telemetrySettings.Logger.Warn(
+					"failed statement execution error",
+					zap.Error(err),
+					zap.String("trace_id", statementSpan.SpanContext().TraceID().String()),
+					zap.String("span_id", statementSpan.SpanContext().SpanID().String()),
+				)
+			}
+		} else {
+			statementSpan.SetStatus(codes.Ok, "statement executed successfully")
+			statementSpan.End()
+		}
+	}
+	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
+	return nil
+}
+
+func (s *StatementSequence[K]) executeWithoutTracing(ctx context.Context, tCtx K) error {
+	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
+		s.telemetrySettings.Logger.Debug(
+			"initial TransformContext before executing StatementSequence",
+			zap.Any("TransformContext", tCtx),
+		)
 	}
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
 			if s.errorMode == PropagateError {
-				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
-				return err
+				return fmt.Errorf("failed to execute statement '%s': %w", statement.origText, err)
 			}
 			if s.errorMode == IgnoreError {
-				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+				s.telemetrySettings.Logger.Warn(
+					"failed statement execution error",
+					zap.Error(err),
+					zap.String("statement", statement.origText),
+				)
 			}
 		}
 	}

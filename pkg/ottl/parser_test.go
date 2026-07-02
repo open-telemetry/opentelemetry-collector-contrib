@@ -15,8 +15,13 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -2834,6 +2839,152 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestStatementSequence_Execute_Tracing(t *testing.T) {
+	tests := []struct {
+		name        string
+		statements  func(set component.TelemetrySettings) []*Statement[any]
+		options     []StatementSequenceOption[any]
+		noTracing   bool
+		expectError bool
+		validate    func(t *testing.T, spans []tracetest.SpanStub)
+	}{
+		{
+			name:      "no tracing - NeverSample - no spans recorded",
+			noTracing: true,
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, nil }},
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []tracetest.SpanStub) {
+				assert.Empty(t, spans)
+			},
+		},
+		{
+			name: "successful execution - spans with correct attributes and hierarchy",
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return 1, nil }},
+					origText:          "test_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []tracetest.SpanStub) {
+				require.Len(t, spans, 2)
+				stmtSpan, seqSpan := spans[0], spans[1]
+
+				assert.Equal(t, "ottl/StatementExecution", stmtSpan.Name)
+				assert.Equal(t, "ottl/StatementSequenceExecution", seqSpan.Name)
+
+				// Statement span is child of sequence span
+				assert.Equal(t, seqSpan.SpanContext.SpanID(), stmtSpan.Parent.SpanID())
+				assert.Equal(t, seqSpan.SpanContext.TraceID(), stmtSpan.SpanContext.TraceID())
+
+				assert.Contains(t, stmtSpan.Attributes, attribute.String("statement", "test_statement"))
+				assert.Contains(t, stmtSpan.Attributes, attribute.Bool("condition.matched", true))
+
+				assert.Equal(t, codes.Ok, stmtSpan.Status.Code)
+				assert.Equal(t, codes.Ok, seqSpan.Status.Code)
+			},
+		},
+		{
+			name:        "PropagateError - both spans record error",
+			expectError: true,
+			options:     []StatementSequenceOption[any]{WithStatementSequenceErrorMode[any](PropagateError)},
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("boom") }},
+					origText:          "err_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []tracetest.SpanStub) {
+				require.Len(t, spans, 2)
+				stmtSpan, seqSpan := spans[0], spans[1]
+
+				assert.Equal(t, codes.Error, stmtSpan.Status.Code)
+				assert.Contains(t, stmtSpan.Status.Description, "boom")
+				assert.NotEmpty(t, stmtSpan.Events, "statement span should have a RecordError event")
+
+				assert.Equal(t, codes.Error, seqSpan.Status.Code)
+				assert.Contains(t, seqSpan.Status.Description, "boom")
+			},
+		},
+		{
+			name:    "IgnoreError - statement span has error, sequence span is Ok",
+			options: []StatementSequenceOption[any]{WithStatementSequenceErrorMode[any](IgnoreError)},
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("boom") }},
+					origText:          "err_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []tracetest.SpanStub) {
+				require.Len(t, spans, 2)
+				stmtSpan, seqSpan := spans[0], spans[1]
+
+				assert.Equal(t, codes.Error, stmtSpan.Status.Code)
+				assert.NotEmpty(t, stmtSpan.Events, "statement span should have a RecordError event")
+
+				assert.Equal(t, codes.Ok, seqSpan.Status.Code)
+			},
+		},
+		{
+			name:    "SilentError - statement span has error, sequence span is Ok",
+			options: []StatementSequenceOption[any]{WithStatementSequenceErrorMode[any](SilentError)},
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("boom") }},
+					origText:          "err_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []tracetest.SpanStub) {
+				require.Len(t, spans, 2)
+				stmtSpan, seqSpan := spans[0], spans[1]
+
+				assert.Equal(t, codes.Error, stmtSpan.Status.Code)
+				assert.NotEmpty(t, stmtSpan.Events, "statement span should have a RecordError event")
+
+				assert.Equal(t, codes.Ok, seqSpan.Status.Code)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := tracetest.NewSpanRecorder()
+			set := componenttest.NewNopTelemetrySettings()
+			sampler := trace.AlwaysSample()
+			if tt.noTracing {
+				sampler = trace.NeverSample()
+			}
+			set.TracerProvider = trace.NewTracerProvider(
+				trace.WithSampler(sampler),
+				trace.WithSpanProcessor(rec),
+			)
+
+			seq := NewStatementSequence(tt.statements(set), set, tt.options...)
+			err := seq.Execute(t.Context(), nil)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			tt.validate(t, tracetest.SpanStubsFromReadOnlySpans(rec.Ended()))
 		})
 	}
 }
