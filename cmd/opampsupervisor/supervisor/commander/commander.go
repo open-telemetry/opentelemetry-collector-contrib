@@ -165,8 +165,6 @@ func (c *Commander) startNormal() error {
 }
 
 func (c *Commander) startWithPassthroughLogging() error {
-	c.logFilePath = ""
-
 	// grab cmd pipes
 	stdoutPipe, err := c.cmd.StdoutPipe()
 	if err != nil {
@@ -185,11 +183,9 @@ func (c *Commander) startWithPassthroughLogging() error {
 
 	colLogger := c.logger.Named("collector")
 	var outputWG sync.WaitGroup
-	outputWG.Add(2)
 
 	// capture agent output
-	go func() {
-		defer outputWG.Done()
+	outputWG.Go(func() {
 		reader := bufio.NewReader(stdoutPipe)
 		for {
 			line, err := reader.ReadString('\n')
@@ -209,9 +205,8 @@ func (c *Commander) startWithPassthroughLogging() error {
 			colLogger.Info(line)
 			c.onPassthroughLogLine(line)
 		}
-	}()
-	go func() {
-		defer outputWG.Done()
+	})
+	outputWG.Go(func() {
 		reader := bufio.NewReader(stderrPipe)
 		for {
 			line, err := reader.ReadString('\n')
@@ -231,7 +226,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 			colLogger.Error(line)
 			c.onPassthroughLogLine(line)
 		}
-	}()
+	})
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 
