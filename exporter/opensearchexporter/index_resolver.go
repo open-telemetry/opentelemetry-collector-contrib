@@ -137,9 +137,10 @@ func (*indexResolver) calculateTimeSuffix(timeFormat string, timestamp time.Time
 var safeIndexSegmentPattern = regexp.MustCompile(`^[a-z0-9_.-]+$`)
 
 // isSafeIndexSegment reports whether an attribute value can be substituted into
-// an index name. A leading dot would target system indices (e.g. `.kibana`),
-// and `..` enables path traversal in the index API, so both are rejected even
-// though their individual characters are otherwise allowed.
+// an index name. A leading dot would target system indices (e.g. `.kibana`).
+// OpenSearch already rejects a standalone `..` name, so rejecting any `..`
+// sequence here is defense-in-depth rather than a load-bearing check. Both are
+// rejected even though their individual characters are otherwise allowed.
 func isSafeIndexSegment(val string) bool {
 	return safeIndexSegmentPattern.MatchString(val) &&
 		!strings.HasPrefix(val, ".") &&
