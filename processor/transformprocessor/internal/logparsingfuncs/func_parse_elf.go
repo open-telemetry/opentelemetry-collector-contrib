@@ -205,15 +205,14 @@ func parseELFDataLine(line string) ([]string, error) {
 					i++
 					continue
 				}
-				if i+1 < n && line[i+1] == '"' {
-					// escaped double-quote: "" → "
-					sb.WriteByte('"')
-					i += 2
-				} else {
+				if i+1 >= n || line[i+1] != '"' {
 					i++ // skip closing '"'
 					closed = true
 					break
 				}
+				// escaped double-quote: "" → "
+				sb.WriteByte('"')
+				i += 2
 			}
 			if !closed {
 				return nil, fmt.Errorf("unterminated quoted value in data line: %q", line)
