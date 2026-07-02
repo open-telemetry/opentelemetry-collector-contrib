@@ -79,6 +79,7 @@ type routingItem[C any] struct {
 	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[*ottllog.TransformContext]
+	statementText      string
 	statementContext   string
 	action             Action
 }
@@ -239,6 +240,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				return err
 			}
 			route.statementContext = "request"
+			route.statementText = item.Condition
 		} else {
 			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
@@ -263,22 +265,28 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			switch s := result.(type) {
 			case *ottl.Statement[*ottlotelcol.TransformContext]:
 				route.otelcolStatement = s
-				route.statementContext = "otelcol"
+				route.statementContext = ottlotelcol.ContextName
+				route.statementText = s.String()
 			case *ottl.Statement[*ottlresource.TransformContext]:
 				route.resourceStatement = s
-				route.statementContext = "resource"
+				route.statementContext = ottlresource.ContextName
+				route.statementText = s.String()
 			case *ottl.Statement[*ottlspan.TransformContext]:
 				route.spanStatement = s
-				route.statementContext = "span"
+				route.statementContext = ottlspan.ContextName
+				route.statementText = s.String()
 			case *ottl.Statement[*ottlmetric.TransformContext]:
 				route.metricStatement = s
-				route.statementContext = "metric"
+				route.statementContext = ottlmetric.ContextName
+				route.statementText = s.String()
 			case *ottl.Statement[*ottldatapoint.TransformContext]:
 				route.dataPointStatement = s
-				route.statementContext = "datapoint"
+				route.statementContext = ottldatapoint.ContextName
+				route.statementText = s.String()
 			case *ottl.Statement[*ottllog.TransformContext]:
 				route.logStatement = s
-				route.statementContext = "log"
+				route.statementContext = ottllog.ContextName
+				route.statementText = s.String()
 			default:
 				return fmt.Errorf("unexpected statement type: %T", result)
 			}
@@ -286,7 +294,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 
 		// Use the resolved context for the key so that an explicit context and its
 		// inferred equivalent are treated as the same route.
-		k := key(route.statementContext, item)
+		k := key(route.statementContext, route.statementText)
 		if _, dupeFound := r.routes[k]; dupeFound {
 			var pipelineNames []string
 			for _, p := range item.Pipelines {
@@ -311,9 +319,6 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 	return nil
 }
 
-func key(resolvedContext string, entry RoutingTableItem) string {
-	if resolvedContext == "request" {
-		return "[request] " + entry.Condition
-	}
-	return "[" + resolvedContext + "] " + entry.Statement
+func key(resolvedContext, ottlText string) string {
+	return "[" + resolvedContext + "] " + ottlText
 }

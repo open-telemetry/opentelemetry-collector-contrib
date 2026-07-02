@@ -266,12 +266,17 @@ func TestDuplicateRouteIsIgnored(t *testing.T) {
 	routeTable := []RoutingTableItem{
 		{Condition: `resource.attributes["env"] == "prod"`, Pipelines: []pipeline.ID{originalPipeline}},
 		{Condition: `resource.attributes["env"] == "prod"`, Pipelines: []pipeline.ID{duplicatePipeline}}, // duplicate
+
+		{Condition: `span.attributes["foo"] == "foo"`, Pipelines: []pipeline.ID{originalPipeline}},
+		{Context: "span", Condition: `attributes["foo"] == "foo"`, Pipelines: []pipeline.ID{duplicatePipeline}}, // duplicate after inference
+
+		{Context: "request", Condition: `request["foo"] == "foo"`, Pipelines: []pipeline.ID{originalPipeline}},
+		{Context: "request", Condition: `request["foo"] == "foo"`, Pipelines: []pipeline.ID{duplicatePipeline}}, // duplicate
 	}
 
 	originalSink := new(consumertest.LogsSink)
 	duplicateSink := new(consumertest.LogsSink)
 
-	// Consumer provider returns different sinks based on pipeline ID
 	consumerProvider := func(pipelineIDs ...pipeline.ID) (consumer.Logs, error) {
 		if len(pipelineIDs) > 0 && pipelineIDs[0] == originalPipeline {
 			return originalSink, nil
@@ -281,19 +286,20 @@ func TestDuplicateRouteIsIgnored(t *testing.T) {
 
 	router, err := newRouter(routeTable, nil, consumerProvider, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
+	require.Len(t, router.routeSlice, 3)
+	require.Len(t, router.routes, 3)
 
-	// Only one route should exist (duplicate was ignored)
-	require.Len(t, router.routeSlice, 1)
-	require.Len(t, router.routes, 1)
+	resourceRoute := router.routeSlice[0]
+	assert.Equal(t, "resource", resourceRoute.statementContext)
+	assert.Same(t, originalSink, resourceRoute.consumer)
 
-	// The route should use the original pipeline's consumer, not the duplicate's
-	// We verify this by checking the route exists and has the expected context
-	route := router.routeSlice[0]
-	assert.Equal(t, "resource", route.statementContext)
+	spanRoute := router.routeSlice[1]
+	assert.Equal(t, "span", spanRoute.statementContext)
+	assert.Same(t, originalSink, spanRoute.consumer)
 
-	// The consumer should be the original sink, not the duplicate sink
-	// Since we can't directly compare consumers, we verify by using the router
-	assert.Same(t, originalSink, route.consumer)
+	requestRoute := router.routeSlice[2]
+	assert.Equal(t, "request", requestRoute.statementContext)
+	assert.Same(t, originalSink, requestRoute.consumer)
 }
 
 // routerBuilders builds a router for each signal type. In the test table, we use this to build a router for each test case

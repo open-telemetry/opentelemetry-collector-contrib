@@ -76,11 +76,11 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
-	route, ok := rtConn.router.routes[key("resource", rtConn.router.table[0])]
+	route, ok := rtConn.router.routes[key("resource", rtConn.router.routeSlice[0].statementText)]
 	assert.True(t, ok)
 	require.Same(t, &sink0, route.consumer)
 
-	route, ok = rtConn.router.routes[key("resource", rtConn.router.table[1])]
+	route, ok = rtConn.router.routes[key("resource", rtConn.router.routeSlice[1].statementText)]
 	assert.True(t, ok)
 
 	routeConsumer, err := router.Consumer(logs0, logs1)
