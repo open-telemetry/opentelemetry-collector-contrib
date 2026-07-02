@@ -250,6 +250,13 @@
       ]
     },
     {
+      "groupName": "github.com/twmb/franz-go/pkg/kmsg package",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "allowedVersions": "<2.0.0"
+    },
+    {
       "matchPackageNames": [
         "github.com/vmware/govmomi"
       ],

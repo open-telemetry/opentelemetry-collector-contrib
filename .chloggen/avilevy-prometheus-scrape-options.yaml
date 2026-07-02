@@ -1,9 +1,0 @@
-change_type: enhancement
-component: receiver/prometheus
-note: Add `scrape_on_shutdown`, `discovery_reload_on_startup`, and `initial_scrape_offset` configuration options to allow tuning startup and shutdown scrape behavior in serverless environments.
-issues: [48979]
-subtext: |
-  - `scrape_on_shutdown` (default: false): Enables a final scrape before the receiver closes.
-  - `discovery_reload_on_startup` (default: false): Enables discovering targets immediately on startup.
-  - `initial_scrape_offset` (default: 0s): Adds a fixed delay before the initial scrape of targets.
-change_logs: [user]

@@ -28,6 +28,61 @@ import (
 func TestCreateNewLogReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
+	userDefinedServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	userDefinedServerConfig.WriteTimeout = 0
+	userDefinedServerConfig.ReadHeaderTimeout = 0
+	userDefinedServerConfig.IdleTimeout = 0
+	userDefinedServerConfig.KeepAlivesEnabled = false
+	userDefinedServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	headerRegexServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	headerRegexServerConfig.WriteTimeout = 0
+	headerRegexServerConfig.ReadHeaderTimeout = 0
+	headerRegexServerConfig.IdleTimeout = 0
+	headerRegexServerConfig.KeepAlivesEnabled = false
+	headerRegexServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	readTimeoutServerConfig.WriteTimeout = 0
+	readTimeoutServerConfig.ReadHeaderTimeout = 0
+	readTimeoutServerConfig.IdleTimeout = 0
+	readTimeoutServerConfig.KeepAlivesEnabled = false
+	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	writeTimeoutServerConfig.WriteTimeout = 0
+	writeTimeoutServerConfig.ReadHeaderTimeout = 0
+	writeTimeoutServerConfig.IdleTimeout = 0
+	writeTimeoutServerConfig.KeepAlivesEnabled = false
+	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
+	regexCompileServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	regexCompileServerConfig.WriteTimeout = 0
+	regexCompileServerConfig.ReadHeaderTimeout = 0
+	regexCompileServerConfig.IdleTimeout = 0
+	regexCompileServerConfig.KeepAlivesEnabled = false
+	regexCompileServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+
 	tests := []struct {
 		desc     string
 		cfg      Config
@@ -43,12 +98,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined config success",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: userDefinedServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -63,12 +113,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined config success with header_attribute_regex supplied",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: headerRegexServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -84,12 +129,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined read timeout exceeds max value",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: readTimeoutServerConfig,
 				ReadTimeout:  "11s",
 				WriteTimeout: "5s",
 				Path:         "/event",
@@ -105,12 +145,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined write timeout exceeds max value",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: writeTimeoutServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "11s",
 				Path:         "/event",
@@ -126,12 +161,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined regex fails to compile",
 			cfg: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
+				ServerConfig: regexCompileServerConfig,
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
 				Path:         "/event",

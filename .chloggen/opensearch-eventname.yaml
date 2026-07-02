@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: exporter/opensearch
+
+note: Preserve LogRecord EventName field in all log encoding modes.
+
+issues: [49314]
+
+subtext:

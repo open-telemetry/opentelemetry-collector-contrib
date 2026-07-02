@@ -56,6 +56,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/pprof
 pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
@@ -212,7 +213,6 @@ pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-pkg/translator/pprof
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
