@@ -368,10 +368,14 @@ func TestWithProxy(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.ProxyURL = tt.proxyURL
 			cfg := &datadogconfig.Config{
-				ClientConfig: confighttp.ClientConfig{
-					ProxyURL: tt.proxyURL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			// Create config with proxy settings from environment
@@ -402,10 +406,14 @@ func TestWithTLSSetting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			clientConfig := confighttp.NewDefaultClientConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			clientConfig.MaxIdleConns = 0
+			clientConfig.IdleConnTimeout = 0
+			clientConfig.ForceAttemptHTTP2 = false
+			clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify}
 			cfg := &datadogconfig.Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLS: configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify},
-				},
+				ClientConfig: clientConfig,
 			}
 
 			configComponent := NewConfigComponent(WithTLSSetting(cfg))

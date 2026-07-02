@@ -120,13 +120,9 @@ func (p *parseContext[K]) newLocalIdentifierGetter(identifier *basePath[K]) (Get
 }
 
 func (g *localIdentifierGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	activation, ok := ctx.Value(localActivationKey{}).(*localActivation)
-	if !ok {
-		return nil, fmt.Errorf("local identifier %q evaluated outside of an active local scope", g.identifier.name)
-	}
-	v, ok := activation.resolve(g.identifier.name)
-	if !ok {
-		return nil, fmt.Errorf("missing value for local identifier %q", g.identifier.name)
+	v, err := resolveLocalIdentifierBinding(ctx, g.identifier.name)
+	if err != nil {
+		return nil, err
 	}
 	if len(g.identifier.keys) > 0 {
 		val, err := getIndexedValue[K](ctx, tCtx, v, g.identifier.keys)
@@ -150,4 +146,25 @@ func countNonBlankIdentifiers(params []LocalIdentifierDecl) int {
 		}
 	}
 	return count
+}
+
+func resolveLocalIdentifierBinding(ctx context.Context, name string) (any, error) {
+	activation, ok := ctx.Value(localActivationKey{}).(*localActivation)
+	if !ok {
+		return nil, fmt.Errorf("local identifier %q evaluated outside of an active local scope", name)
+	}
+	v, ok := activation.resolve(name)
+	if !ok {
+		return nil, fmt.Errorf("missing value for local identifier %q", name)
+	}
+	return v, nil
+}
+
+func makeLocalIdentifiers(args ...string) []LocalIdentifierDecl {
+	res := make([]LocalIdentifierDecl, len(args))
+	for i, v := range args {
+		lid := localIdentifierDecl(v)
+		res[i] = &lid
+	}
+	return res
 }
