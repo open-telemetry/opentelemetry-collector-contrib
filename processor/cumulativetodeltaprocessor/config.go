@@ -16,6 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
+var validHistogramFields = map[string]bool{
+	"bucket_counts": true,
+	"sum":           true,
+	"count":         true,
+}
+
+var validHistogramFieldList = []string{"bucket_counts", "count", "sum"}
+
 var validMetricTypes = map[string]bool{
 	strings.ToLower(pmetric.MetricTypeSum.String()):                  true,
 	strings.ToLower(pmetric.MetricTypeHistogram.String()):            true,
@@ -42,6 +50,11 @@ type Config struct {
 	// Cannot be used with deprecated Metrics config option.
 	Include MatchMetrics `mapstructure:"include"`
 	Exclude MatchMetrics `mapstructure:"exclude"`
+
+	// HistogramFields specifies which histogram fields to convert to delta.
+	// Valid values: "bucket_counts", "sum", "count".
+	// When empty (default), all fields are converted (backward compatible).
+	HistogramFields []string `mapstructure:"histogram_fields"`
 }
 
 type MatchMetrics struct {
@@ -81,6 +94,15 @@ func (config *Config) Validate() error {
 				"found invalid metric type in include.metric_types: %s. Valid values are %s",
 				metricType,
 				validMetricTypeList,
+			)
+		}
+	}
+	for _, field := range config.HistogramFields {
+		if !validHistogramFields[strings.ToLower(field)] {
+			return fmt.Errorf(
+				"found invalid field in histogram_fields: %s. Valid values are %v",
+				field,
+				validHistogramFieldList,
 			)
 		}
 	}

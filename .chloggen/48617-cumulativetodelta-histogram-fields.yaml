@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/cumulativetodelta
+
+note: Add `histogram_fields` allowlist to control which histogram data-point fields (`bucket_counts`, `sum`, `count`) are converted to delta. Empty (default) preserves prior behavior of converting all fields.
+
+issues: [48617]
+
+change_logs: [user]

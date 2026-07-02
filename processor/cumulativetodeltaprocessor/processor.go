@@ -48,11 +48,36 @@ var (
 	}
 )
 
+type histogramFieldSet struct {
+	convertBucketCounts bool
+	convertSum          bool
+	convertCount        bool
+}
+
+func buildHistogramFieldSet(fields []string) histogramFieldSet {
+	if len(fields) == 0 {
+		return histogramFieldSet{true, true, true}
+	}
+	var fs histogramFieldSet
+	for _, f := range fields {
+		switch strings.ToLower(f) {
+		case "bucket_counts":
+			fs.convertBucketCounts = true
+		case "sum":
+			fs.convertSum = true
+		case "count":
+			fs.convertCount = true
+		}
+	}
+	return fs
+}
+
 type cumulativeToDeltaProcessor struct {
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
 	includeMetricTypes map[pmetric.MetricType]bool
 	excludeMetricTypes map[pmetric.MetricType]bool
+	histogramFields    histogramFieldSet
 	logger             *zap.Logger
 	deltaCalculator    *tracking.MetricTracker
 	cancelFunc         context.CancelFunc
@@ -90,6 +115,7 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger, telemetry
 		p.excludeMetricTypes = excludeMetricTypeFilter
 	}
 
+	p.histogramFields = buildHistogramFieldSet(config.HistogramFields)
 	p.deltaCalculator = tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue)
 
 	return p, nil
@@ -312,12 +338,16 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 		if valid {
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
-			dp.SetCount(delta.HistogramValue.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+			if ctdp.histogramFields.convertCount {
+				dp.SetCount(delta.HistogramValue.Count)
+			}
+			if ctdp.histogramFields.convertSum && dp.HasSum() && !math.IsNaN(dp.Sum()) {
 				dp.SetSum(delta.HistogramValue.Sum)
 			}
-			dp.ExplicitBounds().FromRaw(delta.HistogramValue.BucketBounds)
-			dp.BucketCounts().FromRaw(delta.HistogramValue.BucketCounts)
+			if ctdp.histogramFields.convertBucketCounts {
+				dp.ExplicitBounds().FromRaw(delta.HistogramValue.BucketBounds)
+				dp.BucketCounts().FromRaw(delta.HistogramValue.BucketCounts)
+			}
 			dp.RemoveMin()
 			dp.RemoveMax()
 			return false
@@ -367,20 +397,24 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 		if valid {
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
-			dp.SetCount(delta.ExponentialHistogramPoint.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+			if ctdp.histogramFields.convertCount {
+				dp.SetCount(delta.ExponentialHistogramPoint.Count)
+			}
+			if ctdp.histogramFields.convertSum && dp.HasSum() && !math.IsNaN(dp.Sum()) {
 				dp.SetSum(delta.ExponentialHistogramPoint.Sum)
 			}
-			// Scale and ZeroThreshold are unchanged
-			dp.SetZeroCount(delta.ExponentialHistogramPoint.ZeroCount)
-			dp.Positive().SetOffset(delta.ExponentialHistogramPoint.Positive.Offset)
-			if len(delta.ExponentialHistogramPoint.Positive.BucketCounts) == 0 {
-				pcommon.NewUInt64Slice()
-				dp.Positive().BucketCounts()
+			if ctdp.histogramFields.convertBucketCounts {
+				// Scale and ZeroThreshold are unchanged
+				dp.SetZeroCount(delta.ExponentialHistogramPoint.ZeroCount)
+				dp.Positive().SetOffset(delta.ExponentialHistogramPoint.Positive.Offset)
+				if len(delta.ExponentialHistogramPoint.Positive.BucketCounts) == 0 {
+					pcommon.NewUInt64Slice()
+					dp.Positive().BucketCounts()
+				}
+				dp.Positive().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Positive.BucketCounts)
+				dp.Negative().SetOffset(delta.ExponentialHistogramPoint.Negative.Offset)
+				dp.Negative().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Negative.BucketCounts)
 			}
-			dp.Positive().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Positive.BucketCounts)
-			dp.Negative().SetOffset(delta.ExponentialHistogramPoint.Negative.Offset)
-			dp.Negative().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Negative.BucketCounts)
 			// Cannot consistently compute min/max
 			dp.RemoveMin()
 			dp.RemoveMax()
