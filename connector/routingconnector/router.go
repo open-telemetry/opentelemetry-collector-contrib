@@ -247,11 +247,15 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			if item.Context == "" {
 				// Try context inference first. If that fails, fall back to "resource" for
 				// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
-				// implied resource context. Emit a warning so users can migrate to explicit
-				// context-qualified paths (e.g. resource.attributes["x"]).
+				// implied resource context.
 				result, err = r.parserCollection.ParseStatements(statementsGetter)
 				if err != nil {
-					result, err = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
+					r.logger.Debug("Failed to parse statement with context inference, retrying with 'resource' context.", zap.Error(err))
+					var retryErr error
+					result, retryErr = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
+					if retryErr == nil {
+						err = nil
+					}
 				}
 			} else {
 				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)

@@ -188,6 +188,17 @@ func TestContextInference(t *testing.T) {
 	}
 }
 
+func TestContextInferenceFailurePreservesParseError(t *testing.T) {
+	// When context inference fails and the resource fallback also fails, the original
+	// parse error must be returned instead of a misleading resource-prefixed path error.
+	routeTable := []RoutingTableItem{{
+		Condition: `datapoint.value_double <= 5 and metric.attributes["bar"] != nil`,
+		Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalMetrics, "test")},
+	}}
+	_, _, err := routerBuilders[pipeline.SignalMetrics](routeTable)
+	require.ErrorContains(t, err, `metric.attributes[bar]" is not a valid path`)
+}
+
 func TestRequestContextCannotBeInferred(t *testing.T) {
 	// The `request` context uses a special grammar (`request["key"] == "value"`) that
 	// is not valid OTTL syntax. It cannot be inferred from a condition; it must be
@@ -202,7 +213,8 @@ func TestRequestContextCannotBeInferred(t *testing.T) {
 	_, err := newRouter(routeTable, nil,
 		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 		componenttest.NewNopTelemetrySettings())
-	require.ErrorContains(t, err, `segment "request" from path "resource.request[X-Tenant]" is not a valid path`)
+	require.ErrorContains(t, err, `request[\"X-Tenant\"] == \"acme\""`)
+	require.ErrorContains(t, err, `first segment must be a valid context name`)
 }
 
 func TestRequestContextDeprecationWarning(t *testing.T) {
