@@ -141,9 +141,6 @@ func TestMoveCreate(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -169,9 +166,6 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -209,9 +203,6 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // Check if we read log lines from a rotated file before lines from the newly created file
 // Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
 func TestTrackRotatedFilesLogOrder(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -261,9 +252,6 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 // When a file it rotated out of pattern via move/create, we should
 // detect that our old handle is still valid attempt to read from it.
 func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
-	if runtime.GOOS == windowsOS {
-		t.Skip("Moving files while open is unsupported on Windows")
-	}
 	t.Parallel()
 
 	tempDir := t.TempDir()

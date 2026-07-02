@@ -273,7 +273,11 @@ The operator may lose a small percentage of logs, if both of the following condi
 When both of these conditions occur, it is possible that a file is written to (then copied elsewhere) and
 then truncated before the operator has a chance to consume the new data.
 
-### Potential failure to consume files when file rotation via move/create is used on Windows
+### File rotation via move/create on Windows
 
-On Windows, rotation of files using the Move/Create strategy may cause errors and loss of data,
-because Golang does not currently support the Windows mechanism for `FILE_SHARE_DELETE`.
+On Windows, files are opened with the `FILE_SHARE_DELETE` flag, which allows them to be moved or
+deleted by other processes while the operator still holds an open handle. Like other platforms,
+the operator keeps file handles open between poll cycles so that data written to a file that was
+rotated out of the matching pattern can still be read from the retained handle. The handle is
+released within a couple of poll cycles once the file is no longer matched, so it is never held
+perpetually.

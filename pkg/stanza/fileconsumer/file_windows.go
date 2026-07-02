@@ -6,17 +6,12 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 )
-
-// Noop on windows because we close files immediately after reading.
-func (*Manager) readLostFiles(context.Context) {
-}
 
 // normalizePath ensures Windows UNC paths are properly formatted for os.Open().
 // It converts UNC paths to extended-length format (\\?\UNC\server\share\path)

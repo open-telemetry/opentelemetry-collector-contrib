@@ -152,6 +152,32 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return filesClosed
 }
 
+// EndConsume closes the files from the previous poll and promotes the current
+// poll's files to be the previous poll's files. The current poll's files are
+// kept open between polls so that we can detect and read "lost" files, which
+// have been moved out of the matching pattern. On Windows, files are opened
+// with FILE_SHARE_DELETE so they can still be moved or deleted while we hold
+// the handle; the handle is released here within a couple of polls once the
+// file is no longer matched, so it is never held perpetually.
+func (t *fileTracker) EndConsume() (filesClosed int) {
+	spare := t.previousPollFiles
+	filesClosed = t.ClosePreviousFiles()
+
+	// t.currentPollFiles -> t.previousPollFiles
+	t.previousPollFiles = t.currentPollFiles
+	t.previousPollFiles.Reindex()
+	if spare == nil {
+		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
+	} else {
+		spare.Reset()
+		t.currentPollFiles = spare
+	}
+
+	t.unmatchedFiles = t.unmatchedFiles[:0]
+	t.unmatchedFps = t.unmatchedFps[:0]
+	return filesClosed
+}
+
 func (t *fileTracker) EndPoll(ctx context.Context) {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
