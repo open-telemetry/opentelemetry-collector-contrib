@@ -153,6 +153,10 @@ attributes:
     type: string
     requirement_level: required
     enum: [free_space, probe, range]
+  sqlserver.availability_group.name:
+    description: The name of the SQL Server Always On availability group.
+    type: string
+    requirement_level: recommended
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -271,6 +275,20 @@ attributes:
     description: Number of physical reads performed by the query.
     type: int
     requirement_level: recommended
+  sqlserver.replica.direction:
+    description: The direction of log data flow for the availability group replica.
+    type: string
+    requirement_level: recommended
+    enum: [transmit, receive]
+  sqlserver.replica.name:
+    description: The name of the availability replica server.
+    type: string
+    requirement_level: recommended
+  sqlserver.replica.queue.type:
+    description: The type of queue in the availability group replica pipeline.
+    type: string
+    requirement_level: recommended
+    enum: [send, redo]
   sqlserver.request_status:
     description: Status of the request (e.g., running, suspended).
     type: string
@@ -720,6 +738,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.log_data.io.rate:
+    enabled: false
+    description: Rate of log data flow between availability group replicas.
+    stability: development
+    unit: By/s
+    gauge:
+      value_type: double
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.direction]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
   sqlserver.login.rate:
     enabled: false
     description: Total number of logins.
@@ -927,6 +954,24 @@ metrics:
     gauge:
       value_type: double
     attributes: [replica.direction]
+  sqlserver.replica.queue.size:
+    enabled: false
+    description: Amount of log data queued in the availability group replica pipeline.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
+  sqlserver.replica.secondary_lag:
+    enabled: false
+    description: Number of seconds the secondary replica is lagging behind the primary replica.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
   sqlserver.resource_pool.disk.operations:
     enabled: false
     description: The rate of operations issued.

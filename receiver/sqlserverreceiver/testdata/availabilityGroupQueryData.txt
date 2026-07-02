@@ -1,0 +1,41 @@
+[
+  {
+    "availability_group": "AG_Primary",
+    "computer_name": "sql-node-01",
+    "database_name": "SalesDB",
+    "log_send_queue_size": "1024",
+    "log_send_rate": "512",
+    "measurement": "sqlserver_availability_group_replica_states",
+    "redo_queue_size": "2048",
+    "redo_rate": "256",
+    "replica_name": "sql-node-02",
+    "secondary_lag_seconds": "5",
+    "sql_instance": "sql-node-01"
+  },
+  {
+    "availability_group": "AG_Primary",
+    "computer_name": "sql-node-01",
+    "database_name": "InventoryDB",
+    "log_send_queue_size": "512",
+    "log_send_rate": "256",
+    "measurement": "sqlserver_availability_group_replica_states",
+    "redo_queue_size": "1024",
+    "redo_rate": "128",
+    "replica_name": "sql-node-02",
+    "secondary_lag_seconds": "2",
+    "sql_instance": "sql-node-01"
+  },
+  {
+    "availability_group": "AG_Primary",
+    "computer_name": "sql-node-01",
+    "database_name": "SalesDB",
+    "log_send_queue_size": "0",
+    "log_send_rate": "0",
+    "measurement": "sqlserver_availability_group_replica_states",
+    "redo_queue_size": "0",
+    "redo_rate": "0",
+    "replica_name": "sql-node-01",
+    "secondary_lag_seconds": "",
+    "sql_instance": "sql-node-01"
+  }
+]

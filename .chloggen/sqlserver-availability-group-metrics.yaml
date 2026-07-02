@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/sqlserver
+
+note: Add opt-in Always On Availability Group metrics
+
+issues: [48369]
+
+change_logs: [user]
