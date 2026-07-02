@@ -56,27 +56,31 @@ func BenchmarkExtractAttributes(b *testing.B) {
 // on every regular metric series.
 func makeWriteV2Request(numSeries, samplesPerSeries, extraLabels int) *writev2.Request {
 	symbols := []string{
-		"",
-		"__name__",
-		"job",
-		"my_job",
-		"instance",
-		"my_instance",
-		"target_info",
-		"service_name",
-		"my_service",
-		"service_version",
-		"v1.0",
-		"cloud_provider",
-		"gcp",
-		"otel_scope_name",
-		"bench_scope",
-		"otel_scope_version",
-		"v0.1.0",
-		"otel_scope_schema_url",
-		"https://example.com/schema",
-		"otel_scope_env",
-		"prod",
+		"",                                 // 0
+		"__name__",                         // 1
+		"job",                              // 2
+		"my_job",                           // 3
+		"instance",                         // 4
+		"my_instance",                      // 5
+		"target_info",                      // 6
+		"service_name",                     // 7
+		"my_service",                       // 8
+		"service_version",                  // 9
+		"v1.0",                             // 10
+		"cloud_provider",                   // 11
+		"gcp",                              // 12
+		"otel_scope_name",                  // 13
+		"bench_scope",                      // 14
+		"otel_scope_version",               // 15
+		"v0.1.0",                           // 16
+		"otel_scope_schema_url",            // 17
+		"https://example.com/schema",       // 18
+		"otel_scope_env",                   // 19
+		"prod",                             // 20
+		"trace_id",                         // 21
+		"4bf92f3577b34da6a3ce929d0e0e4736", // 22
+		"span_id",                          // 23
+		"00f067aa0ba902b7",                 // 24
 	}
 
 	extraLabelIndexStart := len(symbols)
@@ -116,11 +120,35 @@ func makeWriteV2Request(numSeries, samplesPerSeries, extraLabels int) *writev2.R
 			samples = append(samples, writev2.Sample{Value: float64(1), Timestamp: int64(s + 1), StartTimestamp: int64(s + 1)})
 		}
 
+		metricType := writev2.Metadata_METRIC_TYPE_GAUGE
+		if i%2 == 0 {
+			metricType = writev2.Metadata_METRIC_TYPE_COUNTER
+		}
+
 		ts = append(ts, writev2.TimeSeries{
-			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			Metadata:   writev2.Metadata{Type: metricType},
 			LabelsRefs: labelRefs,
 			Samples:    samples,
 		})
+
+		if metricType == writev2.Metadata_METRIC_TYPE_COUNTER {
+			exemplars := make([]writev2.Exemplar, 0, samplesPerSeries)
+			for s := range samplesPerSeries {
+				exemplars = append(exemplars, writev2.Exemplar{
+					Value:     float64(i + s + 1),
+					Timestamp: int64(s + 1),
+					LabelsRefs: []uint32{
+						21, 22,
+						23, 24,
+					},
+				})
+			}
+			ts = append(ts, writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: metricType},
+				LabelsRefs: labelRefs,
+				Exemplars:  exemplars,
+			})
+		}
 	}
 
 	return &writev2.Request{Symbols: symbols, Timeseries: ts}

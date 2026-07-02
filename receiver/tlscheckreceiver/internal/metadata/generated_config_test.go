@@ -61,6 +61,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestTlscheckTimeLeftMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().TlscheckTimeLeft
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []TlscheckTimeLeftMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric tlscheck.time_left doesn't have an attribute invalid, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san]")
+
+	cfg = DefaultMetricsConfig().TlscheckTimeLeft
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

@@ -31,7 +31,14 @@ func newIndexResolver(defaultPrefix, defaultDataset, defaultNamespace string) *i
 
 // getDefaultIndexName provides default index naming for backward compatibility
 func (r *indexResolver) getDefaultIndexName() string {
-	return strings.Join([]string{r.defaultPrefix, r.defaultDataset, r.defaultNamespace}, "-")
+	parts := []string{r.defaultPrefix}
+	if r.defaultDataset != "" {
+		parts = append(parts, r.defaultDataset)
+	}
+	if r.defaultNamespace != "" {
+		parts = append(parts, r.defaultNamespace)
+	}
+	return strings.Join(parts, "-")
 }
 
 // extractPlaceholderKeys extracts unique placeholder keys from the index pattern

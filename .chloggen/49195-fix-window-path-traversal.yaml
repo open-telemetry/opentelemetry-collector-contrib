@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: exporter/file
+note: "Fix path traversal vulnerability on Windows when using grouping file exporter"
+issues: [49194]

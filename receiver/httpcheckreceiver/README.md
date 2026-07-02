@@ -3,7 +3,6 @@
 
 The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

@@ -6,7 +6,6 @@ This receiver contains the implementation of the Huawei Cloud
 Collector. The receiver collects metrics from Huawei Cloud's CES service and sends them to the OpenTelemetry Collector
 for processing and exporting.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

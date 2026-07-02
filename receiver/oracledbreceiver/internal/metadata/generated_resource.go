@@ -28,6 +28,41 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
+// SetOracleDbHostingType sets provided value as "oracle.db.hosting_type" attribute.
+func (rb *ResourceBuilder) SetOracleDbHostingType(val string) {
+	if rb.config.OracleDbHostingType.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.hosting_type", val)
+	}
+}
+
+// SetOracleDbOpenMode sets provided value as "oracle.db.open_mode" attribute.
+func (rb *ResourceBuilder) SetOracleDbOpenMode(val string) {
+	if rb.config.OracleDbOpenMode.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.open_mode", val)
+	}
+}
+
+// SetOracleDbPdb sets provided value as "oracle.db.pdb" attribute.
+func (rb *ResourceBuilder) SetOracleDbPdb(val string) {
+	if rb.config.OracleDbPdb.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.pdb", val)
+	}
+}
+
+// SetOracleDbRole sets provided value as "oracle.db.role" attribute.
+func (rb *ResourceBuilder) SetOracleDbRole(val string) {
+	if rb.config.OracleDbRole.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.role", val)
+	}
+}
+
+// SetOracleDbVersion sets provided value as "oracle.db.version" attribute.
+func (rb *ResourceBuilder) SetOracleDbVersion(val string) {
+	if rb.config.OracleDbVersion.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.version", val)
+	}
+}
+
 // SetOracledbInstanceName sets provided value as "oracledb.instance.name" attribute.
 func (rb *ResourceBuilder) SetOracledbInstanceName(val string) {
 	if rb.config.OracledbInstanceName.Enabled {
@@ -42,8 +77,23 @@ func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
 	}
 }
 
+// SetServiceName sets provided value as "service.name" attribute.
+func (rb *ResourceBuilder) SetServiceName(val string) {
+	if rb.config.ServiceName.Enabled {
+		rb.res.Attributes().PutStr("service.name", val)
+	}
+}
+
+// SetServiceNamespace sets provided value as "service.namespace" attribute.
+func (rb *ResourceBuilder) SetServiceNamespace(val string) {
+	if rb.config.ServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("service.namespace", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	rb.config.applyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r

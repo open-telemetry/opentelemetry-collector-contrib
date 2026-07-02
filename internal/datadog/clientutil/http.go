@@ -22,9 +22,11 @@ var (
 		"Content-Encoding": "gzip",
 	}
 	// ProtobufHeaders headers for protobuf requests.
+	// Content-Encoding is gzip to stay consistent with the metric series path,
+	// which is always gzip-compressed (see clientutil.GZipSubmitMetricsOptionalParameters).
 	ProtobufHeaders = map[string]string{
 		"Content-Type":     "application/x-protobuf",
-		"Content-Encoding": "identity",
+		"Content-Encoding": "gzip",
 	}
 )
 

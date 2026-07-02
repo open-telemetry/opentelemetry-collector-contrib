@@ -6,6 +6,7 @@ package splunkhecexporter
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -17,10 +18,12 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/goccy/go-json"
+	"github.com/google/pprof/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,11 +35,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
@@ -48,10 +53,14 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
-	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, func(_ []byte) {})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+func newTestClientWithBodyReader(bodyReader func([]byte)) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{http.StatusOK}, []string{"OK"}, bodyReader)
+}
+
+func newTestClientWithPresetResponses(codes []int, bodies []string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
 	index := 0
 	var headers []http.Header
 
@@ -62,6 +71,9 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 			index++
 
 			headers = append(headers, req.Header)
+
+			b, _ := io.ReadAll(req.Body)
+			bodyReader(b)
 
 			return &http.Response{
 				StatusCode: code,
@@ -1709,7 +1721,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	logs := createLogData(2, 1, 1)
 
 	// The first record is to be sent successfully, the second one should not
-	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, func(_ []byte) {})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
 	err := c.pushLogData(t.Context(), logs)
@@ -1755,6 +1767,368 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	assert.Equal(t, 20, profilingCount)
 	assert.Equal(t, 10, nonProfilingCount)
+}
+
+func TestProfileData(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+
+	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	done := make(chan struct{})
+	var closeOnce sync.Once
+
+	httpClient, headers := newTestClientWithBodyReader(func(bChan []byte) {
+		var hecEvent translator.Event
+		err := json.Unmarshal(bChan, &hecEvent)
+		require.NoError(t, err)
+		decoded, err := base64.StdEncoding.DecodeString(hecEvent.Event.(string))
+		require.NoError(t, err)
+		gr, err := gzip.NewReader(bytes.NewBuffer(decoded))
+		require.NoError(t, err)
+		defer gr.Close()
+		raw, _ := io.ReadAll(gr)
+		pprofProfile, err := profile.ParseData(raw)
+		require.NoError(t, err)
+
+		require.Equal(t, []int64{42}, pprofProfile.Sample[0].Value)
+		closeOnce.Do(func() { close(done) })
+	})
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("foo")
+	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	s := p.Samples().AppendEmpty()
+	s.Values().Append(42)
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.NoError(t, err)
+
+	<-done
+
+	foundHeader := false
+	for _, h := range *headers {
+		if v := h.Get(libraryHeaderName); v != "" {
+			foundHeader = true
+			require.Equal(t, "otel.profiling", v)
+		}
+	}
+
+	require.True(t, foundHeader)
+}
+
+func TestProfileDataPprofSampleLabels(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.LinkTable().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	link := dict.LinkTable().AppendEmpty()
+	link.SetTraceID(traceID)
+	link.SetSpanID(spanID)
+
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(0)
+	p.SampleType().SetUnitStrindex(1)
+	p.SetPeriod(100)
+	ts := time.Date(2024, 6, 15, 12, 0, 0, 123456789, time.UTC)
+	p.SetTime(pcommon.NewTimestampFromTime(ts))
+	s := p.Samples().AppendEmpty()
+	s.Values().Append(42)
+	s.SetLinkIndex(1)
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	require.Len(t, pprofProfile.Sample, 1)
+	sample := pprofProfile.Sample[0]
+	require.Equal(t, []int64{42}, sample.Value)
+	require.Equal(t, []string{"runtime/profiler"}, sample.Label["source.event.name"])
+	require.Equal(t, []int64{ts.UnixMilli()}, sample.NumLabel["source.event.time"])
+	require.Equal(t, []string{spanID.String()}, sample.Label["span_id"])
+	require.Equal(t, []string{traceID.String()}, sample.Label["trace_id"])
+	require.Equal(t, []string{"100"}, sample.Label["source.event.period"])
+	require.Equal(t, ts.UnixNano(), pprofProfile.TimeNanos)
+}
+
+// TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
+// multiple values is a per-observation time series of a single sample type (paired 1:1 with
+// timestamps_unix_nano), not multiple distinct sample types. Each observation must become its
+// own pprof sample, and the profile must carry exactly one sample type.
+func TestProfileDataMultiValueSamples(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	// Index 0 of each dictionary table is the zero-value sentinel; real entries start at 1.
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
+	t0 := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+	t1 := t0.Add(10 * time.Millisecond)
+	sample := p.Samples().AppendEmpty()
+	sample.Values().Append(1)
+	sample.Values().Append(2)
+	sample.TimestampsUnixNano().Append(uint64(t0.UnixNano()))
+	sample.TimestampsUnixNano().Append(uint64(t1.UnixNano()))
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	// One sample type, one pprof sample per observation.
+	require.Len(t, pprofProfile.SampleType, 1)
+	require.Equal(t, "cpu", pprofProfile.SampleType[0].Type)
+	require.Equal(t, "nanoseconds", pprofProfile.SampleType[0].Unit)
+	require.Len(t, pprofProfile.Sample, 2)
+	require.Equal(t, []int64{1}, pprofProfile.Sample[0].Value)
+	require.Equal(t, []int64{2}, pprofProfile.Sample[1].Value)
+	// source.event.time is taken from each observation's own timestamp.
+	require.Equal(t, []int64{t0.UnixMilli()}, pprofProfile.Sample[0].NumLabel["source.event.time"])
+	require.Equal(t, []int64{t1.UnixMilli()}, pprofProfile.Sample[1].NumLabel["source.event.time"])
+}
+
+func TestProfileDataTimestampsOnlySample(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("wall")
+	dict.StringTable().Append("nanoseconds")
+
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
+	t0 := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+	t1 := t0.Add(10 * time.Millisecond)
+	sample := p.Samples().AppendEmpty()
+	sample.TimestampsUnixNano().Append(uint64(t0.UnixNano()))
+	sample.TimestampsUnixNano().Append(uint64(t1.UnixNano()))
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	require.Len(t, pprofProfile.Sample, 1)
+	require.Equal(t, []int64{2}, pprofProfile.Sample[0].Value)
+	// source.event.time uses the first timestamp (only one event time survives aggregation).
+	require.Equal(t, []int64{t0.UnixMilli()}, pprofProfile.Sample[0].NumLabel["source.event.time"])
+}
+
+func decodePprofLogRecord(t *testing.T, lr plog.LogRecord) *profile.Profile {
+	t.Helper()
+	decoded, err := base64.StdEncoding.DecodeString(lr.Body().AsString())
+	require.NoError(t, err)
+	gr, err := gzip.NewReader(bytes.NewBuffer(decoded))
+	require.NoError(t, err)
+	defer gr.Close()
+	raw, err := io.ReadAll(gr)
+	require.NoError(t, err)
+	pprofProfile, err := profile.ParseData(raw)
+	require.NoError(t, err)
+	return pprofProfile
+}
+
+func TestProfileDataMultipleResources(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var mu sync.Mutex
+	var observedHosts []string
+
+	httpClient, _ := newTestClientWithBodyReader(func(body []byte) {
+		// Each HEC batch may contain multiple newline-delimited JSON events.
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var hecEvent translator.Event
+			require.NoError(t, json.Unmarshal(line, &hecEvent))
+			mu.Lock()
+			observedHosts = append(observedHosts, hecEvent.Host)
+			mu.Unlock()
+		}
+	})
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("cpu")
+
+	rp1 := profiles.ResourceProfiles().AppendEmpty()
+	rp1.Resource().Attributes().PutStr("host.name", "host-a")
+	p1 := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p1.Samples().AppendEmpty().Values().Append(1)
+
+	rp2 := profiles.ResourceProfiles().AppendEmpty()
+	rp2.Resource().Attributes().PutStr("host.name", "host-b")
+	p2 := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p2.Samples().AppendEmpty().Values().Append(2)
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
+
+	assert.ElementsMatch(t, []string{"host-a", "host-b"}, observedHosts,
+		"each resource's profiles must be emitted with its own host.name, not all under the first resource")
+}
+
+// TestProfileDataTotalFrameCount verifies that profiling.data.total.frame.count reflects
+// the sum of stack depths (location indices) across all samples, not the sample count.
+func TestProfileDataTotalFrameCount(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var mu sync.Mutex
+	var observedFrameCounts []int64
+
+	httpClient, _ := newTestClientWithBodyReader(func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var raw map[string]any
+			require.NoError(t, json.Unmarshal(line, &raw))
+			fields, ok := raw["fields"].(map[string]any)
+			if !ok {
+				continue
+			}
+			if v, ok := fields[profilingDataTotalFrameCountKey]; ok {
+				mu.Lock()
+				observedFrameCounts = append(observedFrameCounts, int64(v.(float64)))
+				mu.Unlock()
+			}
+		}
+	})
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StringTable().Append("cpu")
+
+	// Add 3 empty locations (indices 0, 1, 2) so the translator can look them up.
+	dict.LocationTable().AppendEmpty()
+	dict.LocationTable().AppendEmpty()
+	dict.LocationTable().AppendEmpty()
+
+	// Stack 0: sentinel (zero-value)
+	dict.StackTable().AppendEmpty()
+	// Stack 1: 3 location indices → 3 frames
+	stack1 := dict.StackTable().AppendEmpty()
+	stack1.LocationIndices().Append(0)
+	stack1.LocationIndices().Append(1)
+	stack1.LocationIndices().Append(2)
+	// Stack 2: 1 location index → 1 frame
+	stack2 := dict.StackTable().AppendEmpty()
+	stack2.LocationIndices().Append(0)
+
+	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+
+	// Sample A: stack 1 → 3 frames
+	sA := p.Samples().AppendEmpty()
+	sA.Values().Append(1)
+	sA.SetStackIndex(1)
+
+	// Sample B: stack 2 → 1 frame
+	sB := p.Samples().AppendEmpty()
+	sB.Values().Append(1)
+	sB.SetStackIndex(2)
+
+	// Total frames = 3 + 1 = 4; sample count = 2 (wrong value without the fix)
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
+
+	require.Len(t, observedFrameCounts, 1)
+	assert.Equal(t, int64(4), observedFrameCounts[0],
+		"profiling.data.total.frame.count must be the sum of stack depths (4), not the sample count (2)")
+}
+
+// TestProfileDataTranslationErrorIsPerProfile verifies that when one profile in a batch fails to
+// translate, the remaining valid profiles are still exported and the returned error is permanent.
+func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var mu sync.Mutex
+	var observedHosts []string
+
+	httpClient, _ := newTestClientWithBodyReader(func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var hecEvent translator.Event
+			require.NoError(t, json.Unmarshal(line, &hecEvent))
+			mu.Lock()
+			observedHosts = append(observedHosts, hecEvent.Host)
+			mu.Unlock()
+		}
+	})
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("cpu")
+
+	// Resource 1: well-formed profile — should export successfully.
+	rp1 := profiles.ResourceProfiles().AppendEmpty()
+	rp1.Resource().Attributes().PutStr("host.name", "good-host")
+	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
+
+	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
+	// which the spec forbids. This causes an error that is local to this profile and does not
+	// affect the shared dictionary used by the good profile.
+	rp2 := profiles.ResourceProfiles().AppendEmpty()
+	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
+	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badSample := badProfile.Samples().AppendEmpty()
+	badSample.Values().Append(1)
+	badSample.Values().Append(2)                        // 2 values
+	badSample.TimestampsUnixNano().Append(uint64(1000)) // but only 1 timestamp → mismatch error
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+
+	// The good profile must have been shipped.
+	assert.Contains(t, observedHosts, "good-host", "good profile must be exported despite sibling failure")
+	// The bad profile must not have been shipped.
+	assert.NotContains(t, observedHosts, "bad-host")
+	// The combined error must be non-nil and permanent.
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
@@ -2126,7 +2500,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), cfg)
 
 	// The first request succeeds, the second fails.
-	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop()}
 
@@ -2147,7 +2521,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 
-	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
 

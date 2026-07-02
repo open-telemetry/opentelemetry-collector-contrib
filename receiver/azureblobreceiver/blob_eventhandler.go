@@ -55,13 +55,13 @@ func (p *blobEventHandler) pollBlobs(ctx context.Context) {
 func (p *blobEventHandler) processContainers(ctx context.Context) {
 	if p.logsContainerName != "" && p.logsDataConsumer != nil {
 		p.processContainer(ctx, p.logsContainerName, func(ctx context.Context, data []byte) error {
-			return p.logsDataConsumer.consumeLogsJSON(ctx, data)
+			return p.logsDataConsumer.consumeLogs(ctx, data)
 		})
 	}
 
 	if p.tracesContainerName != "" && p.tracesDataConsumer != nil {
 		p.processContainer(ctx, p.tracesContainerName, func(ctx context.Context, data []byte) error {
-			return p.tracesDataConsumer.consumeTracesJSON(ctx, data)
+			return p.tracesDataConsumer.consumeTraces(ctx, data)
 		})
 	}
 }

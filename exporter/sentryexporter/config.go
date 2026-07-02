@@ -69,6 +69,9 @@ func (cfg *Config) Validate() error {
 	if cfg.OrgSlug == "" {
 		return errors.New("'org_slug' is required")
 	}
+	if !projectSlugRegexp.MatchString(cfg.OrgSlug) {
+		return fmt.Errorf("'org_slug' %q must match %q", cfg.OrgSlug, projectSlugRegexp.String())
+	}
 	if cfg.AuthToken == "" {
 		return errors.New("'auth_token' is required")
 	}

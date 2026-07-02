@@ -67,14 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemProcessesCountDataPoint(ts, 3, AttributeStatusDaemon)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)

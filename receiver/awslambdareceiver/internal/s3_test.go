@@ -19,7 +19,7 @@ import (
 func TestS3ServiceProvider(t *testing.T) {
 	provider := S3ServiceProvider{}
 
-	service, err := provider.GetService(t.Context())
+	service, err := provider.GetService(t.Context(), AWSOptions{})
 	require.NoError(t, err)
 	require.NotNil(t, service)
 }

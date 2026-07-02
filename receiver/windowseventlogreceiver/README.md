@@ -4,7 +4,6 @@
 This receiver tails and parses logs from windows event log API using the
 [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
@@ -12,7 +11,8 @@ This receiver tails and parses logs from windows event log API using the
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fwindowseventlog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fwindowseventlog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fwindowseventlog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fwindowseventlog) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_windowseventlog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_windowseventlog&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@armstrmi](https://www.github.com/armstrmi), [@pjanotti](https://www.github.com/pjanotti) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mrsillydog](https://www.github.com/mrsillydog), [@pjanotti](https://www.github.com/pjanotti) |
+| Emeritus      | [@armstrmi](https://www.github.com/armstrmi) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -45,6 +45,7 @@ This receiver tails and parses logs from windows event log API using the
 | `retry_on_failure.max_elapsed_time` | `5 minutes`  | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                  |
 | `remote`                              | object       | Remote configuration for connecting to a remote machine to collect logs. Includes server (the address of the remote server), with username, password, and optional domain.                                                    |
 | `query`                             | none         | XML query used for filtering events. See [Query Schema](https://learn.microsoft.com/en-us/windows/win32/wes/queryschema-schema)                                                                                                                |
+| `path`                             | none         | File path for EVTX file archive to read.                                                                                                                |
 | `resolve_sids`                      | object       | Configuration for resolving Windows Security Identifiers (SIDs) to user/group names. See [SID Resolution](#sid-resolution) section below.                                                                                     |
 | `resolve_sids.enabled`              | `false`      | If `true`, automatically resolves SIDs to user and group names in Windows event logs.                                                                                                                                          |
 | `resolve_sids.cache_size`           | `10000`      | Maximum number of SID-to-name mappings to cache in memory. Older entries are evicted using LRU policy.                                                                                                                         |

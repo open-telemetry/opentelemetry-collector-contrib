@@ -37,6 +37,9 @@ resourceLogs:
               - key: rpc.jsonrpc.error_code
                 value:
                   intValue: "0"
+              - key: rpc.response.status_code
+                value:
+                  stringValue: "0"
               - key: user.email
                 value:
                   stringValue: system:gcp-controller-manager

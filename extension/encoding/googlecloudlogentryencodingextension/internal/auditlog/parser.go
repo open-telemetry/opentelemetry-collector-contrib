@@ -6,6 +6,7 @@ package auditlog // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	gojson "github.com/goccy/go-json"
@@ -247,8 +248,11 @@ func handleStatus(s *status, attr pcommon.Map) {
 	if s == nil {
 		return
 	}
-
-	shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
+	// TODO: Remove the old attribute in the future.
+	if s.Code != nil {
+		shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
+		shared.PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.FormatInt(*s.Code, 10), attr)
+	}
 	shared.PutStr(string(conventionsv138.RPCJSONRPCErrorMessageKey), s.Message, attr)
 }
 

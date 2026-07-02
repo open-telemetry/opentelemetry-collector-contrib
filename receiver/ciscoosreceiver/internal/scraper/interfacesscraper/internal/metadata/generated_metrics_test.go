@@ -80,35 +80,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkErrorsDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 1, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 3, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkIoDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkIoDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketCountDataPoint(ts, 1, AttributeNetworkPacketTypeMulticast, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkPacketCountDataPoint(ts, 3, AttributeNetworkPacketTypeBroadcast, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketDroppedDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")

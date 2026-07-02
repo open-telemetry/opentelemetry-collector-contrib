@@ -32,6 +32,15 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.IngestURL = defaultIngestURL
 	defaultCfg.IngestKey = "00000000000000000000000000000000"
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.MaxIdleConns = defaultMaxIdleConns
+	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
+	clientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.ForceAttemptHTTP2 = true
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -43,14 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:             5 * time.Second,
-					MaxIdleConns:        defaultMaxIdleConns,
-					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-					MaxConnsPerHost:     defaultMaxConnsPerHost,
-					IdleConnTimeout:     defaultIdleConnTimeout,
-					ForceAttemptHTTP2:   true,
-				},
+				ClientConfig: clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
 					InitialInterval:     99 * time.Second,

@@ -26,10 +26,14 @@ const (
 )
 
 func TestNewClientFailureToParse(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://\x00"
 	_, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "http://\x00",
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.Error(t, err)
 }
@@ -38,10 +42,14 @@ func TestTransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	nodes, err := client.TransportNodes(t.Context())
@@ -53,10 +61,14 @@ func TestClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	nodes, err := client.ClusterNodes(t.Context())
@@ -68,10 +80,14 @@ func TestClusterNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	iFaces, err := client.Interfaces(t.Context(), managerNode1, managerClass)
@@ -83,10 +99,14 @@ func TestTransportNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	iFaces, err := client.Interfaces(t.Context(), transportNode1, transportClass)
@@ -98,10 +118,14 @@ func TestTransportNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	transportStatus, err := client.NodeStatus(t.Context(), transportNode1, transportClass)
@@ -113,10 +137,14 @@ func TestClusterNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	transportStatus, err := client.NodeStatus(t.Context(), managerNode1, managerClass)
@@ -128,10 +156,14 @@ func TestTransportNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	iStats, err := client.InterfaceStatus(t.Context(), transportNode1, transportNodeNic1, transportClass)
@@ -143,10 +175,14 @@ func TestManagerNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 	iStats, err := client.InterfaceStatus(t.Context(), managerNode1, managerNodeNic1, managerClass)
@@ -158,10 +194,14 @@ func TestDoRequestBadUrl(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -173,11 +213,15 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Password: badPassword,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Password:     badPassword,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -189,11 +233,15 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Password: badPassword,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Password:     badPassword,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -205,11 +253,15 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Password: badPassword,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Password:     badPassword,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -221,11 +273,15 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Password: badPassword,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Password:     badPassword,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -237,11 +293,15 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Password: badPassword,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Password:     badPassword,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -253,11 +313,15 @@ func TestInternalServerError(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = nsxMock.URL
 	client, err := newClient(t.Context(), &Config{
-		Username: user500,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: nsxMock.URL,
-		},
+		Username:     user500,
+		ClientConfig: clientConfig,
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 

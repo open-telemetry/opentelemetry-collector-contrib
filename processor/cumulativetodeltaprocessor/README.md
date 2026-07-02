@@ -5,7 +5,6 @@ The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monoto
 histogram metrics from cumulative to delta aggregation temporality. Non-monotonic sums are excluded. Delta metrics are
 excluded from any conversion and forwarded without changes.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -134,6 +133,15 @@ processors:
         # If include/exclude are not specified
         # convert all cumulative sum or histogram metrics to delta
 ```
+
+## Troubleshooting
+
+When [Telemetry is
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this
+component can export [several metrics](./documentation.md). All metrics are
+disabled by default and must be opted-in via the collector's
+`service.telemetry.metrics.level`
+[configuration](https://opentelemetry.io/docs/collector/internal-telemetry/#metric-verbosity).
 
 ## Warnings
 

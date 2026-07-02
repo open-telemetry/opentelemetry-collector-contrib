@@ -48,8 +48,8 @@ func NewFactory() receiver.Factory {
 
 func (*blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		Logs:           LogsConfig{ContainerName: logsContainerName},
-		Traces:         TracesConfig{ContainerName: tracesContainerName},
+		Logs:           LogsConfig{ContainerName: logsContainerName, Encoding: EncodingOTLPJSON},
+		Traces:         TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 		Authentication: ConnectionStringAuth,
 		Cloud:          defaultCloud,
 	}
@@ -108,7 +108,7 @@ func (f *blobReceiverFactory) getReceiver(
 		}
 
 		var receiver component.Component
-		receiver, err = newReceiver(set, beh)
+		receiver, err = newReceiver(set, beh, receiverConfig.Logs.Encoding, receiverConfig.Traces.Encoding)
 		return receiver
 	})
 

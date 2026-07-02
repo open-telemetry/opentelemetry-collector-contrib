@@ -132,7 +132,8 @@ var MetricsInfo = metricsInfo{
 		Name: "haproxy.requests.redispatched",
 	},
 	HaproxyRequestsTotal: metricInfo{
-		Name: "haproxy.requests.total",
+		Name:       "haproxy.requests.total",
+		Attributes: []string{"status_code"},
 	},
 	HaproxyResponsesAverageTime: metricInfo{
 		Name: "haproxy.responses.average_time",
@@ -203,7 +204,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricHaproxyActive struct {

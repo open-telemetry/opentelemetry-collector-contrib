@@ -28,7 +28,8 @@ var MetricsInfo = metricsInfo{
 		Name: "file.count",
 	},
 	FileCtime: metricInfo{
-		Name: "file.ctime",
+		Name:       "file.ctime",
+		Attributes: []string{"file.permissions"},
 	},
 	FileMtime: metricInfo{
 		Name: "file.mtime",
@@ -47,7 +48,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricFileAtime struct {

@@ -7,6 +7,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 )
 
 const (
@@ -14,51 +16,42 @@ const (
 	TransactionIdentifierRoot = "cgx.transaction.root"
 )
 
-func ApplyTransactionsAttributes(td ptrace.Traces, logger *zap.Logger) (ptrace.Traces, error) {
-	if td.SpanCount() == 0 {
-		logger.Debug("no spans found in the trace")
-		return td, nil
-	}
+func ApplyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]ptrace.Span, logger *zap.Logger) {
+	applyTransactionsAttributesByTraceID(spansByTraceID, logger)
+}
 
-	spansByTraceID := groupSpansByTraceID(td)
-
-	for _, spans := range spansByTraceID {
-		logger.Debug("processing trace", zap.String("traceID", spans[0].TraceID().String()), zap.Int("spans", len(spans)))
-		root := buildSpanTree(spans, logger)
+func applyTransactionsAttributesByTraceID(spansByTraceID map[pcommon.TraceID][]ptrace.Span, logger *zap.Logger) {
+	for traceID, spans := range spansByTraceID {
+		if len(spans) == 0 {
+			logger.Debug("skipping empty trace span group", zap.String("traceID", traceID.String()))
+			continue
+		}
+		logger.Debug("processing trace", zap.String("traceID", traceID.String()), zap.Int("spans", len(spans)))
+		root := selectSpanRoot(traceutil.BuildTraceTree(spans), logger)
 		if root != nil {
-			markSpanAsRoot(root.span)
-			applyTransactionToTrace(root, root.span.Name())
+			markSpanAsRoot(root.Span)
+			applyTransactionToTrace(root, root.Span.Name())
 		}
 	}
-
-	return td, nil
 }
 
-func groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]ptrace.Span {
-	traceSpanMap := make(map[pcommon.TraceID][]ptrace.Span)
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rs := td.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			scopeSpans := rs.ScopeSpans().At(j)
-			for k := 0; k < scopeSpans.Spans().Len(); k++ {
-				span := scopeSpans.Spans().At(k)
-				traceID := span.TraceID()
-				traceSpanMap[traceID] = append(traceSpanMap[traceID], span)
-			}
-		}
+func ApplyTransactionAttributesToTree(tree traceutil.TraceTree, logger *zap.Logger) {
+	root := selectSpanRoot(tree, logger)
+	if root != nil {
+		markSpanAsRoot(root.Span)
+		applyTransactionToTrace(root, root.Span.Name())
 	}
-	return traceSpanMap
 }
 
-func applyTransactionToTrace(currentSpan *spanNode, transactionName string) {
-	for _, child := range currentSpan.children {
-		if _, ok := child.span.Attributes().Get(TransactionIdentifierRoot); ok {
-			applyTransactionToTrace(child, child.span.Name())
-		} else if child.span.Kind() == ptrace.SpanKindServer || child.span.Kind() == ptrace.SpanKindConsumer {
-			markSpanAsRoot(child.span)
-			applyTransactionToTrace(child, child.span.Name())
+func applyTransactionToTrace(currentSpan *traceutil.TraceTreeNode, transactionName string) {
+	for _, child := range currentSpan.Children {
+		if _, ok := child.Span.Attributes().Get(TransactionIdentifierRoot); ok {
+			applyTransactionToTrace(child, child.Span.Name())
+		} else if child.Span.Kind() == ptrace.SpanKindServer || child.Span.Kind() == ptrace.SpanKindConsumer {
+			markSpanAsRoot(child.Span)
+			applyTransactionToTrace(child, child.Span.Name())
 		} else {
-			child.span.Attributes().PutStr(TransactionIdentifier, transactionName)
+			child.Span.Attributes().PutStr(TransactionIdentifier, transactionName)
 			applyTransactionToTrace(child, transactionName)
 		}
 	}

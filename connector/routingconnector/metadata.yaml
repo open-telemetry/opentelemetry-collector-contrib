@@ -7,9 +7,16 @@ status:
     alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
-    emeritus: [jpkrohling, mwear]
+    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu, mwear]
+    emeritus: [jpkrohling]
     seeking_new: true
+
+feature_gates:
+  - id: connector.routing.defaultErrorModeIgnore
+    description: When enabled, the default error_mode is `ignore` instead of `propagate`.
+    stage: alpha
+    from_version: v0.155.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418
 
 tests:
   skip_lifecycle: true

@@ -4,7 +4,6 @@
 This receiver uses Flink's [REST API](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#rest-api-integration)
 to collect Jobmanager, Taskmanager, Job, Task and Operator metrics.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -36,9 +35,11 @@ The following settings are optional:
 
 ### Example Configuration
 
+> **Note:** The receiver type has been renamed from `flinkmetrics` to `flink_metrics`. The old name is still accepted but will log a deprecation warning.
+
 ```yaml
 receivers:
-  flinkmetrics:
+  flink_metrics:
     endpoint: http://localhost:8081
     collection_interval: 10s
 ```

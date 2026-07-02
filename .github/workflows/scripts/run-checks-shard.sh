@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 set -euo pipefail
 
 # ======================================================================================
-# Runs one shard of the build-and-test-experimental "exp-checks" matrix.
+# Runs one shard of the build-and-test "checks" matrix.
 #
-# The original `checks` job in build-and-test.yml runs 18 codegen + validation
-# targets serially. Splitting them into matrix shards lets a fresh runner
-# handle each subset so the file-modifying targets (goporto, gogci, gotidy,
-# crosslink, generate) don't share a working tree.
+# The `checks` job runs codegen + validation targets split into matrix shards
+# so file-modifying targets (goporto, gogci, gotidy, crosslink, generate)
+# don't share a working tree.
 #
 # Usage:
 #   ./run-checks-shard.sh <shard-name>

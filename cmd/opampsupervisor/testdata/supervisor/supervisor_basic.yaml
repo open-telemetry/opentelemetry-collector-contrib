@@ -16,6 +16,7 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+  bootstrap_timeout: 10s
   {{- if .local_config }}
   config_files:
     - {{ .local_config }}

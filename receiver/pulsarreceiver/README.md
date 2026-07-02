@@ -3,7 +3,6 @@
 
 The Pulsar Receiver receives logs, metrics, and traces from [Apache Pulsar](https://pulsar.apache.org/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics, traces, logs   |

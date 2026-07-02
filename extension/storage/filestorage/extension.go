@@ -110,7 +110,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
 		// If recreate is disabled, just try once
-		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		return newClient(lfs.logger, absoluteName, lfs.cfg)
 	}
 
 	// If recreate is enabled, handle potential panics during database opening
@@ -120,8 +120,8 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 
-			// Rename the corrupted file with ISO 8601 timestamp
-			timestamp := time.Now().Format("2006-01-02T15:04:05.000")
+			// Use a filename-safe timestamp so recreate works on Windows too.
+			timestamp := time.Now().UTC().Format("20060102T150405.000Z0700")
 			backupName := absoluteName + "." + timestamp + ".backup"
 			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
 				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
@@ -133,12 +133,12 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("backup", backupName))
 
 			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+			client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 		}
 	}()
 
 	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 	return client, err
 }
 
@@ -169,9 +169,9 @@ func sanitize(name string) string {
 	var sanitized strings.Builder
 	for _, character := range name {
 		if isSafe(character) {
-			sanitized.WriteString(string(character))
+			fmt.Fprint(&sanitized, string(character))
 		} else {
-			sanitized.WriteString(fmt.Sprintf("~%04X", character))
+			fmt.Fprintf(&sanitized, "~%04X", character)
 		}
 	}
 	return sanitized.String()
