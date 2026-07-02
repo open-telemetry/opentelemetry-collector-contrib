@@ -42,3 +42,42 @@ func TestCreateMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 }
+
+func TestCreateLogsReceiver(t *testing.T) {
+	factory := NewFactory()
+	_, err := factory.CreateLogs(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+}
+
+func TestCreateLogsReceiverWithEvents(t *testing.T) {
+	factory := NewFactory()
+	_, err := factory.CreateLogs(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
+			},
+			LogsBuilderConfig: metadata.LogsBuilderConfig{
+				Events: metadata.EventsConfig{
+					DbServerQuerySample: metadata.EventConfig{
+						Enabled: true,
+					},
+				},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+}

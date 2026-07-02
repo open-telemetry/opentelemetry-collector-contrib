@@ -71,6 +71,136 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Range Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "120"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Probe Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "37"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "FreeSpace Scans/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "5"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Pages Allocated/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "812"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Page Deallocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "401"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Mixed page allocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Pages Compressed/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "60"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Page Compression Attempts/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "75"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Extents Allocated/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "30"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Extent Deallocations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "11"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Skipped Ghosted Records/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "8"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Scan Point Revalidations/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "4"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Worktables From Cache Ratio",
+    "counter_type": "537003264",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Access Methods",
+    "sql_instance": "d26d40521426",
+    "value": "97.5"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Bytes Received from Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",

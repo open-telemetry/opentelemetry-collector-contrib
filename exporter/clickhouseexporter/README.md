@@ -2,7 +2,8 @@
 # ClickHouse Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [alpha]: metrics   |
+| Stability     | [development]: profiles   |
+|               | [alpha]: metrics   |
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
@@ -10,6 +11,7 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
 | Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
+[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -278,6 +280,22 @@ limit 100
 The OTLP Metrics [define two type value for one datapoint](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358),
 clickhouse only use one value of float64 to store them.
 
+### Profiles
+
+> [!IMPORTANT]
+> Profiles support is at `development` stability. The OpenTelemetry profiling signal itself is
+> pre-GA (the OTLP profiles protocol is in `v1development`), so the schema and behavior may change
+> in a backwards-incompatible way. To send profiles through a collector pipeline you must enable the
+> `service.profilesSupport` feature gate (`--feature-gates=+service.profilesSupport`).
+>
+> **The profiles table requires ClickHouse 26.2 or newer.** It always uses `text` (full-text-search)
+> indexes and does not fall back to `bloom_filter` on older server versions. If you manage the schema
+> yourself (`create_schema: false`), you can adapt the DDL for an older version.
+
+Profiles are stored as one denormalized row per OTLP `Sample`. The interned `ProfilesDictionary`
+(strings, functions, locations, mappings, links, attributes) is resolved at write time so each row
+is self-contained and can be queried without joins.
+
 ## Performance Guide
 
 A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
@@ -321,6 +339,7 @@ ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
+- `profiles_table_name` (default = otel_profiles): The table name for profiles.
 - `metrics_tables`
     - `gauge`
         - `name` (default = "otel_metrics_gauge")

@@ -406,6 +406,19 @@ func TestLogsExporterHostMetadata(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
+	// Drain metadata payloads to prevent the DatadogServerMock's /intake handler from
+	// blocking on an unbuffered channel send. An unread send keeps the HTTP connection
+	// in StateActive, causing server.Close() to hang indefinitely.
+	go func() {
+		for {
+			select {
+			case <-server.MetadataChan:
+			case <-t.Context().Done():
+				return
+			}
+		}
+	}()
+
 	cfg := &datadogconfig.Config{
 		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
