@@ -88,6 +88,8 @@ var datadogKnownResourceAttributes = map[string]string{
 	"db.statement": string(conventions.DBQueryTextKey),
 
 	// Other
+	// The error.* mappings are kept for signals without span events (e.g. logs); trace spans
+	// instead turn the error.* tags into an OTel exception span event (see addExceptionSpanEvent).
 	"process_id":       string(conventions.ProcessPIDKey),
 	"error.stacktrace": string(conventions.ExceptionStacktraceKey),
 	"error.msg":        string(conventions.ExceptionMessageKey),
