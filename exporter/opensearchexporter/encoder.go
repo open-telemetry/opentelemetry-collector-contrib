@@ -105,6 +105,7 @@ func (m *encodeModel) encodeLogSSO(
 	sso := ssoRecord{}
 	sso.Attributes = record.Attributes().AsRaw()
 	sso.Body = record.Body().AsString()
+	sso.EventName = record.EventName()
 
 	now := time.Now()
 	ts := record.Timestamp().AsTime()
@@ -166,6 +167,7 @@ func (m *encodeModel) encodeLogDataModel(resource pcommon.Resource, record plog.
 	document.AddInt("TraceFlags", int64(record.Flags()))
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
+	document.AddString("EventName", record.EventName())
 	document.AddAttribute("Body", record.Body())
 	if m.flattenAttributes {
 		document.AddAttributes("", record.Attributes())
@@ -279,6 +281,7 @@ func (*encodeModel) encodeLogOTelV1(
 		Time:                   ts,
 		ObservedTime:           record.ObservedTimestamp().AsTime(),
 		Body:                   record.Body().AsString(),
+		EventName:              record.EventName(),
 		TraceID:                record.TraceID().String(),
 		SpanID:                 record.SpanID().String(),
 		Flags:                  int64(record.Flags()),

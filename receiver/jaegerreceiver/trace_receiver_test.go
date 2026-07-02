@@ -78,13 +78,18 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
+	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	thriftHTTPServerConfig.WriteTimeout = 0
+	thriftHTTPServerConfig.ReadHeaderTimeout = 0
+	thriftHTTPServerConfig.IdleTimeout = 0
+	thriftHTTPServerConfig.KeepAlivesEnabled = false
+	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  addr,
+		Transport: confignet.TransportTypeTCP,
+	}
 	config := Protocols{
-		ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint:  addr,
-				Transport: confignet.TransportTypeTCP,
-			},
-		}),
+		ThriftHTTP: configoptional.Some(thriftHTTPServerConfig),
 	}
 	sink := new(consumertest.TracesSink)
 

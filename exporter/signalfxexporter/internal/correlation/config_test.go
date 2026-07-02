@@ -21,8 +21,14 @@ func TestInvalidConfig(t *testing.T) {
 	noEndpointErr := invalid.validate()
 	require.Error(t, noEndpointErr)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = ":123:456"
 	invalid = Config{
-		ClientConfig: confighttp.ClientConfig{Endpoint: ":123:456"},
+		ClientConfig: clientConfig,
 	}
 	invalidURLErr := invalid.validate()
 	require.Error(t, invalidURLErr)
