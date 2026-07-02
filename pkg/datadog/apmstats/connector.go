@@ -149,7 +149,7 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
 	if !metadata.DatadogEnableScopeConventionFeatureGate.IsEnabled() {
-		acfg.Features["disable_scope_convention"] = struct{}{}
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
 	}
 	if !metadata.DatadogEnableOperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
