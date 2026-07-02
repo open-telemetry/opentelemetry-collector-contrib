@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: tailsamplingprocessor
+
+note: Move spans into the per-trace ResourceSpans during ingest instead of deep-copying them, reducing per-span allocations.
+
+issues: []
+
+subtext: |
+  The processor now declares `MutatesData: true`. Pipelines that fan the input out
+  to multiple consumers will see one extra clone at the fanoutconsumer boundary
+  (which already happened internally inside this processor); in the typical
+  single-consumer load-balanced topology there is no additional copy and the
+  per-span deep copy is replaced with a pointer swap.
+
+change_logs: [user]
