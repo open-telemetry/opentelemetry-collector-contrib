@@ -255,10 +255,10 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 			}
 			dp.SetCount(dp.Count() + dps.At(i).Count())
 			dp.SetSum(dp.Sum() + dps.At(i).Sum())
-			if dp.HasMin() && dp.Min() > dps.At(i).Min() {
+			if dp.HasMin() && dps.At(i).HasMin() && dp.Min() > dps.At(i).Min() {
 				dp.SetMin(dps.At(i).Min())
 			}
-			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
+			if dp.HasMax() && dps.At(i).HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
 			for b := 0; b < dps.At(i).BucketCounts().Len(); b++ {
@@ -287,10 +287,10 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			dp.SetCount(dp.Count() + dps.At(i).Count())
 			dp.SetSum(dp.Sum() + dps.At(i).Sum())
 			dp.SetZeroCount(dp.ZeroCount() + dps.At(i).ZeroCount())
-			if dp.HasMin() && dp.Min() > dps.At(i).Min() {
+			if dp.HasMin() && dps.At(i).HasMin() && dp.Min() > dps.At(i).Min() {
 				dp.SetMin(dps.At(i).Min())
 			}
-			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
+			if dp.HasMax() && dps.At(i).HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
 
