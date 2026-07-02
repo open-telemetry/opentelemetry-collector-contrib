@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,18 +55,23 @@ type client interface {
 }
 
 type streamNames struct {
-	group string
-	names []*string
+	group           string
+	groupIdentifier string
+	names           []*string
 }
 
 var nowFunc = time.Now
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: &sn.group,
-		StartTime:    aws.Int64(st.UnixMilli()),
-		EndTime:      aws.Int64(et.UnixMilli()),
-		Limit:        aws.Int32(int32(limit)),
+		StartTime: aws.Int64(st.UnixMilli()),
+		EndTime:   aws.Int64(et.UnixMilli()),
+		Limit:     aws.Int32(int32(limit)),
+	}
+	if sn.groupIdentifier != "" {
+		base.LogGroupIdentifier = &sn.groupIdentifier
+	} else {
+		base.LogGroupName = &sn.group
 	}
 	if len(sn.names) > 0 {
 		base.LogStreamNames = aws.ToStringSlice(sn.names)
@@ -80,18 +86,30 @@ func (sn *streamNames) groupName() string {
 	return sn.group
 }
 
+func (sn *streamNames) checkpointKey() string {
+	if sn.groupIdentifier != "" {
+		return sn.groupIdentifier
+	}
+	return sn.group
+}
+
 type streamPrefix struct {
-	group  string
-	prefix *string
+	group           string
+	groupIdentifier string
+	prefix          *string
 }
 
 func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:        &sp.group,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int32(int32(limit)),
 		LogStreamNamePrefix: sp.prefix,
+	}
+	if sp.groupIdentifier != "" {
+		base.LogGroupIdentifier = &sp.groupIdentifier
+	} else {
+		base.LogGroupName = &sp.group
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -103,9 +121,17 @@ func (sp *streamPrefix) groupName() string {
 	return sp.group
 }
 
+func (sp *streamPrefix) checkpointKey() string {
+	if sp.groupIdentifier != "" {
+		return sp.groupIdentifier
+	}
+	return sp.group
+}
+
 type groupRequest interface {
 	request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput
 	groupName() string
+	checkpointKey() string
 }
 
 func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.Logs) *logsReceiver {
@@ -233,23 +259,38 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 
 		// Retrieve the last persisted timestamp for this log group if exists
 		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
-			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+			cpKey := r.checkpointKey()
+			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, cpKey)
+			if err != nil || checkpoint == "" {
+				// Migrate: try the old key (group name) if the new key (ARN) has no checkpoint
+				oldKey := r.groupName()
+				if oldKey != cpKey {
+					checkpoint, err = l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, oldKey)
+					if err == nil && checkpoint != "" {
+						// Migrate old checkpoint to new key and delete old
+						_ = l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, cpKey, checkpoint)
+						_ = l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, oldKey)
+						l.settings.Logger.Info("Migrated checkpoint from log group name to ARN key",
+							zap.String("oldKey", oldKey),
+							zap.String("newKey", cpKey))
+					}
+				}
+			}
 			if err == nil && checkpoint != "" {
 				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
 				if parseErr == nil && parsedTime.After(startTime) {
 					startTime = parsedTime
 					l.settings.Logger.Info("Resuming from previously known checkpoint(s)",
-						zap.String("logGroup", logGroup),
+						zap.String("checkpointKey", cpKey),
 						zap.Time("startTime", startTime))
 				} else if parseErr != nil {
 					l.settings.Logger.Warn("Failed to parse persisted timestamp, using default start time",
-						zap.String("logGroup", logGroup),
+						zap.String("checkpointKey", cpKey),
 						zap.String("checkpoint", checkpoint),
 						zap.Error(parseErr))
-					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, logGroup); err != nil {
+					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, cpKey); err != nil {
 						l.settings.Logger.Error("Failed to delete invalid checkpoint",
-							zap.String("logGroup", logGroup),
+							zap.String("checkpointKey", cpKey),
 							zap.String("checkpoint", checkpoint),
 							zap.Error(err))
 					}
@@ -265,12 +306,12 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 
 		// Persist the new end time as the checkpoint for this log group
 		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
+			cpKey := r.checkpointKey()
 			newCheckpoint := endTime.Format(time.RFC3339)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, cpKey, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
-					zap.String("logGroup", logGroup),
+					zap.String("checkpointKey", cpKey),
 					zap.String("checkpoint", newCheckpoint),
 					zap.Error(err))
 			}
@@ -461,18 +502,26 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 
 			numGroups++
 
+			var groupArn string
+			if lg.Arn != nil {
+				// AWS DescribeLogGroups returns ARNs with a trailing ":*" suffix
+				// (e.g. "arn:aws:logs:us-east-2:123456:log-group:/my/group:*")
+				// but FilterLogEvents LogGroupIdentifier rejects the ":*".
+				groupArn = strings.TrimSuffix(*lg.Arn, ":*")
+			}
+
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
-				groups = append(groups, &streamNames{group: *lg.LogGroupName})
+				groups = append(groups, &streamNames{group: *lg.LogGroupName, groupIdentifier: groupArn})
 				continue
 			}
 
 			for _, prefix := range auto.Streams.Prefixes {
-				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
+				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, groupIdentifier: groupArn, prefix: prefix})
 			}
 
 			if len(auto.Streams.Names) > 0 {
-				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
+				groups = append(groups, &streamNames{group: *lg.LogGroupName, groupIdentifier: groupArn, names: auto.Streams.Names})
 			}
 		}
 		nextToken = dlgResults.NextToken
