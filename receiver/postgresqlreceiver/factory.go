@@ -88,7 +88,7 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	var clientFactory = newPoolClientFactory(cfg)
+	clientFactory := newPoolClientFactory(cfg)
 
 	ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
 	s, err := scraper.NewMetrics(ns.scrape, scraper.WithShutdown(ns.shutdown))
@@ -111,7 +111,7 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	cfg := receiverCfg.(*Config)
 
-	var clientFactory = newPoolClientFactory(cfg)
+	clientFactory := newPoolClientFactory(cfg)
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
