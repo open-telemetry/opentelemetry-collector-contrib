@@ -55,6 +55,9 @@ type Config struct {
 
 	// PodDeleteGracePeriod is the duration to wait before deleting a pod from the cache after receiving a delete event.
 	PodDeleteGracePeriod time.Duration `mapstructure:"pod_delete_grace_period"`
+
+	// Kubelet configures experimental direct kubelet /pods polling as the pod metadata source.
+	Kubelet KubeletConfig `mapstructure:"kubelet"`
 }
 
 func (cfg *Config) Validate() error {
@@ -67,6 +70,22 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.PodDeleteGracePeriod < 0 {
 		return errors.New("pod_delete_grace_period must be greater than or equal to 0")
+	}
+	if cfg.Kubelet.PollInterval <= 0 {
+		return errors.New("kubelet.poll_interval must be greater than 0")
+	}
+	if cfg.Kubelet.RequestTimeout <= 0 {
+		return errors.New("kubelet.request_timeout must be greater than 0")
+	}
+	if cfg.Kubelet.Enabled {
+		if cfg.Filter.NodeFromEnvVar != "" {
+			if err := cfg.Filter.Validate(); err != nil {
+				return err
+			}
+		}
+		if cfg.Kubelet.Endpoint == "" && cfg.Filter.Node == "" && cfg.Filter.NodeFromEnvVar == "" {
+			return errors.New("kubelet requires filter.node, filter.node_from_env_var, or kubelet.endpoint")
+		}
 	}
 
 	for _, assoc := range cfg.Association {
@@ -132,6 +151,16 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// KubeletConfig configures direct kubelet /pods polling.
+type KubeletConfig struct {
+	Enabled            bool          `mapstructure:"enabled"`
+	PollInterval       time.Duration `mapstructure:"poll_interval"`
+	RequestTimeout     time.Duration `mapstructure:"request_timeout"`
+	Endpoint           string        `mapstructure:"endpoint"`
+	InsecureSkipVerify bool          `mapstructure:"insecure_skip_verify"`
+	AllowInsecureHTTP  bool          `mapstructure:"allow_insecure_http"`
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
