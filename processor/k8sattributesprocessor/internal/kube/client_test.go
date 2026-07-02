@@ -2576,7 +2576,7 @@ func TestListKubeletPodsHonorsContextCancel(t *testing.T) {
 func TestKubeletPodLister(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/pods", r.URL.Path)
-		require.NoError(t, json.NewEncoder(w).Encode(api_v1.PodList{Items: []api_v1.Pod{
+		assert.NoError(t, json.NewEncoder(w).Encode(api_v1.PodList{Items: []api_v1.Pod{
 			kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
 		}}))
 	}))

@@ -1827,12 +1827,14 @@ func (c *WatchClient) addOrUpdatePodWithCleanup(pod *api_v1.Pod, cleanupStaleIde
 
 func (c *WatchClient) deleteStalePodIdentifiersLocked(oldPod *Pod, newIdentifiers []PodIdentifier) {
 	current := make(map[PodIdentifier]struct{}, len(newIdentifiers))
-	for _, id := range newIdentifiers {
-		current[id] = struct{}{}
+	for i := range newIdentifiers {
+		current[newIdentifiers[i]] = struct{}{}
 	}
 
 	oldContainerIDs := containerIDSet(oldPod)
-	for _, id := range c.getIdentifiersFromAssoc(oldPod) {
+	oldIdentifiers := c.getIdentifiersFromAssoc(oldPod)
+	for i := range oldIdentifiers {
+		id := oldIdentifiers[i]
 		if _, ok := current[id]; ok || podIdentifierHasContainerID(id, oldContainerIDs) {
 			continue
 		}
@@ -1959,8 +1961,8 @@ func (c *WatchClient) cancelDeleteRequests(ids []PodIdentifier, podUID string) {
 	defer c.deleteMut.Unlock()
 
 	current := make(map[PodIdentifier]struct{}, len(ids))
-	for _, id := range ids {
-		current[id] = struct{}{}
+	for i := range ids {
+		current[ids[i]] = struct{}{}
 	}
 	c.deleteQueue = slices.DeleteFunc(c.deleteQueue, func(request deleteRequest) bool {
 		_, ok := current[request.id]

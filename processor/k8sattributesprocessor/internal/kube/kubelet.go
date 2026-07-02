@@ -1,11 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kube
+package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -45,8 +46,9 @@ func newKubeletPodLister(apiCfg k8sconfig.APIConfig, cfg KubeletConfig, node str
 	if err != nil {
 		return nil, err
 	}
-	if parsedEndpoint.Scheme != "https" && !(cfg.AllowInsecureHTTP && parsedEndpoint.Scheme == "http") {
-		return nil, fmt.Errorf("kubelet.endpoint must use https unless allow_insecure_http is enabled")
+	allowedScheme := parsedEndpoint.Scheme == "https" || (cfg.AllowInsecureHTTP && parsedEndpoint.Scheme == "http")
+	if !allowedScheme {
+		return nil, errors.New("kubelet.endpoint must use https unless allow_insecure_http is enabled")
 	}
 
 	restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
