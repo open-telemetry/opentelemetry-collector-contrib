@@ -148,6 +148,11 @@ attributes:
     description: The port number on which the server is listening.
     type: int
     requirement_level: recommended
+  sqlserver.access.scan.type:
+    description: The type of access method scan being performed.
+    type: string
+    requirement_level: required
+    enum: [free_space, probe, range]
   sqlserver.blocking.start_time:
     description: Timestamp of when the current blocking wait began (ISO 8601 format).
     type: string
@@ -184,6 +189,11 @@ attributes:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
     requirement_level: recommended
+  sqlserver.extent.operation.type:
+    description: The type of extent allocation operation.
+    type: string
+    requirement_level: required
+    enum: [allocated, deallocated]
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
@@ -196,6 +206,16 @@ attributes:
     description: Number of transactions currently open in the session.
     type: int
     requirement_level: recommended
+  sqlserver.page.allocation.type:
+    description: The type of page allocation operation.
+    type: string
+    requirement_level: required
+    enum: [allocated, deallocated, mixed]
+  sqlserver.page.compression.type:
+    description: The type of page compression operation.
+    type: string
+    requirement_level: required
+    enum: [attempted, succeeded]
   sqlserver.parameterization.result:
     description: The result of an auto-parameterization attempt by the SQL Server query optimizer.
     type: string
@@ -445,6 +465,15 @@ events:
       - sqlserver.query.plan.creation_time
 
 metrics:
+  sqlserver.access.scan.rate:
+    enabled: false
+    description: Rate of access method scans.
+    stability: development
+    unit: "{scan}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.access.scan.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.attention.rate:
     enabled: false
     description: Number of SQL attentions (client cancellation interrupts) received per second.
@@ -585,6 +614,24 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.extent.operation.rate:
+    enabled: false
+    description: Rate of extent operations.
+    stability: development
+    unit: "{extent}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.extent.operation.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.ghost_record.skipped.rate:
+    enabled: false
+    description: Rate of ghosted records skipped during scans.
+    stability: development
+    unit: "{record}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -747,6 +794,15 @@ metrics:
       value_type: double
     attributes: [wait.category, wait.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.page.allocation.rate:
+    enabled: false
+    description: Rate of page allocation operations.
+    stability: development
+    unit: "{page}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.page.allocation.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.buffer_cache.free_list.stalls.rate:
     enabled: false
     description: Number of free list stalls.
@@ -770,6 +826,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.compression.rate:
+    enabled: false
+    description: Rate of page compression operations.
+    stability: development
+    unit: "{page}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.page.compression.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.lazy_write.rate:
     enabled: true
     description: Number of lazy writes moving dirty pages to disk.
@@ -803,6 +868,15 @@ metrics:
       value_type: double
     attributes: [page.operations]
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.read_ahead.rate:
+    enabled: false
+    description: Rate of pages read from disk by the read-ahead manager.
+    stability: development
+    unit: "{page}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.split.rate:
     enabled: true
     description: Number of pages split as a result of overflowing index pages.
@@ -880,6 +954,15 @@ metrics:
     gauge:
       value_type: double
       input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.scan_point.revalidation.rate:
+    enabled: false
+    description: Rate at which scan points needed to be revalidated.
+    stability: development
+    unit: "{revalidate}/s"
+    gauge:
+      value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.table.count:
@@ -985,6 +1068,15 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
+  sqlserver.worktable.cache.hit_ratio:
+    enabled: false
+    description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 feature_gates:
   - id: receiver.sqlserver.RemoveServerResourceAttribute
