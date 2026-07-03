@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -455,9 +456,13 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 			},
 		}
 
-		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		pprof := makeProfile(sample)
+
+		require.NoError(t, pprof.CheckValid())
+
+		_, err := ConvertPprofToProfiles(pprof)
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("labels with multiple values (%d) are not supported", 2))
 	})
 
 	t.Run("numeric label with multiple values", func(t *testing.T) {
@@ -471,7 +476,24 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 
 		_, err := ConvertPprofToProfiles(makeProfile(sample))
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("numeric labels with multiple values (%d) are not supported", 2))
+	})
+
+	t.Run("numeric unit with multiple values", func(t *testing.T) {
+		sample := &profile.Sample{
+			Location: []*profile.Location{baseLocation},
+			Value:    []int64{10},
+			NumLabel: map[string][]int64{
+				"n": {1},
+			},
+			NumUnit: map[string][]string{
+				"n": {"a", "b"},
+			},
+		}
+
+		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		require.Error(t, err)
+		require.EqualError(t, err, fmt.Sprintf("numeric units with multiple values (%d) are not supported", 2))
 	})
 }
 
