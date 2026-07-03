@@ -406,6 +406,11 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 	if attrs.HTTPRoute != "" {
 		sb.WriteString(" ")
 		sb.WriteString(attrs.HTTPRoute)
+	} else if attrs.URLAttributes.URLFull != "" {
+		if u, err := url.Parse(attrs.URLAttributes.URLFull); err == nil {
+			sb.WriteString(" ")
+			sb.WriteString(u.Path)
+		}
 	}
 
 	data.Name = sb.String()
