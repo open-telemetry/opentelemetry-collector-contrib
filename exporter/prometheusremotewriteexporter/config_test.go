@@ -160,7 +160,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "reserved_metadata_keys"),
-			errorMessage: "include_metadata_keys entry content-type collides with a reserved remote write header",
+			errorMessage: "include_metadata_keys entry \"content-type\" collides with a reserved remote write header",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "include_metadata_keys"),
