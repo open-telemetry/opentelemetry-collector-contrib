@@ -527,6 +527,92 @@ func TestScopeAttributeConflictsDropped(t *testing.T) {
 	}, labels)
 }
 
+// TestAddMetricSuffixesFalseNoUnitSuffix is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15524.
+//
+// When add_metric_suffixes: false is configured, neither type suffixes
+// (_total, _ratio) nor unit suffixes (_milliseconds, _bytes) should be
+// appended to the exported metric name. A bump of github.com/prometheus/common
+// introduced a separate unit-suffix path not gated by WithMetricSuffixes,
+// silently re-enabling unit suffixes even when the flag was false.
+func TestAddMetricSuffixesFalseNoUnitSuffix(t *testing.T) {
+	tests := []struct {
+		name       string
+		metricName string
+		unit       string
+		badSuffix  string // suffix that must NOT appear in the exported name
+	}{
+		{
+			name:       "milliseconds unit suffix suppressed",
+			metricName: "http_request_duration",
+			unit:       "ms",
+			badSuffix:  "_milliseconds",
+		},
+		{
+			name:       "bytes unit suffix suppressed",
+			metricName: "process_memory",
+			unit:       "By",
+			badSuffix:  "_bytes",
+		},
+		{
+			name:       "seconds unit suffix suppressed",
+			metricName: "cache_ttl",
+			unit:       "s",
+			badSuffix:  "_seconds",
+		},
+		{
+			name:       "total type suffix suppressed for monotonic counter",
+			metricName: "requests",
+			unit:       "",
+			badSuffix:  "_total",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName(tt.metricName)
+			metric.SetUnit(tt.unit)
+
+			// Use a monotonic sum so that by default (suffixes enabled) it would
+			// receive both a _total suffix and a unit suffix.
+			sum := metric.SetEmptySum()
+			sum.SetIsMonotonic(true)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			dp := sum.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(42.0)
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+			//nolint:staticcheck // AddMetricSuffixes is deprecated but still supported; this test intentionally exercises it.
+			c := newCollector(&Config{
+				AddMetricSuffixes: false,
+			}, zap.NewNop())
+			c.accumulator = &mockAccumulator{
+				[]pmetric.Metric{metric},
+				pcommon.NewMap(),
+				[]string{""},
+				[]string{""},
+				[]string{""},
+				[]pcommon.Map{pcommon.NewMap()},
+			}
+
+			ch := make(chan prometheus.Metric, 2)
+			go func() {
+				c.Collect(ch)
+				close(ch)
+			}()
+
+			for m := range ch {
+				desc := m.Desc().String()
+				require.NotContains(t, desc, tt.badSuffix,
+					"add_metric_suffixes=false must suppress %q suffix; got desc: %s", tt.badSuffix, desc)
+				require.Contains(t, desc, tt.metricName,
+					"base metric name must still appear in desc")
+			}
+		})
+	}
+}
+
 func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
