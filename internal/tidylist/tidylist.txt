@@ -220,6 +220,7 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
+processor/dynamicsamplingprocessor
 processor/filterprocessor
 processor/genainormalizerprocessor
 processor/geoipprocessor
