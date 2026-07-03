@@ -127,7 +127,7 @@ The exporter follows the semantic conventions to fill the Application Insights s
 | Request.Source                | `http.client_ip` or `net.peer.name`                   |           |
 | Request.ResponseCode          | `http.status_code` or `status_code`                   | `"0"`     |
 | Request.Success               | `http.status_code` or `status_code`                   | `true`    |
-| Dependency.Name               | `http.method`, `http.route`                           | span name |
+| Dependency.Name               | `http.method`, `http.route`, or path of `http.url`    | span name |
 | Dependency.Data               | `http.url` or span name or `db.statement`             |           |
 | Dependency.Type               | `"HTTP"` or `rpc.system` or `db.system` or `"InProc"` |           |
 | Dependency.Target             | host of `http.url` or `net.peer.name`                 |           |

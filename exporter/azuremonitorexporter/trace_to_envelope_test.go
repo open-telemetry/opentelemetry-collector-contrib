@@ -259,7 +259,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet1(t *testing.T) {
 
 	assert.Equal(t, "400", data.ResultCode)
 	assert.False(t, data.Success)
-	assert.Equal(t, defaultHTTPMethod, data.Name)
+	assert.Equal(t, defaultHTTPMethod+" /bar", data.Name)
 	assert.Equal(t, "https://foo:81/bar?biz=baz", data.Data)
 	assert.Equal(t, "HTTP", data.Type)
 }
@@ -346,6 +346,26 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	defaultHTTPRemoteDependencyDataValidations(t, span, data)
 	assert.Equal(t, "https://127.0.0.1:81/bar?biz=baz", data.Data)
 	assert.Equal(t, "12345", envelope.Tags[contracts.UserId])
+}
+
+// Tests that the dependency name falls back to just the request method when
+// neither http.route nor url.full is present.
+func TestHTTPClientSpanToRemoteDependencyNameFallbackToMethod(t *testing.T) {
+	span := getDefaultHTTPClientSpan()
+	spanAttributes := span.Attributes()
+
+	spanAttributes.PutInt("http.response.status_code", defaultHTTPStatusCode)
+
+	// No http.route and no url.full => name defaults to just the request method.
+	spanAttributes.PutStr("url.full", "")
+
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
+	envelope := envelopes[0]
+	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
+	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+	commonRemoteDependencyDataValidations(t, span, data)
+
+	assert.Equal(t, defaultHTTPMethod, data.Name)
 }
 
 // Tests proper assignment for an RPC server span
