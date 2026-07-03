@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
@@ -177,6 +178,94 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, resour
 	return nil
 }
 
+type exemplarStatements struct {
+	ottl.StatementSequence[*ottlexemplar.TransformContext]
+	expr.BoolExpr[*ottlexemplar.TransformContext]
+}
+
+func (exemplarStatements) Context() ContextID {
+	return Exemplar
+}
+
+func (e exemplarStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for _, rmetrics := range md.ResourceMetrics().All() {
+		for _, smetrics := range rmetrics.ScopeMetrics().All() {
+			for _, metric := range smetrics.Metrics().All() {
+				var err error
+				//exhaustive:enforce
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					err = e.handleNumberDataPointExemplars(ctx, rmetrics, smetrics, metric, metric.Sum().DataPoints())
+				case pmetric.MetricTypeGauge:
+					err = e.handleNumberDataPointExemplars(ctx, rmetrics, smetrics, metric, metric.Gauge().DataPoints())
+				case pmetric.MetricTypeHistogram:
+					err = e.handleHistogramDataPointExemplars(ctx, rmetrics, smetrics, metric, metric.Histogram().DataPoints())
+				case pmetric.MetricTypeExponentialHistogram:
+					err = e.handleExponentialHistogramDataPointExemplars(ctx, rmetrics, smetrics, metric, metric.ExponentialHistogram().DataPoints())
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeSummary:
+				}
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (e exemplarStatements) handleNumberDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.NumberDataPointSlice) error {
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
+			if err := e.executeExemplar(ctx, tCtx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (e exemplarStatements) handleHistogramDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.HistogramDataPointSlice) error {
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
+			if err := e.executeExemplar(ctx, tCtx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (e exemplarStatements) handleExponentialHistogramDataPointExemplars(ctx context.Context, resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dps pmetric.ExponentialHistogramDataPointSlice) error {
+	for _, dp := range dps.All() {
+		for _, exemplar := range dp.Exemplars().All() {
+			tCtx := ottlexemplar.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric, dp, exemplar)
+			if err := e.executeExemplar(ctx, tCtx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (e exemplarStatements) executeExemplar(ctx context.Context, tCtx *ottlexemplar.TransformContext) error {
+	condition, err := e.Eval(ctx, tCtx)
+	if err != nil {
+		tCtx.Close()
+		return err
+	}
+	if condition {
+		err = e.Execute(ctx, tCtx)
+		if err != nil {
+			tCtx.Close()
+			return err
+		}
+	}
+	tCtx.Close()
+	return nil
+}
+
 type MetricParserCollection ottl.ParserCollection[MetricsConsumer]
 
 type MetricParserCollectionOption ottl.ParserCollectionOption[MetricsConsumer]
@@ -188,6 +277,16 @@ func WithMetricParser(functions map[string]ottl.Factory[*ottlmetric.TransformCon
 			return err
 		}
 		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, ottl.WithStatementConverter(convertMetricStatements))(pc)
+	}
+}
+
+func WithExemplarParser(functions map[string]ottl.Factory[*ottlexemplar.TransformContext]) MetricParserCollectionOption {
+	return func(pc *ottl.ParserCollection[MetricsConsumer]) error {
+		exemplarParser, err := ottlexemplar.NewParser(functions, pc.Settings, ottlexemplar.EnablePathContextNames())
+		if err != nil {
+			return err
+		}
+		return ottl.WithParserCollectionContext(ottlexemplar.ContextName, &exemplarParser, ottl.WithStatementConverter(convertExemplarStatements))(pc)
 	}
 }
 
@@ -264,6 +363,27 @@ func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], stat
 	}
 	dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.Settings, ottldatapoint.WithStatementSequenceErrorMode(errorMode))
 	return dataPointStatements{dpStatements, globalExpr}, nil
+}
+
+func convertExemplarStatements(pc *ottl.ParserCollection[MetricsConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottlexemplar.TransformContext]) (MetricsConsumer, error) {
+	contextStatements, err := toContextStatements(statements)
+	if err != nil {
+		return nil, err
+	}
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottl.Option[*ottlexemplar.TransformContext]
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlexemplar.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForExemplarWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardExemplarFuncs(), parserOptions)
+	if errGlobalBoolExpr != nil {
+		return nil, errGlobalBoolExpr
+	}
+	eStatements := ottlexemplar.NewStatementSequence(parsedStatements, pc.Settings, ottlexemplar.WithStatementSequenceErrorMode(errorMode))
+	return exemplarStatements{eStatements, globalExpr}, nil
 }
 
 func (mpc *MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (MetricsConsumer, error) {

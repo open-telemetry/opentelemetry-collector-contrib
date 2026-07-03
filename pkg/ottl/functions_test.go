@@ -91,6 +91,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			&optionalArgsArguments{},
 			functionWithOptionalArgs,
 		),
+		createFactory[any](
+			"testing_non_pointer_lambda",
+			&nonPointerLambdaArguments{},
+			functionWithNonPointerLambda,
+		),
 	)
 
 	p, _ := NewParser(
@@ -579,6 +584,28 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 													String: ottltest.Strp("bar"),
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "lambda expression argument that is not a pointer",
+			inv: editor{
+				Function: "testing_non_pointer_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"value"},
+								Body: lambdaBody{
+									Value: &value{
+										Literal: &mathExprLiteral{
+											Path: &path{Fields: []field{{Name: "value"}}},
 										},
 									},
 								},
@@ -2531,13 +2558,23 @@ func functionWithFunctionGetter(FunctionGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type nonPointerLambdaArguments struct {
+	Expr LambdaExpression[any]
+}
+
+func functionWithNonPointerLambda(LambdaExpression[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return nil, nil
+	}, nil
+}
+
 type evalLambdaArguments[K any] struct {
-	Expr LambdaExpression[K]
+	Expr *LambdaExpression[K]
 	Args []Getter[K]
 }
 
 //nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
-func evalLambdaFunction[K any](expr LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
+func evalLambdaFunction[K any](expr *LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		lambda, err := expr.Activate(ctx, len(args))
 		if err != nil {
