@@ -29,6 +29,9 @@ const (
 	// maxGetMetricDataQueries is the AWS limit per GetMetricData request.
 	maxGetMetricDataQueries = 500
 
+	// recentlyActiveThreshold is the only window AWS supports for RecentlyActive.
+	recentlyActiveThreshold = 3 * time.Hour
+
 	// statsPerMetric is the number of CloudWatch statistics we request per metric (Sum, SampleCount, Minimum, Maximum).
 	statsPerMetric = 4
 
@@ -164,9 +167,7 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			input.MetricName = aws.String(f.MetricName)
 		}
 	}
-	if s.discovery.RecentlyActive {
-		// Restrict discovery to metrics active in the last three hours. PT3H is the only
-		// value AWS accepts for this filter.
+	if s.collectionInterval > 0 && s.collectionInterval < recentlyActiveThreshold {
 		input.RecentlyActive = types.RecentlyActivePt3h
 	}
 

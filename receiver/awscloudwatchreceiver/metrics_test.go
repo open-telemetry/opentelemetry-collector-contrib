@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
@@ -419,9 +420,9 @@ func TestListMetrics_SinglePage(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
-func TestListMetrics_RecentlyActive(t *testing.T) {
+func TestListMetrics_RecentlyActiveBelowThreshold(t *testing.T) {
 	mc := &mockMetricsClient{}
-	// When recently_active is enabled, ListMetrics must be called with RecentlyActive=PT3H.
+	// Discovery with a collection interval under three hours must pass RecentlyActive=PT3H to ListMetrics.
 	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
 		return p.RecentlyActive == types.RecentlyActivePt3h
 	}), mock.Anything).Return(
@@ -434,7 +435,8 @@ func TestListMetrics_RecentlyActive(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: true},
+		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
+		Discovery:        &MetricsDiscoveryConfig{Limit: 10},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
@@ -445,10 +447,10 @@ func TestListMetrics_RecentlyActive(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
-func TestListMetrics_RecentlyActiveUnsetByDefault(t *testing.T) {
+func TestListMetrics_RecentlyActiveUnsetAtOrAboveThreshold(t *testing.T) {
 	mc := &mockMetricsClient{}
-	// Without recently_active, RecentlyActive must be left at its zero value so AWS
-	// applies the default two-week discovery window.
+	// Discovery with a collection interval of three hours or more must leave RecentlyActive
+	// at its zero value so AWS applies the default two-week discovery window.
 	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
 		return p.RecentlyActive == ""
 	}), mock.Anything).Return(
@@ -461,7 +463,8 @@ func TestListMetrics_RecentlyActiveUnsetByDefault(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 10},
+		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 3 * time.Hour},
+		Discovery:        &MetricsDiscoveryConfig{Limit: 10},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
