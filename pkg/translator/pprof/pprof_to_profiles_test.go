@@ -532,7 +532,33 @@ func TestConvertPprofToProfiles_LabelAndNumUnitPaths(t *testing.T) {
 
 	p := out.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	require.Equal(t, 1, p.Samples().Len())
-	require.GreaterOrEqual(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	require.Equal(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	for _, attrIdx := range p.Samples().At(0).AttributeIndices().All() {
+		require.NotZero(t, attrIdx)
+		attr := out.Dictionary().AttributeTable().At(int(attrIdx))
+		keyIdx := attr.KeyStrindex()
+		require.NotZero(t, keyIdx)
+		key := out.Dictionary().StringTable().At(int(keyIdx))
+		switch key {
+		case "label.with.unit":
+			require.Equal(t, "v", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "label.no.unit":
+			require.Equal(t, "x", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "num.with.unit":
+			require.Equal(t, int64(7), attr.Value().Int())
+			unitIdx := attr.UnitStrindex()
+			require.NotZero(t, unitIdx)
+			unit := out.Dictionary().StringTable().At(int(unitIdx))
+			require.Equal(t, "ms", unit)
+		case "num.no.unit":
+			require.Equal(t, int64(8), attr.Value().Int())
+			require.Zero(t, attr.UnitStrindex())
+		default:
+			t.Errorf("unexpected key: %s", key)
+		}
+	}
 	require.GreaterOrEqual(t, p.AttributeIndices().Len(), 3)
 }
 

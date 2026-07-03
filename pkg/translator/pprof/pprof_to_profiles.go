@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"reflect"
+"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -167,12 +167,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 						len(lv), errPprofInvalid)
 				}
 				var idx int32
-				lu, exist := sample.NumUnit[lk]
-				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
-				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
-				}
+				idx = lts.getIdxForAttribute(lk, lv[0])
 				s.AttributeIndices().Append(idx)
 			}
 
@@ -184,9 +179,13 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
 				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
+					idx = lts.getIdxForAttribute(lk, lv[0])
 				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
+					if len(lu) != 1 {
+						return nil, fmt.Errorf("invalid length of numeric unit value %d: %w",
+							len(lu), errPprofInvalid)
+					}
+					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv[0])
 				}
 				s.AttributeIndices().Append(idx)
 			}
