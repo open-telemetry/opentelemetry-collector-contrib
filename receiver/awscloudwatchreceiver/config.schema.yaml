@@ -50,7 +50,7 @@ $defs:
     type: object
     properties:
       account_id:
-        description: AccountID optionally identifies the metric's source account in a cross-account monitoring setup.
+        description: Source account for this metric in cross-account monitoring setups. If not a configured source account, the metric is dropped.
         type: string
       dimensions:
         type: object
@@ -90,7 +90,7 @@ $defs:
     type: object
     properties:
       account_identifiers:
-        description: AccountIdentifiers optionally narrows cross-account discovery to specific source accounts. Requires IncludeLinkedAccounts to be true.
+        description: Restricts cross-account discovery to specific source account IDs. Requires include_linked_accounts. When unset, metrics from all linked accounts are discovered.
         type: array
         items:
           type: string
@@ -98,11 +98,11 @@ $defs:
         x-optional: true
         $ref: metrics_discovery_filters
       include_linked_accounts:
-        description: IncludeLinkedAccounts, when true and run from a monitoring account, discovers metrics from linked source accounts in addition to (or filtered by) AccountIdentifiers.
+        description: When running in a monitoring account, discovers metrics from linked source accounts.
         x-pointer: true
         type: boolean
       limit:
-        description: Limit is the maximum number of metric queries to generate during discovery. Each combination of namespace, metric name, and dimensions counts as a single metric query (e.g. EC2/CPUUtilization for 10 unique instances counts as 10 metrics). Defaults to 100. In a cross-account setup `Limit` applies independently to each source account.
+        description: Maximum number of metrics to discover. Defaults to 100. In cross-account setups, the limit is applied per source account.
         type: integer
       stats:
         description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.

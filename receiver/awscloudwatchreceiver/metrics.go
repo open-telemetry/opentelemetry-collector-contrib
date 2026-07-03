@@ -188,12 +188,6 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 
 // listMetrics discovers metrics via the ListMetrics API, respecting discovery config
 // (namespace, metric name, limit, and cross-account options).
-//
-// When account_identifiers is set, each source account is queried separately because
-// ListMetrics filters a single owning account at a time; the limit applies per account.
-// When include_linked_accounts is set without identifiers, a single monitoring-account
-// sweep discovers metrics across all linked accounts, again capped per account. Otherwise
-// the receiver's own account is discovered as before.
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
 	if len(s.discovery.AccountIdentifiers) > 0 {
 		var out []MetricQuery

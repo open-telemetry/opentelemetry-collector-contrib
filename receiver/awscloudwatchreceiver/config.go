@@ -58,19 +58,17 @@ type MetricsConfig struct {
 // Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
 type MetricsDiscoveryConfig struct {
 	Filters configoptional.Optional[MetricsDiscoveryFilters] `mapstructure:"filters"`
-	// Limit is the maximum number of metric queries to generate during discovery. Each combination
-	// of namespace, metric name, and dimensions counts as a single metric query (e.g.
-	// EC2/CPUUtilization for 10 unique instances counts as 10 metrics). Defaults to 100.
-	// In a cross-account setup `Limit` applies independently to each source account.
+	// Limit is the maximum number of metrics to discover. Defaults to 100. In cross-account
+	// setups, the limit is applied per source account. Lower values may cap API costs but may
+	// cause incomplete data.
 	Limit int `mapstructure:"limit"`
 	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
-	// IncludeLinkedAccounts, when true and run from a monitoring account, discovers
-	// metrics from linked source accounts in addition to (or filtered by) AccountIdentifiers.
+	// IncludeLinkedAccounts, when true and run from a monitoring account, discovers metrics from linked source accounts.
 	IncludeLinkedAccounts *bool `mapstructure:"include_linked_accounts"`
-	// AccountIdentifiers optionally narrows cross-account discovery to specific source
-	// accounts. Requires IncludeLinkedAccounts to be true.
+	// AccountIdentifiers restricts cross-account discovery to specific source account IDs. Requires IncludeLinkedAccounts.
+	// When unset, metrics from all linked accounts are discovered.
 	AccountIdentifiers []string `mapstructure:"account_identifiers"`
 }
 
@@ -93,7 +91,7 @@ type MetricQuery struct {
 	MetricName string            `mapstructure:"metric_name"`
 	Dimensions map[string]string `mapstructure:"dimensions"`
 	Stats      []string          `mapstructure:"stats"`
-	// AccountID optionally identifies the metric's source account in a cross-account monitoring setup.
+	// AccountID is the source account for this metric in cross-account monitoring setups. If not a configured source account, the metric is dropped.
 	AccountID string `mapstructure:"account_id"`
 }
 
