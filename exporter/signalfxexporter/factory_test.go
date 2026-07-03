@@ -99,16 +99,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 2 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
 	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 2 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "added-entry", Value: "added value"},
-				{Name: "dot.test", Value: "test"},
-			},
-		},
+		AccessToken:  "testToken",
+		Realm:        "us1",
+		ClientConfig: clientConfig,
 	}
 
 	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)

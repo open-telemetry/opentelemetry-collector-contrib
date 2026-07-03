@@ -118,7 +118,7 @@ func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.R
 
 	if triggerType == replayEvent {
 		a.logger.Info("Running custom event", zap.String(logInvokedTrigger, string(triggerType)))
-		service, err := a.s3Provider.GetService(ctx)
+		service, err := a.s3Provider.GetService(ctx, a.cfg.S3.AWSOptions)
 		if err != nil {
 			return err
 		}
@@ -219,7 +219,7 @@ func newLogsHandler(
 ) (handlerProvider, error) {
 	logger := set.Logger
 
-	s3Service, err := s3Provider.GetService(ctx)
+	s3Service, err := s3Provider.GetService(ctx, cfg.S3.AWSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
@@ -341,7 +341,7 @@ func newMetricsHandler(
 		decoder = xstreamencoding.NewMetricsUnmarshalerDecoderFactory(metricsUnmarshaler)
 	}
 
-	s3Service, err := s3Provider.GetService(ctx)
+	s3Service, err := s3Provider.GetService(ctx, cfg.S3.AWSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}

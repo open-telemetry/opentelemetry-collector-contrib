@@ -730,6 +730,6 @@ This provides insights into query performance and resource usage, helping users 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |

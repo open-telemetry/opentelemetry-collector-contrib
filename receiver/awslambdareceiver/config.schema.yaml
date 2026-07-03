@@ -11,6 +11,8 @@ $defs:
         type: array
         items:
           $ref: s_3_encoding
+    allOf:
+      - $ref: ./internal.aws_options
   s_3_encoding:
     description: S3Encoding defines one entry in the S3 multi-encoding routing table.
     type: object

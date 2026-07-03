@@ -84,6 +84,6 @@ Records errors occurring during SFTP check.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| ssh.endpoint | Full SSH endpoint | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| ssh.endpoint | Full SSH endpoint | Any Str | false | - | - |

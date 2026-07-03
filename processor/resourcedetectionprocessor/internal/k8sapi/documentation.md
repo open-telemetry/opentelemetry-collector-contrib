@@ -6,8 +6,8 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| k8s.cluster.uid | The Kubernetes cluster UID, derived from the kube-system namespace UID. | Any Str | true | - |
-| k8s.node.name | The Kubernetes node name | Any Str | true | - |
-| k8s.node.uid | The Kubernetes node UID | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| k8s.cluster.uid | The Kubernetes cluster UID, derived from the kube-system namespace UID. | Any Str | true | - | - |
+| k8s.node.name | The Kubernetes node name | Any Str | true | - | - |
+| k8s.node.uid | The Kubernetes node UID | Any Str | true | - | - |
