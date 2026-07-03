@@ -6,6 +6,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"errors"
 	"fmt"
+	"net/textproto"
 
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
@@ -122,6 +123,16 @@ type RemoteWriteQueue struct {
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
+// reservedRemoteWriteHeaders are managed by the remote write protocol itself and
+// must not be overwritten by headers forwarded from client metadata. Keys are
+// stored in canonical MIME form for case-insensitive matching.
+var reservedRemoteWriteHeaders = map[string]struct{}{
+	textproto.CanonicalMIMEHeaderKey("Content-Encoding"):                  {},
+	textproto.CanonicalMIMEHeaderKey("Content-Type"):                      {},
+	textproto.CanonicalMIMEHeaderKey("User-Agent"):                        {},
+	textproto.CanonicalMIMEHeaderKey("X-Prometheus-Remote-Write-Version"): {},
+}
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
@@ -173,6 +184,12 @@ func (cfg *Config) Validate() error {
 
 		if cfg.RemoteWriteProtoMsg == remoteapi.WriteV1MessageType && (cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation) {
 			return fmt.Errorf("translation strategy %s requires Prometheus Remote Write 2.0 (UTF-8 support)", cfg.TranslationStrategy)
+		}
+	}
+
+	for _, key := range cfg.IncludeMetadataKeys {
+		if _, reserved := reservedRemoteWriteHeaders[textproto.CanonicalMIMEHeaderKey(key)]; reserved {
+			return fmt.Errorf("include_metadata_keys entry %q collides with a reserved remote write header", key)
 		}
 	}
 

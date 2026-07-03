@@ -159,6 +159,10 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "reserved_metadata_keys"),
+			errorMessage: "include_metadata_keys entry content-type collides with a reserved remote write header",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "include_metadata_keys"),
 			expected: &Config{
 				MaxBatchSizeBytes:          3000000,
