@@ -32,6 +32,10 @@ import (
 
 const querySampleTraceContextKey = "_otel_trace_context"
 
+// detachedCleanupTimeout bounds best-effort cleanup statements (see execDetached)
+// so a truly unresponsive backend can't hang cleanup forever.
+const detachedCleanupTimeout = 5 * time.Second
+
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
 // i.e. database1
 type databaseName string
@@ -128,6 +132,17 @@ func isExplainableQuery(query string) bool {
 	return ok
 }
 
+// execDetached runs a best-effort cleanup statement using a context that
+// survives cancellation of ctx, so cleanup still runs even if ctx was already
+// canceled or timed out (e.g. because the operation it was cleaning up after
+// got canceled) — otherwise long-lived pooled connections can be left with
+// leaked server-side state such as a prepared statement.
+func (c *postgreSQLClient) execDetached(ctx context.Context, query string) {
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
+	defer cancel()
+	_, _ = c.client.ExecContext(cleanupCtx, query)
+}
+
 // explainQuery implements client.
 func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
@@ -148,16 +163,7 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		nulls[i] = "null"
 	}
 
-	defer func() {
-		// Use a context detached from ctx's cancellation so that cleanup still runs
-		// even if the caller's context was canceled or timed out (e.g. due to the
-		// EXPLAIN itself being blocked), avoiding leaked prepared statements on
-		// long-lived pooled connections. Bound it with its own timeout so a truly
-		// unresponsive backend can't hang cleanup forever.
-		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
-		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
-	}()
+	defer c.execDetached(ctx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 
 	// if there is no parameter needed, we can not put an empty bracket
 
