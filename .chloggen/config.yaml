@@ -14,6 +14,7 @@ components:
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
     - cmd/telemetrygen
+    - config/configdbauth
     - connector/count
     - connector/datadog
     - connector/exceptions
@@ -88,6 +89,7 @@ components:
     - extension/cfgarden_observer
     - extension/cgroup_runtime
     - extension/datadog
+    - extension/dbauth
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
