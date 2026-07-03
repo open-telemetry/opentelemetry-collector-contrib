@@ -606,3 +606,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/prob
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../kubelet
