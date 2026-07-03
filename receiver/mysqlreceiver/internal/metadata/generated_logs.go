@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,7 +17,7 @@ type eventDbServerQuerySample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, mysqlBlockingPidsAttributeValue string, mysqlBlockingStartTimeAttributeValue string, mysqlBlockingWaitDurationAttributeValue float64, mysqlBlockingLockModeAttributeValue string, mysqlBlockingLockTypeAttributeValue string, mysqlBlockingLockTableAttributeValue string, mysqlBlockingLockIndexAttributeValue string, mysqlBlockingTransactionStartTimeAttributeValue string, mysqlBlockingLockLevelAttributeValue string, mysqlBlockingMdlObjectTypeAttributeValue string, mysqlBlockingMdlObjectSchemaAttributeValue string, mysqlBlockingMdlObjectNameAttributeValue string, mysqlBlockingMdlLockTypeAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -50,6 +49,19 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutInt("client.port", clientPortAttributeValue)
 	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
 	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.pids", mysqlBlockingPidsAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.start_time", mysqlBlockingStartTimeAttributeValue)
+	dp.Attributes().PutDouble("mysql.blocking.wait_duration", mysqlBlockingWaitDurationAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.lock.mode", mysqlBlockingLockModeAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.lock.type", mysqlBlockingLockTypeAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.lock.table", mysqlBlockingLockTableAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.lock.index", mysqlBlockingLockIndexAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.transaction.start_time", mysqlBlockingTransactionStartTimeAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.lock_level", mysqlBlockingLockLevelAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.mdl.object_type", mysqlBlockingMdlObjectTypeAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.mdl.object_schema", mysqlBlockingMdlObjectSchemaAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.mdl.object_name", mysqlBlockingMdlObjectNameAttributeValue)
+	dp.Attributes().PutStr("mysql.blocking.mdl.lock_type", mysqlBlockingMdlLockTypeAttributeValue)
 
 }
 
@@ -257,8 +269,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
-func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64) {
-	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlThreadsThreadIDAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, mysqlThreadsProcesslistCommandAttributeValue, mysqlThreadsProcesslistStateAttributeValue, dbQueryTextAttributeValue, mysqlEventsStatementsCurrentDigestAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventIDAttributeValue, mysqlWaitTypeAttributeValue, mysqlSessionStatusAttributeValue, mysqlSessionIDAttributeValue, mysqlEventsStatementsCurrentTimerWaitAttributeValue, mysqlEventsWaitsCurrentTimerWaitAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, mysqlBlockingPidsAttributeValue string, mysqlBlockingStartTimeAttributeValue string, mysqlBlockingWaitDurationAttributeValue float64, mysqlBlockingLockModeAttributeValue string, mysqlBlockingLockTypeAttributeValue string, mysqlBlockingLockTableAttributeValue string, mysqlBlockingLockIndexAttributeValue string, mysqlBlockingTransactionStartTimeAttributeValue string, mysqlBlockingLockLevelAttributeValue string, mysqlBlockingMdlObjectTypeAttributeValue string, mysqlBlockingMdlObjectSchemaAttributeValue string, mysqlBlockingMdlObjectNameAttributeValue string, mysqlBlockingMdlLockTypeAttributeValue string) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlThreadsThreadIDAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, mysqlThreadsProcesslistCommandAttributeValue, mysqlThreadsProcesslistStateAttributeValue, dbQueryTextAttributeValue, mysqlEventsStatementsCurrentDigestAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventIDAttributeValue, mysqlWaitTypeAttributeValue, mysqlSessionStatusAttributeValue, mysqlSessionIDAttributeValue, mysqlEventsStatementsCurrentTimerWaitAttributeValue, mysqlEventsWaitsCurrentTimerWaitAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, mysqlBlockingPidsAttributeValue, mysqlBlockingStartTimeAttributeValue, mysqlBlockingWaitDurationAttributeValue, mysqlBlockingLockModeAttributeValue, mysqlBlockingLockTypeAttributeValue, mysqlBlockingLockTableAttributeValue, mysqlBlockingLockIndexAttributeValue, mysqlBlockingTransactionStartTimeAttributeValue, mysqlBlockingLockLevelAttributeValue, mysqlBlockingMdlObjectTypeAttributeValue, mysqlBlockingMdlObjectSchemaAttributeValue, mysqlBlockingMdlObjectNameAttributeValue, mysqlBlockingMdlLockTypeAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.

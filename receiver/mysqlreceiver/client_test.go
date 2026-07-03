@@ -204,86 +204,74 @@ func TestDBVersionCapabilities(t *testing.T) {
 		name                        string
 		dv                          dbVersion
 		wantSupportsQuerySampleText bool
-		wantSupportsReplicaStatus   bool
-		wantSupportsProcesslist     bool
+		wantIsMySQL8Plus            bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")},
 			wantSupportsQuerySampleText: true,
-			wantSupportsReplicaStatus:   true,
-			wantSupportsProcesslist:     true,
+			wantIsMySQL8Plus:            true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.3")},
 			wantSupportsQuerySampleText: true,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.2")},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
-			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
+			name:                        "MySQL 8.0.0 (below all 8.x feature gates)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.0")},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
-			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
+			name:                        "MySQL 8.0.22 (minimum for isMySQL8Plus)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.22")},
 			wantSupportsQuerySampleText: true,
-			wantSupportsReplicaStatus:   true,
-			wantSupportsProcesslist:     true,
+			wantIsMySQL8Plus:            true,
 		},
 		{
-			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
+			name:                        "MySQL 8.0.21 (below isMySQL8Plus threshold)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.21")},
 			wantSupportsQuerySampleText: true,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
 			name:                        "MySQL 5.7.44",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "5.7.44")},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "11.4.2")},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 		{
 			name:                        "zero value (version unknown)",
 			dv:                          dbVersion{},
 			wantSupportsQuerySampleText: false,
-			wantSupportsReplicaStatus:   false,
-			wantSupportsProcesslist:     false,
+			wantIsMySQL8Plus:            false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
-			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
-			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
+			assert.Equal(t, tt.wantIsMySQL8Plus, tt.dv.isMySQL8Plus(), "isMySQL8Plus()")
 		})
 	}
 }
@@ -336,7 +324,7 @@ func TestReplicaStatusQuery(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			q := "SHOW REPLICA STATUS"
-			if !tt.dbVer.supportsReplicaStatus() {
+			if !tt.dbVer.isMySQL8Plus() {
 				q = "SHOW SLAVE STATUS"
 			}
 			assert.Equal(t, tt.wantQuery, q)

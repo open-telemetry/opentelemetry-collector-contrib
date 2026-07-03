@@ -718,7 +718,7 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 }
 
 func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
-	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats(m.detectedVersion.supportsReplicaStatus())
+	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats(m.detectedVersion.isMySQL8Plus())
 	if err != nil {
 		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
@@ -808,7 +808,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 }
 
 func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist())
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.isMySQL8Plus())
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
 		errs.AddPartial(1, err)
@@ -884,6 +884,19 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			clientPort,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.blockingPIDs,
+			sample.blockingStartTime,
+			sample.blockingWaitDuration,
+			sample.blockingLockMode,
+			sample.blockingLockType,
+			sample.blockingLockTable,
+			sample.blockingLockIndex,
+			sample.blockingTransactionStart,
+			sample.blockingLockLevel,
+			sample.mdlObjectType,
+			sample.mdlObjectSchema,
+			sample.mdlObjectName,
+			sample.mdlLockType,
 		)
 	}
 
