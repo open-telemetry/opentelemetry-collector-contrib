@@ -277,6 +277,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 - [ParseCLF](#parseclf)
 - [ParseLEEF](#parseleef)
+- [ParseELF](#parseelf)
 
 **Traces only functions**
 
@@ -782,6 +783,35 @@ Examples:
 - `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
 
 - `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
+
+### ParseELF
+
+`ParseELF(target)`
+
+The `ParseELF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [W3C Extended Log Format (ELF)](https://www.w3.org/TR/WD-logfile.html) log block.
+
+`target` is a Getter that returns a string containing a complete ELF log block (one or more directive lines followed by data lines). If the string is empty or does not contain a valid `#Version` directive, an error is returned.
+
+**Intended usage:** `ParseELF` is designed for pipelines where the full ELF block — header directives (`#Version`, `#Fields`, etc.) and data lines — is available as a single string. This is the case when using the [filelog receiver](../../receiver/filelogreceiver/README.md) with a multiline configuration that groups an entire ELF file (or rotated segment) into one log record body, or when the entire log content is read from a single field. In a line-by-line streaming pipeline where `#Fields` arrives only once at file open, each individual data line does not carry its own header; for that pattern you would need to prepend the known header directives to each data line before passing the string to `ParseELF`.
+
+The returned map contains the following keys:
+
+* `version` — value of the `#Version` directive (required).
+* `software` — value of `#Software` (omitted if not present).
+* `date` — value of `#Date` (omitted if not present).
+* `start_date` — value of `#Start-Date` (omitted if not present).
+* `end_date` — value of `#End-Date` (omitted if not present).
+* `remark` — value of `#Remark` (omitted if not present).
+* `fields` — string slice of field names from the last `#Fields` directive.
+* `entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
+
+Multiple `#Fields` directives within a single block are supported; each directive applies to subsequent data lines until the next `#Fields` directive is encountered. Double-quoted field values (as produced by Microsoft IIS) are handled correctly.
+
+Examples:
+
+- `ParseELF(body)`
+
+- `ParseELF("#Version: 1.0\n#Fields: time cs-method cs-uri\n00:34:23 GET /foo/bar.html")`
 
 ### set_semconv_span_name
 
