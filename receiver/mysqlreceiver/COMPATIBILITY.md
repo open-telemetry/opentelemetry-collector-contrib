@@ -9,6 +9,7 @@ This document lists every version-gated capability in the MySQL receiver. Versio
 | `supportsQuerySampleText()` | MySQL 8.0.3+ | Top-query scraper uses 5-column fallback template (`topQueryNoSampleText.tmpl`); `querySampleText` is empty and `EXPLAIN` is skipped |
 | `supportsReplicaStatus()` | MySQL 8.0.22+ | `SHOW SLAVE STATUS` is used instead of `SHOW REPLICA STATUS` |
 | `supportsProcesslist()` | MySQL 8.0.22+ | `client.port` and `network.peer.port` remain `0`; `information_schema.PROCESSLIST` is **not** used as a fallback (it holds a global mutex, was deprecated in MySQL 8.0, removed in MySQL 9.0, and has already been removed from this receiver) |
+| `supportsDataLockWaits()` | MySQL 8.0.1+ | InnoDB blocking data uses `information_schema.innodb_lock_waits` + `innodb_locks` (legacy tables available on MySQL 5.7 and all MariaDB). Metadata lock (MDL) blocking attributes are empty (MDL requires `performance_schema.metadata_locks`, available only on MySQL 8.0+) |
 
 ## Timer Wait Tiers (`querySample.tmpl`)
 
@@ -35,12 +36,12 @@ The following product/version/platform combinations have been validated against 
 - **Platform** — deployment type and instance class (e.g. `AWS RDS db.t3.micro`, `Docker 27.x`, `bare metal`)
 - **Date** — date live validation passed
 
-| Product | Series | Exact Version | Platform | `supportsQuerySampleText` | `supportsProcesslist` | `supportsReplicaStatus` | Timer Wait Tiers | Date |
-|---|---|---|---|---|---|---|---|---|
-| MySQL | 8.4 | 8.4.7 | AWS RDS db.t3.micro | ✓ | ✓ | ✓ | 1, 2, 3 | 2026-04-21 |
-| MySQL | 5.7 | 5.7.44 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | 1, 2, 3 | 2026-04-21 |
-| MariaDB | 10.5 | 10.5.28 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | 1, 3 | 2026-04-21 |
-| MariaDB | 11.8 | 11.8.2 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | 1, 3 | 2026-04-21 |
+| Product | Series | Exact Version | Platform | `supportsQuerySampleText` | `supportsProcesslist` | `supportsReplicaStatus` | `supportsDataLockWaits` | Timer Wait Tiers | Date |
+|---|---|---|---|---|---|---|---|---|---|
+| MySQL | 8.4 | 8.4.7 | AWS RDS db.t3.micro | ✓ | ✓ | ✓ | ✓ | 1, 2, 3 | 2026-04-21 |
+| MySQL | 5.7 | 5.7.44 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | ✗ | 1, 2, 3 | 2026-04-21 |
+| MariaDB | 10.5 | 10.5.28 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | ✗ | 1, 3 | 2026-04-21 |
+| MariaDB | 11.8 | 11.8.2 | AWS RDS db.t3.micro | ✗ | ✗ | ✗ | ✗ | 1, 3 | 2026-04-21 |
 
 **Legend:**
 - ✓ = capability enabled

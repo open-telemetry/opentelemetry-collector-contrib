@@ -778,7 +778,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 }
 
 func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist())
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist(), m.detectedVersion.supportsDataLockWaits())
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
 		errs.AddPartial(1, err)
@@ -854,6 +854,19 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			clientPort,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.blockingPIDs,
+			sample.blockingStartTime,
+			sample.blockingWaitDuration,
+			sample.blockingLockMode,
+			sample.blockingLockType,
+			sample.blockingLockTable,
+			sample.blockingLockIndex,
+			sample.blockingTransactionStart,
+			sample.blockingLockLevel,
+			sample.mdlObjectType,
+			sample.mdlObjectSchema,
+			sample.mdlObjectName,
+			sample.mdlLockType,
 		)
 	}
 

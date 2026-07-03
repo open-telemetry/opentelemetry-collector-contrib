@@ -137,6 +137,45 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.blocking.lock.index:
+    description: Name of the index involved in the InnoDB lock wait (for RECORD locks). Empty string if not blocked or for TABLE locks.
+    type: string
+  mysql.blocking.lock.mode:
+    description: InnoDB lock mode requested by the blocked session (e.g. X, S, IX, IS, S_GAP, X_GAP). Empty string if not blocked.
+    type: string
+  mysql.blocking.lock.table:
+    description: Schema-qualified name of the table containing the locked resource. Empty string if not blocked.
+    type: string
+  mysql.blocking.lock.type:
+    description: InnoDB lock type (RECORD or TABLE). Empty string if not blocked.
+    type: string
+  mysql.blocking.lock_level:
+    description: The lock layer responsible for the block. Either 'row' for InnoDB data locks or 'metadata' for DDL-level metadata locks. Empty string if not blocked. MySQL 8.0+ only for 'metadata'.
+    type: string
+  mysql.blocking.mdl.lock_type:
+    description: Metadata lock type being waited on (e.g. SHARED_READ, SHARED_WRITE, EXCLUSIVE). MySQL 8.0+ only. Empty string if not MDL-blocked.
+    type: string
+  mysql.blocking.mdl.object_name:
+    description: Name of the metadata-locked object. MySQL 8.0+ only. Empty string if not MDL-blocked.
+    type: string
+  mysql.blocking.mdl.object_schema:
+    description: Schema of the metadata-locked object. MySQL 8.0+ only. Empty string if not MDL-blocked.
+    type: string
+  mysql.blocking.mdl.object_type:
+    description: Type of metadata lock object (e.g. TABLE, SCHEMA, GLOBAL, COMMIT). MySQL 8.0+ only. Empty string if not MDL-blocked.
+    type: string
+  mysql.blocking.pids:
+    description: Comma-separated list of processlist IDs blocking this session via InnoDB row locks or metadata locks. Empty string if not blocked.
+    type: string
+  mysql.blocking.start_time:
+    description: ISO 8601 UTC timestamp when this session started waiting for a lock. From innodb_trx.trx_wait_started for InnoDB locks; derived from events_waits_current for metadata locks. Empty string if not blocked.
+    type: string
+  mysql.blocking.transaction.start_time:
+    description: ISO 8601 UTC timestamp when the blocked session's transaction began (innodb_trx.trx_started). Empty string if not blocked.
+    type: string
+  mysql.blocking.wait_duration:
+    description: Seconds this session has been waiting for the blocked lock. 0 if not blocked.
+    type: double
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -306,6 +345,19 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.blocking.pids
+      - mysql.blocking.start_time
+      - mysql.blocking.wait_duration
+      - mysql.blocking.lock.mode
+      - mysql.blocking.lock.type
+      - mysql.blocking.lock.table
+      - mysql.blocking.lock.index
+      - mysql.blocking.transaction.start_time
+      - mysql.blocking.lock_level
+      - mysql.blocking.mdl.object_type
+      - mysql.blocking.mdl.object_schema
+      - mysql.blocking.mdl.object_name
+      - mysql.blocking.mdl.lock_type
 
   db.server.top_query:
     enabled: false

@@ -709,6 +709,19 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
+| mysql.blocking.pids | Comma-separated list of processlist IDs blocking this session via InnoDB row locks or metadata locks. Empty string if not blocked. | Any Str | - |
+| mysql.blocking.start_time | ISO 8601 UTC timestamp when this session started waiting for a lock. From innodb_trx.trx_wait_started for InnoDB locks; derived from events_waits_current for metadata locks. Empty string if not blocked. | Any Str | - |
+| mysql.blocking.wait_duration | Seconds this session has been waiting for the blocked lock. 0 if not blocked. | Any Double | - |
+| mysql.blocking.lock.mode | InnoDB lock mode requested by the blocked session (e.g. X, S, IX, IS, S_GAP, X_GAP). Empty string if not blocked. | Any Str | - |
+| mysql.blocking.lock.type | InnoDB lock type (RECORD or TABLE). Empty string if not blocked. | Any Str | - |
+| mysql.blocking.lock.table | Schema-qualified name of the table containing the locked resource. Empty string if not blocked. | Any Str | - |
+| mysql.blocking.lock.index | Name of the index involved in the InnoDB lock wait (for RECORD locks). Empty string if not blocked or for TABLE locks. | Any Str | - |
+| mysql.blocking.transaction.start_time | ISO 8601 UTC timestamp when the blocked session's transaction began (innodb_trx.trx_started). Empty string if not blocked. | Any Str | - |
+| mysql.blocking.lock_level | The lock layer responsible for the block. Either 'row' for InnoDB data locks or 'metadata' for DDL-level metadata locks. Empty string if not blocked. MySQL 8.0+ only for 'metadata'. | Any Str | - |
+| mysql.blocking.mdl.object_type | Type of metadata lock object (e.g. TABLE, SCHEMA, GLOBAL, COMMIT). MySQL 8.0+ only. Empty string if not MDL-blocked. | Any Str | - |
+| mysql.blocking.mdl.object_schema | Schema of the metadata-locked object. MySQL 8.0+ only. Empty string if not MDL-blocked. | Any Str | - |
+| mysql.blocking.mdl.object_name | Name of the metadata-locked object. MySQL 8.0+ only. Empty string if not MDL-blocked. | Any Str | - |
+| mysql.blocking.mdl.lock_type | Metadata lock type being waited on (e.g. SHARED_READ, SHARED_WRITE, EXCLUSIVE). MySQL 8.0+ only. Empty string if not MDL-blocked. | Any Str | - |
 
 ### db.server.top_query
 

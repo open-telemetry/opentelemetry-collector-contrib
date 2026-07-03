@@ -1,0 +1,1 @@
+-54323	1034386	appuser	192.168.1.82	9012	mydb	Query	executing	UPDATE accounts SET balance = 100 WHERE id = 5	UPDATE accounts SET balance = 100 WHERE id = 5	dddddd	17470257764	waiting	lock/table/sql/handler	0.000008000000	0.003		row	101	2026-07-02 10:32:00	3.7	X	RECORD	mydb.accounts	PRIMARY	2026-07-02 10:31:58				

@@ -46,6 +46,12 @@ Collecting query samples requires the `performance_schema` to be enabled:
 GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
+Collecting blocking session data additionally requires the `PROCESS` privilege to
+see other sessions' transactions in `information_schema.innodb_trx`:
+```sql
+GRANT PROCESS ON *.* TO '<your-user>'@'%';
+```
+
 ## Configuration
 
 

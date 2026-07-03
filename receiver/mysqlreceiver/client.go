@@ -97,6 +97,24 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+// minMySQLDataLockWaitsVersion is the MySQL version that introduced
+// performance_schema.data_lock_waits and removed information_schema.innodb_lock_waits.
+var minMySQLDataLockWaitsVersion = version.Must(version.NewVersion("8.0.1"))
+
+// supportsDataLockWaits reports whether the server has
+// performance_schema.data_lock_waits (MySQL 8.0.1+).
+// MySQL < 8.0.1 and all MariaDB versions use the legacy
+// information_schema.innodb_lock_waits instead.
+func (v dbVersion) supportsDataLockWaits() bool {
+	if !v.isValid() {
+		return false
+	}
+	if v.product == dbProductMariaDB {
+		return false
+	}
+	return !v.version.LessThan(minMySQLDataLockWaitsVersion)
+}
+
 type client interface {
 	Connect() error
 	getDBVersion() dbVersion
@@ -114,7 +132,7 @@ type client interface {
 	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
 	// supportsProcesslist controls whether the performance_schema.processlist JOIN
 	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
-	getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error)
+	getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -299,6 +317,20 @@ type querySample struct {
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
+	// Blocking session attributes
+	blockingLockLevel       string
+	blockingPIDs            string
+	blockingStartTime       string
+	blockingWaitDuration    float64
+	blockingLockMode        string
+	blockingLockType        string
+	blockingLockTable       string
+	blockingLockIndex       string
+	blockingTransactionStart string
+	mdlObjectType           string
+	mdlObjectSchema         string
+	mdlObjectName           string
+	mdlLockType             string
 }
 
 type topQuery struct {
@@ -922,13 +954,14 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit":               limit,
-		"supportsProcesslist": supportsProcesslist,
+		"limit":                  limit,
+		"supportsProcesslist":    supportsProcesslist,
+		"supportsDataLockWaits":  supportsDataLockWaits,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -985,6 +1018,32 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.statementTimerWait)
 			case "traceparent":
 				dest = append(dest, &s.traceparent)
+			case "blocking_lock_level":
+				dest = append(dest, &s.blockingLockLevel)
+			case "blocking_pids":
+				dest = append(dest, &s.blockingPIDs)
+			case "blocking_start_time":
+				dest = append(dest, &s.blockingStartTime)
+			case "blocking_wait_duration":
+				dest = append(dest, &s.blockingWaitDuration)
+			case "blocking_lock_mode":
+				dest = append(dest, &s.blockingLockMode)
+			case "blocking_lock_type":
+				dest = append(dest, &s.blockingLockType)
+			case "blocking_lock_table":
+				dest = append(dest, &s.blockingLockTable)
+			case "blocking_lock_index":
+				dest = append(dest, &s.blockingLockIndex)
+			case "blocking_transaction_start":
+				dest = append(dest, &s.blockingTransactionStart)
+			case "mdl_object_type":
+				dest = append(dest, &s.mdlObjectType)
+			case "mdl_object_schema":
+				dest = append(dest, &s.mdlObjectSchema)
+			case "mdl_object_name":
+				dest = append(dest, &s.mdlObjectName)
+			case "mdl_lock_type":
+				dest = append(dest, &s.mdlLockType)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}

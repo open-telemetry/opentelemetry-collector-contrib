@@ -628,7 +628,7 @@ func TestVersionCompatibility(t *testing.T) {
 
 			// --- getQuerySamples: must succeed without error ---
 			// Result may be empty if no active sessions.
-			_, err = c.getQuerySamples(10, dv.supportsProcesslist())
+			_, err = c.getQuerySamples(10, dv.supportsProcesslist(), dv.supportsDataLockWaits())
 			require.NoError(t, err, "getQuerySamples should not fail (wrong template would cause 'unknown table' error)")
 
 			// --- getReplicaStatusStats: must succeed without error ---
