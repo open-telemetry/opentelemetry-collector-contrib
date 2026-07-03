@@ -393,6 +393,52 @@ func TestAlertManagerPostAlert(t *testing.T) {
 func TestClientConfig(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 	fmt.Println(endpoint)
+
+	useSecureClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	useSecureClientConfig.MaxIdleConns = 0
+	useSecureClientConfig.IdleConnTimeout = 0
+	useSecureClientConfig.ForceAttemptHTTP2 = false
+	useSecureClientConfig.Endpoint = endpoint
+	useSecureClientConfig.TLS = configtls.ClientConfig{
+		Insecure: false,
+	}
+
+	headersClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	headersClientConfig.MaxIdleConns = 0
+	headersClientConfig.IdleConnTimeout = 0
+	headersClientConfig.ForceAttemptHTTP2 = false
+	headersClientConfig.Endpoint = endpoint
+	headersClientConfig.Headers = configopaque.MapList{
+		{Name: "hdr1", Value: "val1"},
+		{Name: "hdr2", Value: "val2"},
+	}
+
+	caCertClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	caCertClientConfig.MaxIdleConns = 0
+	caCertClientConfig.IdleConnTimeout = 0
+	caCertClientConfig.ForceAttemptHTTP2 = false
+	caCertClientConfig.Endpoint = endpoint
+	caCertClientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "testdata/test_cert.pem",
+		},
+	}
+
+	certPemFileErrorClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	certPemFileErrorClientConfig.MaxIdleConns = 0
+	certPemFileErrorClientConfig.IdleConnTimeout = 0
+	certPemFileErrorClientConfig.ForceAttemptHTTP2 = false
+	certPemFileErrorClientConfig.Endpoint = endpoint
+	certPemFileErrorClientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "nosuchfile",
+		},
+	}
+
 	tests := []struct {
 		name             string
 		config           *Config
@@ -402,50 +448,25 @@ func TestClientConfig(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Insecure: false,
-					},
-				},
+				ClientConfig: useSecureClientConfig,
 			},
 		},
 		{
 			name: "Headers",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					Headers: configopaque.MapList{
-						{Name: "hdr1", Value: "val1"},
-						{Name: "hdr2", Value: "val2"},
-					},
-				},
+				ClientConfig: headersClientConfig,
 			},
 		},
 		{
 			name: "CaCert",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "testdata/test_cert.pem",
-						},
-					},
-				},
+				ClientConfig: caCertClientConfig,
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "nosuchfile",
-						},
-					},
-				},
+				ClientConfig: certPemFileErrorClientConfig,
 			},
 			mustFailOnCreate: false,
 			mustFailOnStart:  true,

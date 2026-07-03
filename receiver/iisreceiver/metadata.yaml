@@ -1,6 +1,5 @@
 display_name: Microsoft IIS Receiver
 type: iis
-reaggregation_enabled: true
 
 description: |
   The Microsoft IIS Receiver grabs metrics about an IIS instance using the Windows Performance Counters. Because of

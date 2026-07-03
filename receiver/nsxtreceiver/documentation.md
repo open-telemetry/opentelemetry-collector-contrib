@@ -95,9 +95,9 @@ The number of packets which have flowed through the network interface on the nod
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| device.id | The name of the network interface. | Any Str | true | - |
-| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - |
-| nsxt.node.name | The name of the NSX Node. | Any Str | true | - |
-| nsxt.node.type | The type of NSX Node. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| device.id | The name of the network interface. | Any Str | true | - | - |
+| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - | - |
+| nsxt.node.name | The name of the NSX Node. | Any Str | true | - | - |
+| nsxt.node.type | The type of NSX Node. | Any Str | true | - | - |

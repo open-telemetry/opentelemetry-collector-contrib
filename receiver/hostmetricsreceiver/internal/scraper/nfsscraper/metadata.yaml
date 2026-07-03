@@ -11,8 +11,6 @@ status:
 
 sem_conv_version: 1.9.0
 
-reaggregation_enabled: true
-
 attributes:
   error.type:
     description: Describes a class of error the operation ended with.

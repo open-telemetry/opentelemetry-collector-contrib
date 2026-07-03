@@ -67,18 +67,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckDurationDataPoint(ts, 1, "tcpcheck.endpoint-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionRefused)
 			if tt.name == "reaggregate_set" {
 				mb.RecordTcpcheckErrorDataPoint(ts, 3, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionTimeout)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckStatusDataPoint(ts, 1, "tcpcheck.endpoint-val")

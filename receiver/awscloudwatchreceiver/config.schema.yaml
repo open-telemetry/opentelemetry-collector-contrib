@@ -35,6 +35,9 @@ $defs:
     properties:
       groups:
         $ref: group_config
+      initial_lookback:
+        type: string
+        format: duration
       max_events_per_request:
         type: integer
       poll_interval:

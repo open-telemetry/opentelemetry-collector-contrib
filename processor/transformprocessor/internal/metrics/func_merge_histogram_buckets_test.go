@@ -141,6 +141,17 @@ func TestMergeHistogramBuckets(t *testing.T) {
 			expectedCounts: []uint64{84, 126, 5, 50, 1},
 		},
 		{
+			name:           "limit buckets uses smallest divisor that stays within limit",
+			inputBounds:    []float64{1, 2, 3, 4, 5, 6, 7, 8, 9},
+			inputCounts:    []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			inputCount:     55,
+			inputSum:       385,
+			targetValue:    int64(4),
+			method:         ottl.NewTestingOptional(mergeHistogramBucketsMethodLimitBuckets),
+			expectedBounds: []float64{3, 6, 9},
+			expectedCounts: []uint64{6, 15, 24, 10},
+		},
+		{
 			name:           "limit buckets single compaction pass may reduce below limit",
 			inputBounds:    []float64{0.1, 0.5, 1.0},
 			inputCounts:    []uint64{5, 8, 3, 1},

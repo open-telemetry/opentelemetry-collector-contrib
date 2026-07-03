@@ -7,6 +7,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -31,6 +37,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -55,6 +67,442 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of access method scans.
+            gauge:
+              dataPoints:
+                - asDouble: 120
+                  attributes:
+                    - key: sqlserver.access.scan.type
+                      value:
+                        stringValue: range
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.access.scan.rate
+            unit: '{scan}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of access method scans.
+            gauge:
+              dataPoints:
+                - asDouble: 37
+                  attributes:
+                    - key: sqlserver.access.scan.type
+                      value:
+                        stringValue: probe
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.access.scan.rate
+            unit: '{scan}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of access method scans.
+            gauge:
+              dataPoints:
+                - asDouble: 5
+                  attributes:
+                    - key: sqlserver.access.scan.type
+                      value:
+                        stringValue: free_space
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.access.scan.rate
+            unit: '{scan}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of page allocation operations.
+            gauge:
+              dataPoints:
+                - asDouble: 812
+                  attributes:
+                    - key: sqlserver.page.allocation.type
+                      value:
+                        stringValue: allocated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.allocation.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of page allocation operations.
+            gauge:
+              dataPoints:
+                - asDouble: 401
+                  attributes:
+                    - key: sqlserver.page.allocation.type
+                      value:
+                        stringValue: deallocated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.allocation.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of page allocation operations.
+            gauge:
+              dataPoints:
+                - asDouble: 12
+                  attributes:
+                    - key: sqlserver.page.allocation.type
+                      value:
+                        stringValue: mixed
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.allocation.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of page compression operations.
+            gauge:
+              dataPoints:
+                - asDouble: 60
+                  attributes:
+                    - key: sqlserver.page.compression.type
+                      value:
+                        stringValue: succeeded
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.compression.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of page compression operations.
+            gauge:
+              dataPoints:
+                - asDouble: 75
+                  attributes:
+                    - key: sqlserver.page.compression.type
+                      value:
+                        stringValue: attempted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.compression.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of extent operations.
+            gauge:
+              dataPoints:
+                - asDouble: 30
+                  attributes:
+                    - key: sqlserver.extent.operation.type
+                      value:
+                        stringValue: allocated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.extent.operation.rate
+            unit: '{extent}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of extent operations.
+            gauge:
+              dataPoints:
+                - asDouble: 11
+                  attributes:
+                    - key: sqlserver.extent.operation.type
+                      value:
+                        stringValue: deallocated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.extent.operation.rate
+            unit: '{extent}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of ghosted records skipped during scans.
+            gauge:
+              dataPoints:
+                - asDouble: 8
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.ghost_record.skipped.rate
+            unit: '{record}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate at which scan points needed to be revalidated.
+            gauge:
+              dataPoints:
+                - asDouble: 4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.scan_point.revalidation.rate
+            unit: '{revalidate}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Fraction of worktables that did not require initialization because they were retrieved from the worktable cache.
+            gauge:
+              dataPoints:
+                - asDouble: 0.975
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.worktable.cache.hit_ratio
+            unit: '1'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -83,6 +531,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -111,6 +565,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -135,6 +595,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -163,6 +629,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -187,6 +659,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -215,6 +693,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -239,6 +723,42 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of pages read from disk by the read-ahead manager.
+            gauge:
+              dataPoints:
+                - asDouble: 347
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.read_ahead.rate
+            unit: '{page}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -267,6 +787,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -295,6 +821,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -319,6 +851,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -344,6 +882,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -368,6 +912,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -392,6 +942,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -416,6 +972,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -440,6 +1002,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -464,6 +1032,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -488,6 +1062,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -512,6 +1092,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -536,6 +1122,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -560,6 +1152,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -592,6 +1190,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -616,6 +1220,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -640,6 +1250,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -664,6 +1280,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -688,6 +1310,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -712,6 +1340,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -736,6 +1370,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -762,6 +1402,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -786,6 +1432,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -814,6 +1466,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -842,6 +1500,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -866,6 +1530,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -890,6 +1560,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -914,6 +1590,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -939,6 +1621,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -967,6 +1655,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -995,6 +1689,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1020,6 +1720,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1044,6 +1750,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1072,6 +1784,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1096,6 +1814,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1124,6 +1848,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1152,6 +1882,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1176,6 +1912,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1204,6 +1946,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1228,6 +1976,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1253,6 +2007,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1277,6 +2037,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1301,6 +2067,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1325,6 +2097,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1354,6 +2132,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1378,6 +2162,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1404,6 +2194,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1430,6 +2226,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1458,6 +2260,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1486,6 +2294,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1514,6 +2328,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1542,6 +2362,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1570,6 +2396,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1598,6 +2430,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1626,6 +2464,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1654,6 +2498,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1682,6 +2532,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1710,6 +2566,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1738,6 +2600,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1766,6 +2634,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -1794,6 +2668,12 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426

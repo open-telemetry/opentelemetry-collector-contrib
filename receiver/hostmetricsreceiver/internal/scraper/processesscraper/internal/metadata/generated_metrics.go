@@ -92,7 +92,8 @@ var MapAttributeStatus = map[string]AttributeStatus{
 
 var MetricsInfo = metricsInfo{
 	SystemProcessesCount: metricInfo{
-		Name: "system.processes.count",
+		Name:       "system.processes.count",
+		Attributes: []string{"status"},
 	},
 	SystemProcessesCreated: metricInfo{
 		Name: "system.processes.created",
@@ -105,7 +106,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemProcessesCount struct {
