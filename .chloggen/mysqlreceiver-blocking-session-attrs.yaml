@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: mysqlreceiver
+component: receiver/mysql
 
 note: Add 13 mysql.blocking.* attributes to db.server.query_sample events for InnoDB row-level and metadata lock (MDL) blocking visibility. Uses split templates (querySample.tmpl for MySQL 8.0.1+ and querySampleLegacy.tmpl for MySQL <8.0/MariaDB) for clean version-conditional SQL.
 
@@ -12,3 +12,5 @@ subtext: |
   mysql.blocking.lock.index, mysql.blocking.transaction.start_time, mysql.blocking.lock_level,
   mysql.blocking.mdl.object_type, mysql.blocking.mdl.object_schema, mysql.blocking.mdl.object_name,
   mysql.blocking.mdl.lock_type. Requires PROCESS privilege for blocking information_schema tables.
+
+change_logs: [user]
