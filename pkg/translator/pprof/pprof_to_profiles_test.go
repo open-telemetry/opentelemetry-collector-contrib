@@ -532,7 +532,7 @@ func TestConvertPprofToProfiles_LabelAndNumUnitPaths(t *testing.T) {
 
 	p := out.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	require.Equal(t, 1, p.Samples().Len())
-	require.Equal(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	require.Equal(t, 4, p.Samples().At(0).AttributeIndices().Len())
 	for _, attrIdx := range p.Samples().At(0).AttributeIndices().All() {
 		require.NotZero(t, attrIdx)
 		attr := out.Dictionary().AttributeTable().At(int(attrIdx))

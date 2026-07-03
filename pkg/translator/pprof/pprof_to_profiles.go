@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-"reflect"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -166,8 +166,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 					return nil, fmt.Errorf("labels with multiple values (%d) are not supported: %w",
 						len(lv), errPprofInvalid)
 				}
-				var idx int32
-				idx = lts.getIdxForAttribute(lk, lv[0])
+				idx := lts.getIdxForAttribute(lk, lv[0])
 				s.AttributeIndices().Append(idx)
 			}
 
