@@ -277,7 +277,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/chloggen v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/crosslink v0.30.0 // indirect
-	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260629131108-f40f26bd9a4e // indirect
+	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260702202003-335e29c1ae8a // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
 	go.opentelemetry.io/collector/cmd/builder v0.155.1-0.20260702132714-193fe1b7ac5d // indirect
