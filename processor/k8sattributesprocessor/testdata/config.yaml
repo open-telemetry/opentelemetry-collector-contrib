@@ -293,7 +293,6 @@ k8s_attributes/kubelet:
   kubelet:
     enabled: true
     poll_interval: 15s
-    request_timeout: 20s
     insecure_skip_verify: true
     allow_insecure_http: true
 
@@ -312,10 +311,12 @@ k8s_attributes/bad_kubelet_poll_interval:
   kubelet:
     poll_interval: 0s
 
-k8s_attributes/bad_kubelet_request_timeout:
-  kubelet:
-    request_timeout: 0s
-
 k8s_attributes/bad_kubelet_node:
+  kubelet:
+    enabled: true
+
+k8s_attributes/bad_kubelet_node_from_env_var:
+  filter:
+    node_from_env_var: K8S_MISSING_NODE
   kubelet:
     enabled: true

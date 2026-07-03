@@ -448,7 +448,6 @@ func withKubeletConfig(cfg KubeletConfig) option {
 		p.kubelet = kube.KubeletConfig{
 			Enabled:            cfg.Enabled,
 			PollInterval:       cfg.PollInterval,
-			RequestTimeout:     cfg.RequestTimeout,
 			Endpoint:           cfg.Endpoint,
 			InsecureSkipVerify: cfg.InsecureSkipVerify,
 			AllowInsecureHTTP:  cfg.AllowInsecureHTTP,

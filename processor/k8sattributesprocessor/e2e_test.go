@@ -2479,3 +2479,69 @@ func TestE2E_ContainerIDAssociation(t *testing.T) {
 		})
 	}
 }
+
+func TestE2E_KubeletPodMetadataSource(t *testing.T) {
+	testDir := filepath.Join("testdata", "e2e", "kubelet")
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	nsFile := filepath.Join(testDir, "namespace.yaml")
+	buf, err := os.ReadFile(nsFile)
+	require.NoErrorf(t, err, "failed to read namespace object file %s", nsFile)
+	nsObj, err := k8stest.CreateObject(k8sClient, buf)
+	require.NoErrorf(t, err, "failed to create k8s namespace from file %s", nsFile)
+
+	testNs := nsObj.GetName()
+	defer func() {
+		require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", testNs)
+	}()
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	tracesConsumer := new(consumertest.TracesSink)
+	logsConsumer := new(consumertest.LogsSink)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+	defer shutdownSinks()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete collector object %s", obj.GetName())
+		}
+	}()
+
+	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
+		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
+		TestID:       testID,
+		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
+		DataTypes:    []string{"metrics", "logs", "traces"},
+	}
+	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
+	defer func() {
+		for _, obj := range telemetryGenObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete telemetrygen object %s", obj.GetName())
+		}
+	}()
+
+	for _, info := range telemetryGenObjInfos {
+		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+	}
+
+	waitForData(t, 10, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+
+	attrs := map[string]*expectedValue{
+		"k8s.pod.name":        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+		"k8s.pod.uid":         newExpectedValue(regex, uidRe),
+		"k8s.namespace.name":  newExpectedValue(equal, testNs),
+		"k8s.node.name":       newExpectedValue(exist, ""),
+		"k8s.pod.start_time":  newExpectedValue(exist, ""),
+		"k8s.labels.app":      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+		"k8s.deployment.name": newExpectedValue(shouldnotexist, ""),
+	}
+
+	scanTracesForAttributes(t, tracesConsumer, "test-traces-deployment", attrs)
+	scanMetricsForAttributes(t, metricsConsumer, "test-metrics-deployment", attrs)
+	scanLogsForAttributes(t, logsConsumer, "test-logs-deployment", attrs)
+}

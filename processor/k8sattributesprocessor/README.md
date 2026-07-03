@@ -243,9 +243,11 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 The processor can experimentally poll the node-local kubelet `https://<node>:10250/pods` endpoint for pod metadata instead of using the Kubernetes API server pod informer. This is disabled by default and is intended for daemonset collectors in large clusters where pod watches create excessive API server load.
 
-Kubelet mode lists pods on a timer and applies namespace, node, label, and field filters locally because kubelet `/pods` is not a watch API and does not support server-side selectors. It only returns pods visible to one kubelet. The processor may still use Kubernetes API server informers for namespace, node, and workload metadata when configured extraction rules require them.
+Kubelet mode lists pods on a timer and applies namespace, node, label, and field filters locally because kubelet `/pods` is not a watch API and does not support server-side selectors. It only returns pods visible to one kubelet. Pod metadata changes may lag by up to `kubelet.poll_interval`; shorter intervals improve freshness but increase kubelet request load. The processor may still use Kubernetes API server informers for namespace, node, and workload metadata when configured extraction rules require them.
 
-Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.endpoint`. The collector service account must be allowed by kubelet authentication and authorization to read `/pods`, and the kubelet serving certificate must be trusted by the configured Kubernetes auth/TLS material. If your cluster does not make the kubelet serving CA available to the collector, `kubelet.insecure_skip_verify` can be used to skip kubelet TLS verification. Plaintext `http` endpoints require `kubelet.allow_insecure_http`.
+Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.endpoint`. The collector service account must be allowed by kubelet authentication and authorization to read `/pods`, and the kubelet serving certificate must be trusted by the configured Kubernetes auth/TLS material. Some managed Kubernetes services restrict direct kubelet access from workload service accounts. For example, GKE documents that secure kubelet `/pods` access requires `nodes/proxy`, which cannot be granted in Autopilot clusters and is not recommended in Standard clusters. In those clusters this mode cannot be used unless kubelet authn/authz allows the collector to read `/pods`. If your cluster does not make the kubelet serving CA available to the collector, `kubelet.insecure_skip_verify` can be used to skip kubelet TLS verification. Plaintext `http` endpoints require `kubelet.allow_insecure_http`.
+
+When `auth_type` is `kubeConfig`, kubelet requests use the Kubernetes API server node proxy instead of direct node-local kubelet access. Use `serviceAccount` or TLS auth with a kubelet endpoint for the API server load-reduction path.
 
 ```yaml
 processors:
@@ -256,7 +258,6 @@ processors:
     kubelet:
       enabled: true
       poll_interval: 10s
-      request_timeout: 30s
       insecure_skip_verify: false
       allow_insecure_http: false
 ```
@@ -754,7 +755,6 @@ k8s_attributes:
   kubelet:
     enabled: false
     poll_interval: 10s
-    request_timeout: 30s
     endpoint: ""
     insecure_skip_verify: false
     allow_insecure_http: false

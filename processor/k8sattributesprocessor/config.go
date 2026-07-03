@@ -74,9 +74,6 @@ func (cfg *Config) Validate() error {
 	if cfg.Kubelet.PollInterval <= 0 {
 		return errors.New("kubelet.poll_interval must be greater than 0")
 	}
-	if cfg.Kubelet.RequestTimeout <= 0 {
-		return errors.New("kubelet.request_timeout must be greater than 0")
-	}
 	if cfg.Kubelet.Enabled {
 		if cfg.Filter.NodeFromEnvVar != "" {
 			if err := cfg.Filter.Validate(); err != nil {
@@ -157,7 +154,6 @@ func (cfg *Config) Validate() error {
 type KubeletConfig struct {
 	Enabled            bool          `mapstructure:"enabled"`
 	PollInterval       time.Duration `mapstructure:"poll_interval"`
-	RequestTimeout     time.Duration `mapstructure:"request_timeout"`
 	Endpoint           string        `mapstructure:"endpoint"`
 	InsecureSkipVerify bool          `mapstructure:"insecure_skip_verify"`
 	AllowInsecureHTTP  bool          `mapstructure:"allow_insecure_http"`

@@ -175,16 +175,6 @@ func New(
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
 
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClientBundle
-	}
-	bundle, err := newClientSet(apiCfg)
-	if err != nil {
-		return nil, err
-	}
-	c.kc = bundle.K8s
-	c.mc = bundle.Meta
-
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
 		return nil, err
@@ -199,7 +189,7 @@ func New(
 			return nil, errors.New("kubelet requires filter.node or kubelet.endpoint")
 		}
 		c.kubeletPods = map[string]*api_v1.Pod{}
-		c.kubeletPodLister, err = newKubeletPodLister(apiCfg, kubelet, c.Filters.Node)
+		c.kubeletPodLister, err = newKubeletPodLister(apiCfg, kubelet, c.Filters.Node, c.logger)
 		if err != nil {
 			return nil, err
 		}
@@ -209,6 +199,7 @@ func New(
 		}
 	}
 
+	needNamespaceInformer := c.extractNamespaceLabelsAnnotations() || rules.ClusterUID
 	if informersFactory.newNamespaceInformer == nil {
 		switch {
 		case c.extractNamespaceLabelsAnnotations():
@@ -226,6 +217,41 @@ func New(
 		default:
 			informersFactory.newNamespaceInformer = NewNoOpInformer
 		}
+	}
+
+	// Enable the ReplicaSet informer when any of the following applies:
+	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
+	//   2) DeploymentUID is enabled
+	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
+	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
+		c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations()
+	needNodeInformer := c.extractNodeLabelsAnnotations() || c.extractNodeUID()
+	needDeploymentInformer := c.extractDeploymentLabelsAnnotations()
+	needStatefulSetInformer := c.extractStatefulSetLabelsAnnotations()
+	needDaemonSetInformer := c.extractDaemonSetLabelsAnnotations()
+	needJobInformer := c.extractJobLabelsAnnotations() || rules.CronJobUID
+	needAPIClient := !kubelet.Enabled ||
+		needNamespaceInformer ||
+		needReplicaSetInformer ||
+		needNodeInformer ||
+		needDeploymentInformer ||
+		needStatefulSetInformer ||
+		needDaemonSetInformer ||
+		needJobInformer
+
+	if needAPIClient {
+		if newClientSet == nil {
+			newClientSet = k8sconfig.MakeClientBundle
+		}
+		var bundle k8sconfig.ClientBundle
+		bundle, err = newClientSet(apiCfg)
+		if err != nil {
+			return nil, err
+		}
+		c.kc = bundle.K8s
+		c.mc = bundle.Meta
 	}
 
 	if !kubelet.Enabled {
@@ -247,15 +273,6 @@ func New(
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
-	// Enable the ReplicaSet informer when any of the following applies:
-	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
-	//   2) DeploymentUID is enabled
-	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
-	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
-	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
-		c.Rules.DeploymentUID ||
-		c.extractDeploymentLabelsAnnotations()
-
 	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = func(client clientmeta.Interface, namespace string) cache.SharedInformer {
@@ -269,23 +286,23 @@ func New(
 		}
 	}
 
-	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
+	if needNodeInformer {
 		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node, watchSyncPeriod)
 	}
 
-	if c.extractDeploymentLabelsAnnotations() {
+	if needDeploymentInformer {
 		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractStatefulSetLabelsAnnotations() {
+	if needStatefulSetInformer {
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractDaemonSetLabelsAnnotations() {
+	if needDaemonSetInformer {
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+	if needJobInformer {
 		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
@@ -501,10 +518,7 @@ func (c *WatchClient) reconcileKubeletPods(pods []api_v1.Pod) {
 			continue
 		}
 		current[uid] = pod
-		if previous, ok := c.kubeletPods[uid]; ok {
-			if previous.ResourceVersion != "" && previous.ResourceVersion == pod.ResourceVersion {
-				continue
-			}
+		if _, ok := c.kubeletPods[uid]; ok {
 			c.handleKubeletPodUpdate(pod)
 		} else {
 			c.handlePodAdd(pod)
@@ -1084,6 +1098,9 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
+		if ts.IsZero() && pod.Status.StartTime != nil {
+			ts = *pod.Status.StartTime
+		}
 		if !ts.IsZero() {
 			if rfc3339ts, err := ts.MarshalText(); err != nil {
 				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
@@ -1783,6 +1800,7 @@ func (c *WatchClient) addOrUpdatePodWithCleanup(pod *api_v1.Pod, cleanupStaleIde
 	newPod := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(newPod)
 	var staleContainerIDRequests []deleteRequest
+	var stalePodIdentifierRequests []deleteRequest
 
 	c.m.Lock()
 	var oldPod *Pod
@@ -1817,39 +1835,34 @@ func (c *WatchClient) addOrUpdatePodWithCleanup(pod *api_v1.Pod, cleanupStaleIde
 		staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
 	}
 	if cleanupStaleIdentifiers && oldPod != nil && c.Pods[podUIDIdentifier(newPod.PodUID)] == newPod {
-		c.deleteStalePodIdentifiersLocked(oldPod, identifiers)
+		stalePodIdentifierRequests = c.stalePodIdentifierDeleteRequestsLocked(oldPod, newPod, identifiers)
 	}
 	c.m.Unlock()
 
 	c.cancelDeleteRequests(identifiers, newPod.PodUID)
 	c.appendDeleteRequests(staleContainerIDRequests)
+	c.appendDeleteRequests(stalePodIdentifierRequests)
 }
 
-func (c *WatchClient) deleteStalePodIdentifiersLocked(oldPod *Pod, newIdentifiers []PodIdentifier) {
+func (c *WatchClient) stalePodIdentifierDeleteRequestsLocked(oldPod, newPod *Pod, newIdentifiers []PodIdentifier) []deleteRequest {
 	current := make(map[PodIdentifier]struct{}, len(newIdentifiers))
 	for i := range newIdentifiers {
 		current[newIdentifiers[i]] = struct{}{}
 	}
 
-	oldContainerIDs := containerIDSet(oldPod)
+	staleContainerIDs := staleContainerIDs(oldPod, newPod)
 	oldIdentifiers := c.getIdentifiersFromAssoc(oldPod)
+	requests := make([]deleteRequest, 0, len(oldIdentifiers))
 	for i := range oldIdentifiers {
 		id := oldIdentifiers[i]
-		if _, ok := current[id]; ok || podIdentifierHasContainerID(id, oldContainerIDs) {
+		if _, ok := current[id]; ok || podIdentifierHasContainerID(id, staleContainerIDs) {
 			continue
 		}
 		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
-			delete(c.Pods, id)
+			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
 		}
 	}
-}
-
-func containerIDSet(pod *Pod) map[string]struct{} {
-	ids := make(map[string]struct{}, len(pod.Containers.ByID))
-	for id := range pod.Containers.ByID {
-		ids[id] = struct{}{}
-	}
-	return ids
+	return requests
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {

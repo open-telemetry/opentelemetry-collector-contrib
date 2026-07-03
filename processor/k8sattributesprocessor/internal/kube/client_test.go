@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	sharedkubelet "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
@@ -236,6 +237,29 @@ func TestConstructorErrors(t *testing.T) {
 		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
 	})
+	t.Run("kubelet-without-node-or-endpoint", func(t *testing.T) {
+		c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, er, ff, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{Enabled: true})
+		assert.Nil(t, c)
+		require.EqualError(t, err, "kubelet requires filter.node or kubelet.endpoint")
+	})
+	t.Run("kubelet-lister-error", func(t *testing.T) {
+		c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, er, Filters{Node: "node-a"}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{Enabled: true, Endpoint: "http://node-a:10250"})
+		assert.Nil(t, c)
+		require.ErrorContains(t, err, "kubelet.endpoint must use https unless allow_insecure_http is enabled")
+	})
+}
+
+func TestKubeletPodOnlySkipsKubernetesAPIClient(t *testing.T) {
+	clientProvider := func(k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+		return k8sconfig.ClientBundle{}, errors.New("should not create kubernetes API client")
+	}
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, ExtractionRules{}, Filters{Node: "node-a"}, []Association{}, Excludes{}, clientProvider, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{
+		Enabled:           true,
+		Endpoint:          "http://node-a:10250",
+		AllowInsecureHTTP: true,
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, c)
 }
 
 func TestPodAdd(t *testing.T) {
@@ -2450,11 +2474,15 @@ func TestReconcileKubeletPods(t *testing.T) {
 	assert.Equal(t, "10.0.0.1", got.Address)
 
 	c.reconcileKubeletPods([]api_v1.Pod{kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.2", map[string]string{"app": "ok"})})
+	require.NotEmpty(t, c.deleteQueue)
 	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
-	assert.False(t, ok)
+	assert.True(t, ok)
 	got, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
 	require.True(t, ok)
 	assert.Equal(t, "pod-a", got.Name)
+	c.deleteLoopProcessing(0)
+	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	assert.False(t, ok)
 
 	c.reconcileKubeletPods(nil)
 	c.deleteLoopProcessing(0)
@@ -2462,7 +2490,7 @@ func TestReconcileKubeletPods(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestReconcileKubeletPodsSkipsUnchangedResourceVersion(t *testing.T) {
+func TestReconcileKubeletPodsUpdatesUnchangedResourceVersion(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.kubeletPods = map[string]*api_v1.Pod{}
 
@@ -2474,9 +2502,7 @@ func TestReconcileKubeletPodsSkipsUnchangedResourceVersion(t *testing.T) {
 	unchanged.ResourceVersion = "1"
 	c.reconcileKubeletPods([]api_v1.Pod{unchanged})
 
-	_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
-	assert.False(t, ok)
-	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
 	require.True(t, ok)
 	assert.Equal(t, "pod-a", got.Name)
 }
@@ -2493,6 +2519,38 @@ func TestInformerPodUpdateKeepsStaleIdentifiers(t *testing.T) {
 	assert.True(t, ok)
 	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
 	assert.True(t, ok)
+}
+
+func TestReconcileKubeletPodsQueuesStaleCompositeContainerIDAssociation(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{ContainerID: true}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{
+			{From: ConnectionSource},
+			{From: ResourceSource, Name: "container.id"},
+		},
+	}}
+	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
+	c.kubeletPods = map[string]*api_v1.Pod{}
+
+	oldPod := podWithContainerID("uid-a", "container-a", 0)
+	oldPod.Status.PodIP = "10.0.0.1"
+	c.reconcileKubeletPods([]api_v1.Pod{*oldPod})
+
+	oldID := PodIdentifier{
+		PodIdentifierAttributeFromConnection("10.0.0.1"),
+		PodIdentifierAttributeFromResourceAttribute("container.id", "container-a"),
+	}
+	require.Contains(t, c.Pods, oldID)
+
+	newPod := podWithContainerID("uid-a", "container-a", 0)
+	newPod.Status.PodIP = "10.0.0.2"
+	c.reconcileKubeletPods([]api_v1.Pod{*newPod})
+
+	require.Contains(t, c.Pods, oldID)
+	require.NotEmpty(t, c.deleteQueue)
+	c.deleteLoopProcessing(0)
+	assert.NotContains(t, c.Pods, oldID)
 }
 
 func TestReconcileKubeletPodsCancelsDeleteForReappearingPod(t *testing.T) {
@@ -2536,6 +2594,19 @@ func TestReconcileKubeletPodsFiltersLocally(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestReconcileKubeletPodsInvalidFilter(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Filters = Filters{
+		Labels: []LabelFilter{{Op: selection.Exists}},
+	}
+	c.kubeletPods = map[string]*api_v1.Pod{}
+
+	c.reconcileKubeletPods([]api_v1.Pod{
+		kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+	})
+	assert.Empty(t, c.kubeletPods)
+}
+
 type fakePodLister struct {
 	pods *api_v1.PodList
 	err  error
@@ -2561,6 +2632,13 @@ func TestListKubeletPods(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestListKubeletPodsNilList(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.kubeletPodLister = fakePodLister{}
+
+	require.ErrorContains(t, c.listKubeletPods(t.Context()), "kubelet pod lister returned nil pod list")
+}
+
 func TestListKubeletPodsHonorsContextCancel(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	ctx, cancel := context.WithCancel(t.Context())
@@ -2574,15 +2652,9 @@ func TestListKubeletPodsHonorsContextCancel(t *testing.T) {
 }
 
 func TestKubeletPodLister(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/pods", r.URL.Path)
-		assert.NoError(t, json.NewEncoder(w).Encode(api_v1.PodList{Items: []api_v1.Pod{
-			kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
-		}}))
-	}))
-	defer server.Close()
-
-	lister := kubeletPodLister{client: server.Client(), endpoint: server.URL + "/pods"}
+	lister := kubeletPodLister{client: fakeKubeletClient{body: mustMarshalPodList(t, api_v1.PodList{Items: []api_v1.Pod{
+		kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+	}})}}
 	pods, err := lister.listPods(t.Context())
 	require.NoError(t, err)
 	require.Len(t, pods.Items, 1)
@@ -2590,44 +2662,86 @@ func TestKubeletPodLister(t *testing.T) {
 }
 
 func TestKubeletPodListerStatusError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "nope", http.StatusForbidden)
-	}))
-	defer server.Close()
-
-	lister := kubeletPodLister{client: server.Client(), endpoint: server.URL + "/pods"}
+	lister := kubeletPodLister{client: fakeKubeletClient{err: errors.New("kubelet request GET /pods failed - \"403 Forbidden\"")}}
 	_, err := lister.listPods(t.Context())
-	require.ErrorContains(t, err, "kubelet /pods returned 403 Forbidden")
+	require.ErrorContains(t, err, "403 Forbidden")
+}
+
+func TestKubeletPodListerInvalidJSON(t *testing.T) {
+	lister := kubeletPodLister{client: fakeKubeletClient{body: []byte("not-json")}}
+	_, err := lister.listPods(t.Context())
+	require.Error(t, err)
+}
+
+func TestKubeletPodListerCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	lister := kubeletPodLister{client: fakeKubeletClient{body: mustMarshalPodList(t, api_v1.PodList{})}}
+	_, err := lister.listPods(ctx)
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestNewKubeletPodListerEndpoint(t *testing.T) {
-	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/pods", r.URL.Path)
+		assert.NoError(t, json.NewEncoder(w).Encode(api_v1.PodList{}))
+	}))
+	defer server.Close()
 
-	lister, err := newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{}, "node-a")
+	lister, err := newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
+		Endpoint:          server.URL + "/pods",
+		AllowInsecureHTTP: true,
+	}, "ignored", zap.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, "https://node-a:10250/pods", lister.endpoint)
-	assert.Equal(t, defaultKubeletPodsRequestTimeout, lister.client.Timeout)
-
-	lister, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
-		Endpoint:       "https://node-a:10250",
-		RequestTimeout: time.Second,
-	}, "ignored")
+	_, err = lister.listPods(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://node-a:10250/pods", lister.endpoint)
-	assert.Equal(t, time.Second, lister.client.Timeout)
 
 	_, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
 		Endpoint: "http://node-a:10250",
-	}, "ignored")
+	}, "ignored", zap.NewNop())
 	require.ErrorContains(t, err, "kubelet.endpoint must use https unless allow_insecure_http is enabled")
 
 	lister, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
 		Endpoint:          "http://node-a:10250",
 		AllowInsecureHTTP: true,
-	}, "ignored")
+	}, "ignored", zap.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, "http://node-a:10250/pods", lister.endpoint)
+	require.NotNil(t, lister)
+
+	lister, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
+		AllowInsecureHTTP: true,
+	}, "node-a", zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, lister)
+
+	_, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
+		Endpoint:          "http://[::1",
+		AllowInsecureHTTP: true,
+	}, "ignored", zap.NewNop())
+	require.Error(t, err)
+
+	_, err = newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig}, KubeletConfig{
+		Endpoint: "https://node-a:10250",
+	}, "ignored", zap.NewNop())
+	require.ErrorContains(t, err, "kubelet.endpoint must be a node name when auth_type is kubeConfig")
+}
+
+var _ sharedkubelet.Client = fakeKubeletClient{}
+
+type fakeKubeletClient struct {
+	body []byte
+	err  error
+}
+
+func (f fakeKubeletClient) Get(string) ([]byte, error) {
+	return f.body, f.err
+}
+
+func mustMarshalPodList(t *testing.T, pods api_v1.PodList) []byte {
+	t.Helper()
+	body, err := json.Marshal(pods)
+	require.NoError(t, err)
+	return body
 }
 
 func TestStartWaitsForKubeletPods(t *testing.T) {
@@ -2644,6 +2758,24 @@ func TestStartWaitsForKubeletPods(t *testing.T) {
 	require.NoError(t, c.Start())
 	_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
 	assert.True(t, ok)
+}
+
+func TestKubeletPodStartTimeUsesStatusStartTime(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		PodName:   true,
+		StartTime: true,
+	}
+
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	c.addOrUpdatePodFromKubelet(&pod)
+
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	require.True(t, ok)
+	require.NotNil(t, pod.Status.StartTime)
+	want, err := pod.Status.StartTime.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, string(want), got.Attributes["k8s.pod.start_time"])
 }
 
 func kubeletTestPod(uid, name, namespace, node, ip string, labels map[string]string) api_v1.Pod {
