@@ -292,8 +292,9 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 				continue
 			}
 			dp.SetCount(dp.Count() + dps.At(i).Count())
-			// Sum is optional: only keep an aggregate sum while every merged
-			// datapoint carries one (see mergeHistogramDataPoints).
+			// Sum is optional on histogram datapoints. Keep the aggregated sum only
+			// while every merged datapoint carries one; if any is missing a sum, the
+			// total would be incomplete, so drop it entirely.
 			if dp.HasSum() && dps.At(i).HasSum() {
 				dp.SetSum(dp.Sum() + dps.At(i).Sum())
 			} else {
