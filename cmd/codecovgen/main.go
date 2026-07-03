@@ -88,15 +88,26 @@ func main() {
 	config, err := walkTree(args)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		os.Exit(1)
+	}
+
+	// Codecov only supports up to maxComponents individual components.
+	if n := len(config.ComponentManagement.IndividualComponents); n > maxComponents {
+		fmt.Printf("Error: generated %d components, which exceeds the Codecov limit of %d\n", n, maxComponents)
+		os.Exit(1)
 	}
 
 	// Add component list to the config
 	err = addComponentList(config, args)
 	if err != nil {
 		fmt.Println("Error adding component list:", err)
+		os.Exit(1)
 	}
 }
+
+// maxComponents is the maximum number of individual components Codecov supports.
+// This is not actually documented anywhere but things break after that.
+const maxComponents = 255
 
 // component represents a component in the Codecov configuration.
 type component struct {
@@ -177,6 +188,16 @@ func walkTree(cli Args) (*codecovConfig, error) {
 			}
 		}
 
+		// Skip deprecated/unmaintained components.
+		skip, err := isDeprecatedOrUnmaintainedOnly(filepath.Join(path, metadataFileName))
+		if err != nil {
+			return err
+		}
+		if skip {
+			fmt.Printf("Skipping deprecated/unmaintained module %q\n", relModName)
+			return nil
+		}
+
 		// Create component and add it to the config
 		relativePath, err := filepath.Rel(cli.Dir, path)
 		if err != nil {
@@ -202,6 +223,42 @@ func walkTree(cli Args) (*codecovConfig, error) {
 	}
 
 	return config, nil
+}
+
+const metadataFileName = "metadata.yaml"
+
+// metadata is a partial representation of a component's metadata.yaml.
+type metadata struct {
+	Status struct {
+		Stability map[string][]string `yaml:"stability"`
+	} `yaml:"status"`
+}
+
+func isDeprecatedOrUnmaintainedOnly(metadataPath string) (bool, error) {
+	data, err := os.ReadFile(metadataPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to read metadata file %q: %w", metadataPath, err)
+	}
+
+	var meta metadata
+	if err := yaml.Unmarshal(data, &meta); err != nil {
+		return false, fmt.Errorf("failed to parse metadata file %q: %w", metadataPath, err)
+	}
+
+	hasSignal := false
+	for level, signals := range meta.Status.Stability {
+		if len(signals) == 0 {
+			continue
+		}
+		if level != "deprecated" && level != "unmaintained" {
+			return false, nil
+		}
+		hasSignal = true
+	}
+	return hasSignal, nil
 }
 
 // readModuleName reads the go.mod file and returns the module's name
@@ -255,7 +312,7 @@ func addComponentList(config *codecovConfig, cli Args) error {
 	}
 
 	codecovCfg = bytes.ReplaceAll(codecovCfg, oldContent[0], replacement)
-	err = os.WriteFile(configPath, codecovCfg, 0o600)
+	err = os.WriteFile(configPath, codecovCfg, 0o600) // #nosec G703 -- configPath is derived from the trusted --dir CLI argument
 	if err != nil {
 		return fmt.Errorf("failed to write to %q: %w", configPath, err)
 	}
