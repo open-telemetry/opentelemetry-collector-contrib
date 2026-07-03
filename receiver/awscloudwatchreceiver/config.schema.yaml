@@ -50,7 +50,7 @@ $defs:
     type: object
     properties:
       account_id:
-        description: Source account for this metric in cross-account monitoring setups. If not a configured source account, the metric is dropped.
+        description: AccountID is the source account for this metric in cross-account monitoring setups. If not a configured source account, the metric is dropped.
         type: string
       dimensions:
         type: object
@@ -90,7 +90,7 @@ $defs:
     type: object
     properties:
       account_identifiers:
-        description: Restricts cross-account discovery to specific source account IDs. Requires include_linked_accounts. When unset, metrics from all linked accounts are discovered.
+        description: AccountIdentifiers restricts cross-account discovery to specific source account IDs. Requires IncludeLinkedAccounts. When unset, metrics from all linked accounts are discovered.
         type: array
         items:
           type: string
@@ -98,11 +98,11 @@ $defs:
         x-optional: true
         $ref: metrics_discovery_filters
       include_linked_accounts:
-        description: When running in a monitoring account, discovers metrics from linked source accounts.
+        description: IncludeLinkedAccounts, when true and run from a monitoring account, discovers metrics from linked source accounts.
         x-pointer: true
         type: boolean
       limit:
-        description: Maximum number of metrics to discover. Defaults to 100. In cross-account setups, the limit is applied per source account.
+        description: Limit is the maximum number of metrics to discover. Defaults to 100. In cross-account setups, the limit is applied per source account. Lower values may cap API costs but may cause incomplete data.
         type: integer
       stats:
         description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.
