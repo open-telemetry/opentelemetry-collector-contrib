@@ -89,8 +89,8 @@ components:
     - extension/cfgarden_observer
     - extension/cgroup_runtime
     - extension/datadog
-    - extension/dbauth
     - extension/db_storage
+    - extension/dbauth
     - extension/docker_observer
     - extension/ecs_observer
     - extension/encoding

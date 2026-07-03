@@ -2,9 +2,11 @@ ignored_paths:
   - cmd/codecovgen
   - cmd/telemetrygen
   - cmd/opampsupervisor
+  - config/configdbauth
   - exporter/datadogexporter/integrationtest
   - extension/observer
   - extension/encoding
+  - extension/dbauth
   - extension/opampcustommessages
   - extension/storage
   - pkg/batchperresourceattr
