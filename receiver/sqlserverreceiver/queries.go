@@ -344,52 +344,69 @@ func getSQLServerPerformanceCounterQuery(instanceName string) string {
 
 const sqlServerProperties = `
 SET DEADLOCK_PRIORITY -10;
-IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4) BEGIN /*NOT IN Standard, Enterprise, Express*/
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise or Express. This query is only supported on these editions.';
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN /*NOT IN Standard, Enterprise, Express, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express or Azure SQL Managed Instance. This query is only supported on these editions.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END
 
 DECLARE
 	 @SqlStatement AS nvarchar(max) = ''
+	,@EngineEdition AS int = CAST(SERVERPROPERTY('EngineEdition') AS int)
 	,@MajorMinorVersion AS int = CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),4) AS int)*100 + CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar),3) AS int)
 	,@Columns AS nvarchar(MAX) = ''
+	,@RegReadStatement AS nvarchar(MAX) = ''
 
-IF CAST(SERVERPROPERTY('ProductVersion') AS varchar(50)) >= '10.50.2500.0'
+-- Azure SQL Managed Instance (EngineEdition 8) has no host OS, so the Windows registry reads
+-- (xp_instance_regread) and several host/instance properties are unavailable there. On that
+-- edition these columns would come back NULL and emit a warning on every scrape, so they are
+-- omitted entirely rather than selected as NULL. None of them are consumed by the receiver.
+IF @EngineEdition <> 8
+BEGIN
 	SET @Columns = N'
+	,@@SERVICENAME AS [service_name]
+	,SERVERPROPERTY(''IsClustered'') AS [instance_type]
+	,@ForceEncryption AS [ForceEncryption]
+	,COALESCE(@DynamicportNo,@StaticportNo) AS [Port]
+	,IIF(@DynamicportNo IS NULL, ''Static'', ''Dynamic'') AS [PortType]'
+
+	IF CAST(SERVERPROPERTY('ProductVersion') AS varchar(50)) >= '10.50.2500.0'
+		SET @Columns = @Columns + N'
 	,CASE [virtual_machine_type_desc]
 		WHEN ''NONE'' THEN ''PHYSICAL Machine''
 		ELSE [virtual_machine_type_desc]
 	END AS [hardware_type]'
 
-SET @SqlStatement = '
-DECLARE @ForceEncryption INT
-DECLARE @DynamicportNo NVARCHAR(50);
-DECLARE @StaticportNo NVARCHAR(50);
+	SET @RegReadStatement = N'
+	DECLARE @ForceEncryption INT
+	DECLARE @DynamicportNo NVARCHAR(50);
+	DECLARE @StaticportNo NVARCHAR(50);
 
-EXEC [xp_instance_regread]
-	 @rootkey = ''HKEY_LOCAL_MACHINE''
-	,@key = ''SOFTWARE\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib''
-	,@value_name = ''ForceEncryption''
-	,@value = @ForceEncryption OUTPUT;
+	EXEC [xp_instance_regread]
+		@rootkey = ''HKEY_LOCAL_MACHINE''
+		,@key = ''SOFTWARE\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib''
+		,@value_name = ''ForceEncryption''
+		,@value = @ForceEncryption OUTPUT;
 
-EXEC [xp_instance_regread]
-	 @rootkey = ''HKEY_LOCAL_MACHINE''
-	,@key = ''Software\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib\Tcp\IpAll''
-	,@value_name = ''TcpDynamicPorts''
-	,@value = @DynamicportNo OUTPUT
+	EXEC [xp_instance_regread]
+		@rootkey = ''HKEY_LOCAL_MACHINE''
+		,@key = ''Software\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib\Tcp\IpAll''
+		,@value_name = ''TcpDynamicPorts''
+		,@value = @DynamicportNo OUTPUT
 
-EXEC [xp_instance_regread]
-	  @rootkey = ''HKEY_LOCAL_MACHINE''
-     ,@key = ''Software\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib\Tcp\IpAll''
-     ,@value_name = ''TcpPort''
-     ,@value = @StaticportNo OUTPUT
+	EXEC [xp_instance_regread]
+		@rootkey = ''HKEY_LOCAL_MACHINE''
+		,@key = ''Software\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib\Tcp\IpAll''
+		,@value_name = ''TcpPort''
+		,@value = @StaticportNo OUTPUT'
+END
+
+SET @SqlStatement = @RegReadStatement + '
 
 SELECT
 	 ''sqlserver_server_properties'' AS [measurement]
 	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
 	,HOST_NAME() AS [computer_name]
-	,@@SERVICENAME AS [service_name]
 	,si.[cpu_count]
 	,(SELECT [total_physical_memory_kb] FROM sys.[dm_os_sys_memory]) AS [server_memory]
 	,(SELECT [available_physical_memory_kb] FROM sys.[dm_os_sys_memory]) AS [available_server_memory]
@@ -397,12 +414,8 @@ SELECT
 	,CAST(SERVERPROPERTY(''EngineEdition'') AS int) AS [engine_edition]
 	,DATEDIFF(MINUTE,si.[sqlserver_start_time],GETDATE()) AS [uptime]
 	,SERVERPROPERTY(''ProductVersion'') AS [sql_version]
-	,SERVERPROPERTY(''IsClustered'') AS [instance_type]
 	,SERVERPROPERTY(''IsHadrEnabled'') AS [is_hadr_enabled]
 	,LEFT(@@VERSION,CHARINDEX('' - '',@@VERSION)) AS [sql_version_desc]
-	,@ForceEncryption AS [ForceEncryption]
-	,COALESCE(@DynamicportNo,@StaticportNo) AS [Port]
-	,IIF(@DynamicportNo IS NULL, ''Static'', ''Dynamic'') AS [PortType]
 	,dbs.[db_online]
 	,dbs.[db_restoring]
 	,dbs.[db_recovering]
