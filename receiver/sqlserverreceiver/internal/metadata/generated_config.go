@@ -767,6 +767,57 @@ func (ms *SqlserverLockWaitTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// SqlserverLogDataIoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.log_data.io.rate metric.
+type SqlserverLogDataIoRateMetricAttributeKey string
+
+const (
+	SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName SqlserverLogDataIoRateMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverLogDataIoRateMetricAttributeKeyDbNamespace                    SqlserverLogDataIoRateMetricAttributeKey = "db.namespace"
+	SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName           SqlserverLogDataIoRateMetricAttributeKey = "sqlserver.replica.name"
+	SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaDirection      SqlserverLogDataIoRateMetricAttributeKey = "sqlserver.replica.direction"
+)
+
+// SqlserverLogDataIoRateMetricConfig provides config for the sqlserver.log_data.io.rate metric.
+type SqlserverLogDataIoRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverLogDataIoRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverLogDataIoRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverLogDataIoRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaDirection:
+		default:
+			return fmt.Errorf("metric sqlserver.log_data.io.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric.
 type SqlserverLoginRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1500,6 +1551,107 @@ func (ms *SqlserverReplicaDataRateMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverReplicaQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.replica.queue.size metric.
+type SqlserverReplicaQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace                    SqlserverReplicaQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName           SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.replica.name"
+	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType      SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.replica.queue.type"
+)
+
+// SqlserverReplicaQueueSizeMetricConfig provides config for the sqlserver.replica.queue.size metric.
+type SqlserverReplicaQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverReplicaQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverReplicaQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverReplicaQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType:
+		default:
+			return fmt.Errorf("metric sqlserver.replica.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverReplicaSecondaryLagMetricAttributeKey specifies the key of an attribute for the sqlserver.replica.secondary_lag metric.
+type SqlserverReplicaSecondaryLagMetricAttributeKey string
+
+const (
+	SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaSecondaryLagMetricAttributeKey = "sqlserver.availability_group.name"
+	SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace                    SqlserverReplicaSecondaryLagMetricAttributeKey = "db.namespace"
+	SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName           SqlserverReplicaSecondaryLagMetricAttributeKey = "sqlserver.replica.name"
+)
+
+// SqlserverReplicaSecondaryLagMetricConfig provides config for the sqlserver.replica.secondary_lag metric.
+type SqlserverReplicaSecondaryLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverReplicaSecondaryLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverReplicaSecondaryLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverReplicaSecondaryLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace, SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.replica.secondary_lag doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverResourcePoolDiskOperationsMetricAttributeKey specifies the key of an attribute for the sqlserver.resource_pool.disk.operations metric.
 type SqlserverResourcePoolDiskOperationsMetricAttributeKey string
 
@@ -1928,6 +2080,7 @@ type MetricsConfig struct {
 	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLogDataIoRate                      SqlserverLogDataIoRateMetricConfig                      `mapstructure:"sqlserver.log_data.io.rate"`
 	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
 	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
 	SqlserverMemoryArea                         SqlserverMemoryAreaMetricConfig                         `mapstructure:"sqlserver.memory.area"`
@@ -1952,6 +2105,8 @@ type MetricsConfig struct {
 	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
 	SqlserverRecompilationRatio                 SqlserverRecompilationRatioMetricConfig                 `mapstructure:"sqlserver.recompilation.ratio"`
 	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverReplicaQueueSize                   SqlserverReplicaQueueSizeMetricConfig                   `mapstructure:"sqlserver.replica.queue.size"`
+	SqlserverReplicaSecondaryLag                SqlserverReplicaSecondaryLagMetricConfig                `mapstructure:"sqlserver.replica.secondary_lag"`
 	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
@@ -2072,6 +2227,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockWaitTimeAvg: SqlserverLockWaitTimeAvgMetricConfig{
 			Enabled: true,
 		},
+		SqlserverLogDataIoRate: SqlserverLogDataIoRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaDirection},
+		},
 		SqlserverLoginRate: SqlserverLoginRateMetricConfig{
 			Enabled: false,
 		},
@@ -2161,6 +2321,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverReplicaDataRateMetricAttributeKey{SqlserverReplicaDataRateMetricAttributeKeyReplicaDirection},
+		},
+		SqlserverReplicaQueueSize: SqlserverReplicaQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
+		},
+		SqlserverReplicaSecondaryLag: SqlserverReplicaSecondaryLagMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverReplicaSecondaryLagMetricAttributeKey{SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaSecondaryLagMetricAttributeKeyDbNamespace, SqlserverReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName},
 		},
 		SqlserverResourcePoolDiskOperations: SqlserverResourcePoolDiskOperationsMetricConfig{
 			Enabled:             false,

@@ -1,0 +1,214 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: sql-node-01
+    scopeMetrics:
+      - metrics:
+          - description: Rate of log data flow between availability group replicas.
+            gauge:
+              dataPoints:
+                - asDouble: 262144
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: InventoryDB
+                    - key: sqlserver.replica.direction
+                      value:
+                        stringValue: receive
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.replica.direction
+                      value:
+                        stringValue: receive
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-01
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 524288
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.replica.direction
+                      value:
+                        stringValue: receive
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.log_data.io.rate
+            unit: By/s
+          - description: Amount of log data queued in the availability group replica pipeline.
+            gauge:
+              dataPoints:
+                - asInt: "524288"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: InventoryDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-01
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1048576"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1048576"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: InventoryDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-01
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2097152"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.replica.queue.size
+            unit: By
+          - description: Number of seconds the secondary replica is lagging behind the primary replica.
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: InventoryDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 5
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG_Primary
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: sql-node-02
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.replica.secondary_lag
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
