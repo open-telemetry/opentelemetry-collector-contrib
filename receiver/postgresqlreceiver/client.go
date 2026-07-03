@@ -149,7 +149,14 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 	}
 
 	defer func() {
-		_, _ = c.client.ExecContext(ctx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		// Use a context detached from ctx's cancellation so that cleanup still runs
+		// even if the caller's context was canceled or timed out (e.g. due to the
+		// EXPLAIN itself being blocked), avoiding leaked prepared statements on
+		// long-lived pooled connections. Bound it with its own timeout so a truly
+		// unresponsive backend can't hang cleanup forever.
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
 	// if there is no parameter needed, we can not put an empty bracket

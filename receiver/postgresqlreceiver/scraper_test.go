@@ -991,11 +991,22 @@ func TestExplainQueryUsesContext(t *testing.T) {
 		WillDelayFor(50 * time.Millisecond).
 		WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`))
 
-	ctx, cancel := context.WithTimeout(t.Context(), time.Nanosecond)
+	// Cleanup must still run even though the caller's context is already
+	// expired by the time the deferred DEALLOCATE PREPARE fires, otherwise
+	// the prepared statement leaks on long-lived pooled connections.
+	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	// The timeout must be short enough to expire before the mocked query's
+	// delay elapses (so explainQuery observes a context error), but long
+	// enough that the query actually reaches the driver first (otherwise the
+	// ExpectQuery above is never triggered).
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 	defer cancel()
 
 	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
 	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 type (
