@@ -116,6 +116,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 	var err error
 
 	switch s.sqlQuery {
+	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+		err = s.recordAvailabilityGroupMetrics(ctx)
 	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
 		err = s.recordDatabaseIOMetrics(ctx)
 	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
@@ -347,6 +349,103 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	}
 
 	return rb
+}
+
+func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
+	const (
+		agNameKey            = "ag_name"
+		replicaNameKey       = "replica_name"
+		logSendQueueSizeKey  = "log_send_queue_size"
+		logSendRateKey       = "log_send_rate"
+		redoQueueSizeKey     = "redo_queue_size"
+		redoRateKey          = "redo_rate"
+		estimatedDataLossKey = "estimated_data_loss"
+		estimatedRecoveryKey = "estimated_recovery_time"
+		hardenedLatencyKey   = "hardened_latency"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		agName := row[agNameKey]
+		replicaName := row[replicaNameKey]
+		dbName := row[databaseNameKey]
+
+		val, err = retrieveInt(row, logSendQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// DMV returns KB; convert to bytes
+			s.mb.RecordSqlserverAgLogSendQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+		}
+
+		val, err = retrieveInt(row, logSendRateKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// DMV returns KB/s; convert to bytes/s
+			s.mb.RecordSqlserverAgLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+		}
+
+		val, err = retrieveInt(row, redoQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// DMV returns KB; convert to bytes
+			s.mb.RecordSqlserverAgRedoQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+		}
+
+		val, err = retrieveInt(row, redoRateKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// DMV returns KB/s; convert to bytes/s
+			s.mb.RecordSqlserverAgRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+		}
+
+		val, err = retrieveFloat(row, estimatedDataLossKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAgEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
+		}
+
+		val, err = retrieveFloat(row, estimatedRecoveryKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+		}
+
+		// hardened_latency may be NULL on SQL Server < 2016
+		if row[hardenedLatencyKey] != "" {
+			val, err = retrieveFloat(row, hardenedLatencyKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				s.mb.RecordSqlserverAgHardenedLatencyDataPoint(now, val.(float64), agName, dbName, replicaName)
+			}
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found by query")
+	}
+
+	return errors.Join(errs...)
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {

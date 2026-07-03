@@ -3,6 +3,27 @@ all_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
+    sqlserver.ag.estimated_data_loss:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.estimated_recovery_time:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.hardened_latency:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.log_send.queue_size:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.log_send.rate:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.redo.queue_size:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.redo.rate:
+      enabled: true
+      attributes: ["ag.name","db.namespace","replica.name"]
     sqlserver.attention.rate:
       enabled: true
     sqlserver.batch.request.rate:
@@ -186,6 +207,27 @@ reaggregate_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
+    sqlserver.ag.estimated_data_loss:
+      enabled: true
+      attributes: []
+    sqlserver.ag.estimated_recovery_time:
+      enabled: true
+      attributes: []
+    sqlserver.ag.hardened_latency:
+      enabled: true
+      attributes: []
+    sqlserver.ag.log_send.queue_size:
+      enabled: true
+      attributes: []
+    sqlserver.ag.log_send.rate:
+      enabled: true
+      attributes: []
+    sqlserver.ag.redo.queue_size:
+      enabled: true
+      attributes: []
+    sqlserver.ag.redo.rate:
+      enabled: true
+      attributes: []
     sqlserver.attention.rate:
       enabled: true
     sqlserver.batch.request.rate:
@@ -369,6 +411,27 @@ none_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: false
+    sqlserver.ag.estimated_data_loss:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.estimated_recovery_time:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.hardened_latency:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.log_send.queue_size:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.log_send.rate:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.redo.queue_size:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
+    sqlserver.ag.redo.rate:
+      enabled: false
+      attributes: ["ag.name","db.namespace","replica.name"]
     sqlserver.attention.rate:
       enabled: false
     sqlserver.batch.request.rate:

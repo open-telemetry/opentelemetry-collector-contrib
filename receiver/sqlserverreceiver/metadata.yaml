@@ -59,6 +59,10 @@ resource_attributes:
 
 attributes:
   # attributes for metrics
+  ag.name:
+    description: The name of the SQL Server Availability Group.
+    type: string
+    requirement_level: recommended
   cache.state:
     description: The state of the cache objects.
     type: string
@@ -140,6 +144,10 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [transmit, receive]
+  replica.name:
+    description: The name of the SQL Server Availability Group replica.
+    type: string
+    requirement_level: recommended
   server.address:
     description: The network address of the server hosting the database.
     type: string
@@ -474,6 +482,69 @@ metrics:
       value_type: double
     attributes: [sqlserver.access.scan.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.ag.estimated_data_loss:
+    enabled: false
+    description: Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.estimated_recovery_time:
+    enabled: false
+    description: Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.hardened_latency:
+    enabled: false
+    description: Latency between when a log record is generated on the primary replica and hardened on the secondary replica.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.log_send.queue_size:
+    enabled: false
+    description: Amount of log records of the primary database that has not been sent to the secondary replicas.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.log_send.rate:
+    enabled: false
+    description: Rate at which log records are being sent from the primary database replica to the secondary replica.
+    stability: development
+    unit: By/s
+    gauge:
+      value_type: int
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.redo.queue_size:
+    enabled: false
+    description: Amount of log records of the secondary database that has not yet been redone.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.ag.redo.rate:
+    enabled: false
+    description: Rate at which log records are being redone on the secondary database replica.
+    stability: development
+    unit: By/s
+    gauge:
+      value_type: int
+    attributes: [ag.name, db.namespace, replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.attention.rate:
     enabled: false
     description: Number of SQL attentions (client cancellation interrupts) received per second.

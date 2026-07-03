@@ -30,6 +30,356 @@ func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// SqlserverAgEstimatedDataLossMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.estimated_data_loss metric.
+type SqlserverAgEstimatedDataLossMetricAttributeKey string
+
+const (
+	SqlserverAgEstimatedDataLossMetricAttributeKeyAgName      SqlserverAgEstimatedDataLossMetricAttributeKey = "ag.name"
+	SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace SqlserverAgEstimatedDataLossMetricAttributeKey = "db.namespace"
+	SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName SqlserverAgEstimatedDataLossMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgEstimatedDataLossMetricConfig provides config for the sqlserver.ag.estimated_data_loss metric.
+type SqlserverAgEstimatedDataLossMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgEstimatedDataLossMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgEstimatedDataLossMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.estimated_data_loss doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgEstimatedRecoveryTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.estimated_recovery_time metric.
+type SqlserverAgEstimatedRecoveryTimeMetricAttributeKey string
+
+const (
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName      SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "ag.name"
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.ag.estimated_recovery_time metric.
+type SqlserverAgEstimatedRecoveryTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.estimated_recovery_time doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgHardenedLatencyMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.hardened_latency metric.
+type SqlserverAgHardenedLatencyMetricAttributeKey string
+
+const (
+	SqlserverAgHardenedLatencyMetricAttributeKeyAgName      SqlserverAgHardenedLatencyMetricAttributeKey = "ag.name"
+	SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace SqlserverAgHardenedLatencyMetricAttributeKey = "db.namespace"
+	SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName SqlserverAgHardenedLatencyMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgHardenedLatencyMetricConfig provides config for the sqlserver.ag.hardened_latency metric.
+type SqlserverAgHardenedLatencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgHardenedLatencyMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgHardenedLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.hardened_latency doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgLogSendQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.log_send.queue_size metric.
+type SqlserverAgLogSendQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName      SqlserverAgLogSendQueueSizeMetricAttributeKey = "ag.name"
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace SqlserverAgLogSendQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName SqlserverAgLogSendQueueSizeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgLogSendQueueSizeMetricConfig provides config for the sqlserver.ag.log_send.queue_size metric.
+type SqlserverAgLogSendQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgLogSendQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.log_send.queue_size doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgLogSendRateMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.log_send.rate metric.
+type SqlserverAgLogSendRateMetricAttributeKey string
+
+const (
+	SqlserverAgLogSendRateMetricAttributeKeyAgName      SqlserverAgLogSendRateMetricAttributeKey = "ag.name"
+	SqlserverAgLogSendRateMetricAttributeKeyDbNamespace SqlserverAgLogSendRateMetricAttributeKey = "db.namespace"
+	SqlserverAgLogSendRateMetricAttributeKeyReplicaName SqlserverAgLogSendRateMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgLogSendRateMetricConfig provides config for the sqlserver.ag.log_send.rate metric.
+type SqlserverAgLogSendRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgLogSendRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgLogSendRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.log_send.rate doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgRedoQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.redo.queue_size metric.
+type SqlserverAgRedoQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverAgRedoQueueSizeMetricAttributeKeyAgName      SqlserverAgRedoQueueSizeMetricAttributeKey = "ag.name"
+	SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace SqlserverAgRedoQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName SqlserverAgRedoQueueSizeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgRedoQueueSizeMetricConfig provides config for the sqlserver.ag.redo.queue_size metric.
+type SqlserverAgRedoQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgRedoQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgRedoQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.redo.queue_size doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAgRedoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.redo.rate metric.
+type SqlserverAgRedoRateMetricAttributeKey string
+
+const (
+	SqlserverAgRedoRateMetricAttributeKeyAgName      SqlserverAgRedoRateMetricAttributeKey = "ag.name"
+	SqlserverAgRedoRateMetricAttributeKeyDbNamespace SqlserverAgRedoRateMetricAttributeKey = "db.namespace"
+	SqlserverAgRedoRateMetricAttributeKeyReplicaName SqlserverAgRedoRateMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAgRedoRateMetricConfig provides config for the sqlserver.ag.redo.rate metric.
+type SqlserverAgRedoRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAgRedoRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAgRedoRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAgRedoRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.ag.redo.rate doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverAttentionRateMetricConfig provides config for the sqlserver.attention.rate metric.
 type SqlserverAttentionRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1900,6 +2250,13 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
 	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
+	SqlserverAgEstimatedDataLoss                SqlserverAgEstimatedDataLossMetricConfig                `mapstructure:"sqlserver.ag.estimated_data_loss"`
+	SqlserverAgEstimatedRecoveryTime            SqlserverAgEstimatedRecoveryTimeMetricConfig            `mapstructure:"sqlserver.ag.estimated_recovery_time"`
+	SqlserverAgHardenedLatency                  SqlserverAgHardenedLatencyMetricConfig                  `mapstructure:"sqlserver.ag.hardened_latency"`
+	SqlserverAgLogSendQueueSize                 SqlserverAgLogSendQueueSizeMetricConfig                 `mapstructure:"sqlserver.ag.log_send.queue_size"`
+	SqlserverAgLogSendRate                      SqlserverAgLogSendRateMetricConfig                      `mapstructure:"sqlserver.ag.log_send.rate"`
+	SqlserverAgRedoQueueSize                    SqlserverAgRedoQueueSizeMetricConfig                    `mapstructure:"sqlserver.ag.redo.queue_size"`
+	SqlserverAgRedoRate                         SqlserverAgRedoRateMetricConfig                         `mapstructure:"sqlserver.ag.redo.rate"`
 	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
 	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
@@ -1975,6 +2332,41 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SqlserverAccessScanRate: SqlserverAccessScanRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverAgEstimatedDataLoss: SqlserverAgEstimatedDataLossMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgEstimatedRecoveryTime: SqlserverAgEstimatedRecoveryTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgHardenedLatency: SqlserverAgHardenedLatencyMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgLogSendQueueSize: SqlserverAgLogSendQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgLogSendRate: SqlserverAgLogSendRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgRedoQueueSize: SqlserverAgRedoQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAgRedoRate: SqlserverAgRedoRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
 		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,

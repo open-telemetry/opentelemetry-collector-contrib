@@ -545,6 +545,34 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.access.scan.rate",
 		Attributes: []string{"sqlserver.access.scan.type"},
 	},
+	SqlserverAgEstimatedDataLoss: metricInfo{
+		Name:       "sqlserver.ag.estimated_data_loss",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgEstimatedRecoveryTime: metricInfo{
+		Name:       "sqlserver.ag.estimated_recovery_time",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgHardenedLatency: metricInfo{
+		Name:       "sqlserver.ag.hardened_latency",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgLogSendQueueSize: metricInfo{
+		Name:       "sqlserver.ag.log_send.queue_size",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgLogSendRate: metricInfo{
+		Name:       "sqlserver.ag.log_send.rate",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgRedoQueueSize: metricInfo{
+		Name:       "sqlserver.ag.redo.queue_size",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
+	SqlserverAgRedoRate: metricInfo{
+		Name:       "sqlserver.ag.redo.rate",
+		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+	},
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
 	},
@@ -776,6 +804,13 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	SqlserverAccessScanRate                     metricInfo
+	SqlserverAgEstimatedDataLoss                metricInfo
+	SqlserverAgEstimatedRecoveryTime            metricInfo
+	SqlserverAgHardenedLatency                  metricInfo
+	SqlserverAgLogSendQueueSize                 metricInfo
+	SqlserverAgLogSendRate                      metricInfo
+	SqlserverAgRedoQueueSize                    metricInfo
+	SqlserverAgRedoRate                         metricInfo
 	SqlserverAttentionRate                      metricInfo
 	SqlserverBatchRequestRate                   metricInfo
 	SqlserverBatchSQLCompilationRate            metricInfo
@@ -896,6 +931,671 @@ func (m *metricSqlserverAccessScanRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverAccessScanRate(cfg SqlserverAccessScanRateMetricConfig) metricSqlserverAccessScanRate {
 	m := metricSqlserverAccessScanRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgEstimatedDataLoss struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SqlserverAgEstimatedDataLossMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.estimated_data_loss metric with initial data.
+func (m *metricSqlserverAgEstimatedDataLoss) init() {
+	m.data.SetName("sqlserver.ag.estimated_data_loss")
+	m.data.SetDescription("Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgEstimatedDataLoss) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgEstimatedDataLoss) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgEstimatedDataLoss(cfg SqlserverAgEstimatedDataLossMetricConfig) metricSqlserverAgEstimatedDataLoss {
+	m := metricSqlserverAgEstimatedDataLoss{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgEstimatedRecoveryTime struct {
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SqlserverAgEstimatedRecoveryTimeMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.estimated_recovery_time metric with initial data.
+func (m *metricSqlserverAgEstimatedRecoveryTime) init() {
+	m.data.SetName("sqlserver.ag.estimated_recovery_time")
+	m.data.SetDescription("Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgEstimatedRecoveryTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgEstimatedRecoveryTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgEstimatedRecoveryTime(cfg SqlserverAgEstimatedRecoveryTimeMetricConfig) metricSqlserverAgEstimatedRecoveryTime {
+	m := metricSqlserverAgEstimatedRecoveryTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgHardenedLatency struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SqlserverAgHardenedLatencyMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.hardened_latency metric with initial data.
+func (m *metricSqlserverAgHardenedLatency) init() {
+	m.data.SetName("sqlserver.ag.hardened_latency")
+	m.data.SetDescription("Latency between when a log record is generated on the primary replica and hardened on the secondary replica.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgHardenedLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgHardenedLatency) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgHardenedLatency) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgHardenedLatency(cfg SqlserverAgHardenedLatencyMetricConfig) metricSqlserverAgHardenedLatency {
+	m := metricSqlserverAgHardenedLatency{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgLogSendQueueSize struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SqlserverAgLogSendQueueSizeMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.log_send.queue_size metric with initial data.
+func (m *metricSqlserverAgLogSendQueueSize) init() {
+	m.data.SetName("sqlserver.ag.log_send.queue_size")
+	m.data.SetDescription("Amount of log records of the primary database that has not been sent to the secondary replicas.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgLogSendQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgLogSendQueueSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgLogSendQueueSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgLogSendQueueSize(cfg SqlserverAgLogSendQueueSizeMetricConfig) metricSqlserverAgLogSendQueueSize {
+	m := metricSqlserverAgLogSendQueueSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgLogSendRate struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SqlserverAgLogSendRateMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.log_send.rate metric with initial data.
+func (m *metricSqlserverAgLogSendRate) init() {
+	m.data.SetName("sqlserver.ag.log_send.rate")
+	m.data.SetDescription("Rate at which log records are being sent from the primary database replica to the secondary replica.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgLogSendRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgLogSendRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgLogSendRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgLogSendRate(cfg SqlserverAgLogSendRateMetricConfig) metricSqlserverAgLogSendRate {
+	m := metricSqlserverAgLogSendRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgRedoQueueSize struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SqlserverAgRedoQueueSizeMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.redo.queue_size metric with initial data.
+func (m *metricSqlserverAgRedoQueueSize) init() {
+	m.data.SetName("sqlserver.ag.redo.queue_size")
+	m.data.SetDescription("Amount of log records of the secondary database that has not yet been redone.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgRedoQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgRedoQueueSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgRedoQueueSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgRedoQueueSize(cfg SqlserverAgRedoQueueSizeMetricConfig) metricSqlserverAgRedoQueueSize {
+	m := metricSqlserverAgRedoQueueSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverAgRedoRate struct {
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SqlserverAgRedoRateMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.ag.redo.rate metric with initial data.
+func (m *metricSqlserverAgRedoRate) init() {
+	m.data.SetName("sqlserver.ag.redo.rate")
+	m.data.SetDescription("Rate at which log records are being redone on the secondary database replica.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverAgRedoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyAgName) {
+		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyReplicaName) {
+		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverAgRedoRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverAgRedoRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverAgRedoRate(cfg SqlserverAgRedoRateMetricConfig) metricSqlserverAgRedoRate {
+	m := metricSqlserverAgRedoRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5093,6 +5793,13 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter                    map[string]filter.Filter
 	resourceAttributeExcludeFilter                    map[string]filter.Filter
 	metricSqlserverAccessScanRate                     metricSqlserverAccessScanRate
+	metricSqlserverAgEstimatedDataLoss                metricSqlserverAgEstimatedDataLoss
+	metricSqlserverAgEstimatedRecoveryTime            metricSqlserverAgEstimatedRecoveryTime
+	metricSqlserverAgHardenedLatency                  metricSqlserverAgHardenedLatency
+	metricSqlserverAgLogSendQueueSize                 metricSqlserverAgLogSendQueueSize
+	metricSqlserverAgLogSendRate                      metricSqlserverAgLogSendRate
+	metricSqlserverAgRedoQueueSize                    metricSqlserverAgRedoQueueSize
+	metricSqlserverAgRedoRate                         metricSqlserverAgRedoRate
 	metricSqlserverAttentionRate                      metricSqlserverAttentionRate
 	metricSqlserverBatchRequestRate                   metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate            metricSqlserverBatchSQLCompilationRate
@@ -5188,6 +5895,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                                     pmetric.NewMetrics(),
 		buildInfo:                                         settings.BuildInfo,
 		metricSqlserverAccessScanRate:                     newMetricSqlserverAccessScanRate(mbc.Metrics.SqlserverAccessScanRate),
+		metricSqlserverAgEstimatedDataLoss:                newMetricSqlserverAgEstimatedDataLoss(mbc.Metrics.SqlserverAgEstimatedDataLoss),
+		metricSqlserverAgEstimatedRecoveryTime:            newMetricSqlserverAgEstimatedRecoveryTime(mbc.Metrics.SqlserverAgEstimatedRecoveryTime),
+		metricSqlserverAgHardenedLatency:                  newMetricSqlserverAgHardenedLatency(mbc.Metrics.SqlserverAgHardenedLatency),
+		metricSqlserverAgLogSendQueueSize:                 newMetricSqlserverAgLogSendQueueSize(mbc.Metrics.SqlserverAgLogSendQueueSize),
+		metricSqlserverAgLogSendRate:                      newMetricSqlserverAgLogSendRate(mbc.Metrics.SqlserverAgLogSendRate),
+		metricSqlserverAgRedoQueueSize:                    newMetricSqlserverAgRedoQueueSize(mbc.Metrics.SqlserverAgRedoQueueSize),
+		metricSqlserverAgRedoRate:                         newMetricSqlserverAgRedoRate(mbc.Metrics.SqlserverAgRedoRate),
 		metricSqlserverAttentionRate:                      newMetricSqlserverAttentionRate(mbc.Metrics.SqlserverAttentionRate),
 		metricSqlserverBatchRequestRate:                   newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:            newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
@@ -5384,6 +6098,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSqlserverAccessScanRate.emit(ils.Metrics())
+	mb.metricSqlserverAgEstimatedDataLoss.emit(ils.Metrics())
+	mb.metricSqlserverAgEstimatedRecoveryTime.emit(ils.Metrics())
+	mb.metricSqlserverAgHardenedLatency.emit(ils.Metrics())
+	mb.metricSqlserverAgLogSendQueueSize.emit(ils.Metrics())
+	mb.metricSqlserverAgLogSendRate.emit(ils.Metrics())
+	mb.metricSqlserverAgRedoQueueSize.emit(ils.Metrics())
+	mb.metricSqlserverAgRedoRate.emit(ils.Metrics())
 	mb.metricSqlserverAttentionRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
@@ -5487,6 +6208,41 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordSqlserverAccessScanRateDataPoint adds a data point to sqlserver.access.scan.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAccessScanTypeAttributeValue AttributeSqlserverAccessScanType) {
 	mb.metricSqlserverAccessScanRate.recordDataPoint(mb.startTime, ts, val, sqlserverAccessScanTypeAttributeValue.String())
+}
+
+// RecordSqlserverAgEstimatedDataLossDataPoint adds a data point to sqlserver.ag.estimated_data_loss metric.
+func (mb *MetricsBuilder) RecordSqlserverAgEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.ag.estimated_recovery_time metric.
+func (mb *MetricsBuilder) RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgHardenedLatencyDataPoint adds a data point to sqlserver.ag.hardened_latency metric.
+func (mb *MetricsBuilder) RecordSqlserverAgHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgHardenedLatency.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.ag.log_send.queue_size metric.
+func (mb *MetricsBuilder) RecordSqlserverAgLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgLogSendRateDataPoint adds a data point to sqlserver.ag.log_send.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverAgLogSendRateDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgLogSendRate.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.ag.redo.queue_size metric.
+func (mb *MetricsBuilder) RecordSqlserverAgRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgRedoQueueSize.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+}
+
+// RecordSqlserverAgRedoRateDataPoint adds a data point to sqlserver.ag.redo.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverAgRedoRateDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgRedoRate.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAttentionRateDataPoint adds a data point to sqlserver.attention.rate metric.

@@ -236,6 +236,132 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
 
+### sqlserver.ag.estimated_data_loss
+
+Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.estimated_recovery_time
+
+Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.hardened_latency
+
+Latency between when a log record is generated on the primary replica and hardened on the secondary replica.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.log_send.queue_size
+
+Amount of log records of the primary database that has not been sent to the secondary replicas.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.log_send.rate
+
+Rate at which log records are being sent from the primary database replica to the secondary replica.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.redo.queue_size
+
+Amount of log records of the secondary database that has not yet been redone.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.ag.redo.rate
+
+Rate at which log records are being redone on the secondary database replica.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
 ### sqlserver.attention.rate
 
 Number of SQL attentions (client cancellation interrupts) received per second.

@@ -67,6 +67,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["sqlserver.ag.estimated_data_loss"] = mb.metricSqlserverAgEstimatedDataLoss.config.AggregationStrategy
+			aggMap["sqlserver.ag.estimated_recovery_time"] = mb.metricSqlserverAgEstimatedRecoveryTime.config.AggregationStrategy
+			aggMap["sqlserver.ag.hardened_latency"] = mb.metricSqlserverAgHardenedLatency.config.AggregationStrategy
+			aggMap["sqlserver.ag.log_send.queue_size"] = mb.metricSqlserverAgLogSendQueueSize.config.AggregationStrategy
+			aggMap["sqlserver.ag.log_send.rate"] = mb.metricSqlserverAgLogSendRate.config.AggregationStrategy
+			aggMap["sqlserver.ag.redo.queue_size"] = mb.metricSqlserverAgRedoQueueSize.config.AggregationStrategy
+			aggMap["sqlserver.ag.redo.rate"] = mb.metricSqlserverAgRedoRate.config.AggregationStrategy
 			aggMap["sqlserver.database.count"] = mb.metricSqlserverDatabaseCount.config.AggregationStrategy
 			aggMap["sqlserver.database.io"] = mb.metricSqlserverDatabaseIo.config.AggregationStrategy
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
@@ -95,6 +102,48 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverAccessScanRateDataPoint(ts, 1, AttributeSqlserverAccessScanTypeFreeSpace)
+
+			allMetricsCount++
+			mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgLogSendRateDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgLogSendRateDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverAgRedoRateDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverAgRedoRateDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSqlserverAttentionRateDataPoint(ts, 1)
@@ -367,6 +416,13 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSqlserverAgEstimatedDataLoss.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgEstimatedRecoveryTime.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgHardenedLatency.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgLogSendQueueSize.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgLogSendRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgRedoQueueSize.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverAgRedoRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseIo.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
@@ -426,6 +482,356 @@ func TestMetricsBuilder(t *testing.T) {
 					sqlserverAccessScanTypeAttrVal, ok := dp.Attributes().Get("sqlserver.access.scan.type")
 					assert.True(t, ok)
 					assert.Equal(t, "free_space", sqlserverAccessScanTypeAttrVal.Str())
+				case "sqlserver.ag.estimated_data_loss":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_data_loss")
+						validatedMetrics["sqlserver.ag.estimated_data_loss"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_data_loss")
+						validatedMetrics["sqlserver.ag.estimated_data_loss"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.ag.estimated_data_loss"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.estimated_recovery_time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_recovery_time")
+						validatedMetrics["sqlserver.ag.estimated_recovery_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_recovery_time")
+						validatedMetrics["sqlserver.ag.estimated_recovery_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.ag.estimated_recovery_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.hardened_latency":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.ag.hardened_latency")
+						validatedMetrics["sqlserver.ag.hardened_latency"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Latency between when a log record is generated on the primary replica and hardened on the secondary replica.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.ag.hardened_latency")
+						validatedMetrics["sqlserver.ag.hardened_latency"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Latency between when a log record is generated on the primary replica and hardened on the secondary replica.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.ag.hardened_latency"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.log_send.queue_size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.queue_size")
+						validatedMetrics["sqlserver.ag.log_send.queue_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log records of the primary database that has not been sent to the secondary replicas.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.queue_size")
+						validatedMetrics["sqlserver.ag.log_send.queue_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log records of the primary database that has not been sent to the secondary replicas.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.ag.log_send.queue_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.log_send.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.rate")
+						validatedMetrics["sqlserver.ag.log_send.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log records are being sent from the primary database replica to the secondary replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.rate")
+						validatedMetrics["sqlserver.ag.log_send.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log records are being sent from the primary database replica to the secondary replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.ag.log_send.rate"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.redo.queue_size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.queue_size")
+						validatedMetrics["sqlserver.ag.redo.queue_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log records of the secondary database that has not yet been redone.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.queue_size")
+						validatedMetrics["sqlserver.ag.redo.queue_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of log records of the secondary database that has not yet been redone.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.ag.redo.queue_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
+				case "sqlserver.ag.redo.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.ag.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.rate")
+						validatedMetrics["sqlserver.ag.redo.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log records are being redone on the secondary database replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						assert.True(t, ok)
+						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.ag.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.rate")
+						validatedMetrics["sqlserver.ag.redo.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate at which log records are being redone on the secondary database replica.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.ag.redo.rate"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("ag.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("replica.name")
+						assert.False(t, ok)
+					}
 				case "sqlserver.attention.rate":
 					assert.False(t, validatedMetrics["sqlserver.attention.rate"], "Found a duplicate in the metrics slice: sqlserver.attention.rate")
 					validatedMetrics["sqlserver.attention.rate"] = true
