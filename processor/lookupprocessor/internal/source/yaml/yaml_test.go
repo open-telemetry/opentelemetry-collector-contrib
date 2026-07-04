@@ -35,17 +35,17 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "valid path",
-			config:  &Config{Path: "/path/to/file.yaml"},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "/path/to/file.yaml"}},
 			wantErr: false,
 		},
 		{
 			name:    "valid reload interval",
-			config:  &Config{Path: "/path/to/file.yaml", ReloadInterval: 5 * time.Minute},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "/path/to/file.yaml", ReloadInterval: 5 * time.Minute}},
 			wantErr: false,
 		},
 		{
 			name:    "negative reload interval",
-			config:  &Config{Path: "/path/to/file.yaml", ReloadInterval: -1},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "/path/to/file.yaml", ReloadInterval: -1}},
 			wantErr: true,
 		},
 	}
@@ -80,7 +80,7 @@ bool_key: true
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath}}
 
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -143,7 +143,7 @@ user002:
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath}}
 
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -185,7 +185,7 @@ user002:
 
 func TestYAMLSourceFileNotFound(t *testing.T) {
 	factory := NewFactory()
-	cfg := &Config{Path: "/nonexistent/path/to/file.yaml"}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "/nonexistent/path/to/file.yaml"}}
 
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -209,7 +209,7 @@ func TestYAMLSourceInvalidYAML(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath}}
 
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -231,7 +231,7 @@ func TestYAMLSourceReload(t *testing.T) {
 	require.NoError(t, os.WriteFile(yamlPath, []byte("store1010: open_store\n"), 0o600))
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}}
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
@@ -262,7 +262,7 @@ func TestYAMLSourceReloadKeepsLastGoodOnError(t *testing.T) {
 	require.NoError(t, os.WriteFile(yamlPath, []byte("store1010: closed_store\n"), 0o600))
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath, ReloadInterval: 20 * time.Millisecond}}
 	settings := lookupsource.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}

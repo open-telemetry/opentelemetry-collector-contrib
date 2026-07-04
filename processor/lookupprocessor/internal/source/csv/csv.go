@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"time"
 	"unicode/utf8"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
@@ -24,12 +23,7 @@ const sourceType = "csv"
 
 // Config is the configuration for the CSV lookup source.
 type Config struct {
-	// Path is the path to the CSV file. Required.
-	Path string `mapstructure:"path"`
-
-	// ReloadInterval, when > 0, re-reads the file on this interval so changes
-	// take effect without a collector restart. 0 (default) disables reloading.
-	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+	lookupsource.FileSourceConfig `mapstructure:",squash"`
 
 	// HasHeader indicates whether the first row is a header of column names.
 	// Default: true. When false, columns are referenced by 0-based index.
@@ -52,11 +46,8 @@ type Config struct {
 
 // Validate implements lookupsource.SourceConfig.
 func (c *Config) Validate() error {
-	if c.Path == "" {
-		return errors.New("path is required")
-	}
-	if c.ReloadInterval < 0 {
-		return errors.New("reload_interval must not be negative")
+	if err := c.FileSourceConfig.Validate(); err != nil {
+		return err
 	}
 	if len([]rune(c.Delimiter)) != 1 {
 		return fmt.Errorf("delimiter must be a single character, got %q", c.Delimiter)

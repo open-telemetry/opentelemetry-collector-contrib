@@ -6,8 +6,6 @@ package yaml // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -17,27 +15,15 @@ import (
 
 const sourceType = "yaml"
 
-// Config is the configuration for the YAML lookup source.
+// Config is the configuration for the YAML lookup source. The file should
+// contain a flat map of string keys to values.
 type Config struct {
-	// Path is the path to the YAML file containing key-value mappings.
-	// The file should contain a flat map of string keys to values.
-	// Required.
-	Path string `mapstructure:"path"`
-
-	// ReloadInterval, when > 0, re-reads the file on this interval so changes
-	// take effect without a collector restart. 0 (default) disables reloading.
-	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+	lookupsource.FileSourceConfig `mapstructure:",squash"`
 }
 
 // Validate implements lookupsource.SourceConfig.
 func (c *Config) Validate() error {
-	if c.Path == "" {
-		return errors.New("path is required")
-	}
-	if c.ReloadInterval < 0 {
-		return errors.New("reload_interval must not be negative")
-	}
-	return nil
+	return c.FileSourceConfig.Validate()
 }
 
 // NewFactory creates a factory for the YAML source.
