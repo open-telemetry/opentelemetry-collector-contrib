@@ -141,7 +141,7 @@ main () {
     #
     # Reviewers are requested one at a time so a single invalid reviewer
     # doesn't drop the rest of the requests.
-    if [[ ${#REVIEWER_SET[@]} -gt 0 ]]; then
+    if [[ -n "${!REVIEWER_SET[*]}" ]]; then
         for REVIEWER in "${!REVIEWER_SET[@]}"; do
             request_review "${REVIEWER}"
         done
