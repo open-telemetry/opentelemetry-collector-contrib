@@ -97,6 +97,16 @@ Start the Supervisor:
 ./opampsupervisor --config=supervisor.yaml
 ```
 
+The supervisor's own log encoding is configured under `telemetry.logs.encoding`.
+Use `console` for plain-text logs with ISO8601 timestamps. Leave the field
+unset (or set it to `json`) to keep the default JSON output.
+
+```yaml
+telemetry:
+  logs:
+    encoding: console
+```
+
 Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
 
 ## Persistent data storage
