@@ -178,6 +178,11 @@ func Test_truncateAll_validation(t *testing.T) {
 	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateMarkerOpt, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 11 cannot be greater than limit 3")
+
+	truncateUtf8MarkerOpt := ottl.NewTestingOptional("[✄]")
+	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateUtf8MarkerOpt, zap.NewNop())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 5 cannot be greater than limit 3")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
@@ -217,44 +222,58 @@ func Test_truncateAll_get_nil(t *testing.T) {
 
 func Test_truncateAll_truncationMarker(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
 	tests := []struct {
-		name   string
-		limit  int64
-		marker string
-		want   func(pcommon.Map)
+		name       string
+		testString string
+		limit      int64
+		marker     string
+		want       func(pcommon.Map)
 	}{
 		{
-			name:   "truncate map with marker",
-			limit:  7,
-			marker: "(...)",
+			name:       "truncate map with marker",
+			testString: "hello world",
+			limit:      7,
+			marker:     "(...)",
 			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
 				expectedMap.PutStr("test", "he(...)")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "truncate map to only marker",
-			limit:  5,
-			marker: "(...)",
+			name:       "truncate map to only marker",
+			testString: "hello world",
+			limit:      5,
+			marker:     "(...)",
 			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
 				expectedMap.PutStr("test", "(...)")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "truncate utf-8 safe with marker",
-			limit:  10,
-			marker: "[✄]",
+			name:       "truncate correct size with utf-8 marker",
+			testString: "hello world",
+			limit:      10,
+			marker:     "[✄]",
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello[✄]")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hello[✄]")
+			},
+		},
+		{
+			name:       "truncate utf-8 safe with marker",
+			testString: "hell😀 w😀rld",
+			limit:      16, // Truncates in the middle of the second emoji. Backs up to the preceding char and adds the marker.
+			marker:     "(...)",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hell😀 w(...)")
 			},
 		},
 	}
@@ -262,6 +281,7 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
+			scenarioMap.PutStr("test", tt.testString)
 
 			setterWasCalled := false
 			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
