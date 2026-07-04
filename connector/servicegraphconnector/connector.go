@@ -20,9 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -48,10 +46,10 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		string(conventionsv138.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
+		string(conventions.PeerServiceKey), "db.name", "db.system",
 	}
 
-	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
+	defaultDatabaseNameAttributes = []string{"db.name"}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
