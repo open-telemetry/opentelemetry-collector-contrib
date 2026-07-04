@@ -32,6 +32,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
 
+// TODO(#48615): Once the template-manager PR lands, add assertions for
+// date_nanos timestamp precision. Without an index template, OpenSearch's
+// dynamic mapping infers "date" (millisecond precision) instead of
+// "date_nanos" for ISO-8601 timestamps with nanosecond precision.
+
 func setupOpenSearch(t *testing.T) string {
 	t.Helper()
 
@@ -144,12 +149,25 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 		}
 
 		typeVal, _ := durMap["type"].(string)
-		if typeVal == "long" || typeVal == "integer" {
-			return true
+		if typeVal != "long" && typeVal != "integer" {
+			lastErr = fmt.Errorf("unexpected type for durationInNanos: %s", typeVal)
+			return false
 		}
 
-		lastErr = fmt.Errorf("unexpected type for durationInNanos: %s", typeVal)
-		return false
+		// Verify status.code is numeric (long/integer)
+		if statusMap, ok := propertiesMap["status"].(map[string]any); ok {
+			if statusProps, ok := statusMap["properties"].(map[string]any); ok {
+				if codeMap, ok := statusProps["code"].(map[string]any); ok {
+					codeType, _ := codeMap["type"].(string)
+					if codeType != "long" && codeType != "integer" {
+						lastErr = fmt.Errorf("unexpected type for status.code: %s", codeType)
+						return false
+					}
+				}
+			}
+		}
+
+		return true
 	}, 30*time.Second, 500*time.Millisecond)
 
 	if !success {
@@ -167,7 +185,7 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 	cfg.Endpoint = endpoint
 	cfg.TLS.Insecure = true
 	cfg.Mode = "otel-v1"
-	cfg.LogsIndex = "logs-otel-v1"
+	cfg.LogsIndex = "otel-v1-logs"
 	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
 	require.NoError(t, cfg.Validate())
@@ -194,20 +212,20 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 
 	var lastErr error
 	success := assert.Eventually(t, func() bool {
-		_, err = client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"logs-otel-v1"}})
+		_, err = client.Indices.Refresh(t.Context(), &opensearchapi.IndicesRefreshReq{Indices: []string{"otel-v1-logs"}})
 		if err != nil {
 			lastErr = fmt.Errorf("refresh error: %w", err)
 			return false
 		}
 
-		mappingResp, err := client.Indices.Mapping.Get(t.Context(), &opensearchapi.MappingGetReq{Indices: []string{"logs-otel-v1"}})
+		mappingResp, err := client.Indices.Mapping.Get(t.Context(), &opensearchapi.MappingGetReq{Indices: []string{"otel-v1-logs"}})
 		if err != nil || len(mappingResp.Indices) == 0 {
 			lastErr = errors.New("index not found or mapping empty")
 			return false
 		}
 
 		var responseMap map[string]any
-		if err := json.NewDecoder(bytes.NewReader(mappingResp.Indices["logs-otel-v1"].Mappings)).Decode(&responseMap); err != nil {
+		if err := json.NewDecoder(bytes.NewReader(mappingResp.Indices["otel-v1-logs"].Mappings)).Decode(&responseMap); err != nil {
 			lastErr = fmt.Errorf("decode error: %w", err)
 			return false
 		}
@@ -218,22 +236,27 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 			return false
 		}
 
-		fieldNames := []string{"severityNumber", "severity_number", "SeverityNumber", "severity"}
-		var sevMap map[string]any
-		for _, fn := range fieldNames {
-			if sm, exists := propertiesMap[fn].(map[string]any); exists {
-				sevMap = sm
-				break
-			}
-		}
-
-		if sevMap == nil {
+		// The otel-v1 encoder emits "severity" as a nested object with
+		// "number" (int32) and "text" sub-fields.
+		sevMap, ok := propertiesMap["severity"].(map[string]any)
+		if !ok {
 			keys := []string{}
 			for k := range propertiesMap {
 				keys = append(keys, k)
 			}
 			lastErr = fmt.Errorf("severity field not found. Available fields in index: %v", keys)
 			return false
+		}
+
+		// Verify severity.number is numeric (long/integer)
+		if sevProps, ok := sevMap["properties"].(map[string]any); ok {
+			if numMap, ok := sevProps["number"].(map[string]any); ok {
+				numType, _ := numMap["type"].(string)
+				if numType != "long" && numType != "integer" {
+					lastErr = fmt.Errorf("unexpected type for severity.number: %s", numType)
+					return false
+				}
+			}
 		}
 
 		return true
