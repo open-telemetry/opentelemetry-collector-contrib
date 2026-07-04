@@ -8,8 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // SanitizeSpanName obfuscates the span name if it represents a database statement.
@@ -42,10 +41,10 @@ func SanitizeSpanName(span ptrace.Span, obfuscator *Obfuscator) (string, bool, e
 }
 
 func GetDBSystem(attributes pcommon.Map) string {
-	if system := getStringAttrLower(attributes, string(semconv138.DBSystemNameKey)); system != "" {
+	if system := getStringAttrLower(attributes, string(conventions.DBSystemNameKey)); system != "" {
 		return system
 	}
-	return getStringAttrLower(attributes, string(semconv128.DBSystemKey))
+	return getStringAttrLower(attributes, "db.system")
 }
 
 func getStringAttrLower(attributes pcommon.Map, key string) string {

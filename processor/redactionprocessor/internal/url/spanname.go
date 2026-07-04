@@ -8,8 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // SanitizeSpanName sanitizes the span name if the span looks like an HTTP span.
@@ -70,15 +69,15 @@ func shouldSanitizeSpan(span ptrace.Span) bool {
 }
 
 var httpAttributeKeys = []string{
-	string(semconv138.HTTPRouteKey),
-	string(semconv138.HTTPRequestMethodKey),
-	string(semconv138.HTTPRequestMethodOriginalKey),
-	string(semconv138.HTTPResponseStatusCodeKey),
-	string(semconv138.URLFullKey),
-	string(semconv125.HTTPSchemeKey),
-	string(semconv125.HTTPTargetKey),
-	string(semconv125.HTTPMethodKey),
-	string(semconv125.HTTPURLKey),
+	string(conventions.HTTPRouteKey),
+	string(conventions.HTTPRequestMethodKey),
+	string(conventions.HTTPRequestMethodOriginalKey),
+	string(conventions.HTTPResponseStatusCodeKey),
+	string(conventions.URLFullKey),
+	"http.scheme",
+	"http.target",
+	"http.method",
+	"http.url",
 }
 
 func hasHTTPAttributes(attrs pcommon.Map) bool {
