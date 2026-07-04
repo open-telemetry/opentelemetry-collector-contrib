@@ -45,6 +45,7 @@ func basicConfig(portNumber uint) *Config {
 			CollectionInterval:  1 * time.Millisecond,
 		},
 		isDirectDBConnectionEnabled: true,
+		MetricsBuilderConfig:        metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig: metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
