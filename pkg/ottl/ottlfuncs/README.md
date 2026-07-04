@@ -489,6 +489,7 @@ Examples:
 - `truncate_all(log.attributes, 100)`
 - `truncate_all(resource.attributes, 50, false)`
 - `truncate_all(resource.attributes, 50, false, "(...)")`
+- `truncate_all(log.attributes, 100, truncation_marker = "(truncated)")` 
 
 ## Converters
 
