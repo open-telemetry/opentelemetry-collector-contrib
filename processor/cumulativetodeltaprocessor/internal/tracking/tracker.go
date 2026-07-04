@@ -114,6 +114,22 @@ func (t *MetricTracker) Streams() int64 {
 	return t.streams.Load()
 }
 
+// isMonotonicHistogram reports if a histogram is monotonic.
+// A histogram is not monotonic when there is a drop in the total count or a bucket count.
+func isMonotonicHistogram(value, prevValue *HistogramPoint) bool {
+	if value.Count < prevValue.Count {
+		return false
+	}
+
+	for index, prevBucket := range prevValue.BucketCounts {
+		if value.BucketCounts[index] < prevBucket {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, reason string) {
 	metricID := in.Identity
 	metricPoint := in.Value
@@ -195,15 +211,16 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		delta := value.Clone()
 
-		// Calculate deltas unless histogram count was reset
-		if valid && delta.Count >= prevValue.Count {
+		// Calculate deltas unless there was a reset.
+		if valid {
+			if !isMonotonicHistogram(&delta, prevValue) {
+				return out, false, ReasonReset
+			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}
-		} else if valid {
-			reason = ReasonReset
 		}
 
 		out.HistogramValue = &delta
@@ -242,8 +259,15 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			prevValue.Positive = prevValue.Positive.Coarsen(bitsLost)
 			prevValue.Negative = prevValue.Negative.Coarsen(bitsLost)
 		}
-		delta.Positive = value.Positive.Diff(&prevValue.Positive)
-		delta.Negative = value.Negative.Diff(&prevValue.Negative)
+		var reset bool
+		delta.Positive, reset = value.Positive.Diff(&prevValue.Positive)
+		if reset {
+			return out, false, ReasonReset
+		}
+		delta.Negative, reset = value.Negative.Diff(&prevValue.Negative)
+		if reset {
+			return out, false, ReasonReset
+		}
 
 		out.ExponentialHistogramPoint = &delta
 
