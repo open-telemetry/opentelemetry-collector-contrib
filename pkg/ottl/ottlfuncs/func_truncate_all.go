@@ -57,7 +57,6 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl
 		for key, value := range val.All() {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
-
 				truncateAt := int(limit) - len(marker)
 
 				if useUTF8Safe {
