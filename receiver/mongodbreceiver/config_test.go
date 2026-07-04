@@ -106,6 +106,18 @@ func TestValidate(t *testing.T) {
 			expected:  nil,
 		},
 	}
+	// max_rows_per_query=0 must be validated separately since the test loop
+	// above always sets it to defaultMaxRowsPerQuery.
+	t.Run("max_rows_per_query zero is invalid", func(t *testing.T) {
+		cfg := &Config{
+			Hosts:                 []confignet.TCPAddrConfig{{Endpoint: "localhost:27017"}},
+			ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
+			MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
+			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: 0},
+		}
+		err := xconfmap.Validate(cfg)
+		require.ErrorContains(t, err, "query_sample_collection.max_rows_per_query must be greater than 0")
+	})
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			var hosts []confignet.TCPAddrConfig
@@ -117,12 +129,13 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username:             tc.username,
-				Password:             configopaque.String(tc.password),
-				Hosts:                hosts,
-				Scheme:               tc.scheme,
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				Username:              tc.username,
+				Password:              configopaque.String(tc.password),
+				Hosts:                 hosts,
+				Scheme:                tc.scheme,
+				ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
+				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
@@ -173,9 +186,10 @@ func TestBadTLSConfigs(t *testing.T) {
 						Endpoint: defaultEndpoint,
 					},
 				},
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				ClientConfig:         tc.tlsConfig,
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
+				ClientConfig:          tc.tlsConfig,
+				MetricsBuilderConfig:  metadata.NewDefaultMetricsBuilderConfig(),
+				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expectError {
@@ -350,6 +364,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.AuthMechanismProperties = map[string]string{
 		"SERVICE_NAME": "mongodb",
 	}
+	expected.QuerySampleCollection.MaxRowsPerQuery = 42
 
 	require.Equal(t, expected, cfg)
 }
