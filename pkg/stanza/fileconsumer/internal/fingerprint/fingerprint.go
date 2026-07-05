@@ -37,6 +37,19 @@ func New(first []byte) *Fingerprint {
 func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if decompressData && compression.IsGzipFile(file, logger) {
+		offset, err := file.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return nil, fmt.Errorf("error getting current file offset: %w", err)
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("error seeking to start of file: %w", err)
+		}
+		defer func() {
+			if _, seekErr := file.Seek(offset, io.SeekStart); seekErr != nil {
+				logger.Error("error restoring file offset", zap.Error(seekErr))
+			}
+		}()
+
 		// If the file is of compressed type, uncompress the data before creating its fingerprint
 		uncompressedData, err := gzip.NewReader(file)
 		if err != nil {
