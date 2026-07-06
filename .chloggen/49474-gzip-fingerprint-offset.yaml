@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: pkg/stanza/fileconsumer
+component: pkg/stanza
 
 note: Fix fingerprint generation for gzip-compressed files when the file descriptor is positioned at a non-zero offset.
 
