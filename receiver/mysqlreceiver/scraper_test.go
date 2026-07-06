@@ -493,7 +493,7 @@ type queryPlanSpyClient struct {
 	explainPlan  string
 }
 
-func (c *queryPlanSpyClient) getQuerySamples(uint64, bool) ([]querySample, error) {
+func (c *queryPlanSpyClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) {
 	return c.querySamples, nil
 }
 
@@ -781,7 +781,7 @@ func (c *mockClient) getReplicaStatusStats(_ bool) ([]replicaStatusStats, error)
 }
 
 // Generate a function for getQuerySamples to read data from a static file
-func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
+func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) {
 	var samples []querySample
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.querySamplesFile+".txt"))
 	if err != nil {

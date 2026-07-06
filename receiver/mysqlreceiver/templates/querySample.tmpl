@@ -2,7 +2,10 @@
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
-    COALESCE(pl.HOST, thread.processlist_host, '') AS client_address,
+    COALESCE(
+        {{- if .supportsProcesslist}} pl.HOST,{{- end}}
+        thread.processlist_host, ''
+    ) AS client_address,
     -- client_port is parsed from client_address in Go using net.SplitHostPort,
     -- which handles both IPv4 (host:port) and IPv6 ([::1]:port) formats correctly.
     -- pl.HOST contains "host:port" for TCP/IP connections on MySQL 8.0.22+.
@@ -111,7 +114,12 @@ FROM
     -- Both MySQL and MariaDB store user variable names in lowercase in VARIABLE_NAME
     -- regardless of how the client spelled them, so '= traceparent' matches any case.
     LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
+    {{- if .supportsProcesslist}}
+    -- performance_schema.processlist.HOST returns "host:port" for TCP/IP connections,
+    -- enabling population of client.port. Available MySQL 8.0.22+; lock-free unlike
+    -- information_schema.PROCESSLIST (which was removed in MySQL 9.0).
     LEFT JOIN performance_schema.processlist AS pl ON pl.ID = thread.PROCESSLIST_ID
+    {{- end}}
     -- InnoDB row-level lock blocking: pre-aggregated derived table (one row per waiting thread)
     LEFT JOIN (
         SELECT

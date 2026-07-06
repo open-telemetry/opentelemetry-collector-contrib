@@ -31,9 +31,15 @@ const (
 	dbProductMariaDB
 )
 
-// minMySQL8PlusVersion is the threshold for full MySQL 8 feature support (8.0.22+):
-// performance_schema.processlist, data_lock_waits, metadata_locks, and SHOW REPLICA STATUS.
-var minMySQL8PlusVersion = version.Must(version.NewVersion("8.0.22"))
+// minMySQLDataLockWaitsVersion is the first GA MySQL version with
+// performance_schema.data_lock_waits, data_locks, and metadata_locks (8.0.11).
+// The information_schema.innodb_lock_waits table was removed in MySQL 8.0.
+var minMySQLDataLockWaitsVersion = version.Must(version.NewVersion("8.0.11"))
+
+// minMySQLProcesslistVersion is the MySQL version that introduced
+// performance_schema.processlist (lock-free, exposes host:port) and
+// SHOW REPLICA STATUS (replacing SHOW SLAVE STATUS).
+var minMySQLProcesslistVersion = version.Must(version.NewVersion("8.0.22"))
 
 // dbVersion holds the parsed database version and product identity.
 // Capability predicates keep version-specific branching out of callers.
@@ -79,19 +85,40 @@ func (v dbVersion) supportsQuerySampleText() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLQuerySampleTextVersion)
 }
 
-// isMySQL8Plus reports whether the server is MySQL 8.0.22+ — the minimum version
-// that supports performance_schema.processlist, performance_schema.data_lock_waits,
-// performance_schema.metadata_locks, and SHOW REPLICA STATUS. This predicate gates
-// query sample template selection (querySample.tmpl vs querySampleLegacy.tmpl) and
-// the SHOW REPLICA STATUS syntax.
-//
-// On MariaDB (all versions) and MySQL < 8.0.22, the legacy template and
-// SHOW SLAVE STATUS are used instead.
-func (v dbVersion) isMySQL8Plus() bool {
+// supportsDataLockWaits reports whether the server has
+// performance_schema.data_lock_waits and data_locks (MySQL 8.0.11+, the first GA).
+// MySQL removed information_schema.innodb_lock_waits in 8.0, so versions 8.0.11+
+// must use the performance_schema tables. This predicate gates query sample template
+// selection: querySample.tmpl (modern) vs querySampleLegacy.tmpl (MySQL 5.7/MariaDB).
+func (v dbVersion) supportsDataLockWaits() bool {
 	if !v.isValid() {
 		return false
 	}
-	return v.product == dbProductMySQL && !v.version.LessThan(minMySQL8PlusVersion)
+	if v.product == dbProductMariaDB {
+		return false
+	}
+	return !v.version.LessThan(minMySQLDataLockWaitsVersion)
+}
+
+// supportsProcesslist reports whether performance_schema.processlist is available
+// (MySQL 8.0.22+). This table exposes HOST as "host:port" for TCP/IP connections,
+// enabling population of client.port and network.peer.port on query sample events.
+// This predicate also gates SHOW REPLICA STATUS (vs the deprecated SHOW SLAVE STATUS).
+//
+// The only alternative source that exposes host:port is information_schema.PROCESSLIST,
+// but it is not used: its implementation iterates active threads while holding a global
+// mutex (same as SHOW PROCESSLIST), which has negative performance consequences on busy
+// systems. It was also deprecated in MySQL 8.0, removed in MySQL 9.0, and was already
+// removed from this receiver in a prior change. performance_schema.processlist is
+// lock-free and reads directly from Performance Schema data structures.
+//
+// As a result, client.port and network.peer.port remain 0 on MariaDB (all versions)
+// and MySQL < 8.0.22, where this table is not available.
+func (v dbVersion) supportsProcesslist() bool {
+	if !v.isValid() {
+		return false
+	}
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLProcesslistVersion)
 }
 
 type client interface {
@@ -104,15 +131,16 @@ type client interface {
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
 	getStatementEventsStats() ([]statementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
-	// isMySQL8Plus controls whether SHOW REPLICA STATUS or the
-	// deprecated SHOW SLAVE STATUS is used.
-	getReplicaStatusStats(isMySQL8Plus bool) ([]replicaStatusStats, error)
+	// supportsProcesslist controls whether SHOW REPLICA STATUS or the
+	// deprecated SHOW SLAVE STATUS is used (MySQL 8.0.22+).
+	getReplicaStatusStats(supportsProcesslist bool) ([]replicaStatusStats, error)
 	// supportsSampleText controls top-query template selection (MySQL 8+ vs fallback).
 	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
-	// isMySQL8Plus controls template selection: querySample.tmpl (MySQL 8.0.22+,
-	// includes processlist JOIN and perf_schema blocking/MDL) vs querySampleLegacy.tmpl
-	// (MySQL <8.0 / MariaDB, info_schema blocking, no processlist, no MDL).
-	getQuerySamples(limit uint64, isMySQL8Plus bool) ([]querySample, error)
+	// supportsProcesslist controls the processlist JOIN within querySample.tmpl (MySQL 8.0.22+).
+	// supportsDataLockWaits controls template selection: querySample.tmpl (MySQL 8.0.11+,
+	// uses perf_schema blocking/MDL) vs querySampleLegacy.tmpl (MySQL 5.7/MariaDB,
+	// uses info_schema innodb_lock_waits).
+	getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -613,9 +641,9 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 	return stats, nil
 }
 
-func (c *mySQLClient) getReplicaStatusStats(isMySQL8Plus bool) ([]replicaStatusStats, error) {
+func (c *mySQLClient) getReplicaStatusStats(supportsProcesslist bool) ([]replicaStatusStats, error) {
 	query := "SHOW REPLICA STATUS"
-	if !isMySQL8Plus {
+	if !supportsProcesslist {
 		query = "SHOW SLAVE STATUS"
 	}
 
@@ -937,16 +965,17 @@ var querySampleTemplate string
 //go:embed templates/querySampleLegacy.tmpl
 var querySampleLegacyTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64, isMySQL8Plus bool) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error) {
 	tmplSrc := querySampleTemplate
-	if !isMySQL8Plus {
+	if !supportsDataLockWaits {
 		tmplSrc = querySampleLegacyTemplate
 	}
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(tmplSrc))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit": limit,
+		"limit":              limit,
+		"supportsProcesslist": supportsProcesslist,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -1038,9 +1067,9 @@ func (c *mySQLClient) getQuerySamples(limit uint64, isMySQL8Plus bool) ([]queryS
 		}
 
 		// pl.HOST from performance_schema.processlist uses "host:port" for IPv4 and
-		// "[::1]:port" for IPv6, both parseable by net.SplitHostPort. On the legacy
-		// template (isMySQL8Plus=false), processlistHost is a bare hostname from
-		// thread.processlist_host and SplitHostPort will return an error — in that
+		// "[::1]:port" for IPv6, both parseable by net.SplitHostPort. When processlist
+		// is not joined (supportsProcesslist=false), processlistHost is a bare hostname
+		// from thread.processlist_host and SplitHostPort will return an error — in that
 		// case we leave processlistHost as-is and clientPort as 0.
 		if host, portStr, splitErr := net.SplitHostPort(s.processlistHost); splitErr == nil {
 			if port, parseErr := strconv.ParseUint(portStr, 10, 64); parseErr == nil {
