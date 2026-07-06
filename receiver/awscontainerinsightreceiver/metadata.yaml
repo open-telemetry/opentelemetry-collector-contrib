@@ -10,6 +10,13 @@ status:
   codeowners:
     active: [Aneurysm9, pxaws]
 
+feature_gates:
+  - id: receiver.awscontainerinsightreceiver.useNewTypeName
+    description: "When enabled, the receiver uses the new component type name 'awscontainerinsight' instead of 'awscontainerinsightreceiver'."
+    stage: alpha
+    from_version: v0.143.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052
+
 # TODO: Update the receiver to pass the tests
 tests:
   skip_lifecycle: true
