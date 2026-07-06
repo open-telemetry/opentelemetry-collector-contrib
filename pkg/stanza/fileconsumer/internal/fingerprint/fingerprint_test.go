@@ -421,7 +421,7 @@ func TestNewFromFileGzipOffset(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, expectedFP.Equal(actualFP))
 
-	// 4. Assert that the original offset is restored after the call
+	// 4. Assert that the offset of the file is not modified
 	currentOffset, err := compressedFile.Seek(0, io.SeekCurrent)
 	require.NoError(t, err)
 	require.Equal(t, nonZeroOffset, currentOffset)
