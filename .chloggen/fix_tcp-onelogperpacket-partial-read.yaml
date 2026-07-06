@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/stanza
+component: receiver/tcp_log
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Fix tcp input operator emitting partial log data after a connection read error when `one_log_per_packet` is enabled
