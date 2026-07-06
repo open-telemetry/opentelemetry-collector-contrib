@@ -11,7 +11,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, Caleb-Hurshman]
+    active: [antonblock, ishleenk17, Caleb-Hurshman, ebrdarSplunk]
     seeking_new: true
     emeritus: [djaglowski]
 
