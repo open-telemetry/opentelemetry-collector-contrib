@@ -260,6 +260,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				ctx = t.Context()
 			}
 
+			require.NoError(t, tt.expr.ValidateArity(len(tt.expr.Formals())))
 			lb, err := tt.expr.Activate(ctx)
 			require.NoError(t, err)
 			defer lb.Close()
@@ -287,6 +288,7 @@ func TestLambdaExpression_Activate(t *testing.T) {
 		},
 		nil,
 	)
+	require.NoError(t, expr.ValidateArity(1))
 
 	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
@@ -320,12 +322,58 @@ func TestLambdaExpression_Activate(t *testing.T) {
 	assert.Equal(t, "two", got2)
 }
 
+func TestLambdaExpression_Activate_RequiresValidateArity(t *testing.T) {
+	newExpr := func() *LambdaExpression[any] {
+		return newLambdaExpression(
+			makeLocalIdentifiers("a"),
+			&localIdentifierGetter[any]{
+				identifier: &basePath[any]{name: "a"},
+			},
+			nil,
+		)
+	}
+
+	t.Run("errors when ValidateArity was not called", func(t *testing.T) {
+		expr := newExpr()
+
+		lb, err := expr.Activate(t.Context())
+		require.EqualError(t, err, "lambda arity was not validated: ValidateArity must be called before Activate")
+		require.Nil(t, lb)
+	})
+
+	t.Run("errors when ValidateArity failed", func(t *testing.T) {
+		expr := newExpr()
+
+		require.Error(t, expr.ValidateArity(2))
+
+		lb, err := expr.Activate(t.Context())
+		require.EqualError(t, err, "lambda arity was not validated: ValidateArity must be called before Activate")
+		require.Nil(t, lb)
+	})
+
+	t.Run("succeeds after ValidateArity passed", func(t *testing.T) {
+		expr := newExpr()
+
+		require.NoError(t, expr.ValidateArity(1))
+
+		lb, err := expr.Activate(t.Context())
+		require.NoError(t, err)
+		defer lb.Close()
+
+		require.NoError(t, lb.SetArg(0, "value"))
+		got, err := lb.Eval(nil)
+		require.NoError(t, err)
+		assert.Equal(t, "value", got)
+	})
+}
+
 func TestLambdaActivation_SetArg(t *testing.T) {
 	expr := newLambdaExpression[any](
 		makeLocalIdentifiers("a"),
 		nil,
 		nil,
 	)
+	require.NoError(t, expr.ValidateArity(1))
 
 	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
@@ -345,6 +393,7 @@ func TestLambdaActivation_StaleArg(t *testing.T) {
 		},
 		nil,
 	)
+	require.NoError(t, expr.ValidateArity(2))
 
 	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
@@ -383,6 +432,8 @@ func TestLambdaActivation_ParentChain(t *testing.T) {
 		},
 		nil,
 	)
+	require.NoError(t, outerExpr.ValidateArity(1))
+	require.NoError(t, innerExpr.ValidateArity(1))
 
 	outerLb, err := outerExpr.Activate(t.Context())
 	require.NoError(t, err)
@@ -407,6 +458,7 @@ func TestLambdaActivation_Close(t *testing.T) {
 		},
 		nil,
 	)
+	require.NoError(t, expr.ValidateArity(2))
 
 	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)

@@ -23,6 +23,7 @@ type LambdaExpression[K any] struct {
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
+	arityValidated bool
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
@@ -61,6 +62,7 @@ func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
 		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
 	}
+	l.arityValidated = true
 	return nil
 }
 
@@ -68,7 +70,14 @@ func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 // its own activation and argument storage, linking the resulting activation to the given ctx.
 // Call [LambdaActivation.SetArg] for every index in (0...arity) before each [LambdaActivation.Eval],
 // and then [LambdaActivation.Close] on the returned activation when it is no longer needed.
+//
+// [LambdaExpression.ValidateArity] must be called successfully before Activate; otherwise Activate
+// returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
+// runs inside the closure the factory returns.
 func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
+	if !l.arityValidated {
+		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
+	}
 	v := l.activationPool.Get().(*LambdaActivation[K])
 	v.ctx = pushLocalActivation(ctx, v.activation)
 	return v, nil
