@@ -104,45 +104,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverAccessScanRateDataPoint(ts, 1, AttributeSqlserverAccessScanTypeFreeSpace)
 
 			allMetricsCount++
-			mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgEstimatedDataLossDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgHardenedLatencyDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgLogSendQueueSizeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgLogSendRateDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgLogSendRateDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgLogSendRateDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgLogSendRateDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgRedoQueueSizeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAgRedoRateDataPoint(ts, 1, "ag.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAgRedoRateDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAgRedoRateDataPoint(ts, 3, "ag.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAgRedoRateDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
 			}
 
 			allMetricsCount++
@@ -495,9 +495,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -525,7 +525,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -545,9 +545,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -575,7 +575,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -595,9 +595,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -625,7 +625,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -645,9 +645,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -675,7 +675,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -695,9 +695,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -725,7 +725,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -745,9 +745,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -775,7 +775,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
@@ -795,9 +795,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						agNameAttrVal, ok := dp.Attributes().Get("ag.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "ag.name-val", agNameAttrVal.Str())
+						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
@@ -825,7 +825,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("ag.name")
+						_, ok := dp.Attributes().Get("availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)

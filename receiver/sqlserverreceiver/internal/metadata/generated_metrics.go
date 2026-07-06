@@ -547,31 +547,31 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverAgEstimatedDataLoss: metricInfo{
 		Name:       "sqlserver.ag.estimated_data_loss",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgEstimatedRecoveryTime: metricInfo{
 		Name:       "sqlserver.ag.estimated_recovery_time",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgHardenedLatency: metricInfo{
 		Name:       "sqlserver.ag.hardened_latency",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendQueueSize: metricInfo{
 		Name:       "sqlserver.ag.log_send.queue_size",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendRate: metricInfo{
 		Name:       "sqlserver.ag.log_send.rate",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoQueueSize: metricInfo{
 		Name:       "sqlserver.ag.redo.queue_size",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoRate: metricInfo{
 		Name:       "sqlserver.ag.redo.rate",
-		Attributes: []string{"ag.name", "db.namespace", "replica.name"},
+		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAttentionRate: metricInfo{
 		Name: "sqlserver.attention.rate",
@@ -956,7 +956,7 @@ func (m *metricSqlserverAgEstimatedDataLoss) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -964,8 +964,8 @@ func (m *metricSqlserverAgEstimatedDataLoss) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1051,7 +1051,7 @@ func (m *metricSqlserverAgEstimatedRecoveryTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1059,8 +1059,8 @@ func (m *metricSqlserverAgEstimatedRecoveryTime) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1146,7 +1146,7 @@ func (m *metricSqlserverAgHardenedLatency) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgHardenedLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgHardenedLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1154,8 +1154,8 @@ func (m *metricSqlserverAgHardenedLatency) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1241,7 +1241,7 @@ func (m *metricSqlserverAgLogSendQueueSize) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgLogSendQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgLogSendQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1249,8 +1249,8 @@ func (m *metricSqlserverAgLogSendQueueSize) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1336,7 +1336,7 @@ func (m *metricSqlserverAgLogSendRate) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgLogSendRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgLogSendRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1344,8 +1344,8 @@ func (m *metricSqlserverAgLogSendRate) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1431,7 +1431,7 @@ func (m *metricSqlserverAgRedoQueueSize) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgRedoQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgRedoQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1439,8 +1439,8 @@ func (m *metricSqlserverAgRedoQueueSize) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -1526,7 +1526,7 @@ func (m *metricSqlserverAgRedoRate) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAgRedoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAgRedoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1534,8 +1534,8 @@ func (m *metricSqlserverAgRedoRate) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyAgName) {
-		dp.Attributes().PutStr("ag.name", agNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName) {
+		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAgRedoRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
@@ -6211,38 +6211,38 @@ func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Time
 }
 
 // RecordSqlserverAgEstimatedDataLossDataPoint adds a data point to sqlserver.ag.estimated_data_loss metric.
-func (mb *MetricsBuilder) RecordSqlserverAgEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.ag.estimated_recovery_time metric.
-func (mb *MetricsBuilder) RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgHardenedLatencyDataPoint adds a data point to sqlserver.ag.hardened_latency metric.
-func (mb *MetricsBuilder) RecordSqlserverAgHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgHardenedLatency.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgHardenedLatency.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.ag.log_send.queue_size metric.
-func (mb *MetricsBuilder) RecordSqlserverAgLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgLogSendRateDataPoint adds a data point to sqlserver.ag.log_send.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverAgLogSendRateDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgLogSendRate.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgLogSendRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgLogSendRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.ag.redo.queue_size metric.
-func (mb *MetricsBuilder) RecordSqlserverAgRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgRedoQueueSize.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgRedoQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAgRedoRateDataPoint adds a data point to sqlserver.ag.redo.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverAgRedoRateDataPoint(ts pcommon.Timestamp, val int64, agNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAgRedoRate.recordDataPoint(mb.startTime, ts, val, agNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAgRedoRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+	mb.metricSqlserverAgRedoRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
 // RecordSqlserverAttentionRateDataPoint adds a data point to sqlserver.attention.rate metric.

@@ -250,7 +250,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -268,7 +268,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -286,7 +286,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -304,7 +304,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -322,7 +322,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -340,7 +340,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
@@ -358,7 +358,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| ag.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 

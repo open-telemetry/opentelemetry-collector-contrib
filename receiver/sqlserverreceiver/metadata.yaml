@@ -59,7 +59,7 @@ resource_attributes:
 
 attributes:
   # attributes for metrics
-  ag.name:
+  availability_group.name:
     description: The name of the SQL Server Availability Group.
     type: string
     requirement_level: recommended
@@ -489,7 +489,7 @@ metrics:
     unit: s
     gauge:
       value_type: double
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.estimated_recovery_time:
     enabled: false
@@ -498,7 +498,7 @@ metrics:
     unit: s
     gauge:
       value_type: double
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.hardened_latency:
     enabled: false
@@ -507,7 +507,7 @@ metrics:
     unit: s
     gauge:
       value_type: double
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.log_send.queue_size:
     enabled: false
@@ -516,7 +516,7 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.log_send.rate:
     enabled: false
@@ -525,7 +525,7 @@ metrics:
     unit: By/s
     gauge:
       value_type: int
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.redo.queue_size:
     enabled: false
@@ -534,7 +534,7 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.ag.redo.rate:
     enabled: false
@@ -543,7 +543,7 @@ metrics:
     unit: By/s
     gauge:
       value_type: int
-    attributes: [ag.name, db.namespace, replica.name]
+    attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
   sqlserver.attention.rate:
     enabled: false

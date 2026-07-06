@@ -34,9 +34,9 @@ func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) e
 type SqlserverAgEstimatedDataLossMetricAttributeKey string
 
 const (
-	SqlserverAgEstimatedDataLossMetricAttributeKeyAgName      SqlserverAgEstimatedDataLossMetricAttributeKey = "ag.name"
-	SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace SqlserverAgEstimatedDataLossMetricAttributeKey = "db.namespace"
-	SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName SqlserverAgEstimatedDataLossMetricAttributeKey = "replica.name"
+	SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName SqlserverAgEstimatedDataLossMetricAttributeKey = "availability_group.name"
+	SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace           SqlserverAgEstimatedDataLossMetricAttributeKey = "db.namespace"
+	SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAgEstimatedDataLossMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgEstimatedDataLossMetricConfig provides config for the sqlserver.ag.estimated_data_loss metric.
@@ -65,9 +65,9 @@ func (ms *SqlserverAgEstimatedDataLossMetricConfig) Unmarshal(parser *confmap.Co
 func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName:
+		case SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.estimated_data_loss doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -84,9 +84,9 @@ func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
 type SqlserverAgEstimatedRecoveryTimeMetricAttributeKey string
 
 const (
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName      SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "ag.name"
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "availability_group.name"
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace           SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
+	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.ag.estimated_recovery_time metric.
@@ -115,9 +115,9 @@ func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Unmarshal(parser *confma
 func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
+		case SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.estimated_recovery_time doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -134,9 +134,9 @@ func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
 type SqlserverAgHardenedLatencyMetricAttributeKey string
 
 const (
-	SqlserverAgHardenedLatencyMetricAttributeKeyAgName      SqlserverAgHardenedLatencyMetricAttributeKey = "ag.name"
-	SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace SqlserverAgHardenedLatencyMetricAttributeKey = "db.namespace"
-	SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName SqlserverAgHardenedLatencyMetricAttributeKey = "replica.name"
+	SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName SqlserverAgHardenedLatencyMetricAttributeKey = "availability_group.name"
+	SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace           SqlserverAgHardenedLatencyMetricAttributeKey = "db.namespace"
+	SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAgHardenedLatencyMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgHardenedLatencyMetricConfig provides config for the sqlserver.ag.hardened_latency metric.
@@ -165,9 +165,9 @@ func (ms *SqlserverAgHardenedLatencyMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName:
+		case SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.hardened_latency doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -184,9 +184,9 @@ func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
 type SqlserverAgLogSendQueueSizeMetricAttributeKey string
 
 const (
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName      SqlserverAgLogSendQueueSizeMetricAttributeKey = "ag.name"
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace SqlserverAgLogSendQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName SqlserverAgLogSendQueueSizeMetricAttributeKey = "replica.name"
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAgLogSendQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace           SqlserverAgLogSendQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAgLogSendQueueSizeMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgLogSendQueueSizeMetricConfig provides config for the sqlserver.ag.log_send.queue_size metric.
@@ -215,9 +215,9 @@ func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Unmarshal(parser *confmap.Con
 func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName:
+		case SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.log_send.queue_size doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.log_send.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -234,9 +234,9 @@ func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
 type SqlserverAgLogSendRateMetricAttributeKey string
 
 const (
-	SqlserverAgLogSendRateMetricAttributeKeyAgName      SqlserverAgLogSendRateMetricAttributeKey = "ag.name"
-	SqlserverAgLogSendRateMetricAttributeKeyDbNamespace SqlserverAgLogSendRateMetricAttributeKey = "db.namespace"
-	SqlserverAgLogSendRateMetricAttributeKeyReplicaName SqlserverAgLogSendRateMetricAttributeKey = "replica.name"
+	SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName SqlserverAgLogSendRateMetricAttributeKey = "availability_group.name"
+	SqlserverAgLogSendRateMetricAttributeKeyDbNamespace           SqlserverAgLogSendRateMetricAttributeKey = "db.namespace"
+	SqlserverAgLogSendRateMetricAttributeKeyReplicaName           SqlserverAgLogSendRateMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgLogSendRateMetricConfig provides config for the sqlserver.ag.log_send.rate metric.
@@ -265,9 +265,9 @@ func (ms *SqlserverAgLogSendRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName:
+		case SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.log_send.rate doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -284,9 +284,9 @@ func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
 type SqlserverAgRedoQueueSizeMetricAttributeKey string
 
 const (
-	SqlserverAgRedoQueueSizeMetricAttributeKeyAgName      SqlserverAgRedoQueueSizeMetricAttributeKey = "ag.name"
-	SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace SqlserverAgRedoQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName SqlserverAgRedoQueueSizeMetricAttributeKey = "replica.name"
+	SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAgRedoQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace           SqlserverAgRedoQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAgRedoQueueSizeMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgRedoQueueSizeMetricConfig provides config for the sqlserver.ag.redo.queue_size metric.
@@ -315,9 +315,9 @@ func (ms *SqlserverAgRedoQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) 
 func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName:
+		case SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.redo.queue_size doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.redo.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -334,9 +334,9 @@ func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
 type SqlserverAgRedoRateMetricAttributeKey string
 
 const (
-	SqlserverAgRedoRateMetricAttributeKeyAgName      SqlserverAgRedoRateMetricAttributeKey = "ag.name"
-	SqlserverAgRedoRateMetricAttributeKeyDbNamespace SqlserverAgRedoRateMetricAttributeKey = "db.namespace"
-	SqlserverAgRedoRateMetricAttributeKeyReplicaName SqlserverAgRedoRateMetricAttributeKey = "replica.name"
+	SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName SqlserverAgRedoRateMetricAttributeKey = "availability_group.name"
+	SqlserverAgRedoRateMetricAttributeKeyDbNamespace           SqlserverAgRedoRateMetricAttributeKey = "db.namespace"
+	SqlserverAgRedoRateMetricAttributeKeyReplicaName           SqlserverAgRedoRateMetricAttributeKey = "replica.name"
 )
 
 // SqlserverAgRedoRateMetricConfig provides config for the sqlserver.ag.redo.rate metric.
@@ -365,9 +365,9 @@ func (ms *SqlserverAgRedoRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *SqlserverAgRedoRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName:
+		case SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.redo.rate doesn't have an attribute %v, valid attributes: [ag.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.ag.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -2336,37 +2336,37 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverAgEstimatedDataLoss: SqlserverAgEstimatedDataLossMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgEstimatedRecoveryTime: SqlserverAgEstimatedRecoveryTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgHardenedLatency: SqlserverAgHardenedLatencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgLogSendQueueSize: SqlserverAgLogSendQueueSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgLogSendRate: SqlserverAgLogSendRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgRedoQueueSize: SqlserverAgRedoQueueSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
 		},
 		SqlserverAgRedoRate: SqlserverAgRedoRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
+			EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
 		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,

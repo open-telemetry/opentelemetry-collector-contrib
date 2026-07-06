@@ -1107,7 +1107,7 @@ END
 
 SET @SqlStatement = N'
 SELECT
-	ag.[name]                                     AS [ag_name]
+	ag.[name]                                     AS [availability_group_name]
 	,DB_NAME(drs.[database_id])                   AS [database_name]
 	,ar.[replica_server_name]                     AS [replica_name]
 	,drs.[log_send_queue_size]                    AS [log_send_queue_size]

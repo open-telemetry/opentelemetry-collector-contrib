@@ -353,7 +353,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 
 func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
 	const (
-		agNameKey            = "ag_name"
+		agNameKey            = "availability_group_name"
 		replicaNameKey       = "replica_name"
 		logSendQueueSizeKey  = "log_send_queue_size"
 		logSendRateKey       = "log_send_rate"

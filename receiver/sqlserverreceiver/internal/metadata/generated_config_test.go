@@ -33,37 +33,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAgEstimatedDataLoss: SqlserverAgEstimatedDataLossMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgEstimatedRecoveryTime: SqlserverAgEstimatedRecoveryTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgHardenedLatency: SqlserverAgHardenedLatencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgLogSendQueueSize: SqlserverAgLogSendQueueSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgLogSendRate: SqlserverAgLogSendRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgRedoQueueSize: SqlserverAgRedoQueueSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgRedoRate: SqlserverAgRedoRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
 					},
 					SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 						Enabled: true,
@@ -330,37 +330,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAgEstimatedDataLoss: SqlserverAgEstimatedDataLossMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAgName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgEstimatedRecoveryTime: SqlserverAgEstimatedRecoveryTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAgName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgHardenedLatency: SqlserverAgHardenedLatencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAgName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgLogSendQueueSize: SqlserverAgLogSendQueueSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAgName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgLogSendRate: SqlserverAgLogSendRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAgName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgRedoQueueSize: SqlserverAgRedoQueueSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAgName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
 					},
 					SqlserverAgRedoRate: SqlserverAgRedoRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAgName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
+						EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
 					},
 					SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 						Enabled: false,
@@ -632,7 +632,7 @@ func TestSqlserverAgEstimatedDataLossMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgEstimatedDataLossMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.estimated_data_loss doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.estimated_data_loss doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgEstimatedDataLoss
 	cfg.AggregationStrategy = "invalid"
@@ -644,7 +644,7 @@ func TestSqlserverAgEstimatedRecoveryTimeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgEstimatedRecoveryTime
 	cfg.AggregationStrategy = "invalid"
@@ -656,7 +656,7 @@ func TestSqlserverAgHardenedLatencyMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgHardenedLatencyMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.hardened_latency doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.hardened_latency doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgHardenedLatency
 	cfg.AggregationStrategy = "invalid"
@@ -668,7 +668,7 @@ func TestSqlserverAgLogSendQueueSizeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgLogSendQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.log_send.queue_size doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.log_send.queue_size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgLogSendQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -680,7 +680,7 @@ func TestSqlserverAgLogSendRateMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgLogSendRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.log_send.rate doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.log_send.rate doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgLogSendRate
 	cfg.AggregationStrategy = "invalid"
@@ -692,7 +692,7 @@ func TestSqlserverAgRedoQueueSizeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgRedoQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.redo.queue_size doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.redo.queue_size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgRedoQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -704,7 +704,7 @@ func TestSqlserverAgRedoRateMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgRedoRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.redo.rate doesn't have an attribute invalid, valid attributes: [ag.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.ag.redo.rate doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgRedoRate
 	cfg.AggregationStrategy = "invalid"
