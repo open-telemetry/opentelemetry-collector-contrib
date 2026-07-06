@@ -105,7 +105,6 @@ $defs:
       poll_interval:
         type: string
         format: duration
-        format: duration
   pod_association_config:
     description: PodAssociationConfig contain single rule how to associate Pod metadata with logs, spans and metrics
     type: object
