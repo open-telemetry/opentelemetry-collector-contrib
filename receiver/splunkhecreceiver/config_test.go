@@ -30,8 +30,8 @@ func TestLoadConfig(t *testing.T) {
 
 	allSettingsServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	allSettingsServerConfig.WriteTimeout = 0
-	allSettingsServerConfig.ReadHeaderTimeout = 0
+	allSettingsServerConfig.WriteTimeout = defaultServerTimeout
+	allSettingsServerConfig.ReadHeaderTimeout = defaultServerTimeout
 	allSettingsServerConfig.IdleTimeout = 0
 	allSettingsServerConfig.KeepAlivesEnabled = false
 	allSettingsServerConfig.NetAddr = confignet.AddrConfig{
@@ -41,8 +41,8 @@ func TestLoadConfig(t *testing.T) {
 
 	tlsServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	tlsServerConfig.WriteTimeout = 0
-	tlsServerConfig.ReadHeaderTimeout = 0
+	tlsServerConfig.WriteTimeout = defaultServerTimeout
+	tlsServerConfig.ReadHeaderTimeout = defaultServerTimeout
 	tlsServerConfig.IdleTimeout = 0
 	tlsServerConfig.KeepAlivesEnabled = false
 	tlsServerConfig.NetAddr = confignet.AddrConfig{
