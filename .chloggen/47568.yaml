@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: exporter/awsxray
+
+note: Use local service name for Consumer local root segment names, falling back to resource service name when aws.local.service is absent.
+
+issues: [43432]
+
+subtext: |
+  Consumer spans promoted to X-Ray Segments after #42633 were named
+  using the span (operation) name instead of the local service name.
+  The fix mirrors the existing Server span naming behavior.
+
+change_logs: [user]
