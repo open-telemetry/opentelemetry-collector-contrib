@@ -1,4 +1,5 @@
 type: oracleclouddetector
+sem_conv_version: 1.40.0
 
 status:
   class: processor
@@ -9,41 +10,59 @@ status:
 
 resource_attributes:
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1").
     type: string
     enabled: true
   cloud.platform:
-    description: Value is `oracle_cloud_infrastructure` for resources detected on Oracle Cloud Infrastructure (OCI).
+    semantic_convention:
+      ref: cloud.md#cloud-platform
+    description: Identifies the Oracle Cloud platform for the resource, such as Oracle Cloud Infrastructure Compute or Oracle Container Engine for Kubernetes.
     type: string
     enabled: true
   cloud.provider:
-    description: Always set to `oraclecloud` to identify resources provided by Oracle Cloud Infrastructure
+    semantic_convention:
+      ref: cloud.md#cloud-provider
+    description: Identifies Oracle Cloud Infrastructure as the cloud provider.
     type: string
     enabled: true
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The system hostname as reported by the OCI metadata service.
     type: string
     enabled: true
   host.type:
+    semantic_convention:
+      ref: host.md#host-type
     description: The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex".
     enabled: true
     type: string
   k8s.cluster.name:
+    semantic_convention:
+      ref: k8s.md#k8s-cluster-name
     description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
     enabled: true
     type: string
   oracle_cloud.realm:
-    description: The Oracle Cloud realm
+    semantic_convention:
+      ref: oracle-cloud.md#oracle-cloud-realm
+    description: The OCI realm identifier for the isolated partition where the tenancy and resources reside, such as "oc1" or "oc2".
     enabled: true
-    type: string    
+    type: string
 
 tests:
   skip_lifecycle: true
