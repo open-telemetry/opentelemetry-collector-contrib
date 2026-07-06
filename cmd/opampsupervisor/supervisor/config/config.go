@@ -359,8 +359,9 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -407,6 +408,9 @@ type Logs struct {
 	Level            zapcore.Level `mapstructure:"level"`
 	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
 	OutputPaths      []string      `mapstructure:"output_paths"`
+	// Encoding sets the logger's encoding. Valid values are "json" and "console".
+	// Defaults to "json".
+	Encoding string `mapstructure:"encoding"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
@@ -434,6 +438,15 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+	}
 	return Supervisor{
 		Capabilities: Capabilities{
 			AcceptsRemoteConfig:            false,
@@ -468,11 +481,7 @@ func DefaultSupervisor() Supervisor {
 			},
 		},
 		HealthCheck: HealthCheck{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
+			ServerConfig: serverConfig,
 		},
 	}
 }

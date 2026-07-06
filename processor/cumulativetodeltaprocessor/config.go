@@ -6,8 +6,6 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
 	"time"
 
@@ -24,7 +22,7 @@ var validMetricTypes = map[string]bool{
 	strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()): true,
 }
 
-var validMetricTypeList = slices.Collect(maps.Keys(validMetricTypes))
+var validMetricTypeList = []string{"exponentialhistogram", "histogram", "sum"}
 
 // Config defines the configuration for the processor.
 type Config struct {
