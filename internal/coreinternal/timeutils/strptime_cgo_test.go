@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build cgo && unix
+//go:build cgo && unix && !aix
 
 package timeutils
 
