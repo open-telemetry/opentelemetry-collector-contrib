@@ -98,9 +98,16 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
 
+	periodSec := int64(s.period.Seconds())
+	now := time.Now().UTC()
+	// Shift endTime back by delay to account for CloudWatch metric publication latency.
+	// Query exactly one collectionInterval worth of data so consecutive scrapes do not overlap.
+	endTime := alignTimeToPeriod(now.Add(-s.delay), periodSec)
+	startTime := alignTimeToPeriod(endTime.Add(-s.collectionInterval), periodSec)
+
 	var metricsToScrape []MetricQuery
 	if s.discovery != nil {
-		discovered, err := s.listMetrics(ctx)
+		discovered, err := s.listMetrics(ctx, startTime)
 		if err != nil {
 			return pmetric.NewMetrics(), fmt.Errorf("list metrics: %w", err)
 		}
@@ -112,13 +119,6 @@ func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	} else {
 		metricsToScrape = s.metrics
 	}
-
-	periodSec := int64(s.period.Seconds())
-	now := time.Now().UTC()
-	// Shift endTime back by delay to account for CloudWatch metric publication latency.
-	// Query exactly one collectionInterval worth of data so consecutive scrapes do not overlap.
-	endTime := alignTimeToPeriod(now.Add(-s.delay), periodSec)
-	startTime := alignTimeToPeriod(endTime.Add(-s.collectionInterval), periodSec)
 
 	md := pmetric.NewMetrics()
 	for batchStart := 0; batchStart < len(metricsToScrape); {
@@ -157,7 +157,7 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 }
 
 // listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
-func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
+func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context, startTime time.Time) ([]MetricQuery, error) {
 	input := &cloudwatch.ListMetricsInput{}
 	if f := s.discovery.Filters.Get(); f != nil {
 		if f.Namespace != "" {
@@ -167,7 +167,9 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			input.MetricName = aws.String(f.MetricName)
 		}
 	}
-	if s.collectionInterval > 0 && s.collectionInterval < recentlyActiveThreshold {
+
+	// If the scrape window is within the last 3 hours, set RecentlyActive to reduce the number of metrics returned.
+	if startTime.After(time.Now().UTC().Add(-recentlyActiveThreshold)) {
 		input.RecentlyActive = types.RecentlyActivePt3h
 	}
 
