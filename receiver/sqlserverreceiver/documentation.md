@@ -258,9 +258,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.estimated_recovery_time
 
@@ -276,9 +276,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.hardened_latency
 
@@ -294,9 +294,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.log_send.queue.size
 
@@ -312,9 +312,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.log_send.rate
 
@@ -330,9 +330,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.redo.queue.size
 
@@ -348,9 +348,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.availability_group.redo.rate
 
@@ -366,9 +366,9 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
-| replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
 ### sqlserver.computer.uptime
 

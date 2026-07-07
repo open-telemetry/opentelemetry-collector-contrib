@@ -550,31 +550,31 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverAvailabilityGroupEstimatedDataLoss: metricInfo{
 		Name:       "sqlserver.availability_group.estimated_data_loss",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupEstimatedRecoveryTime: metricInfo{
 		Name:       "sqlserver.availability_group.estimated_recovery_time",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupHardenedLatency: metricInfo{
 		Name:       "sqlserver.availability_group.hardened_latency",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupLogSendQueueSize: metricInfo{
 		Name:       "sqlserver.availability_group.log_send.queue.size",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupLogSendRate: metricInfo{
 		Name:       "sqlserver.availability_group.log_send.rate",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupRedoQueueSize: metricInfo{
 		Name:       "sqlserver.availability_group.redo.queue.size",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverAvailabilityGroupRedoRate: metricInfo{
 		Name:       "sqlserver.availability_group.redo.rate",
-		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
 	SqlserverBatchRequestRate: metricInfo{
 		Name: "sqlserver.batch.request.rate",
@@ -1015,13 +1015,13 @@ func (m *metricSqlserverAvailabilityGroupEstimatedDataLoss) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1110,13 +1110,13 @@ func (m *metricSqlserverAvailabilityGroupEstimatedRecoveryTime) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1205,13 +1205,13 @@ func (m *metricSqlserverAvailabilityGroupHardenedLatency) recordDataPoint(start 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1300,13 +1300,13 @@ func (m *metricSqlserverAvailabilityGroupLogSendQueueSize) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1395,13 +1395,13 @@ func (m *metricSqlserverAvailabilityGroupLogSendRate) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1490,13 +1490,13 @@ func (m *metricSqlserverAvailabilityGroupRedoQueueSize) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string
@@ -1585,13 +1585,13 @@ func (m *metricSqlserverAvailabilityGroupRedoRate) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("availability_group.name", availabilityGroupNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("replica.name", replicaNameAttributeValue)
+		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
 	}
 
 	var s string

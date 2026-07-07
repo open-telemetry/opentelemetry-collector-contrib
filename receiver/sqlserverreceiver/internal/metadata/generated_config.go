@@ -54,9 +54,9 @@ func (ms *SqlserverAttentionRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 type SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupEstimatedDataLossMetricConfig provides config for the sqlserver.availability_group.estimated_data_loss metric.
@@ -87,7 +87,7 @@ func (ms *SqlserverAvailabilityGroupEstimatedDataLossMetricConfig) Validate() er
 		switch val {
 		case SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -104,9 +104,9 @@ func (ms *SqlserverAvailabilityGroupEstimatedDataLossMetricConfig) Validate() er
 type SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.availability_group.estimated_recovery_time metric.
@@ -137,7 +137,7 @@ func (ms *SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig) Validate(
 		switch val {
 		case SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -154,9 +154,9 @@ func (ms *SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig) Validate(
 type SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupHardenedLatencyMetricConfig provides config for the sqlserver.availability_group.hardened_latency metric.
@@ -187,7 +187,7 @@ func (ms *SqlserverAvailabilityGroupHardenedLatencyMetricConfig) Validate() erro
 		switch val {
 		case SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.hardened_latency doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -204,9 +204,9 @@ func (ms *SqlserverAvailabilityGroupHardenedLatencyMetricConfig) Validate() erro
 type SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig provides config for the sqlserver.availability_group.log_send.queue.size metric.
@@ -237,7 +237,7 @@ func (ms *SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig) Validate() err
 		switch val {
 		case SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -254,9 +254,9 @@ func (ms *SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig) Validate() err
 type SqlserverAvailabilityGroupLogSendRateMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupLogSendRateMetricConfig provides config for the sqlserver.availability_group.log_send.rate metric.
@@ -287,7 +287,7 @@ func (ms *SqlserverAvailabilityGroupLogSendRateMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -304,9 +304,9 @@ func (ms *SqlserverAvailabilityGroupLogSendRateMetricConfig) Validate() error {
 type SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupRedoQueueSizeMetricConfig provides config for the sqlserver.availability_group.redo.queue.size metric.
@@ -337,7 +337,7 @@ func (ms *SqlserverAvailabilityGroupRedoQueueSizeMetricConfig) Validate() error 
 		switch val {
 		case SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.redo.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.redo.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -354,9 +354,9 @@ func (ms *SqlserverAvailabilityGroupRedoQueueSizeMetricConfig) Validate() error 
 type SqlserverAvailabilityGroupRedoRateMetricAttributeKey string
 
 const (
-	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "sqlserver.availability_group.name"
 	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "db.namespace"
-	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "replica.name"
+	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "sqlserver.replica.name"
 )
 
 // SqlserverAvailabilityGroupRedoRateMetricConfig provides config for the sqlserver.availability_group.redo.rate metric.
@@ -387,7 +387,7 @@ func (ms *SqlserverAvailabilityGroupRedoRateMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.availability_group.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.redo.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 

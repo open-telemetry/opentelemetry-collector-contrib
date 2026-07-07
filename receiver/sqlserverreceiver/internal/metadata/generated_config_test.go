@@ -632,7 +632,7 @@ func TestSqlserverAvailabilityGroupEstimatedDataLossMetricsConfig_Validate(t *te
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedDataLoss
 	cfg.AggregationStrategy = "invalid"
@@ -644,7 +644,7 @@ func TestSqlserverAvailabilityGroupEstimatedRecoveryTimeMetricsConfig_Validate(t
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedRecoveryTime
 	cfg.AggregationStrategy = "invalid"
@@ -656,7 +656,7 @@ func TestSqlserverAvailabilityGroupHardenedLatencyMetricsConfig_Validate(t *test
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.hardened_latency doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.hardened_latency doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupHardenedLatency
 	cfg.AggregationStrategy = "invalid"
@@ -668,7 +668,7 @@ func TestSqlserverAvailabilityGroupLogSendQueueSizeMetricsConfig_Validate(t *tes
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupLogSendQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -680,7 +680,7 @@ func TestSqlserverAvailabilityGroupLogSendRateMetricsConfig_Validate(t *testing.
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.rate doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupLogSendRate
 	cfg.AggregationStrategy = "invalid"
@@ -692,7 +692,7 @@ func TestSqlserverAvailabilityGroupRedoQueueSizeMetricsConfig_Validate(t *testin
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.queue.size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupRedoQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -704,7 +704,7 @@ func TestSqlserverAvailabilityGroupRedoRateMetricsConfig_Validate(t *testing.T) 
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAvailabilityGroupRedoRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.rate doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupRedoRate
 	cfg.AggregationStrategy = "invalid"

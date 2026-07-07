@@ -107,45 +107,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverAttentionRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts, 1, "availability_group.name-val", "db.namespace-val", "replica.name-val")
+			mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts, 3, "availability_group.name-val-2", "db.namespace-val-2", "replica.name-val-2")
+				mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -507,15 +507,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_data_loss")
 						validatedMetrics["sqlserver.availability_group.estimated_data_loss"] = true
@@ -537,11 +537,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.estimated_recovery_time":
@@ -557,15 +557,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_recovery_time")
 						validatedMetrics["sqlserver.availability_group.estimated_recovery_time"] = true
@@ -587,11 +587,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.hardened_latency":
@@ -607,15 +607,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.availability_group.hardened_latency")
 						validatedMetrics["sqlserver.availability_group.hardened_latency"] = true
@@ -637,11 +637,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.log_send.queue.size":
@@ -657,15 +657,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.queue.size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.queue.size")
 						validatedMetrics["sqlserver.availability_group.log_send.queue.size"] = true
@@ -687,11 +687,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.log_send.rate":
@@ -707,15 +707,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.rate")
 						validatedMetrics["sqlserver.availability_group.log_send.rate"] = true
@@ -737,11 +737,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.redo.queue.size":
@@ -757,15 +757,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.queue.size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.queue.size")
 						validatedMetrics["sqlserver.availability_group.redo.queue.size"] = true
@@ -787,11 +787,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.availability_group.redo.rate":
@@ -807,15 +807,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("availability_group.name")
+						availabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.name-val", availabilityGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.availability_group.name-val", availabilityGroupNameAttrVal.Str())
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						replicaNameAttrVal, ok := dp.Attributes().Get("replica.name")
+						replicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
-						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.replica.name-val", replicaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.rate")
 						validatedMetrics["sqlserver.availability_group.redo.rate"] = true
@@ -837,11 +837,11 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("availability_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replica.name")
+						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.batch.request.rate":

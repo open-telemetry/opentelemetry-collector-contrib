@@ -7,25 +7,25 @@ all_set:
       enabled: true
     sqlserver.availability_group.estimated_data_loss:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.estimated_recovery_time:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.hardened_latency:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.log_send.queue.size:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.log_send.rate:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.redo.queue.size:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.redo.rate:
       enabled: true
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -415,25 +415,25 @@ none_set:
       enabled: false
     sqlserver.availability_group.estimated_data_loss:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.estimated_recovery_time:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.hardened_latency:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.log_send.queue.size:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.log_send.rate:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.redo.queue.size:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.availability_group.redo.rate:
       enabled: false
-      attributes: ["availability_group.name","db.namespace","replica.name"]
+      attributes: ["sqlserver.availability_group.name","db.namespace","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
