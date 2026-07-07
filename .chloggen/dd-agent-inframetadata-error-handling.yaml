@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: exporter/datadog
-note: "Fix host metadata collection no longer aborts the entire batch when one resource fails; errors are accumulated and processing continues for remaining resources"
-issues: [49153]
-subtext: See [DataDog/datadog-agent#51893](https://github.com/DataDog/datadog-agent/pull/51893).
-change_logs: [user]
