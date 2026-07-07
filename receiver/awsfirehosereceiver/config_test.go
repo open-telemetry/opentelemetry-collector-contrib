@@ -83,28 +83,6 @@ func TestValidate(t *testing.T) {
 		cfg     *Config
 		wantErr string
 	}{
-		"negative record_decompressed_size_limit": {
-			cfg: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Endpoint: "localhost:8443",
-					},
-				},
-				RecordDecompressedSizeLimit: -1,
-			},
-			wantErr: "record_decompressed_size_limit must be non-negative",
-		},
-		"negative request_decompressed_size_limit": {
-			cfg: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Endpoint: "localhost:8443",
-					},
-				},
-				RequestDecompressedSizeLimit: -1,
-			},
-			wantErr: "request_decompressed_size_limit must be non-negative",
-		},
 		"valid configuration": {
 			cfg: &Config{
 				ServerConfig: confighttp.ServerConfig{
@@ -112,8 +90,6 @@ func TestValidate(t *testing.T) {
 						Endpoint: "localhost:8443",
 					},
 				},
-				RecordDecompressedSizeLimit:  10,
-				RequestDecompressedSizeLimit: 20,
 			},
 		},
 	}
@@ -128,10 +104,5 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestPrintDefaultMaxRequestBodySize(t *testing.T) {
-	cfg := confighttp.NewDefaultServerConfig()
-	t.Logf("Default MaxRequestBodySize is: %d", cfg.MaxRequestBodySize)
 }
 

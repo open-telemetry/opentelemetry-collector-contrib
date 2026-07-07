@@ -227,8 +227,10 @@ func TestFirehoseRequest(t *testing.T) {
 		},
 		"WithGzipRecordExceedingRecordLimit": {
 			config: &Config{
-				AccessKey:                   testFirehoseAccessKey,
-				RecordDecompressedSizeLimit: 10,
+				AccessKey: testFirehoseAccessKey,
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 10,
+				},
 			},
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("012345678901234"))),
@@ -244,8 +246,10 @@ func TestFirehoseRequest(t *testing.T) {
 		},
 		"WithGzipRecordsExceedingCumulativeLimit": {
 			config: &Config{
-				AccessKey:                    testFirehoseAccessKey,
-				RequestDecompressedSizeLimit: 15,
+				AccessKey: testFirehoseAccessKey,
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 15,
+				},
 			},
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("0123456789"))),
@@ -265,8 +269,10 @@ func TestFirehoseRequest(t *testing.T) {
 		},
 		"WithNonGzipRecordExceedingRecordLimit": {
 			config: &Config{
-				AccessKey:                   testFirehoseAccessKey,
-				RecordDecompressedSizeLimit: 5,
+				AccessKey: testFirehoseAccessKey,
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 5,
+				},
 			},
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("0123456789"),
@@ -282,8 +288,10 @@ func TestFirehoseRequest(t *testing.T) {
 		},
 		"WithNonGzipRecordsExceedingCumulativeLimit": {
 			config: &Config{
-				AccessKey:                    testFirehoseAccessKey,
-				RequestDecompressedSizeLimit: 15,
+				AccessKey: testFirehoseAccessKey,
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 15,
+				},
 			},
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("0123456789"),
