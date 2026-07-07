@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/stanza
+note: Add `otelcol` parser operator preset for parsing collector self-logs.
+issues: [49525]

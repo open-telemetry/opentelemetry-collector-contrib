@@ -251,6 +251,27 @@ When this option is set, all files ending with that suffix are scanned using a g
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
+## Example - Tailing Collector Self-Logs
+
+The OpenTelemetry Collector emits its own logs in Zap JSON format when configured with JSON logging under `service.telemetry.logs`. To parse these logs and promote the `resource` field directly to OTLP Resource attributes in one step, use the `otelcol` parser operator.
+
+Receiver Configuration:
+```yaml
+receivers:
+  filelog:
+    include: [ /var/log/otelcol.log ]
+    operators:
+      - type: otelcol
+```
+
+This operator automatically:
+- Parses the log line as JSON.
+- Extracts `ts` and sets it as the log record timestamp (handling both ISO8601 string and epoch seconds).
+- Extracts `level` and sets it as severity.
+- Extracts `msg` and sets it as the log body.
+- Extracts the `resource` map and merges its fields directly into OTLP Resource attributes.
+- Leaves all other dynamic fields (e.g., `caller`, `otelcol.component.id`, etc.) in the log record attributes.
+
 ## Offset tracking
 
 The `storage` setting allows you to define the proper storage extension for storing file offsets.
