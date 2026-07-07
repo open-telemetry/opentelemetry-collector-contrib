@@ -1675,3 +1675,14 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectIndexStatsSkipsViews(t *testing.T) {
+	fc := &fakeClient{}
+	viewErr := mongo.CommandError{Code: 40602, Message: "$indexStats is only valid as the first stage in a pipeline"}
+	fc.On("IndexStats", mock.Anything, "fakedatabase", "someview").Return([]bson.M{}, viewErr)
+	scraper := &mongodbScraper{logger: zap.NewNop(), client: fc}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.collectIndexStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), "fakedatabase", "someview", errs)
+	require.NoError(t, errs.Combine())
+}
