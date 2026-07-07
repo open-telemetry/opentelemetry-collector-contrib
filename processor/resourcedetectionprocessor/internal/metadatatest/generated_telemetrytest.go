@@ -55,7 +55,7 @@ func AssertEqualResourcedetectionDetectorDuration(t *testing.T, tt *componenttes
 func AssertEqualResourcedetectionDetectorResults(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.resourcedetection.detector.results",
-		Description: "Number of resource detection results, by detector and outcome. [Development]",
+		Description: "Number of resource detection results, by detector and outcome. On failure, error.type carries the error class. [Development]",
 		Unit:        "{detection}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

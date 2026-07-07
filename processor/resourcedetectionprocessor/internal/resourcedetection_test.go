@@ -188,7 +188,7 @@ func TestDetectResource_RecordsFailureTelemetry(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 
 	md := &mockDetector{}
-	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("boom"))
+	md.On("Detect").Return(pcommon.NewResource(), "", context.DeadlineExceeded)
 
 	f := NewProviderFactory(map[DetectorType]DetectorFactory{
 		"ec2": func(processor.Settings, DetectorConfig) (Detector, error) { return md, nil },
@@ -199,13 +199,18 @@ func TestDetectResource_RecordsFailureTelemetry(t *testing.T) {
 	// Short timeout cuts the inter-retry backoff short via context cancellation.
 	require.Error(t, p.Refresh(t.Context(), &http.Client{Timeout: 50 * time.Millisecond}))
 
-	// Retries aggregate into a single {detector, outcome=failure} datapoint, so the
-	// exact count is timing-dependent; assert the datapoint and that it is non-zero.
+	// Retries aggregate into a single datapoint, so the exact count is timing-dependent;
+	// assert the attributes (incl. error.type) and that the count is non-zero.
 	got, err := tt.GetMetric("otelcol.resourcedetection.detector.results")
 	require.NoError(t, err)
 	sum := got.Data.(metricdata.Sum[int64])
 	require.Len(t, sum.DataPoints, 1)
-	failureAttrs := attribute.NewSet(attribute.String("detector", "ec2"), attribute.String("outcome", "failure"))
+	// semconv.ErrorType(context.DeadlineExceeded) classifies to this type name.
+	failureAttrs := attribute.NewSet(
+		attribute.String("detector", "ec2"),
+		attribute.String("outcome", "failure"),
+		attribute.String("error.type", "context.deadlineExceededError"),
+	)
 	assert.Equal(t, failureAttrs, sum.DataPoints[0].Attributes)
 	assert.GreaterOrEqual(t, sum.DataPoints[0].Value, int64(1))
 }

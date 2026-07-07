@@ -47,6 +47,9 @@ attributes:
       - tencent_cvm
       - upcloud
       - vultr
+  error.type:
+    description: The type of error that caused detection to fail. Absent on success.
+    type: string
   outcome:
     description: Whether the detection operation succeeded or failed.
     type: string
@@ -79,10 +82,10 @@ telemetry:
     resourcedetection.detector.results:
       prefix: otelcol.
       enabled: true
-      description: Number of resource detection results, by detector and outcome.
+      description: Number of resource detection results, by detector and outcome. On failure, error.type carries the error class.
       stability: development
       unit: "{detection}"
-      attributes: [detector, outcome]
+      attributes: [detector, outcome, error.type]
       sum:
         value_type: int
         monotonic: true

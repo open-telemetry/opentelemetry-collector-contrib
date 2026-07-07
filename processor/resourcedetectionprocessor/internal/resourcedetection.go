@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -192,11 +193,15 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			startTime := time.Now()
 			detectorAttr := attribute.String("detector", string(entry.detectorType))
 
-			// record emits the per-detector result and duration.
-			record := func(outcome string) {
-				attrs := metric.WithAttributes(detectorAttr, attribute.String("outcome", outcome))
-				p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, attrs)
-				p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), attrs)
+			// record emits the per-detector result and duration. On failure, failErr
+			// classifies the error.type on the results counter.
+			record := func(outcome string, failErr error) {
+				base := []attribute.KeyValue{detectorAttr, attribute.String("outcome", outcome)}
+				p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), metric.WithAttributes(base...))
+				if failErr != nil {
+					base = append(base, semconv.ErrorType(failErr))
+				}
+				p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, metric.WithAttributes(base...))
 			}
 
 			sleep := backoff.ExponentialBackOff{
@@ -206,19 +211,26 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			}
 			sleep.Reset()
 
+			// Classify error.type from the first attempt's error: it's the deterministic
+			// root cause, whereas the last attempt's error often just reflects the context
+			// deadline firing rather than why the detector actually failed.
+			var firstErr error
 			for {
 				r, schemaURL, err := entry.detector.Detect(ctx)
 				if err == nil {
-					record("success")
+					record("success", nil)
 					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return
+				}
+				if firstErr == nil {
+					firstErr = err
 				}
 
 				p.logger.Warn("failed to detect resource", zap.String("detector", string(entry.detectorType)), zap.Error(err))
 
 				next := sleep.NextBackOff()
 				if next == backoff.Stop {
-					record("failure")
+					record("failure", firstErr)
 					ch <- resourceResult{err: err}
 					return
 				}
@@ -228,7 +240,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 				case <-ctx.Done():
 					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
 					timer.Stop()
-					record("failure")
+					record("failure", firstErr)
 					ch <- resourceResult{err: err}
 					return
 				case <-timer.C:
