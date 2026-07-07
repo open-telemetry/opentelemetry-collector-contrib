@@ -82,11 +82,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyBackupDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesOutputDataPoint(ts, "1")
@@ -108,15 +106,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsErrorsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsRetriesDataPoint(ts, "1")
@@ -132,27 +127,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyRequestsAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsDeniedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsErrorsDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsQueuedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsRedispatchedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
@@ -162,30 +151,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyResponsesAverageTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyResponsesDeniedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyResponsesErrorsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyServerSelectedTotalDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsAverageDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordHaproxySessionsLimitDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsRateDataPoint(ts, "1")

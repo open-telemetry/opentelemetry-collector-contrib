@@ -643,11 +643,11 @@ The amount of data transmitted back to the driver by all the tasks in this stage
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| spark.application.id | The ID of the application for which the metric was recorded. | Any Str | true | - |
-| spark.application.name | The name of the application for which the metric was recorded. | Any Str | true | - |
-| spark.executor.id | The ID of the executor for which the metric was recorded. | Any Str | true | - |
-| spark.job.id | The ID of the job for which the metric was recorded. | Any Int | true | - |
-| spark.stage.attempt.id | The ID of the stage attempt for which the metric was recorded. | Any Int | false | - |
-| spark.stage.id | The ID of the application stage for which the metric was recorded. | Any Int | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| spark.application.id | The ID of the application for which the metric was recorded. | Any Str | true | - | - |
+| spark.application.name | The name of the application for which the metric was recorded. | Any Str | true | - | - |
+| spark.executor.id | The ID of the executor for which the metric was recorded. | Any Str | true | - | - |
+| spark.job.id | The ID of the job for which the metric was recorded. | Any Int | true | - | - |
+| spark.stage.attempt.id | The ID of the stage attempt for which the metric was recorded. | Any Int | false | - | - |
+| spark.stage.id | The ID of the application stage for which the metric was recorded. | Any Int | true | - | - |

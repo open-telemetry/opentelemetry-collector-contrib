@@ -88,11 +88,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordFileCtimeDataPoint(ts, 3, "file.permissions-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFileMtimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFileSizeDataPoint(ts, 1)

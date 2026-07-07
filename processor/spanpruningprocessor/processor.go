@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -303,10 +304,22 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			break
 		}
 
-		// Group parent candidates by name + status
+		// Candidates derive from leaf groups visited in map order, so sort them
+		// into a stable order before grouping. This keeps the summary anchor
+		// (group.nodes[0]) deterministic when same-named parents under different
+		// parents merge into one group.
+		sort.Slice(eligibleParents, func(i, j int) bool {
+			return nodeOrderLess(eligibleParents[i], eligibleParents[j])
+		})
+
+		// Group parent candidates by name + status, keyed on the node's tree
+		// depth (not the loop iteration). Branches of unequal height can make
+		// same-named ancestors at different tree depths eligible in the same
+		// round; keying on iteration depth would merge them and anchor the
+		// summary at a non-deterministic depth.
 		parentGroups := make(map[string][]*spanNode)
 		for _, node := range eligibleParents {
-			parentKey := p.buildParentGroupKey(node.span, depth)
+			parentKey := p.buildParentGroupKey(node.span, node.depth())
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 

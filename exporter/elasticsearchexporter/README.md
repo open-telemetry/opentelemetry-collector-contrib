@@ -284,6 +284,13 @@ This mode may be used for compatibility with existing dashboards that work with 
 | Metrics   | :white_check_mark: |
 | Profiles  | :no_entry_sign:    |
 
+In ECS mapping mode, span events are extracted as separate ECS-formatted log documents following
+the APM data stream convention:
+
+- Span events named `exception` with `exception.type` or `exception.message` present are routed
+  to `logs-apm.error-<namespace>`.
+- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
+
 #### Bodymap mapping mode
 
 > [!WARNING]

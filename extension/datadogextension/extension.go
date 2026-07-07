@@ -12,7 +12,6 @@ import (
 	"time"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
@@ -375,7 +374,7 @@ func buildAgentConfig(cfg *Config) coreconfig.Component {
 		agentcomponents.WithProxy(ddConfig),
 		agentcomponents.WithTLSSetting(ddConfig),
 		// logging_frequency required to be set to avoid "divide by zero" error
-		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
+		agentcomponents.WithLoggingConfig(),
 	)
 }
 
@@ -386,15 +385,20 @@ func newExtension(
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
 ) (*datadogExtension, error) {
-	host, err := hostProvider.Source(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	var host source.Source
 	var hostnameSource string
 	if cfg.Hostname != "" {
+		// Hostname is already known from config; skip the source provider to avoid
+		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
+		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname}
 	} else {
 		hostnameSource = "inferred"
+		var err error
+		host, err = hostProvider.Source(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create agent components

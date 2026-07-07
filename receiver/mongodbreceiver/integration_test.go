@@ -23,10 +23,10 @@ import (
 const mongoPort = "27017"
 
 func TestIntegration(t *testing.T) {
-	t.Run("4.0", integrationTest("4_0", []string{"/setup.sh"}, func(*Config) {}))
+	t.Run("4.4", integrationTest("4_4", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("5.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
-	t.Run("6.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
-	t.Run("7.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
+	t.Run("6.0", integrationTest("6_0", []string{"/setup.sh"}, func(*Config) {}))
+	t.Run("7.0", integrationTest("7_0", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("4.4lpu", integrationTest("4_4lpu", []string{"/lpu.sh"}, func(cfg *Config) {
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"

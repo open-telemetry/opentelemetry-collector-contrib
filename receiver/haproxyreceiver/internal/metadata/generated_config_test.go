@@ -260,6 +260,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestHaproxyRequestsTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().HaproxyRequestsTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []HaproxyRequestsTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric haproxy.requests.total doesn't have an attribute invalid, valid attributes: [status_code]")
+
+	cfg = DefaultMetricsConfig().HaproxyRequestsTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
