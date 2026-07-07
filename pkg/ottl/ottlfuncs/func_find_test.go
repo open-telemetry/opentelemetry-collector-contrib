@@ -175,7 +175,8 @@ func Test_find(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := find(tt.source, tt.predicate, &tt.mapper)
+			exprFunc, err := find(tt.source, tt.predicate, &tt.mapper)
+			require.NoError(t, err)
 			got, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
@@ -185,7 +186,7 @@ func Test_find(t *testing.T) {
 
 func Test_find_error(t *testing.T) {
 	t.Run("unsupported source type", func(t *testing.T) {
-		exprFunc := find(
+		exprFunc, err := find(
 			ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "not a collection", nil
@@ -196,7 +197,8 @@ func Test_find_error(t *testing.T) {
 			}),
 			&ottl.Optional[*ottl.LambdaExpression[any]]{},
 		)
-		_, err := exprFunc(t.Context(), nil)
+		require.NoError(t, err)
+		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "unsupported type")
 	})
@@ -213,8 +215,9 @@ func Test_find_error(t *testing.T) {
 			return 123, nil
 		})
 
-		exprFunc := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
-		_, err := exprFunc(t.Context(), nil)
+		exprFunc, err := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		require.NoError(t, err)
+		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
 		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
@@ -232,8 +235,9 @@ func Test_find_error(t *testing.T) {
 			return 123, nil
 		})
 
-		exprFunc := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
-		_, err := exprFunc(t.Context(), nil)
+		exprFunc, err := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		require.NoError(t, err)
+		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
 		assert.ErrorContains(t, err, "lambda expression must return a value of type bool")
@@ -248,14 +252,15 @@ func Test_find_error(t *testing.T) {
 			},
 		}
 
-		exprFunc := find(
+		exprFunc, err := find(
 			source,
 			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
 			&ottl.Optional[*ottl.LambdaExpression[any]]{},
 		)
-		_, err := exprFunc(t.Context(), nil)
+		require.NoError(t, err)
+		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
 		assert.ErrorContains(t, err, "eval failed")
@@ -270,14 +275,15 @@ func Test_find_error(t *testing.T) {
 			},
 		}
 
-		exprFunc := find(
+		exprFunc, err := find(
 			source,
 			ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
 			&ottl.Optional[*ottl.LambdaExpression[any]]{},
 		)
-		_, err := exprFunc(t.Context(), nil)
+		require.NoError(t, err)
+		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "error while evaluating lambda function on slice item (0,")
 		assert.ErrorContains(t, err, "eval failed")
@@ -300,8 +306,9 @@ func Test_find_mapper_error(t *testing.T) {
 		return nil, errors.New("mapper failed")
 	}))
 
-	exprFunc := find(source, predicate, &mapper)
-	_, err := exprFunc(t.Context(), nil)
+	exprFunc, err := find(source, predicate, &mapper)
+	require.NoError(t, err)
+	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error while evaluating mapper lambda function on item (target,")
 	assert.ErrorContains(t, err, "mapper failed")

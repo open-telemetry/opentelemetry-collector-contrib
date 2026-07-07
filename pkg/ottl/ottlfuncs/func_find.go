@@ -30,17 +30,29 @@ func createFindFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	if !ok {
 		return nil, errors.New("FindFactory args must be of type *FindArguments[K]")
 	}
-	return find(args.Source, args.Predicate, &args.Mapper), nil
+	return find(args.Source, args.Predicate, &args.Mapper)
 }
 
-func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], mapper *ottl.Optional[*ottl.LambdaExpression[K]]) ottl.ExprFunc[K] {
+func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], mapper *ottl.Optional[*ottl.LambdaExpression[K]]) (ottl.ExprFunc[K], error) {
+	err := predicate.ValidateArity(2)
+	if err != nil {
+		return nil, fmt.Errorf("invalid predicate: %w", err)
+	}
+
+	if !mapper.IsEmpty() {
+		err = mapper.Get().ValidateArity(2)
+		if err != nil {
+			return nil, fmt.Errorf("invalid mapper: %w", err)
+		}
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		sourceVal, err := funcutil.GetSliceOrMapValue(ctx, tCtx, source)
 		if err != nil {
 			return nil, err
 		}
 
-		lb, err := predicate.Activate(ctx, 2)
+		lb, err := predicate.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +61,7 @@ func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], map
 		var valueMapper *ottl.LambdaActivation[K]
 		if !mapper.IsEmpty() {
 			m := mapper.Get()
-			valueMapper, err = m.Activate(ctx, 2)
+			valueMapper, err = m.Activate(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -64,7 +76,7 @@ func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], map
 		default:
 			return nil, fmt.Errorf("unsupported type: %T", typedVal)
 		}
-	}
+	}, nil
 }
 
 func findSliceValue[K any](tCtx K, source pcommon.Slice, lambda, mapper *ottl.LambdaActivation[K]) (any, error) {
@@ -93,13 +105,13 @@ func findMapValue[K any](tCtx K, source pcommon.Map, lambda, mapper *ottl.Lambda
 	return nil, nil
 }
 
-func formatFindResult[K any](tCtx K, v1 any, v2 pcommon.Value, mapper *ottl.LambdaActivation[K]) (any, error) {
+func formatFindResult[K any](tCtx K, k any, v pcommon.Value, mapper *ottl.LambdaActivation[K]) (any, error) {
 	if mapper == nil {
-		return ottlcommon.GetValue(v2), nil
+		return ottlcommon.GetValue(v), nil
 	}
-	result, err := funcutil.EvaluateBiFunction[K, any](tCtx, mapper, v1, v2)
+	result, err := funcutil.EvaluateBiFunction[K, any](tCtx, mapper, k, v)
 	if err != nil {
-		return false, fmt.Errorf("error while evaluating mapper lambda function on item (%v, %v): %w", v1, v2, err)
+		return false, fmt.Errorf("error while evaluating mapper lambda function on item (%v, %v): %w", k, v, err)
 	}
 	return ottlcommon.NormalizeValue(result), nil
 }
