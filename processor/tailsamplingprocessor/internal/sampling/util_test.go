@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,7 +92,7 @@ func TestWriteEffectiveThreshold(t *testing.T) {
 	thc, err := sampling.TValueToThreshold("c")
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	counter, err := noop.NewMeterProvider().Meter("test").Int64Counter("test")
 	require.NoError(t, err)
 
