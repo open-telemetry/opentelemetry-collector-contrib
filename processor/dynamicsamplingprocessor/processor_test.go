@@ -41,7 +41,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 			name: "catch_all_first_warns",
 			rules: []RuleConfig{
 				{Name: "default"},
-				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+				{Name: "keep-errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 			},
 			wantWarn:  true,
 			wantField: "default",
@@ -49,7 +49,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 		{
 			name: "catch_all_last_no_warn",
 			rules: []RuleConfig{
-				{Name: "keep-errors", Conditions: []string{"status.code == 2"}},
+				{Name: "keep-errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 				{Name: "default"},
 			},
 		},
@@ -62,7 +62,7 @@ func TestWarnUnreachableRules(t *testing.T) {
 		{
 			name: "all_conditional_no_warn",
 			rules: []RuleConfig{
-				{Name: "errors", Conditions: []string{"status.code == 2"}},
+				{Name: "errors", Conditions: []string{"span.status.code == STATUS_CODE_ERROR"}},
 				{Name: "payment", Conditions: []string{"service.name == payment"}},
 			},
 		},
@@ -139,7 +139,7 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 		Rules: []RuleConfig{
 			{
 				Name:       "keep-errors",
-				Conditions: []string{"status.code == 2"},
+				Conditions: []string{"span.status.code == STATUS_CODE_ERROR"},
 				Sampler:    SamplerConfig{Type: AlwaysSample},
 			},
 			{
@@ -385,7 +385,7 @@ func TestProcessor_LateSpansForDroppedTraceDropped(t *testing.T) {
 			// and end up dropped as unmatched.
 			{
 				Name:       "never",
-				Conditions: []string{"status.code == 99"},
+				Conditions: []string{"span.status.code == 999"},
 				Sampler:    SamplerConfig{Type: AlwaysSample},
 			},
 		},

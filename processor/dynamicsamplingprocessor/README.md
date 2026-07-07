@@ -89,12 +89,15 @@ Rules are evaluated in order; the first whose conditions all match selects the s
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
+Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on.
+
 The intended pattern is specific-conditions rules first, catch-all last:
 
 ```yaml
 rules:
   - name: keep-errors
-    conditions: ["status.code == 2"]
+    conditions:
+      - span.status.code == STATUS_CODE_ERROR
     sampler:
       type: always_sample
   - name: default              # catch-all
@@ -107,16 +110,39 @@ rules:
 
 With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
 
-Each condition is a simple expression. In this initial release the supported forms are:
+#### How multiple conditions combine
 
-| Expression                                    | Meaning                                                                |
-|-----------------------------------------------|------------------------------------------------------------------------|
-| `field == value`                              | Any span (or its resource) has `field` set to `value`.                 |
-| `field != value`                              | No span has `field` set to `value`.                                    |
-| `status.code == N`                            | Any span has status code `N` (0 = Unset, 1 = Ok, 2 = Error).            |
-| `status.code != N`                            | No span has status code `N`.                                            |
+Each rule can carry multiple OTTL conditions. The `match` field controls how they are combined against the spans of the accumulated trace:
 
-OTTL-based conditions are planned for a follow-up release.
+- `match: any_span` (default): each condition must be satisfied by *some* span in the trace, but not necessarily the same span across conditions. Reads as "the trace has these characteristics."
+- `match: same_span`: some single span in the trace must satisfy *all* conditions at once. Reads as "there is a span with these characteristics."
+
+`match` is not permitted on catch-all rules (rules with no conditions).
+
+Example: keep a trace only when a single span is both an error and from the payment service:
+
+```yaml
+- name: payment-errors
+  match: same_span
+  conditions:
+    - span.status.code == STATUS_CODE_ERROR
+    - resource.attributes["service.name"] == "payment"
+  sampler:
+    type: always_sample
+```
+
+Example (default `any_span`): keep any trace that touched the payment service *and* saw an error somewhere:
+
+```yaml
+- name: payment-involved-errors
+  conditions:
+    - span.status.code == STATUS_CODE_ERROR
+    - resource.attributes["service.name"] == "payment"
+  sampler:
+    type: always_sample
+```
+
+If an OTTL condition raises an evaluation error at runtime (for example, a path does not exist on a specific span) the condition is treated as false for that span and the `otelcol_processor_dynamic_sampling_ottl_eval_errors` counter is incremented, labelled by the rule name. Other spans and conditions continue to evaluate normally.
 
 ### Samplers
 
@@ -272,6 +298,7 @@ For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`). |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer before a decision could be made.             |
+| `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
 
 ## Output attributes
 
