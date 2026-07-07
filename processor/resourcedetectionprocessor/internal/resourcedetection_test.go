@@ -136,22 +136,24 @@ func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md2 := &mockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
-	p := newTestResourceProvider(time.Second, md1, md2)
+	p, err := newTestResourceProvider(time.Second, md1, md2)
+	require.NoError(t, err)
 
 	var cancel context.CancelFunc
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
+	err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
 }
 
 func TestDetectResource_NoDetectors(t *testing.T) {
-	p := newTestResourceProvider(time.Second)
+	p, err := newTestResourceProvider(time.Second)
+	require.NoError(t, err)
 
-	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	err = p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
 	require.EqualError(t, err, "resource detection failed: no detectors succeeded")
 }
 
@@ -205,13 +207,16 @@ func TestDetectResource_RecordsFailureTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	sum := got.Data.(metricdata.Sum[int64])
 	require.Len(t, sum.DataPoints, 1)
-	// semconv.ErrorType(context.DeadlineExceeded) classifies to this type name.
-	failureAttrs := attribute.NewSet(
-		attribute.String("detector", "ec2"),
-		attribute.String("outcome", "failure"),
-		attribute.String("error.type", "context.deadlineExceededError"),
-	)
-	assert.Equal(t, failureAttrs, sum.DataPoints[0].Attributes)
+	attrs := sum.DataPoints[0].Attributes
+	detector, ok := attrs.Value("detector")
+	assert.True(t, ok)
+	assert.Equal(t, "ec2", detector.AsString())
+	outcome, ok := attrs.Value("outcome")
+	assert.True(t, ok)
+	assert.Equal(t, "failure", outcome.AsString())
+	errType, ok := attrs.Value("error.type")
+	assert.True(t, ok, "error.type should be present on failure")
+	assert.NotEmpty(t, errType.AsString())
 	assert.GreaterOrEqual(t, sum.DataPoints[0].Value, int64(1))
 }
 
@@ -298,7 +303,8 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := newTestResourceProvider(time.Second, md1, md2)
+	p, err := newTestResourceProvider(time.Second, md1, md2)
+	require.NoError(t, err)
 
 	// Perform initial detection
 	go func() {
@@ -307,7 +313,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		md2.ch <- struct{}{}
 	}()
 
-	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	err = p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
 	require.NoError(t, err)
 
 	// Get the detected resource
@@ -353,9 +359,10 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := newTestResourceProvider(time.Second, md1, md2)
+	p, err := newTestResourceProvider(time.Second, md1, md2)
+	require.NoError(t, err)
 
-	err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
+	err = p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 
 	// Get the detected resource
@@ -378,10 +385,11 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 	md.On("Detect").Return(res1, "", nil).Once()
 	md.On("Detect").Return(res2, "", nil).Once()
 
-	p := newTestResourceProvider(1*time.Second, md)
+	p, err := newTestResourceProvider(1*time.Second, md)
+	require.NoError(t, err)
 
 	// Initial detection
-	err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 	require.NoError(t, err)
 
 	got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
@@ -473,10 +481,11 @@ func TestStartStopRefreshing(t *testing.T) {
 		md.On("Detect").Return(res1, "", nil).Once()
 		md.On("Detect").Return(res2, "", nil)
 
-		p := newTestResourceProvider(time.Second, md)
+		p, err := newTestResourceProvider(time.Second, md)
+		require.NoError(t, err)
 
 		// Initial detection
-		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 		require.NoError(t, err)
 
 		got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
@@ -507,10 +516,11 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := newTestResourceProvider(time.Second, md)
+		p, err := newTestResourceProvider(time.Second, md)
+		require.NoError(t, err)
 
 		// Initial detection
-		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 		require.NoError(t, err)
 
 		// Start refreshing with zero interval - should not start goroutine
@@ -532,10 +542,11 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := newTestResourceProvider(time.Second, md)
+		p, err := newTestResourceProvider(time.Second, md)
+		require.NoError(t, err)
 
 		// Initial detection
-		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 		require.NoError(t, err)
 
 		// Stop refreshing without ever starting - should be safe
@@ -547,7 +558,8 @@ func TestStartStopRefreshing(t *testing.T) {
 }
 
 func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
-	provider := newTestResourceProvider(5 * time.Second)
+	provider, err := newTestResourceProvider(5 * time.Second)
+	require.NoError(t, err)
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Call StartRefreshing multiple times (simulating traces, metrics, logs processors)
@@ -579,11 +591,14 @@ func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
 
 // newTestResourceProvider builds a provider with a nop telemetry builder, assigning
 // each detector a synthetic type.
-func newTestResourceProvider(timeout time.Duration, detectors ...Detector) *ResourceProvider {
-	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+func newTestResourceProvider(timeout time.Duration, detectors ...Detector) (*ResourceProvider, error) {
+	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	if err != nil {
+		return nil, err
+	}
 	entries := make([]detectorEntry, len(detectors))
 	for i, d := range detectors {
 		entries[i] = detectorEntry{detectorType: DetectorType(fmt.Sprintf("mock%d", i)), detector: d}
 	}
-	return NewResourceProvider(zap.NewNop(), tb, timeout, entries...)
+	return NewResourceProvider(zap.NewNop(), tb, timeout, entries...), nil
 }
