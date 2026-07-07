@@ -236,6 +236,14 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.access.scan.type | The type of access method scan being performed. | Str: ``free_space``, ``probe``, ``range`` | Required | - |
 
+### sqlserver.attention.rate
+
+Number of SQL attentions (client cancellation interrupts) received per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {attentions}/s | Gauge | Double | Development |
+
 ### sqlserver.availability_group.estimated_data_loss
 
 Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
@@ -361,14 +369,6 @@ This metric is only available when the receiver is configured to directly connec
 | availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
-### sqlserver.attention.rate
-
-Number of SQL attentions (client cancellation interrupts) received per second.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {attentions}/s | Gauge | Double | Development |
 
 ### sqlserver.computer.uptime
 

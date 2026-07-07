@@ -3,6 +3,8 @@ all_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.availability_group.estimated_data_loss:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
@@ -24,8 +26,6 @@ all_set:
     sqlserver.availability_group.redo.rate:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.attention.rate:
-      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -207,6 +207,8 @@ reaggregate_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.availability_group.estimated_data_loss:
       enabled: true
       attributes: []
@@ -228,8 +230,6 @@ reaggregate_set:
     sqlserver.availability_group.redo.rate:
       enabled: true
       attributes: []
-    sqlserver.attention.rate:
-      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -411,6 +411,8 @@ none_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: false
+    sqlserver.attention.rate:
+      enabled: false
     sqlserver.availability_group.estimated_data_loss:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
@@ -432,8 +434,6 @@ none_set:
     sqlserver.availability_group.redo.rate:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.attention.rate:
-      enabled: false
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:

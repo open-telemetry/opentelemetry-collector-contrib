@@ -482,6 +482,14 @@ metrics:
       value_type: double
     attributes: [sqlserver.access.scan.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.attention.rate:
+    enabled: false
+    description: Number of SQL attentions (client cancellation interrupts) received per second.
+    stability: development
+    unit: "{attentions}/s"
+    gauge:
+      value_type: double
+    attributes: []
   sqlserver.availability_group.estimated_data_loss:
     enabled: false
     description: Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
@@ -545,14 +553,6 @@ metrics:
       value_type: int
     attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.attention.rate:
-    enabled: false
-    description: Number of SQL attentions (client cancellation interrupts) received per second.
-    stability: development
-    unit: "{attentions}/s"
-    gauge:
-      value_type: double
-    attributes: []
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.

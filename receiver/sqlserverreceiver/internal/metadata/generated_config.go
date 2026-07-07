@@ -30,356 +30,6 @@ func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// SqlserverAgEstimatedDataLossMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_data_loss metric.
-type SqlserverAgEstimatedDataLossMetricAttributeKey string
-
-const (
-	SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName SqlserverAgEstimatedDataLossMetricAttributeKey = "availability_group.name"
-	SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace           SqlserverAgEstimatedDataLossMetricAttributeKey = "db.namespace"
-	SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAgEstimatedDataLossMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgEstimatedDataLossMetricConfig provides config for the sqlserver.availability_group.estimated_data_loss metric.
-type SqlserverAgEstimatedDataLossMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgEstimatedDataLossMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgEstimatedDataLossMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgEstimatedRecoveryTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_recovery_time metric.
-type SqlserverAgEstimatedRecoveryTimeMetricAttributeKey string
-
-const (
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "availability_group.name"
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace           SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
-	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.availability_group.estimated_recovery_time metric.
-type SqlserverAgEstimatedRecoveryTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgHardenedLatencyMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.hardened_latency metric.
-type SqlserverAgHardenedLatencyMetricAttributeKey string
-
-const (
-	SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName SqlserverAgHardenedLatencyMetricAttributeKey = "availability_group.name"
-	SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace           SqlserverAgHardenedLatencyMetricAttributeKey = "db.namespace"
-	SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAgHardenedLatencyMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgHardenedLatencyMetricConfig provides config for the sqlserver.availability_group.hardened_latency metric.
-type SqlserverAgHardenedLatencyMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgHardenedLatencyMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgHardenedLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgLogSendQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.queue.size metric.
-type SqlserverAgLogSendQueueSizeMetricAttributeKey string
-
-const (
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAgLogSendQueueSizeMetricAttributeKey = "availability_group.name"
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace           SqlserverAgLogSendQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAgLogSendQueueSizeMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgLogSendQueueSizeMetricConfig provides config for the sqlserver.availability_group.log_send.queue.size metric.
-type SqlserverAgLogSendQueueSizeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgLogSendQueueSizeMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgLogSendRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.rate metric.
-type SqlserverAgLogSendRateMetricAttributeKey string
-
-const (
-	SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName SqlserverAgLogSendRateMetricAttributeKey = "availability_group.name"
-	SqlserverAgLogSendRateMetricAttributeKeyDbNamespace           SqlserverAgLogSendRateMetricAttributeKey = "db.namespace"
-	SqlserverAgLogSendRateMetricAttributeKeyReplicaName           SqlserverAgLogSendRateMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgLogSendRateMetricConfig provides config for the sqlserver.availability_group.log_send.rate metric.
-type SqlserverAgLogSendRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgLogSendRateMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgLogSendRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgRedoQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.queue.size metric.
-type SqlserverAgRedoQueueSizeMetricAttributeKey string
-
-const (
-	SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAgRedoQueueSizeMetricAttributeKey = "availability_group.name"
-	SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace           SqlserverAgRedoQueueSizeMetricAttributeKey = "db.namespace"
-	SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAgRedoQueueSizeMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgRedoQueueSizeMetricConfig provides config for the sqlserver.availability_group.redo.queue.size metric.
-type SqlserverAgRedoQueueSizeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgRedoQueueSizeMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgRedoQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.redo.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SqlserverAgRedoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.rate metric.
-type SqlserverAgRedoRateMetricAttributeKey string
-
-const (
-	SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName SqlserverAgRedoRateMetricAttributeKey = "availability_group.name"
-	SqlserverAgRedoRateMetricAttributeKeyDbNamespace           SqlserverAgRedoRateMetricAttributeKey = "db.namespace"
-	SqlserverAgRedoRateMetricAttributeKeyReplicaName           SqlserverAgRedoRateMetricAttributeKey = "replica.name"
-)
-
-// SqlserverAgRedoRateMetricConfig provides config for the sqlserver.availability_group.redo.rate metric.
-type SqlserverAgRedoRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverAgRedoRateMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *SqlserverAgRedoRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverAgRedoRateMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName:
-		default:
-			return fmt.Errorf("metric sqlserver.availability_group.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // SqlserverAttentionRateMetricConfig provides config for the sqlserver.attention.rate metric.
 type SqlserverAttentionRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -397,6 +47,356 @@ func (ms *SqlserverAttentionRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_data_loss metric.
+type SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupEstimatedDataLossMetricConfig provides config for the sqlserver.availability_group.estimated_data_loss metric.
+type SqlserverAvailabilityGroupEstimatedDataLossMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupEstimatedDataLossMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupEstimatedDataLossMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_recovery_time metric.
+type SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.availability_group.estimated_recovery_time metric.
+type SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.hardened_latency metric.
+type SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupHardenedLatencyMetricConfig provides config for the sqlserver.availability_group.hardened_latency metric.
+type SqlserverAvailabilityGroupHardenedLatencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupHardenedLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupHardenedLatencyMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.queue.size metric.
+type SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig provides config for the sqlserver.availability_group.log_send.queue.size metric.
+type SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupLogSendRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.rate metric.
+type SqlserverAvailabilityGroupLogSendRateMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupLogSendRateMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupLogSendRateMetricConfig provides config for the sqlserver.availability_group.log_send.rate metric.
+type SqlserverAvailabilityGroupLogSendRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupLogSendRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupLogSendRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.queue.size metric.
+type SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupRedoQueueSizeMetricConfig provides config for the sqlserver.availability_group.redo.queue.size metric.
+type SqlserverAvailabilityGroupRedoQueueSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupRedoQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupRedoQueueSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.redo.queue.size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverAvailabilityGroupRedoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.rate metric.
+type SqlserverAvailabilityGroupRedoRateMetricAttributeKey string
+
+const (
+	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "availability_group.name"
+	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace           SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "db.namespace"
+	SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName           SqlserverAvailabilityGroupRedoRateMetricAttributeKey = "replica.name"
+)
+
+// SqlserverAvailabilityGroupRedoRateMetricConfig provides config for the sqlserver.availability_group.redo.rate metric.
+type SqlserverAvailabilityGroupRedoRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverAvailabilityGroupRedoRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverAvailabilityGroupRedoRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverAvailabilityGroupRedoRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName:
+		default:
+			return fmt.Errorf("metric sqlserver.availability_group.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2249,83 +2249,83 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
-	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
-	SqlserverAgEstimatedDataLoss                SqlserverAgEstimatedDataLossMetricConfig                `mapstructure:"sqlserver.availability_group.estimated_data_loss"`
-	SqlserverAgEstimatedRecoveryTime            SqlserverAgEstimatedRecoveryTimeMetricConfig            `mapstructure:"sqlserver.availability_group.estimated_recovery_time"`
-	SqlserverAgHardenedLatency                  SqlserverAgHardenedLatencyMetricConfig                  `mapstructure:"sqlserver.availability_group.hardened_latency"`
-	SqlserverAgLogSendQueueSize                 SqlserverAgLogSendQueueSizeMetricConfig                 `mapstructure:"sqlserver.availability_group.log_send.queue.size"`
-	SqlserverAgLogSendRate                      SqlserverAgLogSendRateMetricConfig                      `mapstructure:"sqlserver.availability_group.log_send.rate"`
-	SqlserverAgRedoQueueSize                    SqlserverAgRedoQueueSizeMetricConfig                    `mapstructure:"sqlserver.availability_group.redo.queue.size"`
-	SqlserverAgRedoRate                         SqlserverAgRedoRateMetricConfig                         `mapstructure:"sqlserver.availability_group.redo.rate"`
-	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
-	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
-	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
-	SqlserverBatchSQLRecompilationRate          SqlserverBatchSQLRecompilationRateMetricConfig          `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
-	SqlserverComputerUptime                     SqlserverComputerUptimeMetricConfig                     `mapstructure:"sqlserver.computer.uptime"`
-	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
-	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
-	SqlserverDatabaseCount                      SqlserverDatabaseCountMetricConfig                      `mapstructure:"sqlserver.database.count"`
-	SqlserverDatabaseExecutionErrors            SqlserverDatabaseExecutionErrorsMetricConfig            `mapstructure:"sqlserver.database.execution.errors"`
-	SqlserverDatabaseFullScanRate               SqlserverDatabaseFullScanRateMetricConfig               `mapstructure:"sqlserver.database.full_scan.rate"`
-	SqlserverDatabaseIo                         SqlserverDatabaseIoMetricConfig                         `mapstructure:"sqlserver.database.io"`
-	SqlserverDatabaseLatency                    SqlserverDatabaseLatencyMetricConfig                    `mapstructure:"sqlserver.database.latency"`
-	SqlserverDatabaseOperations                 SqlserverDatabaseOperationsMetricConfig                 `mapstructure:"sqlserver.database.operations"`
-	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
-	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
-	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
-	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
-	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
-	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
-	SqlserverLatchSuperlatchCount               SqlserverLatchSuperlatchCountMetricConfig               `mapstructure:"sqlserver.latch.superlatch.count"`
-	SqlserverLatchSuperlatchTransitionRate      SqlserverLatchSuperlatchTransitionRateMetricConfig      `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
-	SqlserverLatchWaitRate                      SqlserverLatchWaitRateMetricConfig                      `mapstructure:"sqlserver.latch.wait.rate"`
-	SqlserverLatchWaitTimeAvg                   SqlserverLatchWaitTimeAvgMetricConfig                   `mapstructure:"sqlserver.latch.wait_time.avg"`
-	SqlserverLatchWaitTimeTotal                 SqlserverLatchWaitTimeTotalMetricConfig                 `mapstructure:"sqlserver.latch.wait_time.total"`
-	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
-	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
-	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
-	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
-	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
-	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
-	SqlserverMemoryArea                         SqlserverMemoryAreaMetricConfig                         `mapstructure:"sqlserver.memory.area"`
-	SqlserverMemoryCacheObjectCount             SqlserverMemoryCacheObjectCountMetricConfig             `mapstructure:"sqlserver.memory.cache.object.count"`
-	SqlserverMemoryGrantsPendingCount           SqlserverMemoryGrantsPendingCountMetricConfig           `mapstructure:"sqlserver.memory.grants.pending.count"`
-	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
-	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
-	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
-	SqlserverPageAllocationRate                 SqlserverPageAllocationRateMetricConfig                 `mapstructure:"sqlserver.page.allocation.rate"`
-	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
-	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
-	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
-	SqlserverPageCompressionRate                SqlserverPageCompressionRateMetricConfig                `mapstructure:"sqlserver.page.compression.rate"`
-	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
-	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
-	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
-	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageReadAheadRate                  SqlserverPageReadAheadRateMetricConfig                  `mapstructure:"sqlserver.page.read_ahead.rate"`
-	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
-	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
-	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
-	SqlserverRecompilationRatio                 SqlserverRecompilationRatioMetricConfig                 `mapstructure:"sqlserver.recompilation.ratio"`
-	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`
-	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
-	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
-	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
-	SqlserverScanPointRevalidationRate          SqlserverScanPointRevalidationRateMetricConfig          `mapstructure:"sqlserver.scan_point.revalidation.rate"`
-	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
-	SqlserverTransactionDelay                   SqlserverTransactionDelayMetricConfig                   `mapstructure:"sqlserver.transaction.delay"`
-	SqlserverTransactionMirrorWriteRate         SqlserverTransactionMirrorWriteRateMetricConfig         `mapstructure:"sqlserver.transaction.mirror_write.rate"`
-	SqlserverTransactionRate                    SqlserverTransactionRateMetricConfig                    `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionWriteRate               SqlserverTransactionWriteRateMetricConfig               `mapstructure:"sqlserver.transaction.write.rate"`
-	SqlserverTransactionLogFlushDataRate        SqlserverTransactionLogFlushDataRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
-	SqlserverTransactionLogFlushRate            SqlserverTransactionLogFlushRateMetricConfig            `mapstructure:"sqlserver.transaction_log.flush.rate"`
-	SqlserverTransactionLogFlushWaitRate        SqlserverTransactionLogFlushWaitRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
-	SqlserverTransactionLogGrowthCount          SqlserverTransactionLogGrowthCountMetricConfig          `mapstructure:"sqlserver.transaction_log.growth.count"`
-	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
-	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
-	SqlserverWorktableCacheHitRatio             SqlserverWorktableCacheHitRatioMetricConfig             `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
+	SqlserverAccessScanRate                         SqlserverAccessScanRateMetricConfig                         `mapstructure:"sqlserver.access.scan.rate"`
+	SqlserverAttentionRate                          SqlserverAttentionRateMetricConfig                          `mapstructure:"sqlserver.attention.rate"`
+	SqlserverAvailabilityGroupEstimatedDataLoss     SqlserverAvailabilityGroupEstimatedDataLossMetricConfig     `mapstructure:"sqlserver.availability_group.estimated_data_loss"`
+	SqlserverAvailabilityGroupEstimatedRecoveryTime SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig `mapstructure:"sqlserver.availability_group.estimated_recovery_time"`
+	SqlserverAvailabilityGroupHardenedLatency       SqlserverAvailabilityGroupHardenedLatencyMetricConfig       `mapstructure:"sqlserver.availability_group.hardened_latency"`
+	SqlserverAvailabilityGroupLogSendQueueSize      SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig      `mapstructure:"sqlserver.availability_group.log_send.queue.size"`
+	SqlserverAvailabilityGroupLogSendRate           SqlserverAvailabilityGroupLogSendRateMetricConfig           `mapstructure:"sqlserver.availability_group.log_send.rate"`
+	SqlserverAvailabilityGroupRedoQueueSize         SqlserverAvailabilityGroupRedoQueueSizeMetricConfig         `mapstructure:"sqlserver.availability_group.redo.queue.size"`
+	SqlserverAvailabilityGroupRedoRate              SqlserverAvailabilityGroupRedoRateMetricConfig              `mapstructure:"sqlserver.availability_group.redo.rate"`
+	SqlserverBatchRequestRate                       SqlserverBatchRequestRateMetricConfig                       `mapstructure:"sqlserver.batch.request.rate"`
+	SqlserverBatchSQLCompilationRate                SqlserverBatchSQLCompilationRateMetricConfig                `mapstructure:"sqlserver.batch.sql_compilation.rate"`
+	SqlserverBatchSQLRecompilationRate              SqlserverBatchSQLRecompilationRateMetricConfig              `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverComputerUptime                         SqlserverComputerUptimeMetricConfig                         `mapstructure:"sqlserver.computer.uptime"`
+	SqlserverCPUCount                               SqlserverCPUCountMetricConfig                               `mapstructure:"sqlserver.cpu.count"`
+	SqlserverDatabaseBackupOrRestoreRate            SqlserverDatabaseBackupOrRestoreRateMetricConfig            `mapstructure:"sqlserver.database.backup_or_restore.rate"`
+	SqlserverDatabaseCount                          SqlserverDatabaseCountMetricConfig                          `mapstructure:"sqlserver.database.count"`
+	SqlserverDatabaseExecutionErrors                SqlserverDatabaseExecutionErrorsMetricConfig                `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFullScanRate                   SqlserverDatabaseFullScanRateMetricConfig                   `mapstructure:"sqlserver.database.full_scan.rate"`
+	SqlserverDatabaseIo                             SqlserverDatabaseIoMetricConfig                             `mapstructure:"sqlserver.database.io"`
+	SqlserverDatabaseLatency                        SqlserverDatabaseLatencyMetricConfig                        `mapstructure:"sqlserver.database.latency"`
+	SqlserverDatabaseOperations                     SqlserverDatabaseOperationsMetricConfig                     `mapstructure:"sqlserver.database.operations"`
+	SqlserverDatabaseTempdbSpace                    SqlserverDatabaseTempdbSpaceMetricConfig                    `mapstructure:"sqlserver.database.tempdb.space"`
+	SqlserverDatabaseTempdbVersionStoreSize         SqlserverDatabaseTempdbVersionStoreSizeMetricConfig         `mapstructure:"sqlserver.database.tempdb.version_store.size"`
+	SqlserverDeadlockRate                           SqlserverDeadlockRateMetricConfig                           `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverExtentOperationRate                    SqlserverExtentOperationRateMetricConfig                    `mapstructure:"sqlserver.extent.operation.rate"`
+	SqlserverGhostRecordSkippedRate                 SqlserverGhostRecordSkippedRateMetricConfig                 `mapstructure:"sqlserver.ghost_record.skipped.rate"`
+	SqlserverIndexSearchRate                        SqlserverIndexSearchRateMetricConfig                        `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverLatchSuperlatchCount                   SqlserverLatchSuperlatchCountMetricConfig                   `mapstructure:"sqlserver.latch.superlatch.count"`
+	SqlserverLatchSuperlatchTransitionRate          SqlserverLatchSuperlatchTransitionRateMetricConfig          `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
+	SqlserverLatchWaitRate                          SqlserverLatchWaitRateMetricConfig                          `mapstructure:"sqlserver.latch.wait.rate"`
+	SqlserverLatchWaitTimeAvg                       SqlserverLatchWaitTimeAvgMetricConfig                       `mapstructure:"sqlserver.latch.wait_time.avg"`
+	SqlserverLatchWaitTimeTotal                     SqlserverLatchWaitTimeTotalMetricConfig                     `mapstructure:"sqlserver.latch.wait_time.total"`
+	SqlserverLockTimeoutRate                        SqlserverLockTimeoutRateMetricConfig                        `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                          SqlserverLockWaitCountMetricConfig                          `mapstructure:"sqlserver.lock.wait.count"`
+	SqlserverLockWaitRate                           SqlserverLockWaitRateMetricConfig                           `mapstructure:"sqlserver.lock.wait.rate"`
+	SqlserverLockWaitTimeAvg                        SqlserverLockWaitTimeAvgMetricConfig                        `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLoginRate                              SqlserverLoginRateMetricConfig                              `mapstructure:"sqlserver.login.rate"`
+	SqlserverLogoutRate                             SqlserverLogoutRateMetricConfig                             `mapstructure:"sqlserver.logout.rate"`
+	SqlserverMemoryArea                             SqlserverMemoryAreaMetricConfig                             `mapstructure:"sqlserver.memory.area"`
+	SqlserverMemoryCacheObjectCount                 SqlserverMemoryCacheObjectCountMetricConfig                 `mapstructure:"sqlserver.memory.cache.object.count"`
+	SqlserverMemoryGrantsPendingCount               SqlserverMemoryGrantsPendingCountMetricConfig               `mapstructure:"sqlserver.memory.grants.pending.count"`
+	SqlserverMemoryPageCount                        SqlserverMemoryPageCountMetricConfig                        `mapstructure:"sqlserver.memory.page.count"`
+	SqlserverMemoryUsage                            SqlserverMemoryUsageMetricConfig                            `mapstructure:"sqlserver.memory.usage"`
+	SqlserverOsWaitDuration                         SqlserverOsWaitDurationMetricConfig                         `mapstructure:"sqlserver.os.wait.duration"`
+	SqlserverPageAllocationRate                     SqlserverPageAllocationRateMetricConfig                     `mapstructure:"sqlserver.page.allocation.rate"`
+	SqlserverPageBufferCacheFreeListStallsRate      SqlserverPageBufferCacheFreeListStallsRateMetricConfig      `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
+	SqlserverPageBufferCacheHitRatio                SqlserverPageBufferCacheHitRatioMetricConfig                `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
+	SqlserverPageCheckpointFlushRate                SqlserverPageCheckpointFlushRateMetricConfig                `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageCompressionRate                    SqlserverPageCompressionRateMetricConfig                    `mapstructure:"sqlserver.page.compression.rate"`
+	SqlserverPageLazyWriteRate                      SqlserverPageLazyWriteRateMetricConfig                      `mapstructure:"sqlserver.page.lazy_write.rate"`
+	SqlserverPageLifeExpectancy                     SqlserverPageLifeExpectancyMetricConfig                     `mapstructure:"sqlserver.page.life_expectancy"`
+	SqlserverPageLookupRate                         SqlserverPageLookupRateMetricConfig                         `mapstructure:"sqlserver.page.lookup.rate"`
+	SqlserverPageOperationRate                      SqlserverPageOperationRateMetricConfig                      `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageReadAheadRate                      SqlserverPageReadAheadRateMetricConfig                      `mapstructure:"sqlserver.page.read_ahead.rate"`
+	SqlserverPageSplitRate                          SqlserverPageSplitRateMetricConfig                          `mapstructure:"sqlserver.page.split.rate"`
+	SqlserverParameterizationRate                   SqlserverParameterizationRateMetricConfig                   `mapstructure:"sqlserver.parameterization.rate"`
+	SqlserverPlanExecutionRate                      SqlserverPlanExecutionRateMetricConfig                      `mapstructure:"sqlserver.plan.execution.rate"`
+	SqlserverProcessesBlocked                       SqlserverProcessesBlockedMetricConfig                       `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverRecompilationRatio                     SqlserverRecompilationRatioMetricConfig                     `mapstructure:"sqlserver.recompilation.ratio"`
+	SqlserverReplicaDataRate                        SqlserverReplicaDataRateMetricConfig                        `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverResourcePoolDiskOperations             SqlserverResourcePoolDiskOperationsMetricConfig             `mapstructure:"sqlserver.resource_pool.disk.operations"`
+	SqlserverResourcePoolDiskThrottledReadRate      SqlserverResourcePoolDiskThrottledReadRateMetricConfig      `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
+	SqlserverResourcePoolDiskThrottledWriteRate     SqlserverResourcePoolDiskThrottledWriteRateMetricConfig     `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverScanPointRevalidationRate              SqlserverScanPointRevalidationRateMetricConfig              `mapstructure:"sqlserver.scan_point.revalidation.rate"`
+	SqlserverTableCount                             SqlserverTableCountMetricConfig                             `mapstructure:"sqlserver.table.count"`
+	SqlserverTransactionDelay                       SqlserverTransactionDelayMetricConfig                       `mapstructure:"sqlserver.transaction.delay"`
+	SqlserverTransactionMirrorWriteRate             SqlserverTransactionMirrorWriteRateMetricConfig             `mapstructure:"sqlserver.transaction.mirror_write.rate"`
+	SqlserverTransactionRate                        SqlserverTransactionRateMetricConfig                        `mapstructure:"sqlserver.transaction.rate"`
+	SqlserverTransactionWriteRate                   SqlserverTransactionWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.write.rate"`
+	SqlserverTransactionLogFlushDataRate            SqlserverTransactionLogFlushDataRateMetricConfig            `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
+	SqlserverTransactionLogFlushRate                SqlserverTransactionLogFlushRateMetricConfig                `mapstructure:"sqlserver.transaction_log.flush.rate"`
+	SqlserverTransactionLogFlushWaitRate            SqlserverTransactionLogFlushWaitRateMetricConfig            `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
+	SqlserverTransactionLogGrowthCount              SqlserverTransactionLogGrowthCountMetricConfig              `mapstructure:"sqlserver.transaction_log.growth.count"`
+	SqlserverTransactionLogShrinkCount              SqlserverTransactionLogShrinkCountMetricConfig              `mapstructure:"sqlserver.transaction_log.shrink.count"`
+	SqlserverTransactionLogUsage                    SqlserverTransactionLogUsageMetricConfig                    `mapstructure:"sqlserver.transaction_log.usage"`
+	SqlserverUserConnectionCount                    SqlserverUserConnectionCountMetricConfig                    `mapstructure:"sqlserver.user.connection.count"`
+	SqlserverWorktableCacheHitRatio                 SqlserverWorktableCacheHitRatioMetricConfig                 `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2333,43 +2333,43 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverAccessScanRate: SqlserverAccessScanRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverAgEstimatedDataLoss: SqlserverAgEstimatedDataLossMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgEstimatedDataLossMetricAttributeKey{SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgEstimatedRecoveryTime: SqlserverAgEstimatedRecoveryTimeMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgEstimatedRecoveryTimeMetricAttributeKey{SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgHardenedLatency: SqlserverAgHardenedLatencyMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgHardenedLatencyMetricAttributeKey{SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgLogSendQueueSize: SqlserverAgLogSendQueueSizeMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgLogSendQueueSizeMetricAttributeKey{SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgLogSendRate: SqlserverAgLogSendRateMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgLogSendRateMetricAttributeKey{SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgRedoQueueSize: SqlserverAgRedoQueueSizeMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgRedoQueueSizeMetricAttributeKey{SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName},
-		},
-		SqlserverAgRedoRate: SqlserverAgRedoRateMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverAgRedoRateMetricAttributeKey{SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName},
-		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverAvailabilityGroupEstimatedDataLoss: SqlserverAvailabilityGroupEstimatedDataLossMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey{SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupEstimatedRecoveryTime: SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey{SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupHardenedLatency: SqlserverAvailabilityGroupHardenedLatencyMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupLogSendQueueSize: SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupLogSendRate: SqlserverAvailabilityGroupLogSendRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupRedoQueueSize: SqlserverAvailabilityGroupRedoQueueSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName},
+		},
+		SqlserverAvailabilityGroupRedoRate: SqlserverAvailabilityGroupRedoRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverAvailabilityGroupRedoRateMetricAttributeKey{SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName},
 		},
 		SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 			Enabled: true,
