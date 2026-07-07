@@ -50,10 +50,20 @@ func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
 			continue
 		}
 
-		profiles, err := pprof.ConvertPprofToProfiles(pprofProfile, pprof.ScopeInfo{Name: metadata.ScopeName + "/filescraper", Version: fs.BuildInfo.Version})
+		profiles, err := pprof.ConvertPprofToProfiles(pprofProfile)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to convert pprof to profiles from %s: %w", match, err))
 			continue
+		}
+
+		//set ScopeName and Version
+		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+			rp := profiles.ResourceProfiles().At(i)
+			for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+				sp := rp.ScopeProfiles().At(j)
+				sp.Scope().SetName(metadata.ScopeName + "/filescraper")
+				sp.Scope().SetVersion(fs.BuildInfo.Version)
+			}
 		}
 
 		if err := profiles.MergeTo(result); err != nil {

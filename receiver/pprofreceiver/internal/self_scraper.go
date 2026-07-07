@@ -50,13 +50,22 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 	pprofProfile, parseErr := profile.Parse(hcs.buf)
 	hcs.buf.Reset()
 	if parseErr == nil {
-		p, err := translator.ConvertPprofToProfiles(
-			pprofProfile,
-			translator.ScopeInfo{
-				Name:    metadata.ScopeName + "/selfscraper",
-				Version: hcs.BuildInfo.Version,
-			},
-		)
+		p, err := translator.ConvertPprofToProfiles(pprofProfile)
+
+		
+		if p != nil {
+			name := metadata.ScopeName + "/selfscraper"
+			version := hcs.BuildInfo.Version
+			for i := 0; i < p.ResourceProfiles().Len(); i++ {
+				rp := p.ResourceProfiles().At(i)
+				for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+					sp := rp.ScopeProfiles().At(j)
+					sp.Scope().SetName(name)
+					sp.Scope().SetVersion(version)
+				}
+			}
+		}
+
 		_ = pprof.StartCPUProfile(hcs.writer)
 		if p == nil {
 			return pprofile.Profiles{}, err

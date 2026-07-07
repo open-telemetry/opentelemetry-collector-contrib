@@ -27,8 +27,6 @@ var (
 	errIdxFormatInvalid = errors.New("invalid format of attribute indices")
 )
 
-const scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
-
 const (
 	// noAttrUnit is an internal helper to indicate that no
 	// unit is associated to this Attribute.
@@ -101,21 +99,10 @@ type lookupTables struct {
 	lastStackTableIdx int32
 }
 
-// ScopeInfo allows callers to override instrumentation scope metadata
-// reported for converted profiles. If omitted, the default scopeName is
-// used and scope version remains unset.
-type ScopeInfo struct {
-	Name    string
-	Version string
-}
-
 // ConvertPprofToProfiles converts a pprof profile to OTLP profiles format.
-func ConvertPprofToProfiles(src *profile.Profile, info ...ScopeInfo) (*pprofile.Profiles, error) {
+func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
 		return nil, fmt.Errorf("%w: %w", err, errPprofInvalid)
-	}
-	if len(info) > 1 {
-		return nil, fmt.Errorf("expected at most one ScopeInfo, got %d", len(info))
 	}
 	dst := pprofile.NewProfiles()
 
@@ -140,22 +127,6 @@ func ConvertPprofToProfiles(src *profile.Profile, info ...ScopeInfo) (*pprofile.
 
 	sp := rp.ScopeProfiles().AppendEmpty()
 	sp.SetSchemaUrl(semconv.SchemaURL)
-
-	name := scopeName
-	version := ""
-
-	if len(info) > 0 {
-		if info[0].Name != "" {
-			name = info[0].Name
-		}
-		version = info[0].Version
-	}
-
-	sp.Scope().SetName(name)
-
-	if version != "" {
-		sp.Scope().SetVersion(version)
-	}
 	// Use a dedicated pprofile.Profile for each sample type.
 	// By convention, pprof uses the last sample type as default, while OTel Profiles
 	// uses the first profile as default. Therefore, swap first and last.

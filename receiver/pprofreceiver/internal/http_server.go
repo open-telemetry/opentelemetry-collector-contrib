@@ -101,13 +101,22 @@ func (s *HTTPServer) handlePush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profiles, err := pprof.ConvertPprofToProfiles(pprofProfile, pprof.ScopeInfo{
-		Name:    metadata.ScopeName + "/httpserver",
-		Version: s.Settings.BuildInfo.Version,
-	})
+	profiles, err := pprof.ConvertPprofToProfiles(pprofProfile)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to convert pprof to profiles: %v", err), http.StatusBadRequest)
 		return
+	}
+
+	//set ScopeName and Version
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		rp := profiles.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+
+			// Directly setting values without any extra initialization
+			sp.Scope().SetName(metadata.ScopeName + "/httpserver")
+			sp.Scope().SetVersion(s.Settings.BuildInfo.Version)
+		}
 	}
 
 	ctx := r.Context()

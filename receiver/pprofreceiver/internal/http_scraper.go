@@ -55,15 +55,23 @@ func (hcs *HTTPClientScraper) ScrapeProfiles(_ context.Context) (pprofile.Profil
 		return pprofile.Profiles{}, fmt.Errorf("failed to parse pprof data: %w", err)
 	}
 
-	profiles, err := pprof.ConvertPprofToProfiles(
-		pprofProfile,
-		pprof.ScopeInfo{
-			Name:    metadata.ScopeName + "/httpclientscraper",
-			Version: hcs.BuildInfo.Version,
-		},
-	)
+	profiles, err := pprof.ConvertPprofToProfiles(pprofProfile)
 	if err != nil {
 		return pprofile.Profiles{}, fmt.Errorf("failed to convert pprof to profiles: %w", err)
 	}
+
+	//set ScopeName and Version
+	name := metadata.ScopeName + "/httpclientscraper"
+	version := hcs.BuildInfo.Version
+
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		rp := profiles.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			sp.Scope().SetName(name)
+			sp.Scope().SetVersion(version)
+		}
+	}
+
 	return *profiles, err
 }
