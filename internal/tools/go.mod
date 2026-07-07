@@ -102,8 +102,8 @@ require (
 	github.com/ghostiam/protogetter v0.3.17 // indirect
 	github.com/go-critic/go-critic v0.14.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.9.0 // indirect
-	github.com/go-git/go-git/v5 v5.19.1 // indirect
+	github.com/go-git/go-billy/v5 v5.8.0 // indirect
+	github.com/go-git/go-git/v5 v5.18.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260213210345-44df1a37e875 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
@@ -211,7 +211,7 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.21.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
-	github.com/pjbgf/sha1cd v0.6.0 // indirect
+	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polyfloyd/go-errorlint v1.8.0 // indirect
 	github.com/prometheus/client_golang v1.20.3 // indirect
@@ -280,15 +280,15 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260702202003-335e29c1ae8a // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.155.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.155.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/component v1.61.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/confmap v1.61.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.61.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/featuregate v1.61.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/filter v0.155.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/internal/schemagen v0.155.1-0.20260704132837-00f6354e6f8b // indirect
-	go.opentelemetry.io/collector/pdata v1.61.1-0.20260704132837-00f6354e6f8b // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.156.0 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.156.0 // indirect
+	go.opentelemetry.io/collector/component v1.62.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.62.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.62.0 // indirect
+	go.opentelemetry.io/collector/filter v0.156.0 // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.156.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.62.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect

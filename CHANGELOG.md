@@ -7,6 +7,185 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.156.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/fileconsumer`: Move feature gate filelog.protobufCheckpointEncoding to beta and keep it enabled by default (#49387)
+- `receiver/oracledb`: Enhanced Oracle SQL query plan details with runtime execution statistics. (#49329)
+  This change requires the collector user to have access to V$SQL_PLAN_STATISTICS_ALL. Existing deployments that only grant access to V$SQL_PLAN
+  may experience query plan collection failures until the appropriate privileges are granted.
+  
+  SQL query plan details are now retrieved from V$SQL_PLAN_STATISTICS_ALL instead of V$SQL_PLAN. Since V$SQL_PLAN_STATISTICS_ALL is a superset of V$SQL_PLAN,
+  this change is backward compatible with respect to the emitted plan detail fields while enabling collection of additional runtime execution statistics,
+  including OUTPUT_ROWS, LAST_OUTPUT_ROWS, LAST_ELAPSED_TIME, LAST_CR_BUFFER_GETS, LAST_CU_BUFFER_GETS, STARTS, and LAST_STARTS.
+  
+
+### 🚩 Deprecations 🚩
+
+- `connector/routing`: Deprecate the `request` context in favor of `otelcol.*` OTTL paths. (#44762)
+  The routing connector `request` context and `request["key"]` condition syntax are deprecated in favor of
+  `otelcol.client.metadata["key"][0]` for HTTP/client metadata and `otelcol.grpc.metadata["key"][0]` for gRPC metadata.
+  These paths work in all signal contexts and are documented in the [OTelCol OTTL context](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlotelcol/README.md).
+  A warning is logged when the `request` context is still configured.
+  
+- `exporter/datadog`: The `exporter.datadogexporter.metricremappingdisabled` feature gate no longer has any effect when the serializer exporter path is active (the default). Use `exporter.datadogexporter.DisableAllMetricRemapping` to disable metric remapping. (#49320)
+  See [DataDog/datadog-agent#51232](https://github.com/DataDog/datadog-agent/pull/51232).
+- `receiver/aws_cloudwatch`: rename to `aws_cloudwatch` with deprecated alias `awscloudwatch` (#45339)
+
+### 🚀 New components 🚀
+
+- `processor/dynamic_sampling`: Add dynamic sampling processor for adaptive trace sampling with W3C TraceState rate encoding. (#48898)
+
+### 💡 Enhancements 💡
+
+- `cmd/opampsupervisor`: Make the OpAMP Supervisor logger encoding configurable so it can emit console (plain-text) logs as well as JSON (#47532)
+- `connector/routing`: Add OTTL context inference support to routing connector. (#38080)
+  The routing connector now supports OTTL context inference, allowing users to write clearer routing conditions using 
+  context-qualified paths. Instead of relying on implicit context resolution, users can explicitly specify which 
+  context's attributes they want to access (e.g., `resource.attributes["env"]` or `span.attributes["http.method"]`). 
+  Unqualified paths like `attributes["key"]` continue to work and default to the resource context for backward compatibility. 
+  
+- `exporter/alibabacloud_logservice`: Add `security_token` (STS) support alongside AK/SK; preserve ECS role/token-file fallback. (#48624)
+  When `security_token` is provided in the exporter configuration the SDK is
+  configured to use static STS credentials via the provider. The existing
+  `ecs_ram_role` and `token_file_path` behavior remains the higher-priority
+  authentication method and is unchanged.
+  
+- `exporter/clickhouse`: Add experimental support for the profiles signal (#49304)
+- `exporter/datadog`: Emit `otel.datadog_exporter.metrics.running.fargate{task_arn}` for AWS ECS Fargate workloads so that each workload has its own metric. (#49042)
+  Host-based workloads continue to use `otel.datadog_exporter.metrics.running{host}` unchanged.
+  `otel.datadog_exporter.metrics.running` will no longer be tagged with `task_arn`. Fargate workloads will only use `otel.datadog_exporter.metrics.running.fargate{task_arn}`.
+  
+- `exporter/datadog`: Fargate workloads now emit a dedicated `otel.datadog_exporter.metrics.running.fargate` metric tagged with `task_arn` instead of sharing `otel.datadog_exporter.metrics.running` with host-based workloads. (#49320)
+  Host-based workloads continue to emit `otel.datadog_exporter.metrics.running{host}` unchanged.
+  See [DataDog/datadog-agent#52203](https://github.com/DataDog/datadog-agent/pull/52203).
+  
+- `exporter/elasticsearch`: Support routing from data_stream attributes defined as scope attributes (#49306)
+- `extension/azure_auth`: Promote the Azure Authenticator extension to beta stability. (#48521)
+- `extension/file_storage`: Added `max_size` support to the filestorage extension to cap per-component database growth. (#38620)
+- `extension/sigv4auth`: Add automatic service detection for CloudWatch OTLP metrics endpoint (monitoring.<region>.amazonaws.com) (#48738)
+- `pkg/translator/pprof`: reduce allocations in sample conversion (#49452)
+- `processor/transform`: Add `exemplar` context support to the transform processor, allowing `metric_statements` to read and modify exemplar fields on metric datapoints. (#49022)
+- `receiver/aws_lambda`: Add support for AWS configuration overrides for static credentials (#49163)
+- `receiver/faro`: Emit per-payload counters for ingested Faro logs, measurements, exceptions, and events (#48071)
+  Adds `otelcol_faro_log_ingested_total`, `otelcol_faro_measurement_ingested_total`,
+  `otelcol_faro_exception_ingested_total`, and `otelcol_faro_event_ingested_total`. Each
+  counter is incremented by the number of entries in the corresponding
+  payload section after the request body is parsed.
+  
+- `receiver/mongodb`: Add Query Sample collection to the MongoDB receiver, emitting a `db.server.query_sample` log event for each currently executing operation. (#48573)
+  Samples are collected via `$currentOp`, with idle connections and administrative commands
+  filtered out. Each event includes obfuscated query text and operation metadata.
+  The `logs` signal is at `development` stability; attribute names may change until OTel
+  `db.server.query_sample` conventions stabilize. The `metrics` signal remains at `beta`.
+  
+- `receiver/oracledb`: Add `service.name` and `service.namespace` opt-in resource attributes and allow overriding any resource attribute via `override_value`. (#47088)
+- `receiver/oracledb`: Add workload analysis metrics related to scans, enqueue, LOB, parse, sort, cursor, and session activity (#48808)
+  Adds fourteen new opt-in metrics (disabled by default):
+    - `oracledb.call.count`, `oracledb.call.recursive.cpu.time`
+    - `oracledb.cursor.cache.hits`, `oracledb.cursor.cache.size`, `oracledb.cursor.open`
+    - `oracledb.db.time`
+    - `oracledb.enqueue.operations`
+    - `oracledb.lob.operations`
+    - `oracledb.parse.cpu.time`, `oracledb.parse.elapsed.time`
+    - `oracledb.scan.count`, `oracledb.scan.table.rows`
+    - `oracledb.sort.operations`, `oracledb.sort.rows`
+  No new SQL queries are issued; the existing v$sysstat scrape already returns
+  all required rows, so the receiver adds no additional load on the monitored
+  Oracle instance.
+  
+- `receiver/oracledb`: Add buffer cache and Database Writer (DBWR) metrics (#49061)
+- `receiver/oracledb`: Add redo log metrics (#49060)
+- `receiver/postgresql`: Add default service.name and service.namespace resource attributes (#47087)
+  Both attributes default to enabled: false. When enabled, service.name
+  defaults to unknown_service:postgresql and service.namespace defaults
+  to an empty string. Additionally, override_value is enabled for all
+  resource attributes, allowing users to set custom values via
+  override_value in the collector configuration.
+  
+- `receiver/postgresql`: Adds blocking session and lock attributes to `db.server.query_sample` events for PostgreSQL blocking session detection. Blocking attributes are always emitted (empty string / 0 when not blocked). (#49028)
+  New attributes under postgresql.blocking.*: postgresql.blocking.pids, postgresql.blocking.start_time,
+  postgresql.blocking.wait_duration, postgresql.blocking.lock.mode, postgresql.blocking.lock.type,
+  postgresql.blocking.lock.relation, postgresql.blocking.transaction.start_time.
+  postgresql.blocking.pids contains the full array of blocking PIDs from pg_blocking_pids() (e.g. {5121,5122}).
+  postgresql.blocking.start_time uses pg_locks.waitstart (PostgreSQL 14+) to record when the lock wait began. waitstart is stable for the full duration of the wait — it is set once when the lock wait starts and is not affected by blockers joining or leaving.
+  postgresql.blocking.transaction.start_time provides a UTC timestamp (RFC3339) from xact_start representing when the transaction started, predating the lock contention itself.
+  Idle-in-transaction blocker sessions (holding locks without an active request) are captured via pg_blocking_pids subquery in the WHERE clause.
+  All blocking attributes are always present on every db.server.query_sample event; empty string / 0 values indicate no active blocking.
+  Requires PostgreSQL 14 or later.
+  
+- `receiver/prometheus`: Promote `receiver.prometheusreceiver.IgnoreScopeInfoMetric` feature gate to beta. (#47312)
+  The `otel_scope_info` metric is now ignored for scope attribute extraction by default.
+  To temporarily restore the previous behavior, disable the feature gate with `--feature-gates=-receiver.prometheusreceiver.IgnoreScopeInfoMetric`.
+  
+- `receiver/sqlserver`: Add access methods and buffer pool metrics (#49182)
+  Adds the following metrics, all disabled by default:
+    - `sqlserver.access.scan.rate`
+    - `sqlserver.extent.operation.rate`
+    - `sqlserver.ghost_record.skipped.rate`
+    - `sqlserver.page.allocation.rate`
+    - `sqlserver.page.compression.rate`
+    - `sqlserver.page.read_ahead.rate`
+    - `sqlserver.scan_point.revalidation.rate`
+    - `sqlserver.worktable.cache.hit_ratio`
+  
+- `receiver/syslog`: Add support for RFC6587 Octet Counting framing with RFC3164 message format. (#45216)
+
+### 🧰 Bug fixes 🧰
+
+- `connector/routing`: Fix duplicate routing table entry handling to correctly ignore duplicates instead of overwriting the original route (#44762)
+  Previously, when duplicate routing table entries were encountered, the warning message indicated that the duplicate 
+  would be ignored, but in fact the original entry was being overwritten by the duplicate. 
+  This fix ensures that duplicates are properly ignored and the original route's consumer is preserved.
+  
+- `exporter/awsxray`: Use local service name for Consumer local root segment names, falling back to resource service name when aws.local.service is absent. (#43432)
+  Consumer spans promoted to X-Ray Segments after #42633 were named
+  using the span (operation) name instead of the local service name.
+  The fix mirrors the existing Server span naming behavior.
+  
+- `exporter/datadog`: Compress the metric sketches payload with gzip in the legacy metric API client, matching the metric series payload. Previously sketches were sent uncompressed, increasing egress for distribution/histogram metrics. (#49313)
+- `exporter/datadog`: Fix CPU core count fields (`cpu_cores`, `cpu_logical_processors`) missing from host metadata payloads for remote hosts in OTel gateway topologies. (#49320)
+  CPU data arrives via `system.cpu.physical.count` / `system.cpu.logical.count` metrics and was never
+  forwarded to the host metadata reporter in the serializer exporter path.
+  See [DataDog/datadog-agent#51893](https://github.com/DataDog/datadog-agent/pull/51893).
+  
+- `exporter/datadog`: Fix host metadata collection no longer aborts the entire batch when one resource fails; errors are accumulated and processing continues for remaining resources (#49153)
+  See [DataDog/datadog-agent#51893](https://github.com/DataDog/datadog-agent/pull/51893).
+- `exporter/datadog`: Metrics from the Podman stats receiver now report the correct Datadog metric origin (`opentelemetry_collector_podmanreceiver`) instead of falling through to `opentelemetry_collector_unknown`. (#49320)
+  See [DataDog/datadog-agent#52594](https://github.com/DataDog/datadog-agent/pull/52594).
+- `exporter/file`: Fix path traversal vulnerability on Windows when using grouping file exporter (#49194)
+- `exporter/opensearch`: Preserve LogRecord EventName field in all log encoding modes. (#49314)
+- `extension/datadog`: Skip cloud metadata source provider probe when hostname is already set in config, avoiding spurious GCP metadata server requests on non-GCP hosts. (#49241)
+- `pkg/translator/pprof`: Wrong conversion of labels from pprof to OTLP profiles (#49449)
+- `processor/cumulativetodelta`: Align reset detection and dropping on histograms and exponential histograms (#48278)
+  Histograms and exponential histograms where there is a drop in total count or on any bucket counts are now treated as a reset and dropped.
+  
+- `processor/cumulativetodelta`: Fix non-deterministic order of valid metric types in error messages for invalid `metric_types` config values. (#49120)
+- `processor/gen_ai_normalizer`: Fix OpenInference message normalization for flattened indexed attributes (#48421)
+  Reconstruct gen_ai.input.messages and gen_ai.output.messages from 
+  OpenInference flattened indexed span attributes 
+  (llm.{input,output}_messages.N.message.*).
+  
+- `processor/k8s_attributes`: Fix cache key memory leak in k8sattributesprocessor when a Pod's IP is missing or cleared from the delete event (#48986)
+  When a Pod is deleted, if its IP address is missing or already cleared from the delete event status,
+  the processor now looks up the cached pod by its UID to retrieve the stored IP and correctly queue
+  all associated keys for deletion.
+  
+- `processor/resource_detection`: Fix Docker resource detection failing to start when optional resource attributes are disabled, including container attributes when the hostname does not match a Docker container name. (#46275)
+- `processor/spanpruning`: Fix non-deterministic depth of preserved outlier spans by grouping leaves and parents by tree depth, so same-named ancestors at different depths are no longer merged. (#49323)
+- `receiver/aws_cloudwatch`: Fix logs being skipped when AWS pagination returns an empty page (#48577)
+- `receiver/github`: Capture the datapoint timestamp per repository instead of once at scrape start, so per-repository metrics carry a timestamp close to when each repository was observed. (#48497)
+- `receiver/prometheus`: Prometheus API server config/targets stay in sync with Target Allocator changing it if both are enabled. (#48040)
+  Previously, the API server config and targets did not get the updates from the Target Allocator.
+- `receiver/tcp_log`: Fix tcp input operator emitting partial log data after a connection read error when `one_log_per_packet` is enabled (#49199)
+  Previously, if a TCP connection was reset mid-read while `one_log_per_packet`
+  was set to true, the partial buffer was still processed and emitted as a log
+  entry. Now the read error causes the message to be discarded instead.
+  
+
+<!-- previous-version -->
+
 ## v0.155.0
 
 ### 🛑 Breaking changes 🛑
