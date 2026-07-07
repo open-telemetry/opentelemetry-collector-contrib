@@ -80,7 +80,6 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
 }
-
 func TestLogsBuilder(t *testing.T) {
 	tests := []struct {
 		name        string
