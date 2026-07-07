@@ -448,6 +448,14 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrsModifiedLen: 1,
 		},
 		{
+			name: "http.response.status_code tag is set as string (v1 conventions)",
+			attrs: map[string]any{
+				"http.response.status_code": "404",
+			},
+			status:           errorStatus,
+			attrsModifiedLen: 1,
+		},
+		{
 			name: "http.status_code, http.status_message and error tags are set",
 			attrs: map[string]any{
 				tracetranslator.TagError:         true,

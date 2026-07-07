@@ -302,7 +302,7 @@ func setInternalSpanStatus(attrs pcommon.Map, span ptrace.Span) {
 		// otel.status_message tag will have already been removed if
 		// statusExists is true.
 		attrs.Remove(string(conventions.OTelStatusCodeKey))
-	} else if httpCodeAttr, ok := attrs.Get(string(conventionsv125.HTTPStatusCodeKey)); !statusExists && ok {
+	} else if httpCodeAttr, ok := getHTTPStatusCodeAttr(attrs); !statusExists && ok {
 		// Fallback to introspecting if this span represents a failed HTTP
 		// request or response, but again, only do so if the `error` tag was
 		// not set to true and no explicit status was sent.
@@ -355,6 +355,18 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 		return 0, fmt.Errorf("%w: %s", errType, attrVal.Type().String())
 	}
 	return val, nil
+}
+
+// getHTTPStatusCodeAttr returns the HTTP status code attribute value, checking
+// both the deprecated http.status_code (semconv v1.25.0) and the current
+// http.response.status_code (semconv v1.40.0) keys. This ensures span status is
+// still derived from the HTTP status code regardless of which HTTP semantic
+// conventions the Jaeger translator is configured to emit.
+func getHTTPStatusCodeAttr(attrs pcommon.Map) (pcommon.Value, bool) {
+	if attr, ok := attrs.Get(string(conventionsv125.HTTPStatusCodeKey)); ok {
+		return attr, true
+	}
+	return attrs.Get(string(conventions.HTTPResponseStatusCodeKey))
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value, kind ptrace.SpanKind) (ptrace.StatusCode, error) {
