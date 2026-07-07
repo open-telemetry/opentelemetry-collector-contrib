@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/splunkhec
+component: exporter/splunk_hec
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Use `buildInfo.Version` as fallback for `__splunk_app_version` header when `splunk_app_version` is not configured.
