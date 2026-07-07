@@ -125,6 +125,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 			_, err := io.Copy(&buf, conn)
 			if err != nil {
 				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
+				return
 			}
 			log := truncateMaxLog(buf.Bytes(), i.MaxLogSize)
 			i.handleMessage(ctx, conn, dec, log)
