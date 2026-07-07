@@ -565,12 +565,6 @@ update-otel:
 	$(MAKE) genoteltestbedcol
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash "$(OTEL_STABLE_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
-	git version
-	git count-objects
-	ls -la .git/objects/pack
-	git config -l | grep /Ei 'gc\.maintenance|partialclone|promisor|filter' || true
-	pgrep -af git || true
-	git fsck --connectivity-only
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash "$(OTEL_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
