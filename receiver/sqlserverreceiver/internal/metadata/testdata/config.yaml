@@ -12,13 +12,13 @@ all_set:
     sqlserver.availability_group.hardened_latency:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.availability_group.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue.size:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.availability_group.log_send.rate:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.availability_group.redo.queue_size:
+    sqlserver.availability_group.redo.queue.size:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.availability_group.redo.rate:
@@ -216,13 +216,13 @@ reaggregate_set:
     sqlserver.availability_group.hardened_latency:
       enabled: true
       attributes: []
-    sqlserver.availability_group.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue.size:
       enabled: true
       attributes: []
     sqlserver.availability_group.log_send.rate:
       enabled: true
       attributes: []
-    sqlserver.availability_group.redo.queue_size:
+    sqlserver.availability_group.redo.queue.size:
       enabled: true
       attributes: []
     sqlserver.availability_group.redo.rate:
@@ -420,13 +420,13 @@ none_set:
     sqlserver.availability_group.hardened_latency:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.availability_group.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue.size:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.availability_group.log_send.rate:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.availability_group.redo.queue_size:
+    sqlserver.availability_group.redo.queue.size:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.availability_group.redo.rate:

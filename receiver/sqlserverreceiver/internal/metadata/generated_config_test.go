@@ -668,7 +668,7 @@ func TestSqlserverAgLogSendQueueSizeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgLogSendQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.queue_size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.queue.size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgLogSendQueueSize
 	cfg.AggregationStrategy = "invalid"
@@ -692,7 +692,7 @@ func TestSqlserverAgRedoQueueSizeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverAgRedoQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.queue_size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.queue.size doesn't have an attribute invalid, valid attributes: [availability_group.name, db.namespace, replica.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverAgRedoQueueSize
 	cfg.AggregationStrategy = "invalid"

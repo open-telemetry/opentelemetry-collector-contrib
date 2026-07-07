@@ -509,7 +509,7 @@ metrics:
       value_type: double
     attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.log_send.queue_size:
+  sqlserver.availability_group.log_send.queue.size:
     enabled: false
     description: Amount of log records of the primary database that has not been sent to the secondary replicas.
     stability: development
@@ -527,7 +527,7 @@ metrics:
       value_type: int
     attributes: [availability_group.name, db.namespace, replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.redo.queue_size:
+  sqlserver.availability_group.redo.queue.size:
     enabled: false
     description: Amount of log records of the secondary database that has not yet been redone.
     stability: development

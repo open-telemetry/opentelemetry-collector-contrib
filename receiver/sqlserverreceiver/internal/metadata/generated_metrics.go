@@ -558,7 +558,7 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendQueueSize: metricInfo{
-		Name:       "sqlserver.availability_group.log_send.queue_size",
+		Name:       "sqlserver.availability_group.log_send.queue.size",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendRate: metricInfo{
@@ -566,7 +566,7 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoQueueSize: metricInfo{
-		Name:       "sqlserver.availability_group.redo.queue_size",
+		Name:       "sqlserver.availability_group.redo.queue.size",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoRate: metricInfo{
@@ -1231,9 +1231,9 @@ type metricSqlserverAgLogSendQueueSize struct {
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.availability_group.log_send.queue_size metric with initial data.
+// init fills sqlserver.availability_group.log_send.queue.size metric with initial data.
 func (m *metricSqlserverAgLogSendQueueSize) init() {
-	m.data.SetName("sqlserver.availability_group.log_send.queue_size")
+	m.data.SetName("sqlserver.availability_group.log_send.queue.size")
 	m.data.SetDescription("Amount of log records of the primary database that has not been sent to the secondary replicas.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1421,9 +1421,9 @@ type metricSqlserverAgRedoQueueSize struct {
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.availability_group.redo.queue_size metric with initial data.
+// init fills sqlserver.availability_group.redo.queue.size metric with initial data.
 func (m *metricSqlserverAgRedoQueueSize) init() {
-	m.data.SetName("sqlserver.availability_group.redo.queue_size")
+	m.data.SetName("sqlserver.availability_group.redo.queue.size")
 	m.data.SetDescription("Amount of log records of the secondary database that has not yet been redone.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -6225,7 +6225,7 @@ func (mb *MetricsBuilder) RecordSqlserverAgHardenedLatencyDataPoint(ts pcommon.T
 	mb.metricSqlserverAgHardenedLatency.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.availability_group.log_send.queue_size metric.
+// RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.availability_group.log_send.queue.size metric.
 func (mb *MetricsBuilder) RecordSqlserverAgLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
@@ -6235,7 +6235,7 @@ func (mb *MetricsBuilder) RecordSqlserverAgLogSendRateDataPoint(ts pcommon.Times
 	mb.metricSqlserverAgLogSendRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.availability_group.redo.queue_size metric.
+// RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.availability_group.redo.queue.size metric.
 func (mb *MetricsBuilder) RecordSqlserverAgRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgRedoQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }

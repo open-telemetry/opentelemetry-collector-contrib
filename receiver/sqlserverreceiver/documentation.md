@@ -290,7 +290,7 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.log_send.queue_size
+### sqlserver.availability_group.log_send.queue.size
 
 Amount of log records of the primary database that has not been sent to the secondary replicas.
 
@@ -326,7 +326,7 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.redo.queue_size
+### sqlserver.availability_group.redo.queue.size
 
 Amount of log records of the secondary database that has not yet been redone.
 
