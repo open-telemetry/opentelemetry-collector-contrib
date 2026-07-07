@@ -14,9 +14,6 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
-  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
-  </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
   </a>
@@ -103,6 +100,7 @@ For more information about the approver role, see the [community repository](htt
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
+- [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
@@ -110,6 +108,7 @@ For more information about the approver role, see the [community repository](htt
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Roger Coll](https://github.com/rogercoll), Elastic
+- [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - Actively seeking contributors to triage issues
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).

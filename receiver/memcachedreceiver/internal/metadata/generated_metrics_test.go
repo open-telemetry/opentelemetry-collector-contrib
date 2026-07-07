@@ -71,62 +71,51 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedBytesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedCommandsDataPoint(ts, 3, AttributeCommandSet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedConnectionsCurrentDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedConnectionsTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedCPUUsageDataPoint(ts, 3, AttributeStateUser)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedCurrentItemsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedEvictionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedNetworkDataPoint(ts, 3, AttributeDirectionReceived)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedOperationHitRatioDataPoint(ts, 3, AttributeOperationDecrement)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedOperationsDataPoint(ts, 3, AttributeTypeMiss, AttributeOperationDecrement)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedThreadsDataPoint(ts, 1)

@@ -98,13 +98,15 @@ var MapAttributeSystemdUnitActiveState = map[string]AttributeSystemdUnitActiveSt
 
 var MetricsInfo = metricsInfo{
 	SystemdServiceCPUTime: metricInfo{
-		Name: "systemd.service.cpu.time",
+		Name:       "systemd.service.cpu.time",
+		Attributes: []string{"cpu.mode"},
 	},
 	SystemdServiceRestarts: metricInfo{
 		Name: "systemd.service.restarts",
 	},
 	SystemdUnitState: metricInfo{
-		Name: "systemd.unit.state",
+		Name:       "systemd.unit.state",
+		Attributes: []string{"systemd.unit.active_state"},
 	},
 }
 
@@ -115,7 +117,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemdServiceCPUTime struct {

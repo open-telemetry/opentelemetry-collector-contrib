@@ -4,7 +4,10 @@
 package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 
 import (
+	"fmt"
+	"math"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -296,6 +299,14 @@ func TestProducerConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"large_message": {
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.MaxMessageBytes = 209715200
+				cfg.MaxBrokerWriteBytes = 268435456
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_compression": {
@@ -313,6 +324,41 @@ func TestProducerConfig(t *testing.T) {
 		"max_message_bytes_negative": {
 			expectedErr: "max_message_bytes (-1000) must be non-negative",
 		},
+		"max_broker_write_bytes_negative": {
+			expectedErr: "max_broker_write_bytes (-1000) must be non-negative",
+		},
+		"max_broker_write_bytes_too_small": {
+			expectedErr: fmt.Sprintf("max_broker_write_bytes (1000) must be at least %d (%d MiB, franz-go minimum)", franzGoMinBrokerWriteBytes, franzGoMinBrokerWriteBytes>>20),
+		},
+		"max_message_bytes_exceeds_broker": {
+			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", franzGoMinBrokerWriteBytes),
+		},
+	})
+}
+
+// TestProducerConfigInt32Overflow verifies that size limits exceeding the int32
+// range used by franz-go are rejected. Values above math.MaxInt32 are only
+// representable on platforms where int is 64-bit, so this is skipped elsewhere.
+func TestProducerConfigInt32Overflow(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is not wide enough to exceed math.MaxInt32 on this architecture")
+	}
+	// Use a runtime int64 value so the conversion to int is not a compile-time
+	// constant (which would overflow int and fail to build on 32-bit platforms).
+	maxInt32 := int64(math.MaxInt32)
+	overflow := int(maxInt32 + 1)
+
+	t.Run("max_message_bytes", func(t *testing.T) {
+		cfg := NewDefaultProducerConfig()
+		cfg.MaxMessageBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_message_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
+	})
+	t.Run("max_broker_write_bytes", func(t *testing.T) {
+		cfg := NewDefaultProducerConfig()
+		cfg.MaxBrokerWriteBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
 	})
 }
 

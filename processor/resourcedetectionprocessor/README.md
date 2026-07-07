@@ -103,6 +103,10 @@ be found at [Docker Detector Resource Attributes](./internal/docker/documentatio
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
+If `container.name` or `container.image.name` is enabled, the detector inspects the current container
+by using the container hostname as the Docker container name or ID. This can fail when the container
+hostname is changed, for example when running with `network_mode: host`.
+
 Example:
 
 ```yaml
@@ -223,6 +227,16 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
+
+#### Cloud Run Worker Pools Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.instance (instance id)
+    * faas.name (worker pool name)
+    * faas.version (worker pool revision)
 
 #### Google Cloud Functions Metadata
 

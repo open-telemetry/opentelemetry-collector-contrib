@@ -55,6 +55,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sovereign"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 120 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				ProjectID:      "my-sovereign-project-id",
+				UniverseDomain: "monitoring.example.com",
+				MetricsList: []MetricConfig{
+					{MetricName: "compute.googleapis.com/instance/cpu/usage_time"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

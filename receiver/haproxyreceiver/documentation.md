@@ -294,9 +294,9 @@ Total effective weight (backend) or effective weight (server). Corresponds to HA
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str | true | - |
-| haproxy.proxy_name | Proxy name | Any Str | true | - |
-| haproxy.server.state | Server status (UP, DOWN, NOLB, MAINT, no check, etc.). Corresponds to HAProxy's `status` field. | Any Str | false | - |
-| haproxy.service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str | true | - | - |
+| haproxy.proxy_name | Proxy name | Any Str | true | - | - |
+| haproxy.server.state | Server status (UP, DOWN, NOLB, MAINT, no check, etc.). Corresponds to HAProxy's `status` field. | Any Str | false | - | - |
+| haproxy.service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str | true | - | - |

@@ -79,40 +79,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 3, AttributeClassServices)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 3, AttributeDiskStateAvailable)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeFilesystemUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeMemoryCacheUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeNetworkIoDataPoint(ts, 3, AttributeDirectionTransmitted)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
