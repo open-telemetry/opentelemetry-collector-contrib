@@ -220,7 +220,9 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.12")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.IsEnabled() {
-		attrMap.PutInt(string(conventions.ServerPortKey), 51306)
+		// This is a client span, so both net.peer.name and net.peer.port map to the
+		// server.* attributes. net.host.port (the local port) has no server.* role here
+		// and would collide with net.peer.port, so it is intentionally not migrated.
 		attrMap.PutStr(string(conventions.ServerAddressKey), "shopdb.example.com")
 		attrMap.PutInt(string(conventions.ServerPortKey), 3306)
 		attrMap.PutStr(string(conventions.NetworkTransportKey), "tcp")
