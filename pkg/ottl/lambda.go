@@ -44,6 +44,7 @@ func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], b
 			}
 		},
 	}
+	v.arityValidated = &atomic.Bool{}
 	return v
 }
 
