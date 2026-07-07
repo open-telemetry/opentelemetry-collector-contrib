@@ -673,7 +673,7 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
 		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
 		"__splunk_app_name":    config.SplunkAppName,
-		"__splunk_app_version": config.SplunkAppVersion,
+		"__splunk_app_version": appVersion,
 	}
 }
 
