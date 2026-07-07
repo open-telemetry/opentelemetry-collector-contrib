@@ -821,13 +821,12 @@ func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) 
 			s.blockingWaitDuration, _ = strconv.ParseFloat(text[20], 64)
 			s.blockingLockMode = text[21]
 			s.blockingLockType = text[22]
-			s.blockingLockTable = text[23]
-			s.blockingLockIndex = text[24]
-			s.blockingTransactionStart = text[25]
-			s.mdlObjectType = text[26]
-			s.mdlObjectSchema = text[27]
-			s.mdlObjectName = text[28]
-			s.mdlLockType = text[29]
+			s.blockingWaitResource = text[23]
+			s.blockingTransactionStart = text[24]
+			s.mdlObjectType = text[25]
+			s.mdlObjectSchema = text[26]
+			s.mdlObjectName = text[27]
+			s.mdlLockType = text[28]
 		}
 
 		samples = append(samples, s)
@@ -1495,16 +1494,16 @@ func TestScrapeQuerySamplesBlockingInnoDB(t *testing.T) {
 	assert.True(t, ok, "mysql.blocking.wait_duration must be present")
 	assert.InDelta(t, 12.5, waitDur.Double(), 0.001)
 
-	lockMode, ok := attrs.Get("mysql.blocking.lock.mode")
-	assert.True(t, ok, "mysql.blocking.lock.mode must be present")
+	lockMode, ok := attrs.Get("mysql.innodb_lock.mode")
+	assert.True(t, ok, "mysql.innodb_lock.mode must be present")
 	assert.Equal(t, "X", lockMode.Str())
 
-	lockTable, ok := attrs.Get("mysql.blocking.lock.table")
-	assert.True(t, ok, "mysql.blocking.lock.table must be present")
-	assert.Equal(t, "adventureworks.orders", lockTable.Str())
+	waitResource, ok := attrs.Get("mysql.innodb_lock.wait_resource")
+	assert.True(t, ok, "mysql.innodb_lock.wait_resource must be present")
+	assert.Equal(t, "adventureworks.orders/PRIMARY/1", waitResource.Str())
 
-	mdlType, ok := attrs.Get("mysql.blocking.mdl.object_type")
-	assert.True(t, ok, "mysql.blocking.mdl.object_type must be present")
+	mdlType, ok := attrs.Get("mysql.mdl_lock.object.type")
+	assert.True(t, ok, "mysql.mdl_lock.object.type must be present")
 	assert.Empty(t, mdlType.Str(), "MDL attributes must be empty for InnoDB row-level blocks")
 }
 
@@ -1535,12 +1534,12 @@ func TestScrapeQuerySamplesBlockingMDL(t *testing.T) {
 	assert.True(t, ok, "mysql.blocking.pids must be present")
 	assert.Equal(t, "55", pids.Str())
 
-	mdlObjType, ok := attrs.Get("mysql.blocking.mdl.object_type")
-	assert.True(t, ok, "mysql.blocking.mdl.object_type must be present")
+	mdlObjType, ok := attrs.Get("mysql.mdl_lock.object.type")
+	assert.True(t, ok, "mysql.mdl_lock.object.type must be present")
 	assert.Equal(t, "TABLE", mdlObjType.Str())
 
-	mdlLockType, ok := attrs.Get("mysql.blocking.mdl.lock_type")
-	assert.True(t, ok, "mysql.blocking.mdl.lock_type must be present")
+	mdlLockType, ok := attrs.Get("mysql.mdl_lock.type")
+	assert.True(t, ok, "mysql.mdl_lock.type must be present")
 	assert.Equal(t, "EXCLUSIVE", mdlLockType.Str())
 }
 

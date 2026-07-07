@@ -79,16 +79,13 @@ resourceLogs:
               - key: mysql.blocking.wait_duration
                 value:
                   doubleValue: 0
-              - key: mysql.blocking.lock.mode
+              - key: mysql.innodb_lock.mode
                 value:
                   stringValue: ""
-              - key: mysql.blocking.lock.type
+              - key: mysql.innodb_lock.type
                 value:
                   stringValue: ""
-              - key: mysql.blocking.lock.table
-                value:
-                  stringValue: ""
-              - key: mysql.blocking.lock.index
+              - key: mysql.innodb_lock.wait_resource
                 value:
                   stringValue: ""
               - key: mysql.blocking.transaction.start_time
@@ -97,16 +94,16 @@ resourceLogs:
               - key: mysql.blocking.lock_level
                 value:
                   stringValue: ""
-              - key: mysql.blocking.mdl.object_type
+              - key: mysql.mdl_lock.object.type
                 value:
                   stringValue: ""
-              - key: mysql.blocking.mdl.object_schema
+              - key: mysql.mdl_lock.object.schema
                 value:
                   stringValue: ""
-              - key: mysql.blocking.mdl.object_name
+              - key: mysql.mdl_lock.object.name
                 value:
                   stringValue: ""
-              - key: mysql.blocking.mdl.lock_type
+              - key: mysql.mdl_lock.type
                 value:
                   stringValue: ""
             body: {}

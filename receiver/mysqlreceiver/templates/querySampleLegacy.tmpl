@@ -81,8 +81,7 @@
     COALESCE(blk.wait_duration_seconds, 0) AS blocking_wait_duration,
     COALESCE(blk.requested_lock_mode, '') AS blocking_lock_mode,
     COALESCE(blk.requested_lock_type, '') AS blocking_lock_type,
-    COALESCE(blk.lock_table, '') AS blocking_lock_table,
-    COALESCE(blk.lock_index, '') AS blocking_lock_index,
+    COALESCE(blk.wait_resource, '') AS blocking_wait_resource,
     CASE WHEN blk.transaction_started IS NOT NULL
         THEN DATE_FORMAT(CONVERT_TZ(blk.transaction_started, @@session.time_zone, '+00:00'), '%Y-%m-%dT%TZ')
         ELSE ''
@@ -106,8 +105,7 @@ FROM
             TIMESTAMPDIFF(SECOND, r_trx.trx_wait_started, NOW()) AS wait_duration_seconds,
             MIN(rl.lock_mode) AS requested_lock_mode,
             MIN(rl.lock_type) AS requested_lock_type,
-            MIN(bl.lock_table) AS lock_table,
-            MIN(bl.lock_index) AS lock_index,
+            MIN(CONCAT(REPLACE(bl.lock_table, '`', ''), IFNULL(CONCAT('/', bl.lock_index), ''), IFNULL(CONCAT('/', bl.lock_data), ''))) AS wait_resource,
             r_trx.trx_started AS transaction_started
         FROM information_schema.innodb_lock_waits lw
         JOIN information_schema.innodb_trx r_trx ON lw.requesting_trx_id = r_trx.trx_id

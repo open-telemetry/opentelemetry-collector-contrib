@@ -332,8 +332,7 @@ type querySample struct {
 	blockingWaitDuration     float64
 	blockingLockMode         string
 	blockingLockType         string
-	blockingLockTable        string
-	blockingLockIndex        string
+	blockingWaitResource     string
 	blockingTransactionStart string
 	mdlObjectType            string
 	mdlObjectSchema          string
@@ -1044,10 +1043,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool, su
 				dest = append(dest, &s.blockingLockMode)
 			case "blocking_lock_type":
 				dest = append(dest, &s.blockingLockType)
-			case "blocking_lock_table":
-				dest = append(dest, &s.blockingLockTable)
-			case "blocking_lock_index":
-				dest = append(dest, &s.blockingLockIndex)
+			case "blocking_wait_resource":
+				dest = append(dest, &s.blockingWaitResource)
 			case "blocking_transaction_start":
 				dest = append(dest, &s.blockingTransactionStart)
 			case "mdl_object_type":
