@@ -67,13 +67,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["sqlserver.ag.estimated_data_loss"] = mb.metricSqlserverAgEstimatedDataLoss.config.AggregationStrategy
-			aggMap["sqlserver.ag.estimated_recovery_time"] = mb.metricSqlserverAgEstimatedRecoveryTime.config.AggregationStrategy
-			aggMap["sqlserver.ag.hardened_latency"] = mb.metricSqlserverAgHardenedLatency.config.AggregationStrategy
-			aggMap["sqlserver.ag.log_send.queue_size"] = mb.metricSqlserverAgLogSendQueueSize.config.AggregationStrategy
-			aggMap["sqlserver.ag.log_send.rate"] = mb.metricSqlserverAgLogSendRate.config.AggregationStrategy
-			aggMap["sqlserver.ag.redo.queue_size"] = mb.metricSqlserverAgRedoQueueSize.config.AggregationStrategy
-			aggMap["sqlserver.ag.redo.rate"] = mb.metricSqlserverAgRedoRate.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.estimated_data_loss"] = mb.metricSqlserverAgEstimatedDataLoss.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.estimated_recovery_time"] = mb.metricSqlserverAgEstimatedRecoveryTime.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.hardened_latency"] = mb.metricSqlserverAgHardenedLatency.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.log_send.queue_size"] = mb.metricSqlserverAgLogSendQueueSize.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.log_send.rate"] = mb.metricSqlserverAgLogSendRate.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.redo.queue_size"] = mb.metricSqlserverAgRedoQueueSize.config.AggregationStrategy
+			aggMap["sqlserver.availability_group.redo.rate"] = mb.metricSqlserverAgRedoRate.config.AggregationStrategy
 			aggMap["sqlserver.database.count"] = mb.metricSqlserverDatabaseCount.config.AggregationStrategy
 			aggMap["sqlserver.database.io"] = mb.metricSqlserverDatabaseIo.config.AggregationStrategy
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
@@ -482,10 +482,10 @@ func TestMetricsBuilder(t *testing.T) {
 					sqlserverAccessScanTypeAttrVal, ok := dp.Attributes().Get("sqlserver.access.scan.type")
 					assert.True(t, ok)
 					assert.Equal(t, "free_space", sqlserverAccessScanTypeAttrVal.Str())
-				case "sqlserver.ag.estimated_data_loss":
+				case "sqlserver.availability_group.estimated_data_loss":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_data_loss")
-						validatedMetrics["sqlserver.ag.estimated_data_loss"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_data_loss")
+						validatedMetrics["sqlserver.availability_group.estimated_data_loss"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.", mi.Description())
@@ -505,8 +505,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_data_loss")
-						validatedMetrics["sqlserver.ag.estimated_data_loss"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_data_loss"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_data_loss")
+						validatedMetrics["sqlserver.availability_group.estimated_data_loss"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.", mi.Description())
@@ -515,7 +515,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.ag.estimated_data_loss"] {
+						switch aggMap["sqlserver.availability_group.estimated_data_loss"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":
@@ -532,10 +532,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.estimated_recovery_time":
+				case "sqlserver.availability_group.estimated_recovery_time":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_recovery_time")
-						validatedMetrics["sqlserver.ag.estimated_recovery_time"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_recovery_time")
+						validatedMetrics["sqlserver.availability_group.estimated_recovery_time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.", mi.Description())
@@ -555,8 +555,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.ag.estimated_recovery_time")
-						validatedMetrics["sqlserver.ag.estimated_recovery_time"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.estimated_recovery_time"], "Found a duplicate in the metrics slice: sqlserver.availability_group.estimated_recovery_time")
+						validatedMetrics["sqlserver.availability_group.estimated_recovery_time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.", mi.Description())
@@ -565,7 +565,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.ag.estimated_recovery_time"] {
+						switch aggMap["sqlserver.availability_group.estimated_recovery_time"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":
@@ -582,10 +582,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.hardened_latency":
+				case "sqlserver.availability_group.hardened_latency":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.ag.hardened_latency")
-						validatedMetrics["sqlserver.ag.hardened_latency"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.availability_group.hardened_latency")
+						validatedMetrics["sqlserver.availability_group.hardened_latency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Latency between when a log record is generated on the primary replica and hardened on the secondary replica.", mi.Description())
@@ -605,8 +605,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.ag.hardened_latency")
-						validatedMetrics["sqlserver.ag.hardened_latency"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.hardened_latency"], "Found a duplicate in the metrics slice: sqlserver.availability_group.hardened_latency")
+						validatedMetrics["sqlserver.availability_group.hardened_latency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Latency between when a log record is generated on the primary replica and hardened on the secondary replica.", mi.Description())
@@ -615,7 +615,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.ag.hardened_latency"] {
+						switch aggMap["sqlserver.availability_group.hardened_latency"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":
@@ -632,10 +632,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.log_send.queue_size":
+				case "sqlserver.availability_group.log_send.queue_size":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.queue_size")
-						validatedMetrics["sqlserver.ag.log_send.queue_size"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.queue_size")
+						validatedMetrics["sqlserver.availability_group.log_send.queue_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Amount of log records of the primary database that has not been sent to the secondary replicas.", mi.Description())
@@ -655,8 +655,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.queue_size")
-						validatedMetrics["sqlserver.ag.log_send.queue_size"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.queue_size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.queue_size")
+						validatedMetrics["sqlserver.availability_group.log_send.queue_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Amount of log records of the primary database that has not been sent to the secondary replicas.", mi.Description())
@@ -665,7 +665,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.ag.log_send.queue_size"] {
+						switch aggMap["sqlserver.availability_group.log_send.queue_size"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -682,10 +682,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.log_send.rate":
+				case "sqlserver.availability_group.log_send.rate":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.rate")
-						validatedMetrics["sqlserver.ag.log_send.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.rate")
+						validatedMetrics["sqlserver.availability_group.log_send.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate at which log records are being sent from the primary database replica to the secondary replica.", mi.Description())
@@ -705,8 +705,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.log_send.rate")
-						validatedMetrics["sqlserver.ag.log_send.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.log_send.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.log_send.rate")
+						validatedMetrics["sqlserver.availability_group.log_send.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate at which log records are being sent from the primary database replica to the secondary replica.", mi.Description())
@@ -715,7 +715,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.ag.log_send.rate"] {
+						switch aggMap["sqlserver.availability_group.log_send.rate"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -732,10 +732,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.redo.queue_size":
+				case "sqlserver.availability_group.redo.queue_size":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.queue_size")
-						validatedMetrics["sqlserver.ag.redo.queue_size"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.queue_size")
+						validatedMetrics["sqlserver.availability_group.redo.queue_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Amount of log records of the secondary database that has not yet been redone.", mi.Description())
@@ -755,8 +755,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.queue_size")
-						validatedMetrics["sqlserver.ag.redo.queue_size"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.queue_size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.queue_size")
+						validatedMetrics["sqlserver.availability_group.redo.queue_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Amount of log records of the secondary database that has not yet been redone.", mi.Description())
@@ -765,7 +765,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.ag.redo.queue_size"] {
+						switch aggMap["sqlserver.availability_group.redo.queue_size"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -782,10 +782,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.ag.redo.rate":
+				case "sqlserver.availability_group.redo.rate":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.ag.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.rate")
-						validatedMetrics["sqlserver.ag.redo.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.rate")
+						validatedMetrics["sqlserver.availability_group.redo.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate at which log records are being redone on the secondary database replica.", mi.Description())
@@ -805,8 +805,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "replica.name-val", replicaNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.ag.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.ag.redo.rate")
-						validatedMetrics["sqlserver.ag.redo.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.availability_group.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.redo.rate")
+						validatedMetrics["sqlserver.availability_group.redo.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate at which log records are being redone on the secondary database replica.", mi.Description())
@@ -815,7 +815,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.ag.redo.rate"] {
+						switch aggMap["sqlserver.availability_group.redo.rate"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":

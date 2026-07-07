@@ -546,31 +546,31 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"sqlserver.access.scan.type"},
 	},
 	SqlserverAgEstimatedDataLoss: metricInfo{
-		Name:       "sqlserver.ag.estimated_data_loss",
+		Name:       "sqlserver.availability_group.estimated_data_loss",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgEstimatedRecoveryTime: metricInfo{
-		Name:       "sqlserver.ag.estimated_recovery_time",
+		Name:       "sqlserver.availability_group.estimated_recovery_time",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgHardenedLatency: metricInfo{
-		Name:       "sqlserver.ag.hardened_latency",
+		Name:       "sqlserver.availability_group.hardened_latency",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendQueueSize: metricInfo{
-		Name:       "sqlserver.ag.log_send.queue_size",
+		Name:       "sqlserver.availability_group.log_send.queue_size",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgLogSendRate: metricInfo{
-		Name:       "sqlserver.ag.log_send.rate",
+		Name:       "sqlserver.availability_group.log_send.rate",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoQueueSize: metricInfo{
-		Name:       "sqlserver.ag.redo.queue_size",
+		Name:       "sqlserver.availability_group.redo.queue_size",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAgRedoRate: metricInfo{
-		Name:       "sqlserver.ag.redo.rate",
+		Name:       "sqlserver.availability_group.redo.rate",
 		Attributes: []string{"availability_group.name", "db.namespace", "replica.name"},
 	},
 	SqlserverAttentionRate: metricInfo{
@@ -946,9 +946,9 @@ type metricSqlserverAgEstimatedDataLoss struct {
 	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.estimated_data_loss metric with initial data.
+// init fills sqlserver.availability_group.estimated_data_loss metric with initial data.
 func (m *metricSqlserverAgEstimatedDataLoss) init() {
-	m.data.SetName("sqlserver.ag.estimated_data_loss")
+	m.data.SetName("sqlserver.availability_group.estimated_data_loss")
 	m.data.SetDescription("Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
@@ -1041,9 +1041,9 @@ type metricSqlserverAgEstimatedRecoveryTime struct {
 	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.estimated_recovery_time metric with initial data.
+// init fills sqlserver.availability_group.estimated_recovery_time metric with initial data.
 func (m *metricSqlserverAgEstimatedRecoveryTime) init() {
-	m.data.SetName("sqlserver.ag.estimated_recovery_time")
+	m.data.SetName("sqlserver.availability_group.estimated_recovery_time")
 	m.data.SetDescription("Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
@@ -1136,9 +1136,9 @@ type metricSqlserverAgHardenedLatency struct {
 	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.hardened_latency metric with initial data.
+// init fills sqlserver.availability_group.hardened_latency metric with initial data.
 func (m *metricSqlserverAgHardenedLatency) init() {
-	m.data.SetName("sqlserver.ag.hardened_latency")
+	m.data.SetName("sqlserver.availability_group.hardened_latency")
 	m.data.SetDescription("Latency between when a log record is generated on the primary replica and hardened on the secondary replica.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
@@ -1231,9 +1231,9 @@ type metricSqlserverAgLogSendQueueSize struct {
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.log_send.queue_size metric with initial data.
+// init fills sqlserver.availability_group.log_send.queue_size metric with initial data.
 func (m *metricSqlserverAgLogSendQueueSize) init() {
-	m.data.SetName("sqlserver.ag.log_send.queue_size")
+	m.data.SetName("sqlserver.availability_group.log_send.queue_size")
 	m.data.SetDescription("Amount of log records of the primary database that has not been sent to the secondary replicas.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1326,9 +1326,9 @@ type metricSqlserverAgLogSendRate struct {
 	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.log_send.rate metric with initial data.
+// init fills sqlserver.availability_group.log_send.rate metric with initial data.
 func (m *metricSqlserverAgLogSendRate) init() {
-	m.data.SetName("sqlserver.ag.log_send.rate")
+	m.data.SetName("sqlserver.availability_group.log_send.rate")
 	m.data.SetDescription("Rate at which log records are being sent from the primary database replica to the secondary replica.")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
@@ -1421,9 +1421,9 @@ type metricSqlserverAgRedoQueueSize struct {
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.redo.queue_size metric with initial data.
+// init fills sqlserver.availability_group.redo.queue_size metric with initial data.
 func (m *metricSqlserverAgRedoQueueSize) init() {
-	m.data.SetName("sqlserver.ag.redo.queue_size")
+	m.data.SetName("sqlserver.availability_group.redo.queue_size")
 	m.data.SetDescription("Amount of log records of the secondary database that has not yet been redone.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1516,9 +1516,9 @@ type metricSqlserverAgRedoRate struct {
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.ag.redo.rate metric with initial data.
+// init fills sqlserver.availability_group.redo.rate metric with initial data.
 func (m *metricSqlserverAgRedoRate) init() {
-	m.data.SetName("sqlserver.ag.redo.rate")
+	m.data.SetName("sqlserver.availability_group.redo.rate")
 	m.data.SetDescription("Rate at which log records are being redone on the secondary database replica.")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
@@ -6210,37 +6210,37 @@ func (mb *MetricsBuilder) RecordSqlserverAccessScanRateDataPoint(ts pcommon.Time
 	mb.metricSqlserverAccessScanRate.recordDataPoint(mb.startTime, ts, val, sqlserverAccessScanTypeAttributeValue.String())
 }
 
-// RecordSqlserverAgEstimatedDataLossDataPoint adds a data point to sqlserver.ag.estimated_data_loss metric.
+// RecordSqlserverAgEstimatedDataLossDataPoint adds a data point to sqlserver.availability_group.estimated_data_loss metric.
 func (mb *MetricsBuilder) RecordSqlserverAgEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.ag.estimated_recovery_time metric.
+// RecordSqlserverAgEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.availability_group.estimated_recovery_time metric.
 func (mb *MetricsBuilder) RecordSqlserverAgEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgHardenedLatencyDataPoint adds a data point to sqlserver.ag.hardened_latency metric.
+// RecordSqlserverAgHardenedLatencyDataPoint adds a data point to sqlserver.availability_group.hardened_latency metric.
 func (mb *MetricsBuilder) RecordSqlserverAgHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgHardenedLatency.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.ag.log_send.queue_size metric.
+// RecordSqlserverAgLogSendQueueSizeDataPoint adds a data point to sqlserver.availability_group.log_send.queue_size metric.
 func (mb *MetricsBuilder) RecordSqlserverAgLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgLogSendRateDataPoint adds a data point to sqlserver.ag.log_send.rate metric.
+// RecordSqlserverAgLogSendRateDataPoint adds a data point to sqlserver.availability_group.log_send.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverAgLogSendRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgLogSendRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.ag.redo.queue_size metric.
+// RecordSqlserverAgRedoQueueSizeDataPoint adds a data point to sqlserver.availability_group.redo.queue_size metric.
 func (mb *MetricsBuilder) RecordSqlserverAgRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgRedoQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }
 
-// RecordSqlserverAgRedoRateDataPoint adds a data point to sqlserver.ag.redo.rate metric.
+// RecordSqlserverAgRedoRateDataPoint adds a data point to sqlserver.availability_group.redo.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverAgRedoRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
 	mb.metricSqlserverAgRedoRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
 }

@@ -3,25 +3,25 @@ all_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
-    sqlserver.ag.estimated_data_loss:
+    sqlserver.availability_group.estimated_data_loss:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.estimated_recovery_time:
+    sqlserver.availability_group.estimated_recovery_time:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.hardened_latency:
+    sqlserver.availability_group.hardened_latency:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue_size:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.log_send.rate:
+    sqlserver.availability_group.log_send.rate:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.redo.queue_size:
+    sqlserver.availability_group.redo.queue_size:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.redo.rate:
+    sqlserver.availability_group.redo.rate:
       enabled: true
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.attention.rate:
@@ -207,25 +207,25 @@ reaggregate_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: true
-    sqlserver.ag.estimated_data_loss:
+    sqlserver.availability_group.estimated_data_loss:
       enabled: true
       attributes: []
-    sqlserver.ag.estimated_recovery_time:
+    sqlserver.availability_group.estimated_recovery_time:
       enabled: true
       attributes: []
-    sqlserver.ag.hardened_latency:
+    sqlserver.availability_group.hardened_latency:
       enabled: true
       attributes: []
-    sqlserver.ag.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue_size:
       enabled: true
       attributes: []
-    sqlserver.ag.log_send.rate:
+    sqlserver.availability_group.log_send.rate:
       enabled: true
       attributes: []
-    sqlserver.ag.redo.queue_size:
+    sqlserver.availability_group.redo.queue_size:
       enabled: true
       attributes: []
-    sqlserver.ag.redo.rate:
+    sqlserver.availability_group.redo.rate:
       enabled: true
       attributes: []
     sqlserver.attention.rate:
@@ -411,25 +411,25 @@ none_set:
   metrics:
     sqlserver.access.scan.rate:
       enabled: false
-    sqlserver.ag.estimated_data_loss:
+    sqlserver.availability_group.estimated_data_loss:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.estimated_recovery_time:
+    sqlserver.availability_group.estimated_recovery_time:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.hardened_latency:
+    sqlserver.availability_group.hardened_latency:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.log_send.queue_size:
+    sqlserver.availability_group.log_send.queue_size:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.log_send.rate:
+    sqlserver.availability_group.log_send.rate:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.redo.queue_size:
+    sqlserver.availability_group.redo.queue_size:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
-    sqlserver.ag.redo.rate:
+    sqlserver.availability_group.redo.rate:
       enabled: false
       attributes: ["availability_group.name","db.namespace","replica.name"]
     sqlserver.attention.rate:

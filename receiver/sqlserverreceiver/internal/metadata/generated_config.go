@@ -30,7 +30,7 @@ func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// SqlserverAgEstimatedDataLossMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.estimated_data_loss metric.
+// SqlserverAgEstimatedDataLossMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_data_loss metric.
 type SqlserverAgEstimatedDataLossMetricAttributeKey string
 
 const (
@@ -39,7 +39,7 @@ const (
 	SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName           SqlserverAgEstimatedDataLossMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgEstimatedDataLossMetricConfig provides config for the sqlserver.ag.estimated_data_loss metric.
+// SqlserverAgEstimatedDataLossMetricConfig provides config for the sqlserver.availability_group.estimated_data_loss metric.
 type SqlserverAgEstimatedDataLossMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -67,7 +67,7 @@ func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgEstimatedDataLossMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAgEstimatedDataLossMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -80,7 +80,7 @@ func (ms *SqlserverAgEstimatedDataLossMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgEstimatedRecoveryTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.estimated_recovery_time metric.
+// SqlserverAgEstimatedRecoveryTimeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.estimated_recovery_time metric.
 type SqlserverAgEstimatedRecoveryTimeMetricAttributeKey string
 
 const (
@@ -89,7 +89,7 @@ const (
 	SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName           SqlserverAgEstimatedRecoveryTimeMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.ag.estimated_recovery_time metric.
+// SqlserverAgEstimatedRecoveryTimeMetricConfig provides config for the sqlserver.availability_group.estimated_recovery_time metric.
 type SqlserverAgEstimatedRecoveryTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -117,7 +117,7 @@ func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAgEstimatedRecoveryTimeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -130,7 +130,7 @@ func (ms *SqlserverAgEstimatedRecoveryTimeMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgHardenedLatencyMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.hardened_latency metric.
+// SqlserverAgHardenedLatencyMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.hardened_latency metric.
 type SqlserverAgHardenedLatencyMetricAttributeKey string
 
 const (
@@ -139,7 +139,7 @@ const (
 	SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName           SqlserverAgHardenedLatencyMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgHardenedLatencyMetricConfig provides config for the sqlserver.ag.hardened_latency metric.
+// SqlserverAgHardenedLatencyMetricConfig provides config for the sqlserver.availability_group.hardened_latency metric.
 type SqlserverAgHardenedLatencyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -167,7 +167,7 @@ func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgHardenedLatencyMetricAttributeKeyAvailabilityGroupName, SqlserverAgHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAgHardenedLatencyMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.hardened_latency doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -180,7 +180,7 @@ func (ms *SqlserverAgHardenedLatencyMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgLogSendQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.log_send.queue_size metric.
+// SqlserverAgLogSendQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.queue_size metric.
 type SqlserverAgLogSendQueueSizeMetricAttributeKey string
 
 const (
@@ -189,7 +189,7 @@ const (
 	SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName           SqlserverAgLogSendQueueSizeMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgLogSendQueueSizeMetricConfig provides config for the sqlserver.ag.log_send.queue_size metric.
+// SqlserverAgLogSendQueueSizeMetricConfig provides config for the sqlserver.availability_group.log_send.queue_size metric.
 type SqlserverAgLogSendQueueSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -217,7 +217,7 @@ func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgLogSendQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.log_send.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -230,7 +230,7 @@ func (ms *SqlserverAgLogSendQueueSizeMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgLogSendRateMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.log_send.rate metric.
+// SqlserverAgLogSendRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.log_send.rate metric.
 type SqlserverAgLogSendRateMetricAttributeKey string
 
 const (
@@ -239,7 +239,7 @@ const (
 	SqlserverAgLogSendRateMetricAttributeKeyReplicaName           SqlserverAgLogSendRateMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgLogSendRateMetricConfig provides config for the sqlserver.ag.log_send.rate metric.
+// SqlserverAgLogSendRateMetricConfig provides config for the sqlserver.availability_group.log_send.rate metric.
 type SqlserverAgLogSendRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -267,7 +267,7 @@ func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgLogSendRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgLogSendRateMetricAttributeKeyDbNamespace, SqlserverAgLogSendRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.log_send.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -280,7 +280,7 @@ func (ms *SqlserverAgLogSendRateMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgRedoQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.redo.queue_size metric.
+// SqlserverAgRedoQueueSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.queue_size metric.
 type SqlserverAgRedoQueueSizeMetricAttributeKey string
 
 const (
@@ -289,7 +289,7 @@ const (
 	SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName           SqlserverAgRedoQueueSizeMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgRedoQueueSizeMetricConfig provides config for the sqlserver.ag.redo.queue_size metric.
+// SqlserverAgRedoQueueSizeMetricConfig provides config for the sqlserver.availability_group.redo.queue_size metric.
 type SqlserverAgRedoQueueSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -317,7 +317,7 @@ func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgRedoQueueSizeMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoQueueSizeMetricAttributeKeyDbNamespace, SqlserverAgRedoQueueSizeMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.redo.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.redo.queue_size doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -330,7 +330,7 @@ func (ms *SqlserverAgRedoQueueSizeMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverAgRedoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.ag.redo.rate metric.
+// SqlserverAgRedoRateMetricAttributeKey specifies the key of an attribute for the sqlserver.availability_group.redo.rate metric.
 type SqlserverAgRedoRateMetricAttributeKey string
 
 const (
@@ -339,7 +339,7 @@ const (
 	SqlserverAgRedoRateMetricAttributeKeyReplicaName           SqlserverAgRedoRateMetricAttributeKey = "replica.name"
 )
 
-// SqlserverAgRedoRateMetricConfig provides config for the sqlserver.ag.redo.rate metric.
+// SqlserverAgRedoRateMetricConfig provides config for the sqlserver.availability_group.redo.rate metric.
 type SqlserverAgRedoRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -367,7 +367,7 @@ func (ms *SqlserverAgRedoRateMetricConfig) Validate() error {
 		switch val {
 		case SqlserverAgRedoRateMetricAttributeKeyAvailabilityGroupName, SqlserverAgRedoRateMetricAttributeKeyDbNamespace, SqlserverAgRedoRateMetricAttributeKeyReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.ag.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
+			return fmt.Errorf("metric sqlserver.availability_group.redo.rate doesn't have an attribute %v, valid attributes: [availability_group.name, db.namespace, replica.name]", val)
 		}
 	}
 
@@ -2250,13 +2250,13 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
 	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
-	SqlserverAgEstimatedDataLoss                SqlserverAgEstimatedDataLossMetricConfig                `mapstructure:"sqlserver.ag.estimated_data_loss"`
-	SqlserverAgEstimatedRecoveryTime            SqlserverAgEstimatedRecoveryTimeMetricConfig            `mapstructure:"sqlserver.ag.estimated_recovery_time"`
-	SqlserverAgHardenedLatency                  SqlserverAgHardenedLatencyMetricConfig                  `mapstructure:"sqlserver.ag.hardened_latency"`
-	SqlserverAgLogSendQueueSize                 SqlserverAgLogSendQueueSizeMetricConfig                 `mapstructure:"sqlserver.ag.log_send.queue_size"`
-	SqlserverAgLogSendRate                      SqlserverAgLogSendRateMetricConfig                      `mapstructure:"sqlserver.ag.log_send.rate"`
-	SqlserverAgRedoQueueSize                    SqlserverAgRedoQueueSizeMetricConfig                    `mapstructure:"sqlserver.ag.redo.queue_size"`
-	SqlserverAgRedoRate                         SqlserverAgRedoRateMetricConfig                         `mapstructure:"sqlserver.ag.redo.rate"`
+	SqlserverAgEstimatedDataLoss                SqlserverAgEstimatedDataLossMetricConfig                `mapstructure:"sqlserver.availability_group.estimated_data_loss"`
+	SqlserverAgEstimatedRecoveryTime            SqlserverAgEstimatedRecoveryTimeMetricConfig            `mapstructure:"sqlserver.availability_group.estimated_recovery_time"`
+	SqlserverAgHardenedLatency                  SqlserverAgHardenedLatencyMetricConfig                  `mapstructure:"sqlserver.availability_group.hardened_latency"`
+	SqlserverAgLogSendQueueSize                 SqlserverAgLogSendQueueSizeMetricConfig                 `mapstructure:"sqlserver.availability_group.log_send.queue_size"`
+	SqlserverAgLogSendRate                      SqlserverAgLogSendRateMetricConfig                      `mapstructure:"sqlserver.availability_group.log_send.rate"`
+	SqlserverAgRedoQueueSize                    SqlserverAgRedoQueueSizeMetricConfig                    `mapstructure:"sqlserver.availability_group.redo.queue_size"`
+	SqlserverAgRedoRate                         SqlserverAgRedoRateMetricConfig                         `mapstructure:"sqlserver.availability_group.redo.rate"`
 	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
 	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
