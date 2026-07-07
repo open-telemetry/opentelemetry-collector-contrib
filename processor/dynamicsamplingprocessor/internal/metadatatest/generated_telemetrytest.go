@@ -52,6 +52,22 @@ func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *compo
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorDynamicSamplingIncomingTracestateUnparseable(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable",
+		Description: "Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold. [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorDynamicSamplingTracesActive(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_active",

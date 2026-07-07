@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadata"
 )
 
@@ -108,6 +109,29 @@ func buildTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode, root bool
 	span.SetName("op")
 	span.Status().SetCode(statusCode)
 	return td
+}
+
+// setTraceState overwrites the raw W3C tracestate on every span in td.
+func setTraceState(td ptrace.Traces, raw string) {
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				span.TraceState().FromRaw(raw)
+			}
+		}
+	}
+}
+
+// firstSpanTValue returns the ot=th value from the first span in td, or "" if
+// the tracestate is missing or unparseable.
+func firstSpanTValue(t *testing.T, td ptrace.Traces) string {
+	t.Helper()
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	w3c, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
+	if err != nil {
+		return ""
+	}
+	return w3c.OTelValue().TValue()
 }
 
 func TestProcessor_AlwaysSample_ForwardsAllTraces(t *testing.T) {
@@ -411,6 +435,137 @@ func TestProcessor_LateSpansForDroppedTraceDropped(t *testing.T) {
 	p.mu.Lock()
 	assert.Empty(t, p.traces)
 	p.mu.Unlock()
+}
+
+func TestCombineThreshold(t *testing.T) {
+	th20pct, err := sampling.ProbabilityToThreshold(0.20)
+	require.NoError(t, err)
+	th10pct, err := sampling.ProbabilityToThreshold(0.10)
+	require.NoError(t, err)
+	th02pct, err := sampling.ProbabilityToThreshold(0.02)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		upstream sampling.Threshold
+		rate     int
+		want     sampling.Threshold
+	}{
+		{"rate_1_returns_upstream", th20pct, 1, th20pct},
+		{"rate_0_returns_upstream", th20pct, 0, th20pct},
+		{"no_upstream_10x", sampling.AlwaysSampleThreshold, 10, th10pct},
+		{"upstream_20pct_and_10x_gives_2pct", th20pct, 10, th02pct},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := combineThreshold(tt.upstream, tt.rate)
+			require.NoError(t, err)
+			// Integer arithmetic in combineThreshold rounds differently to the
+			// float-based ProbabilityToThreshold; compare adjusted counts with a
+			// small tolerance rather than the raw unsigned value.
+			assert.InDelta(t, tt.want.AdjustedCount(), got.AdjustedCount(), 0.01,
+				"got %v want %v", got.AdjustedCount(), tt.want.AdjustedCount())
+		})
+	}
+}
+
+func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{
+				Name: "fixed",
+				Sampler: SamplerConfig{
+					Type:          Deterministic,
+					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // rate 10
+				},
+			},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Upstream th: 50% keep. Under consistent sampling with our rate 10 on top,
+	// effective absolute keep should be 5%, so emitted t-value must decode to 5%.
+	upstream, err := sampling.ProbabilityToThreshold(0.50)
+	require.NoError(t, err)
+	upstreamTValue := upstream.TValue()
+
+	// Deterministic sampler dropped rate=10 will match on random values > 0.9,
+	// so build a traceID whose randomness is at the top of the space to guarantee sampling.
+	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
+	td := newTrace(traceID, ptrace.StatusCodeUnset)
+	setTraceState(td, "ot=th:"+upstreamTValue)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	out := sink.AllTraces()[0]
+	tv := firstSpanTValue(t, out)
+	th, err := sampling.TValueToThreshold(tv)
+	require.NoError(t, err)
+	// 5% keep ⇒ adjusted count 20.
+	assert.InDelta(t, 20.0, th.AdjustedCount(), 0.01,
+		"emitted adjusted count should reflect combined upstream+our sampling")
+}
+
+func TestProcessor_UpstreamStricterThanOurs_LatePathHonoursUpstream(t *testing.T) {
+	// Verify late-arriving spans keep a stricter incoming ot=th rather than
+	// having it lowered by our cached decision. UpdateTValueWithSampling
+	// refuses to weaken a stricter threshold, so the emitted th should equal
+	// the incoming th on the late span.
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 100, NonSampledCacheSize: 100},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	// Late span comes in with a stricter upstream th (1% keep). Cached decision
+	// is AlwaysSample (100% keep). Emitted should keep the stricter value.
+	strict, err := sampling.ProbabilityToThreshold(0.01)
+	require.NoError(t, err)
+	late := newTrace(traceID, ptrace.StatusCodeUnset)
+	setTraceState(late, "ot=th:"+strict.TValue())
+	require.NoError(t, p.ConsumeTraces(t.Context(), late))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 2 }, time.Second, 10*time.Millisecond)
+
+	tv := firstSpanTValue(t, sink.AllTraces()[1])
+	th, err := sampling.TValueToThreshold(tv)
+	require.NoError(t, err)
+	assert.Equal(t, strict.Unsigned(), th.Unsigned(),
+		"late span should retain the stricter incoming threshold, not be lowered by the cached decision")
+}
+
+func TestProcessor_UnparseableTracestateCounter(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xAB})
+	td := newTrace(traceID, ptrace.StatusCodeUnset)
+	// Malformed tracestate value that fails parse (invalid key char in vendor).
+	setTraceState(td, "!!not-a-tracestate!!")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
 }
 
 func TestProcessor_DecisionCacheDisabled(t *testing.T) {

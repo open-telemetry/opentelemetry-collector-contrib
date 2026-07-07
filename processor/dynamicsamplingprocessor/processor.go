@@ -358,7 +358,7 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	for _, lf := range lateForwards {
-		stampLateBatch(lf.td, lf.md)
+		p.stampLateBatch(ctx, lf.td, lf.md)
 		if err := p.next.ConsumeTraces(ctx, lf.td); err != nil {
 			p.logger.Error("forwarding late span failed", zap.Error(err), zap.Stringer("traceID", lf.traceID))
 		}
@@ -398,12 +398,12 @@ func (p *dynamicSamplingProcessor) trigger(id pcommon.TraceID, source triggerSou
 
 // stampLateBatch stamps every span in a late batch with the original rule
 // attribution and ot=th TraceState.
-func stampLateBatch(td ptrace.Traces, md cachedDecision) {
+func (p *dynamicSamplingProcessor) stampLateBatch(ctx context.Context, td ptrace.Traces, md cachedDecision) {
 	for _, rs := range td.ResourceSpans().All() {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
-				updateTraceState(span, md.threshold)
+				p.updateTraceState(ctx, span, md.threshold)
 			}
 		}
 	}
@@ -451,15 +451,21 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	ruleAttr := metric.WithAttributes(attribute.String("rule", matchedRule.name))
 	p.telemetry.ProcessorDynamicSamplingDecisionSampleRate.Record(ctx, int64(rate), ruleAttr)
 
-	threshold, _ := sampling.ProbabilityToThreshold(1.0 / float64(rate))
-	if !shouldSample(id, rate) {
+	upstreamTh, randomness := readIncomingSampling(pt.spans, id)
+	effectiveTh, err := combineThreshold(upstreamTh, rate)
+	if err != nil {
+		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
+		p.cache.recordNotSampled(id)
+		return
+	}
+	if !effectiveTh.ShouldSample(randomness) {
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
 		p.cache.recordNotSampled(id)
 		return
 	}
 
-	p.cache.recordSampled(id, cachedDecision{ruleName: matchedRule.name, threshold: threshold})
-	annotated := assembleTrace(pt.spans, matchedRule.name, threshold)
+	p.cache.recordSampled(id, cachedDecision{ruleName: matchedRule.name, threshold: effectiveTh})
+	annotated := p.assembleTrace(ctx, pt.spans, matchedRule.name, effectiveTh)
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
 		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", id))
@@ -482,24 +488,66 @@ func (p *dynamicSamplingProcessor) evaluate(pt *pendingTrace) (*rule, int) {
 	return nil, 0
 }
 
-// shouldSample returns true when the trace should be kept at the given rate.
-// rate <= 1 always keeps the trace. Otherwise the decision is deterministic
-// using consistent probability sampling against the traceID randomness.
-func shouldSample(id pcommon.TraceID, rate int) bool {
+// readIncomingSampling scans the accumulated spans for upstream sampling state:
+// the strictest observed `ot=th` (or AlwaysSampleThreshold if none), and the
+// randomness value (preferring `ot=rv` when present, falling back to the trace
+// ID). Spans whose tracestate fails to parse are silently ignored here; the
+// error is surfaced on the emit path via the unparseable counter.
+func readIncomingSampling(spans []ptrace.ResourceSpans, id pcommon.TraceID) (sampling.Threshold, sampling.Randomness) {
+	upstream := sampling.AlwaysSampleThreshold
+	randomness := sampling.TraceIDToRandomness(id)
+	haveRV := false
+	for _, rs := range spans {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				raw := span.TraceState().AsRaw()
+				if raw == "" {
+					continue
+				}
+				w3c, err := sampling.NewW3CTraceState(raw)
+				if err != nil {
+					continue
+				}
+				ot := w3c.OTelValue()
+				if th, ok := ot.TValueThreshold(); ok {
+					if sampling.ThresholdGreater(th, upstream) {
+						upstream = th
+					}
+				}
+				if !haveRV {
+					if rv, ok := ot.RValueRandomness(); ok {
+						randomness = rv
+						haveRV = true
+					}
+				}
+			}
+		}
+	}
+	return upstream, randomness
+}
+
+// combineThreshold returns the threshold that, applied under consistent
+// probability sampling on top of `upstream`, keeps 1-in-`rate` of the traffic
+// that survived upstream. For rate <= 1 the upstream threshold is returned
+// unchanged (nothing to add).
+//
+// Under consistent sampling, joint keep probability is the min of the two
+// stages' probabilities, achieved by taking the max of their thresholds.
+// This helper computes an `ours` threshold that is >= upstream by construction,
+// so max(ours, upstream) == ours. The resulting effective keep probability of
+// the original population is P(rand > upstream) / rate, which downstream
+// systems reconstruct correctly from the emitted `ot=th`.
+func combineThreshold(upstream sampling.Threshold, rate int) (sampling.Threshold, error) {
 	if rate <= 1 {
-		return true
+		return upstream, nil
 	}
-	probability := 1.0 / float64(rate)
-	threshold, err := sampling.ProbabilityToThreshold(probability)
-	if err != nil {
-		return false
-	}
-	return threshold.ShouldSample(sampling.TraceIDToRandomness(id))
+	surviving := sampling.MaxAdjustedCount - upstream.Unsigned()
+	return sampling.UnsignedToThreshold(sampling.MaxAdjustedCount - surviving/uint64(rate))
 }
 
 // assembleTrace combines accumulated ResourceSpans into a single ptrace.Traces
 // and stamps every span with the rule attribute and `ot=th` TraceState.
-func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
+func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
 		dst := out.ResourceSpans().AppendEmpty()
@@ -507,7 +555,7 @@ func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, threshold samp
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
-				updateTraceState(span, threshold)
+				p.updateTraceState(ctx, span, threshold)
 			}
 		}
 	}
@@ -516,11 +564,16 @@ func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, threshold samp
 
 // updateTraceState parses the existing TraceState, updates the OTel T-value to
 // reflect the sampling threshold, and serializes the result back onto the
-// span. Failures fall through silently so we never block a sampled trace on a
-// malformed upstream TraceState.
-func updateTraceState(span ptrace.Span, threshold sampling.Threshold) {
-	w3c, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
+// span. `UpdateTValueWithSampling` refuses to lower a stricter incoming
+// threshold; that is spec-correct and treated as a silent no-op. A parse
+// error on the incoming tracestate bumps the unparseable counter.
+func (p *dynamicSamplingProcessor) updateTraceState(ctx context.Context, span ptrace.Span, threshold sampling.Threshold) {
+	raw := span.TraceState().AsRaw()
+	w3c, err := sampling.NewW3CTraceState(raw)
 	if err != nil {
+		if raw != "" {
+			p.telemetry.ProcessorDynamicSamplingIncomingTracestateUnparseable.Add(ctx, 1)
+		}
 		return
 	}
 	if err := w3c.OTelValue().UpdateTValueWithSampling(threshold); err != nil {

@@ -262,6 +262,18 @@ In-flight work on adding tracestate handling to `tail_sampling`'s probabilistic 
 
 For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling` users retain the existing multi-policy model unchanged, and `dynamic_sampling` keeps a single evaluation model (first-match with rate-bearing samplers) end to end.
 
+## Interoperability with upstream sampling
+
+The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (explicit randomness) already set on incoming spans by an upstream sampler, such as an SDK head sampler or a probabilistic collector processor:
+
+- **Randomness.** If an incoming span carries `ot=rv`, that value is used to make the sampling decision. Otherwise the last 7 bytes of the trace ID are used, per the consistent probability spec.
+- **Threshold composition.** The rule-selected sampler picks a rate `N`; the emitted `ot=th` is composed on top of any upstream threshold `T_up` so the effective absolute keep probability is `P(rand > T_up) / N`. Downstream metric consumers reading `ot=th` reconstruct the correct adjusted count for the original population without additional configuration.
+- **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
+
+### Known limitation: adaptive-sampler rate bias under upstream sampling
+
+The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) select their rate from the traffic they observe, assuming that input is a uniform sample of the underlying population. When an upstream stage has already sampled, the input reaching the adaptive sampler is skewed toward higher randomness values, and per-key rate math based on observed volume is biased. The emitted `ot=th` is still metric-accurate downstream (via threshold composition above); the caveat is that the rate the adaptive sampler *targets* is "of the input reaching me," not "of the original population." Follow-up in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517).
+
 ## Metrics
 
 | Metric                                              | Type     | Labels   | Description                                                                 |
@@ -272,6 +284,7 @@ For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`). |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer before a decision could be made.             |
+| `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 
 ## Output attributes
 
