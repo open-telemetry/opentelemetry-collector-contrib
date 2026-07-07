@@ -67,7 +67,8 @@ func Test_mapKeys(t *testing.T) {
 					return tt.source, nil
 				},
 			}
-			exprFunc := mapKeys(target, tt.keyMapper)
+			exprFunc, err := mapKeys(target, tt.keyMapper)
+			require.NoError(t, err)
 			got, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got.(pcommon.Map).AsRaw())
@@ -88,8 +89,9 @@ func Test_mapKeys_lambda_type_error(t *testing.T) {
 		return 123, nil
 	})
 
-	exprFunc := mapKeys(target, keyMapper)
-	_, err := exprFunc(t.Context(), nil)
+	exprFunc, err := mapKeys(target, keyMapper)
+	require.NoError(t, err)
+	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error while evaluating lambda function on map item (a,")
 	assert.ErrorContains(t, err, "lambda expression must return a value of type string")

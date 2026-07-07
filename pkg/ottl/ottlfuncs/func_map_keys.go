@@ -29,17 +29,22 @@ func createMapKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	if !ok {
 		return nil, errors.New("MapKeysFactory args must be of type *MapKeysArguments[K]")
 	}
-	return mapKeys(args.Source, args.KeyMapper), nil
+	return mapKeys(args.Source, args.KeyMapper)
 }
 
-func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[K]) ottl.ExprFunc[K] {
+func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+	err := keyMapper.ValidateArity(2)
+	if err != nil {
+		return nil, err
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		sourceVal, err := source.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		lb, err := keyMapper.Activate(ctx, 2)
+		lb, err := keyMapper.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -58,5 +63,5 @@ func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[
 		res := pcommon.NewMap()
 		builder.UnsafeIntoMap(res)
 		return res, nil
-	}
+	}, nil
 }
