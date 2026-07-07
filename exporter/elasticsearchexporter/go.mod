@@ -8,7 +8,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.14.1
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
-	github.com/klauspost/compress v1.18.7
+	github.com/klauspost/compress v1.19.0
 	github.com/lestrrat-go/strftime v1.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.155.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.155.0
@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.61.1-0.20260704132837-00f6354e6f8b
 	go.opentelemetry.io/collector/pdata v1.61.1-0.20260704132837-00f6354e6f8b
 	go.opentelemetry.io/collector/pdata/pprofile v0.155.1-0.20260704132837-00f6354e6f8b
-	go.opentelemetry.io/ebpf-profiler v0.0.202623
+	go.opentelemetry.io/ebpf-profiler v0.0.202627
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/metric v1.44.0
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
@@ -49,7 +49,7 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
-	github.com/cilium/ebpf v0.21.0 // indirect
+	github.com/cilium/ebpf v0.22.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
