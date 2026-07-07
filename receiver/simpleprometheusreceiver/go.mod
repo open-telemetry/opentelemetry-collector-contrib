@@ -190,7 +190,7 @@ require (
 	github.com/prometheus/client_golang/exp v0.0.0-20260518105423-c9d5bc4c50a9 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
-	github.com/prometheus/exporter-toolkit v0.17.0 // indirect
+	github.com/prometheus/exporter-toolkit v0.17.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/prometheus/sigv4 v0.4.1 // indirect
@@ -246,7 +246,7 @@ require (
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/api v0.278.0 // indirect
