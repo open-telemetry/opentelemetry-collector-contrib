@@ -387,7 +387,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB; convert to bytes
-			s.mb.RecordSqlserverAvailabilityGroupQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 		}
 
 		val, err = retrieveInt(row, logSendRateKey)
@@ -395,7 +395,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB/s; convert to bytes/s
-			s.mb.RecordSqlserverAvailabilityGroupLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaLogSendRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
 		}
 
 		val, err = retrieveInt(row, redoQueueSizeKey)
@@ -403,7 +403,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB; convert to bytes
-			s.mb.RecordSqlserverAvailabilityGroupQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
 		}
 
 		val, err = retrieveInt(row, redoRateKey)
@@ -411,21 +411,21 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB/s; convert to bytes/s
-			s.mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaRedoRateDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
 		}
 
 		val, err = retrieveFloat(row, estimatedDataLossKey)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			s.mb.RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossDataPoint(now, val.(float64), agName, dbName, replicaName)
 		}
 
 		val, err = retrieveFloat(row, estimatedRecoveryKey)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			s.mb.RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
 		}
 
 		// hardened_latency may be NULL on SQL Server < 2016
@@ -434,7 +434,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
-				s.mb.RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(now, val.(float64), agName, dbName, replicaName)
+				s.mb.RecordSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyDataPoint(now, val.(float64), agName, dbName, replicaName)
 			}
 		}
 

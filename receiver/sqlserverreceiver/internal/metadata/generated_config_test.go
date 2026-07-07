@@ -33,35 +33,35 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 						Enabled: true,
 					},
-					SqlserverAvailabilityGroupEstimatedDataLoss: SqlserverAvailabilityGroupEstimatedDataLossMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss: SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey{SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupEstimatedRecoveryTime: SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime: SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey{SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupHardenedLatency: SqlserverAvailabilityGroupHardenedLatencyMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupLogSendRate: SqlserverAvailabilityGroupLogSendRateMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaLogSendRate: SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupQueueSize: SqlserverAvailabilityGroupQueueSizeMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaQueueSize: SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
 					},
-					SqlserverAvailabilityGroupRedoRate: SqlserverAvailabilityGroupRedoRateMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaRedoRate: SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupRedoRateMetricAttributeKey{SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 						Enabled: true,
@@ -325,35 +325,35 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 						Enabled: false,
 					},
-					SqlserverAvailabilityGroupEstimatedDataLoss: SqlserverAvailabilityGroupEstimatedDataLossMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss: SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey{SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupEstimatedRecoveryTime: SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime: SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey{SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupHardenedLatency: SqlserverAvailabilityGroupHardenedLatencyMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency: SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupLogSendRate: SqlserverAvailabilityGroupLogSendRateMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaLogSendRate: SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKeySqlserverReplicaName},
 					},
-					SqlserverAvailabilityGroupQueueSize: SqlserverAvailabilityGroupQueueSizeMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaQueueSize: SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType},
 					},
-					SqlserverAvailabilityGroupRedoRate: SqlserverAvailabilityGroupRedoRateMetricConfig{
+					SqlserverAvailabilityGroupDatabaseReplicaRedoRate: SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverAvailabilityGroupRedoRateMetricAttributeKey{SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeyDbNamespace, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
 						Enabled: false,
@@ -611,80 +611,80 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAccessScanRateMetricConfig{}, SqlserverAttentionRateMetricConfig{}, SqlserverAvailabilityGroupEstimatedDataLossMetricConfig{}, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricConfig{}, SqlserverAvailabilityGroupHardenedLatencyMetricConfig{}, SqlserverAvailabilityGroupLogSendRateMetricConfig{}, SqlserverAvailabilityGroupQueueSizeMetricConfig{}, SqlserverAvailabilityGroupRedoRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverExtentOperationRateMetricConfig{}, SqlserverGhostRecordSkippedRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageAllocationRateMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageCompressionRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageReadAheadRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverScanPointRevalidationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorktableCacheHitRatioMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverAccessScanRateMetricConfig{}, SqlserverAttentionRateMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig{}, SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricConfig{}, SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverExtentOperationRateMetricConfig{}, SqlserverGhostRecordSkippedRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLatchSuperlatchCountMetricConfig{}, SqlserverLatchSuperlatchTransitionRateMetricConfig{}, SqlserverLatchWaitRateMetricConfig{}, SqlserverLatchWaitTimeAvgMetricConfig{}, SqlserverLatchWaitTimeTotalMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryAreaMetricConfig{}, SqlserverMemoryCacheObjectCountMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryPageCountMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageAllocationRateMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageCompressionRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageReadAheadRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverParameterizationRateMetricConfig{}, SqlserverPlanExecutionRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverRecompilationRatioMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverScanPointRevalidationRateMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, SqlserverWorktableCacheHitRatioMetricConfig{}, HostNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}, SqlserverComputerNameResourceAttributeConfig{}, SqlserverDatabaseNameResourceAttributeConfig{}, SqlserverInstanceNameResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
 
-func TestSqlserverAvailabilityGroupEstimatedDataLossMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedDataLoss
+func TestSqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_data_loss doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLossMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.estimated_data_loss doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedDataLoss
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestSqlserverAvailabilityGroupEstimatedRecoveryTimeMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedRecoveryTime
+func TestSqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.estimated_recovery_time doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupEstimatedRecoveryTime
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestSqlserverAvailabilityGroupHardenedLatencyMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupHardenedLatency
+func TestSqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.hardened_latency doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaHardenedLatencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.hardened_latency doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupHardenedLatency
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestSqlserverAvailabilityGroupLogSendRateMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupLogSendRate
+func TestSqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaLogSendRate
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupLogSendRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.log_send.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaLogSendRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.log_send.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupLogSendRate
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaLogSendRate
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestSqlserverAvailabilityGroupQueueSizeMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupQueueSize
+func TestSqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaQueueSize
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupQueueSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.availability_group.queue.type]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.queue.size doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.availability_group.queue.type]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupQueueSize
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaQueueSize
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestSqlserverAvailabilityGroupRedoRateMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupRedoRate
+func TestSqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaRedoRate
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []SqlserverAvailabilityGroupRedoRateMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.redo.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
+	cfg.EnabledAttributes = []SqlserverAvailabilityGroupDatabaseReplicaRedoRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.availability_group.database_replica.redo.rate doesn't have an attribute invalid, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]")
 
-	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupRedoRate
+	cfg = DefaultMetricsConfig().SqlserverAvailabilityGroupDatabaseReplicaRedoRate
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

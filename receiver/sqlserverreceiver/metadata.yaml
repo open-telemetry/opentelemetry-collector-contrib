@@ -495,34 +495,34 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  sqlserver.availability_group.estimated_data_loss:
+  sqlserver.availability_group.database_replica.estimated_data_loss:
     enabled: false
-    description: Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
+    description: Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.
     stability: development
     unit: s
     gauge:
       value_type: double
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.estimated_recovery_time:
+  sqlserver.availability_group.database_replica.estimated_recovery_time:
     enabled: false
-    description: Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.
+    description: Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.
     stability: development
     unit: s
     gauge:
       value_type: double
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.hardened_latency:
+  sqlserver.availability_group.database_replica.hardened_latency:
     enabled: false
-    description: Latency between when a log record is generated on the primary replica and hardened on the secondary replica.
+    description: Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.
     stability: development
     unit: s
     gauge:
       value_type: double
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.log_send.rate:
+  sqlserver.availability_group.database_replica.log_send.rate:
     enabled: false
     description: Rate at which log data is being sent from the primary database replica to the secondary replica.
     stability: development
@@ -531,7 +531,7 @@ metrics:
       value_type: int
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.queue.size:
+  sqlserver.availability_group.database_replica.queue.size:
     enabled: false
     description: Amount of log data in the availability group queue that has not yet been processed.
     stability: development
@@ -540,7 +540,7 @@ metrics:
       value_type: int
     attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.availability_group.queue.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-  sqlserver.availability_group.redo.rate:
+  sqlserver.availability_group.database_replica.redo.rate:
     enabled: false
     description: Rate at which log data is being redone on the secondary database replica.
     stability: development

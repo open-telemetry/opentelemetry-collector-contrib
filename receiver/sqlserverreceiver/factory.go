@@ -253,12 +253,12 @@ func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverAvailabilityGroupEstimatedDataLoss.Enabled ||
-		metrics.SqlserverAvailabilityGroupEstimatedRecoveryTime.Enabled ||
-		metrics.SqlserverAvailabilityGroupHardenedLatency.Enabled ||
-		metrics.SqlserverAvailabilityGroupQueueSize.Enabled ||
-		metrics.SqlserverAvailabilityGroupLogSendRate.Enabled ||
-		metrics.SqlserverAvailabilityGroupRedoRate.Enabled
+	return metrics.SqlserverAvailabilityGroupDatabaseReplicaEstimatedDataLoss.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaEstimatedRecoveryTime.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaHardenedLatency.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaLogSendRate.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaRedoRate.Enabled
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {

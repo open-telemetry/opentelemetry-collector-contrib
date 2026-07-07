@@ -244,27 +244,9 @@ Number of SQL attentions (client cancellation interrupts) received per second.
 | ---- | ----------- | ---------- | --------- |
 | {attentions}/s | Gauge | Double | Development |
 
-### sqlserver.availability_group.estimated_data_loss
+### sqlserver.availability_group.database_replica.estimated_data_loss
 
-Estimated data loss for the secondary database replica, measured as the age of the last log record sent to the primary.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| db.namespace | The database name. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.estimated_recovery_time
-
-Estimated time to recover the secondary database replica, measured as the time needed to redo the current redo queue.
+Estimated potential data loss if a failover occurred now, expressed as the age in seconds of the oldest unsent log record on the primary replica.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -280,9 +262,9 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.hardened_latency
+### sqlserver.availability_group.database_replica.estimated_recovery_time
 
-Latency between when a log record is generated on the primary replica and hardened on the secondary replica.
+Estimated time in seconds to bring the secondary database replica up to date if a failover occurred now, based on the current redo queue size.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -298,7 +280,25 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.log_send.rate
+### sqlserver.availability_group.database_replica.hardened_latency
+
+Time in seconds between a log record being generated on the primary replica and hardened to disk on the secondary replica.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.availability_group.database_replica.log_send.rate
 
 Rate at which log data is being sent from the primary database replica to the secondary replica.
 
@@ -316,7 +316,7 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.queue.size
+### sqlserver.availability_group.database_replica.queue.size
 
 Amount of log data in the availability group queue that has not yet been processed.
 
@@ -335,7 +335,7 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 | sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
 
-### sqlserver.availability_group.redo.rate
+### sqlserver.availability_group.database_replica.redo.rate
 
 Rate at which log data is being redone on the secondary database replica.
 
