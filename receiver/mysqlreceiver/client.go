@@ -140,7 +140,7 @@ type client interface {
 	// supportsDataLockWaits controls template selection: querySample.tmpl (MySQL 8.0.11+,
 	// uses perf_schema blocking/MDL) vs querySampleLegacy.tmpl (MySQL 5.7/MariaDB,
 	// uses info_schema innodb_lock_waits).
-	getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error)
+	getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -964,7 +964,7 @@ var querySampleTemplate string
 //go:embed templates/querySampleLegacy.tmpl
 var querySampleLegacyTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool, supportsDataLockWaits bool) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error) {
 	tmplSrc := querySampleTemplate
 	if !supportsDataLockWaits {
 		tmplSrc = querySampleLegacyTemplate
@@ -973,7 +973,7 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool, su
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit":              limit,
+		"limit":               limit,
 		"supportsProcesslist": supportsProcesslist,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
