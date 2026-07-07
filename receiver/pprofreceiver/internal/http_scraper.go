@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
@@ -60,7 +59,7 @@ func (hcs *HTTPClientScraper) ScrapeProfiles(_ context.Context) (pprofile.Profil
 		return pprofile.Profiles{}, fmt.Errorf("failed to convert pprof to profiles: %w", err)
 	}
 
-	//set ScopeName and Version
+	// set ScopeName and Version
 	name := metadata.ScopeName + "/httpclientscraper"
 	version := hcs.BuildInfo.Version
 

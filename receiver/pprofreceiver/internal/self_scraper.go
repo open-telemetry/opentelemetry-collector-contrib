@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/xscraper"
 
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
@@ -52,7 +51,6 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 	if parseErr == nil {
 		p, err := translator.ConvertPprofToProfiles(pprofProfile)
 
-		
 		if p != nil {
 			name := metadata.ScopeName + "/selfscraper"
 			version := hcs.BuildInfo.Version

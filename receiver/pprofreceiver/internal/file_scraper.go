@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
@@ -56,7 +55,7 @@ func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
 			continue
 		}
 
-		//set ScopeName and Version
+		// set ScopeName and Version
 		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 			rp := profiles.ResourceProfiles().At(i)
 			for j := 0; j < rp.ScopeProfiles().Len(); j++ {
