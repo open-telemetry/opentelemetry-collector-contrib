@@ -24,7 +24,7 @@ type LambdaExpression[K any] struct {
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
-	arityValidated atomic.Bool
+	arityValidated *atomic.Bool
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
