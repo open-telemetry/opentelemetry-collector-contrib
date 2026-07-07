@@ -118,6 +118,14 @@ SELECT DISTINCT
 		counter_name IN (
 			 'SQL Compilations/sec'
 			,'SQL Re-Compilations/sec'
+			,'SQL Attention rate'
+			,'Auto-Param Attempts/sec'
+			,'Safe Auto-Params/sec'
+			,'Unsafe Auto-Params/sec'
+			,'Failed Auto-Params/sec'
+			,'Forced Parameterizations/sec'
+			,'Guided plan executions/sec'
+			,'Misguided plan executions/sec'
 			,'User Connections'
 			,'Batch Requests/sec'
 			,'Logouts/sec'
@@ -129,13 +137,27 @@ SELECT DISTINCT
 			,'Number of SuperLatches'
 			,'SuperLatch Promotions/sec'
 			,'SuperLatch Demotions/sec'
+			,'Extent Deallocations/sec'
+			,'Extents Allocated/sec'
+			,'FreeSpace Scans/sec'
 			,'Full Scans/sec'
 			,'Index Searches/sec'
+			,'Mixed page allocations/sec'
+			,'Page Compression Attempts/sec'
+			,'Page Deallocations/sec'
 			,'Page Splits/sec'
 			,'Page lookups/sec'
 			,'Page reads/sec'
 			,'Page writes/sec'
+			,'Pages Allocated/sec'
+			,'Pages Compressed/sec'
+			,'Probe Scans/sec'
+			,'Range Scans/sec'
 			,'Readahead pages/sec'
+			,'Scan Point Revalidations/sec'
+			,'Skipped Ghosted Records/sec'
+			,'Worktables From Cache Base'
+			,'Worktables From Cache Ratio'
 			,'Lazy writes/sec'
 			,'Checkpoint pages/sec'
 			,'Table Lock Escalations/sec'
@@ -290,6 +312,7 @@ LEFT OUTER JOIN @PCounters AS pc1
 	ON (
 		pc.[counter_name] = REPLACE(pc1.[counter_name],' base','')
 		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' (ms)')
+		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' Ratio')
 	)
 	AND pc.[object_name] = pc1.[object_name]
 	AND pc.[instance_name] = pc1.[instance_name]

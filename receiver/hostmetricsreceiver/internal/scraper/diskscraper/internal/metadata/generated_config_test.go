@@ -115,6 +115,89 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSystemDiskIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.io doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemDiskIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskIoTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskIoTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskIoTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.io_time doesn't have an attribute invalid, valid attributes: [device]")
+
+	cfg = DefaultMetricsConfig().SystemDiskIoTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskMergedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskMerged
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskMergedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.merged doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemDiskMerged
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskOperationTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskOperationTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskOperationTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.operation_time doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemDiskOperationTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.operations doesn't have an attribute invalid, valid attributes: [device, direction]")
+
+	cfg = DefaultMetricsConfig().SystemDiskOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskPendingOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskPendingOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskPendingOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.pending_operations doesn't have an attribute invalid, valid attributes: [device]")
+
+	cfg = DefaultMetricsConfig().SystemDiskPendingOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemDiskWeightedIoTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemDiskWeightedIoTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemDiskWeightedIoTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.disk.weighted_io_time doesn't have an attribute invalid, valid attributes: [device]")
+
+	cfg = DefaultMetricsConfig().SystemDiskWeightedIoTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

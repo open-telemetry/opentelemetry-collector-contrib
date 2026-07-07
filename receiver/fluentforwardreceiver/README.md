@@ -4,7 +4,6 @@
 This receiver runs a TCP server that accepts events via the
 [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |

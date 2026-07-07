@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    sqlserver.access.scan.rate:
+      enabled: true
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -35,6 +39,10 @@ all_set:
     sqlserver.database.tempdb.version_store.size:
       enabled: true
     sqlserver.deadlock.rate:
+      enabled: true
+    sqlserver.extent.operation.rate:
+      enabled: true
+    sqlserver.ghost_record.skipped.rate:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
@@ -77,11 +85,15 @@ all_set:
     sqlserver.os.wait.duration:
       enabled: true
       attributes: ["wait.category","wait.type"]
+    sqlserver.page.allocation.rate:
+      enabled: true
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: true
     sqlserver.page.checkpoint.flush.rate:
+      enabled: true
+    sqlserver.page.compression.rate:
       enabled: true
     sqlserver.page.lazy_write.rate:
       enabled: true
@@ -93,9 +105,19 @@ all_set:
     sqlserver.page.operation.rate:
       enabled: true
       attributes: ["type"]
+    sqlserver.page.read_ahead.rate:
+      enabled: true
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.parameterization.rate:
+      enabled: true
+      attributes: ["sqlserver.parameterization.result"]
+    sqlserver.plan.execution.rate:
+      enabled: true
+      attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.recompilation.ratio:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
@@ -106,6 +128,8 @@ all_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.scan_point.revalidation.rate:
       enabled: true
     sqlserver.table.count:
       enabled: true
@@ -132,6 +156,8 @@ all_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worktable.cache.hit_ratio:
+      enabled: true
   events:
     db.server.query_sample:
       enabled: true
@@ -145,6 +171,10 @@ all_set:
     server.port:
       enabled: true
     service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
     sqlserver.computer.name:
       enabled: true
@@ -154,6 +184,10 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    sqlserver.access.scan.rate:
+      enabled: true
+    sqlserver.attention.rate:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -188,6 +222,10 @@ reaggregate_set:
     sqlserver.database.tempdb.version_store.size:
       enabled: true
     sqlserver.deadlock.rate:
+      enabled: true
+    sqlserver.extent.operation.rate:
+      enabled: true
+    sqlserver.ghost_record.skipped.rate:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
@@ -230,11 +268,15 @@ reaggregate_set:
     sqlserver.os.wait.duration:
       enabled: true
       attributes: []
+    sqlserver.page.allocation.rate:
+      enabled: true
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: true
     sqlserver.page.checkpoint.flush.rate:
+      enabled: true
+    sqlserver.page.compression.rate:
       enabled: true
     sqlserver.page.lazy_write.rate:
       enabled: true
@@ -246,9 +288,19 @@ reaggregate_set:
     sqlserver.page.operation.rate:
       enabled: true
       attributes: []
+    sqlserver.page.read_ahead.rate:
+      enabled: true
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.parameterization.rate:
+      enabled: true
+      attributes: []
+    sqlserver.plan.execution.rate:
+      enabled: true
+      attributes: []
     sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.recompilation.ratio:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
@@ -259,6 +311,8 @@ reaggregate_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.scan_point.revalidation.rate:
       enabled: true
     sqlserver.table.count:
       enabled: true
@@ -285,6 +339,8 @@ reaggregate_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+    sqlserver.worktable.cache.hit_ratio:
+      enabled: true
   events:
     db.server.query_sample:
       enabled: true
@@ -299,6 +355,10 @@ reaggregate_set:
       enabled: true
     service.instance.id:
       enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
+      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -307,6 +367,10 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    sqlserver.access.scan.rate:
+      enabled: false
+    sqlserver.attention.rate:
+      enabled: false
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
@@ -341,6 +405,10 @@ none_set:
     sqlserver.database.tempdb.version_store.size:
       enabled: false
     sqlserver.deadlock.rate:
+      enabled: false
+    sqlserver.extent.operation.rate:
+      enabled: false
+    sqlserver.ghost_record.skipped.rate:
       enabled: false
     sqlserver.index.search.rate:
       enabled: false
@@ -383,11 +451,15 @@ none_set:
     sqlserver.os.wait.duration:
       enabled: false
       attributes: ["wait.category","wait.type"]
+    sqlserver.page.allocation.rate:
+      enabled: false
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: false
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: false
     sqlserver.page.checkpoint.flush.rate:
+      enabled: false
+    sqlserver.page.compression.rate:
       enabled: false
     sqlserver.page.lazy_write.rate:
       enabled: false
@@ -399,9 +471,19 @@ none_set:
     sqlserver.page.operation.rate:
       enabled: false
       attributes: ["type"]
+    sqlserver.page.read_ahead.rate:
+      enabled: false
     sqlserver.page.split.rate:
       enabled: false
+    sqlserver.parameterization.rate:
+      enabled: false
+      attributes: ["sqlserver.parameterization.result"]
+    sqlserver.plan.execution.rate:
+      enabled: false
+      attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:
+      enabled: false
+    sqlserver.recompilation.ratio:
       enabled: false
     sqlserver.replica.data.rate:
       enabled: false
@@ -412,6 +494,8 @@ none_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.scan_point.revalidation.rate:
       enabled: false
     sqlserver.table.count:
       enabled: false
@@ -438,6 +522,8 @@ none_set:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
+    sqlserver.worktable.cache.hit_ratio:
+      enabled: false
   events:
     db.server.query_sample:
       enabled: false
@@ -452,12 +538,45 @@ none_set:
       enabled: false
     service.instance.id:
       enabled: false
+    service.name:
+      enabled: false
+    service.namespace:
+      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
       enabled: false
     sqlserver.instance.name:
       enabled: false
+override_set:
+  resource_attributes:
+    host.name:
+      enabled: true
+      override_value: "override-host.name"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
+    service.instance.id:
+      enabled: true
+      override_value: "override-service.instance.id"
+    service.name:
+      enabled: true
+      override_value: "override-service.name"
+    service.namespace:
+      enabled: true
+      override_value: "override-service.namespace"
+    sqlserver.computer.name:
+      enabled: true
+      override_value: "override-sqlserver.computer.name"
+    sqlserver.database.name:
+      enabled: true
+      override_value: "override-sqlserver.database.name"
+    sqlserver.instance.name:
+      enabled: true
+      override_value: "override-sqlserver.instance.name"
 filter_set_include:
   resource_attributes:
     host.name:
@@ -479,6 +598,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.namespace:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -528,6 +659,18 @@ filter_set_exclude:
         - strict: "service.instance.id-val"
       events_exclude:
         - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"
+    service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.namespace-val"
+      events_exclude:
+        - strict: "service.namespace-val"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:

@@ -4,7 +4,6 @@
 The osquery Receiver runs queries run on an [osquery](https://osquery.io/)'s daemon on a schedule and converts the
 output to logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

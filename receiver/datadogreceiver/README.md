@@ -4,7 +4,6 @@
 The Datadog receiver enables translation between Datadog and OpenTelemetry-compatible backends. It currently has
 support for Datadog's APM traces, metrics, and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
@@ -24,10 +23,10 @@ Configuration wise is very simple, just need to specify where the Datadog receiv
 
 Then, the receiver must be configured in the pipeline where it will be used.
 
-The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to
-reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is
-initiated with a 128-bit trace id by a service that then calls a datadog instrumented one. Without this, spans from the
-datadog instrumented service will not correlate with the other spans.
+The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (enabled by default) makes the receiver reconstruct
+full 128-bit trace ids from spans coming from a datadog instrumented service, so they correlate with OpenTelemetry
+spans. Datadog splits a 128-bit trace id into a lower 64-bit part (`TraceID`) and an upper 64-bit part (`_dd.p.tid`);
+the receiver concatenates them. Disable the gate to fall back to 64-bit (zero-padded) trace ids.
 
 ```yaml
 receivers:
@@ -75,6 +74,31 @@ The duration between runs of the idle series cleanup task. This setting is only 
 The value must be a string with a unit (e.g. "5m", "60s").
 
 Default: "5m"
+
+### logs.decode_json_message (Optional)
+
+When `true`, log records whose `message` is itself a JSON object are expanded, mirroring Datadog's
+server-side "Preprocessing for JSON logs". The Datadog Agent forwards an application's JSON log as an
+opaque `message` string (JSON parsing normally happens in the Datadog backend), so without this the
+whole line becomes the log body. With it enabled, the inner reserved attributes take precedence over
+the agent envelope:
+
+- inner `message` → log body
+- `status`/`level`/`severity` → severity
+- `timestamp`/`@timestamp`/`date` → timestamp (the application's emit time, overriding the agent's collection time)
+- `hostname`/`host` → `host.name`, `service` → `service.name`
+- `dd.trace_id`/`dd.span_id` (decimal) → the record's `TraceID`/`SpanID`, enabling trace-log correlation
+- remaining inner keys → log attributes (with Datadog→OTel key translation)
+
+Default: `true`. Set to `false` to keep the raw JSON message as the log body.
+
+```yaml
+receivers:
+  datadog:
+    endpoint: localhost:8126
+    logs:
+      decode_json_message: true
+```
 
 ### HTTP Service Config
 

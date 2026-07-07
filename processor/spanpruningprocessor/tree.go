@@ -4,6 +4,9 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
+	"bytes"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -12,14 +15,15 @@ import (
 // spanNode models a span in the trace tree with cached relationships and
 // aggregation bookkeeping.
 type spanNode struct {
-	span              ptrace.Span
-	scopeSpans        ptrace.ScopeSpans
-	parent            *spanNode
-	children          []*spanNode
-	groupKey          string         // cached group key for leaf spans
-	replacementSpanID pcommon.SpanID // summary span ID that replaced this node's group
-	isLeaf            bool           // true if node has no children
-	markedForRemoval  bool           // true if node will be aggregated
+	span               ptrace.Span
+	scopeSpans         ptrace.ScopeSpans
+	parent             *spanNode
+	children           []*spanNode
+	groupKey           string         // cached group key for leaf spans
+	replacementSpanID  pcommon.SpanID // summary span ID that replaced this node's group
+	isLeaf             bool           // true if node has no children
+	markedForRemoval   bool           // true if node will be aggregated
+	isPreservedOutlier bool           // true if preserved as outlier (not aggregated)
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -76,13 +80,19 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		}
 	}
 
-	// Third pass: collect leaves (nodes still marked as leaf)
+	// Third pass: collect leaves (nodes still marked as leaf). nodeByID is a
+	// map, so iteration order is random; sort the leaves into a stable order
+	// (start time, then span ID) so downstream grouping, summary anchoring, and
+	// outlier reparenting are deterministic across runs.
 	tree.leaves = make([]*spanNode, 0, len(spans)/4)
 	for _, node := range tree.nodeByID {
 		if node.isLeaf {
 			tree.leaves = append(tree.leaves, node)
 		}
 	}
+	sort.Slice(tree.leaves, func(i, j int) bool {
+		return nodeOrderLess(tree.leaves[i], tree.leaves[j])
+	})
 
 	// Log warnings for incomplete traces
 	if rootCount > 1 {
@@ -103,6 +113,29 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
 func (t *traceTree) getLeaves() []*spanNode {
 	return t.leaves
+}
+
+// nodeOrderLess orders span nodes by start time, then span ID. It gives a
+// stable order that does not depend on map iteration, so leaf grouping, parent
+// candidate grouping, and summary anchoring are deterministic across runs.
+func nodeOrderLess(a, b *spanNode) bool {
+	sa, sb := a.span, b.span
+	if sa.StartTimestamp() != sb.StartTimestamp() {
+		return sa.StartTimestamp() < sb.StartTimestamp()
+	}
+	aID, bID := sa.SpanID(), sb.SpanID()
+	return bytes.Compare(aID[:], bID[:]) < 0
+}
+
+// depth returns the node's depth in the trace tree (root spans and orphans are
+// depth 0). It walks the cached parent chain, so cost is proportional to tree
+// height.
+func (n *spanNode) depth() int {
+	d := 0
+	for p := n.parent; p != nil; p = p.parent {
+		d++
+	}
+	return d
 }
 
 // findEligibleParentNodesFromCandidates filters candidate parents to those
@@ -145,7 +178,7 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 }
 
 // isEligibleForParentAggregation verifies that a node meets the criteria for
-// parent aggregation (not root, all children marked, not already marked).
+// parent aggregation (not root, all children marked or preserved, not already marked).
 func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
@@ -162,9 +195,9 @@ func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool
 		return false
 	}
 
-	// All children must be marked for removal
+	// All children must be either marked for removal OR preserved as outliers
 	for _, child := range node.children {
-		if !child.markedForRemoval {
+		if !child.markedForRemoval && !child.isPreservedOutlier {
 			return false
 		}
 	}

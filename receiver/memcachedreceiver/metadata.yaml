@@ -1,6 +1,5 @@
 display_name: Memcached Receiver
 type: memcached
-reaggregation_enabled: true
 
 description: |
   This receiver can fetch stats from a Memcached instance using the [stats

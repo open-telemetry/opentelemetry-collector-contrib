@@ -329,9 +329,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
-	if s.dbObfuscator != nil {
-		s.dbObfuscator.DBSystem = db.GetDBSystem(attributes)
-	}
+	dbSystem := db.GetDBSystem(attributes)
 
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
@@ -365,7 +363,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValueForAttribute(strVal, k)
+		processedString := s.processStringValueForAttribute(strVal, k, dbSystem)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -438,7 +436,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSystem string) string {
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
 		if match {
@@ -451,7 +449,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) 
 	}
 
 	if s.dbObfuscator.HasObfuscators() {
-		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
+		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey, dbSystem)
 		if err != nil {
 			return strVal
 		}

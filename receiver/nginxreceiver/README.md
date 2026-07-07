@@ -4,7 +4,6 @@
 This receiver can fetch stats from a NGINX instance using the `ngx_http_stub_status_module` module's `status`
 endpoint.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

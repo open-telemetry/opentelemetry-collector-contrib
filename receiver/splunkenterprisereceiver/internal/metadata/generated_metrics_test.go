@@ -171,7 +171,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")

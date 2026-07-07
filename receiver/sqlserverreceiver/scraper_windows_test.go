@@ -100,11 +100,11 @@ func TestSqlServerScraper(t *testing.T) {
 
 	assert.NoError(t, s.start(t.Context(), nil))
 	assert.Empty(t, s.watcherRecorders)
-	assert.Equal(t, 21, obsLogs.Len())
-	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
-	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
+	assert.Equal(t, 29, obsLogs.Len())
+	assert.Equal(t, 29, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
+	assert.Equal(t, 29, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:General Statistics\\").Len())
-	assert.Equal(t, 3, obsLogs.FilterMessageSnippet("\\SQLServer:SQL Statistics\\").Len())
+	assert.Equal(t, 11, obsLogs.FilterMessageSnippet("\\SQLServer:SQL Statistics\\").Len())
 	assert.Equal(t, 2, obsLogs.FilterMessageSnippet("\\SQLServer:Locks(_Total)\\").Len())
 	assert.Equal(t, 6, obsLogs.FilterMessageSnippet("\\SQLServer:Buffer Manager\\").Len())
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:Access Methods(_Total)\\").Len())
@@ -128,6 +128,8 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+		cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
@@ -158,13 +160,19 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+				ServiceName: metadata.ServiceNameResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+				ServiceNamespace: metadata.ServiceNamespaceResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeConfig{
+				SqlserverDatabaseName: metadata.SqlserverDatabaseNameResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.SqlserverInstanceNameResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverComputerName: metadata.SqlserverComputerNameResourceAttributeConfig{
 					Enabled: true,
 				},
 			},

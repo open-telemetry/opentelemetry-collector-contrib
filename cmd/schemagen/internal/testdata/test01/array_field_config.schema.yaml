@@ -1,7 +1,0 @@
-type: object
-properties:
-  tags:
-    items:
-      type: string
-    type: array
-

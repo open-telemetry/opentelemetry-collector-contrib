@@ -21,15 +21,15 @@ jobs:
       contents: write # required for pushing changes in release-prepare-release.sh
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: "open-telemetry/opentelemetry-collector"
           path: opentelemetry-collector
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: opentelemetry-collector-contrib
       - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: oldstable
           cache: false

@@ -5,7 +5,6 @@ The lookup processor enriches telemetry signals by performing external lookups t
 evaluates an [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) value
 expression to extract a lookup key, queries a lookup source, and writes the results as new attributes.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs, traces, metrics   |

@@ -3,7 +3,6 @@
 
 The `Skywalking` encoding extension is used to unmarshal Apache Skywalking segment traces. Marshalling is not supported.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

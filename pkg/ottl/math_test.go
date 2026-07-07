@@ -67,8 +67,12 @@ func testTime[K any](time, format string) (ExprFunc[K], error) {
 	if err != nil {
 		return nil, err
 	}
+	parser, err := timeutils.NewStrptimeParser(format)
+	if err != nil {
+		return nil, err
+	}
 	return func(_ context.Context, _ K) (any, error) {
-		timestamp, err := timeutils.ParseStrptime(format, time, loc)
+		timestamp, err := parser.Parse(time, loc)
 		return timestamp, err
 	}, nil
 }
@@ -337,7 +341,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 			parsed, err := mathParser.ParseString("", tt.input)
 			require.NoError(t, err)
 
-			getter, err := p.evaluateMathExpression(parsed.MathExpression)
+			getter, err := p.newParseContext().evaluateMathExpression(parsed.MathExpression)
 			require.NoError(t, err)
 
 			result, err := getter.Get(t.Context(), nil)
@@ -656,8 +660,9 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			pc := p.newParseContext()
 			if tt.mathExpr != nil {
-				getter, err := p.evaluateMathExpression(tt.mathExpr)
+				getter, err := pc.evaluateMathExpression(tt.mathExpr)
 				if err != nil {
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
@@ -671,7 +676,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				parsed, err := mathParser.ParseString("", tt.input)
 				require.NoError(t, err)
 
-				getter, err := p.evaluateMathExpression(parsed.MathExpression)
+				getter, err := pc.evaluateMathExpression(parsed.MathExpression)
 				require.NoError(t, err)
 
 				result, err := getter.Get(t.Context(), nil)
@@ -1237,7 +1242,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		getter, err := p.evaluateMathExpression(tt.mathExpr)
+		getter, err := p.newParseContext().evaluateMathExpression(tt.mathExpr)
 		require.NoError(t, err)
 
 		result, err := getter.Get(t.Context(), nil)

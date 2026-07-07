@@ -4,7 +4,6 @@
 The Microsoft IIS Receiver grabs metrics about an IIS instance using the Windows Performance Counters. Because of
 this, it is a Windows only receiver.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
