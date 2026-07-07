@@ -8,7 +8,11 @@
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 // #define _XOPEN_SOURCE
+// // _DEFAULT_SOURCE only exists since glibc 2.19 (2014); _BSD_SOURCE is the
+// // spelling older glibc versions understand for the same feature set. Both
+// // are defined so tm_gmtoff is visible regardless of glibc version.
 // #define _DEFAULT_SOURCE
+// #define _BSD_SOURCE
 // #include <stdlib.h>
 // #include <time.h>
 import (
