@@ -129,3 +129,9 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintDefaultMaxRequestBodySize(t *testing.T) {
+	cfg := confighttp.NewDefaultServerConfig()
+	t.Logf("Default MaxRequestBodySize is: %d", cfg.MaxRequestBodySize)
+}
+
