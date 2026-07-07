@@ -33,7 +33,7 @@ require (
 	github.com/prometheus/client_golang v1.23.3-0.20251103151724-a5ae20370e5e
 	github.com/prometheus/common v0.69.0
 	github.com/prometheus/prometheus v0.312.0
-	github.com/shirou/gopsutil/v4 v4.26.5
+	github.com/shirou/gopsutil/v4 v4.26.6
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.1-0.20260704132837-00f6354e6f8b
 	go.opentelemetry.io/collector/component/componenttest v0.155.1-0.20260704132837-00f6354e6f8b
