@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/event"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/drivertest"
@@ -120,6 +121,60 @@ func TestListDatabaseNames(t *testing.T) {
 	dbNames, err := client.ListDatabaseNames(t.Context(), bson.D{})
 	require.NoError(t, err)
 	require.Equal(t, "admin", dbNames[0])
+}
+
+func TestListCollectionNames(t *testing.T) {
+	mont := drivertest.NewMockDeployment()
+	mont.AddResponses(bson.D{
+		bson.E{Key: "ok", Value: 1},
+		bson.E{Key: "cursor", Value: bson.D{
+			bson.E{Key: "id", Value: int64(0)},
+			bson.E{Key: "ns", Value: "testdb.$cmd.listCollections"},
+			bson.E{Key: "firstBatch", Value: bson.A{
+				bson.D{
+					bson.E{Key: "name", Value: "products"},
+					bson.E{Key: "type", Value: "collection"},
+				},
+				bson.D{
+					bson.E{Key: "name", Value: "orders"},
+					bson.E{Key: "type", Value: "collection"},
+				},
+			}},
+		}},
+	})
+
+	var cmdStarted *event.CommandStartedEvent
+	monitor := &event.CommandMonitor{
+		Started: func(_ context.Context, e *event.CommandStartedEvent) {
+			cmdStarted = e
+		},
+	}
+
+	opts := options.Client().SetMonitor(monitor)
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+	opts.Deployment = mont
+	c, err := mongo.Connect(opts)
+	require.NoError(t, err)
+
+	client := &mongodbClient{
+		Client: c,
+	}
+	colNames, err := client.ListCollectionNames(t.Context(), "testdb")
+	require.NoError(t, err)
+	require.Equal(t, []string{"products", "orders"}, colNames)
+
+	require.NotNil(t, cmdStarted)
+	require.Equal(t, "listCollections", cmdStarted.CommandName)
+
+	var cmdStruct struct {
+		Filter struct {
+			Type string `bson:"type"`
+		} `bson:"filter"`
+	}
+	err = bson.Unmarshal(cmdStarted.Command, &cmdStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, "collection", cmdStruct.Filter.Type)
 }
 
 type commandString = string
