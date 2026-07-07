@@ -361,6 +361,44 @@ func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, conf
 	return writeTempConfigFile(t, buf.String())
 }
 
+func writeCountingCollectorWrapper(t *testing.T, invocationsFile string) string {
+	t.Helper()
+
+	var extension string
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	collectorPath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
+	require.NoError(t, err)
+
+	wrapperPath := filepath.Join(t.TempDir(), "otelcontribcol-wrapper")
+	if runtime.GOOS == "windows" {
+		wrapperPath += ".bat"
+		script := fmt.Sprintf("@echo off\r\necho %%* >> %q\r\n%q %%*\r\nexit /b %%ERRORLEVEL%%\r\n", invocationsFile, collectorPath)
+		require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o600))
+		return wrapperPath
+	}
+
+	script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" >> %q\nexec %q \"$@\"\n", invocationsFile, collectorPath)
+	require.NoError(t, os.WriteFile(wrapperPath, []byte(script), 0o700))
+	return wrapperPath
+}
+
+func collectorInvocationCount(t *testing.T, invocationsFile string) int {
+	t.Helper()
+
+	content, err := os.ReadFile(invocationsFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0
+	}
+	require.NoError(t, err)
+	trimmed := strings.TrimSpace(string(content))
+	if trimmed == "" {
+		return 0
+	}
+	return len(strings.Split(trimmed, "\n"))
+}
+
 func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
 	t.Helper()
 
@@ -1093,6 +1131,102 @@ func TestSupervisorRestoresLastWorkingRemoteConfigAtRuntimeAfterFailedConfig(t *
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, workingHash)
 	}, 15*time.Second, 100*time.Millisecond, "Restored last working remote config was not reported as applied")
+}
+
+func TestSupervisorDoesNotTightlyLoopWhenRestoredLastWorkingRemoteConfigFails(t *testing.T) {
+	storageDir := t.TempDir()
+	workingPort, err := findRandomPort()
+	require.NoError(t, err)
+	workingCfg, workingHash := createHealthCheckCollectorConfWithPort(t, strconv.Itoa(workingPort))
+	badCfg, badHash := createBadCollectorConf(t)
+	collectorInvocationsFile := filepath.Join(t.TempDir(), "collector-invocations.txt")
+	collectorWrapper := writeCountingCollectorWrapper(t, collectorInvocationsFile)
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	cfgFile := writeTempConfigFile(t, fmt.Sprintf(`
+server:
+  endpoint: %q
+
+capabilities:
+  reports_effective_config: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+
+storage:
+  directory: %q
+
+agent:
+  executable: %q
+  bootstrap_timeout: 10s
+  automatic_config_rollback: true
+`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorWrapper))
+
+	s, supervisorCfg := newSupervisorFromConfigFile(t, cfgFile)
+	require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+
+	require.NoError(t, s.Start(t.Context()))
+	t.Cleanup(s.Shutdown)
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: workingCfg.Bytes()},
+				},
+			},
+			ConfigHash: workingHash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		return healthCheckOK(workingPort)
+	}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+	require.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
+		return err == nil
+	}, 15*time.Second, 100*time.Millisecond, "Working remote config was not saved as last working")
+
+	invocationsBeforeBadConfig := collectorInvocationCount(t, collectorInvocationsFile)
+	claimedWorkingPortCh := claimPortWhenFree(t, workingPort)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	select {
+	case claimedWorkingPort := <-claimedWorkingPortCh:
+		require.NotNil(t, claimedWorkingPort)
+		t.Cleanup(func() {
+			require.NoError(t, claimedWorkingPort.Close())
+		})
+	case <-time.After(10 * time.Second):
+		t.Fatal("did not claim the last working config port after the collector stopped")
+	}
+	require.Eventually(t, func() bool {
+		return collectorInvocationCount(t, collectorInvocationsFile) >= invocationsBeforeBadConfig+2
+	}, 15*time.Second, 100*time.Millisecond, "Bad config and restored last working config were not both started")
+
+	require.Never(t, func() bool {
+		return collectorInvocationCount(t, collectorInvocationsFile) > invocationsBeforeBadConfig+2
+	}, 2*time.Second, 100*time.Millisecond, "Restored last working remote config failed repeatedly without waiting for restart backoff")
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
@@ -2051,6 +2185,31 @@ func healthCheckOK(port int) bool {
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
+}
+
+func claimPortWhenFree(t *testing.T, port int) <-chan net.Listener {
+	t.Helper()
+
+	claimed := make(chan net.Listener, 1)
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+			if err == nil {
+				claimed <- listener
+				return
+			}
+
+			select {
+			case <-t.Context().Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	return claimed
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
