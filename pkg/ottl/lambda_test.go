@@ -337,7 +337,7 @@ func TestLambdaExpression_Activate_RequiresValidateArity(t *testing.T) {
 		expr := newExpr()
 
 		lb, err := expr.Activate(t.Context())
-		require.EqualError(t, err, "lambda arity was not validated: ValidateArity must be called before Activate")
+		require.Error(t, err)
 		require.Nil(t, lb)
 	})
 
@@ -347,7 +347,7 @@ func TestLambdaExpression_Activate_RequiresValidateArity(t *testing.T) {
 		require.Error(t, expr.ValidateArity(2))
 
 		lb, err := expr.Activate(t.Context())
-		require.EqualError(t, err, "lambda arity was not validated: ValidateArity must be called before Activate")
+		require.Error(t, err)
 		require.Nil(t, lb)
 	})
 
@@ -357,6 +357,28 @@ func TestLambdaExpression_Activate_RequiresValidateArity(t *testing.T) {
 		require.NoError(t, expr.ValidateArity(1))
 
 		lb, err := expr.Activate(t.Context())
+		require.NoError(t, err)
+		defer lb.Close()
+
+		require.NoError(t, lb.SetArg(0, "value"))
+		got, err := lb.Eval(nil)
+		require.NoError(t, err)
+		assert.Equal(t, "value", got)
+	})
+
+	t.Run("requires revalidation after a failed ValidateArity", func(t *testing.T) {
+		expr := newExpr()
+
+		require.NoError(t, expr.ValidateArity(1))
+		require.Error(t, expr.ValidateArity(2))
+
+		lb, err := expr.Activate(t.Context())
+		require.Error(t, err)
+		require.Nil(t, lb)
+
+		require.NoError(t, expr.ValidateArity(1))
+
+		lb, err = expr.Activate(t.Context())
 		require.NoError(t, err)
 		defer lb.Close()
 

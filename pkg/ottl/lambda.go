@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 )
 
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
@@ -23,7 +24,7 @@ type LambdaExpression[K any] struct {
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
-	arityValidated bool
+	arityValidated atomic.Bool
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
@@ -58,11 +59,18 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 // the OTTL function factory, i.e. outside the closure the factory returns. It's
 // meant to verify the lambda passed by the user has the correct number of
 // formals before calling [LambdaExpression.Activate].
+//
+// While this is only intended to be called once, if it is called with an
+// invalid arity after being called with a valid arity, the lambda will be
+// marked as needing validation again, and [LambdaExpression.Activate] will
+// return an error until [LambdaExpression.ValidateArity] is called with a valid
+// arity.
 func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
+		l.arityValidated.Store(false)
 		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
 	}
-	l.arityValidated = true
+	l.arityValidated.Store(true)
 	return nil
 }
 
@@ -75,7 +83,7 @@ func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 // returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
 // runs inside the closure the factory returns.
 func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
-	if !l.arityValidated {
+	if !l.arityValidated.Load() {
 		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
 	}
 	v := l.activationPool.Get().(*LambdaActivation[K])
