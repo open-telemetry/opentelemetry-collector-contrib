@@ -387,7 +387,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB; convert to bytes
-			s.mb.RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 		}
 
 		val, err = retrieveInt(row, logSendRateKey)
@@ -403,7 +403,7 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
 			// DMV returns KB; convert to bytes
-			s.mb.RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName)
+			s.mb.RecordSqlserverAvailabilityGroupQueueSizeDataPoint(now, val.(int64)*1024, agName, dbName, replicaName, metadata.AttributeSqlserverAvailabilityGroupQueueTypeRedo)
 		}
 
 		val, err = retrieveInt(row, redoRateKey)

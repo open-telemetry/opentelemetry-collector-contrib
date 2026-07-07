@@ -298,27 +298,9 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.log_send.queue.size
-
-Amount of log records of the primary database that has not been sent to the secondary replicas.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
-| db.namespace | The database name. | Any Str | Recommended | - |
-| sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
-
 ### sqlserver.availability_group.log_send.rate
 
-Rate at which log records are being sent from the primary database replica to the secondary replica.
+Rate at which log data is being sent from the primary database replica to the secondary replica.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -334,9 +316,9 @@ This metric is only available when the receiver is configured to directly connec
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
-### sqlserver.availability_group.redo.queue.size
+### sqlserver.availability_group.queue.size
 
-Amount of log records of the secondary database that has not yet been redone.
+Amount of log data in the availability group queue that has not yet been processed.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 
@@ -351,10 +333,11 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+| sqlserver.availability_group.queue.type | The type of availability group queue. | Str: ``log_send``, ``redo`` | Recommended | - |
 
 ### sqlserver.availability_group.redo.rate
 
-Rate at which log records are being redone on the secondary database replica.
+Rate at which log data is being redone on the secondary database replica.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
 

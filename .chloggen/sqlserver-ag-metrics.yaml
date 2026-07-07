@@ -16,15 +16,14 @@ issues: [00000]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds 7 new opt-in metrics for monitoring SQL Server Always On Availability Groups:
+  Adds 6 new opt-in metrics for monitoring SQL Server Always On Availability Groups:
   - sqlserver.availability_group.estimated_data_loss (s)
   - sqlserver.availability_group.estimated_recovery_time (s)
   - sqlserver.availability_group.hardened_latency (s, SQL Server 2016+)
-  - sqlserver.availability_group.log_send.queue.size (By)
+  - sqlserver.availability_group.queue.size (By) — log_send and redo queue sizes via sqlserver.availability_group.queue.type attribute
   - sqlserver.availability_group.log_send.rate (By/s)
-  - sqlserver.availability_group.redo.queue.size (By)
   - sqlserver.availability_group.redo.rate (By/s)
-  Each metric includes availability_group.name, db.namespace, and replica.name attributes.
+  Each metric includes sqlserver.availability_group.name, db.namespace, and sqlserver.replica.name attributes.
   Requires direct connection to SQL Server with Always On Availability Groups enabled.
 
 # If your change doesn't affect end users or the exported elements of any package,

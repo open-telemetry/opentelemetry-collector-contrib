@@ -290,6 +290,32 @@ var MapAttributeSqlserverAccessScanType = map[string]AttributeSqlserverAccessSca
 	"range":      AttributeSqlserverAccessScanTypeRange,
 }
 
+// AttributeSqlserverAvailabilityGroupQueueType specifies the value sqlserver.availability_group.queue.type attribute.
+type AttributeSqlserverAvailabilityGroupQueueType int
+
+const (
+	_ AttributeSqlserverAvailabilityGroupQueueType = iota
+	AttributeSqlserverAvailabilityGroupQueueTypeLogSend
+	AttributeSqlserverAvailabilityGroupQueueTypeRedo
+)
+
+// String returns the string representation of the AttributeSqlserverAvailabilityGroupQueueType.
+func (av AttributeSqlserverAvailabilityGroupQueueType) String() string {
+	switch av {
+	case AttributeSqlserverAvailabilityGroupQueueTypeLogSend:
+		return "log_send"
+	case AttributeSqlserverAvailabilityGroupQueueTypeRedo:
+		return "redo"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverAvailabilityGroupQueueType is a helper map of string to AttributeSqlserverAvailabilityGroupQueueType attribute value.
+var MapAttributeSqlserverAvailabilityGroupQueueType = map[string]AttributeSqlserverAvailabilityGroupQueueType{
+	"log_send": AttributeSqlserverAvailabilityGroupQueueTypeLogSend,
+	"redo":     AttributeSqlserverAvailabilityGroupQueueTypeRedo,
+}
+
 // AttributeSqlserverExtentOperationType specifies the value sqlserver.extent.operation.type attribute.
 type AttributeSqlserverExtentOperationType int
 
@@ -560,17 +586,13 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.availability_group.hardened_latency",
 		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
-	SqlserverAvailabilityGroupLogSendQueueSize: metricInfo{
-		Name:       "sqlserver.availability_group.log_send.queue.size",
-		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
-	},
 	SqlserverAvailabilityGroupLogSendRate: metricInfo{
 		Name:       "sqlserver.availability_group.log_send.rate",
 		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
 	},
-	SqlserverAvailabilityGroupRedoQueueSize: metricInfo{
-		Name:       "sqlserver.availability_group.redo.queue.size",
-		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name"},
+	SqlserverAvailabilityGroupQueueSize: metricInfo{
+		Name:       "sqlserver.availability_group.queue.size",
+		Attributes: []string{"sqlserver.availability_group.name", "db.namespace", "sqlserver.replica.name", "sqlserver.availability_group.queue.type"},
 	},
 	SqlserverAvailabilityGroupRedoRate: metricInfo{
 		Name:       "sqlserver.availability_group.redo.rate",
@@ -808,9 +830,8 @@ type metricsInfo struct {
 	SqlserverAvailabilityGroupEstimatedDataLoss     metricInfo
 	SqlserverAvailabilityGroupEstimatedRecoveryTime metricInfo
 	SqlserverAvailabilityGroupHardenedLatency       metricInfo
-	SqlserverAvailabilityGroupLogSendQueueSize      metricInfo
 	SqlserverAvailabilityGroupLogSendRate           metricInfo
-	SqlserverAvailabilityGroupRedoQueueSize         metricInfo
+	SqlserverAvailabilityGroupQueueSize             metricInfo
 	SqlserverAvailabilityGroupRedoRate              metricInfo
 	SqlserverBatchRequestRate                       metricInfo
 	SqlserverBatchSQLCompilationRate                metricInfo
@@ -1006,7 +1027,7 @@ func (m *metricSqlserverAvailabilityGroupEstimatedDataLoss) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupEstimatedDataLoss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1014,14 +1035,14 @@ func (m *metricSqlserverAvailabilityGroupEstimatedDataLoss) recordDataPoint(star
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedDataLossMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
 	}
 
 	var s string
@@ -1101,7 +1122,7 @@ func (m *metricSqlserverAvailabilityGroupEstimatedRecoveryTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupEstimatedRecoveryTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1109,14 +1130,14 @@ func (m *metricSqlserverAvailabilityGroupEstimatedRecoveryTime) recordDataPoint(
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupEstimatedRecoveryTimeMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
 	}
 
 	var s string
@@ -1196,7 +1217,7 @@ func (m *metricSqlserverAvailabilityGroupHardenedLatency) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupHardenedLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupHardenedLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1204,14 +1225,14 @@ func (m *metricSqlserverAvailabilityGroupHardenedLatency) recordDataPoint(start 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupHardenedLatencyMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
 	}
 
 	var s string
@@ -1274,101 +1295,6 @@ func newMetricSqlserverAvailabilityGroupHardenedLatency(cfg SqlserverAvailabilit
 	return m
 }
 
-type metricSqlserverAvailabilityGroupLogSendQueueSize struct {
-	data          pmetric.Metric                                         // data buffer for generated metric.
-	config        SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig // metric config provided by user.
-	capacity      int                                                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                                                // slice containing number of aggregated datapoints at each index
-}
-
-// init fills sqlserver.availability_group.log_send.queue.size metric with initial data.
-func (m *metricSqlserverAvailabilityGroupLogSendQueueSize) init() {
-	m.data.SetName("sqlserver.availability_group.log_send.queue.size")
-	m.data.SetDescription("Amount of log records of the primary database that has not been sent to the secondary replicas.")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricSqlserverAvailabilityGroupLogSendQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyDbNamespace) {
-		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendQueueSizeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverAvailabilityGroupLogSendQueueSize) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverAvailabilityGroupLogSendQueueSize) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverAvailabilityGroupLogSendQueueSize(cfg SqlserverAvailabilityGroupLogSendQueueSizeMetricConfig) metricSqlserverAvailabilityGroupLogSendQueueSize {
-	m := metricSqlserverAvailabilityGroupLogSendQueueSize{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSqlserverAvailabilityGroupLogSendRate struct {
 	data          pmetric.Metric                                    // data buffer for generated metric.
 	config        SqlserverAvailabilityGroupLogSendRateMetricConfig // metric config provided by user.
@@ -1379,14 +1305,14 @@ type metricSqlserverAvailabilityGroupLogSendRate struct {
 // init fills sqlserver.availability_group.log_send.rate metric with initial data.
 func (m *metricSqlserverAvailabilityGroupLogSendRate) init() {
 	m.data.SetName("sqlserver.availability_group.log_send.rate")
-	m.data.SetDescription("Rate at which log records are being sent from the primary database replica to the secondary replica.")
+	m.data.SetDescription("Rate at which log data is being sent from the primary database replica to the secondary replica.")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupLogSendRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupLogSendRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1394,14 +1320,14 @@ func (m *metricSqlserverAvailabilityGroupLogSendRate) recordDataPoint(start pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupLogSendRateMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
 	}
 
 	var s string
@@ -1464,24 +1390,24 @@ func newMetricSqlserverAvailabilityGroupLogSendRate(cfg SqlserverAvailabilityGro
 	return m
 }
 
-type metricSqlserverAvailabilityGroupRedoQueueSize struct {
-	data          pmetric.Metric                                      // data buffer for generated metric.
-	config        SqlserverAvailabilityGroupRedoQueueSizeMetricConfig // metric config provided by user.
-	capacity      int                                                 // max observed number of data points added to the metric.
-	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
+type metricSqlserverAvailabilityGroupQueueSize struct {
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        SqlserverAvailabilityGroupQueueSizeMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.availability_group.redo.queue.size metric with initial data.
-func (m *metricSqlserverAvailabilityGroupRedoQueueSize) init() {
-	m.data.SetName("sqlserver.availability_group.redo.queue.size")
-	m.data.SetDescription("Amount of log records of the secondary database that has not yet been redone.")
+// init fills sqlserver.availability_group.queue.size metric with initial data.
+func (m *metricSqlserverAvailabilityGroupQueueSize) init() {
+	m.data.SetName("sqlserver.availability_group.queue.size")
+	m.data.SetDescription("Amount of log data in the availability group queue that has not yet been processed.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupRedoQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverAvailabilityGroupQueueTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1489,14 +1415,17 @@ func (m *metricSqlserverAvailabilityGroupRedoQueueSize) recordDataPoint(start pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyDbNamespace) {
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoQueueSizeMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupQueueSizeMetricAttributeKeySqlserverAvailabilityGroupQueueType) {
+		dp.Attributes().PutStr("sqlserver.availability_group.queue.type", sqlserverAvailabilityGroupQueueTypeAttributeValue)
 	}
 
 	var s string
@@ -1529,14 +1458,14 @@ func (m *metricSqlserverAvailabilityGroupRedoQueueSize) recordDataPoint(start pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverAvailabilityGroupRedoQueueSize) updateCapacity() {
+func (m *metricSqlserverAvailabilityGroupQueueSize) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverAvailabilityGroupRedoQueueSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverAvailabilityGroupQueueSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1549,8 +1478,8 @@ func (m *metricSqlserverAvailabilityGroupRedoQueueSize) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricSqlserverAvailabilityGroupRedoQueueSize(cfg SqlserverAvailabilityGroupRedoQueueSizeMetricConfig) metricSqlserverAvailabilityGroupRedoQueueSize {
-	m := metricSqlserverAvailabilityGroupRedoQueueSize{config: cfg}
+func newMetricSqlserverAvailabilityGroupQueueSize(cfg SqlserverAvailabilityGroupQueueSizeMetricConfig) metricSqlserverAvailabilityGroupQueueSize {
+	m := metricSqlserverAvailabilityGroupQueueSize{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1569,14 +1498,14 @@ type metricSqlserverAvailabilityGroupRedoRate struct {
 // init fills sqlserver.availability_group.redo.rate metric with initial data.
 func (m *metricSqlserverAvailabilityGroupRedoRate) init() {
 	m.data.SetName("sqlserver.availability_group.redo.rate")
-	m.data.SetDescription("Rate at which log records are being redone on the secondary database replica.")
+	m.data.SetDescription("Rate at which log data is being redone on the secondary database replica.")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverAvailabilityGroupRedoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
+func (m *metricSqlserverAvailabilityGroupRedoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1584,14 +1513,14 @@ func (m *metricSqlserverAvailabilityGroupRedoRate) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyAvailabilityGroupName) {
-		dp.Attributes().PutStr("sqlserver.availability_group.name", availabilityGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverAvailabilityGroupName) {
+		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeyReplicaName) {
-		dp.Attributes().PutStr("sqlserver.replica.name", replicaNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverAvailabilityGroupRedoRateMetricAttributeKeySqlserverReplicaName) {
+		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
 	}
 
 	var s string
@@ -5797,9 +5726,8 @@ type MetricsBuilder struct {
 	metricSqlserverAvailabilityGroupEstimatedDataLoss     metricSqlserverAvailabilityGroupEstimatedDataLoss
 	metricSqlserverAvailabilityGroupEstimatedRecoveryTime metricSqlserverAvailabilityGroupEstimatedRecoveryTime
 	metricSqlserverAvailabilityGroupHardenedLatency       metricSqlserverAvailabilityGroupHardenedLatency
-	metricSqlserverAvailabilityGroupLogSendQueueSize      metricSqlserverAvailabilityGroupLogSendQueueSize
 	metricSqlserverAvailabilityGroupLogSendRate           metricSqlserverAvailabilityGroupLogSendRate
-	metricSqlserverAvailabilityGroupRedoQueueSize         metricSqlserverAvailabilityGroupRedoQueueSize
+	metricSqlserverAvailabilityGroupQueueSize             metricSqlserverAvailabilityGroupQueueSize
 	metricSqlserverAvailabilityGroupRedoRate              metricSqlserverAvailabilityGroupRedoRate
 	metricSqlserverBatchRequestRate                       metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate                metricSqlserverBatchSQLCompilationRate
@@ -5899,9 +5827,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverAvailabilityGroupEstimatedDataLoss:     newMetricSqlserverAvailabilityGroupEstimatedDataLoss(mbc.Metrics.SqlserverAvailabilityGroupEstimatedDataLoss),
 		metricSqlserverAvailabilityGroupEstimatedRecoveryTime: newMetricSqlserverAvailabilityGroupEstimatedRecoveryTime(mbc.Metrics.SqlserverAvailabilityGroupEstimatedRecoveryTime),
 		metricSqlserverAvailabilityGroupHardenedLatency:       newMetricSqlserverAvailabilityGroupHardenedLatency(mbc.Metrics.SqlserverAvailabilityGroupHardenedLatency),
-		metricSqlserverAvailabilityGroupLogSendQueueSize:      newMetricSqlserverAvailabilityGroupLogSendQueueSize(mbc.Metrics.SqlserverAvailabilityGroupLogSendQueueSize),
 		metricSqlserverAvailabilityGroupLogSendRate:           newMetricSqlserverAvailabilityGroupLogSendRate(mbc.Metrics.SqlserverAvailabilityGroupLogSendRate),
-		metricSqlserverAvailabilityGroupRedoQueueSize:         newMetricSqlserverAvailabilityGroupRedoQueueSize(mbc.Metrics.SqlserverAvailabilityGroupRedoQueueSize),
+		metricSqlserverAvailabilityGroupQueueSize:             newMetricSqlserverAvailabilityGroupQueueSize(mbc.Metrics.SqlserverAvailabilityGroupQueueSize),
 		metricSqlserverAvailabilityGroupRedoRate:              newMetricSqlserverAvailabilityGroupRedoRate(mbc.Metrics.SqlserverAvailabilityGroupRedoRate),
 		metricSqlserverBatchRequestRate:                       newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:                newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
@@ -6102,9 +6029,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverAvailabilityGroupEstimatedDataLoss.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupEstimatedRecoveryTime.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupHardenedLatency.emit(ils.Metrics())
-	mb.metricSqlserverAvailabilityGroupLogSendQueueSize.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupLogSendRate.emit(ils.Metrics())
-	mb.metricSqlserverAvailabilityGroupRedoQueueSize.emit(ils.Metrics())
+	mb.metricSqlserverAvailabilityGroupQueueSize.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupRedoRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
@@ -6216,38 +6142,33 @@ func (mb *MetricsBuilder) RecordSqlserverAttentionRateDataPoint(ts pcommon.Times
 }
 
 // RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint adds a data point to sqlserver.availability_group.estimated_data_loss metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupEstimatedDataLossDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverAvailabilityGroupEstimatedDataLoss.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint adds a data point to sqlserver.availability_group.estimated_recovery_time metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupEstimatedRecoveryTimeDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverAvailabilityGroupEstimatedRecoveryTime.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint adds a data point to sqlserver.availability_group.hardened_latency metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupHardenedLatency.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
-}
-
-// RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint adds a data point to sqlserver.availability_group.log_send.queue.size metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupLogSendQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupLogSendQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupHardenedLatencyDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverAvailabilityGroupHardenedLatency.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverAvailabilityGroupLogSendRateDataPoint adds a data point to sqlserver.availability_group.log_send.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupLogSendRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupLogSendRateDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverAvailabilityGroupLogSendRate.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
-// RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint adds a data point to sqlserver.availability_group.redo.queue.size metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupRedoQueueSizeDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupRedoQueueSize.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+// RecordSqlserverAvailabilityGroupQueueSizeDataPoint adds a data point to sqlserver.availability_group.queue.size metric.
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupQueueSizeDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverAvailabilityGroupQueueTypeAttributeValue AttributeSqlserverAvailabilityGroupQueueType) {
+	mb.metricSqlserverAvailabilityGroupQueueSize.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue, sqlserverAvailabilityGroupQueueTypeAttributeValue.String())
 }
 
 // RecordSqlserverAvailabilityGroupRedoRateDataPoint adds a data point to sqlserver.availability_group.redo.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts pcommon.Timestamp, val int64, availabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, replicaNameAttributeValue string) {
-	mb.metricSqlserverAvailabilityGroupRedoRate.recordDataPoint(mb.startTime, ts, val, availabilityGroupNameAttributeValue, dbNamespaceAttributeValue, replicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupRedoRateDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverAvailabilityGroupRedoRate.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverBatchRequestRateDataPoint adds a data point to sqlserver.batch.request.rate metric.
