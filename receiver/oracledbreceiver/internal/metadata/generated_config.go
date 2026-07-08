@@ -790,13 +790,23 @@ func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// OracledbGcCurrentBlockReceiveTimeMetricConfig provides config for the oracledb.gc.current_block.receive.time metric.
-type OracledbGcCurrentBlockReceiveTimeMetricConfig struct {
+// OracledbGcCurrentBlockTimeMetricAttributeKey specifies the key of an attribute for the oracledb.gc.current_block.time metric.
+type OracledbGcCurrentBlockTimeMetricAttributeKey string
+
+const (
+	OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection OracledbGcCurrentBlockTimeMetricAttributeKey = "oracledb.gc.direction"
+)
+
+// OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric.
+type OracledbGcCurrentBlockTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbGcCurrentBlockTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbGcCurrentBlockReceiveTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbGcCurrentBlockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -807,6 +817,24 @@ func (ms *OracledbGcCurrentBlockReceiveTimeMetricConfig) Unmarshal(parser *confm
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbGcCurrentBlockTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection:
+		default:
+			return fmt.Errorf("metric oracledb.gc.current_block.time doesn't have an attribute %v, valid attributes: [oracledb.gc.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -922,7 +950,7 @@ func (ms *OracledbLobOperationsMetricConfig) Validate() error {
 type OracledbLockTimeMetricAttributeKey string
 
 const (
-	OracledbLockTimeMetricAttributeKeyOracledbLockType OracledbLockTimeMetricAttributeKey = "oracledb.lock.type"
+	OracledbLockTimeMetricAttributeKeyOracledbSessionType OracledbLockTimeMetricAttributeKey = "oracledb.session.type"
 )
 
 // OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric.
@@ -951,9 +979,9 @@ func (ms *OracledbLockTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbLockTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbLockTimeMetricAttributeKeyOracledbLockType:
+		case OracledbLockTimeMetricAttributeKeyOracledbSessionType:
 		default:
-			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.lock.type]", val)
+			return fmt.Errorf("metric oracledb.lock.time doesn't have an attribute %v, valid attributes: [oracledb.session.type]", val)
 		}
 	}
 
@@ -2553,7 +2581,7 @@ type MetricsConfig struct {
 	OracledbExchangeDeadlocks                     OracledbExchangeDeadlocksMetricConfig                     `mapstructure:"oracledb.exchange_deadlocks"`
 	OracledbExecutionUtilization                  OracledbExecutionUtilizationMetricConfig                  `mapstructure:"oracledb.execution.utilization"`
 	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
-	OracledbGcCurrentBlockReceiveTime             OracledbGcCurrentBlockReceiveTimeMetricConfig             `mapstructure:"oracledb.gc.current_block.receive.time"`
+	OracledbGcCurrentBlockTime                    OracledbGcCurrentBlockTimeMetricConfig                    `mapstructure:"oracledb.gc.current_block.time"`
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbHostCPUUtilization                    OracledbHostCPUUtilizationMetricConfig                    `mapstructure:"oracledb.host.cpu.utilization"`
 	OracledbLibraryCacheUtilization               OracledbLibraryCacheUtilizationMetricConfig               `mapstructure:"oracledb.library_cache.utilization"`
@@ -2724,8 +2752,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbExecutions: OracledbExecutionsMetricConfig{
 			Enabled: true,
 		},
-		OracledbGcCurrentBlockReceiveTime: OracledbGcCurrentBlockReceiveTimeMetricConfig{
-			Enabled: false,
+		OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection},
 		},
 		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,
@@ -2744,7 +2774,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbLockTime: OracledbLockTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbLockType},
+			EnabledAttributes:   []OracledbLockTimeMetricAttributeKey{OracledbLockTimeMetricAttributeKeyOracledbSessionType},
 		},
 		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 			Enabled: true,

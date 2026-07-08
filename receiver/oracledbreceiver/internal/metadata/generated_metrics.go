@@ -242,30 +242,26 @@ var MapAttributeOracledbEnqueueType = map[string]AttributeOracledbEnqueueType{
 	"waits":       AttributeOracledbEnqueueTypeWaits,
 }
 
-// AttributeOracledbLockType specifies the value oracledb.lock.type attribute.
-type AttributeOracledbLockType int
+// AttributeOracledbGcDirection specifies the value oracledb.gc.direction attribute.
+type AttributeOracledbGcDirection int
 
 const (
-	_ AttributeOracledbLockType = iota
-	AttributeOracledbLockTypeBackground
-	AttributeOracledbLockTypeForeground
+	_ AttributeOracledbGcDirection = iota
+	AttributeOracledbGcDirectionReceive
 )
 
-// String returns the string representation of the AttributeOracledbLockType.
-func (av AttributeOracledbLockType) String() string {
+// String returns the string representation of the AttributeOracledbGcDirection.
+func (av AttributeOracledbGcDirection) String() string {
 	switch av {
-	case AttributeOracledbLockTypeBackground:
-		return "background"
-	case AttributeOracledbLockTypeForeground:
-		return "foreground"
+	case AttributeOracledbGcDirectionReceive:
+		return "receive"
 	}
 	return ""
 }
 
-// MapAttributeOracledbLockType is a helper map of string to AttributeOracledbLockType attribute value.
-var MapAttributeOracledbLockType = map[string]AttributeOracledbLockType{
-	"background": AttributeOracledbLockTypeBackground,
-	"foreground": AttributeOracledbLockTypeForeground,
+// MapAttributeOracledbGcDirection is a helper map of string to AttributeOracledbGcDirection attribute value.
+var MapAttributeOracledbGcDirection = map[string]AttributeOracledbGcDirection{
+	"receive": AttributeOracledbGcDirectionReceive,
 }
 
 // AttributeOracledbParseResult specifies the value oracledb.parse.result attribute.
@@ -451,12 +447,15 @@ type AttributeOracledbSessionType int
 
 const (
 	_ AttributeOracledbSessionType = iota
+	AttributeOracledbSessionTypeBackground
 	AttributeOracledbSessionTypeForeground
 )
 
 // String returns the string representation of the AttributeOracledbSessionType.
 func (av AttributeOracledbSessionType) String() string {
 	switch av {
+	case AttributeOracledbSessionTypeBackground:
+		return "background"
 	case AttributeOracledbSessionTypeForeground:
 		return "foreground"
 	}
@@ -465,6 +464,7 @@ func (av AttributeOracledbSessionType) String() string {
 
 // MapAttributeOracledbSessionType is a helper map of string to AttributeOracledbSessionType attribute value.
 var MapAttributeOracledbSessionType = map[string]AttributeOracledbSessionType{
+	"background": AttributeOracledbSessionTypeBackground,
 	"foreground": AttributeOracledbSessionTypeForeground,
 }
 
@@ -622,8 +622,9 @@ var MetricsInfo = metricsInfo{
 	OracledbExecutions: metricInfo{
 		Name: "oracledb.executions",
 	},
-	OracledbGcCurrentBlockReceiveTime: metricInfo{
-		Name: "oracledb.gc.current_block.receive.time",
+	OracledbGcCurrentBlockTime: metricInfo{
+		Name:       "oracledb.gc.current_block.time",
+		Attributes: []string{"oracledb.gc.direction"},
 	},
 	OracledbHardParses: metricInfo{
 		Name: "oracledb.hard_parses",
@@ -640,7 +641,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbLockTime: metricInfo{
 		Name:       "oracledb.lock.time",
-		Attributes: []string{"oracledb.lock.type"},
+		Attributes: []string{"oracledb.session.type"},
 	},
 	OracledbLogicalReads: metricInfo{
 		Name: "oracledb.logical_reads",
@@ -858,7 +859,7 @@ type metricsInfo struct {
 	OracledbExchangeDeadlocks                     metricInfo
 	OracledbExecutionUtilization                  metricInfo
 	OracledbExecutions                            metricInfo
-	OracledbGcCurrentBlockReceiveTime             metricInfo
+	OracledbGcCurrentBlockTime                    metricInfo
 	OracledbHardParses                            metricInfo
 	OracledbHostCPUUtilization                    metricInfo
 	OracledbLibraryCacheUtilization               metricInfo
@@ -2759,50 +2760,89 @@ func newMetricOracledbExecutions(cfg OracledbExecutionsMetricConfig) metricOracl
 	return m
 }
 
-type metricOracledbGcCurrentBlockReceiveTime struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   OracledbGcCurrentBlockReceiveTimeMetricConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+type metricOracledbGcCurrentBlockTime struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        OracledbGcCurrentBlockTimeMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.gc.current_block.receive.time metric with initial data.
-func (m *metricOracledbGcCurrentBlockReceiveTime) init() {
-	m.data.SetName("oracledb.gc.current_block.receive.time")
-	m.data.SetDescription("Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.")
+// init fills oracledb.gc.current_block.time metric with initial data.
+func (m *metricOracledbGcCurrentBlockTime) init() {
+	m.data.SetName("oracledb.gc.current_block.time")
+	m.data.SetDescription("Cumulative time spent transferring current blocks between instances over RAC cache fusion.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbGcCurrentBlockReceiveTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbGcDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection) {
+		dp.Attributes().PutStr("oracledb.gc.direction", oracledbGcDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbGcCurrentBlockReceiveTime) updateCapacity() {
+func (m *metricOracledbGcCurrentBlockTime) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbGcCurrentBlockReceiveTime) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbGcCurrentBlockTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbGcCurrentBlockReceiveTime(cfg OracledbGcCurrentBlockReceiveTimeMetricConfig) metricOracledbGcCurrentBlockReceiveTime {
-	m := metricOracledbGcCurrentBlockReceiveTime{config: cfg}
+func newMetricOracledbGcCurrentBlockTime(cfg OracledbGcCurrentBlockTimeMetricConfig) metricOracledbGcCurrentBlockTime {
+	m := metricOracledbGcCurrentBlockTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3064,7 +3104,7 @@ type metricOracledbLockTime struct {
 // init fills oracledb.lock.time metric with initial data.
 func (m *metricOracledbLockTime) init() {
 	m.data.SetName("oracledb.lock.time")
-	m.data.SetDescription("Cumulative time spent on transaction lock activity, in seconds.")
+	m.data.SetDescription("Cumulative time spent on transaction lock activity.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3073,7 +3113,7 @@ func (m *metricOracledbLockTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbLockTypeAttributeValue string) {
+func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3081,8 +3121,8 @@ func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbLockTimeMetricAttributeKeyOracledbLockType) {
-		dp.Attributes().PutStr("oracledb.lock.type", oracledbLockTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbLockTimeMetricAttributeKeyOracledbSessionType) {
+		dp.Attributes().PutStr("oracledb.session.type", oracledbSessionTypeAttributeValue)
 	}
 
 	var s string
@@ -6652,7 +6692,7 @@ type MetricsBuilder struct {
 	metricOracledbExchangeDeadlocks                     metricOracledbExchangeDeadlocks
 	metricOracledbExecutionUtilization                  metricOracledbExecutionUtilization
 	metricOracledbExecutions                            metricOracledbExecutions
-	metricOracledbGcCurrentBlockReceiveTime             metricOracledbGcCurrentBlockReceiveTime
+	metricOracledbGcCurrentBlockTime                    metricOracledbGcCurrentBlockTime
 	metricOracledbHardParses                            metricOracledbHardParses
 	metricOracledbHostCPUUtilization                    metricOracledbHostCPUUtilization
 	metricOracledbLibraryCacheUtilization               metricOracledbLibraryCacheUtilization
@@ -6770,7 +6810,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbExchangeDeadlocks:                     newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
 		metricOracledbExecutionUtilization:                  newMetricOracledbExecutionUtilization(mbc.Metrics.OracledbExecutionUtilization),
 		metricOracledbExecutions:                            newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
-		metricOracledbGcCurrentBlockReceiveTime:             newMetricOracledbGcCurrentBlockReceiveTime(mbc.Metrics.OracledbGcCurrentBlockReceiveTime),
+		metricOracledbGcCurrentBlockTime:                    newMetricOracledbGcCurrentBlockTime(mbc.Metrics.OracledbGcCurrentBlockTime),
 		metricOracledbHardParses:                            newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
 		metricOracledbHostCPUUtilization:                    newMetricOracledbHostCPUUtilization(mbc.Metrics.OracledbHostCPUUtilization),
 		metricOracledbLibraryCacheUtilization:               newMetricOracledbLibraryCacheUtilization(mbc.Metrics.OracledbLibraryCacheUtilization),
@@ -6995,7 +7035,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbExchangeDeadlocks.emit(ils.Metrics())
 	mb.metricOracledbExecutionUtilization.emit(ils.Metrics())
 	mb.metricOracledbExecutions.emit(ils.Metrics())
-	mb.metricOracledbGcCurrentBlockReceiveTime.emit(ils.Metrics())
+	mb.metricOracledbGcCurrentBlockTime.emit(ils.Metrics())
 	mb.metricOracledbHardParses.emit(ils.Metrics())
 	mb.metricOracledbHostCPUUtilization.emit(ils.Metrics())
 	mb.metricOracledbLibraryCacheUtilization.emit(ils.Metrics())
@@ -7367,9 +7407,9 @@ func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp
 	return nil
 }
 
-// RecordOracledbGcCurrentBlockReceiveTimeDataPoint adds a data point to oracledb.gc.current_block.receive.time metric.
-func (mb *MetricsBuilder) RecordOracledbGcCurrentBlockReceiveTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbGcCurrentBlockReceiveTime.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbGcCurrentBlockTimeDataPoint adds a data point to oracledb.gc.current_block.time metric.
+func (mb *MetricsBuilder) RecordOracledbGcCurrentBlockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbGcDirectionAttributeValue AttributeOracledbGcDirection) {
+	mb.metricOracledbGcCurrentBlockTime.recordDataPoint(mb.startTime, ts, val, oracledbGcDirectionAttributeValue.String())
 }
 
 // RecordOracledbHardParsesDataPoint adds a data point to oracledb.hard_parses metric.
@@ -7403,8 +7443,8 @@ func (mb *MetricsBuilder) RecordOracledbLobOperationsDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbLockTimeDataPoint adds a data point to oracledb.lock.time metric.
-func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbLockTypeAttributeValue AttributeOracledbLockType) {
-	mb.metricOracledbLockTime.recordDataPoint(mb.startTime, ts, val, oracledbLockTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue AttributeOracledbSessionType) {
+	mb.metricOracledbLockTime.recordDataPoint(mb.startTime, ts, val, oracledbSessionTypeAttributeValue.String())
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.

@@ -390,7 +390,7 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg.Metrics.OracledbLockTime.Enabled = true
 	cfg.Metrics.OracledbRecoveryBlocksRead.Enabled = true
 	cfg.Metrics.OracledbSmonPosts.Enabled = true
-	cfg.Metrics.OracledbGcCurrentBlockReceiveTime.Enabled = true
+	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
 
 	m := scrapeWithConfig(t, cfg)
 
@@ -408,17 +408,17 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 			assert.Equal(t, int64(4521), dps.At(0).IntValue())
 		case "oracledb.lock.time":
 			seen++
-			// one data point per oracledb.lock.type; raw centiseconds are divided by 100
+			// one data point per oracledb.session.type; raw centiseconds are divided by 100
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
-				lockType, _ := dp.Attributes().Get("oracledb.lock.type")
-				switch lockType.Str() {
+				sessionType, _ := dp.Attributes().Get("oracledb.session.type")
+				switch sessionType.Str() {
 				case "background":
 					assert.InDelta(t, 3.5, dp.DoubleValue(), 1e-9)
 				case "foreground":
 					assert.InDelta(t, 12.0, dp.DoubleValue(), 1e-9)
 				default:
-					t.Errorf("unexpected oracledb.lock.type %q", lockType.Str())
+					t.Errorf("unexpected oracledb.session.type %q", sessionType.Str())
 				}
 			}
 		case "oracledb.recovery.blocks_read":
@@ -439,8 +439,10 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
 				}
 			}
-		case "oracledb.gc.current_block.receive.time":
+		case "oracledb.gc.current_block.time":
 			seen++
+			gcDir, _ := dps.At(0).Attributes().Get("oracledb.gc.direction")
+			assert.Equal(t, "receive", gcDir.Str())
 			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
 		}
 	}

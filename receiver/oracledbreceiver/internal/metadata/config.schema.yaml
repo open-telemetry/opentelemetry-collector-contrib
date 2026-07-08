@@ -248,8 +248,8 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.gc.current_block.receive.time:
-        description: "OracledbGcCurrentBlockReceiveTimeMetricConfig provides config for the oracledb.gc.current_block.receive.time metric."
+      oracledb.gc.current_block.time:
+        description: "OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric."
         type: object
         properties:
           enabled:

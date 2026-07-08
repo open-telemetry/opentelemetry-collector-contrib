@@ -393,7 +393,7 @@ Total wall-clock time spent in database calls.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.session.type | Class of session the database time is attributed to. | Str: ``foreground`` | Recommended | - |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.db_block_gets
 
@@ -447,13 +447,19 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
 
-### oracledb.gc.current_block.receive.time
+### oracledb.gc.current_block.time
 
-Cumulative time spent receiving current blocks from other instances over RAC cache fusion, in seconds.
+Cumulative time spent transferring current blocks between instances over RAC cache fusion.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.gc.direction | Direction of the RAC cache fusion block transfer. | Str: ``receive`` | Recommended | - |
 
 ### oracledb.host.cpu.utilization
 
@@ -487,7 +493,7 @@ Total count of LOB (large object) I/O operations.
 
 ### oracledb.lock.time
 
-Cumulative time spent on transaction lock activity, in seconds.
+Cumulative time spent on transaction lock activity.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -497,7 +503,7 @@ Cumulative time spent on transaction lock activity, in seconds.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.lock.type | Whether the lock timing is accumulated by background (get) or foreground (wait) sessions. | Str: ``background``, ``foreground`` | Recommended | - |
+| oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
 
 ### oracledb.logons
 

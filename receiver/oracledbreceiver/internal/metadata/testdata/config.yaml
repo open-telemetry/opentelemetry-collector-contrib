@@ -70,8 +70,9 @@ all_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: true
-    oracledb.gc.current_block.receive.time:
+    oracledb.gc.current_block.time:
       enabled: true
+      attributes: ["oracledb.gc.direction"]
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
@@ -83,7 +84,7 @@ all_set:
       attributes: ["disk.io.direction"]
     oracledb.lock.time:
       enabled: true
-      attributes: ["oracledb.lock.type"]
+      attributes: ["oracledb.session.type"]
     oracledb.logical_reads:
       enabled: true
     oracledb.logons:
@@ -309,8 +310,9 @@ reaggregate_set:
       attributes: []
     oracledb.executions:
       enabled: true
-    oracledb.gc.current_block.receive.time:
+    oracledb.gc.current_block.time:
       enabled: true
+      attributes: []
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
@@ -548,8 +550,9 @@ none_set:
       attributes: ["oracledb.parse.type"]
     oracledb.executions:
       enabled: false
-    oracledb.gc.current_block.receive.time:
+    oracledb.gc.current_block.time:
       enabled: false
+      attributes: ["oracledb.gc.direction"]
     oracledb.hard_parses:
       enabled: false
     oracledb.host.cpu.utilization:
@@ -561,7 +564,7 @@ none_set:
       attributes: ["disk.io.direction"]
     oracledb.lock.time:
       enabled: false
-      attributes: ["oracledb.lock.type"]
+      attributes: ["oracledb.session.type"]
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:
