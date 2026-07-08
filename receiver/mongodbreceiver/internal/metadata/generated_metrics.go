@@ -2073,7 +2073,7 @@ type metricMongodbLockAcquireTime struct {
 func (m *metricMongodbLockAcquireTime) init() {
 	m.data.SetName("mongodb.lock.acquire.time")
 	m.data.SetDescription("Cumulative wait time for the lock acquisitions.")
-	m.data.SetUnit("microseconds")
+	m.data.SetUnit("us")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
