@@ -74,8 +74,8 @@ github.com/DataDog/datadog-agent/comp/core/telemetry v0.80.2 h1:ob+hkQFsaBh2AZYv
 github.com/DataDog/datadog-agent/comp/core/telemetry v0.80.2/go.mod h1:jiunyU0eFqDznBDBaqppVtyJqjfx5rVxf4dvD5j7RgM=
 github.com/DataDog/datadog-agent/comp/def v0.80.2 h1:HhGKz1/IQKdYz/nNEsqh4Ik283QMKxxwH/JCrvTl404=
 github.com/DataDog/datadog-agent/comp/def v0.80.2/go.mod h1:v1vMf3wCmEpBX64eLjyjyiJFsq4W+rnJXQnLdqwB0gs=
-github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.82.0-devel.0.20260708171050-652d86f7cb28 h1:xTR1oodPWZQGiGyKzlVBfwufWhUC4l43oROm1a/iNao=
-github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.82.0-devel.0.20260708171050-652d86f7cb28/go.mod h1:pDK2s57uTku5ANirzDCWcMDihYUi1f82yTMi5PCVZXw=
+github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.82.0-devel.0.20260708210941-b0d9b5a19458 h1:9J2/tj5Hq7pX30Sh10kO37OkwmN3tbM1n7X+klPopCg=
+github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.82.0-devel.0.20260708210941-b0d9b5a19458/go.mod h1:RCTJUnL/LVz20xEltjFe4eXm8nqtVXKgm53xjiQ5D88=
 github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.80.2 h1:PCcnNm5nWqNaVguYp+qaitxD0REYaEm+tUuvinujT1g=
 github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.80.2/go.mod h1:od3vQNYA+eKEYH9liTqyMQ0s5k3fr3l6uYFihHzDyMg=
 github.com/DataDog/datadog-agent/comp/logs-library v0.80.2 h1:NwP3I7908xXG1k20h7Enum/LzPCr5PkoVMI3zeRBhXE=
@@ -88,8 +88,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelin
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.80.2/go.mod h1:MqfhnuUmKxsrGN1dBuO+q+N3YuHch2W7OF93870mCR4=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.80.2 h1:Rt+IUYIRx65QU2mflEJlG6NKnxSSOjr6HS10k+Njbc8=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.80.2/go.mod h1:EVeAXxkZP2XDrMO7Onnxivl8G690eCfrPjQNNlCv+V4=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.82.0-devel.0.20260708171050-652d86f7cb28 h1:MhTGHwoG3i0LnYgzuUisuuQiSQyC8n6SL9aHLkddlF0=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.82.0-devel.0.20260708171050-652d86f7cb28/go.mod h1:Oh0aWkljh9OEeruG4v5PrQqGmgdShHD76jqymvG7KLk=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.82.0-devel.0.20260708210941-b0d9b5a19458 h1:W5cJr9V8425geCjdzwAjroktTS8YbOZwHvxDLl6FQ6s=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.82.0-devel.0.20260708210941-b0d9b5a19458/go.mod h1:qze9dfocemgyifuPlYzsuOgLf/BBjCiTTczFFAQTF2s=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.80.2 h1:RIwXb/N8ZdBX/pYKIDDDP7opzkdcySLhyG/+vuirxA8=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.80.2/go.mod h1:UlN+EAHEuIZQJPJ28qGgvhhEISx+AGVjMrtgxE02SJ8=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.80.2 h1:9kWLcFICEHZSw70t21l3KKfY0Uew1LE4a0J0XcFeP/E=
@@ -130,8 +130,8 @@ github.com/DataDog/datadog-agent/pkg/config/setup v0.82.0-devel.0.20260624113434
 github.com/DataDog/datadog-agent/pkg/config/setup v0.82.0-devel.0.20260624113434-509b872045c2/go.mod h1:ClyjaQdt62EcsNYM6b/1JqJJwt6utrZEekMdpAF8TnQ=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.80.2 h1:9UXniWMRE2AKjAF8uNruo6CyKODXz8O4MSD2oyVYj7Q=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.80.2/go.mod h1:lBaWVAVkkZKnxX4hnRW++i5hQ2ZcYpotSR1lVbcX3T4=
-github.com/DataDog/datadog-agent/pkg/config/utils v0.82.0-devel.0.20260708171050-652d86f7cb28 h1:aJ7qvkFTHW7gzNznlfcMiT8aHhtO1X9RnfMMTY/ne4w=
-github.com/DataDog/datadog-agent/pkg/config/utils v0.82.0-devel.0.20260708171050-652d86f7cb28/go.mod h1:hxvnx/vRbIscmng6FMwLQwUR+W8IpXgKlw55HzAzIG8=
+github.com/DataDog/datadog-agent/pkg/config/utils v0.82.0-devel.0.20260708210941-b0d9b5a19458 h1:do/1nD/4jdG7KHK38ZcVxWj2NebgMl4jgBfIICUCraw=
+github.com/DataDog/datadog-agent/pkg/config/utils v0.82.0-devel.0.20260708210941-b0d9b5a19458/go.mod h1:hxvnx/vRbIscmng6FMwLQwUR+W8IpXgKlw55HzAzIG8=
 github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.80.2 h1:67GWpwsMS+X1MF3BCB4Dj2P+SBD05oh5TKIOF+Rz6OY=
 github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.80.2/go.mod h1:m1SxBSvjGcPqHLabhOGO3mYyKKcDlbHL56XfutA9msQ=
 github.com/DataDog/datadog-agent/pkg/fips v0.80.2 h1:OcvPls5ITDjPa5IFGi2ns2mZjFIUhP5nWplv6VT08GU=
@@ -152,8 +152,8 @@ github.com/DataDog/datadog-agent/pkg/logs/types v0.80.2 h1:YtGLq5Adi3arueFmH0p9C
 github.com/DataDog/datadog-agent/pkg/logs/types v0.80.2/go.mod h1:xIcb+Ke1wVOBAx1Gzs1Ch6FTiXzw2kZ+QvBnyP8a7EQ=
 github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.80.2 h1:4PJ6I3X3LkT/P/1sY8Cn76ta6zbdLQWX/mExvSWUWLQ=
 github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.80.2/go.mod h1:REuZO9xfHQ+rc8eZ6IS9mycOa2fAMHz/IGx/vF3tYj8=
-github.com/DataDog/datadog-agent/pkg/metrics v0.82.0-devel.0.20260708171050-652d86f7cb28 h1:R7dViWG7cJ4oHyE/NhT12BEpiJqSIlITC0iFf958v0o=
-github.com/DataDog/datadog-agent/pkg/metrics v0.82.0-devel.0.20260708171050-652d86f7cb28/go.mod h1:qzrRWFxtbZlVqvxgULLVtLcF6AkrV616/4an8xlGUJY=
+github.com/DataDog/datadog-agent/pkg/metrics v0.82.0-devel.0.20260708210941-b0d9b5a19458 h1:mIFopehE/6OmFTmrsY+j4RAc98rGi+PKIrocDkv+CCU=
+github.com/DataDog/datadog-agent/pkg/metrics v0.82.0-devel.0.20260708210941-b0d9b5a19458/go.mod h1:0Dxk3rISTis6uyE/1V7U0lLYftG6eK/XwhKKWNED/D4=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.80.2 h1:wDMDyCYc1ttLq7RmnD7TubBj4n/6li7NGUE6TWlEWw4=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.80.2/go.mod h1:kV//ZZCD4UVoynNmYC/QKkWnk6P2++cuc2Axjqebpyo=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.82.0-devel.0.20260617134427-74e6d071eaae h1:SA3el3mqgokbkJ4EiG1yhaKnqKSSrm7m7Q9rcJU1Z7A=
@@ -176,8 +176,8 @@ github.com/DataDog/datadog-agent/pkg/proto v0.80.2 h1:Q+ZcqkH3muKjeChRUTRVhcuSPQ
 github.com/DataDog/datadog-agent/pkg/proto v0.80.2/go.mod h1:/sOCbgk2WqWFDxYEd4k7dJVk/F2LGqR3l6OCAB2/IbI=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.2 h1:g7KSX8l4uLYcHBuV0DwSly2hpLHidDmc2URsYHC8bhM=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.80.2/go.mod h1:b+X8RabhAJgY7dxWUHaKvB9UgxK32oeK7V1tyYpHVZs=
-github.com/DataDog/datadog-agent/pkg/serializer v0.82.0-devel.0.20260708171050-652d86f7cb28 h1:LKGAoz0a1SvnoZ2NSiyVDNfxImPaCPZcekmlNzxSFBU=
-github.com/DataDog/datadog-agent/pkg/serializer v0.82.0-devel.0.20260708171050-652d86f7cb28/go.mod h1:VLSp521Hw4w2PNHYz3REw2eLsD0fw5aqFA4I99m/5T4=
+github.com/DataDog/datadog-agent/pkg/serializer v0.82.0-devel.0.20260708210941-b0d9b5a19458 h1:rYTGJbcksDtX1X2gkiWDNxcQTZou3flNA30d2CVaWVc=
+github.com/DataDog/datadog-agent/pkg/serializer v0.82.0-devel.0.20260708210941-b0d9b5a19458/go.mod h1:CGyJbYiUMN88GR8vY5JUZY2s0twkT2ycrS9j3kSIjs0=
 github.com/DataDog/datadog-agent/pkg/status/health v0.80.2 h1:y2dlnf1nfvgu2UuSeXtHvwjK+W7oeHKzV8g7FX6YMa4=
 github.com/DataDog/datadog-agent/pkg/status/health v0.80.2/go.mod h1:alSzpMIPKXrJrZ68TPCziImSIzEZCo0V2i2b9cmczqY=
 github.com/DataDog/datadog-agent/pkg/tagger/types v0.80.2 h1:C2PKymj2mNnPjfbQP/xAeRwpqOWvAJL7wLvG958urhs=
