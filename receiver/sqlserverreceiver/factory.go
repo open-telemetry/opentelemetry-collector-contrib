@@ -263,12 +263,14 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverBatchRequestRate.Enabled ||
 		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
+		metrics.SqlserverConnectionResetRate.Enabled ||
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
 		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
+		metrics.SqlserverErrorRate.Enabled ||
 		metrics.SqlserverExtentOperationRate.Enabled ||
 		metrics.SqlserverGhostRecordSkippedRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
@@ -277,9 +279,14 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverLatchWaitRate.Enabled ||
 		metrics.SqlserverLatchWaitTimeAvg.Enabled ||
 		metrics.SqlserverLatchWaitTimeTotal.Enabled ||
+		metrics.SqlserverLockBlockCount.Enabled ||
+		metrics.SqlserverLockEscalationRate.Enabled ||
+		metrics.SqlserverLockMemory.Enabled ||
+		metrics.SqlserverLockRequestRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
 		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
+		metrics.SqlserverLockWaitTimeTotal.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
 		metrics.SqlserverMemoryArea.Enabled ||
