@@ -143,7 +143,7 @@ Total time spent (in microseconds) executing a specific sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| µs | Sum | Int | true | Development |
+| us | Sum | Int | true | Development |
 
 #### Attributes
 
