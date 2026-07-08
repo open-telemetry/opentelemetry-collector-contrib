@@ -595,6 +595,33 @@ query sample
  | Any Slice | - |
 | mongodb.operation.wait.details | Details about what the MongoDB operation is waiting on. | Any Str | - |
 
+### db.server.top_query
+
+Top query collection emits one event per slow query execution sampled from the MongoDB profiler
+(system.profile) or the diagnostic log (getLog). The top N slowest executions per scrape window
+are emitted.
+
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed (e.g. find, aggregate, insert). | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| mongodb.operation.cpu_time | CPU time in seconds for this query execution. | Any Double | - |
+| mongodb.operation.docs_examined | Number of documents examined by this query execution. | Any Int | - |
+| mongodb.operation.docs_returned | Number of documents returned by this query execution. | Any Int | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.explain_plan | The obfuscated query explain plan, if collection is enabled. | Any Str | - |
+| mongodb.operation.explain_plan_hash | FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape. | Any Str | - |
+| mongodb.operation.keys_examined | Number of index keys examined by this query execution. | Any Int | - |
+| mongodb.operation.plan.summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.operation.response_length | Response length in bytes for this query execution. | Any Int | - |
+| mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
