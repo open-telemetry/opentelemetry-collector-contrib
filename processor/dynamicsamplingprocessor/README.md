@@ -89,7 +89,7 @@ Rules are evaluated in order; the first whose conditions all match selects the s
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
-Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on.
+Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
 
 The intended pattern is specific-conditions rules first, catch-all last:
 
@@ -143,6 +143,58 @@ Example (default `any_span`): keep any trace that touched the payment service *a
 ```
 
 If an OTTL condition raises an evaluation error at runtime (for example, a path does not exist on a specific span) the condition is treated as false for that span and the `otelcol_processor_dynamic_sampling_ottl_eval_errors` counter is incremented, labelled by the rule name. Other spans and conditions continue to evaluate normally.
+
+#### Condition examples
+
+Keep every trace where an HTTP server span returned 5xx, using OTTL's inline `and`:
+
+```yaml
+- name: http-5xx
+  match: same_span
+  conditions:
+    - span.kind == SPAN_KIND_SERVER and span.attributes["http.response.status_code"] >= 500
+  sampler:
+    type: always_sample
+```
+
+Keep every trace that includes a root span from a specific service, using OTTL's `IsRootSpan()` helper:
+
+```yaml
+- name: root-checkout
+  match: same_span
+  conditions:
+    - IsRootSpan() and resource.attributes["service.name"] == "checkout"
+  sampler:
+    type: always_sample
+```
+
+Keep traces from either the checkout or the billing service, at a modest adaptive rate:
+
+```yaml
+- name: high-value-services
+  conditions:
+    - resource.attributes["service.name"] == "checkout" or resource.attributes["service.name"] == "billing"
+  sampler:
+    type: ema_dynamic
+    ema_dynamic:
+      goal_sampling_percentage: 25
+      key_fields: ["service.name", "http.route"]
+```
+
+Match on span name prefix using OTTL's `IsMatch` regex helper:
+
+```yaml
+- name: api-calls
+  match: same_span
+  conditions:
+    - IsMatch(span.name, "^GET /api/")
+  sampler:
+    type: deterministic
+    deterministic:
+      sampling_percentage: 5
+```
+
+For the full set of comparison operators, string functions, and converter helpers available in conditions, see [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md).
 
 ### Samplers
 
