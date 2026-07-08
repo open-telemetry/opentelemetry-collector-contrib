@@ -145,8 +145,8 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 			{
 				Name: "drop-rest",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 100},
+					Type:               Deterministic,
+					SamplingPercentage: 100,
 				},
 			},
 		},
@@ -223,8 +223,8 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // 1-in-10
+					Type:               Deterministic,
+					SamplingPercentage: 10, // 1-in-10
 				},
 			},
 		},
