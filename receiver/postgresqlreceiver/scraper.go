@@ -164,6 +164,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 		p.collectFunctions(ctx, now, dbClient, database, &errs)
+		p.collectVectorSearchStats(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -584,6 +585,46 @@ func (p *postgreSQLScraper) collectFunctions(
 		}
 		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, "", "")
 
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (p *postgreSQLScraper) collectVectorSearchStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
+	// the collection entirely unless at least one of them is enabled.
+	if !p.config.Metrics.DbPostgresqlVectorSearchCount.Enabled &&
+		!p.config.Metrics.DbPostgresqlVectorQueryExecutionTime.Enabled {
+		return
+	}
+
+	stats, err := client.getVectorSearchStats(ctx)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	var recorded bool
+	for _, stat := range stats {
+		distanceFunction, ok := metadata.MapAttributeDistanceFunction[stat.distanceFunction]
+		if !ok {
+			// A statement matched the vector filter but could not be classified into a known
+			// distance function; skip it rather than emitting an invalid attribute value.
+			p.logger.Debug("skipping unclassified vector distance function", zap.String("distance.function", stat.distanceFunction))
+			continue
+		}
+		p.mb.RecordDbPostgresqlVectorSearchCountDataPoint(now, stat.calls, distanceFunction)
+		p.mb.RecordDbPostgresqlVectorQueryExecutionTimeDataPoint(now, stat.totalExecTime, distanceFunction)
+		recorded = true
+	}
+
+	if recorded {
+		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, "", "", "")
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

@@ -1,0 +1,23 @@
+SELECT
+  CASE
+    WHEN query ~ '<=>'  OR query ~* 'cosine_distance'  THEN 'cosine'
+    WHEN query ~ '<->'  OR query ~* 'l2_distance'      THEN 'l2'
+    WHEN query ~ '<#>'  OR query ~* 'inner_product'    THEN 'inner_product'
+    WHEN query ~ '<\+>' OR query ~* 'l1_distance'      THEN 'l1'
+    WHEN query ~ '<~>'  OR query ~* 'hamming_distance' THEN 'hamming'
+    WHEN query ~ '<%>'  OR query ~* 'jaccard_distance' THEN 'jaccard'
+  END AS distance_function,
+  SUM(calls) AS calls,
+  SUM(total_exec_time) AS total_exec_time
+FROM
+  pg_stat_statements AS pg_stat_statements
+  LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
+WHERE
+  datname = current_database()
+  AND query != '<insufficient privilege>'
+  AND query NOT LIKE '/* otel-collector-ignore */%'
+  AND (
+    query ~ '<=>|<->|<#>|<\+>|<~>|<%>'
+    OR query ~* '(l2|cosine|l1|hamming|jaccard)_distance|inner_product'
+  )
+GROUP BY distance_function;

@@ -1,6 +1,12 @@
 default:
 all_set:
   metrics:
+    db.postgresql.vector.query.execution.time:
+      enabled: true
+      attributes: ["distance.function"]
+    db.postgresql.vector.search.count:
+      enabled: true
+      attributes: ["distance.function"]
     postgresql.backends:
       enabled: true
     postgresql.bgwriter.buffers.allocated:
@@ -106,6 +112,12 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    db.postgresql.vector.query.execution.time:
+      enabled: true
+      attributes: []
+    db.postgresql.vector.search.count:
+      enabled: true
+      attributes: []
     postgresql.backends:
       enabled: true
     postgresql.bgwriter.buffers.allocated:
@@ -211,6 +223,12 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    db.postgresql.vector.query.execution.time:
+      enabled: false
+      attributes: ["distance.function"]
+    db.postgresql.vector.search.count:
+      enabled: false
+      attributes: ["distance.function"]
     postgresql.backends:
       enabled: false
     postgresql.bgwriter.buffers.allocated:

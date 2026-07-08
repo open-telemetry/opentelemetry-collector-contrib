@@ -128,6 +128,45 @@ separately. This could lead some resources usage and limit this will reduce the 
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+
+### Vector Search Metrics
+
+The receiver can report [pgvector](https://github.com/pgvector/pgvector) similarity-search activity through two
+opt-in metrics, both broken down by a `distance.function` attribute:
+
+- `db.postgresql.vector.search.count`: the cumulative number of vector search executions.
+- `db.postgresql.vector.query.execution.time`: the cumulative execution time (in seconds) of vector searches.
+
+Both metrics are derived from `pg_stat_statements` (which must be installed and enabled). Searches are
+classified by inspecting the statement text for a pgvector distance operator (for example `<=>`, `<->`, `<#>`,
+`<+>`, `<~>`, `<%>`) or distance function (for example `cosine_distance`, `l2_distance`, `inner_product`), and the
+resulting `distance.function` attribute is one of `cosine`, `l2`, `inner_product`, `l1`, `hamming`, or `jaccard`.
+Because the values are cumulative counters, throughput and average response time (ART) can be derived downstream
+(for example `rate(db.postgresql.vector.query.execution.time) / rate(db.postgresql.vector.search.count)`).
+
+These metrics require PostgreSQL 13 or later (`pg_stat_statements` 1.8+, which introduced the `total_exec_time`
+column used by `db.postgresql.vector.query.execution.time`) and the [pgvector](https://github.com/pgvector/pgvector)
+extension installed in each scanned database. The `l1` (`<+>`), `hamming` (`<~>`), and `jaccard` (`<%>`)
+classifications additionally require pgvector 0.7.0 or later.
+
+Both metrics are disabled by default. Enable them via:
+
+```yaml
+receivers:
+  postgresql:
+    metrics:
+      db.postgresql.vector.search.count:
+        enabled: true
+      db.postgresql.vector.query.execution.time:
+        enabled: true
+```
+
+The `pg_stat_statements` extension must be created in every database you want these metrics collected from:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
 ### Example Configuration
 
 ```yaml
