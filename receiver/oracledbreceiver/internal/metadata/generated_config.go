@@ -1600,13 +1600,13 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// OracledbRecoveryBlocksReadMetricConfig provides config for the oracledb.recovery.blocks_read metric.
-type OracledbRecoveryBlocksReadMetricConfig struct {
+// OracledbRecoveryBlocksMetricConfig provides config for the oracledb.recovery.blocks metric.
+type OracledbRecoveryBlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbRecoveryBlocksReadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbRecoveryBlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2613,7 +2613,7 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
-	OracledbRecoveryBlocksRead                    OracledbRecoveryBlocksReadMetricConfig                    `mapstructure:"oracledb.recovery.blocks_read"`
+	OracledbRecoveryBlocks                        OracledbRecoveryBlocksMetricConfig                        `mapstructure:"oracledb.recovery.blocks"`
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbRedoBlocks                            OracledbRedoBlocksMetricConfig                            `mapstructure:"oracledb.redo.blocks"`
 	OracledbRedoOperations                        OracledbRedoOperationsMetricConfig                        `mapstructure:"oracledb.redo.operations"`
@@ -2860,7 +2860,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbRecoveryBlocksRead: OracledbRecoveryBlocksReadMetricConfig{
+		OracledbRecoveryBlocks: OracledbRecoveryBlocksMetricConfig{
 			Enabled: false,
 		},
 		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{

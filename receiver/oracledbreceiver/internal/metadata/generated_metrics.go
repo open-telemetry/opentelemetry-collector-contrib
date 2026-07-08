@@ -724,8 +724,8 @@ var MetricsInfo = metricsInfo{
 	OracledbQueriesParallelized: metricInfo{
 		Name: "oracledb.queries_parallelized",
 	},
-	OracledbRecoveryBlocksRead: metricInfo{
-		Name: "oracledb.recovery.blocks_read",
+	OracledbRecoveryBlocks: metricInfo{
+		Name: "oracledb.recovery.blocks",
 	},
 	OracledbRecycleBinLimit: metricInfo{
 		Name: "oracledb.recycle_bin.limit",
@@ -891,7 +891,7 @@ type metricsInfo struct {
 	OracledbProcessesLimit                        metricInfo
 	OracledbProcessesUsage                        metricInfo
 	OracledbQueriesParallelized                   metricInfo
-	OracledbRecoveryBlocksRead                    metricInfo
+	OracledbRecoveryBlocks                        metricInfo
 	OracledbRecycleBinLimit                       metricInfo
 	OracledbRedoBlocks                            metricInfo
 	OracledbRedoOperations                        metricInfo
@@ -4652,15 +4652,15 @@ func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedMetricC
 	return m
 }
 
-type metricOracledbRecoveryBlocksRead struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   OracledbRecoveryBlocksReadMetricConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+type metricOracledbRecoveryBlocks struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbRecoveryBlocksMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.recovery.blocks_read metric with initial data.
-func (m *metricOracledbRecoveryBlocksRead) init() {
-	m.data.SetName("oracledb.recovery.blocks_read")
+// init fills oracledb.recovery.blocks metric with initial data.
+func (m *metricOracledbRecoveryBlocks) init() {
+	m.data.SetName("oracledb.recovery.blocks")
 	m.data.SetDescription("Number of blocks read during instance or media recovery.")
 	m.data.SetUnit("{block}")
 	m.data.SetEmptySum()
@@ -4668,7 +4668,7 @@ func (m *metricOracledbRecoveryBlocksRead) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbRecoveryBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbRecoveryBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4679,14 +4679,14 @@ func (m *metricOracledbRecoveryBlocksRead) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbRecoveryBlocksRead) updateCapacity() {
+func (m *metricOracledbRecoveryBlocks) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbRecoveryBlocksRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbRecoveryBlocks) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -4694,8 +4694,8 @@ func (m *metricOracledbRecoveryBlocksRead) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbRecoveryBlocksRead(cfg OracledbRecoveryBlocksReadMetricConfig) metricOracledbRecoveryBlocksRead {
-	m := metricOracledbRecoveryBlocksRead{config: cfg}
+func newMetricOracledbRecoveryBlocks(cfg OracledbRecoveryBlocksMetricConfig) metricOracledbRecoveryBlocks {
+	m := metricOracledbRecoveryBlocks{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6724,7 +6724,7 @@ type MetricsBuilder struct {
 	metricOracledbProcessesLimit                        metricOracledbProcessesLimit
 	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
 	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
-	metricOracledbRecoveryBlocksRead                    metricOracledbRecoveryBlocksRead
+	metricOracledbRecoveryBlocks                        metricOracledbRecoveryBlocks
 	metricOracledbRecycleBinLimit                       metricOracledbRecycleBinLimit
 	metricOracledbRedoBlocks                            metricOracledbRedoBlocks
 	metricOracledbRedoOperations                        metricOracledbRedoOperations
@@ -6842,7 +6842,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbProcessesLimit:                        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
 		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
-		metricOracledbRecoveryBlocksRead:                    newMetricOracledbRecoveryBlocksRead(mbc.Metrics.OracledbRecoveryBlocksRead),
+		metricOracledbRecoveryBlocks:                        newMetricOracledbRecoveryBlocks(mbc.Metrics.OracledbRecoveryBlocks),
 		metricOracledbRecycleBinLimit:                       newMetricOracledbRecycleBinLimit(mbc.Metrics.OracledbRecycleBinLimit),
 		metricOracledbRedoBlocks:                            newMetricOracledbRedoBlocks(mbc.Metrics.OracledbRedoBlocks),
 		metricOracledbRedoOperations:                        newMetricOracledbRedoOperations(mbc.Metrics.OracledbRedoOperations),
@@ -7067,7 +7067,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
-	mb.metricOracledbRecoveryBlocksRead.emit(ils.Metrics())
+	mb.metricOracledbRecoveryBlocks.emit(ils.Metrics())
 	mb.metricOracledbRecycleBinLimit.emit(ils.Metrics())
 	mb.metricOracledbRedoBlocks.emit(ils.Metrics())
 	mb.metricOracledbRedoOperations.emit(ils.Metrics())
@@ -7687,13 +7687,13 @@ func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.
 	return nil
 }
 
-// RecordOracledbRecoveryBlocksReadDataPoint adds a data point to oracledb.recovery.blocks_read metric.
-func (mb *MetricsBuilder) RecordOracledbRecoveryBlocksReadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordOracledbRecoveryBlocksDataPoint adds a data point to oracledb.recovery.blocks metric.
+func (mb *MetricsBuilder) RecordOracledbRecoveryBlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbRecoveryBlocksRead, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for OracledbRecoveryBlocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbRecoveryBlocksRead.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbRecoveryBlocks.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

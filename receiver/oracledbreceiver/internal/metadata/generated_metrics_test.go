@@ -326,7 +326,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbRecoveryBlocksReadDataPoint(ts, "1")
+			mb.RecordOracledbRecoveryBlocksDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
@@ -1710,9 +1710,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.recovery.blocks_read":
-					assert.False(t, validatedMetrics["oracledb.recovery.blocks_read"], "Found a duplicate in the metrics slice: oracledb.recovery.blocks_read")
-					validatedMetrics["oracledb.recovery.blocks_read"] = true
+				case "oracledb.recovery.blocks":
+					assert.False(t, validatedMetrics["oracledb.recovery.blocks"], "Found a duplicate in the metrics slice: oracledb.recovery.blocks")
+					validatedMetrics["oracledb.recovery.blocks"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of blocks read during instance or media recovery.", mi.Description())

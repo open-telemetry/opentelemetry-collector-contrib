@@ -685,7 +685,7 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.recovery.blocks_read
+### oracledb.recovery.blocks
 
 Number of blocks read during instance or media recovery.
 

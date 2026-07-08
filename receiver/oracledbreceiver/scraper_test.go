@@ -388,7 +388,7 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
 	cfg.Metrics.OracledbLockTime.Enabled = true
-	cfg.Metrics.OracledbRecoveryBlocksRead.Enabled = true
+	cfg.Metrics.OracledbRecoveryBlocks.Enabled = true
 	cfg.Metrics.OracledbSmonPosts.Enabled = true
 	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
 
@@ -421,7 +421,7 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 					t.Errorf("unexpected oracledb.session.type %q", sessionType.Str())
 				}
 			}
-		case "oracledb.recovery.blocks_read":
+		case "oracledb.recovery.blocks":
 			seen++
 			assert.Equal(t, int64(8800), dps.At(0).IntValue())
 		case "oracledb.smon.posts":
