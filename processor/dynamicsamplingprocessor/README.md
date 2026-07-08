@@ -270,6 +270,16 @@ The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (exp
 - **Threshold composition.** The rule-selected sampler picks a rate `N`; the emitted `ot=th` is composed on top of any upstream threshold `T_up` so the effective absolute keep probability is `P(rand > T_up) / N`. Downstream metric consumers reading `ot=th` reconstruct the correct adjusted count for the original population without additional configuration.
 - **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
 
+### Grouping unrelated traces with a shared `ot=rv`
+
+Because the sampling decision is deterministic against the 56-bit randomness value, an upstream producer that sets the same `ot=rv` on multiple otherwise-unrelated traces will get the same sampling decision for all of them at the same threshold. This is useful when a set of traces should be sampled together as a group, for example:
+
+- An LLM agent producing multiple traces for turns in a single conversation, all stamped with a `conversation.id`-derived `ot=rv`.
+- A browser SDK producing multiple traces during one user session, all stamped with a `session.id`-derived `ot=rv`.
+- A batch job producing one trace per task, all stamped with the batch's job ID.
+
+The `ot=rv` value is a 56-bit number, so a stable hash of the entity ID truncated to 56 bits is a suitable derivation. The processor itself does not compute `ot=rv` from arbitrary attributes: the producer or an earlier processor is expected to set it. Whatever `ot=rv` is present when the accumulated trace arrives will be used for the decision and preserved on the emitted spans.
+
 ### Known limitation: adaptive-sampler rate bias under upstream sampling
 
 The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) select their rate from the traffic they observe, assuming that input is a uniform sample of the underlying population. When an upstream stage has already sampled, the input reaching the adaptive sampler is skewed toward higher randomness values, and per-key rate math based on observed volume is biased. The emitted `ot=th` is still metric-accurate downstream (via threshold composition above); the caveat is that the rate the adaptive sampler *targets* is "of the input reaching me," not "of the original population." Follow-up in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517).
