@@ -3370,14 +3370,19 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	})
 
 	t.Run("Health check server is started when port is configured", func(t *testing.T) {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:23233",
+		}
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:23233",
-					},
-				},
+				ServerConfig: serverConfig,
 			},
 		}
 		err := s.startHealthCheckServer()
@@ -3451,6 +3456,16 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	})
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:23233",
+		}
 		newSupervisor := &Supervisor{
 			runCtx:            t.Context(),
 			telemetrySettings: newNopTelemetrySettings(),
@@ -3459,12 +3474,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			doneChan:          make(chan struct{}),
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:23233",
-						},
-					},
+					ServerConfig: serverConfig,
 				},
 			},
 		}
