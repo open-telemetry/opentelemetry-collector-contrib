@@ -547,7 +547,7 @@ metrics:
     enabled: false
     description: Total number of backups/restores.
     stability: development
-    unit: “{backups_or_restores}/s”
+    unit: "{backups_or_restores}/s"
     gauge:
       value_type: double
     attributes: []
@@ -565,7 +565,7 @@ metrics:
     enabled: false
     description: Number of execution errors.
     stability: development
-    unit: “{errors}”
+    unit: "{errors}"
     gauge:
       value_type: int
     attributes: []
@@ -616,7 +616,7 @@ metrics:
     enabled: false
     description: Total free space in temporary DB.
     stability: development
-    unit: “KB”
+    unit: kBy
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -626,7 +626,7 @@ metrics:
     enabled: false
     description: TempDB version store size.
     stability: development
-    unit: “KB”
+    unit: kBy
     gauge:
       value_type: double
     attributes: []
@@ -634,7 +634,7 @@ metrics:
     enabled: false
     description: Total number of deadlocks.
     stability: development
-    unit: “{deadlocks}/s”
+    unit: "{deadlocks}/s"
     gauge:
       value_type: double
     attributes: []
@@ -669,7 +669,7 @@ metrics:
     enabled: false
     description: Total number of index searches.
     stability: development
-    unit: “{searches}/s”
+    unit: "{searches}/s"
     gauge:
       value_type: double
     attributes: []
@@ -805,7 +805,7 @@ metrics:
     enabled: false
     description: Total number of logins.
     stability: development
-    unit: “{logins}/s”
+    unit: "{logins}/s"
     gauge:
       value_type: double
     attributes: []
@@ -813,7 +813,7 @@ metrics:
     enabled: false
     description: Total number of logouts.
     stability: development
-    unit: “{logouts}/s”
+    unit: "{logouts}/s"
     gauge:
       value_type: double
     attributes: []
@@ -858,7 +858,7 @@ metrics:
     enabled: false
     description: Total memory in use.
     stability: development
-    unit: "KB"
+    unit: kBy
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -888,7 +888,7 @@ metrics:
     enabled: false
     description: Number of free list stalls.
     stability: development
-    unit: “{stalls}/s”
+    unit: "{stalls}/s"
     gauge:
       value_type: int
     attributes: []
@@ -936,7 +936,7 @@ metrics:
     enabled: false
     description: Total number of page lookups.
     stability: development
-    unit: “{lookups}/s”
+    unit: "{lookups}/s"
     gauge:
       value_type: double
     attributes: []
@@ -1050,7 +1050,7 @@ metrics:
     enabled: false
     description: The number of tables.
     stability: development
-    unit: “{tables}”
+    unit: "{tables}"
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -1070,7 +1070,7 @@ metrics:
     enabled: false
     description: Total number of mirror write transactions.
     stability: development
-    unit: “{transactions}/s”
+    unit: "{transactions}/s"
     gauge:
       value_type: double
     attributes: []
