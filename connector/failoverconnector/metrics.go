@@ -47,8 +47,11 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 		}
 
 		if err := tc.ConsumeMetrics(ctx, md); err != nil {
-			f.reportConsumerError(idx)
-			continue
+			if f.shouldFailoverOnError(err) {
+				f.reportConsumerError(idx)
+				continue
+			}
+			return err
 		}
 
 		return nil
@@ -61,7 +64,9 @@ func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Met
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
 		err := consumer.ConsumeMetrics(ctx, md)
-		if err == nil {
+		// if the returned error is not considered as failure
+		// reset the pipeline to healthy
+		if err == nil || !f.shouldFailoverOnError(err) {
 			f.pS.ResetHealthyPipeline(i)
 			return true
 		}
