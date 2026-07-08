@@ -598,8 +598,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.session.active.average:
-        description: "OracledbSessionActiveAverageMetricConfig provides config for the oracledb.session.active.average metric."
+      oracledb.session.average:
+        description: "OracledbSessionAverageMetricConfig provides config for the oracledb.session.average metric."
         type: object
         properties:
           enabled:

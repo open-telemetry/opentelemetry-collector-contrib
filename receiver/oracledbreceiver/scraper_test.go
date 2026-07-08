@@ -1190,7 +1190,7 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
 			cfg.Metrics.OracledbParseRate.Enabled = true
 			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
-			cfg.Metrics.OracledbSessionActiveAverage.Enabled = true
+			cfg.Metrics.OracledbSessionAverage.Enabled = true
 			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
 			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
 			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
@@ -1252,7 +1252,7 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 97.80, metricMap["oracledb.redo_allocation.utilization"], floatDelta)
 			assert.InDelta(t, 0.25, metricMap["oracledb.parse.rate"], floatDelta)
 			assert.InDelta(t, 75.30, metricMap["oracledb.execution.utilization"], floatDelta)
-			assert.InDelta(t, 2.50, metricMap["oracledb.session.active.average"], floatDelta)
+			assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
 			// 0.85 ms -> 0.00085 s
 			assert.InDelta(t, 0.00085, metricMap["oracledb.io.single_block.read.latency"], floatDelta)
 			// 12.34 cs -> 0.1234 s

@@ -715,8 +715,9 @@ var MetricsInfo = metricsInfo{
 	OracledbScanTableRows: metricInfo{
 		Name: "oracledb.scan.table.rows",
 	},
-	OracledbSessionActiveAverage: metricInfo{
-		Name: "oracledb.session.active.average",
+	OracledbSessionAverage: metricInfo{
+		Name:       "oracledb.session.average",
+		Attributes: []string{"session_status"},
 	},
 	OracledbSessionCount: metricInfo{
 		Name: "oracledb.session.count",
@@ -858,7 +859,7 @@ type metricsInfo struct {
 	OracledbRedoAllocationUtilization             metricInfo
 	OracledbScanCount                             metricInfo
 	OracledbScanTableRows                         metricInfo
-	OracledbSessionActiveAverage                  metricInfo
+	OracledbSessionAverage                        metricInfo
 	OracledbSessionCount                          metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
@@ -1489,7 +1490,7 @@ type metricOracledbCPUUsageRate struct {
 // init fills oracledb.cpu.usage.rate metric with initial data.
 func (m *metricOracledbCPUUsageRate) init() {
 	m.data.SetName("oracledb.cpu.usage.rate")
-	m.data.SetDescription("Oracle database CPU consumption rate, in CPU-seconds used per second.")
+	m.data.SetDescription("CPU consumption rate, in CPU-seconds used per second.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -5430,48 +5431,87 @@ func newMetricOracledbScanTableRows(cfg OracledbScanTableRowsMetricConfig) metri
 	return m
 }
 
-type metricOracledbSessionActiveAverage struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   OracledbSessionActiveAverageMetricConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+type metricOracledbSessionAverage struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        OracledbSessionAverageMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.session.active.average metric with initial data.
-func (m *metricOracledbSessionActiveAverage) init() {
-	m.data.SetName("oracledb.session.active.average")
-	m.data.SetDescription("Average number of active sessions over the metric interval.")
+// init fills oracledb.session.average metric with initial data.
+func (m *metricOracledbSessionAverage) init() {
+	m.data.SetName("oracledb.session.average")
+	m.data.SetDescription("Average number of sessions over the metric interval.")
 	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbSessionActiveAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbSessionAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sessionStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OracledbSessionAverageMetricAttributeKeySessionStatus) {
+		dp.Attributes().PutStr("session_status", sessionStatusAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSessionActiveAverage) updateCapacity() {
+func (m *metricOracledbSessionAverage) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSessionActiveAverage) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbSessionAverage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbSessionActiveAverage(cfg OracledbSessionActiveAverageMetricConfig) metricOracledbSessionActiveAverage {
-	m := metricOracledbSessionActiveAverage{config: cfg}
+func newMetricOracledbSessionAverage(cfg OracledbSessionAverageMetricConfig) metricOracledbSessionAverage {
+	m := metricOracledbSessionAverage{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5489,7 +5529,7 @@ type metricOracledbSessionCount struct {
 // init fills oracledb.session.count metric with initial data.
 func (m *metricOracledbSessionCount) init() {
 	m.data.SetName("oracledb.session.count")
-	m.data.SetDescription("Number of sessions.")
+	m.data.SetDescription("Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.")
 	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
@@ -6717,7 +6757,7 @@ type MetricsBuilder struct {
 	metricOracledbRedoAllocationUtilization             metricOracledbRedoAllocationUtilization
 	metricOracledbScanCount                             metricOracledbScanCount
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
-	metricOracledbSessionActiveAverage                  metricOracledbSessionActiveAverage
+	metricOracledbSessionAverage                        metricOracledbSessionAverage
 	metricOracledbSessionCount                          metricOracledbSessionCount
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
@@ -6838,7 +6878,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbRedoAllocationUtilization:             newMetricOracledbRedoAllocationUtilization(mbc.Metrics.OracledbRedoAllocationUtilization),
 		metricOracledbScanCount:                             newMetricOracledbScanCount(mbc.Metrics.OracledbScanCount),
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
-		metricOracledbSessionActiveAverage:                  newMetricOracledbSessionActiveAverage(mbc.Metrics.OracledbSessionActiveAverage),
+		metricOracledbSessionAverage:                        newMetricOracledbSessionAverage(mbc.Metrics.OracledbSessionAverage),
 		metricOracledbSessionCount:                          newMetricOracledbSessionCount(mbc.Metrics.OracledbSessionCount),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
@@ -7066,7 +7106,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbRedoAllocationUtilization.emit(ils.Metrics())
 	mb.metricOracledbScanCount.emit(ils.Metrics())
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
-	mb.metricOracledbSessionActiveAverage.emit(ils.Metrics())
+	mb.metricOracledbSessionAverage.emit(ils.Metrics())
 	mb.metricOracledbSessionCount.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
@@ -7776,9 +7816,9 @@ func (mb *MetricsBuilder) RecordOracledbScanTableRowsDataPoint(ts pcommon.Timest
 	return nil
 }
 
-// RecordOracledbSessionActiveAverageDataPoint adds a data point to oracledb.session.active.average metric.
-func (mb *MetricsBuilder) RecordOracledbSessionActiveAverageDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbSessionActiveAverage.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbSessionAverageDataPoint adds a data point to oracledb.session.average metric.
+func (mb *MetricsBuilder) RecordOracledbSessionAverageDataPoint(ts pcommon.Timestamp, val float64, sessionStatusAttributeValue string) {
+	mb.metricOracledbSessionAverage.recordDataPoint(mb.startTime, ts, val, sessionStatusAttributeValue)
 }
 
 // RecordOracledbSessionCountDataPoint adds a data point to oracledb.session.count metric.

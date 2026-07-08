@@ -335,7 +335,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 
 ### oracledb.cpu.usage.rate
 
-Oracle database CPU consumption rate, in CPU-seconds used per second.
+CPU consumption rate, in CPU-seconds used per second.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -814,17 +814,23 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.session.active.average
+### oracledb.session.average
 
-Average number of active sessions over the metric interval.
+Average number of sessions over the metric interval.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {session} | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| session_status | Session status | Any Str | Recommended | - |
+
 ### oracledb.session.count
 
-Number of sessions.
+Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

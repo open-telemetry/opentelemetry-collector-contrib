@@ -170,8 +170,9 @@ all_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.active.average:
+    oracledb.session.average:
       enabled: true
+      attributes: ["session_status"]
     oracledb.session.count:
       enabled: true
     oracledb.sessions.limit:
@@ -413,8 +414,9 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.active.average:
+    oracledb.session.average:
       enabled: true
+      attributes: []
     oracledb.session.count:
       enabled: true
     oracledb.sessions.limit:
@@ -656,8 +658,9 @@ none_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: false
-    oracledb.session.active.average:
+    oracledb.session.average:
       enabled: false
+      attributes: ["session_status"]
     oracledb.session.count:
       enabled: false
     oracledb.sessions.limit:

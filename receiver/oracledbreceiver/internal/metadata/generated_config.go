@@ -1973,13 +1973,23 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbSessionActiveAverageMetricConfig provides config for the oracledb.session.active.average metric.
-type OracledbSessionActiveAverageMetricConfig struct {
+// OracledbSessionAverageMetricAttributeKey specifies the key of an attribute for the oracledb.session.average metric.
+type OracledbSessionAverageMetricAttributeKey string
+
+const (
+	OracledbSessionAverageMetricAttributeKeySessionStatus OracledbSessionAverageMetricAttributeKey = "session_status"
+)
+
+// OracledbSessionAverageMetricConfig provides config for the oracledb.session.average metric.
+type OracledbSessionAverageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionAverageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbSessionActiveAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSessionAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1990,6 +2000,24 @@ func (ms *OracledbSessionActiveAverageMetricConfig) Unmarshal(parser *confmap.Co
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSessionAverageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSessionAverageMetricAttributeKeySessionStatus:
+		default:
+			return fmt.Errorf("metric oracledb.session.average doesn't have an attribute %v, valid attributes: [session_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2602,7 +2630,7 @@ type MetricsConfig struct {
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
-	OracledbSessionActiveAverage                  OracledbSessionActiveAverageMetricConfig                  `mapstructure:"oracledb.session.active.average"`
+	OracledbSessionAverage                        OracledbSessionAverageMetricConfig                        `mapstructure:"oracledb.session.average"`
 	OracledbSessionCount                          OracledbSessionCountMetricConfig                          `mapstructure:"oracledb.session.count"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
@@ -2886,8 +2914,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,
 		},
-		OracledbSessionActiveAverage: OracledbSessionActiveAverageMetricConfig{
-			Enabled: false,
+		OracledbSessionAverage: OracledbSessionAverageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSessionAverageMetricAttributeKey{OracledbSessionAverageMetricAttributeKeySessionStatus},
 		},
 		OracledbSessionCount: OracledbSessionCountMetricConfig{
 			Enabled: false,

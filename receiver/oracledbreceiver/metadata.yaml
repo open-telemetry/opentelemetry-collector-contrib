@@ -535,7 +535,7 @@ metrics:
       input_type: string
     unit: "{gets}"
   oracledb.cpu.usage.rate:
-    description: Oracle database CPU consumption rate, in CPU-seconds used per second.
+    description: CPU consumption rate, in CPU-seconds used per second.
     enabled: false
     stability: development
     gauge:
@@ -1149,15 +1149,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{row}"
-  oracledb.session.active.average:
-    description: Average number of active sessions over the metric interval.
+  oracledb.session.average:
+    description: Average number of sessions over the metric interval.
     enabled: false
     stability: development
     gauge:
       value_type: double
     unit: "{session}"
+    attributes: [session_status]
   oracledb.session.count:
-    description: Number of sessions.
+    description: Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.
     enabled: false
     stability: development
     gauge:

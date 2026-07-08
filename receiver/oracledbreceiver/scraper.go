@@ -54,14 +54,14 @@ const (
 	sysmetricExecuteWithoutParseRatio = "Execute Without Parse Ratio"
 
 	// V$SYSMETRIC health & efficiency indicators (group_id=2, ~60s interval)
-	sysmetricAverageActiveSessions  = "Average Active Sessions"
-	sysmetricSingleBlockReadLatency = "Average Synchronous Single-Block Read Latency"
-	sysmetricResponseTimePerTxn     = "Response Time Per Txn"
-	sysmetricCursorCacheHitRatio    = "Cursor Cache Hit Ratio"
-	sysmetricPGACacheHitPct         = "PGA Cache Hit %"
 	sysmetricCPUUsagePerSec         = "CPU Usage Per Sec"
+	sysmetricCursorCacheHitRatio    = "Cursor Cache Hit Ratio"
 	sysmetricHostCPUUsagePerSec     = "Host CPU Usage Per Sec"
+	sysmetricSingleBlockReadLatency = "Average Synchronous Single-Block Read Latency"
+	sysmetricPGACacheHitPct         = "PGA Cache Hit %"
+	sysmetricAverageActiveSessions  = "Average Active Sessions"
 	sysmetricSessionCount           = "Session Count"
+	sysmetricResponseTimePerTxn     = "Response Time Per Txn"
 
 	consistentGets                 = "consistent gets"
 	cpuTime                        = "CPU used by this session"
@@ -1035,14 +1035,14 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		s.metricsBuilderConfig.Metrics.OracledbRedoAllocationUtilization.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseRate.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionActiveAverage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbCursorCacheUtilization.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUUsageRate.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorCacheUtilization.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbHostCPUUsageRate.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled
 	if !anySysmetricEnabled {
 		return
 	}
@@ -1112,43 +1112,37 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 			if s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled {
 				s.mb.RecordOracledbExecutionUtilizationDataPoint(now, val, metadata.AttributeOracledbParseTypeSoft)
 			}
-		case sysmetricAverageActiveSessions:
-			if s.metricsBuilderConfig.Metrics.OracledbSessionActiveAverage.Enabled {
-				s.mb.RecordOracledbSessionActiveAverageDataPoint(now, val)
-			}
-		case sysmetricSingleBlockReadLatency:
-			if s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled {
-				// Oracle reports this latency in milliseconds; convert to seconds.
-				s.mb.RecordOracledbIoSingleBlockReadLatencyDataPoint(now, val/1000)
-			}
-		case sysmetricResponseTimePerTxn:
-			if s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled {
-				// Oracle reports response time per transaction in centiseconds; convert to seconds.
-				s.mb.RecordOracledbTransactionResponseTimeDataPoint(now, val/100)
+		case sysmetricCPUUsagePerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbCPUUsageRate.Enabled {
+				s.mb.RecordOracledbCPUUsageRateDataPoint(now, val/100)
 			}
 		case sysmetricCursorCacheHitRatio:
 			if s.metricsBuilderConfig.Metrics.OracledbCursorCacheUtilization.Enabled {
 				s.mb.RecordOracledbCursorCacheUtilizationDataPoint(now, val)
 			}
+		case sysmetricHostCPUUsagePerSec:
+			if s.metricsBuilderConfig.Metrics.OracledbHostCPUUsageRate.Enabled {
+				s.mb.RecordOracledbHostCPUUsageRateDataPoint(now, val/100)
+			}
+		case sysmetricSingleBlockReadLatency:
+			if s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled {
+				s.mb.RecordOracledbIoSingleBlockReadLatencyDataPoint(now, val/1000)
+			}
 		case sysmetricPGACacheHitPct:
 			if s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled {
 				s.mb.RecordOracledbPgaCacheUtilizationDataPoint(now, val)
 			}
-		case sysmetricCPUUsagePerSec:
-			if s.metricsBuilderConfig.Metrics.OracledbCPUUsageRate.Enabled {
-				// Oracle reports CPU usage in centiseconds per second; convert to
-				// fractional CPU cores (CPU-seconds per second) for a dimensionless rate.
-				s.mb.RecordOracledbCPUUsageRateDataPoint(now, val/100)
-			}
-		case sysmetricHostCPUUsagePerSec:
-			if s.metricsBuilderConfig.Metrics.OracledbHostCPUUsageRate.Enabled {
-				// Oracle reports host CPU usage in centiseconds per second; convert to
-				// fractional CPU cores (CPU-seconds per second) for a dimensionless rate.
-				s.mb.RecordOracledbHostCPUUsageRateDataPoint(now, val/100)
+		case sysmetricAverageActiveSessions:
+			if s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled {
+				s.mb.RecordOracledbSessionAverageDataPoint(now, val, "active")
 			}
 		case sysmetricSessionCount:
 			if s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled {
 				s.mb.RecordOracledbSessionCountDataPoint(now, int64(val))
+			}
+		case sysmetricResponseTimePerTxn:
+			if s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled {
+				s.mb.RecordOracledbTransactionResponseTimeDataPoint(now, val/100)
 			}
 		}
 	}
