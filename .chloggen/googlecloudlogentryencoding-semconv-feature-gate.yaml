@@ -4,18 +4,21 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: extension/azure_auth
+component: extension/google_cloud_logentry_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Promote the Azure Authenticator extension to beta stability.
+note: Add feature gate to stop emitting deprecated rpc.jsonrpc.error_code and rpc.jsonrpc.error_message attributes
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [48521]
+issues: [22095]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  The feature gate extension.encoding.googlecloudlogentryencoding.DontEmitV0RPCConventions
+  (disabled by default) allows users to opt out of the deprecated semconv v1.38.0 attributes.
+  The new attribute rpc.response.status_code is always emitted regardless of the gate.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -24,4 +27,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]

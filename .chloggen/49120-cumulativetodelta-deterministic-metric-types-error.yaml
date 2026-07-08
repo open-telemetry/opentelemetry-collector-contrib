@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: processor/cumulativetodelta
-
-note: Fix non-deterministic order of valid metric types in error messages for invalid `metric_types` config values.
-
-issues: [49120]
-
-change_logs: [user]

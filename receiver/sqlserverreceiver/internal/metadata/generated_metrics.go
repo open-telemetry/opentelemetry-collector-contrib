@@ -290,6 +290,40 @@ var MapAttributeSqlserverAccessScanType = map[string]AttributeSqlserverAccessSca
 	"range":      AttributeSqlserverAccessScanTypeRange,
 }
 
+// AttributeSqlserverErrorCategory specifies the value sqlserver.error.category attribute.
+type AttributeSqlserverErrorCategory int
+
+const (
+	_ AttributeSqlserverErrorCategory = iota
+	AttributeSqlserverErrorCategoryDbOffline
+	AttributeSqlserverErrorCategoryInfo
+	AttributeSqlserverErrorCategoryKillConnection
+	AttributeSqlserverErrorCategoryUser
+)
+
+// String returns the string representation of the AttributeSqlserverErrorCategory.
+func (av AttributeSqlserverErrorCategory) String() string {
+	switch av {
+	case AttributeSqlserverErrorCategoryDbOffline:
+		return "db_offline"
+	case AttributeSqlserverErrorCategoryInfo:
+		return "info"
+	case AttributeSqlserverErrorCategoryKillConnection:
+		return "kill_connection"
+	case AttributeSqlserverErrorCategoryUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverErrorCategory is a helper map of string to AttributeSqlserverErrorCategory attribute value.
+var MapAttributeSqlserverErrorCategory = map[string]AttributeSqlserverErrorCategory{
+	"db_offline":      AttributeSqlserverErrorCategoryDbOffline,
+	"info":            AttributeSqlserverErrorCategoryInfo,
+	"kill_connection": AttributeSqlserverErrorCategoryKillConnection,
+	"user":            AttributeSqlserverErrorCategoryUser,
+}
+
 // AttributeSqlserverExtentOperationType specifies the value sqlserver.extent.operation.type attribute.
 type AttributeSqlserverExtentOperationType int
 
@@ -314,6 +348,66 @@ func (av AttributeSqlserverExtentOperationType) String() string {
 var MapAttributeSqlserverExtentOperationType = map[string]AttributeSqlserverExtentOperationType{
 	"allocated":   AttributeSqlserverExtentOperationTypeAllocated,
 	"deallocated": AttributeSqlserverExtentOperationTypeDeallocated,
+}
+
+// AttributeSqlserverLockBlockType specifies the value sqlserver.lock.block.type attribute.
+type AttributeSqlserverLockBlockType int
+
+const (
+	_ AttributeSqlserverLockBlockType = iota
+	AttributeSqlserverLockBlockTypeAllocated
+	AttributeSqlserverLockBlockTypeBlocks
+	AttributeSqlserverLockBlockTypeOwner
+	AttributeSqlserverLockBlockTypeOwnerAllocated
+)
+
+// String returns the string representation of the AttributeSqlserverLockBlockType.
+func (av AttributeSqlserverLockBlockType) String() string {
+	switch av {
+	case AttributeSqlserverLockBlockTypeAllocated:
+		return "allocated"
+	case AttributeSqlserverLockBlockTypeBlocks:
+		return "blocks"
+	case AttributeSqlserverLockBlockTypeOwner:
+		return "owner"
+	case AttributeSqlserverLockBlockTypeOwnerAllocated:
+		return "owner_allocated"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverLockBlockType is a helper map of string to AttributeSqlserverLockBlockType attribute value.
+var MapAttributeSqlserverLockBlockType = map[string]AttributeSqlserverLockBlockType{
+	"allocated":       AttributeSqlserverLockBlockTypeAllocated,
+	"blocks":          AttributeSqlserverLockBlockTypeBlocks,
+	"owner":           AttributeSqlserverLockBlockTypeOwner,
+	"owner_allocated": AttributeSqlserverLockBlockTypeOwnerAllocated,
+}
+
+// AttributeSqlserverLockTimeoutType specifies the value sqlserver.lock.timeout.type attribute.
+type AttributeSqlserverLockTimeoutType int
+
+const (
+	_ AttributeSqlserverLockTimeoutType = iota
+	AttributeSqlserverLockTimeoutTypeAll
+	AttributeSqlserverLockTimeoutTypeNonzero
+)
+
+// String returns the string representation of the AttributeSqlserverLockTimeoutType.
+func (av AttributeSqlserverLockTimeoutType) String() string {
+	switch av {
+	case AttributeSqlserverLockTimeoutTypeAll:
+		return "all"
+	case AttributeSqlserverLockTimeoutTypeNonzero:
+		return "nonzero"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverLockTimeoutType is a helper map of string to AttributeSqlserverLockTimeoutType attribute value.
+var MapAttributeSqlserverLockTimeoutType = map[string]AttributeSqlserverLockTimeoutType{
+	"all":     AttributeSqlserverLockTimeoutTypeAll,
+	"nonzero": AttributeSqlserverLockTimeoutTypeNonzero,
 }
 
 // AttributeSqlserverPageAllocationType specifies the value sqlserver.page.allocation.type attribute.
@@ -560,6 +654,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverComputerUptime: metricInfo{
 		Name: "sqlserver.computer.uptime",
 	},
+	SqlserverConnectionResetRate: metricInfo{
+		Name: "sqlserver.connection.reset.rate",
+	},
 	SqlserverCPUCount: metricInfo{
 		Name: "sqlserver.cpu.count",
 	},
@@ -598,6 +695,10 @@ var MetricsInfo = metricsInfo{
 	SqlserverDeadlockRate: metricInfo{
 		Name: "sqlserver.deadlock.rate",
 	},
+	SqlserverErrorRate: metricInfo{
+		Name:       "sqlserver.error.rate",
+		Attributes: []string{"sqlserver.error.category"},
+	},
 	SqlserverExtentOperationRate: metricInfo{
 		Name:       "sqlserver.extent.operation.rate",
 		Attributes: []string{"sqlserver.extent.operation.type"},
@@ -624,8 +725,22 @@ var MetricsInfo = metricsInfo{
 	SqlserverLatchWaitTimeTotal: metricInfo{
 		Name: "sqlserver.latch.wait_time.total",
 	},
+	SqlserverLockBlockCount: metricInfo{
+		Name:       "sqlserver.lock.block.count",
+		Attributes: []string{"sqlserver.lock.block.type"},
+	},
+	SqlserverLockEscalationRate: metricInfo{
+		Name: "sqlserver.lock.escalation.rate",
+	},
+	SqlserverLockMemory: metricInfo{
+		Name: "sqlserver.lock.memory",
+	},
+	SqlserverLockRequestRate: metricInfo{
+		Name: "sqlserver.lock.request.rate",
+	},
 	SqlserverLockTimeoutRate: metricInfo{
-		Name: "sqlserver.lock.timeout.rate",
+		Name:       "sqlserver.lock.timeout.rate",
+		Attributes: []string{"sqlserver.lock.timeout.type"},
 	},
 	SqlserverLockWaitCount: metricInfo{
 		Name: "sqlserver.lock.wait.count",
@@ -635,6 +750,9 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverLockWaitTimeAvg: metricInfo{
 		Name: "sqlserver.lock.wait_time.avg",
+	},
+	SqlserverLockWaitTimeTotal: metricInfo{
+		Name: "sqlserver.lock.wait_time.total",
 	},
 	SqlserverLoginRate: metricInfo{
 		Name: "sqlserver.login.rate",
@@ -781,6 +899,7 @@ type metricsInfo struct {
 	SqlserverBatchSQLCompilationRate            metricInfo
 	SqlserverBatchSQLRecompilationRate          metricInfo
 	SqlserverComputerUptime                     metricInfo
+	SqlserverConnectionResetRate                metricInfo
 	SqlserverCPUCount                           metricInfo
 	SqlserverDatabaseBackupOrRestoreRate        metricInfo
 	SqlserverDatabaseCount                      metricInfo
@@ -792,6 +911,7 @@ type metricsInfo struct {
 	SqlserverDatabaseTempdbSpace                metricInfo
 	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
 	SqlserverDeadlockRate                       metricInfo
+	SqlserverErrorRate                          metricInfo
 	SqlserverExtentOperationRate                metricInfo
 	SqlserverGhostRecordSkippedRate             metricInfo
 	SqlserverIndexSearchRate                    metricInfo
@@ -800,10 +920,15 @@ type metricsInfo struct {
 	SqlserverLatchWaitRate                      metricInfo
 	SqlserverLatchWaitTimeAvg                   metricInfo
 	SqlserverLatchWaitTimeTotal                 metricInfo
+	SqlserverLockBlockCount                     metricInfo
+	SqlserverLockEscalationRate                 metricInfo
+	SqlserverLockMemory                         metricInfo
+	SqlserverLockRequestRate                    metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
 	SqlserverLockWaitTimeAvg                    metricInfo
+	SqlserverLockWaitTimeTotal                  metricInfo
 	SqlserverLoginRate                          metricInfo
 	SqlserverLogoutRate                         metricInfo
 	SqlserverMemoryArea                         metricInfo
@@ -1146,6 +1271,56 @@ func (m *metricSqlserverComputerUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverComputerUptime(cfg SqlserverComputerUptimeMetricConfig) metricSqlserverComputerUptime {
 	m := metricSqlserverComputerUptime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverConnectionResetRate struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SqlserverConnectionResetRateMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.connection.reset.rate metric with initial data.
+func (m *metricSqlserverConnectionResetRate) init() {
+	m.data.SetName("sqlserver.connection.reset.rate")
+	m.data.SetDescription("Number of logical connections reset per second.")
+	m.data.SetUnit("{connection}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverConnectionResetRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverConnectionResetRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverConnectionResetRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverConnectionResetRate(cfg SqlserverConnectionResetRateMetricConfig) metricSqlserverConnectionResetRate {
+	m := metricSqlserverConnectionResetRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1934,6 +2109,58 @@ func newMetricSqlserverDeadlockRate(cfg SqlserverDeadlockRateMetricConfig) metri
 	return m
 }
 
+type metricSqlserverErrorRate struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   SqlserverErrorRateMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.error.rate metric with initial data.
+func (m *metricSqlserverErrorRate) init() {
+	m.data.SetName("sqlserver.error.rate")
+	m.data.SetDescription("Number of errors raised per second.")
+	m.data.SetUnit("{error}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverErrorRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverErrorCategoryAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("sqlserver.error.category", sqlserverErrorCategoryAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverErrorRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverErrorRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverErrorRate(cfg SqlserverErrorRateMetricConfig) metricSqlserverErrorRate {
+	m := metricSqlserverErrorRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverExtentOperationRate struct {
 	data     pmetric.Metric                           // data buffer for generated metric.
 	config   SqlserverExtentOperationRateMetricConfig // metric config provided by user.
@@ -2377,6 +2604,208 @@ func newMetricSqlserverLatchWaitTimeTotal(cfg SqlserverLatchWaitTimeTotalMetricC
 	return m
 }
 
+type metricSqlserverLockBlockCount struct {
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SqlserverLockBlockCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.lock.block.count metric with initial data.
+func (m *metricSqlserverLockBlockCount) init() {
+	m.data.SetName("sqlserver.lock.block.count")
+	m.data.SetDescription("Number of lock blocks tracked by the lock manager.")
+	m.data.SetUnit("{block}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverLockBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverLockBlockTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("sqlserver.lock.block.type", sqlserverLockBlockTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLockBlockCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLockBlockCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLockBlockCount(cfg SqlserverLockBlockCountMetricConfig) metricSqlserverLockBlockCount {
+	m := metricSqlserverLockBlockCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLockEscalationRate struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   SqlserverLockEscalationRateMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.lock.escalation.rate metric with initial data.
+func (m *metricSqlserverLockEscalationRate) init() {
+	m.data.SetName("sqlserver.lock.escalation.rate")
+	m.data.SetDescription("Number of lock escalations per second (locks on a table escalated to a larger granularity).")
+	m.data.SetUnit("{escalation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLockEscalationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLockEscalationRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLockEscalationRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLockEscalationRate(cfg SqlserverLockEscalationRateMetricConfig) metricSqlserverLockEscalationRate {
+	m := metricSqlserverLockEscalationRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLockMemory struct {
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   SqlserverLockMemoryMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.lock.memory metric with initial data.
+func (m *metricSqlserverLockMemory) init() {
+	m.data.SetName("sqlserver.lock.memory")
+	m.data.SetDescription("Total amount of memory used for locks.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLockMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLockMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLockMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLockMemory(cfg SqlserverLockMemoryMetricConfig) metricSqlserverLockMemory {
+	m := metricSqlserverLockMemory{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLockRequestRate struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   SqlserverLockRequestRateMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.lock.request.rate metric with initial data.
+func (m *metricSqlserverLockRequestRate) init() {
+	m.data.SetName("sqlserver.lock.request.rate")
+	m.data.SetDescription("Number of new locks and lock conversions per second requested from the lock manager.")
+	m.data.SetUnit("{request}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLockRequestRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLockRequestRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLockRequestRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLockRequestRate(cfg SqlserverLockRequestRateMetricConfig) metricSqlserverLockRequestRate {
+	m := metricSqlserverLockRequestRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverLockTimeoutRate struct {
 	data     pmetric.Metric                       // data buffer for generated metric.
 	config   SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
@@ -2386,12 +2815,13 @@ type metricSqlserverLockTimeoutRate struct {
 // init fills sqlserver.lock.timeout.rate metric with initial data.
 func (m *metricSqlserverLockTimeoutRate) init() {
 	m.data.SetName("sqlserver.lock.timeout.rate")
-	m.data.SetDescription("Total number of lock timeouts.")
-	m.data.SetUnit("“{timeouts}/s”")
+	m.data.SetDescription("Number of lock timeouts per second.")
+	m.data.SetUnit("{timeout}/s")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverLockTimeoutTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2399,6 +2829,7 @@ func (m *metricSqlserverLockTimeoutRate) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("sqlserver.lock.timeout.type", sqlserverLockTimeoutTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2571,6 +3002,58 @@ func (m *metricSqlserverLockWaitTimeAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverLockWaitTimeAvg(cfg SqlserverLockWaitTimeAvgMetricConfig) metricSqlserverLockWaitTimeAvg {
 	m := metricSqlserverLockWaitTimeAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLockWaitTimeTotal struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SqlserverLockWaitTimeTotalMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.lock.wait_time.total metric with initial data.
+func (m *metricSqlserverLockWaitTimeTotal) init() {
+	m.data.SetName("sqlserver.lock.wait_time.total")
+	m.data.SetDescription("Total wait time in seconds for locks since the last server restart.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSqlserverLockWaitTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLockWaitTimeTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLockWaitTimeTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLockWaitTimeTotal(cfg SqlserverLockWaitTimeTotalMetricConfig) metricSqlserverLockWaitTimeTotal {
+	m := metricSqlserverLockWaitTimeTotal{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5098,6 +5581,7 @@ type MetricsBuilder struct {
 	metricSqlserverBatchSQLCompilationRate            metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate          metricSqlserverBatchSQLRecompilationRate
 	metricSqlserverComputerUptime                     metricSqlserverComputerUptime
+	metricSqlserverConnectionResetRate                metricSqlserverConnectionResetRate
 	metricSqlserverCPUCount                           metricSqlserverCPUCount
 	metricSqlserverDatabaseBackupOrRestoreRate        metricSqlserverDatabaseBackupOrRestoreRate
 	metricSqlserverDatabaseCount                      metricSqlserverDatabaseCount
@@ -5109,6 +5593,7 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseTempdbSpace                metricSqlserverDatabaseTempdbSpace
 	metricSqlserverDatabaseTempdbVersionStoreSize     metricSqlserverDatabaseTempdbVersionStoreSize
 	metricSqlserverDeadlockRate                       metricSqlserverDeadlockRate
+	metricSqlserverErrorRate                          metricSqlserverErrorRate
 	metricSqlserverExtentOperationRate                metricSqlserverExtentOperationRate
 	metricSqlserverGhostRecordSkippedRate             metricSqlserverGhostRecordSkippedRate
 	metricSqlserverIndexSearchRate                    metricSqlserverIndexSearchRate
@@ -5117,10 +5602,15 @@ type MetricsBuilder struct {
 	metricSqlserverLatchWaitRate                      metricSqlserverLatchWaitRate
 	metricSqlserverLatchWaitTimeAvg                   metricSqlserverLatchWaitTimeAvg
 	metricSqlserverLatchWaitTimeTotal                 metricSqlserverLatchWaitTimeTotal
+	metricSqlserverLockBlockCount                     metricSqlserverLockBlockCount
+	metricSqlserverLockEscalationRate                 metricSqlserverLockEscalationRate
+	metricSqlserverLockMemory                         metricSqlserverLockMemory
+	metricSqlserverLockRequestRate                    metricSqlserverLockRequestRate
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
 	metricSqlserverLockWaitTimeAvg                    metricSqlserverLockWaitTimeAvg
+	metricSqlserverLockWaitTimeTotal                  metricSqlserverLockWaitTimeTotal
 	metricSqlserverLoginRate                          metricSqlserverLoginRate
 	metricSqlserverLogoutRate                         metricSqlserverLogoutRate
 	metricSqlserverMemoryArea                         metricSqlserverMemoryArea
@@ -5193,6 +5683,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverBatchSQLCompilationRate:            newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
 		metricSqlserverBatchSQLRecompilationRate:          newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
 		metricSqlserverComputerUptime:                     newMetricSqlserverComputerUptime(mbc.Metrics.SqlserverComputerUptime),
+		metricSqlserverConnectionResetRate:                newMetricSqlserverConnectionResetRate(mbc.Metrics.SqlserverConnectionResetRate),
 		metricSqlserverCPUCount:                           newMetricSqlserverCPUCount(mbc.Metrics.SqlserverCPUCount),
 		metricSqlserverDatabaseBackupOrRestoreRate:        newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
 		metricSqlserverDatabaseCount:                      newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
@@ -5204,6 +5695,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseTempdbSpace:                newMetricSqlserverDatabaseTempdbSpace(mbc.Metrics.SqlserverDatabaseTempdbSpace),
 		metricSqlserverDatabaseTempdbVersionStoreSize:     newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
 		metricSqlserverDeadlockRate:                       newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
+		metricSqlserverErrorRate:                          newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
 		metricSqlserverExtentOperationRate:                newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
 		metricSqlserverGhostRecordSkippedRate:             newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
 		metricSqlserverIndexSearchRate:                    newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
@@ -5212,10 +5704,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLatchWaitRate:                      newMetricSqlserverLatchWaitRate(mbc.Metrics.SqlserverLatchWaitRate),
 		metricSqlserverLatchWaitTimeAvg:                   newMetricSqlserverLatchWaitTimeAvg(mbc.Metrics.SqlserverLatchWaitTimeAvg),
 		metricSqlserverLatchWaitTimeTotal:                 newMetricSqlserverLatchWaitTimeTotal(mbc.Metrics.SqlserverLatchWaitTimeTotal),
+		metricSqlserverLockBlockCount:                     newMetricSqlserverLockBlockCount(mbc.Metrics.SqlserverLockBlockCount),
+		metricSqlserverLockEscalationRate:                 newMetricSqlserverLockEscalationRate(mbc.Metrics.SqlserverLockEscalationRate),
+		metricSqlserverLockMemory:                         newMetricSqlserverLockMemory(mbc.Metrics.SqlserverLockMemory),
+		metricSqlserverLockRequestRate:                    newMetricSqlserverLockRequestRate(mbc.Metrics.SqlserverLockRequestRate),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
 		metricSqlserverLockWaitTimeAvg:                    newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
+		metricSqlserverLockWaitTimeTotal:                  newMetricSqlserverLockWaitTimeTotal(mbc.Metrics.SqlserverLockWaitTimeTotal),
 		metricSqlserverLoginRate:                          newMetricSqlserverLoginRate(mbc.Metrics.SqlserverLoginRate),
 		metricSqlserverLogoutRate:                         newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
 		metricSqlserverMemoryArea:                         newMetricSqlserverMemoryArea(mbc.Metrics.SqlserverMemoryArea),
@@ -5389,6 +5886,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverComputerUptime.emit(ils.Metrics())
+	mb.metricSqlserverConnectionResetRate.emit(ils.Metrics())
 	mb.metricSqlserverCPUCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseBackupOrRestoreRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
@@ -5400,6 +5898,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseTempdbSpace.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
+	mb.metricSqlserverErrorRate.emit(ils.Metrics())
 	mb.metricSqlserverExtentOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverGhostRecordSkippedRate.emit(ils.Metrics())
 	mb.metricSqlserverIndexSearchRate.emit(ils.Metrics())
@@ -5408,10 +5907,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLatchWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLatchWaitTimeAvg.emit(ils.Metrics())
 	mb.metricSqlserverLatchWaitTimeTotal.emit(ils.Metrics())
+	mb.metricSqlserverLockBlockCount.emit(ils.Metrics())
+	mb.metricSqlserverLockEscalationRate.emit(ils.Metrics())
+	mb.metricSqlserverLockMemory.emit(ils.Metrics())
+	mb.metricSqlserverLockRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
+	mb.metricSqlserverLockWaitTimeTotal.emit(ils.Metrics())
 	mb.metricSqlserverLoginRate.emit(ils.Metrics())
 	mb.metricSqlserverLogoutRate.emit(ils.Metrics())
 	mb.metricSqlserverMemoryArea.emit(ils.Metrics())
@@ -5519,6 +6023,11 @@ func (mb *MetricsBuilder) RecordSqlserverComputerUptimeDataPoint(ts pcommon.Time
 	return nil
 }
 
+// RecordSqlserverConnectionResetRateDataPoint adds a data point to sqlserver.connection.reset.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverConnectionResetRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverConnectionResetRate.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSqlserverCPUCountDataPoint adds a data point to sqlserver.cpu.count metric.
 func (mb *MetricsBuilder) RecordSqlserverCPUCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -5594,6 +6103,11 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 	mb.metricSqlserverDeadlockRate.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverErrorRateDataPoint adds a data point to sqlserver.error.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverErrorRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverErrorCategoryAttributeValue AttributeSqlserverErrorCategory) {
+	mb.metricSqlserverErrorRate.recordDataPoint(mb.startTime, ts, val, sqlserverErrorCategoryAttributeValue.String())
+}
+
 // RecordSqlserverExtentOperationRateDataPoint adds a data point to sqlserver.extent.operation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverExtentOperationRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverExtentOperationTypeAttributeValue AttributeSqlserverExtentOperationType) {
 	mb.metricSqlserverExtentOperationRate.recordDataPoint(mb.startTime, ts, val, sqlserverExtentOperationTypeAttributeValue.String())
@@ -5634,9 +6148,29 @@ func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.
 	mb.metricSqlserverLatchWaitTimeTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverLockBlockCountDataPoint adds a data point to sqlserver.lock.block.count metric.
+func (mb *MetricsBuilder) RecordSqlserverLockBlockCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverLockBlockTypeAttributeValue AttributeSqlserverLockBlockType) {
+	mb.metricSqlserverLockBlockCount.recordDataPoint(mb.startTime, ts, val, sqlserverLockBlockTypeAttributeValue.String())
+}
+
+// RecordSqlserverLockEscalationRateDataPoint adds a data point to sqlserver.lock.escalation.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLockEscalationRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLockEscalationRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLockMemoryDataPoint adds a data point to sqlserver.lock.memory metric.
+func (mb *MetricsBuilder) RecordSqlserverLockMemoryDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverLockMemory.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLockRequestRateDataPoint adds a data point to sqlserver.lock.request.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLockRequestRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLockRequestRate.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockTimeoutRate.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverLockTimeoutTypeAttributeValue AttributeSqlserverLockTimeoutType) {
+	mb.metricSqlserverLockTimeoutRate.recordDataPoint(mb.startTime, ts, val, sqlserverLockTimeoutTypeAttributeValue.String())
 }
 
 // RecordSqlserverLockWaitCountDataPoint adds a data point to sqlserver.lock.wait.count metric.
@@ -5652,6 +6186,11 @@ func (mb *MetricsBuilder) RecordSqlserverLockWaitRateDataPoint(ts pcommon.Timest
 // RecordSqlserverLockWaitTimeAvgDataPoint adds a data point to sqlserver.lock.wait_time.avg metric.
 func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverLockWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLockWaitTimeTotalDataPoint adds a data point to sqlserver.lock.wait_time.total metric.
+func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeTotalDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLockWaitTimeTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverLoginRateDataPoint adds a data point to sqlserver.login.rate metric.
