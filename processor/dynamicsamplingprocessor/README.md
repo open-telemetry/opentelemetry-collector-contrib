@@ -284,6 +284,17 @@ Because the sampling decision is deterministic against the 56-bit randomness val
 
 The `ot=rv` value is a 56-bit number, so a stable hash of the entity ID truncated to 56 bits is a suitable derivation. The processor itself does not compute `ot=rv` from arbitrary attributes: the producer or an earlier processor is expected to set it. Whatever `ot=rv` is present when the accumulated trace arrives will be used for the decision and preserved on the emitted spans.
 
+#### Multi-instance deployment considerations
+
+Under the standard two-tier deployment pattern (`loadbalancing` exporter routing traces to a downstream tier running this processor), how traces are routed interacts with rv-based grouping in two useful ways:
+
+- **Routing by trace ID (default).** Traces in the same rv-group land on different collector instances because their trace IDs are unrelated. Sampling decisions remain correct without any coordination between collectors: because our decision is deterministic against the shared rv, every instance reaches the same keep/drop outcome for a given rv. The trade-off is that the adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) each see only a slice of the group's traffic, so per-key rate calculations converge more slowly than if the whole group were visible to one instance.
+- **Routing by a group-carrying attribute.** If the producer sets both a shared `conversation.id` (or similar) and the derived `ot=rv`, `loadbalancing` can be configured with `routing_key: attributes` naming that attribute so all traces for one group land on the same collector. Adaptive-sampler learning is coherent across the group at the cost of load distribution: heavy-tailed group sizes (one active conversation among many quiet ones) skew load onto specific instances, and `num_traces` on the busy instance must be sized for the largest concurrently-pending group or `traces_evicted` will start climbing. Group size is upstream-controlled, so an unexpected traffic spike within one group shifts the skew unpredictably.
+
+Route-by-trace-ID is the safe default (uniform load, correct decisions, coarser sampler learning). Route-by-attribute is worth reaching for when coherent adaptive learning across a group matters and `num_traces` can be sized conservatively.
+
+Future work on shared trace context across collector instances (tracked under "Cross-instance shared state" in [#49311](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49311)) would remove this trade-off: with a shared backing store the adaptive samplers can learn from the whole group regardless of which instance decides any individual trace, so uniform-load routing (route by trace ID) no longer costs sampler learning coherence.
+
 ## Metrics
 
 | Metric                                              | Type     | Labels   | Description                                                                 |
