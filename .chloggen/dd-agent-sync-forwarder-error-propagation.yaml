@@ -1,0 +1,11 @@
+change_type: enhancement
+component: exporter/datadog
+note: Add `datadog.serializerexporter.UseSyncForwarder` feature gate (Alpha, disabled by default) that replaces the async DefaultForwarder with a synchronous forwarder so metric send failures are propagated back through `ConsumeMetrics` to OTel's `exporterhelper` retry/queue layer.
+issues: [0]
+subtext: |
+  When enabled via `--feature-gates=+datadog.serializerexporter.UseSyncForwarder`, the metric serializer
+  exporter path now surfaces Datadog intake errors (5xx → retryable, 4xx → permanent drop) so that
+  `otelcol_exporter_send_failed_metric_points` accurately reflects failures and the configured
+  `retry_on_failure` policy is respected. The default async forwarder silently swallowed these errors.
+  See [DataDog/datadog-agent#51333](https://github.com/DataDog/datadog-agent/pull/51333).
+change_logs: [user]
