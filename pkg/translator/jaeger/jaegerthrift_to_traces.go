@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -112,6 +113,10 @@ func jThriftSpanToInternal(span *jaeger.Span, dest ptrace.Span) {
 	dest.SetName(span.OperationName)
 	dest.SetStartTimestamp(microsecondsToUnixNano(span.StartTime))
 	dest.SetEndTimestamp(microsecondsToUnixNano(span.StartTime + span.Duration))
+
+	if model.Flags(span.Flags).IsSampled() {
+		dest.SetFlags(dest.Flags() | spanFlagsSampled)
+	}
 
 	parentSpanID := jThriftSpanParentID(span)
 	if parentSpanID != 0 {
