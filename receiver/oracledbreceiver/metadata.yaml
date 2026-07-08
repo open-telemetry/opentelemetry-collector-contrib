@@ -750,7 +750,7 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.jvm.memory.committed:
-    description: Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.
+    description: Committed (total) size of Oracle's in-database JVM (OJVM) call heap.
     enabled: false
     stability: development
     gauge:
@@ -758,7 +758,7 @@ metrics:
       input_type: string
     unit: By
   oracledb.jvm.memory.live:
-    description: Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.
+    description: Size of live objects in Oracle's in-database JVM (OJVM) call heap.
     enabled: false
     stability: development
     gauge:
@@ -766,7 +766,7 @@ metrics:
       input_type: string
     unit: By
   oracledb.jvm.memory.used:
-    description: Used size in bytes of Oracle's in-database JVM (OJVM) call heap.
+    description: Used size of Oracle's in-database JVM (OJVM) call heap.
     enabled: false
     stability: development
     gauge:
@@ -1152,8 +1152,8 @@ metrics:
       value_type: int
       input_type: string
     unit: "{row}"
-  oracledb.session.stored_procedure.usage:
-    description: Memory in bytes currently allocated for stored procedures in the session.
+  oracledb.session.stored_procedure.memory:
+    description: Memory currently allocated for stored procedures in the session.
     enabled: false
     stability: development
     gauge:
@@ -1163,7 +1163,7 @@ metrics:
   oracledb.session.wait.time:
     attributes:
       - oracledb.session.wait.state
-    description: Cumulative time sessions spent in non-idle waits, in seconds.
+    description: Cumulative time sessions spent in waits.
     enabled: false
     stability: development
     sum:
@@ -1174,7 +1174,7 @@ metrics:
   oracledb.session.waits:
     attributes:
       - oracledb.session.wait.state
-    description: Cumulative number of non-idle waits across sessions.
+    description: Cumulative number of waits across sessions.
     enabled: false
     stability: development
     sum:

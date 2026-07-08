@@ -1953,13 +1953,13 @@ func (ms *OracledbScanTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric.
-type OracledbSessionStoredProcedureUsageMetricConfig struct {
+// OracledbSessionStoredProcedureMemoryMetricConfig provides config for the oracledb.session.stored_procedure.memory metric.
+type OracledbSessionStoredProcedureMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbSessionStoredProcedureUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSessionStoredProcedureMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2637,7 +2637,7 @@ type MetricsConfig struct {
 	OracledbRedoAllocationUtilization             OracledbRedoAllocationUtilizationMetricConfig             `mapstructure:"oracledb.redo_allocation.utilization"`
 	OracledbScanCount                             OracledbScanCountMetricConfig                             `mapstructure:"oracledb.scan.count"`
 	OracledbScanTableRows                         OracledbScanTableRowsMetricConfig                         `mapstructure:"oracledb.scan.table.rows"`
-	OracledbSessionStoredProcedureUsage           OracledbSessionStoredProcedureUsageMetricConfig           `mapstructure:"oracledb.session.stored_procedure.usage"`
+	OracledbSessionStoredProcedureMemory          OracledbSessionStoredProcedureMemoryMetricConfig          `mapstructure:"oracledb.session.stored_procedure.memory"`
 	OracledbSessionWaitTime                       OracledbSessionWaitTimeMetricConfig                       `mapstructure:"oracledb.session.wait.time"`
 	OracledbSessionWaits                          OracledbSessionWaitsMetricConfig                          `mapstructure:"oracledb.session.waits"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
@@ -2918,7 +2918,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbScanTableRows: OracledbScanTableRowsMetricConfig{
 			Enabled: false,
 		},
-		OracledbSessionStoredProcedureUsage: OracledbSessionStoredProcedureUsageMetricConfig{
+		OracledbSessionStoredProcedureMemory: OracledbSessionStoredProcedureMemoryMetricConfig{
 			Enabled: false,
 		},
 		OracledbSessionWaitTime: OracledbSessionWaitTimeMetricConfig{

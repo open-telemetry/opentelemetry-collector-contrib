@@ -388,7 +388,7 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbSessionWaits.Enabled = true
 	cfg.Metrics.OracledbSessionWaitTime.Enabled = true
-	cfg.Metrics.OracledbSessionStoredProcedureUsage.Enabled = true
+	cfg.Metrics.OracledbSessionStoredProcedureMemory.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryUsed.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryCommitted.Enabled = true
 	cfg.Metrics.OracledbJvmMemoryLive.Enabled = true
@@ -416,7 +416,7 @@ func TestScraper_ScrapeSessionJVMOSMetrics(t *testing.T) {
 		case "oracledb.os.swaps":
 			seen++
 			assert.Equal(t, int64(17), me.Sum().DataPoints().At(0).IntValue())
-		case "oracledb.session.stored_procedure.usage":
+		case "oracledb.session.stored_procedure.memory":
 			seen++
 			assert.Equal(t, int64(262144), me.Gauge().DataPoints().At(0).IntValue())
 		case "oracledb.jvm.memory.used":

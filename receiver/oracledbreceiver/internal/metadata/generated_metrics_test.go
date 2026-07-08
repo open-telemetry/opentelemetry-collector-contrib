@@ -373,7 +373,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbScanTableRowsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbSessionStoredProcedureUsageDataPoint(ts, "1")
+			mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordOracledbSessionWaitTimeDataPoint(ts, 1, AttributeOracledbSessionWaitStateNonIdle)
@@ -1118,7 +1118,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.committed"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
+					assert.Equal(t, "Committed (total) size of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1130,7 +1130,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.live"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.", mi.Description())
+					assert.Equal(t, "Size of live objects in Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1142,7 +1142,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.jvm.memory.used"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Used size in bytes of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
+					assert.Equal(t, "Used size of Oracle's in-database JVM (OJVM) call heap.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1994,12 +1994,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.session.stored_procedure.usage":
-					assert.False(t, validatedMetrics["oracledb.session.stored_procedure.usage"], "Found a duplicate in the metrics slice: oracledb.session.stored_procedure.usage")
-					validatedMetrics["oracledb.session.stored_procedure.usage"] = true
+				case "oracledb.session.stored_procedure.memory":
+					assert.False(t, validatedMetrics["oracledb.session.stored_procedure.memory"], "Found a duplicate in the metrics slice: oracledb.session.stored_procedure.memory")
+					validatedMetrics["oracledb.session.stored_procedure.memory"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Memory in bytes currently allocated for stored procedures in the session.", mi.Description())
+					assert.Equal(t, "Memory currently allocated for stored procedures in the session.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -2012,7 +2012,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.wait.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds.", mi.Description())
+						assert.Equal(t, "Cumulative time sessions spent in waits.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -2029,7 +2029,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.wait.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative time sessions spent in non-idle waits, in seconds.", mi.Description())
+						assert.Equal(t, "Cumulative time sessions spent in waits.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -2056,7 +2056,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.waits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative number of non-idle waits across sessions.", mi.Description())
+						assert.Equal(t, "Cumulative number of waits across sessions.", mi.Description())
 						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -2073,7 +2073,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.session.waits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Cumulative number of non-idle waits across sessions.", mi.Description())
+						assert.Equal(t, "Cumulative number of waits across sessions.", mi.Description())
 						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

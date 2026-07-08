@@ -734,8 +734,8 @@ var MetricsInfo = metricsInfo{
 	OracledbScanTableRows: metricInfo{
 		Name: "oracledb.scan.table.rows",
 	},
-	OracledbSessionStoredProcedureUsage: metricInfo{
-		Name: "oracledb.session.stored_procedure.usage",
+	OracledbSessionStoredProcedureMemory: metricInfo{
+		Name: "oracledb.session.stored_procedure.memory",
 	},
 	OracledbSessionWaitTime: metricInfo{
 		Name:       "oracledb.session.wait.time",
@@ -878,7 +878,7 @@ type metricsInfo struct {
 	OracledbRedoAllocationUtilization             metricInfo
 	OracledbScanCount                             metricInfo
 	OracledbScanTableRows                         metricInfo
-	OracledbSessionStoredProcedureUsage           metricInfo
+	OracledbSessionStoredProcedureMemory          metricInfo
 	OracledbSessionWaitTime                       metricInfo
 	OracledbSessionWaits                          metricInfo
 	OracledbSessionsLimit                         metricInfo
@@ -2848,7 +2848,7 @@ type metricOracledbJvmMemoryCommitted struct {
 // init fills oracledb.jvm.memory.committed metric with initial data.
 func (m *metricOracledbJvmMemoryCommitted) init() {
 	m.data.SetName("oracledb.jvm.memory.committed")
-	m.data.SetDescription("Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetDescription("Committed (total) size of Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -2898,7 +2898,7 @@ type metricOracledbJvmMemoryLive struct {
 // init fills oracledb.jvm.memory.live metric with initial data.
 func (m *metricOracledbJvmMemoryLive) init() {
 	m.data.SetName("oracledb.jvm.memory.live")
-	m.data.SetDescription("Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetDescription("Size of live objects in Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -2948,7 +2948,7 @@ type metricOracledbJvmMemoryUsed struct {
 // init fills oracledb.jvm.memory.used metric with initial data.
 func (m *metricOracledbJvmMemoryUsed) init() {
 	m.data.SetName("oracledb.jvm.memory.used")
-	m.data.SetDescription("Used size in bytes of Oracle's in-database JVM (OJVM) call heap.")
+	m.data.SetDescription("Used size of Oracle's in-database JVM (OJVM) call heap.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -5402,21 +5402,21 @@ func newMetricOracledbScanTableRows(cfg OracledbScanTableRowsMetricConfig) metri
 	return m
 }
 
-type metricOracledbSessionStoredProcedureUsage struct {
-	data     pmetric.Metric                                  // data buffer for generated metric.
-	config   OracledbSessionStoredProcedureUsageMetricConfig // metric config provided by user.
-	capacity int                                             // max observed number of data points added to the metric.
+type metricOracledbSessionStoredProcedureMemory struct {
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   OracledbSessionStoredProcedureMemoryMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.session.stored_procedure.usage metric with initial data.
-func (m *metricOracledbSessionStoredProcedureUsage) init() {
-	m.data.SetName("oracledb.session.stored_procedure.usage")
-	m.data.SetDescription("Memory in bytes currently allocated for stored procedures in the session.")
+// init fills oracledb.session.stored_procedure.memory metric with initial data.
+func (m *metricOracledbSessionStoredProcedureMemory) init() {
+	m.data.SetName("oracledb.session.stored_procedure.memory")
+	m.data.SetDescription("Memory currently allocated for stored procedures in the session.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSessionStoredProcedureUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSessionStoredProcedureMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5427,14 +5427,14 @@ func (m *metricOracledbSessionStoredProcedureUsage) recordDataPoint(start pcommo
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbSessionStoredProcedureUsage) updateCapacity() {
+func (m *metricOracledbSessionStoredProcedureMemory) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbSessionStoredProcedureUsage) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbSessionStoredProcedureMemory) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -5442,8 +5442,8 @@ func (m *metricOracledbSessionStoredProcedureUsage) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricOracledbSessionStoredProcedureUsage(cfg OracledbSessionStoredProcedureUsageMetricConfig) metricOracledbSessionStoredProcedureUsage {
-	m := metricOracledbSessionStoredProcedureUsage{config: cfg}
+func newMetricOracledbSessionStoredProcedureMemory(cfg OracledbSessionStoredProcedureMemoryMetricConfig) metricOracledbSessionStoredProcedureMemory {
+	m := metricOracledbSessionStoredProcedureMemory{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5462,7 +5462,7 @@ type metricOracledbSessionWaitTime struct {
 // init fills oracledb.session.wait.time metric with initial data.
 func (m *metricOracledbSessionWaitTime) init() {
 	m.data.SetName("oracledb.session.wait.time")
-	m.data.SetDescription("Cumulative time sessions spent in non-idle waits, in seconds.")
+	m.data.SetDescription("Cumulative time sessions spent in waits.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -5553,7 +5553,7 @@ type metricOracledbSessionWaits struct {
 // init fills oracledb.session.waits metric with initial data.
 func (m *metricOracledbSessionWaits) init() {
 	m.data.SetName("oracledb.session.waits")
-	m.data.SetDescription("Cumulative number of non-idle waits across sessions.")
+	m.data.SetDescription("Cumulative number of waits across sessions.")
 	m.data.SetUnit("{wait}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -6770,7 +6770,7 @@ type MetricsBuilder struct {
 	metricOracledbRedoAllocationUtilization             metricOracledbRedoAllocationUtilization
 	metricOracledbScanCount                             metricOracledbScanCount
 	metricOracledbScanTableRows                         metricOracledbScanTableRows
-	metricOracledbSessionStoredProcedureUsage           metricOracledbSessionStoredProcedureUsage
+	metricOracledbSessionStoredProcedureMemory          metricOracledbSessionStoredProcedureMemory
 	metricOracledbSessionWaitTime                       metricOracledbSessionWaitTime
 	metricOracledbSessionWaits                          metricOracledbSessionWaits
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
@@ -6890,7 +6890,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbRedoAllocationUtilization:             newMetricOracledbRedoAllocationUtilization(mbc.Metrics.OracledbRedoAllocationUtilization),
 		metricOracledbScanCount:                             newMetricOracledbScanCount(mbc.Metrics.OracledbScanCount),
 		metricOracledbScanTableRows:                         newMetricOracledbScanTableRows(mbc.Metrics.OracledbScanTableRows),
-		metricOracledbSessionStoredProcedureUsage:           newMetricOracledbSessionStoredProcedureUsage(mbc.Metrics.OracledbSessionStoredProcedureUsage),
+		metricOracledbSessionStoredProcedureMemory:          newMetricOracledbSessionStoredProcedureMemory(mbc.Metrics.OracledbSessionStoredProcedureMemory),
 		metricOracledbSessionWaitTime:                       newMetricOracledbSessionWaitTime(mbc.Metrics.OracledbSessionWaitTime),
 		metricOracledbSessionWaits:                          newMetricOracledbSessionWaits(mbc.Metrics.OracledbSessionWaits),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
@@ -7117,7 +7117,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbRedoAllocationUtilization.emit(ils.Metrics())
 	mb.metricOracledbScanCount.emit(ils.Metrics())
 	mb.metricOracledbScanTableRows.emit(ils.Metrics())
-	mb.metricOracledbSessionStoredProcedureUsage.emit(ils.Metrics())
+	mb.metricOracledbSessionStoredProcedureMemory.emit(ils.Metrics())
 	mb.metricOracledbSessionWaitTime.emit(ils.Metrics())
 	mb.metricOracledbSessionWaits.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
@@ -7842,13 +7842,13 @@ func (mb *MetricsBuilder) RecordOracledbScanTableRowsDataPoint(ts pcommon.Timest
 	return nil
 }
 
-// RecordOracledbSessionStoredProcedureUsageDataPoint adds a data point to oracledb.session.stored_procedure.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSessionStoredProcedureUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordOracledbSessionStoredProcedureMemoryDataPoint adds a data point to oracledb.session.stored_procedure.memory metric.
+func (mb *MetricsBuilder) RecordOracledbSessionStoredProcedureMemoryDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for OracledbSessionStoredProcedureUsage, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for OracledbSessionStoredProcedureMemory, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbSessionStoredProcedureUsage.recordDataPoint(mb.startTime, ts, val)
+	mb.metricOracledbSessionStoredProcedureMemory.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

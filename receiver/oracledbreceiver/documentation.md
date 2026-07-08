@@ -457,7 +457,7 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 
 ### oracledb.jvm.memory.committed
 
-Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.
+Committed (total) size of Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -465,7 +465,7 @@ Committed (total) size in bytes of Oracle's in-database JVM (OJVM) call heap.
 
 ### oracledb.jvm.memory.live
 
-Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.
+Size of live objects in Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -473,7 +473,7 @@ Size in bytes of live objects in Oracle's in-database JVM (OJVM) call heap.
 
 ### oracledb.jvm.memory.used
 
-Used size in bytes of Oracle's in-database JVM (OJVM) call heap.
+Used size of Oracle's in-database JVM (OJVM) call heap.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -806,9 +806,9 @@ Total number of rows returned by full-table scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.session.stored_procedure.usage
+### oracledb.session.stored_procedure.memory
 
-Memory in bytes currently allocated for stored procedures in the session.
+Memory currently allocated for stored procedures in the session.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -816,7 +816,7 @@ Memory in bytes currently allocated for stored procedures in the session.
 
 ### oracledb.session.wait.time
 
-Cumulative time sessions spent in non-idle waits, in seconds.
+Cumulative time sessions spent in waits.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -830,7 +830,7 @@ Cumulative time sessions spent in non-idle waits, in seconds.
 
 ### oracledb.session.waits
 
-Cumulative number of non-idle waits across sessions.
+Cumulative number of waits across sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

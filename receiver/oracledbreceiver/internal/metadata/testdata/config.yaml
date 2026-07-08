@@ -168,7 +168,7 @@ all_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.stored_procedure.usage:
+    oracledb.session.stored_procedure.memory:
       enabled: true
     oracledb.session.wait.time:
       enabled: true
@@ -411,7 +411,7 @@ reaggregate_set:
       attributes: []
     oracledb.scan.table.rows:
       enabled: true
-    oracledb.session.stored_procedure.usage:
+    oracledb.session.stored_procedure.memory:
       enabled: true
     oracledb.session.wait.time:
       enabled: true
@@ -654,7 +654,7 @@ none_set:
       attributes: ["oracledb.scan.type","oracledb.scan.mode"]
     oracledb.scan.table.rows:
       enabled: false
-    oracledb.session.stored_procedure.usage:
+    oracledb.session.stored_procedure.memory:
       enabled: false
     oracledb.session.wait.time:
       enabled: false

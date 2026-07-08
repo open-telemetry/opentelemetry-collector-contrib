@@ -591,8 +591,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.session.stored_procedure.usage:
-        description: "OracledbSessionStoredProcedureUsageMetricConfig provides config for the oracledb.session.stored_procedure.usage metric."
+      oracledb.session.stored_procedure.memory:
+        description: "OracledbSessionStoredProcedureMemoryMetricConfig provides config for the oracledb.session.stored_procedure.memory metric."
         type: object
         properties:
           enabled:
