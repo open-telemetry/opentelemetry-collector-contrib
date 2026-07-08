@@ -17,7 +17,8 @@ import (
 
 func activateTestLambda(t *testing.T, expr *ottl.LambdaExpression[any], arity int) *ottl.LambdaActivation[any] {
 	t.Helper()
-	lb, err := expr.Activate(t.Context(), arity)
+	require.NoError(t, expr.ValidateArity(arity))
+	lb, err := expr.Activate(t.Context())
 	require.NoError(t, err)
 	t.Cleanup(lb.Close)
 	return lb
