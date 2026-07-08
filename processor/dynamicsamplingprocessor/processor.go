@@ -452,7 +452,7 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 	p.telemetry.ProcessorDynamicSamplingDecisionSampleRate.Record(ctx, int64(rate), ruleAttr)
 
 	upstreamTh, randomness := readIncomingSampling(pt.spans, id)
-	effectiveTh, err := combineThreshold(upstreamTh, rate)
+	effectiveTh, err := effectiveThreshold(upstreamTh, rate)
 	if err != nil {
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
 		p.cache.recordNotSampled(id)
@@ -526,23 +526,28 @@ func readIncomingSampling(spans []ptrace.ResourceSpans, id pcommon.TraceID) (sam
 	return upstream, randomness
 }
 
-// combineThreshold returns the threshold that, applied under consistent
-// probability sampling on top of `upstream`, keeps 1-in-`rate` of the traffic
-// that survived upstream. For rate <= 1 the upstream threshold is returned
-// unchanged (nothing to add).
+// effectiveThreshold returns the threshold to use for the decision, cache
+// entry, and emission under equalizing composition: the operator's rate is
+// interpreted as population-relative and effective absolute keep is
+// min(P_upstream, 1/rate). Concretely, if the rate-derived threshold is
+// stricter than upstream we use ours; otherwise upstream caps us.
 //
-// Under consistent sampling, joint keep probability is the min of the two
-// stages' probabilities, achieved by taking the max of their thresholds.
-// This helper computes an `ours` threshold that is >= upstream by construction,
-// so max(ours, upstream) == ours. The resulting effective keep probability of
-// the original population is P(rand > upstream) / rate, which downstream
-// systems reconstruct correctly from the emitted `ot=th`.
-func combineThreshold(upstream sampling.Threshold, rate int) (sampling.Threshold, error) {
+// This matches `processor/probabilisticsamplerprocessor` equalizing mode.
+// Metric accuracy downstream is preserved because the emitted `ot=th` is the
+// effective threshold; UpdateTValueWithSampling on the emit path additionally
+// preserves any per-span incoming threshold that is stricter still.
+func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Threshold, error) {
 	if rate <= 1 {
 		return upstream, nil
 	}
-	surviving := sampling.MaxAdjustedCount - upstream.Unsigned()
-	return sampling.UnsignedToThreshold(sampling.MaxAdjustedCount - surviving/uint64(rate))
+	ours, err := sampling.ProbabilityToThreshold(1.0 / float64(rate))
+	if err != nil {
+		return upstream, err
+	}
+	if sampling.ThresholdGreater(upstream, ours) {
+		return upstream, nil
+	}
+	return ours, nil
 }
 
 // assembleTrace combines accumulated ResourceSpans into a single ptrace.Traces

@@ -267,18 +267,12 @@ For these reasons `dynamic_sampling` is a separate processor. The `tail_sampling
 The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (explicit randomness) already set on incoming spans by an upstream sampler, such as an SDK head sampler or a probabilistic collector processor:
 
 - **Randomness.** If an incoming span carries `ot=rv`, that value is used to make the sampling decision. Otherwise the last 7 bytes of the trace ID are used, per the consistent probability spec.
-- **Threshold composition.** The rule-selected sampler picks a rate `N`; the emitted `ot=th` is composed on top of any upstream threshold `T_up` so the effective absolute keep probability is `P(rand > T_up) / N`. Downstream metric consumers reading `ot=th` reconstruct the correct adjusted count for the original population without additional configuration.
+- **Population-relative rate (equalizing).** The rule's rate `N` is interpreted as the operator's target for the original population: "keep 1-in-N of all traces before any sampling." The effective absolute keep probability is `min(P_upstream, 1/N)`. This is the same composition mode as `equalizing` in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing).
 - **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
 
-### Composition semantics: compounding today, equalizing as the goal
+### Accuracy under non-uniform upstream sampling
 
-The composition described above is **compounding**: the rule's rate `N` applies to the traffic that reaches this sampler *after* upstream sampling, not to the original population. Concretely, `T_ours` is chosen so that `P(rand > T_ours | rand > T_up) = 1/N`. With upstream at 50% keep and rule rate 10, the effective absolute keep is 5%, not 10%.
-
-This differs from the `equalizing` mode in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing), where the operator's rate is population-relative and the effective rate is `min(P_upstream, P_ours)`. Under equalizing the same configuration (50% upstream, rule rate 10) yields 10% absolute, and the operator's number always caps total sampling.
-
-Equalizing is the target semantics for `dynamic_sampling` at alpha graduation. The reason we ship compounding first is that the adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) derive their rate from *observed input* volume, so they can only honestly deliver an input-relative rate today. Interpreting their output as population-relative requires the samplers to know upstream's keep probability and compensate their rate math accordingly. That work is tracked in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517); once it lands, the processor's threshold composition collapses to `ProbabilityToThreshold(1/rate)` and matches `probabilisticsamplerprocessor`'s equalizing mode.
-
-Downstream metric accuracy is unaffected by the choice: the emitted `ot=th` correctly reconstructs adjusted counts under either semantics. The distinction is what the operator's configured rate *means*.
+The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_fields`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
 
 ### Grouping unrelated traces with a shared `ot=rv`
 

@@ -437,12 +437,12 @@ func TestProcessor_LateSpansForDroppedTraceDropped(t *testing.T) {
 	p.mu.Unlock()
 }
 
-func TestCombineThreshold(t *testing.T) {
+func TestEffectiveThreshold(t *testing.T) {
+	th50pct, err := sampling.ProbabilityToThreshold(0.50)
+	require.NoError(t, err)
 	th20pct, err := sampling.ProbabilityToThreshold(0.20)
 	require.NoError(t, err)
 	th10pct, err := sampling.ProbabilityToThreshold(0.10)
-	require.NoError(t, err)
-	th02pct, err := sampling.ProbabilityToThreshold(0.02)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -453,16 +453,14 @@ func TestCombineThreshold(t *testing.T) {
 	}{
 		{"rate_1_returns_upstream", th20pct, 1, th20pct},
 		{"rate_0_returns_upstream", th20pct, 0, th20pct},
-		{"no_upstream_10x", sampling.AlwaysSampleThreshold, 10, th10pct},
-		{"upstream_20pct_and_10x_gives_2pct", th20pct, 10, th02pct},
+		{"no_upstream_ours_wins", sampling.AlwaysSampleThreshold, 10, th10pct},
+		{"upstream_looser_ours_wins", th50pct, 10, th10pct},
+		{"upstream_stricter_upstream_wins", th10pct, 5, th10pct},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := combineThreshold(tt.upstream, tt.rate)
+			got, err := effectiveThreshold(tt.upstream, tt.rate)
 			require.NoError(t, err)
-			// Integer arithmetic in combineThreshold rounds differently to the
-			// float-based ProbabilityToThreshold; compare adjusted counts with a
-			// small tolerance rather than the raw unsigned value.
 			assert.InDelta(t, tt.want.AdjustedCount(), got.AdjustedCount(), 0.01,
 				"got %v want %v", got.AdjustedCount(), tt.want.AdjustedCount())
 		})
@@ -480,21 +478,22 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 				Name: "fixed",
 				Sampler: SamplerConfig{
 					Type:          Deterministic,
-					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // rate 10
+					Deterministic: DeterministicConfig{SamplingPercentage: 10}, // rate 10 = keep 10% of population
 				},
 			},
 		},
 	}
 	p := newTestProcessor(t, cfg, sink)
 
-	// Upstream th: 50% keep. Under consistent sampling with our rate 10 on top,
-	// effective absolute keep should be 5%, so emitted t-value must decode to 5%.
+	// Upstream at 50% keep. Under equalizing composition, our rate 10 (10% of
+	// population) is stricter than upstream, so the emitted threshold should
+	// represent 10% keep of the population, i.e. adjusted count 10.
 	upstream, err := sampling.ProbabilityToThreshold(0.50)
 	require.NoError(t, err)
 	upstreamTValue := upstream.TValue()
 
-	// Deterministic sampler dropped rate=10 will match on random values > 0.9,
-	// so build a traceID whose randomness is at the top of the space to guarantee sampling.
+	// TraceID randomness in the top of the space guarantees the span passes
+	// both upstream (T=0.5M) and our threshold (T=0.9M).
 	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
 	td := newTrace(traceID, ptrace.StatusCodeUnset)
 	setTraceState(td, "ot=th:"+upstreamTValue)
@@ -506,9 +505,50 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 	tv := firstSpanTValue(t, out)
 	th, err := sampling.TValueToThreshold(tv)
 	require.NoError(t, err)
-	// 5% keep ⇒ adjusted count 20.
-	assert.InDelta(t, 20.0, th.AdjustedCount(), 0.01,
-		"emitted adjusted count should reflect combined upstream+our sampling")
+	// 10% keep of population ⇒ adjusted count 10.
+	assert.InDelta(t, 10.0, th.AdjustedCount(), 0.01,
+		"emitted adjusted count should reflect the equalizing rate")
+}
+
+func TestProcessor_UpstreamStricterThanRate_UpstreamWins(t *testing.T) {
+	// Under equalizing, if upstream is already stricter than our configured
+	// rate, upstream's threshold is preserved (we do not lower it).
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{
+				Name: "loose",
+				Sampler: SamplerConfig{
+					Type:          Deterministic,
+					Deterministic: DeterministicConfig{SamplingPercentage: 50}, // rate 2 = 50% of population
+				},
+			},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Upstream at 10% keep, stricter than our 50%.
+	upstream, err := sampling.ProbabilityToThreshold(0.10)
+	require.NoError(t, err)
+	upstreamTValue := upstream.TValue()
+
+	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
+	td := newTrace(traceID, ptrace.StatusCodeUnset)
+	setTraceState(td, "ot=th:"+upstreamTValue)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	out := sink.AllTraces()[0]
+	tv := firstSpanTValue(t, out)
+	th, err := sampling.TValueToThreshold(tv)
+	require.NoError(t, err)
+	// 10% keep (upstream) ⇒ adjusted count 10, not 2.
+	assert.InDelta(t, 10.0, th.AdjustedCount(), 0.01,
+		"upstream threshold should be preserved when stricter than the rule's rate")
 }
 
 func TestProcessor_UpstreamStricterThanOurs_LatePathHonoursUpstream(t *testing.T) {

@@ -16,10 +16,11 @@ issues: [49311]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The processor now reads any upstream `ot=th` on incoming spans, composes it with the
-  rule-selected sample rate under consistent probability sampling semantics, and emits
-  the effective threshold so downstream metric consumers reconstruct the correct
-  adjusted count for the original population.
+  The processor now reads any upstream `ot=th` on incoming spans, applies equalizing
+  composition (`min(P_upstream, 1/rate)`, matching `probabilisticsamplerprocessor`'s
+  equalizing mode) and emits the effective threshold so downstream metric consumers
+  reconstruct the correct adjusted count for the original population. Randomness is
+  sourced from `ot=rv` if present, falling back to the trace ID.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
