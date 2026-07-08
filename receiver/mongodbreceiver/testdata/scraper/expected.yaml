@@ -185,7 +185,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: mongodb.health
-            unit: "1"
+            unit: '1'
           - description: The number of times an index has been accessed.
             name: mongodb.index.access.count
             sum:

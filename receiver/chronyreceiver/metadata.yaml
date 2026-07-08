@@ -26,7 +26,7 @@ metrics:
     stability: development
     description: The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.
     extended_documentation: "It is expressed in ppm (parts per million). For example, a value of 1 ppm would mean that when the system’s clock thinks it has advanced 1 second, it has actually advanced by 1.000001 seconds relative to true time."
-    unit: "ppm"
+    unit: "[ppm]"
     gauge:
       value_type: double
     attributes:
@@ -35,7 +35,7 @@ metrics:
     enabled: true
     stability: development
     description: This is the estimated error bound on the frequency.
-    unit: "ppm"
+    unit: "[ppm]"
     gauge:
       value_type: double
   ntp.stratum:
@@ -50,7 +50,7 @@ metrics:
     enabled: true
     stability: development
     description: The number of seconds difference between the system's clock and the reference clock
-    unit: seconds
+    unit: s
     gauge:
       value_type: double
     attributes:
@@ -59,7 +59,7 @@ metrics:
     enabled: true
     stability: development
     description: The estimated local offset on the last clock update
-    unit: seconds
+    unit: s
     gauge:
       value_type: double
     attributes:
@@ -68,7 +68,7 @@ metrics:
     enabled: false
     stability: development
     description: the long term average of the offset value
-    unit: seconds
+    unit: s
     gauge:
       value_type: double
     attributes:
@@ -77,7 +77,7 @@ metrics:
     enabled: false
     stability: development
     description: This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.
-    unit: seconds
+    unit: s
     gauge:
       value_type: double
     attributes:

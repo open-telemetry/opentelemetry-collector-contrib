@@ -34,9 +34,9 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
-- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
+- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Use context-qualified paths (e.g., `resource.attributes["key"]`, `span.attributes["key"]`) to automatically infer the context (see [Context Inference](#context-inference)).
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. Generally `condition` is preferred since it is more terse. May not be used with the deprecated `request` context.
+- `table.context (optional)`: the [OTTL Context](#supported-contexts) in which the condition/statement will be evaluated. **Deprecated:** `request` — use `otelcol.client.metadata` or `otelcol.grpc.metadata` paths instead (see [Limitations](#limitations)). In most cases this field should be omitted; the context is inferred automatically from context-qualified paths. If specified, it takes precedence over inference.
 - `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move` and `copy`.
   - `move`: Matched data is moved to the target pipeline(s) and removed from subsequent route evaluation. This is the default behavior.
   - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
@@ -44,9 +44,45 @@ The following settings are available:
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
 
+### Context Inference
+
+The routing connector supports OTTL context inference, allowing you to write clearer and more maintainable routing conditions using context-qualified paths. This is the recommended approach for specifying routing conditions.
+
+```yaml
+- condition: resource.attributes["env"] == "prod"
+  pipelines: [logs/prod]
+- condition: span.attributes["http.method"] == "GET"
+  pipelines: [traces/http]
+- condition: log.severity_text == "ERROR"
+  pipelines: [logs/errors]
+```
+
+This approach makes it immediately clear which attributes you're accessing without needing a separate `context` field.
+
+### Supported contexts
+
+| Context     | Path prefix  | Example                                                                          |
+|-------------|--------------|----------------------------------------------------------------------------------|
+| [Resource]  | `resource.`  | `resource.attributes["service.name"]`                                            |
+| [Span]      | `span.`      | `span.attributes["http.method"]`                                                 |
+| [Log]       | `log.`       | `log.body`, `log.attributes["level"]`                                            |
+| [Metric]    | `metric.`    | `metric.name`                                                                    |
+| [Datapoint] | `datapoint.` | `datapoint.attributes["host"]`                                                   |
+| [OtelCol]   | `otelcol.`   | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
+
+[resource]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlresource/README.md
+[span]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md
+[metric]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md
+[datapoint]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md
+[log]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md
+[otelcol]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlotelcol/README.md
+
+The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access to incoming HTTP and gRPC request metadata respectively, and are valid in all signal contexts.
+
 ### Limitations
 
-- The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
+- **Deprecated:** The `request` context is deprecated. Use `otelcol.client.metadata["key"]` (HTTP/client metadata) or `otelcol.grpc.metadata["key"]` (gRPC metadata) paths instead. These are supported in all signal contexts. A warning is logged when the `request` context is used. The `request` context only supports the `condition` field with a very limited grammar: `request["key"] == "value"` or `request["key"] != "value"`.
+- When using context inference without an explicit `context` field, the inferred context must be compatible with the pipeline signal type (e.g., `span` context can only be used in traces pipelines).
 
 ### Supported [OTTL] functions
 
@@ -64,7 +100,11 @@ The full list of settings exposed for this connector are documented in [config.g
 
 ## Examples
 
-Route logs based on tenant:
+> [!NOTE]
+> The examples below use context-qualified paths, which is the recommended configuration style. The explicit `context` field is still supported for backward compatibility but is no longer the primary documentation style. See [Context Inference](#context-inference) for details.
+
+### Route logs based on tenant
+
 
 ```yaml
 receivers:
@@ -82,11 +122,11 @@ connectors:
   routing:
     default_pipelines: [logs/other]
     table:
-      - context: request
-        condition: request["X-Tenant"] == "acme"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "acme"
         pipelines: [logs/acme]
-      - context: request
-        condition: request["X-Tenant"] == "ecorp"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -105,7 +145,7 @@ service:
       exporters: [file/other]
 ```
 
-Route logs based on region:
+### Route logs based on region
 
 ```yaml
 receivers:
@@ -123,11 +163,9 @@ connectors:
   routing:
     default_pipelines: [logs/other]
     table:
-      - context: log
-        condition: attributes["region"] == "east"
+      - condition: log.attributes["region"] == "east"
         pipelines: [logs/east]
-      - context: log
-        condition: attributes["region"] == "west"
+      - condition: log.attributes["region"] == "west"
         pipelines: [logs/west]
 
 service:
@@ -146,7 +184,7 @@ service:
       exporters: [file/other]
 ```
 
-Route all low level logs to cheap storage. Route the remainder based on service name:
+### Route low-severity logs to cheap storage, remainder by service name
 
 ```yaml
 receivers:
@@ -157,20 +195,17 @@ exporters:
     path: ./cheap.log
   file/service1:
     path: ./service1-important.log
-  file/ecorp:
+  file/service2:
     path: ./service2-important.log
 
 connectors:
   routing:
     table:
-      - context: log
-        condition: severity_number < SEVERITY_NUMBER_ERROR
+      - condition: log.severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
-      - context: resource
-        condition: attributes["service.name"] == "service1"
+      - condition: resource.attributes["service.name"] == "service1"
         pipelines: [logs/service1]
-      - context: resource
-        condition: attributes["service.name"] == "service2"
+      - condition: resource.attributes["service.name"] == "service2"
         pipelines: [logs/service2]
 
 service:
@@ -189,7 +224,7 @@ service:
       exporters: [file/service2]
 ```
 
-Route all low level logs to cheap storage. Route the remainder based on tenant:
+### Route low-severity logs to cheap storage, remainder by tenant
 
 ```yaml
 receivers:
@@ -206,14 +241,13 @@ exporters:
 connectors:
   routing:
     table:
-      - context: log
-        condition: severity_number < SEVERITY_NUMBER_ERROR
+      - condition: log.severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
-      - context: request
-        condition: request["X-Tenant"] == "acme"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "acme"
         pipelines: [logs/acme]
-      - context: request
-        condition: request["X-Tenant"] == "ecorp"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -232,7 +266,9 @@ service:
       exporters: [file/ecorp]
 ```
 
-Route all logs to an archive, while also routing based on severity using `action: copy`:
+### Route all logs to an archive, while also routing errors using `action: copy`
+
+Conditions with no OTTL paths (such as the literal `"true"`) cannot be inferred, so an explicit `context` field is required.
 
 ```yaml
 receivers:
@@ -254,8 +290,7 @@ connectors:
         condition: "true"
         action: copy
         pipelines: [logs/archive]
-      - context: log
-        condition: severity_number >= SEVERITY_NUMBER_ERROR
+      - condition: log.severity_number >= SEVERITY_NUMBER_ERROR
         pipelines: [logs/errors]
 
 service:
@@ -279,7 +314,7 @@ In this example:
 - Error logs are then moved to the errors pipeline (using the default `action: move`).
 - Any remaining logs (non-errors) go to the default pipeline.
 
-Route traces to multiple pipelines based on different attributes using `action: copy`:
+### Route traces to multiple pipelines using `action: copy`
 
 ```yaml
 receivers:
@@ -297,12 +332,10 @@ connectors:
   routing:
     default_pipelines: [traces/other]
     table:
-      - context: resource
-        condition: attributes["env"] == "prod"
+      - condition: resource.attributes["env"] == "prod"
         action: copy
         pipelines: [traces/prod]
-      - context: span
-        condition: attributes["http.duration_ms"] > 1000
+      - condition: span.attributes["http.duration_ms"] > 1000
         pipelines: [traces/high-latency]
 
 service:
@@ -365,15 +398,15 @@ result in each receiving an independent handle to the data. The same data can th
 ```yaml
 routing/env:
   table:
-    - condition: attributes["env"] == "prod"
+    - condition: resource.attributes["env"] == "prod"
        pipelines: [ logs/prod ]
-    - condition: attributes["env"] == "dev"
+    - condition: resource.attributes["env"] == "dev"
        pipelines: [ logs/dev ]
 routing/region:
   table:
-    - condition: attributes["region"] == "east"
+    - condition: resource.attributes["region"] == "east"
        pipelines: [ logs/east ]
-    - condition: attributes["region"] == "west"
+    - condition: resource.attributes["region"] == "west"
        pipelines: [ logs/west ]
 
 service:
@@ -394,14 +427,14 @@ routing:
   match_once: true
   default_pipelines: [ logs/default ]
   table:
-    - condition: attributes["env"] == "prod"
-       pipelines: [ logs/prod ]
-    - condition: attributes["env"] == "dev"
-       pipelines: [ logs/dev ]
-    - condition: attributes["region"] == "east"
-       pipelines: [ logs/east ]
-    - condition: attributes["region"] == "west"
-       pipelines: [ logs/west ]
+    - condition: resource.attributes["env"] == "prod"
+      pipelines: [ logs/prod ]
+    - condition: resource.attributes["env"] == "dev"
+      pipelines: [ logs/dev ]
+    - condition: resource.attributes["region"] == "east"
+      pipelines: [ logs/east ]
+    - condition: resource.attributes["region"] == "west"
+      pipelines: [ logs/west ]
 
 service:
   pipelines:
@@ -419,13 +452,13 @@ If the number of routes are limited, you may be able to articulate a route for e
 routing:
   default_pipelines: [ logs/default ]
   table:
-    - condition: attributes["env"] == "prod" and attributes["region"] == "east"
+    - condition: resource.attributes["env"] == "prod" and resource.attributes["region"] == "east"
        pipelines: [ logs/prod, logs/east ]
-    - condition: attributes["env"] == "prod" and attributes["region"] == "west"
+    - condition: resource.attributes["env"] == "prod" and resource.attributes["region"] == "west"
        pipelines: [ logs/prod, logs/west ]
-    - condition: attributes["env"] == "dev" and attributes["region"] == "east"
+    - condition: resource.attributes["env"] == "dev" and resource.attributes["region"] == "east"
        pipelines: [ logs/dev, logs/east ]
-    - condition: attributes["env"] == "dev" and attributes["region"] == "west"
+    - condition: resource.attributes["env"] == "dev" and resource.attributes["region"] == "west"
        pipelines: [ logs/dev, logs/west ]
 
 service:
@@ -447,27 +480,27 @@ in the first and second layers must be kept in sync.
 routing:
   default_pipelines: [ logs/default ]
   table: # all routes forward to second layer
-    - condition: attributes["env"] == "prod"
+    - condition: resource.attributes["env"] == "prod"
        pipelines: [ logs/env, logs/region ] 
-    - condition: attributes["env"] == "dev"
+    - condition: resource.attributes["env"] == "dev"
        pipelines: [ logs/env, logs/region ]
-    - condition: attributes["region"] == "east"
+    - condition: resource.attributes["region"] == "east"
        pipelines: [ logs/env, logs/region ]
-    - condition: attributes["region"] == "west"
+    - condition: resource.attributes["region"] == "west"
        pipelines: [ logs/env, logs/region ]
 
 # Second layer routes logs based on environment and region
 routing/env:
   table:
-    - condition: attributes["env"] == "prod"
+    - condition: resource.attributes["env"] == "prod"
        pipelines: [ logs/prod ]
-    - condition: attributes["env"] == "dev"
+    - condition: resource.attributes["env"] == "dev"
        pipelines: [ logs/dev ]
 routing/region:
   table:
-    - condition: attributes["region"] == "east"
+    - condition: resource.attributes["region"] == "east"
        pipelines: [ logs/east ]
-    - condition: attributes["region"] == "west"
+    - condition: resource.attributes["region"] == "west"
        pipelines: [ logs/west ]
 
 service:
