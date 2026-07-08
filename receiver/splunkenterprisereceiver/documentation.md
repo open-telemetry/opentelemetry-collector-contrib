@@ -193,7 +193,7 @@ Gauge tracking the average rate of indexed data. **Note:** Search is best run ag
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Double | Development |
+| kBy | Gauge | Double | Development |
 
 #### Attributes
 
@@ -486,7 +486,7 @@ Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | Development |
+| kBy | Gauge | Int | Development |
 
 #### Attributes
 
