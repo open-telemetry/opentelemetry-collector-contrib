@@ -56,9 +56,12 @@ jobs:
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
           permission-members: read
 
+      # githubgen enforces that every code owner is an organization member and,
+      # via -github-team, that they are a member of the collector-contrib-contributors
+      # team, which grants the repository access required to be requested as a reviewer.
       - name: Gen CODEOWNERS
         run: |
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr" make codeowners
-          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git -C pr diff && exit 1; fi
+          if ! GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr -github-team=collector-contrib-contributors" make codeowners; then echo 'Failed to generate CODEOWNERS. If you added a new code owner, ensure they are a member of the open-telemetry organization and the open-telemetry/collector-contrib-contributors team (https://github.com/orgs/open-telemetry/teams/collector-contrib-contributors).' && exit 1; fi
+          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR. If you added a new code owner, also ensure they are a member of the open-telemetry/collector-contrib-contributors team.' && git -C pr diff && exit 1; fi
 
       - run: ./.github/workflows/scripts/check-disk-space.sh
