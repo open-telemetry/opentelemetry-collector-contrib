@@ -1994,11 +1994,13 @@ func (s *Supervisor) runAgentProcess() {
 			if s.config.Agent.UseHUPConfigReload {
 				if hupErr := s.hupReloadAgent(); hupErr != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(hupErr))
-					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
+					reportedLastWorking := s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
 					if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: hupErr.Error()}); healthErr != nil {
 						s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
 					}
-					s.restoreLastWorkingRemoteConfig()
+					if !reportedLastWorking {
+						s.restoreLastWorkingRemoteConfig()
+					}
 					continue
 				}
 			} else {

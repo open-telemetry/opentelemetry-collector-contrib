@@ -1134,25 +1134,27 @@ func TestSupervisorRestoresLastWorkingRemoteConfigAtRuntimeAfterFailedConfig(t *
 }
 
 func TestSupervisorDoesNotTightlyLoopWhenRestoredLastWorkingRemoteConfigFails(t *testing.T) {
-	storageDir := t.TempDir()
-	workingPort, err := findRandomPort()
-	require.NoError(t, err)
-	workingCfg, workingHash := createHealthCheckCollectorConfWithPort(t, strconv.Itoa(workingPort))
-	badCfg, badHash := createBadCollectorConf(t)
-	collectorInvocationsFile := filepath.Join(t.TempDir(), "collector-invocations.txt")
-	collectorWrapper := writeCountingCollectorWrapper(t, collectorInvocationsFile)
+	for _, mode := range getTestModes() {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+			workingPort, err := findRandomPort()
+			require.NoError(t, err)
+			workingCfg, workingHash := createHealthCheckCollectorConfWithPort(t, strconv.Itoa(workingPort))
+			badCfg, badHash := createBadCollectorConf(t)
+			collectorInvocationsFile := filepath.Join(t.TempDir(), "collector-invocations.txt")
+			collectorWrapper := writeCountingCollectorWrapper(t, collectorInvocationsFile)
 
-	server := newOpAMPServer(
-		t,
-		defaultConnectingHandler,
-		types.ConnectionCallbacks{
-			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
-				return &protobufs.ServerToAgent{}
-			},
-		},
-	)
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						return &protobufs.ServerToAgent{}
+					},
+				},
+			)
 
-	cfgFile := writeTempConfigFile(t, fmt.Sprintf(`
+			cfgFile := writeTempConfigFile(t, fmt.Sprintf(`
 server:
   endpoint: %q
 
@@ -1169,64 +1171,80 @@ agent:
   executable: %q
   bootstrap_timeout: 10s
   automatic_config_rollback: true
-`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorWrapper))
+  use_hup_config_reload: %v
+`, "ws://"+server.addr+"/v1/opamp", storageDir, collectorWrapper, mode.UseHUPConfigReload))
 
-	s, supervisorCfg := newSupervisorFromConfigFile(t, cfgFile)
-	require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+			s, supervisorCfg := newSupervisorFromConfigFile(t, cfgFile)
+			require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
-	require.NoError(t, s.Start(t.Context()))
-	t.Cleanup(s.Shutdown)
+			require.NoError(t, s.Start(t.Context()))
+			t.Cleanup(s.Shutdown)
 
-	waitForSupervisorConnection(server.supervisorConnected, true)
+			waitForSupervisorConnection(server.supervisorConnected, true)
 
-	server.sendToSupervisor(&protobufs.ServerToAgent{
-		RemoteConfig: &protobufs.AgentRemoteConfig{
-			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
-					"": {Body: workingCfg.Bytes()},
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: workingCfg.Bytes()},
+						},
+					},
+					ConfigHash: workingHash,
 				},
-			},
-			ConfigHash: workingHash,
-		},
-	})
+			})
 
-	require.Eventually(t, func() bool {
-		return healthCheckOK(workingPort)
-	}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
-	require.Eventually(t, func() bool {
-		_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
-		return err == nil
-	}, 15*time.Second, 100*time.Millisecond, "Working remote config was not saved as last working")
+			require.Eventually(t, func() bool {
+				return healthCheckOK(workingPort)
+			}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
+			require.Eventually(t, func() bool {
+				_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
+				return err == nil
+			}, 15*time.Second, 100*time.Millisecond, "Working remote config was not saved as last working")
 
-	invocationsBeforeBadConfig := collectorInvocationCount(t, collectorInvocationsFile)
-	claimedWorkingPortCh := claimPortWhenFree(t, workingPort)
-	server.sendToSupervisor(&protobufs.ServerToAgent{
-		RemoteConfig: &protobufs.AgentRemoteConfig{
-			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
-					"": {Body: badCfg.Bytes()},
+			invocationsBeforeBadConfig := collectorInvocationCount(t, collectorInvocationsFile)
+			claimedWorkingPortCh := claimPortWhenFree(t, workingPort)
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: badCfg.Bytes()},
+						},
+					},
+					ConfigHash: badHash,
 				},
-			},
-			ConfigHash: badHash,
-		},
-	})
+			})
 
-	select {
-	case claimedWorkingPort := <-claimedWorkingPortCh:
-		require.NotNil(t, claimedWorkingPort)
-		t.Cleanup(func() {
-			require.NoError(t, claimedWorkingPort.Close())
+			select {
+			case claimedWorkingPort := <-claimedWorkingPortCh:
+				require.NotNil(t, claimedWorkingPort)
+				t.Cleanup(func() {
+					require.NoError(t, claimedWorkingPort.Close())
+				})
+			case <-time.After(10 * time.Second):
+				t.Fatal("did not claim the last working config port after the collector stopped")
+			}
+
+			// In process-restart mode the bad config and the restored last working
+			// config each start a new collector process. In HUP mode the bad config
+			// is reloaded in-place, so whether it adds an invocation depends on when
+			// the collector exits; only the restored config is guaranteed to start a
+			// new process.
+			minInvocations := 2
+			if mode.UseHUPConfigReload {
+				minInvocations = 1
+			}
+			require.Eventually(t, func() bool {
+				return collectorInvocationCount(t, collectorInvocationsFile) >= invocationsBeforeBadConfig+minInvocations
+			}, 15*time.Second, 100*time.Millisecond, "Restored last working config was not started after the bad config")
+
+			require.Never(t, func() bool {
+				return collectorInvocationCount(t, collectorInvocationsFile) > invocationsBeforeBadConfig+2
+			}, 2*time.Second, 100*time.Millisecond, "Restored last working remote config failed repeatedly without waiting for restart backoff")
 		})
-	case <-time.After(10 * time.Second):
-		t.Fatal("did not claim the last working config port after the collector stopped")
 	}
-	require.Eventually(t, func() bool {
-		return collectorInvocationCount(t, collectorInvocationsFile) >= invocationsBeforeBadConfig+2
-	}, 15*time.Second, 100*time.Millisecond, "Bad config and restored last working config were not both started")
-
-	require.Never(t, func() bool {
-		return collectorInvocationCount(t, collectorInvocationsFile) > invocationsBeforeBadConfig+2
-	}, 2*time.Second, 100*time.Millisecond, "Restored last working remote config failed repeatedly without waiting for restart backoff")
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
