@@ -651,7 +651,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.replica.data.rate
-            unit: 'By/s'
+            unit: By/s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -691,7 +691,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.replica.data.rate
-            unit: 'By/s'
+            unit: By/s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1846,11 +1846,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
-<<<<<<< HEAD
-            unit: '{timeouts}/s'
-||||||| 46815d0eea0
-            unit: “{timeouts}/s”
-=======
             unit: '{timeout}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1892,7 +1887,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
             unit: '{timeout}/s'
->>>>>>> upstream/main
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
