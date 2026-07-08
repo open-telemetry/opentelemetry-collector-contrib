@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gobwas/glob v0.2.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.154.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.154.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.60.0
@@ -38,6 +39,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
