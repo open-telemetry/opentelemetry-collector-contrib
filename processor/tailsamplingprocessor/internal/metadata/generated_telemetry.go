@@ -135,7 +135,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorTailSamplingSamplingPolicyExecutionTimeSum, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
 		metric.WithDescription("Total time spent (in microseconds) executing a specific sampling policy [Development]"),
-		metric.WithUnit("µs"),
+		metric.WithUnit("us"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(
