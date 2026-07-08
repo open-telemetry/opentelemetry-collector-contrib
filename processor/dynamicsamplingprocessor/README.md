@@ -270,6 +270,16 @@ The processor honours any incoming `ot=th` (sampling threshold) and `ot=rv` (exp
 - **Threshold composition.** The rule-selected sampler picks a rate `N`; the emitted `ot=th` is composed on top of any upstream threshold `T_up` so the effective absolute keep probability is `P(rand > T_up) / N`. Downstream metric consumers reading `ot=th` reconstruct the correct adjusted count for the original population without additional configuration.
 - **Threshold monotonicity.** If a span already carries an `ot=th` stricter than what this processor would emit, the incoming value is preserved. This matches the consistent probability spec: a downstream stage may raise a threshold but never lower it.
 
+### Composition semantics: compounding today, equalizing as the goal
+
+The composition described above is **compounding**: the rule's rate `N` applies to the traffic that reaches this sampler *after* upstream sampling, not to the original population. Concretely, `T_ours` is chosen so that `P(rand > T_ours | rand > T_up) = 1/N`. With upstream at 50% keep and rule rate 10, the effective absolute keep is 5%, not 10%.
+
+This differs from the `equalizing` mode in [`processor/probabilisticsamplerprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor#equalizing), where the operator's rate is population-relative and the effective rate is `min(P_upstream, P_ours)`. Under equalizing the same configuration (50% upstream, rule rate 10) yields 10% absolute, and the operator's number always caps total sampling.
+
+Equalizing is the target semantics for `dynamic_sampling` at alpha graduation. The reason we ship compounding first is that the adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) derive their rate from *observed input* volume, so they can only honestly deliver an input-relative rate today. Interpreting their output as population-relative requires the samplers to know upstream's keep probability and compensate their rate math accordingly. That work is tracked in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517); once it lands, the processor's threshold composition collapses to `ProbabilityToThreshold(1/rate)` and matches `probabilisticsamplerprocessor`'s equalizing mode.
+
+Downstream metric accuracy is unaffected by the choice: the emitted `ot=th` correctly reconstructs adjusted counts under either semantics. The distinction is what the operator's configured rate *means*.
+
 ### Grouping unrelated traces with a shared `ot=rv`
 
 Because the sampling decision is deterministic against the 56-bit randomness value, an upstream producer that sets the same `ot=rv` on multiple otherwise-unrelated traces will get the same sampling decision for all of them at the same threshold. This is useful when a set of traces should be sampled together as a group, for example:
