@@ -284,10 +284,6 @@ Because the sampling decision is deterministic against the 56-bit randomness val
 
 The `ot=rv` value is a 56-bit number, so a stable hash of the entity ID truncated to 56 bits is a suitable derivation. The processor itself does not compute `ot=rv` from arbitrary attributes: the producer or an earlier processor is expected to set it. Whatever `ot=rv` is present when the accumulated trace arrives will be used for the decision and preserved on the emitted spans.
 
-### Known limitation: adaptive-sampler rate bias under upstream sampling
-
-The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) select their rate from the traffic they observe, assuming that input is a uniform sample of the underlying population. When an upstream stage has already sampled, the input reaching the adaptive sampler is skewed toward higher randomness values, and per-key rate math based on observed volume is biased. The emitted `ot=th` is still metric-accurate downstream (via threshold composition above); the caveat is that the rate the adaptive sampler *targets* is "of the input reaching me," not "of the original population." Follow-up in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517).
-
 ## Metrics
 
 | Metric                                              | Type     | Labels   | Description                                                                 |
