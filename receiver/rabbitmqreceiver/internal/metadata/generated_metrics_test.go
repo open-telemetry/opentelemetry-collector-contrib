@@ -79,6 +79,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRabbitmqExchangeMessagesPublishedInDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRabbitmqExchangeMessagesPublishedOutDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
@@ -321,6 +327,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRabbitmqNodeUptimeDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
+			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
 			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
 			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
@@ -363,6 +371,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The number of consumers currently reading from the queue.", mi.Description())
 					assert.Equal(t, "{consumers}", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.exchange.messages.published_in":
+					assert.False(t, validatedMetrics["rabbitmq.exchange.messages.published_in"], "Found a duplicate in the metrics slice: rabbitmq.exchange.messages.published_in")
+					validatedMetrics["rabbitmq.exchange.messages.published_in"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of messages published into an exchange from channels.", mi.Description())
+					assert.Equal(t, "{messages}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.exchange.messages.published_out":
+					assert.False(t, validatedMetrics["rabbitmq.exchange.messages.published_out"], "Found a duplicate in the metrics slice: rabbitmq.exchange.messages.published_out")
+					validatedMetrics["rabbitmq.exchange.messages.published_out"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of messages published out of an exchange to bound queues.", mi.Description())
+					assert.Equal(t, "{messages}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

@@ -100,13 +100,14 @@ func TestScraperScrape(t *testing.T) {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				mockClient.On("GetNodes", mock.Anything).Return(nil, errors.New("some api error"))
+				mockClient.On("GetExchanges", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: scrapererror.NewPartialScrapeError(
-				errors.New("failed to collect queue metrics: some api error; failed to collect node metrics: some api error"),
+				errors.New("failed to collect queue metrics: some api error; failed to collect node metrics: some api error; failed to collect exchange metrics: some api error"),
 				0, // No metrics were collected
 			),
 		},
@@ -122,6 +123,7 @@ func TestScraperScrape(t *testing.T) {
 
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
 				mockClient.On("GetNodes", mock.Anything).Return(nil, nil)
+				mockClient.On("GetExchanges", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -153,11 +155,38 @@ func TestScraperScrape(t *testing.T) {
 
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
 				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+				mockClient.On("GetExchanges", mock.Anything).Return(nil, nil)
 
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Successful Exchange Metrics Collection",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+
+				exchangeData := loadAPIResponseData(t, exchangesAPIResponseFile)
+				var exchanges []*models.Exchange
+				err := json.Unmarshal(exchangeData, &exchanges)
+				require.NoError(t, err)
+
+				require.NotEmpty(t, exchanges, "Mock exchange list should not be empty")
+
+				mockClient.On("GetQueues", mock.Anything).Return(nil, nil)
+				mockClient.On("GetNodes", mock.Anything).Return(nil, nil)
+				mockClient.On("GetExchanges", mock.Anything).Return(exchanges, nil)
+
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_exchanges.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -262,6 +291,10 @@ func TestScraperScrape(t *testing.T) {
 			cfg.Metrics.RabbitmqNodeQueueCreatedDetailsRate.Enabled = true
 			cfg.Metrics.RabbitmqNodeQueueDeleted.Enabled = true
 			cfg.Metrics.RabbitmqNodeQueueDeletedDetailsRate.Enabled = true
+
+			// Enable exchange metrics
+			cfg.Metrics.RabbitmqExchangeMessagesPublishedIn.Enabled = true
+			cfg.Metrics.RabbitmqExchangeMessagesPublishedOut.Enabled = true
 
 			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)

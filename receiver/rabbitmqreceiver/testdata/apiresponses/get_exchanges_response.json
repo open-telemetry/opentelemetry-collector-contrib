@@ -1,0 +1,46 @@
+[
+    {
+        "name": "",
+        "vhost": "/",
+        "type": "direct",
+        "durable": true,
+        "auto_delete": false,
+        "internal": false
+    },
+    {
+        "name": "test.direct",
+        "vhost": "/",
+        "type": "direct",
+        "durable": true,
+        "auto_delete": false,
+        "internal": false,
+        "message_stats": {
+            "publish_in": 1500,
+            "publish_in_details": {
+                "rate": 12.4
+            },
+            "publish_out": 1480,
+            "publish_out_details": {
+                "rate": 12.0
+            }
+        }
+    },
+    {
+        "name": "amq.topic",
+        "vhost": "/",
+        "type": "topic",
+        "durable": true,
+        "auto_delete": false,
+        "internal": false,
+        "message_stats": {
+            "publish_in": 800,
+            "publish_in_details": {
+                "rate": 5.5
+            },
+            "publish_out": 795,
+            "publish_out_details": {
+                "rate": 5.4
+            }
+        }
+    }
+]
