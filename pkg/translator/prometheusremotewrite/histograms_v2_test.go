@@ -5,11 +5,14 @@ package prometheusremotewrite
 
 import (
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
@@ -18,6 +21,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+// nhcbCumulativeBucketsV2 decodes an RW2 NHCB histogram into its cumulative buckets.
+func nhcbCumulativeBucketsV2(h writev2.Histogram) []nhcbBucket {
+	var got []nhcbBucket
+	for it := h.ToIntHistogram().CumulativeBucketIterator(); it.Next(); {
+		b := it.At()
+		got = append(got, nhcbBucket{b.Upper, b.Count})
+	}
+	return got
+}
 
 type expectedBucketLayoutV2 struct {
 	wantSpans  []writev2.BucketSpan
@@ -398,6 +411,55 @@ func BenchmarkConvertBucketLayoutV2(b *testing.B) {
 			for b.Loop() {
 				convertBucketsLayout(buckets, 0)
 			}
+		})
+	}
+}
+
+func TestExplicitToNHCBHistogramV2(t *testing.T) {
+	tests := []struct {
+		name        string
+		hist        func() pmetric.HistogramDataPoint
+		wantValues  []float64
+		wantCount   uint64
+		wantSum     float64
+		wantBuckets []nhcbBucket
+		stale       bool
+	}{
+		{
+			name:        "consistent count and buckets",
+			hist:        func() pmetric.HistogramDataPoint { return newTestExplicitHistogram().Histogram().DataPoints().At(0) },
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			name: "stale marker",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, err := explicitToNHCBHistogramV2(tt.hist())
+			require.NoError(t, err)
+			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
+			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
+
+			if tt.stale {
+				assert.Equal(t, value.StaleNaN, h.GetCountInt(), "stale marker count")
+				assert.True(t, math.IsNaN(h.Sum), "stale marker sum")
+				return
+			}
+
+			assert.Equal(t, tt.wantValues, h.CustomValues, "explicit bounds carried as custom values")
+			assert.Equal(t, tt.wantCount, h.GetCountInt(), "count")
+			assert.InDelta(t, tt.wantSum, h.Sum, 1e-9, "sum")
+			assert.Equal(t, tt.wantBuckets, nhcbCumulativeBucketsV2(h), "cumulative buckets round-trip")
 		})
 	}
 }
