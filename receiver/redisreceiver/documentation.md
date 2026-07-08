@@ -44,6 +44,49 @@ Longest output list among current client connections
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+### redis.cmd.calls
+
+Total number of calls for a command
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {call} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
+
+### redis.cmd.latency
+
+Command execution latency
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended | - |
+
+### redis.cmd.usec
+
+Total time for all executions of this command
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| us | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
+
 ### redis.commands
 
 Number of commands processed per second
@@ -387,49 +430,6 @@ Current epoch of the cluster
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
-
-### redis.cmd.calls
-
-Total number of calls for a command
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {call} | Sum | Int | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cmd | Redis command name | Any Str | Recommended | - |
-
-### redis.cmd.latency
-
-Command execution latency
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cmd | Redis command name | Any Str | Recommended | - |
-| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended | - |
-
-### redis.cmd.usec
-
-Total time for all executions of this command
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| us | Sum | Int | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| cmd | Redis command name | Any Str | Recommended | - |
 
 ### redis.maxmemory
 
