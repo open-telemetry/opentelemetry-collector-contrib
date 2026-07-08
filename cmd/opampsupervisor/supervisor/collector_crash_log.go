@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -53,6 +54,9 @@ func (s *Supervisor) collectorLogTail() string {
 			return ""
 		}
 		return string(data)
+	}
+	if s.commander != nil {
+		_ = s.commander.WaitForOutputDrain(2 * time.Second)
 	}
 	return s.passthroughLogTail()
 }

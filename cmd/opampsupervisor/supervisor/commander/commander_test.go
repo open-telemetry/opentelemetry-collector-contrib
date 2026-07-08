@@ -21,17 +21,18 @@ const passthroughTestModeEnv = "OTEL_SUPERVISOR_COMMANDER_TEST_MODE" // #nosec G
 func TestMain(m *testing.M) {
 	if os.Getenv(passthroughTestModeEnv) == "passthrough" {
 		// Re-run this test binary as the child process so the test can assert
-		// Commander drains passthrough logs before reporting process exit.
+		// Commander can drain passthrough logs after process exit is observed.
 		_, _ = fmt.Fprint(os.Stderr, "final error line")
 		os.Exit(1)
 	}
 	os.Exit(m.Run())
 }
 
-func TestPassthroughLogsDrainedBeforeExited(t *testing.T) {
+func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
 	cmdr, err := NewCommander(
 		zap.NewNop(),
 		t.TempDir(),
+		"agent.log",
 		config.Agent{
 			Executable:      os.Args[0],
 			PassthroughLogs: true,
@@ -57,6 +58,7 @@ func TestPassthroughLogsDrainedBeforeExited(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for commander exit")
 	}
+	require.True(t, cmdr.WaitForOutputDrain(5*time.Second))
 
 	mu.Lock()
 	defer mu.Unlock()

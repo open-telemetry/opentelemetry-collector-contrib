@@ -416,6 +416,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	s.commander, err = commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
+		agentLogFileName,
 		s.config.Agent,
 		flags...,
 	)
@@ -439,6 +440,7 @@ func (s *Supervisor) getFeatureGates() error {
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
+		agentLogFileName,
 		s.config.Agent,
 		"featuregate",
 	)
@@ -603,6 +605,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
+		agentLogFileName,
 		s.config.Agent,
 		flags...,
 	)

@@ -29,23 +29,24 @@ import (
 type Commander struct {
 	logger             *zap.Logger
 	cfg                config.Agent
-	logsDir            string
 	logFilePath        string
 	passthroughLogHook func(string)
 	args               []string
 	cmd                *exec.Cmd
 	doneCh             chan struct{}
 	exitCh             chan struct{}
+	outputDoneCh       chan struct{}
 	running            *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, logsDir, logFileName string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:  logger,
-		logsDir: logsDir,
-		cfg:     cfg,
-		args:    args,
-		running: &atomic.Int64{},
+		logger:       logger,
+		logFilePath:  filepath.Join(logsDir, logFileName),
+		cfg:          cfg,
+		args:         args,
+		outputDoneCh: make(chan struct{}),
+		running:      &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
@@ -76,6 +77,7 @@ func (c *Commander) Start(ctx context.Context) error {
 		default:
 		}
 	}
+	c.outputDoneCh = make(chan struct{})
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
 	args := slices.Concat(c.args, c.cfg.Arguments)
@@ -89,15 +91,6 @@ func (c *Commander) Start(ctx context.Context) error {
 		return c.startWithPassthroughLogging()
 	}
 	return c.startNormal()
-}
-
-func (c *Commander) Restart(ctx context.Context) error {
-	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
-	if err := c.Stop(ctx); err != nil {
-		return err
-	}
-
-	return c.Start(ctx)
 }
 
 func (c *Commander) ReloadConfigFile() error {
@@ -137,7 +130,6 @@ func (c *Commander) ValidateConfig(ctx context.Context, configPath string) error
 }
 
 func (c *Commander) startNormal() error {
-	c.logFilePath = filepath.Join(c.logsDir, "agent.log")
 	stdoutFile, err := os.Create(c.logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", c.logFilePath, err)
@@ -155,10 +147,11 @@ func (c *Commander) startNormal() error {
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
+	close(c.outputDoneCh)
 
 	go func() {
 		defer stdoutFile.Close()
-		c.watch(nil)
+		c.watch()
 	}()
 
 	return nil
@@ -230,14 +223,15 @@ func (c *Commander) startWithPassthroughLogging() error {
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 
-	go c.watch(outputWG.Wait)
+	go func() {
+		outputWG.Wait()
+		close(c.outputDoneCh)
+	}()
+	go c.watch()
 	return nil
 }
 
-func (c *Commander) watch(waitForOutput func()) {
-	if waitForOutput != nil {
-		waitForOutput()
-	}
+func (c *Commander) watch() {
 	err := c.cmd.Wait()
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
@@ -249,8 +243,9 @@ func (c *Commander) watch(waitForOutput func()) {
 	}
 
 	c.running.Store(0)
-	c.doneCh <- struct{}{}
 	c.exitCh <- struct{}{}
+	<-c.outputDoneCh
+	c.doneCh <- struct{}{}
 }
 
 // LogFilePath returns the path where the agent stdout/stderr are captured.
@@ -267,6 +262,16 @@ func (c *Commander) SetPassthroughLogHook(h func(string)) {
 func (c *Commander) onPassthroughLogLine(line string) {
 	if c.passthroughLogHook != nil {
 		c.passthroughLogHook(line)
+	}
+}
+
+// WaitForOutputDrain waits for passthrough log readers to finish after process exit.
+func (c *Commander) WaitForOutputDrain(timeout time.Duration) bool {
+	select {
+	case <-c.outputDoneCh:
+		return true
+	case <-time.After(timeout):
+		return false
 	}
 }
 
