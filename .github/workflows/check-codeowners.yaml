@@ -34,19 +34,20 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         id: go-setup
         with:
           go-version: oldstable
           cache: false
 
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
+          allow-unsafe-pr-checkout: true
 
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
@@ -55,9 +56,12 @@ jobs:
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
           permission-members: read
 
+      # githubgen enforces that every code owner is an organization member and,
+      # via -github-team, that they are a member of the collector-contrib-contributors
+      # team, which grants the repository access required to be requested as a reviewer.
       - name: Gen CODEOWNERS
         run: |
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr" make codeowners
-          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git -C pr diff && exit 1; fi
+          if ! GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr -github-team=collector-contrib-contributors" make codeowners; then echo 'Failed to generate CODEOWNERS. If you added a new code owner, ensure they are a member of the open-telemetry organization and the open-telemetry/collector-contrib-contributors team (https://github.com/orgs/open-telemetry/teams/collector-contrib-contributors).' && exit 1; fi
+          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR. If you added a new code owner, also ensure they are a member of the open-telemetry/collector-contrib-contributors team.' && git -C pr diff && exit 1; fi
 
       - run: ./.github/workflows/scripts/check-disk-space.sh

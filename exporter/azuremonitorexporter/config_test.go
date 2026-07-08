@@ -28,6 +28,13 @@ func TestLoadConfig(t *testing.T) {
 
 	disk := component.MustNewIDWithName("disk", "")
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "https://dc.services.visualstudio.com/v2/track"
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -44,9 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
 				SpanEventsEnabled:  false,
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://dc.services.visualstudio.com/v2/track",
-				},
+				ClientConfig:       clientConfig,
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
