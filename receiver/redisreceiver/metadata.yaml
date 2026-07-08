@@ -236,7 +236,7 @@ metrics:
       value_type: int
 
   redis.cmd.calls:
-    enabled: false
+    enabled: true
     description: Total number of calls for a command
     stability: development
     unit: "{call}"
@@ -247,7 +247,7 @@ metrics:
     attributes: [cmd]
 
   redis.cmd.latency:
-    enabled: false
+    enabled: true
     description: Command execution latency
     stability: development
     unit: s
@@ -256,7 +256,7 @@ metrics:
     attributes: [cmd, percentile]
 
   redis.cmd.usec:
-    enabled: false
+    enabled: true
     description: Total time for all executions of this command
     stability: development
     unit: us
