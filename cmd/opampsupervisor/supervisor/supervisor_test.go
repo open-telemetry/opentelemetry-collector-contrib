@@ -429,8 +429,7 @@ func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.
 func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
 	cmdr, err := commander.NewCommander(
 		zap.NewNop(),
-		t.TempDir(),
-		agentLogFileName,
+		filepath.Join(t.TempDir(), agentLogFileName),
 		config.Agent{
 			Executable:      os.Args[0],
 			PassthroughLogs: true,
@@ -467,8 +466,7 @@ func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testi
 
 	cmdr, err := commander.NewCommander(
 		zap.NewNop(),
-		t.TempDir(),
-		agentLogFileName,
+		filepath.Join(t.TempDir(), agentLogFileName),
 		config.Agent{
 			Executable:      os.Args[0],
 			PassthroughLogs: true,
@@ -2690,7 +2688,7 @@ func newComposeMergedConfigTestSupervisor(t *testing.T, executablePath string, v
 
 	require.NoError(t, s.createTemplates())
 
-	cmdr, err := commander.NewCommander(zap.NewNop(), s.config.Storage.Directory, agentLogFileName, s.config.Agent)
+	cmdr, err := commander.NewCommander(zap.NewNop(), filepath.Join(s.config.Storage.Directory, agentLogFileName), s.config.Agent)
 	require.NoError(t, err)
 	s.commander = cmdr
 

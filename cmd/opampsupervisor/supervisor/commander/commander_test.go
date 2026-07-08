@@ -6,6 +6,7 @@ package commander
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -31,8 +32,7 @@ func TestMain(m *testing.M) {
 func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
 	cmdr, err := NewCommander(
 		zap.NewNop(),
-		t.TempDir(),
-		"agent.log",
+		filepath.Join(t.TempDir(), "agent.log"),
 		config.Agent{
 			Executable:      os.Args[0],
 			PassthroughLogs: true,

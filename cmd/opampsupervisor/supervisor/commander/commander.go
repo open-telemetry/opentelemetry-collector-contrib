@@ -11,7 +11,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -39,10 +38,10 @@ type Commander struct {
 	running            *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, logsDir, logFileName string, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
 		logger:       logger,
-		logFilePath:  filepath.Join(logsDir, logFileName),
+		logFilePath:  logFilePath,
 		cfg:          cfg,
 		args:         args,
 		outputDoneCh: make(chan struct{}),
