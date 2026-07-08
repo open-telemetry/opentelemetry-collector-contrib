@@ -28,6 +28,7 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.reuse_if_exists` | Controls bucket creation behavior. If `true`, checks if bucket exists and uses it (requires `storage.buckets.get` permission on the bucket); fails if bucket doesn't exist. If `false`, attempts to create bucket; fails if bucket already exists (requires `storage.buckets.create` permission at project level). Set to `true` when the service account lacks project-level bucket creation permissions but has bucket-level permissions. | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 | `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
+| `resource_attrs_to_gcs`  | Mapping of GCS upload configuration values to resource attribute values. See [resource_attrs_to_gcs](#resource_attrs_to_gcs) below.                                                                                       | No       |         |
 | `timeout`                | Time to wait per individual attempt to send data to the backend. See `exporterhelper` docs for details.                                                                                                                  | No       | `5s`    |
 | `retry_on_failure`       | Configuration for how to retry failed requests. See `exporterhelper` docs for details.                                                                                                                                   | No       |         |
 | `sending_queue`          | Configuration for the internal sending queue. See `exporterhelper` docs for details.                                                                                                                                     | No       |         |
@@ -36,10 +37,40 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 
 The `bucket.partition` configuration allows you to organize files into time-based folders.
 
-| Name     | Description                                                                                                                                                                                 | Required | Default |
-|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
-| `format` | Time format string for time-based partitions. If set, formatted UTC time is prepended to the filename. Supports strftime format (e.g., `year=%Y/month=%m`).                                 | No       |         |
-| `prefix` | Prefix for the partition folder structure. If set, this value is prepended to the partition path.                                                                                           | No       |         |
+| Name     | Description                                                                                                                                                 | Required | Default |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| `format` | Time format string for time-based partitions. If set, formatted UTC time is prepended to the filename. Supports strftime format (e.g., `year=%Y/month=%m`). | No       |         |
+| `prefix` | Prefix for the partition folder structure. If set, this value is prepended to the partition path.                                                          | No       |         |
+
+### resource_attrs_to_gcs
+
+| Name     | Description                                                                                                                                                                                                                                                              | Required | Default |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| `prefix` | Resource attribute whose value is inserted as a partition path segment between `bucket.partition.prefix` and the time-based `bucket.partition.format`. If the attribute is present on the data, its value is used; otherwise the segment is omitted. | No       |         |
+
+When `resource_attrs_to_gcs.prefix` is configured, a partition segment is derived from the
+specified resource attribute, allowing data to be routed into per-attribute folders (for
+example, one folder per host or service). The resulting layout is
+`<partition.prefix>/<attribute value>/<partition.format>/...`, so the existing
+`bucket.partition.prefix` is preserved and the attribute segment is appended after it.
+
+The attribute value is stringified, so non-string attributes are converted to their string
+form (for example, the int `42` becomes `42` and a bool becomes `true`); complex types such
+as maps or slices render as their textual representation and are not recommended.
+
+Because resource attribute values are arbitrary and may be untrusted, the value is
+normalized with the standard library `path.Clean` before being used as an object-name
+segment: duplicate slashes are collapsed and empty, `.` and `..` segments are removed
+(so the value cannot traverse above its segment root). Leading and trailing `/` are
+trimmed, while internal `/` are preserved so a value can span multiple folder levels
+(e.g. `service-a/logs`). If the value normalizes to an empty string, no extra segment is
+added. Note that high-cardinality attribute values produce a correspondingly large number
+of object key prefixes.
+
+> Note: the attribute value is read from the **first** resource of each exported batch. If a batch can contain
+> multiple distinct attribute values and you need strict per-value routing, separate the
+> data upstream first using the [`routingconnector`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector)
+> or [`groupbyattrsprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor).
 
 ## Example
 
@@ -63,6 +94,34 @@ extensions:
   # text encoding to ensure only the body is placed in the bucket
   text_encoding:
 ```
+
+### Routing by Resource Attribute
+
+This configuration writes each service's data into its own folder by deriving a partition
+segment from the `service.name` resource attribute, while keeping a static `storage` prefix:
+
+```yaml
+exporters:
+  google_cloud_storage:
+    bucket:
+      name: archive-bucket
+      region: europe-west1
+      file_prefix: logs
+      partition:
+        prefix: storage
+        format: "%Y-%m-%d/%H"
+    resource_attrs_to_gcs:
+      prefix: service.name
+```
+
+Given a resource with `service.name = serviceA`, an object is written to:
+
+```console
+storage/serviceA/2026-06-17/14/logs_<uuid>
+```
+
+If the `service.name` attribute is absent, the attribute segment is omitted and the object
+is written to `storage/2026-06-17/14/logs_<uuid>`.
 
 ### Resiliency Settings
 

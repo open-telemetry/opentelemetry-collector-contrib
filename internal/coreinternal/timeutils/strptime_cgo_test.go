@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build cgo && unix
+//go:build cgo && unix && !aix
 
 package timeutils
 
@@ -13,6 +13,10 @@ import (
 
 // TestParseStrptimeCgo verifies that the input/output pairs in strptime_test.go accurately reflect the behavior of strptime(3).
 func TestParseStrptimeCgo(t *testing.T) {
+	if !SupportsExtendedTZOffset {
+		t.Skip("libc's strptime does not support \"Z\" or colon-separated UTC offsets in %z on this platform")
+	}
+
 	// Verify that libc's strptime parses these in the same way.
 
 	for _, tt := range strptimeTests {

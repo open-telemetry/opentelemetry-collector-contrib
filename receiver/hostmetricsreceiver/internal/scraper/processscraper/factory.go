@@ -6,12 +6,30 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+)
+
+var (
+	// Hardcoded supported-OS list pending mdatagen `supported_os` annotation support.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
+	// migrate to a metadata.yaml declaration and drop the runtime.GOOS check once it lands.
+	supportedPlatforms = []string{
+		"linux",
+		"windows",
+		"darwin",
+		"freebsd",
+		"aix",
+		"android",
+	}
+
+	errUnsupportedPlatform = errors.New("the process scraper is unsupported on this platform")
 )
 
 // NewFactory for Process scraper.
@@ -32,11 +50,8 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
-	// Hardcoded supported-OS list pending mdatagen `supported_os` annotation support.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
-	// migrate to a metadata.yaml declaration and drop the runtime.GOOS check once it lands.
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" && runtime.GOOS != "freebsd" && runtime.GOOS != "aix" {
-		return nil, errors.New("process scraper only available on Linux, Windows, macOS, FreeBSD, or AIX")
+	if !slices.Contains(supportedPlatforms, runtime.GOOS) {
+		return nil, fmt.Errorf("%w: %s", errUnsupportedPlatform, runtime.GOOS)
 	}
 
 	pCfg := cfg.(*Config)

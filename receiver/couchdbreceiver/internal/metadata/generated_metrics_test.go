@@ -79,44 +79,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbAverageRequestTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOpenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 3, AttributeOperationReads)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdRequestsDataPoint(ts, 3, AttributeHTTPMethodDELETE)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdResponsesDataPoint(ts, 3, "http.status_code-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)

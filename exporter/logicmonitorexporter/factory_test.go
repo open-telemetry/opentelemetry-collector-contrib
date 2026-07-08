@@ -22,7 +22,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
 	assert.Equal(t, &Config{
+		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}, cfg, "failed to create default config")
@@ -31,6 +37,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateLogs(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
+
 	tests := []struct {
 		name         string
 		config       Config
@@ -40,9 +53,7 @@ func TestCreateLogs(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://example.logicmonitor.com/rest",
-				},
+				ClientConfig: clientConfig,
 			},
 			shouldError: false,
 		},
@@ -71,6 +82,13 @@ func TestCreateLogs(t *testing.T) {
 }
 
 func TestCreateTraces(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
+
 	tests := []struct {
 		name         string
 		config       Config
@@ -80,9 +98,7 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://example.logicmonitor.com/rest",
-				},
+				ClientConfig: clientConfig,
 			},
 			shouldError: false,
 		},

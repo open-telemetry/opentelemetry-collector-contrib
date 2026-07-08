@@ -104,47 +104,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryRssDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
@@ -175,58 +164,45 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sContainerMemoryRequestUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
@@ -251,11 +227,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodCPUNodeUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
@@ -265,42 +239,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sPodMemoryNodeUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
@@ -310,14 +275,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodMemoryRequestUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
@@ -330,23 +293,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodVolumeUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)

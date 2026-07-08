@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: pkg/pdatatest
-note: Keep pmetricassert normalization from returning validation errors for duplicate datapoints
-issues: [48775]
-change_logs: [api]
