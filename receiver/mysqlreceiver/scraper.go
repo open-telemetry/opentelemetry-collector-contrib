@@ -35,9 +35,9 @@ import (
 
 const defaultServiceName = "unknown_service:mysql"
 
-// otelServiceInstanceNamespace is the UUID v5 namespace for service.instance.id,
+// otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
 // as defined by the OpenTelemetry specification.
-var otelServiceInstanceNamespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+var otelUUIDv5Namespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 
 type mySQLScraper struct {
 	sqlclient              client
@@ -66,7 +66,7 @@ func newMySQLScraper(
 	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
 	seed := resolveServiceInstanceSeed(config.Endpoint, settings.Logger)
-	serviceInstanceID := uuid.NewSHA1(otelServiceInstanceNamespace, []byte(seed)).String()
+	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
@@ -88,12 +88,15 @@ func newMySQLScraper(
 func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
+		logger.Warn("Failed to parse endpoint for service.instance.id; using raw endpoint as UUID seed",
+			zap.String("endpoint", endpoint),
+			zap.Error(err))
 		return endpoint
 	}
 	if host == "localhost" || (net.ParseIP(host) != nil && net.ParseIP(host).IsLoopback()) {
 		hostname, hostnameErr := os.Hostname()
 		if hostnameErr != nil {
-			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers",
+			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
 				zap.String("endpoint", endpoint),
 				zap.Error(hostnameErr))
 			return endpoint
