@@ -69,6 +69,22 @@ func DefaultMetrics(exporterType, hostname string, timestamp uint64, tags []stri
 	return metrics
 }
 
+// FargateMetrics creates built-in metrics to report that a Fargate exporter is running.
+func FargateMetrics(timestamp uint64, tags []string) []datadogV2.MetricSeries {
+	metrics := []datadogV2.MetricSeries{
+		NewGauge("otel.datadog_exporter.metrics.running.fargate", timestamp, 0, 1.0, tags),
+	}
+	for i := range metrics {
+		metrics[i].SetResources([]datadogV2.MetricResource{
+			{
+				Name: datadog.PtrString(""),
+				Type: datadog.PtrString("host"),
+			},
+		})
+	}
+	return metrics
+}
+
 // GatewayUsageGauge creates a gauge metric to report if there is a gateway
 func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gatewayUsage *attributes.GatewayUsage) datadogV2.MetricSeries {
 	series := NewGauge("datadog.otel.gateway", timestamp, 0, gatewayUsage.Gauge(), tags)

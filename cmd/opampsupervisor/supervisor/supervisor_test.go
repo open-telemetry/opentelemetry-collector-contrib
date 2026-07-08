@@ -2826,6 +2826,63 @@ service:
 	require.Equal(t, expectedConfig, noopConfig)
 }
 
+func TestSupervisor_composeNoopConfigIncludeResourceAttributes(t *testing.T) {
+	const expectedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        agent_description:
+            include_resource_attributes: true
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        traces:
+            exporters:
+                - nop
+            receivers:
+                - nop
+    telemetry:
+        resource:
+            attributes:
+                - name: service.instance.id
+                  value: 018fee23-4a51-7303-a441-73faed7d9deb
+`
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+		config: config.Supervisor{
+			Agent: config.Agent{
+				Description: config.AgentDescription{
+					IncludeResourceAttributes: true,
+				},
+			},
+		},
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	noopConfig := strings.ReplaceAll(string(noopConfigBytes), "\r\n", "\n")
+
+	require.NoError(t, err)
+	require.Equal(t, expectedConfig, noopConfig)
+}
+
 func TestSupervisor_configStrictUnmarshal(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -3034,14 +3091,19 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	})
 
 	t.Run("Health check server is started when port is configured", func(t *testing.T) {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:23233",
+		}
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:23233",
-					},
-				},
+				ServerConfig: serverConfig,
 			},
 		}
 		err := s.startHealthCheckServer()
@@ -3115,6 +3177,16 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 	})
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:23233",
+		}
 		newSupervisor := &Supervisor{
 			runCtx:            t.Context(),
 			telemetrySettings: newNopTelemetrySettings(),
@@ -3123,12 +3195,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			doneChan:          make(chan struct{}),
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:23233",
-						},
-					},
+					ServerConfig: serverConfig,
 				},
 			},
 		}

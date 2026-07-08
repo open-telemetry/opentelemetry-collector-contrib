@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.154.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.156.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.60.1-0.20260618174006-415d3dcae73b
-	go.opentelemetry.io/collector/component/componenttest v0.154.1-0.20260618174006-415d3dcae73b
-	go.opentelemetry.io/collector/confmap v1.60.1-0.20260618174006-415d3dcae73b
-	go.opentelemetry.io/collector/extension v1.60.1-0.20260618174006-415d3dcae73b
-	go.opentelemetry.io/collector/extension/extensiontest v0.154.1-0.20260618174006-415d3dcae73b
-	go.opentelemetry.io/collector/pdata v1.60.1-0.20260618174006-415d3dcae73b
+	go.opentelemetry.io/collector/component v1.62.0
+	go.opentelemetry.io/collector/component/componenttest v0.156.0
+	go.opentelemetry.io/collector/confmap v1.62.0
+	go.opentelemetry.io/collector/extension v1.62.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.156.0
+	go.opentelemetry.io/collector/pdata v1.62.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/protobuf v1.36.11
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
@@ -35,8 +35,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.60.1-0.20260618174006-415d3dcae73b // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.1-0.20260618174006-415d3dcae73b // indirect
+	go.opentelemetry.io/collector/featuregate v1.62.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.156.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
@@ -48,8 +48,8 @@ require (
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
-	google.golang.org/grpc v1.81.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/grpc v1.82.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

@@ -28,7 +28,7 @@ jobs:
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -51,7 +51,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -67,7 +67,7 @@ jobs:
         run: |
           sudo rm -f /usr/local/bin/kwokctl /usr/local/bin/kwok
       - name: Install KWOK (kwokctl)
-        uses: kubernetes-sigs/kwok@c04392afe3cc6929cd3cc79f61d8bdcd83a8ba5d # v0.7.0
+        uses: kubernetes-sigs/kwok@156033d7df7ea0e09cea82b715fe566ea68aeeb4 # v0.8.0
         with:
           command: kwokctl
       - name: Loadtest
@@ -107,7 +107,7 @@ jobs:
       contents: write
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: benchmark-results-*

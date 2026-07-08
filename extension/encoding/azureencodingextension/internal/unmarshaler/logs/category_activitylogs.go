@@ -88,9 +88,11 @@ func (r *activityLogRecordBase) PutCommonAttributes(attrs pcommon.Map, body pcom
 
 // Non-SemConv attributes for Administrative activity logs
 const (
-	attributeAzureAdministrativeEntity    = "azure.administrative.entity"
-	attributeAzureAdministrativeMessage   = "azure.administrative.message"
-	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
+	attributeAzureAdministrativeEntity            = "azure.administrative.entity"
+	attributeAzureAdministrativeMessage           = "azure.administrative.message"
+	attributeAzureAdministrativeHierarchy         = "azure.administrative.hierarchy"
+	attributeAzureAdministrativeStatusMessage     = "azure.administrative.status_message"
+	attributeAzureAdministrativeStatusMessageText = "azure.administrative.status_message.text"
 )
 
 // Generic Azure attributes carried by PIM events but not PIM-specific.
@@ -136,9 +138,10 @@ type azureAdministrativeLog struct {
 
 	Properties struct {
 		// Standard Administrative fields
-		Entity    string `json:"entity"`
-		Message   string `json:"message"`
-		Hierarchy string `json:"hierarchy"`
+		Entity        string `json:"entity"`
+		Message       string `json:"message"`
+		Hierarchy     string `json:"hierarchy"`
+		StatusMessage string `json:"statusMessage"`
 
 		// PIM-specific fields (ResourceProviderName=azurerbac)
 		SubscriptionID          *string `json:"SubscriptionID"`
@@ -165,6 +168,18 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeEntity, r.Properties.Entity)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeMessage, r.Properties.Message)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeHierarchy, r.Properties.Hierarchy)
+	// statusMessage is typically a JSON-encoded string containing status/error
+	// details (e.g. VM ScaleSet upgrade failures). Attempt to parse it as JSON
+	// and store the structured object; fall back to the raw string if parsing fails.
+	if r.Properties.StatusMessage != "" {
+		var statusMsg map[string]any
+		if err := gojson.Unmarshal([]byte(r.Properties.StatusMessage), &statusMsg); err == nil {
+			m := attrs.PutEmptyMap(attributeAzureAdministrativeStatusMessage)
+			_ = m.FromRaw(statusMsg)
+		} else {
+			unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeStatusMessageText, r.Properties.StatusMessage)
+		}
+	}
 
 	// PIM fields
 	// SubscriptionID is also set as a resource attribute (cloud.account.id) by unmarshaler.go from
