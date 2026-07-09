@@ -597,9 +597,7 @@ query sample
 
 ### db.server.top_query
 
-Top query collection emits one event per slow query execution sampled from the MongoDB profiler
-(system.profile) or the diagnostic log (getLog). The top N slowest executions per scrape window
-are emitted.
+Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
 
 
 #### Attributes

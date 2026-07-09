@@ -29,7 +29,7 @@ type client interface {
 	// RunCommand accepts any BSON-serialisable command (bson.M or bson.D).
 	RunCommand(ctx context.Context, db string, command any) (bson.M, error)
 	CurrentOp(ctx context.Context) ([]bson.M, error)
-	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]profileDoc, error)
+	FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, error)
 	GetLog(ctx context.Context) (bson.A, error)
 }
 
@@ -162,7 +162,7 @@ func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 // server-side, and returns at most topN documents. Ranking is done on the
 // server via an aggregation pipeline so the receiver never needs to hold or
 // rank the full profile window in memory.
-func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]profileDoc, error) {
+func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, error) {
 	coll := c.Database(dbName).Collection("system.profile")
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
@@ -179,7 +179,7 @@ func (c *mongodbClient) FindProfileDocs(ctx context.Context, dbName string, sinc
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	var docs []profileDoc
+	var docs []slowQueryEntry
 	if err := cursor.All(ctx, &docs); err != nil {
 		return nil, err
 	}

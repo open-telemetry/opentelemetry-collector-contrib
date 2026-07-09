@@ -93,9 +93,9 @@ func (fc *fakeClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
 	return args.Get(0).([]bson.M), args.Error(1)
 }
 
-func (fc *fakeClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]profileDoc, error) {
+func (fc *fakeClient) FindProfileDocs(ctx context.Context, dbName string, sinceTime, upperBound time.Time, topN int64) ([]slowQueryEntry, error) {
 	args := fc.Called(ctx, dbName, sinceTime, upperBound, topN)
-	return args.Get(0).([]profileDoc), args.Error(1)
+	return args.Get(0).([]slowQueryEntry), args.Error(1)
 }
 
 func (fc *fakeClient) GetLog(ctx context.Context) (bson.A, error) {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -20,8 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-// profileDoc represents a single document from system.profile.
-type profileDoc struct {
+// slowQueryEntry is the single shared representation of one slow query
+// execution
+type slowQueryEntry struct {
 	TS             time.Time `bson:"ts"`
 	NS             string    `bson:"ns"`
 	Op             string    `bson:"op"`
@@ -33,21 +35,6 @@ type profileDoc struct {
 	NReturned      int64     `bson:"nreturned"`
 	PlanSummary    string    `bson:"planSummary"`
 	Command        bson.D    `bson:"command"`
-}
-
-// slowQueryEntry is the single shared representation of one slow query execution,
-type slowQueryEntry struct {
-	EndTime        time.Time
-	NS             string
-	Op             string
-	Millis         int64
-	CPUNanos       int64
-	ResponseLength int64
-	KeysExamined   int64
-	DocsExamined   int64
-	NReturned      int64
-	PlanSummary    string
-	Command        bson.D
 }
 
 // structuredLogLine is the JSON shape of a MongoDB structured log entry.
@@ -207,23 +194,11 @@ func (s *mongodbScraper) scrapeTopQueryFromProfiler(ctx context.Context, dbName 
 	}
 
 	entries := make([]slowQueryEntry, 0, len(docs))
-	for _, d := range docs {
-		if len(d.Command) == 0 {
+	for i := range docs {
+		if len(docs[i].Command) == 0 {
 			continue
 		}
-		entries = append(entries, slowQueryEntry{
-			EndTime:        d.TS,
-			NS:             d.NS,
-			Op:             d.Op,
-			Millis:         d.Millis,
-			CPUNanos:       d.CPUNanos,
-			ResponseLength: d.ResponseLength,
-			KeysExamined:   d.KeysExamined,
-			DocsExamined:   d.DocsExamined,
-			NReturned:      d.NReturned,
-			PlanSummary:    d.PlanSummary,
-			Command:        d.Command,
-		})
+		entries = append(entries, docs[i])
 	}
 	return entries, true, nil
 }
@@ -249,7 +224,7 @@ func (s *mongodbScraper) getProfilingLevel(ctx context.Context, dbName string) (
 }
 
 // scrapeTopQueryFromGetLog collects slow query entries from the getLog ring
-// buffer whose EndTime falls in (sinceTime, upperBound], then ranks by millis
+// buffer whose TS falls in (sinceTime, upperBound], then ranks by millis
 // descending on the client side and returns at most topN entries.
 func (s *mongodbScraper) scrapeTopQueryFromGetLog(ctx context.Context, dbSet map[string]struct{}, sinceTime, upperBound time.Time, limit int64) ([]slowQueryEntry, error) {
 	arr, err := s.client.GetLog(ctx)
@@ -260,8 +235,8 @@ func (s *mongodbScraper) scrapeTopQueryFromGetLog(ctx context.Context, dbSet map
 	var entries []slowQueryEntry
 
 	// Iterate in reverse: newest entries first.
-	for i := len(arr) - 1; i >= 0; i-- {
-		line, ok := arr[i].(string)
+	for _, raw := range slices.Backward(arr) {
+		line, ok := raw.(string)
 		if !ok {
 			continue
 		}
@@ -269,10 +244,10 @@ func (s *mongodbScraper) scrapeTopQueryFromGetLog(ctx context.Context, dbSet map
 		if !ok {
 			continue
 		}
-		if !entry.EndTime.After(sinceTime) {
+		if !entry.TS.After(sinceTime) {
 			break
 		}
-		if entry.EndTime.After(upperBound) {
+		if entry.TS.After(upperBound) {
 			// Written after the scrape's snapshot time; belongs to the next window.
 			continue
 		}
@@ -318,7 +293,7 @@ func parseLogLine(line string) (slowQueryEntry, bool) {
 	}
 
 	return slowQueryEntry{
-		EndTime:        t,
+		TS:             t,
 		NS:             raw.Attr.NS,
 		Op:             raw.Attr.Type,
 		Millis:         raw.Attr.DurationMillis,
@@ -341,6 +316,7 @@ func (s *mongodbScraper) processTopQueryEntries(ctx context.Context, entries []s
 
 		obfuscated, err := s.obfuscator.obfuscateCommand(cleanCommand(e.Command))
 		if err != nil {
+			s.logger.Debug("failed to obfuscate command", zap.Error(err))
 		}
 		sig := querySignature(obfuscated)
 
@@ -397,7 +373,7 @@ func (s *mongodbScraper) retrieveQueryPlan(ctx context.Context, e *slowQueryEntr
 
 	cmd := stripKeys(e.Command, commandKeysToStrip)
 
-	if !isExplainable(cmd) {
+	if !isExplainable(e.Op, cmd) {
 		if s.planCache != nil {
 			s.planCache.Add(cacheKey, queryPlanSentinel)
 		}
@@ -412,7 +388,6 @@ func (s *mongodbScraper) retrieveQueryPlan(ctx context.Context, e *slowQueryEntr
 	if err != nil {
 		s.logger.Warn("Failed to run explain",
 			zap.String("db", entryDB),
-			zap.String("command", cmd.String()),
 			zap.Error(err),
 		)
 		if s.planCache != nil {

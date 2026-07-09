@@ -4,7 +4,6 @@
 package mongodbreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -22,7 +21,7 @@ import (
 func newTestScraper(t *testing.T, fc *fakeClient) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.QueryPlanCacheTTL = 0
 	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	s.planCache = buildPlanCache(cfg)
@@ -30,11 +29,11 @@ func newTestScraper(t *testing.T, fc *fakeClient) *mongodbScraper {
 	return s
 }
 
-// --- profileDoc / slowQueryEntry / topN ---
+// --- slowQueryEntry / topN ---
 
-func TestProfileDoc_TSField(t *testing.T) {
+func TestSlowQueryEntry_TSField(t *testing.T) {
 	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-	d := profileDoc{
+	d := slowQueryEntry{
 		TS:     ts,
 		Millis: 250,
 	}
@@ -82,19 +81,37 @@ func TestTopN_StableOnTie(t *testing.T) {
 // --- querySignature / isExplainable / helpers ---
 
 func TestQuerySignature_StableForSameInput(t *testing.T) {
-	require.Equal(t, querySignature("foo"), querySignature("foo"))
+	first := querySignature("foo")
+	second := querySignature("foo")
+	require.Equal(t, first, second)
 	require.NotEqual(t, querySignature("foo"), querySignature("bar"))
 	require.Len(t, querySignature("anything"), 16)
 }
 
 func TestIsExplainable(t *testing.T) {
-	require.True(t, isExplainable(bson.D{{Key: "find", Value: "users"}}))
-	require.True(t, isExplainable(bson.D{{Key: "aggregate", Value: "users"}, {Key: "pipeline", Value: bson.A{}}}))
-	require.False(t, isExplainable(bson.D{{Key: "update", Value: "users"}}))
-	require.False(t, isExplainable(bson.D{{Key: "delete", Value: "users"}}))
-	require.False(t, isExplainable(bson.D{{Key: "insert", Value: "users"}}))
-	require.False(t, isExplainable(bson.D{{Key: "getMore", Value: int64(1)}}))
-	require.False(t, isExplainable(bson.D{{Key: "explain", Value: bson.D{}}}))
+	// op="query" (find) and op="command" (aggregate) are candidates for explain.
+	require.True(t, isExplainable("query", bson.D{{Key: "find", Value: "users"}}))
+	require.True(t, isExplainable("command", bson.D{{Key: "aggregate", Value: "users"}, {Key: "pipeline", Value: bson.A{}}}))
+
+	// Unexplainable ops are skipped regardless of the command payload.
+	// Write ops in system.profile appear as {q,u,multi,upsert} or {q,limit},
+	// not as runnable commands — the op-based filter catches them first.
+	require.False(t, isExplainable("update", bson.D{{Key: "q", Value: bson.D{}}, {Key: "u", Value: bson.D{}}}))
+	require.False(t, isExplainable("remove", bson.D{{Key: "q", Value: bson.D{}}, {Key: "limit", Value: int32(0)}}))
+	require.False(t, isExplainable("insert", bson.D{{Key: "insert", Value: "users"}}))
+	require.False(t, isExplainable("getmore", bson.D{{Key: "getMore", Value: int64(1)}}))
+	require.False(t, isExplainable("killcursors", bson.D{{Key: "killCursors", Value: "users"}}))
+	require.False(t, isExplainable("none", bson.D{{Key: "find", Value: "users"}}))
+	require.False(t, isExplainable("", bson.D{{Key: "find", Value: "users"}}))
+
+	// op="command" but the command itself is unexplainable.
+	require.False(t, isExplainable("command", bson.D{{Key: "update", Value: "users"}}))
+	require.False(t, isExplainable("command", bson.D{{Key: "delete", Value: "users"}}))
+	require.False(t, isExplainable("command", bson.D{{Key: "explain", Value: bson.D{}}}))
+	require.False(t, isExplainable("command", bson.D{{Key: "listCollections", Value: int32(1)}}))
+
+	// Empty command is never explainable.
+	require.False(t, isExplainable("query", bson.D{}))
 }
 
 func TestCleanCommand_StripsSessionKeys(t *testing.T) {
@@ -216,6 +233,33 @@ func TestObfuscateExplainPlan_ObfuscatesTargetedFields(t *testing.T) {
 	require.Equal(t, "?", statusF["$eq"])
 }
 
+func TestObfuscateExplainPlan_ScrubsSlotBasedPlan(t *testing.T) {
+	plan := map[string]any{
+		"queryPlanner": map[string]any{
+			"winningPlan": map[string]any{
+				"queryPlan": map[string]any{
+					"stage":  "IXSCAN",
+					"filter": map[string]any{"age": map[string]any{"$gt": 30}},
+				},
+				"slotBasedPlan": map[string]any{
+					"slots":  `s4 = 30 (const value), s3 = "alice@example.com"`,
+					"stages": `[3] filter {(s7 > 30)}`,
+				},
+			},
+		},
+	}
+	out := obfuscateExplainPlan(plan).(map[string]any)
+	wp := out["queryPlanner"].(map[string]any)["winningPlan"].(map[string]any)
+	sbe := wp["slotBasedPlan"].(map[string]any)
+	require.Equal(t, "?", sbe["slots"])
+	require.Equal(t, "?", sbe["stages"])
+
+	// Classic-shaped queryPlan above is still recursed normally.
+	qp := wp["queryPlan"].(map[string]any)
+	require.Equal(t, "IXSCAN", qp["stage"])
+	require.Equal(t, "?", qp["filter"].(map[string]any)["age"].(map[string]any)["$gt"])
+}
+
 func TestObfuscateExplainPlan_SameStructureSameHash(t *testing.T) {
 	plan1 := map[string]any{
 		"queryPlanner": map[string]any{
@@ -289,7 +333,7 @@ func TestParseLogLine_SlowQuery(t *testing.T) {
 	require.Equal(t, int64(3), entry.DocsExamined)
 	require.Equal(t, int64(1), entry.NReturned)
 	require.NotEmpty(t, entry.Command)
-	require.True(t, entry.EndTime.Equal(ts))
+	require.True(t, entry.TS.Equal(ts))
 }
 
 func TestParseLogLine_NotSlowQuery(t *testing.T) {
@@ -327,7 +371,7 @@ func TestGetProfilingLevel(t *testing.T) {
 			fc := &fakeClient{}
 			fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(tc.ret, nil)
 			s := newTestScraper(t, fc)
-			level, err := s.getProfilingLevel(context.Background(), "appdb")
+			level, err := s.getProfilingLevel(t.Context(), "appdb")
 			require.NoError(t, err)
 			require.Equal(t, tc.want, level)
 		})
@@ -338,7 +382,7 @@ func TestGetProfilingLevel_RunCommandError(t *testing.T) {
 	fc := &fakeClient{}
 	fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(bson.M(nil), errors.New("auth failed"))
 	s := newTestScraper(t, fc)
-	_, err := s.getProfilingLevel(context.Background(), "appdb")
+	_, err := s.getProfilingLevel(t.Context(), "appdb")
 	require.Error(t, err)
 }
 
@@ -349,7 +393,7 @@ func TestScrapeTopQueryFromProfiler_DisabledFallsBack(t *testing.T) {
 	fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(bson.M{"was": int32(0)}, nil)
 	s := newTestScraper(t, fc)
 	now := time.Now()
-	_, used, err := s.scrapeTopQueryFromProfiler(context.Background(), "appdb", now.Add(-time.Minute), now, 20)
+	_, used, err := s.scrapeTopQueryFromProfiler(t.Context(), "appdb", now.Add(-time.Minute), now, 20)
 	require.NoError(t, err)
 	require.False(t, used)
 }
@@ -359,7 +403,7 @@ func TestScrapeTopQueryFromProfiler_EnabledReturnsRankedDocs(t *testing.T) {
 	fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(bson.M{"was": int32(1)}, nil)
 
 	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-	docs := []profileDoc{
+	docs := []slowQueryEntry{
 		{
 			TS:      ts,
 			NS:      "appdb.users",
@@ -373,7 +417,7 @@ func TestScrapeTopQueryFromProfiler_EnabledReturnsRankedDocs(t *testing.T) {
 
 	s := newTestScraper(t, fc)
 	now := time.Now()
-	entries, used, err := s.scrapeTopQueryFromProfiler(context.Background(), "appdb", now.Add(-time.Minute), now, 20)
+	entries, used, err := s.scrapeTopQueryFromProfiler(t.Context(), "appdb", now.Add(-time.Minute), now, 20)
 	require.NoError(t, err)
 	require.True(t, used)
 	require.Len(t, entries, 1)
@@ -383,11 +427,11 @@ func TestScrapeTopQueryFromProfiler_EnabledReturnsRankedDocs(t *testing.T) {
 func TestScrapeTopQueryFromProfiler_EmptyReturnsNoEntries(t *testing.T) {
 	fc := &fakeClient{}
 	fc.On("RunCommand", mock.Anything, "appdb", bson.M{"profile": -1}).Return(bson.M{"was": int32(1)}, nil)
-	fc.On("FindProfileDocs", mock.Anything, "appdb", mock.Anything, mock.Anything, mock.Anything).Return([]profileDoc{}, nil)
+	fc.On("FindProfileDocs", mock.Anything, "appdb", mock.Anything, mock.Anything, mock.Anything).Return([]slowQueryEntry{}, nil)
 
 	s := newTestScraper(t, fc)
 	now := time.Now()
-	entries, used, err := s.scrapeTopQueryFromProfiler(context.Background(), "appdb", now.Add(-time.Minute), now, 20)
+	entries, used, err := s.scrapeTopQueryFromProfiler(t.Context(), "appdb", now.Add(-time.Minute), now, 20)
 	require.NoError(t, err)
 	require.True(t, used)
 	require.Empty(t, entries)
@@ -424,7 +468,7 @@ func TestScrapeTopQueryFromGetLog_FiltersByDB(t *testing.T) {
 	s := newTestScraper(t, fc)
 	dbSet := map[string]struct{}{"appdb": {}}
 	now := time.Now()
-	entries, err := s.scrapeTopQueryFromGetLog(context.Background(), dbSet, now.Add(-time.Minute), now.Add(time.Second), 20)
+	entries, err := s.scrapeTopQueryFromGetLog(t.Context(), dbSet, now.Add(-time.Minute), now.Add(time.Second), 20)
 	require.NoError(t, err)
 	// Two of the four log lines belong to the "appdb" namespace and should pass the filter.
 	require.Len(t, entries, 2)
@@ -456,7 +500,7 @@ func TestScrapeTopQueryFromGetLog_AdvancesCursor(t *testing.T) {
 	s := newTestScraper(t, fc)
 	dbSet := map[string]struct{}{"appdb": {}}
 	// Both entries fall in the window (sinceTime is far in the past, upperBound is now).
-	entries, err := s.scrapeTopQueryFromGetLog(context.Background(), dbSet, now.Add(-time.Minute), now, 20)
+	entries, err := s.scrapeTopQueryFromGetLog(t.Context(), dbSet, now.Add(-time.Minute), now, 20)
 	require.NoError(t, err)
 	require.Len(t, entries, 2)
 }
@@ -474,7 +518,7 @@ func TestRetrieveQueryPlan_NotExplainable(t *testing.T) {
 	}
 	obfuscated, _ := s.obfuscator.obfuscateCommand(e.Command)
 	sig := querySignature(obfuscated)
-	plan, planHash := s.retrieveQueryPlan(context.Background(), e, sig)
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig)
 	require.Empty(t, plan)
 	require.Empty(t, planHash)
 
@@ -489,7 +533,7 @@ func TestRetrieveQueryPlan_NoCommand(t *testing.T) {
 	fc := &fakeClient{}
 	s := newTestScraper(t, fc)
 	e := &slowQueryEntry{NS: "appdb.users"}
-	plan, planHash := s.retrieveQueryPlan(context.Background(), e, "abc")
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, "abc")
 	require.Empty(t, plan)
 	require.Empty(t, planHash)
 }
@@ -510,11 +554,11 @@ func TestRetrieveQueryPlan_CachesSuccess(t *testing.T) {
 	obfuscated, _ := s.obfuscator.obfuscateCommand(e.Command)
 	sig := querySignature(obfuscated)
 
-	plan, planHash := s.retrieveQueryPlan(context.Background(), e, sig)
+	plan, planHash := s.retrieveQueryPlan(t.Context(), e, sig)
 	require.NotEmpty(t, plan)
 	require.NotEmpty(t, planHash)
 
-	plan2, planHash2 := s.retrieveQueryPlan(context.Background(), e, sig)
+	plan2, planHash2 := s.retrieveQueryPlan(t.Context(), e, sig)
 	require.Equal(t, plan, plan2)
 	require.Equal(t, planHash, planHash2)
 	fc.AssertNumberOfCalls(t, "RunCommand", 1)
@@ -528,7 +572,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 
 	entries := []slowQueryEntry{
 		{
-			EndTime:        time.Now(),
+			TS:             time.Now(),
 			NS:             "appdb.users",
 			Op:             "insert",
 			Millis:         100,
@@ -542,7 +586,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	s.processTopQueryEntries(context.Background(), entries, now)
+	s.processTopQueryEntries(t.Context(), entries, now)
 
 	rb := s.lb.NewResourceBuilder()
 	rb.SetServerAddress("localhost")
@@ -588,7 +632,7 @@ func TestProcessTopQueryEntries_EmitsEventForEmptyCommand(t *testing.T) {
 	entries := []slowQueryEntry{
 		{NS: "appdb.users", Op: "query", Millis: 100, Command: bson.D{}},
 	}
-	s.processTopQueryEntries(context.Background(), entries, pcommon.NewTimestampFromTime(time.Now()))
+	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()))
 
 	require.Equal(t, 1, s.lb.Emit().ResourceLogs().Len())
 }

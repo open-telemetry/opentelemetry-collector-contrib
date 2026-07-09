@@ -125,8 +125,24 @@ func querySignature(obfuscated string) string {
 	return fmt.Sprintf("%016x", h.Sum64())
 }
 
-// isExplainable reports whether a bson.D command can be passed to the explain command.
-func isExplainable(cmd bson.D) bool {
+// unexplainableOps are system.profile op values whose commands cannot be
+// wrapped in an explain.
+var unexplainableOps = map[string]struct{}{
+	"insert":      {},
+	"update":      {},
+	"remove":      {},
+	"getmore":     {},
+	"killcursors": {},
+	"none":        {},
+	"":            {},
+}
+
+// isExplainable reports whether a profile entry's command can be passed to
+// the explain command.
+func isExplainable(op string, cmd bson.D) bool {
+	if _, skip := unexplainableOps[op]; skip {
+		return false
+	}
 	for _, e := range cmd {
 		if _, unexplainable := unexplainableCommands[e.Key]; unexplainable {
 			return false
@@ -199,13 +215,16 @@ func asSlice(v any) []any {
 }
 
 // obfuscateExplainPlan recursively walks an explain result and replaces literal
-// values in "filter", "parsedQuery", and "indexBounds" with "?"
+// values in "filter", "parsedQuery", and "indexBounds" with "?". The
+// "slotBasedPlan" subtree (SBE debug output) contains constants embedded in
+// opaque, version-dependent strings; every leaf under it is replaced with "?"
+// to prevent literal leakage without relying on parsing the SBE syntax.
 func obfuscateExplainPlan(v any) any {
 	if m := asMap(v); m != nil {
 		out := make(map[string]any, len(m))
 		for k, child := range m {
 			switch k {
-			case "filter", "parsedQuery", "indexBounds":
+			case "filter", "parsedQuery", "indexBounds", "slotBasedPlan":
 				out[k] = obfuscateLiterals(child)
 			default:
 				out[k] = obfuscateExplainPlan(child)
