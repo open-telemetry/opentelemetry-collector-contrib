@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 )
 
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
@@ -23,6 +24,7 @@ type LambdaExpression[K any] struct {
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
+	arityValidated *atomic.Bool
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
@@ -42,6 +44,7 @@ func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], b
 			}
 		},
 	}
+	v.arityValidated = &atomic.Bool{}
 	return v
 }
 
@@ -51,16 +54,38 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 	return slices.Clone(l.formals)
 }
 
+// ValidateArity checks that the number of arguments that will be passed to the
+// lambda matches the number of declared formals. If the counts differ, an error
+// is returned. This allows statically verifying arity: it should be run inside
+// the OTTL function factory, i.e. outside the closure the factory returns. It's
+// meant to verify the lambda passed by the user has the correct number of
+// formals before calling [LambdaExpression.Activate].
+//
+// While this is only intended to be called once, if it is called with an
+// invalid arity after being called with a valid arity, the lambda will be
+// marked as needing validation again, and [LambdaExpression.Activate] will
+// return an error until [LambdaExpression.ValidateArity] is called with a valid
+// arity.
+func (l *LambdaExpression[K]) ValidateArity(arity int) error {
+	if len(l.formals) != arity {
+		l.arityValidated.Store(false)
+		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
+	}
+	l.arityValidated.Store(true)
+	return nil
+}
+
 // Activate creates a [LambdaActivation] for a single outer function invocation, allocating
 // its own activation and argument storage, linking the resulting activation to the given ctx.
-// The arity is the number of formals the caller must pass, and their values are set via
-// [LambdaActivation.SetArg]. If the lambda's declared formal count differs from arity, an
-// error is returned.
 // Call [LambdaActivation.SetArg] for every index in (0...arity) before each [LambdaActivation.Eval],
 // and then [LambdaActivation.Close] on the returned activation when it is no longer needed.
-func (l *LambdaExpression[K]) Activate(ctx context.Context, arity int) (*LambdaActivation[K], error) {
-	if len(l.formals) != arity {
-		return nil, fmt.Errorf("lambda expects exactly %d argument(s), got %d", arity, len(l.formals))
+//
+// [LambdaExpression.ValidateArity] must be called successfully before Activate; otherwise Activate
+// returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
+// runs inside the closure the factory returns.
+func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
+	if !l.arityValidated.Load() {
+		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
 	}
 	v := l.activationPool.Get().(*LambdaActivation[K])
 	v.ctx = pushLocalActivation(ctx, v.activation)
