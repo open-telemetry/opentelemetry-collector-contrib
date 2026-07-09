@@ -122,6 +122,50 @@ func enableAllMetrics(cfg *Config) {
 	cfg.Metrics.PostgresqlQueryConflicts.Enabled = true
 }
 
+func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+
+	semconvConfig := metricsBuilderConfigForFeatureGate(cfg, true)
+	assert.Equal(t, cfg, semconvConfig)
+
+	legacyConfig := metricsBuilderConfigForFeatureGate(cfg, false)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksHit.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksRead.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlCommits.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDbSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDeadlocks.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexScans.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlSequentialScans.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempIo.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempFiles.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupDeleted.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupFetched.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupInserted.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlOperationsMetricAttributeKey{metadata.PostgresqlOperationsMetricAttributeKeyOperation}, legacyConfig.Metrics.PostgresqlOperations.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlRowsMetricAttributeKey{metadata.PostgresqlRowsMetricAttributeKeyState}, legacyConfig.Metrics.PostgresqlRows.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlQueryConflicts.EnabledAttributes, legacyConfig.Metrics.PostgresqlQueryConflicts.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlDatabaseLocks.EnabledAttributes, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
+	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
+	assert.NotEmpty(t, cfg.Metrics.PostgresqlBackends.EnabledAttributes)
+
+	customConfig := cfg
+	customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes = []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}
+	customLegacyConfig := metricsBuilderConfigForFeatureGate(customConfig, false)
+	assert.Empty(t, customLegacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace}, customConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
+}
+
 func TestScraper(t *testing.T) {
 	runMetricGateVariants(t, filepath.Join("testdata", "scraper", "otel", "expected"),
 		func(t *testing.T) *postgreSQLScraper {

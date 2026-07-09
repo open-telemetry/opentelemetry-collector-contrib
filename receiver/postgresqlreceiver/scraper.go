@@ -108,11 +108,12 @@ func newPostgreSQLScraper(
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
+	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
 		logger:             settings.Logger,
 		config:             config,
 		clientFactory:      clientFactory,
-		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mb:                 metadata.NewMetricsBuilder(mbConfig, settings),
 		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 		excludes:           excludes,
 		cache:              cache,
@@ -121,6 +122,60 @@ func newPostgreSQLScraper(
 		separateSchemaAttr: separateSchemaAttr,
 		useOTelSemconv:     useOTelSemconv,
 	}, nil
+}
+
+func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, useOTelSemconv bool) metadata.MetricsBuilderConfig {
+	if useOTelSemconv {
+		return config
+	}
+
+	metrics := &config.Metrics
+	metrics.PostgresqlBackends.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlBackends.EnabledAttributes, metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlBlksHit.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlBlksHit.EnabledAttributes, metadata.PostgresqlBlksHitMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlBlksRead.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlBlksRead.EnabledAttributes, metadata.PostgresqlBlksReadMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlBlocksRead.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlBlocksRead.EnabledAttributes, metadata.PostgresqlBlocksReadMetricAttributeKeyDbNamespace, metadata.PostgresqlBlocksReadMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlCommits.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlCommits.EnabledAttributes, metadata.PostgresqlCommitsMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlDbSize.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlDbSize.EnabledAttributes, metadata.PostgresqlDbSizeMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlDeadlocks.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlDeadlocks.EnabledAttributes, metadata.PostgresqlDeadlocksMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlFunctionCalls.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlFunctionCalls.EnabledAttributes, metadata.PostgresqlFunctionCallsMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlIndexScans.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlIndexScans.EnabledAttributes, metadata.PostgresqlIndexScansMetricAttributeKeyDbNamespace, metadata.PostgresqlIndexScansMetricAttributeKeyDbCollectionName, metadata.PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName)
+	metrics.PostgresqlIndexSize.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlIndexSize.EnabledAttributes, metadata.PostgresqlIndexSizeMetricAttributeKeyDbNamespace, metadata.PostgresqlIndexSizeMetricAttributeKeyDbCollectionName, metadata.PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName)
+	metrics.PostgresqlOperations.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlOperations.EnabledAttributes, metadata.PostgresqlOperationsMetricAttributeKeyDbNamespace, metadata.PostgresqlOperationsMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlRollbacks.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlRollbacks.EnabledAttributes, metadata.PostgresqlRollbacksMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlRows.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlRows.EnabledAttributes, metadata.PostgresqlRowsMetricAttributeKeyDbNamespace, metadata.PostgresqlRowsMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlSequentialScans.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlSequentialScans.EnabledAttributes, metadata.PostgresqlSequentialScansMetricAttributeKeyDbNamespace, metadata.PostgresqlSequentialScansMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlTableCount.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTableCount.EnabledAttributes, metadata.PostgresqlTableCountMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTableSize.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTableSize.EnabledAttributes, metadata.PostgresqlTableSizeMetricAttributeKeyDbNamespace, metadata.PostgresqlTableSizeMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlTableVacuumCount.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTableVacuumCount.EnabledAttributes, metadata.PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, metadata.PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName)
+	metrics.PostgresqlTempIo.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTempIo.EnabledAttributes, metadata.PostgresqlTempIoMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTempFiles.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTempFiles.EnabledAttributes, metadata.PostgresqlTempFilesMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTupDeleted.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTupDeleted.EnabledAttributes, metadata.PostgresqlTupDeletedMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTupFetched.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTupFetched.EnabledAttributes, metadata.PostgresqlTupFetchedMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTupInserted.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTupInserted.EnabledAttributes, metadata.PostgresqlTupInsertedMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTupReturned.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTupReturned.EnabledAttributes, metadata.PostgresqlTupReturnedMetricAttributeKeyDbNamespace)
+	metrics.PostgresqlTupUpdated.EnabledAttributes = filterMetricAttributes(metrics.PostgresqlTupUpdated.EnabledAttributes, metadata.PostgresqlTupUpdatedMetricAttributeKeyDbNamespace)
+
+	return config
+}
+
+func filterMetricAttributes[T comparable](attributes []T, excluded ...T) []T {
+	filtered := make([]T, 0, len(attributes))
+	for _, attr := range attributes {
+		keep := true
+		for _, excludedAttr := range excluded {
+			if attr == excludedAttr {
+				keep = false
+				break
+			}
+		}
+		if keep {
+			filtered = append(filtered, attr)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
 }
 
 type dbRetrieval struct {
