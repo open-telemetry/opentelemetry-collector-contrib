@@ -25,6 +25,7 @@ exclude_metrics:
 # Metrics in OpenTelemetry Convention.
 
 # CPU Metrics.
+- metric_name: system.cpu.logical.count
 - metric_name: system.cpu.time
   dimensions:
     state: [idle, interrupt, nice, softirq, steal, system, user, wait]
