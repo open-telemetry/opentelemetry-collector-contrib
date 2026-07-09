@@ -276,15 +276,22 @@ additional scrape metadata metrics are emitted as described in the same Promethe
 documentation.
 
 ## Prometheus API Server
-The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+The Prometheus API server hosts information about active targets, service discovery, metrics, and the rendered Prometheus config. Set `api_server.enabled: true` to expose these debugging endpoints. The server is disabled by default.
 
-```
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `false` | Whether the API server is enabled. |
+| `max_connections` | int | `512` | Maximum number of simultaneous HTTP connections the server accepts. |
+| `server_config` | [confighttp.ServerConfig](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp) | endpoint: `127.0.0.1:9090`, read_timeout: `10m` | HTTP server settings including endpoint, TLS, CORS, and timeouts. |
+
+```yaml
 receivers:
   prometheus:
     api_server:
       enabled: true
+      max_connections: 512
       server_config:
-        endpoint: "localhost:9090"
+        endpoint: "127.0.0.1:9090"
 ```
 
 The API server hosts the same paths as the Prometheus agent-mode API. These include:
@@ -295,7 +302,6 @@ The API server hosts the same paths as the Prometheus agent-mode API. These incl
 - /metrics
 
 More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
-
 
 ## Feature gates
 

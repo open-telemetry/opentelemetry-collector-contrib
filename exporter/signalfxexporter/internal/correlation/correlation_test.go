@@ -45,6 +45,17 @@ func TestTrackerAddSpans(t *testing.T) {
 }
 
 func TestTrackerStart(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "localhost:9090"
+	clientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
 	tests := []struct {
 		name    string
 		config  *Config
@@ -54,14 +65,7 @@ func TestTrackerStart(t *testing.T) {
 		{
 			name: "invalid http client settings fails",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "localhost:9090",
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				},
+				ClientConfig: clientConfig,
 			},
 			wantErr: true,
 			errMsg:  "failed to create correlation API client: failed to load TLS config",

@@ -138,7 +138,7 @@ resourceMetrics:
                   startTimeUnixNano: "1679438452495397400"
                   timeUnixNano: "1679438452496922500"
             name: sqlserver.transaction_log.flush.data.rate
-            unit: By/s
+            unit: 'By/s'
           - description: Number of log flushes.
             gauge:
               dataPoints:

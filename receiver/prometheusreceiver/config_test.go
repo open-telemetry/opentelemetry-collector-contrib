@@ -429,18 +429,8 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.True(t, r0.APIServer.Enabled)
-	assert.NotNil(t, r0.APIServer.ServerConfig)
+	require.True(t, r0.APIServer.Enabled)
 	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
-
-	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
-	require.NoError(t, err)
-	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
-
-	r1 := cfg.(*Config)
-	assert.False(t, r1.APIServer.Enabled)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
 	require.NoError(t, err)
@@ -448,15 +438,43 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.PrometheusConfig)
+	assert.False(t, r1.APIServer.Enabled)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIUsingDefaults").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
 	r2 := cfg.(*Config)
-	assert.NotNil(t, r2.PrometheusConfig)
 	assert.False(t, r2.APIServer.Enabled)
+	assert.Equal(t, "127.0.0.1:9090", r2.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
+	require.Error(t, sub.Unmarshal(cfg))
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.Error(t, xconfmap.Validate(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r4 := cfg.(*Config)
+	require.True(t, r4.APIServer.Enabled, "api_server with enabled: true should be enabled")
+	assert.Equal(t, "localhost:9090", r4.APIServer.ServerConfig.NetAddr.Endpoint)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r5 := cfg.(*Config)
+	assert.False(t, r5.APIServer.Enabled, "api_server with enabled: false should not be enabled")
 }
 
 func TestReloadPromConfigSecretHandling(t *testing.T) {

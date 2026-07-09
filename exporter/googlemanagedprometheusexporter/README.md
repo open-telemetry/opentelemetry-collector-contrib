@@ -313,8 +313,8 @@ using the `debug` exporter with `detailed` verbosity:
 processors:
   filter:
     error_mode: ignore
-    metrics:
-      - name != "problematic.metric.name"
+    metric_conditions:
+      - metric.name != "problematic.metric.name"
 exporters:
   debug:
     verbosity: detailed

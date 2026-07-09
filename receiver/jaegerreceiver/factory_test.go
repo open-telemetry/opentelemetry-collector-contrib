@@ -121,18 +121,23 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  "0.0.0.0:14268",
-			Transport: confignet.TransportTypeTCP,
+	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	thriftHTTPServerConfig.WriteTimeout = 0
+	thriftHTTPServerConfig.ReadHeaderTimeout = 0
+	thriftHTTPServerConfig.IdleTimeout = 0
+	thriftHTTPServerConfig.KeepAlivesEnabled = false
+	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "0.0.0.0:14268",
+		Transport: confignet.TransportTypeTCP,
+	}
+	thriftHTTPServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "./testdata/server.crt",
+			KeyFile:  "./testdata/server.key",
 		},
-		TLS: configoptional.Some(configtls.ServerConfig{
-			Config: configtls.Config{
-				CertFile: "./testdata/server.crt",
-				KeyFile:  "./testdata/server.key",
-			},
-		}),
 	})
+	cfg.(*Config).ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 
 	set := receivertest.NewNopSettings(metadata.Type)
 

@@ -44,11 +44,16 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = netAddr
+	serverConfig.MaxRequestBodySize = defaultMaxRequestBodySize
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr:            netAddr,
-			MaxRequestBodySize: defaultMaxRequestBodySize,
-		},
+		ServerConfig:               serverConfig,
 		Path:                       defaultPath,
 		HealthPath:                 defaultHealthPath,
 		ReadTimeout:                defaultReadTimeout,

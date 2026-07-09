@@ -36,9 +36,11 @@ import (
 func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
+	cfg.Metrics.SqlserverAccessScanRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
+	cfg.Metrics.SqlserverConnectionResetRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
@@ -49,16 +51,24 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
+	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
+	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
 	cfg.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
 	cfg.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
+	cfg.Metrics.SqlserverLockBlockCount.Enabled = enabled
+	cfg.Metrics.SqlserverLockEscalationRate.Enabled = enabled
+	cfg.Metrics.SqlserverLockMemory.Enabled = enabled
+	cfg.Metrics.SqlserverLockRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitTimeTotal.Enabled = enabled
 	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
 	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryArea.Enabled = enabled
@@ -67,6 +77,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverMemoryPageCount.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
+	cfg.Metrics.SqlserverPageAllocationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageCompressionRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
 	cfg.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
@@ -74,12 +86,14 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
 	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageOperationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
 	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
 	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
 	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverScanPointRevalidationRate.Enabled = enabled
 	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
 	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
 	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
@@ -96,6 +110,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
+	cfg.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled

@@ -100,7 +100,7 @@ func (c *Config) Validate() error {
 		}
 
 		switch item.Context {
-		case "", "resource", "span", "metric", "datapoint", "log": // ok
+		case "", "resource", "span", "metric", "datapoint", "log", "otelcol": // ok
 		case "request":
 			if item.Statement != "" || item.Condition == "" {
 				return fmt.Errorf("%q context requires a 'condition'", item.Context)
@@ -117,8 +117,8 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
-	// One of "request", "resource", "log", "span", "metric", "datapoint".
-	// Optional. Default "resource".
+	// One of "request" (deprecated), "resource", "log", "span", "metric", "datapoint", "otelcol".
+	// Optional. Default is inferred from the condition/statement paths.
 	Context string `mapstructure:"context"`
 
 	// Statement is an OTTL statement used for making a routing decision.

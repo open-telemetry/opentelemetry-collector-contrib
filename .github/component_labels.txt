@@ -184,6 +184,7 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/drainprocessor processor/drain
+processor/dynamicsamplingprocessor processor/dynamicsampling
 processor/filterprocessor processor/filter
 processor/genainormalizerprocessor processor/genainormalizer
 processor/geoipprocessor processor/geoip

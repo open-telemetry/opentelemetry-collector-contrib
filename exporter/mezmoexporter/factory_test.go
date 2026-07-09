@@ -36,18 +36,20 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.MaxIdleConns = defaultMaxIdleConns
+	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
+	clientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.ForceAttemptHTTP2 = true
+
 	assert.Equal(t, &Config{
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:             5 * time.Second,
-			MaxIdleConns:        defaultMaxIdleConns,
-			MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-			MaxConnsPerHost:     defaultMaxConnsPerHost,
-			IdleConnTimeout:     defaultIdleConnTimeout,
-			ForceAttemptHTTP2:   true,
-		},
+		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}, cfg)

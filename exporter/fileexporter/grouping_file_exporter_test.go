@@ -402,6 +402,18 @@ func TestFullPath(t *testing.T) {
 		{prefix: "/dir", pathSegment: "dirsuffix/../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
 		{prefix: "/dir", pathSegment: "dirsuffix/../../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
 		{prefix: "/dir", pathSegment: "dirsuffix/../../etc/attack", suffix: ".json", want: "/dir/etc/attack.json"},
+		{prefix: "/dir", pathSegment: "..\\etc\\attack", suffix: ".json", want: func() string {
+			if filepath.Separator == '\\' {
+				return "/dir/etc/attack.json"
+			}
+			return "/dir..\\etc\\attack.json"
+		}()},
+		{prefix: "/dir", pathSegment: "dirsuffix\\..\\..\\etc\\attack", suffix: ".json", want: func() string {
+			if filepath.Separator == '\\' {
+				return "/dir/etc/attack.json"
+			}
+			return "/dirdirsuffix\\..\\..\\etc\\attack.json"
+		}()},
 	}
 
 	for _, tc := range tests {
@@ -549,7 +561,7 @@ func TestGroupingFileExporterWithRotation(t *testing.T) {
 	require.NoError(t, gfe.consumeTraces(t.Context(), td))
 
 	gfe.mutex.Lock()
-	writer, ok := gfe.writers.Get(tmpDir + "/test-service.log")
+	writer, ok := gfe.writers.Get(filepath.ToSlash(tmpDir + "/test-service.log"))
 	gfe.mutex.Unlock()
 
 	require.True(t, ok, "Writer should exist")

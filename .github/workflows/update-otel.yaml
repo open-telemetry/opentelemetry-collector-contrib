@@ -23,6 +23,10 @@ jobs:
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
+      # Disable git's automatic maintenance to avoid go-git issues.
+      # Workaround for https://github.com/go-git/go-git/issues/2242
+      - name: Disable git auto maintenance
+        run: git config --global maintenance.auto false
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:

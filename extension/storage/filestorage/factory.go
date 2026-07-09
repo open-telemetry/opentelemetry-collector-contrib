@@ -48,6 +48,7 @@ func createDefaultConfig() component.Config {
 			CleanupOnStart:             false,
 		},
 		Timeout:              time.Second,
+		MaxSize:              0,
 		FSync:                false,
 		CreateDirectory:      false,
 		DirectoryPermissions: "0750",

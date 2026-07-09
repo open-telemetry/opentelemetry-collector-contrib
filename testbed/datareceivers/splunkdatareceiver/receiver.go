@@ -35,13 +35,18 @@ func NewSplunkHECDataReceiver(port int) *SplunkHECDataReceiver {
 
 // Start the receiver.
 func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),
+	}
 	config := splunkhecreceiver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()

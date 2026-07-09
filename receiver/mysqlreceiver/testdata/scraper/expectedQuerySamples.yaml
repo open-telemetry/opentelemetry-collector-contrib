@@ -4,6 +4,9 @@ resourceLogs:
         - key: mysql.instance.endpoint
           value:
             stringValue: localhost:3306
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
     scopeLogs:
       - logRecords:
           - attributes:

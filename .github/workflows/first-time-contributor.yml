@@ -10,33 +10,14 @@ permissions: read-all
 jobs:
   welcome_first_contributor:
     permissions:
-      pull-requests: write
-    runs-on: ubuntu-latest
-    if: github.event.action == 'opened' && github.repository_owner == 'open-telemetry' && (github.event.pull_request.author_association == 'NONE' || github.event.label.name == 'first-contrib-test')
-    steps:
-      - run: gh pr edit "$NUMBER" --add-label "$LABELS"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.pull_request.number }}
-          LABELS: 'first-time contributor'
-
-      - name: Comment on PR
-        uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b # v1.0.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            Welcome, contributor! Thank you for your contribution to opentelemetry-collector-contrib.
-
-            **Important reminders:**
-            - Read our [Contributing Guidelines](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md).
-            - Sign the [CLA](https://identity.linuxfoundation.org/projects/cncf) if you haven't already.
-            - First-time contributors should have **at most one PR not marked as draft until their first PR is merged**.
-            - If your change isn't one of our [priority components](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130), reviews may take more time.
-            - Give reviewers at least a few days before pinging them for feedback.
-            - If you need help or struggle to move your PR forward:
-              - Ask questions regarding general setup, development process, or contributor etiquette in [#opentelemetry-new-contributors](https://cloud-native.slack.com/archives/C09H3MNMBQV).
-              - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
+      pull-requests: write # required by the workflow to post the welcome comment
+    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@a4036f5b7201b7f6dc609cc7200d0648a254413b # v0.1.1
+    with:
+      label: 'first-time contributor'
+      custom_message: |
+        - First-time contributors should have **at most one PR not marked as draft until their first PR is merged**.
+        - If your change isn't one of our [priority components](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130), reviews may take more time.
+        - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
     runs-on: ubuntu-latest

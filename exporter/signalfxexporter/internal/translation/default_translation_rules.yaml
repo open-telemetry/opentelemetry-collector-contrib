@@ -91,12 +91,7 @@ translation_rules:
 # compute cpu.num_processors
 - action: copy_metrics
   mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.num_processors
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.num_processors
-  aggregation_method: count
-  without_dimensions:
-  - cpu
+    system.cpu.logical.count: sf_temp.cpu.num_processors
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle

@@ -171,6 +171,147 @@ func TestStatus(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
+	serverConfig1 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig1.WriteTimeout = 0
+	serverConfig1.ReadHeaderTimeout = 0
+	serverConfig1.IdleTimeout = 0
+	serverConfig1.KeepAlivesEnabled = false
+	serverConfig1.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig2 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig2.WriteTimeout = 0
+	serverConfig2.ReadHeaderTimeout = 0
+	serverConfig2.IdleTimeout = 0
+	serverConfig2.KeepAlivesEnabled = false
+	serverConfig2.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig3 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig3.WriteTimeout = 0
+	serverConfig3.ReadHeaderTimeout = 0
+	serverConfig3.IdleTimeout = 0
+	serverConfig3.KeepAlivesEnabled = false
+	serverConfig3.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig4 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig4.WriteTimeout = 0
+	serverConfig4.ReadHeaderTimeout = 0
+	serverConfig4.IdleTimeout = 0
+	serverConfig4.KeepAlivesEnabled = false
+	serverConfig4.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig5 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig5.WriteTimeout = 0
+	serverConfig5.ReadHeaderTimeout = 0
+	serverConfig5.IdleTimeout = 0
+	serverConfig5.KeepAlivesEnabled = false
+	serverConfig5.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig6 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig6.WriteTimeout = 0
+	serverConfig6.ReadHeaderTimeout = 0
+	serverConfig6.IdleTimeout = 0
+	serverConfig6.KeepAlivesEnabled = false
+	serverConfig6.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig7 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig7.WriteTimeout = 0
+	serverConfig7.ReadHeaderTimeout = 0
+	serverConfig7.IdleTimeout = 0
+	serverConfig7.KeepAlivesEnabled = false
+	serverConfig7.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig8 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig8.WriteTimeout = 0
+	serverConfig8.ReadHeaderTimeout = 0
+	serverConfig8.IdleTimeout = 0
+	serverConfig8.KeepAlivesEnabled = false
+	serverConfig8.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig9 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig9.WriteTimeout = 0
+	serverConfig9.ReadHeaderTimeout = 0
+	serverConfig9.IdleTimeout = 0
+	serverConfig9.KeepAlivesEnabled = false
+	serverConfig9.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig10 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig10.WriteTimeout = 0
+	serverConfig10.ReadHeaderTimeout = 0
+	serverConfig10.IdleTimeout = 0
+	serverConfig10.KeepAlivesEnabled = false
+	serverConfig10.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig11 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig11.WriteTimeout = 0
+	serverConfig11.ReadHeaderTimeout = 0
+	serverConfig11.IdleTimeout = 0
+	serverConfig11.KeepAlivesEnabled = false
+	serverConfig11.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig12 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig12.WriteTimeout = 0
+	serverConfig12.ReadHeaderTimeout = 0
+	serverConfig12.IdleTimeout = 0
+	serverConfig12.KeepAlivesEnabled = false
+	serverConfig12.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig13 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig13.WriteTimeout = 0
+	serverConfig13.ReadHeaderTimeout = 0
+	serverConfig13.IdleTimeout = 0
+	serverConfig13.KeepAlivesEnabled = false
+	serverConfig13.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfig14 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig14.WriteTimeout = 0
+	serverConfig14.ReadHeaderTimeout = 0
+	serverConfig14.IdleTimeout = 0
+	serverConfig14.KeepAlivesEnabled = false
+	serverConfig14.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+
 	tests := []struct {
 		name                  string
 		config                *Config
@@ -182,13 +323,8 @@ func TestStatus(t *testing.T) {
 			name:         "exclude recoverable and permanent errors",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig1,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -402,13 +538,8 @@ func TestStatus(t *testing.T) {
 			name:         "exclude recoverable and permanent errors - verbose",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig2,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -827,13 +958,8 @@ func TestStatus(t *testing.T) {
 			name:         "include recoverable and exclude permanent errors",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig3,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -1054,13 +1180,8 @@ func TestStatus(t *testing.T) {
 			name:         "include recoverable and exclude permanent errors - verbose",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig4,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -1423,13 +1544,8 @@ func TestStatus(t *testing.T) {
 			name:         "include permanent and exclude recoverable errors",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig5,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -1647,13 +1763,8 @@ func TestStatus(t *testing.T) {
 			name:         "include permanent and exclude recoverable errors - verbose",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig6,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2014,13 +2125,8 @@ func TestStatus(t *testing.T) {
 			name:         "include permanent and recoverable errors",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig7,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2241,13 +2347,8 @@ func TestStatus(t *testing.T) {
 			name:         "include permanent and recoverable errors - verbose",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig8,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2610,13 +2711,8 @@ func TestStatus(t *testing.T) {
 			name:         "pipeline nonexistent",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig9,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2640,13 +2736,8 @@ func TestStatus(t *testing.T) {
 			name:         "verbose explicitly false",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig10,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2677,13 +2768,8 @@ func TestStatus(t *testing.T) {
 			name:         "verbose explicitly true",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig11,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
@@ -2726,13 +2812,8 @@ func TestStatus(t *testing.T) {
 			name:         "status disabled",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Config: PathConfig{Enabled: false},
+				ServerConfig: serverConfig12,
+				Config:       PathConfig{Enabled: false},
 				Status: PathConfig{
 					Enabled: false,
 				},
@@ -2746,13 +2827,8 @@ func TestStatus(t *testing.T) {
 		{
 			name: "legacy - default response",
 			legacyConfig: LegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Path: "/status",
+				ServerConfig: serverConfig13,
+				Path:         "/status",
 			},
 			teststeps: []teststep{
 				{
@@ -2868,12 +2944,7 @@ func TestStatus(t *testing.T) {
 		{
 			name: "legacy - custom response",
 			legacyConfig: LegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
+				ServerConfig: serverConfig14,
 				Path:         "/status",
 				ResponseBody: &ResponseBodyConfig{Healthy: "ALL OK", Unhealthy: "NOT OK"},
 			},
@@ -3150,6 +3221,37 @@ func TestConfig(t *testing.T) {
 	confJSON, err := os.ReadFile(filepath.Clean(filepath.Join("testdata", "config.json")))
 	require.NoError(t, err)
 
+	tcServerConfig1 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tcServerConfig1.WriteTimeout = 0
+	tcServerConfig1.ReadHeaderTimeout = 0
+	tcServerConfig1.IdleTimeout = 0
+	tcServerConfig1.KeepAlivesEnabled = false
+	tcServerConfig1.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	tcServerConfig2 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tcServerConfig2.WriteTimeout = 0
+	tcServerConfig2.ReadHeaderTimeout = 0
+	tcServerConfig2.IdleTimeout = 0
+	tcServerConfig2.KeepAlivesEnabled = false
+	tcServerConfig2.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	tcServerConfig3 := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tcServerConfig3.WriteTimeout = 0
+	tcServerConfig3.ReadHeaderTimeout = 0
+	tcServerConfig3.IdleTimeout = 0
+	tcServerConfig3.KeepAlivesEnabled = false
+	tcServerConfig3.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+
 	for _, tc := range []struct {
 		name               string
 		config             *Config
@@ -3160,12 +3262,7 @@ func TestConfig(t *testing.T) {
 		{
 			name: "config not notified",
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
+				ServerConfig: tcServerConfig1,
 				Config: PathConfig{
 					Enabled: true,
 					Path:    "/config",
@@ -3180,12 +3277,7 @@ func TestConfig(t *testing.T) {
 		{
 			name: "config notified",
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
+				ServerConfig: tcServerConfig2,
 				Config: PathConfig{
 					Enabled: true,
 					Path:    "/config",
@@ -3203,12 +3295,7 @@ func TestConfig(t *testing.T) {
 		{
 			name: "config disabled",
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
+				ServerConfig: tcServerConfig3,
 				Config: PathConfig{
 					Enabled: false,
 				},
@@ -3282,14 +3369,19 @@ func TestStatusIncludesAttributesWhenEnabled(t *testing.T) {
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  testutil.GetAvailableLocalAddress(t),
-			},
-		},
-		Config: PathConfig{Enabled: false},
+		ServerConfig: serverConfig,
+		Config:       PathConfig{Enabled: false},
 		Status: PathConfig{
 			Enabled:           true,
 			Path:              "/status",
@@ -3376,14 +3468,19 @@ func TestStatusNonVerboseIncludesAttributes(t *testing.T) {
 
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  testutil.GetAvailableLocalAddress(t),
-			},
-		},
-		Config: PathConfig{Enabled: false},
+		ServerConfig: serverConfig,
+		Config:       PathConfig{Enabled: false},
 		Status: PathConfig{
 			Enabled:           true,
 			Path:              "/status",
@@ -3454,14 +3551,19 @@ func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
 
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  testutil.GetAvailableLocalAddress(t),
-			},
-		},
-		Config: PathConfig{Enabled: false},
+		ServerConfig: serverConfig,
+		Config:       PathConfig{Enabled: false},
 		Status: PathConfig{
 			Enabled:           true,
 			Path:              "/status",

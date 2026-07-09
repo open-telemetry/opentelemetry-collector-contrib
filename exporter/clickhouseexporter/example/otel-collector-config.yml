@@ -6,9 +6,6 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
 processors:
-  batch:
-    send_batch_size: 100000
-    timeout: 5s
   memory_limiter:
     check_interval: 2s
     limit_mib: 1800
@@ -31,7 +28,13 @@ exporters:
     ttl: 12h
     timeout: 10s
     sending_queue:
-      queue_size: 100
+      queue_size: 1000
+      # Batch inserts inside the exporter's sending queue instead of using the
+      # standalone `batch` processor. ClickHouse performs best with large inserts.
+      # `num_consumers` still controls how many inserts run concurrently.
+      batch:
+        min_size: 5000       # rows per INSERT (items sizer); tune to your workload
+        flush_timeout: 5s    # flush a partial batch after this delay
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -49,9 +52,9 @@ service:
   pipelines:
     logs:
       receivers: [ fluentforward, otlp ]
-      processors: [ memory_limiter, resource_detection/system, resource, batch ]
+      processors: [ memory_limiter, resource_detection/system, resource ]
       exporters: [ clickhouse ]
     traces:
       receivers: [ otlp ]
-      processors: [ memory_limiter, resource_detection/system, resource, batch ]
+      processors: [ memory_limiter, resource_detection/system, resource ]
       exporters: [ clickhouse ]

@@ -10,12 +10,14 @@ import (
 	_ "github.com/prometheus/prometheus/plugins" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
 // NewFactory creates a new Prometheus receiver factory.
@@ -27,18 +29,19 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
+	taClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	taClientConfig.MaxIdleConns = 0
+	taClientConfig.IdleConnTimeout = 0
+	taClientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		PrometheusConfig: &PromConfig{
 			GlobalConfig: promconfig.DefaultGlobalConfig,
 		},
-		APIServer: APIServer{
-			Enabled: false,
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: netAddr,
-			},
-		},
+		TargetAllocator: configoptional.Default(targetallocator.Config{
+			ClientConfig: taClientConfig,
+		}),
+		APIServer: apiserver.DefaultConfig(),
 	}
 }
 

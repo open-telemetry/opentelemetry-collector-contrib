@@ -38,6 +38,7 @@ import (
 
 var allMetrics = []string{
 	"system.cpu.time",
+	"system.cpu.logical.count",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
 	"system.cpu.load_average.15m",

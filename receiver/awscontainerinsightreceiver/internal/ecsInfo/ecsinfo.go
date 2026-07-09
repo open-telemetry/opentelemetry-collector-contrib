@@ -80,9 +80,12 @@ type ecsInfoOption func(*EcsInfo)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
 func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
-	setting := confighttp.ClientConfig{
-		Timeout: defaultTimeout,
-	}
+	setting := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	setting.MaxIdleConns = 0
+	setting.IdleConnTimeout = 0
+	setting.ForceAttemptHTTP2 = false
+	setting.Timeout = defaultTimeout
 	ctx, cancel := context.WithCancel(context.Background())
 
 	client, err := setting.ToClient(ctx, host.GetExtensions(), settings)

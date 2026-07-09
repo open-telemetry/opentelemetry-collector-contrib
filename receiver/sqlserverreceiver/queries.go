@@ -137,13 +137,27 @@ SELECT DISTINCT
 			,'Number of SuperLatches'
 			,'SuperLatch Promotions/sec'
 			,'SuperLatch Demotions/sec'
+			,'Extent Deallocations/sec'
+			,'Extents Allocated/sec'
+			,'FreeSpace Scans/sec'
 			,'Full Scans/sec'
 			,'Index Searches/sec'
+			,'Mixed page allocations/sec'
+			,'Page Compression Attempts/sec'
+			,'Page Deallocations/sec'
 			,'Page Splits/sec'
 			,'Page lookups/sec'
 			,'Page reads/sec'
 			,'Page writes/sec'
+			,'Pages Allocated/sec'
+			,'Pages Compressed/sec'
+			,'Probe Scans/sec'
+			,'Range Scans/sec'
 			,'Readahead pages/sec'
+			,'Scan Point Revalidations/sec'
+			,'Skipped Ghosted Records/sec'
+			,'Worktables From Cache Base'
+			,'Worktables From Cache Ratio'
 			,'Lazy writes/sec'
 			,'Checkpoint pages/sec'
 			,'Table Lock Escalations/sec'
@@ -186,6 +200,12 @@ SELECT DISTINCT
 			,'Log Flushes/sec'
 			,'Log Flush Wait Time'
 			,'Memory broker clerk size'
+			,'Lock Memory (KB)'
+			,'Lock Blocks'
+			,'Lock Blocks Allocated'
+			,'Lock Owner Blocks'
+			,'Lock Owner Blocks Allocated'
+			,'Connection Reset/sec'
 			,'Log Bytes Flushed/sec'
 			,'Bytes Sent to Replica/sec'
 			,'Log Send Queue'
@@ -248,6 +268,8 @@ SELECT DISTINCT
 				,'Number of Deadlocks/sec'
 				,'Lock Waits/sec'
 				,'Latch Waits/sec'
+				,'Lock Requests/sec'
+				,'Lock Wait Time (ms)'
 			)
 		)
 )
@@ -298,6 +320,7 @@ LEFT OUTER JOIN @PCounters AS pc1
 	ON (
 		pc.[counter_name] = REPLACE(pc1.[counter_name],' base','')
 		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' (ms)')
+		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' Ratio')
 	)
 	AND pc.[object_name] = pc1.[object_name]
 	AND pc.[instance_name] = pc1.[instance_name]

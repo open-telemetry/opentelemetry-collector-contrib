@@ -7,6 +7,8 @@ mongodb:
   auth_source: admin
   auth_mechanism_properties:
     SERVICE_NAME: mongodb
+  query_sample_collection:
+    max_rows_per_query: 42
   collection_interval: 60s
 
 mongodb/srv:

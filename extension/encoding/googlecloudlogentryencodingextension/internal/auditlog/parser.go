@@ -11,9 +11,9 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
 
@@ -248,12 +248,15 @@ func handleStatus(s *status, attr pcommon.Map) {
 	if s == nil {
 		return
 	}
-	// TODO: Remove the old attribute in the future.
 	if s.Code != nil {
-		shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
+		if !metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+			shared.PutInt("rpc.jsonrpc.error_code", s.Code, attr)
+		}
 		shared.PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.FormatInt(*s.Code, 10), attr)
 	}
-	shared.PutStr(string(conventionsv138.RPCJSONRPCErrorMessageKey), s.Message, attr)
+	if !metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
+		shared.PutStr("rpc.jsonrpc.error_message", s.Message, attr)
+	}
 }
 
 func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {

@@ -31,23 +31,28 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8080",
+	}
+	serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "test.crt",
+			KeyFile:  "test.key",
+		},
+	})
+	serverConfig.CORS = configoptional.Some(confighttp.CORSConfig{
+		AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
+		MaxAge:         7200,
+	})
 	assert.Equal(t,
 		&Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  "localhost:8080",
-				},
-				TLS: configoptional.Some(configtls.ServerConfig{
-					Config: configtls.Config{
-						CertFile: "test.crt",
-						KeyFile:  "test.key",
-					},
-				}),
-				CORS: configoptional.Some(confighttp.CORSConfig{
-					AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
-					MaxAge:         7200,
-				}),
-			},
+			ServerConfig: serverConfig,
 		}, cfg)
 }

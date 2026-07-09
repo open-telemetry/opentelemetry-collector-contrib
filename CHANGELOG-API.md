@@ -7,6 +7,35 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.156.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: handle breaking change in pdata/pprofile (#49373)
+- `pkg/ottl`: Switch `LambdaExpression` arguments to be pointers. (#49420)
+  These values are intended to be mutable and are passed by reference in normal use,
+  so this keeps symmetry between the argument declaration and their use by the function.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.NewTestingLambdaExpression` and internal helpers for implementing lambda-based OTTL functions. (#49180)
+  Adds `ottl.NewTestingLambdaExpression`, a test helper that builds a `LambdaExpression`
+  with a custom value body. The callback receives `resolveBinding func(string) any` to
+  read formal parameters from the active local scope during evaluation.
+  
+  Also introduces internal helpers to support lambda-based OTTL functions:
+  - `funcutil.GetSliceOrMapValue` coerces a getter result to `pcommon.Slice` or `pcommon.Map`.
+  - `funcutil.EvaluateBiFunction` and `funcutil.EvaluateBiPredicate` bind two positional
+    arguments, normalize them, and evaluate a `LambdaActivation`.
+  - `ottlcommon.NormalizeValue` converts values, including `pcommon.Value`, into types
+    used by OTTL comparisons.
+  
+- `pkg/ottl`: Add `String()` method to `ottl.Statement`, `ottl.Condition`, and `ottl.ValueExpression` that return the original OTTL text used during parsing. (#49415)
+- `processor/transform`: Add `exemplar` context support to the transform processor, allowing `metric_statements` to read and modify exemplar fields on metric datapoints. (#49022)
+
+<!-- previous-version -->
+
 ## v0.155.0
 
 ### 💡 Enhancements 💡

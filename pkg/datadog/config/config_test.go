@@ -34,6 +34,42 @@ func TestValidate(t *testing.T) {
 	assert.NoError(t, err)
 	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
 
+	tlsClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	tlsClientConfig.MaxIdleConns = 0
+	tlsClientConfig.IdleConnTimeout = 0
+	tlsClientConfig.ForceAttemptHTTP2 = false
+	tlsClientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true,
+	}
+
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpClientConfig.ForceAttemptHTTP2 = false
+	httpClientConfig.ReadBufferSize = 100
+	httpClientConfig.WriteBufferSize = 200
+	httpClientConfig.Timeout = 10 * time.Second
+	httpClientConfig.IdleConnTimeout = idleConnTimeout
+	httpClientConfig.MaxIdleConns = maxIdleConn
+	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost
+	httpClientConfig.MaxConnsPerHost = maxConnPerHost
+	httpClientConfig.DisableKeepAlives = true
+	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+
+	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	unsupportedClientConfig.MaxIdleConns = 0
+	unsupportedClientConfig.IdleConnTimeout = 0
+	unsupportedClientConfig.ForceAttemptHTTP2 = false
+	unsupportedClientConfig.Endpoint = "endpoint"
+	unsupportedClientConfig.Compression = "gzip"
+	unsupportedClientConfig.Auth = someAuth
+	unsupportedClientConfig.Headers = configopaque.MapList{
+		{Name: "key", Value: "val"},
+	}
+	unsupportedClientConfig.HTTP2ReadIdleTimeout = 250
+	unsupportedClientConfig.HTTP2PingTimeout = 200
+
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -127,12 +163,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS settings are valid",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					TLS: configtls.ClientConfig{
-						InsecureSkipVerify: true,
-					},
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: tlsClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
@@ -159,18 +191,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					ReadBufferSize:      100,
-					WriteBufferSize:     200,
-					Timeout:             10 * time.Second,
-					IdleConnTimeout:     idleConnTimeout,
-					MaxIdleConns:        maxIdleConn,
-					MaxIdleConnsPerHost: maxIdleConnPerHost,
-					MaxConnsPerHost:     maxConnPerHost,
-					DisableKeepAlives:   true,
-					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: httpClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
@@ -178,17 +200,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "unsupported confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    "endpoint",
-					Compression: "gzip",
-					Auth:        someAuth,
-					Headers: configopaque.MapList{
-						{Name: "key", Value: "val"},
-					},
-					HTTP2ReadIdleTimeout: 250,
-					HTTP2PingTimeout:     200,
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: unsupportedClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, headers, http2_read_idle_timeout, http2_ping_timeout",

@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -1115,7 +1116,10 @@ type mockPolicyEvaluator struct {
 	evaluationCount int
 }
 
-var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
+var (
+	_ samplingpolicy.Evaluator          = (*mockPolicyEvaluator)(nil)
+	_ samplingpolicy.ThresholdEvaluator = (*mockPolicyEvaluator)(nil)
+)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.mu.Lock()
@@ -1123,6 +1127,11 @@ func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampli
 
 	m.evaluationCount++
 	return m.nextDecision, m.nextError
+}
+
+func (m *mockPolicyEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
+	d, err := m.Evaluate(ctx, traceID, trace)
+	return d, pkgsampling.AlwaysSampleThreshold, err
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {

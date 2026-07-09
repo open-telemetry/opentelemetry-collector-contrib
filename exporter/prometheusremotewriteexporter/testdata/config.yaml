@@ -77,3 +77,7 @@ prometheus_remote_write/v1_no_translation:
   endpoint: "localhost:8888"
   protobuf_message: "prometheus.WriteRequest"
   translation_strategy: "NoTranslation"
+
+prometheus_remote_write/negative_max_batch_size_bytes:
+  endpoint: "localhost:8888"
+  max_batch_size_bytes: -1

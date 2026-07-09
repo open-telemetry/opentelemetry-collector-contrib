@@ -163,30 +163,25 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			// pprof.Sample.label - this field is split into string and numeric labels.
 			for lk, lv := range sample.Label {
 				if len(lv) != 1 {
-					return nil, fmt.Errorf("labels with multiple values (%d) are not supported: %w",
-						len(lv), errPprofInvalid)
+					return nil, fmt.Errorf("labels with multiple values (%d) are not supported", len(lv))
 				}
-				var idx int32
-				lu, exist := sample.NumUnit[lk]
-				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
-				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
-				}
+				idx := lts.getIdxForAttribute(lk, lv[0])
 				s.AttributeIndices().Append(idx)
 			}
 
 			for lk, lv := range sample.NumLabel {
 				if len(lv) != 1 {
-					return nil, fmt.Errorf("invalid length of numeric label value %d: %w",
-						len(lv), errPprofInvalid)
+					return nil, fmt.Errorf("numeric labels with multiple values (%d) are not supported", len(lv))
 				}
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
 				if !exist {
-					idx = lts.getIdxForAttribute(lk, lv)
+					idx = lts.getIdxForAttribute(lk, lv[0])
 				} else {
-					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv)
+					if len(lu) != 1 {
+						return nil, fmt.Errorf("numeric units with multiple values (%d) are not supported", len(lu))
+					}
+					idx = lts.getIdxForAttributeWithUnit(lk, lu[0], lv[0])
 				}
 				s.AttributeIndices().Append(idx)
 			}

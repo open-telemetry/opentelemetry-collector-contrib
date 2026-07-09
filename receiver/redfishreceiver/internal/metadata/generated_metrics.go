@@ -1050,7 +1050,7 @@ type metricTemperatureReading struct {
 func (m *metricTemperatureReading) init() {
 	m.data.SetName("temperature.reading")
 	m.data.SetDescription("Measures the reading of a chassis temperature.")
-	m.data.SetUnit("°C")
+	m.data.SetUnit("Cel")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]

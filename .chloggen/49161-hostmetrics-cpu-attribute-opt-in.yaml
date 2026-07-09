@@ -1,0 +1,19 @@
+change_type: breaking
+component: receiver/host_metrics
+note: Make the `cpu` attribute opt-in for hostmetrics CPU time and utilization metrics.
+issues: [49161]
+subtext: |
+  By default, `system.cpu.time` and `system.cpu.utilization` are now aggregated across logical CPUs and no longer include the `cpu` attribute.
+  To restore the previous per-logical-CPU output, configure:
+  ```yaml
+  receivers:
+    hostmetrics:
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.time:
+              attributes: [cpu, state]
+            system.cpu.utilization:
+              attributes: [cpu, state]
+  ```
+change_logs: [user]

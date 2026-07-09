@@ -57,14 +57,19 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0
+	serverConfig.KeepAlivesEnabled = false
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8787",
+	}
 	exporterCfg := &Config{
-		Namespace: "test",
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:8787",
-			},
-		},
+		Namespace:        "test",
+		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}

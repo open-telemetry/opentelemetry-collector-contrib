@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
@@ -44,11 +44,10 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 		RandomizationFactor: backoff.DefaultRandomizationFactor,
 		Multiplier:          backoff.DefaultMultiplier,
 		MaxInterval:         r.cfg.MaxInterval,
-		MaxElapsedTime:      r.cfg.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
+	maxElapsedTime := r.cfg.MaxElapsedTime
+	backOffStartTime := time.Now()
 	retryNum := int64(0)
 	for {
 		err := fn(ctx)
@@ -63,6 +62,9 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 		}
 
 		backoffDelay := expBackoff.NextBackOff()
+		if maxElapsedTime > 0 && time.Since(backOffStartTime)+backoffDelay > maxElapsedTime {
+			backoffDelay = backoff.Stop
+		}
 		if backoffDelay == backoff.Stop {
 			err = fmt.Errorf("max elapsed time expired %w", err)
 			return retryNum, err

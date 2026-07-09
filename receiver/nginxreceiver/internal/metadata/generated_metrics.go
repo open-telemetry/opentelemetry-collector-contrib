@@ -91,7 +91,7 @@ type metricNginxConnectionsAccepted struct {
 func (m *metricNginxConnectionsAccepted) init() {
 	m.data.SetName("nginx.connections_accepted")
 	m.data.SetDescription("The total number of accepted client connections")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -144,7 +144,7 @@ type metricNginxConnectionsCurrent struct {
 func (m *metricNginxConnectionsCurrent) init() {
 	m.data.SetName("nginx.connections_current")
 	m.data.SetDescription("The current number of nginx connections by state")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -234,7 +234,7 @@ type metricNginxConnectionsHandled struct {
 func (m *metricNginxConnectionsHandled) init() {
 	m.data.SetName("nginx.connections_handled")
 	m.data.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -286,7 +286,7 @@ type metricNginxRequests struct {
 func (m *metricNginxRequests) init() {
 	m.data.SetName("nginx.requests")
 	m.data.SetDescription("Total number of requests made to the server since it started")
-	m.data.SetUnit("requests")
+	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

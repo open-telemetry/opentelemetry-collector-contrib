@@ -50,6 +50,28 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"current":   AttributeConnectionTypeCurrent,
 }
 
+// AttributeDbSystemName specifies the value db.system.name attribute.
+type AttributeDbSystemName int
+
+const (
+	_ AttributeDbSystemName = iota
+	AttributeDbSystemNameMongodb
+)
+
+// String returns the string representation of the AttributeDbSystemName.
+func (av AttributeDbSystemName) String() string {
+	switch av {
+	case AttributeDbSystemNameMongodb:
+		return "mongodb"
+	}
+	return ""
+}
+
+// MapAttributeDbSystemName is a helper map of string to AttributeDbSystemName attribute value.
+var MapAttributeDbSystemName = map[string]AttributeDbSystemName{
+	"mongodb": AttributeDbSystemNameMongodb,
+}
+
 // AttributeLockMode specifies the value lock_mode attribute.
 type AttributeLockMode int
 
@@ -158,6 +180,32 @@ func (av AttributeMemoryType) String() string {
 var MapAttributeMemoryType = map[string]AttributeMemoryType{
 	"resident": AttributeMemoryTypeResident,
 	"virtual":  AttributeMemoryTypeVirtual,
+}
+
+// AttributeMongodbOperationState specifies the value mongodb.operation.state attribute.
+type AttributeMongodbOperationState int
+
+const (
+	_ AttributeMongodbOperationState = iota
+	AttributeMongodbOperationStateActive
+	AttributeMongodbOperationStateWaiting
+)
+
+// String returns the string representation of the AttributeMongodbOperationState.
+func (av AttributeMongodbOperationState) String() string {
+	switch av {
+	case AttributeMongodbOperationStateActive:
+		return "active"
+	case AttributeMongodbOperationStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeMongodbOperationState is a helper map of string to AttributeMongodbOperationState attribute value.
+var MapAttributeMongodbOperationState = map[string]AttributeMongodbOperationState{
+	"active":  AttributeMongodbOperationStateActive,
+	"waiting": AttributeMongodbOperationStateWaiting,
 }
 
 // AttributeOperation specifies the value operation attribute.
@@ -2025,7 +2073,7 @@ type metricMongodbLockAcquireTime struct {
 func (m *metricMongodbLockAcquireTime) init() {
 	m.data.SetName("mongodb.lock.acquire.time")
 	m.data.SetDescription("Cumulative wait time for the lock acquisitions.")
-	m.data.SetUnit("microseconds")
+	m.data.SetUnit("us")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

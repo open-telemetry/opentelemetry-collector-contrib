@@ -76,12 +76,17 @@ func TestStart(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+			serverConfig.WriteTimeout = 0
+			serverConfig.ReadHeaderTimeout = 0
+			serverConfig.IdleTimeout = 0
+			serverConfig.KeepAlivesEnabled = false
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+			}
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-					},
-				},
+				ServerConfig: serverConfig,
 			}
 			ctx := t.Context()
 			r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
@@ -98,13 +103,18 @@ func TestStart(t *testing.T) {
 		t.Cleanup(func() {
 			require.NoError(t, listener.Close())
 		})
+		serverConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		serverConfig.WriteTimeout = 0
+		serverConfig.ReadHeaderTimeout = 0
+		serverConfig.IdleTimeout = 0
+		serverConfig.KeepAlivesEnabled = false
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  listener.Addr().String(),
+		}
 		cfg := &Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  listener.Addr().String(),
-				},
-			},
+			ServerConfig: serverConfig,
 		}
 		ctx := t.Context()
 		r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})

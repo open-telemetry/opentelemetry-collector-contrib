@@ -21,6 +21,7 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorTailSamplingCountBytesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingCountSpansSampled.Add(context.Background(), 1)
+	tb.ProcessorTailSamplingCountSpansWithUnparseableTracestate.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingCountTracesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingGlobalCountTracesSampled.Add(context.Background(), 1)
@@ -38,6 +39,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingCountSpansSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingCountSpansWithUnparseableTracestate(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingCountTracesSampled(t, testTel,

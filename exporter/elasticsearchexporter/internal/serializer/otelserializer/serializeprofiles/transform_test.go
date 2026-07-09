@@ -847,7 +847,8 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Samples().At(0)
 
-			resourceAttrs := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			resourceAttrs, err := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			require.NoError(t, err)
 			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, resourceAttrs)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 

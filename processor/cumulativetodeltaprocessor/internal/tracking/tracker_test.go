@@ -268,6 +268,55 @@ func TestMetricTracker_Convert(t *testing.T) {
 	})
 }
 
+func TestMetricTracker_ConvertHistogramReset(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1, 2},
+					BucketCounts: buckets,
+				},
+			},
+		}
+	}
+
+	// Setup tracker and initial point.
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	out, valid, _ := m.Convert(point(10, 5, []uint64{4, 6}))
+	require.True(t, valid)
+	assert.Equal(t, []uint64{4, 6}, out.HistogramValue.BucketCounts)
+
+	// Bucket count drops.
+	_, valid, reason := m.Convert(point(11, 6, []uint64{2, 9}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Setup tracker and initial point.
+	m = NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	out, valid, _ = m.Convert(point(10, 5, []uint64{4, 6}))
+	require.True(t, valid)
+	assert.Equal(t, []uint64{4, 6}, out.HistogramValue.BucketCounts)
+
+	// Monotonic increase.
+	out, valid, _ = m.Convert(point(15, 10, []uint64{4, 11}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(5), out.HistogramValue.Count)
+	assert.Equal(t, []uint64{0, 5}, out.HistogramValue.BucketCounts)
+}
+
 func Test_metricTracker_removeStale(t *testing.T) {
 	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{

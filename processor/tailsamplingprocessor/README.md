@@ -28,7 +28,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between. Supplying no upper bound will result in a policy sampling anything greater than `threshold_ms`.
 - `numeric_attribute`: Sample based on number attributes (resource and record) by `min_value` and/or `max_value`
-- `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
+- `probabilistic`: Sample a percentage of traces. By default this hashes the trace ID with FNV-1a using the configured `hash_salt`. When the `processor.tailsamplingprocessor.usetracestate` feature gate is enabled, the policy instead consumes and rewrites OpenTelemetry probability sampling information in the W3C `tracestate`; see [Tracestate handling](#tracestate-handling). Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
@@ -325,6 +325,15 @@ This configuration allows:
 - A sustained throughput of 1 MB/second (1,048,576 bytes/s)
 - Burst traffic up to 5 MB (5,242,880 bytes) before rate limiting kicks in
 - Smooth handling of variable trace sizes and timing
+
+## Tracestate handling
+
+The `processor.tailsamplingprocessor.usetracestate` feature gate (alpha, off by default) opts the processor into reading and writing the OpenTelemetry probability sampling fields (`rv` and `th` in the `ot` section) of the W3C `tracestate`. This lets the tail sampler interoperate with upstream samplers (for example, an SDK or another collector running the [probabilistic sampling processor][probabilistic_sampling_processor]) so that adjusted counts remain correct end-to-end.
+
+When the gate is enabled:
+
+- The `probabilistic` policy makes its decision against the trace's randomness from `tracestate`: it uses the explicit `rv` value if present, or otherwise the W3C-derived randomness from the trace ID, compared against the configured threshold. If no probability sampling information is present, the policy falls back to FNV-hashing the trace ID with the configured `hash_salt`.
+- When a trace is sampled, the processor rewrites each span's outgoing `th` to the smallest effective threshold across all sampling policies that voted to sample. Filter-style policies (those that don't sample probabilistically) imply `th=0` / always-sample. Spans whose existing `th` is already stricter are left alone.
 
 ## A Practical Example
 

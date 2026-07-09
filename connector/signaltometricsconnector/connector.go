@@ -346,7 +346,10 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
-				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
+				profileAttrs, err := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
+				if err != nil {
+					return fmt.Errorf("failed to get profile attributes: %w", err)
+				}
 				for mdIdx, md := range sm.profileMetricDefs {
 					if !md.MatchAttributes(profileAttrs) {
 						continue

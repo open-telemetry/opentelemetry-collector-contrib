@@ -25,6 +25,28 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultServerConfig.WriteTimeout = 0
+	defaultServerConfig.ReadHeaderTimeout = 0
+	defaultServerConfig.IdleTimeout = 0
+	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "0.0.0.0:12800",
+	}
+
+	customServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	customServerConfig.WriteTimeout = 0
+	customServerConfig.ReadHeaderTimeout = 0
+	customServerConfig.IdleTimeout = 0
+	customServerConfig.KeepAlivesEnabled = false
+	customServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "0.0.0.0:12801",
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -33,12 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Protocols: Protocols{
-					HTTP: &confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "0.0.0.0:12800",
-						},
-					},
+					HTTP: &defaultServerConfig,
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "0.0.0.0:11800",
@@ -52,12 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				Protocols: Protocols{
-					HTTP: &confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "0.0.0.0:12801",
-						},
-					},
+					HTTP: &customServerConfig,
 				},
 			},
 		},

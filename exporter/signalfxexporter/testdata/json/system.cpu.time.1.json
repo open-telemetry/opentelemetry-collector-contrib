@@ -990,5 +990,28 @@
         "value": "interrupt"
       }
     ]
+  },
+  {
+    "source": "",
+    "metric": "system.cpu.logical.count",
+    "timestamp": 1597439222299,
+    "value": {
+      "intValue": 8
+    },
+    "metricType": 0,
+    "dimensions": [
+      {
+        "key": "host",
+        "value": "test-node"
+      },
+      {
+        "key": "k8s.cluster.name",
+        "value": "test-cluster"
+      },
+      {
+        "key": "k8s.node.name",
+        "value": "test-node"
+      }
+    ]
   }
 ]

@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "session": {"id": "ABCD1234"},
+    "sdk": {"name": "@grafana/faro-core", "version": "1.0.0", "integrations": []},
+    "app": {"name": "example.com", "version": "1.0.0", "environment": "prod"},
+    "view": {"name": "default"},
+    "browser": {},
+    "page": {"url": "https://example.com/"}
+  },
+  "logs": [
+    {"level": "info", "message": "first", "timestamp": "2025-03-01T15:42:14Z"},
+    {"level": "warn", "message": "second", "timestamp": "2025-03-01T15:42:15Z"}
+  ],
+  "measurements": [
+    {"type": "navigation", "values": {"ttfb": 100}, "timestamp": "2025-03-01T15:42:14Z"},
+    {"type": "navigation", "values": {"fcp": 200}, "timestamp": "2025-03-01T15:42:14Z"},
+    {"type": "navigation", "values": {"lcp": 300}, "timestamp": "2025-03-01T15:42:14Z"}
+  ],
+  "exceptions": [
+    {"type": "Error", "value": "boom", "timestamp": "2025-03-01T15:42:14Z"}
+  ],
+  "events": [
+    {"name": "click", "timestamp": "2025-03-01T15:42:14Z"},
+    {"name": "click", "timestamp": "2025-03-01T15:42:15Z"},
+    {"name": "navigation", "timestamp": "2025-03-01T15:42:16Z"},
+    {"name": "page_view", "timestamp": "2025-03-01T15:42:17Z"}
+  ]
+}

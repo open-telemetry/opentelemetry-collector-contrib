@@ -71,11 +71,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val")
+			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu.frequency-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2")
+				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu.frequency-val-2")
 			}
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
 
@@ -140,9 +140,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						cpuAttrVal, ok := dp.Attributes().Get("cpu")
+						cpuFrequencyAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
+						assert.Equal(t, "cpu.frequency-val", cpuFrequencyAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.frequency"], "Found a duplicate in the metrics slice: system.cpu.frequency")
 						validatedMetrics["system.cpu.frequency"] = true
@@ -210,9 +210,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						cpuAttrVal, ok := dp.Attributes().Get("cpu")
-						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
 						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
 						assert.Equal(t, "idle", stateAttrVal.Str())
@@ -257,9 +254,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						cpuAttrVal, ok := dp.Attributes().Get("cpu")
-						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
 						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
 						assert.Equal(t, "idle", stateAttrVal.Str())

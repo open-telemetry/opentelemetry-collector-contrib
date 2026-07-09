@@ -62,8 +62,6 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 	notifyRetry := make(chan struct{}, 1)
 	pSConstants := state.PSConstants{
 		RetryInterval: cfg.RetryInterval,
-		RetryGap:      cfg.RetryGap,
-		MaxRetries:    cfg.MaxRetries,
 	}
 
 	consumers := make([]C, 0)

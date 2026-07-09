@@ -673,6 +673,13 @@ func TestNewExporterWithProxy(t *testing.T) {
 	})
 	defer proxyServer.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.ProxyURL = proxyServer.URL
+
 	cfg := &datadogconfig.Config{
 		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -696,9 +703,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 		},
 		HostnameDetectionTimeout: 50 * time.Millisecond,
 
-		ClientConfig: confighttp.ClientConfig{
-			ProxyURL: proxyServer.URL,
-		},
+		ClientConfig: clientConfig,
 	}
 
 	params := exportertest.NewNopSettings(metadata.Type)

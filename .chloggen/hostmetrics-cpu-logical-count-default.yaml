@@ -1,0 +1,19 @@
+change_type: breaking
+
+component: receiver/host_metrics
+
+note: Enable the `system.cpu.logical.count` metric by default in the CPU scraper.
+
+issues: [49325]
+
+subtext: |
+  To restore the previous behavior, disable the new metric by applying the following config:
+  ```yaml
+  receivers:
+    host_metrics:
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.logical.count:
+              enabled: false
+  ```

@@ -167,11 +167,118 @@ func Test_localIdentifierGetter_Get(t *testing.T) {
 	}
 }
 
-func makeLocalIdentifiers(args ...string) []LocalIdentifierDecl {
-	res := make([]LocalIdentifierDecl, len(args))
-	for i, v := range args {
-		lid := localIdentifierDecl(v)
-		res[i] = &lid
+func Test_makeLocalIdentifiers(t *testing.T) {
+	tests := []struct {
+		name  string
+		args  []string
+		want  []string
+		blank []bool
+	}{
+		{
+			name: "no params",
+			args: nil,
+			want: nil,
+		},
+		{
+			name:  "named params",
+			args:  []string{"a", "b", "c"},
+			want:  []string{"a", "b", "c"},
+			blank: []bool{false, false, false},
+		},
+		{
+			name:  "blank param",
+			args:  []string{"_"},
+			want:  []string{"_"},
+			blank: []bool{true},
+		},
+		{
+			name:  "blank and named params",
+			args:  []string{"_", "value", "_"},
+			want:  []string{"_", "value", "_"},
+			blank: []bool{true, false, true},
+		},
 	}
-	return res
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := makeLocalIdentifiers(tt.args...)
+			require.Len(t, got, len(tt.want))
+			for i, decl := range got {
+				assert.Equal(t, tt.want[i], decl.Name())
+				assert.Equal(t, tt.blank[i], decl.IsBlank())
+			}
+		})
+	}
+}
+
+func Test_resolveLocalIdentifierBinding(t *testing.T) {
+	tests := []struct {
+		name    string
+		ctx     context.Context
+		binding string
+		want    any
+		wantErr string
+	}{
+		{
+			name:    "outside active local scope",
+			ctx:     t.Context(),
+			binding: "a",
+			wantErr: `local identifier "a" evaluated outside of an active local scope`,
+		},
+		{
+			name: "bound value",
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				bindings: map[string]any{"a": 1},
+			}),
+			binding: "a",
+			want:    1,
+		},
+		{
+			name: "missing binding",
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				bindings: map[string]any{"a": 1},
+			}),
+			binding: "missing",
+			wantErr: `missing value for local identifier "missing"`,
+		},
+		{
+			name: "inherits from parent activation",
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				parent:   &localActivation{bindings: map[string]any{"outer": "parent-value"}},
+				bindings: map[string]any{"inner": "child-value"},
+			}),
+			binding: "outer",
+			want:    "parent-value",
+		},
+		{
+			name: "child shadows parent binding",
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				parent:   &localActivation{bindings: map[string]any{"value": "parent"}},
+				bindings: map[string]any{"value": "child"},
+			}),
+			binding: "value",
+			want:    "child",
+		},
+		{
+			name: "explicit nil binding",
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				bindings: map[string]any{"a": nil},
+			}),
+			binding: "a",
+			want:    nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveLocalIdentifierBinding(tt.ctx, tt.binding)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

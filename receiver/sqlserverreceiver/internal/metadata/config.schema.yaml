@@ -32,6 +32,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.connection.reset.rate:
+        description: "SqlserverConnectionResetRateMetricConfig provides config for the sqlserver.connection.reset.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.cpu.count:
         description: "SqlserverCPUCountMetricConfig provides config for the sqlserver.cpu.count metric."
         type: object
@@ -207,6 +214,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.error.rate:
+        description: "SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.index.search.rate:
         description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
         type: object
@@ -265,6 +279,34 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.lock.block.count:
+        description: "SqlserverLockBlockCountMetricConfig provides config for the sqlserver.lock.block.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.escalation.rate:
+        description: "SqlserverLockEscalationRateMetricConfig provides config for the sqlserver.lock.escalation.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.memory:
+        description: "SqlserverLockMemoryMetricConfig provides config for the sqlserver.lock.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.request.rate:
+        description: "SqlserverLockRequestRateMetricConfig provides config for the sqlserver.lock.request.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object
@@ -293,6 +335,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      sqlserver.lock.wait_time.total:
+        description: "SqlserverLockWaitTimeTotalMetricConfig provides config for the sqlserver.lock.wait_time.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.login.rate:
         description: "SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric."
         type: object

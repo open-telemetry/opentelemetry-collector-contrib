@@ -193,6 +193,7 @@ components:
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/drain
+    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer

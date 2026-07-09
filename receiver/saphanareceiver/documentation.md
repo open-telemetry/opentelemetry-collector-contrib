@@ -636,7 +636,7 @@ The time spent executing operations.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| db.system | The type of database system. | Any Str | true | - |
-| saphana.host | The SAP HANA host. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system | The type of database system. | Any Str | true | - | - |
+| saphana.host | The SAP HANA host. | Any Str | true | - | - |

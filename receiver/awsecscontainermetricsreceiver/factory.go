@@ -5,6 +5,7 @@ package awsecscontainermetricsreceiver // import "github.com/open-telemetry/open
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -46,11 +47,20 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	if metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate.IsEnabled() &&
+		!metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		return nil, errors.New("receiver.awsecscontainermetrics.DontEmitV0ContainerConventions requires receiver.awsecscontainermetrics.EmitV1ContainerConventions to be enabled")
+	}
+
 	endpoint, err := endpoints.GetTMEV4FromEnv()
 	if err != nil || endpoint == nil {
 		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)
 	}
-	clientSettings := confighttp.ClientConfig{}
+	clientSettings := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientSettings.MaxIdleConns = 0
+	clientSettings.IdleConnTimeout = 0
+	clientSettings.ForceAttemptHTTP2 = false
 	rest, err := ecsutil.NewRestClient(*endpoint, clientSettings, params.TelemetrySettings)
 	if err != nil {
 		return nil, err

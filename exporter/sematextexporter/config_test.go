@@ -41,6 +41,27 @@ func TestLoadConfig(t *testing.T) {
 	defer os.Remove(tmpConfigPath)
 	cm, err := confmaptest.LoadConf(tmpConfigPath)
 	require.NoError(t, err)
+
+	defaultClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultClientConfig.MaxIdleConns = 0
+	defaultClientConfig.IdleConnTimeout = 0
+	defaultClientConfig.ForceAttemptHTTP2 = false
+	defaultClientConfig.Timeout = 5 * time.Second
+	defaultClientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+	}
+
+	overrideClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	overrideClientConfig.MaxIdleConns = 0
+	overrideClientConfig.IdleConnTimeout = 0
+	overrideClientConfig.ForceAttemptHTTP2 = false
+	overrideClientConfig.Timeout = 500 * time.Millisecond
+	overrideClientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -48,12 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default-config"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 5 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-					},
-				},
+				ClientConfig:  defaultClientConfig,
 				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
@@ -72,12 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 500 * time.Millisecond,
-					Headers: configopaque.MapList{
-						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-					},
-				},
+				ClientConfig: overrideClientConfig,
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 3

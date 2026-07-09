@@ -63,6 +63,17 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 		config       Config
 		logsConsumer consumer.Logs
 	}
+	happyPathServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	happyPathServerConfig.WriteTimeout = 0
+	happyPathServerConfig.ReadHeaderTimeout = 0
+	happyPathServerConfig.IdleTimeout = 0
+	happyPathServerConfig.KeepAlivesEnabled = false
+	happyPathServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:1234",
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -87,12 +98,7 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:1234",
-						},
-					},
+					ServerConfig: happyPathServerConfig,
 				},
 				logsConsumer: consumertest.NewNop(),
 			},
