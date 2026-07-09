@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.156.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.156.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.156.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.156.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.62.0
 	go.opentelemetry.io/collector/confmap v1.62.0
@@ -68,6 +69,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.156.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.156.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.156.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.156.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.62.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.156.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
@@ -92,6 +94,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
