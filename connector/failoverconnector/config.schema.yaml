@@ -1,5 +1,23 @@
+$defs:
+  conditions_config:
+    description: At most only one condition can be set
+    type: object
+    properties:
+      error:
+        x-pointer: true
+        $ref: error_condition
+  error_condition:
+    description: ErrorCondition implements Condition
+    type: object
+    properties:
+      contains:
+        type: string
 type: object
 properties:
+  condition:
+    description: Condition is an optional user-defined rule that controls which downstream errors trigger failover. When omitted, all error triggers failover.
+    x-optional: true
+    $ref: conditions_config
   max_retries:
     description: MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails, it will not try to recover the level that exceeded the maximum retries
     type: integer
