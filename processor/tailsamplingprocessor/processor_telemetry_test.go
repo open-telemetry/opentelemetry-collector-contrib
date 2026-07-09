@@ -124,7 +124,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
 				Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
-				Unit:        "µs",
+				Unit:        "us",
 				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
 					IsMonotonic: true,
@@ -407,7 +407,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
 				Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
-				Unit:        "µs",
+				Unit:        "us",
 				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
 					IsMonotonic: true,

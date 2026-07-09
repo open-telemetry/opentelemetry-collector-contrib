@@ -376,7 +376,7 @@ Cumulative wait time for the lock acquisitions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| microseconds | Sum | Int | Cumulative | true | Development |
+| us | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
