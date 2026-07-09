@@ -5,8 +5,6 @@ deprecated_type: httpcheck
 description: |
   The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:

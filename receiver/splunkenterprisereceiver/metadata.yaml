@@ -17,7 +17,6 @@ status:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
-reaggregation_enabled: true
 attributes:
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
@@ -188,7 +187,7 @@ metrics:
     enabled: false
     description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
     stability: development
-    unit: KBy
+    unit: kBy
     gauge:
       value_type: double
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
@@ -336,7 +335,7 @@ metrics:
     enabled: false
     description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
     stability: development
-    unit: KBy
+    unit: kBy
     gauge:
       value_type: int
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]

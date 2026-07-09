@@ -158,7 +158,7 @@ telemetry:
     processor_tail_sampling_sampling_policy_execution_time_sum:
       description: Total time spent (in microseconds) executing a specific sampling policy
       stability: development
-      unit: µs
+      unit: us
       enabled: true
       sum:
         value_type: int

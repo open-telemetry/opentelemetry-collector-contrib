@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.datadogreceiver.DontEmitDeprecatedRPCServiceAttr",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver no longer emits the deprecated rpc.service attribute on gRPC spans or resource attributes. The service name is already captured in the span name (service/method) and rpc.method."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
 var ReceiverDatadogreceiverEnable128BitTraceIDFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.datadogreceiver.Enable128BitTraceID",
 	featuregate.StageBeta,

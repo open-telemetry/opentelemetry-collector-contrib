@@ -46,6 +46,9 @@ all_set:
     postgresql.operations:
       enabled: true
       attributes: ["operation"]
+    postgresql.query.conflicts:
+      enabled: true
+      attributes: ["postgresql.conflict.type"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
@@ -99,6 +102,10 @@ all_set:
     postgresql.table.name:
       enabled: true
     service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
 reaggregate_set:
   metrics:
@@ -147,6 +154,9 @@ reaggregate_set:
     postgresql.operations:
       enabled: true
       attributes: []
+    postgresql.query.conflicts:
+      enabled: true
+      attributes: []
     postgresql.replication.data_delay:
       enabled: true
       attributes: []
@@ -201,6 +211,10 @@ reaggregate_set:
       enabled: true
     service.instance.id:
       enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
+      enabled: true
 none_set:
   metrics:
     postgresql.backends:
@@ -248,6 +262,9 @@ none_set:
     postgresql.operations:
       enabled: false
       attributes: ["operation"]
+    postgresql.query.conflicts:
+      enabled: false
+      attributes: ["postgresql.conflict.type"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
@@ -302,6 +319,33 @@ none_set:
       enabled: false
     service.instance.id:
       enabled: false
+    service.name:
+      enabled: false
+    service.namespace:
+      enabled: false
+override_set:
+  resource_attributes:
+    postgresql.database.name:
+      enabled: true
+      override_value: "override-postgresql.database.name"
+    postgresql.index.name:
+      enabled: true
+      override_value: "override-postgresql.index.name"
+    postgresql.schema.name:
+      enabled: true
+      override_value: "override-postgresql.schema.name"
+    postgresql.table.name:
+      enabled: true
+      override_value: "override-postgresql.table.name"
+    service.instance.id:
+      enabled: true
+      override_value: "override-service.instance.id"
+    service.name:
+      enabled: true
+      override_value: "override-service.name"
+    service.namespace:
+      enabled: true
+      override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
     postgresql.database.name:
@@ -329,6 +373,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.namespace:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -366,3 +422,15 @@ filter_set_exclude:
         - strict: "service.instance.id-val"
       events_exclude:
         - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"
+    service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.namespace-val"
+      events_exclude:
+        - strict: "service.namespace-val"

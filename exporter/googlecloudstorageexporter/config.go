@@ -29,6 +29,25 @@ type Config struct {
 
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
+
+	// UniverseDomain is the universe domain for the Google Cloud Storage service.
+	// Defaults to "googleapis.com". Set to support Sovereign Cloud regions.
+	// See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+	UniverseDomain string `mapstructure:"universe_domain"`
+
+	// ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+	ResourceAttrsToGCS ResourceAttrsToGCS `mapstructure:"resource_attrs_to_gcs"`
+}
+
+// ResourceAttrsToGCS maps GCS upload configuration values to resource attribute values.
+type ResourceAttrsToGCS struct {
+	// Prefix names the resource attribute whose value (from the first resource of each batch)
+	// is inserted as a partition segment between bucket.partition.prefix and the time format,
+	// e.g. prefix "storage" + attribute "serviceA" -> "storage/serviceA/<time>/...".
+	Prefix string `mapstructure:"prefix"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type bucketConfig struct {

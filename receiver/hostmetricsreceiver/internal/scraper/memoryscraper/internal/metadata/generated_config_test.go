@@ -140,6 +140,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSystemMemoryLinuxHugepagesUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemMemoryLinuxHugepagesUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemMemoryLinuxHugepagesUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.memory.linux.hugepages.usage doesn't have an attribute invalid, valid attributes: [system.memory.linux.hugepages.state]")
+
+	cfg = DefaultMetricsConfig().SystemMemoryLinuxHugepagesUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemMemoryLinuxHugepagesUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemMemoryLinuxHugepagesUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.memory.linux.hugepages.utilization doesn't have an attribute invalid, valid attributes: [system.memory.linux.hugepages.state]")
+
+	cfg = DefaultMetricsConfig().SystemMemoryLinuxHugepagesUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.memory.usage doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SystemMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemMemoryUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemMemoryUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemMemoryUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.memory.utilization doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SystemMemoryUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

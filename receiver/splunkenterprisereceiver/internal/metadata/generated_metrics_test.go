@@ -171,7 +171,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -1038,7 +1037,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", mi.Description())
-						assert.Equal(t, "KBy", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1059,7 +1058,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", mi.Description())
-						assert.Equal(t, "KBy", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1963,7 +1962,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", mi.Description())
-						assert.Equal(t, "KBy", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -1984,7 +1983,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", mi.Description())
-						assert.Equal(t, "KBy", mi.Unit())
+						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
