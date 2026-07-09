@@ -199,11 +199,19 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	// If HMAC signature verification is configured, read the raw body for verification
 	// before any decompression, since webhook providers sign the raw payload.
 	if er.cfg.HMACSignature.Secret != "" {
-		rawBody, readErr := io.ReadAll(r.Body)
+		limitedBody := io.LimitReader(r.Body, int64(er.maxRequestBodySize)+1)
+		rawBody, readErr := io.ReadAll(limitedBody)
 		_ = r.Body.Close()
 		if readErr != nil {
 			er.failBadReq(ctx, w, http.StatusBadRequest, readErr)
 			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, readErr)
+			return
+		}
+
+		if len(rawBody) > er.maxRequestBodySize {
+			tooLargeErr := fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodySize)
+			er.failBadReq(ctx, w, http.StatusBadRequest, tooLargeErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, tooLargeErr)
 			return
 		}
 
