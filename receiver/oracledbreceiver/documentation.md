@@ -828,6 +828,28 @@ Average number of sessions over the metric interval.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | session_status | Session status | Any Str | Recommended | - |
 
+### oracledb.sga.limit
+
+Maximum size of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### oracledb.sga.usage
+
+Size of each component of the System Global Area (SGA).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.sga.component.name | Name of the SGA component. | Str: ``buffer_cache``, ``data_transfer_cache``, ``fixed_sga``, ``in_memory_area``, ``java_pool``, ``large_pool``, ``redo_buffers``, ``shared_io_pool``, ``shared_pool``, ``streams_pool`` | Recommended | - |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.

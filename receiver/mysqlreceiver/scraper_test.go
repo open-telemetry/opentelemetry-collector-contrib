@@ -94,7 +94,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		actualQuerySamples, err := scraper.scrapeQuerySampleFunc(t.Context())
 		require.NoError(t, err)
@@ -105,7 +106,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
-			plogtest.IgnoreTimestamp()))
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.Endpoint)
 
 		// Scrape top queries
@@ -120,7 +122,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
-			plogtest.IgnoreTimestamp()))
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.Endpoint)
 	})
 
@@ -157,7 +160,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		var partialError scrapererror.PartialScrapeError
 		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
@@ -194,7 +197,8 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 }
 
 // assertLogsHaveInstanceEndpoint verifies that every ResourceLogs in logs carries
