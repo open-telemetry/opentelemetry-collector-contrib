@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	errNoConditionDefined = errors.New("no conditions are defined")
+	errNoConditionDefined = errors.New("no condition is defined")
 	errTooManyConditions  = errors.New("only one failover condition can be applied")
 )
 
