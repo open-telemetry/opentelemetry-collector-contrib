@@ -249,14 +249,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 		image             string
 		wantSampleTextCol bool
 		wantEOLWarn       bool   // true ↔ logDetectedVersion should emit an EOL warning
-		wantProduct       string // expected db.product scope attribute value
+		wantProduct       string // expected db.system.name resource attribute value
 	}{
 		{
 			name:              "MySQL-8.0.33-LogScraper",
 			image:             "mysql:8.0.33",
 			wantSampleTextCol: true,
 			wantEOLWarn:       false,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on ARM hosts.
@@ -264,21 +264,21 @@ func TestIntegrationLogScraper(t *testing.T) {
 			image:             "mysql:5.7",
 			wantSampleTextCol: false,
 			wantEOLWarn:       true,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			name:              "MariaDB-10.11-LogScraper",
 			image:             "mariadb:10.11",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 		{
 			name:              "MariaDB-11.4-LogScraper",
 			image:             "mariadb:11.4",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 	}
 

@@ -54,6 +54,16 @@ func (v dbVersion) productString() string {
 	return "MySQL"
 }
 
+// systemName returns the db.system.name value following OpenTelemetry semantic
+// conventions, which use lowercase identifiers ("mysql", "mariadb"). This is
+// distinct from productString, which is intended for human-readable logging.
+func (v dbVersion) systemName() string {
+	if v.product == dbProductMariaDB {
+		return "mariadb"
+	}
+	return "mysql"
+}
+
 // supportsQuerySampleText reports whether the server's
 // performance_schema.events_statements_summary_by_digest table includes the
 // query_sample_text column, introduced in MySQL 8.0.3. Absent on MySQL <8.0.3

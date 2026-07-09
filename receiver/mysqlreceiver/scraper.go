@@ -216,7 +216,7 @@ func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 	if m.detectedVersion.version != nil {
-		rb.SetDbSystemName(m.detectedVersion.productString())
+		rb.SetDbSystemName(m.detectedVersion.systemName())
 		rb.SetDbSystemVersion(m.detectedVersion.version.String())
 	}
 }

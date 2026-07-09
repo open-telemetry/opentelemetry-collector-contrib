@@ -1353,7 +1353,7 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	assert.Equal(t, "8.0.27", ver.Str())
 	prod, ok := attrs.Get("db.system.name")
 	assert.True(t, ok, "db.system.name resource attribute missing on query-sample output")
-	assert.Equal(t, "MySQL", prod.Str())
+	assert.Equal(t, "mysql", prod.Str())
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
@@ -1411,7 +1411,7 @@ func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	assert.Equal(t, "8.0.27", ver.Str())
 	prod, ok := attrs.Get("db.system.name")
 	assert.True(t, ok, "db.system.name resource attribute missing")
-	assert.Equal(t, "MySQL", prod.Str())
+	assert.Equal(t, "mysql", prod.Str())
 }
 
 // TestScrapeTopQueryFuncNoDetectedVersion verifies that when no version was

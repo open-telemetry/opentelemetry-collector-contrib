@@ -732,7 +732,7 @@ This provides insights into query performance and resource usage, helping users 
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| db.system.name | The database product of the instance. Examples include "MySQL" and "MariaDB". | Any Str | false | - | - |
+| db.system.name | The database product of the instance, following OpenTelemetry semantic conventions. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
 | db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
 | service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
