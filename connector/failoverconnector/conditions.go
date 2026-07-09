@@ -41,24 +41,3 @@ func (e *ErrorCondition) ShouldFailover(err error) bool {
 	}
 	return true
 }
-
-type HealthCheckCondition struct {
-	Status                   string `mapstructure:"status"`
-	healthCheckExtensionHost string `mapstructure:"host"`
-	healthCheckExtensionPort string `mapstructure:"host"`
-}
-
-func NewHealthCheckCondition(config *confmap.Conf) (Condition, error) {
-	e := &HealthCheckCondition{}
-	err := config.Unmarshal(e)
-	if err != nil {
-		return nil, fmt.Errorf("error building condition `error`: %w", err)
-	}
-
-	return e, nil
-}
-
-// TODO: no-op
-func (h *HealthCheckCondition) ShouldFailover(_ error) bool {
-	return true
-}
