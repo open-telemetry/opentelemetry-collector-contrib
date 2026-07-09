@@ -52,7 +52,7 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 		if l.upperThresholdMs == 0 {
 			return duration.Milliseconds() >= l.thresholdMs
 		}
-		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
+		return (l.thresholdMs <= duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
 	}), nil
 }
 

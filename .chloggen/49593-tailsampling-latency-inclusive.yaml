@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: processor/tail_sampling
+note: "Fix inconsistency where `threshold_ms` is exclusive when `upper_threshold_ms` is set but inclusive when it is unset"
+issues: [49593]

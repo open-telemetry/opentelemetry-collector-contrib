@@ -101,7 +101,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  5000 * time.Millisecond,
 				},
 			},
-			samplingpolicy.NotSampled,
+			samplingpolicy.Sampled,
 		},
 		{
 			"trace duration is within lower and upper bounds",
