@@ -13,7 +13,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, crobert-1, atoulme]
+    active: [dmitryax, crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
 
 resource_attributes:
   host.name:
