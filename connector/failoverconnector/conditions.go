@@ -5,14 +5,27 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
-type ConditionsBuilder func(*confmap.Conf) (Condition, error)
+// At most only one condition can be set
+type ConditionsConfig struct {
+	ErrorCond *ErrorCondition `mapstructure:"error"`
+}
 
-var ConditionsMapping = map[string]ConditionsBuilder{
-	"error": NewErrorCondition,
+func (c *ConditionsConfig) Validate() error {
+	set := 0
+	if c.ErrorCond != nil {
+		set++
+	}
+	if set > 1 {
+		return fmt.Errorf("only one failover condition can be applied")
+	}
+
+	if set == 0 {
+		return fmt.Errorf("no conditions are defined")
+	}
+
+	return nil
 }
 
 type Condition interface {
@@ -21,17 +34,7 @@ type Condition interface {
 }
 
 type ErrorCondition struct {
-	errorContains string `mapstructure:"contains"`
-}
-
-func NewErrorCondition(config *confmap.Conf) (Condition, error) {
-	e := &ErrorCondition{}
-	err := config.Unmarshal(e)
-	if err != nil {
-		return nil, fmt.Errorf("error building condition `error`: %w", err)
-	}
-
-	return e, nil
+	Contains string `mapstructure:"contains"`
 }
 
 // TODO: currently no-op
@@ -40,4 +43,11 @@ func (e *ErrorCondition) ShouldFailover(err error) bool {
 		return false
 	}
 	return true
+}
+
+func buildCondition(c ConditionsConfig) Condition {
+	if c.ErrorCond != nil {
+		return c.ErrorCond
+	}
+	return nil
 }

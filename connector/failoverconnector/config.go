@@ -5,11 +5,9 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -42,7 +40,7 @@ type Config struct {
 	// it will not try to recover the level that exceeded the maximum retries
 	MaxRetries int `mapstructure:"max_retries"` // **Deprecated**
 
-	Condition map[string]*confmap.Conf `mapstructure:"condition"`
+	Condition ConditionsConfig `mapstructure:"condition"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -55,16 +53,6 @@ func (c *Config) Validate() error {
 	}
 	if c.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
-	}
-
-	if len(c.Condition) > 1 {
-		return fmt.Errorf("only one failover condition can be applied")
-	}
-	// validate provided name of the condition is supported
-	for name := range c.Condition {
-		if _, ok := ConditionsMapping[name]; !ok {
-			return fmt.Errorf("provided condition: %s is invalid", name)
-		}
 	}
 
 	return nil

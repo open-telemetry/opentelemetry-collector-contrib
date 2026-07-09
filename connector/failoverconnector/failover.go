@@ -5,7 +5,6 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -86,16 +85,6 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		consumers = append(consumers, baseConsumer)
 	}
 
-	var condition Condition
-	var err error
-	for name, config := range cfg.Condition {
-		builder := ConditionsMapping[name]
-		condition, err = builder(config)
-		if err != nil {
-			return nil, fmt.Errorf("could not build condition:%s due to %w", name, err)
-		}
-	}
-
 	selector := state.NewPipelineSelector(notifyRetry, done, pSConstants)
 	return &baseFailoverRouter[C]{
 		consumers:   consumers,
@@ -104,7 +93,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		errTryLock:  state.NewTryLock(),
 		done:        done,
 		notifyRetry: notifyRetry,
-		conditions:  condition,
+		conditions:  buildCondition(cfg.Condition),
 	}, nil
 }
 
