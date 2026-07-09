@@ -1413,3 +1413,34 @@ func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	assert.True(t, ok, "db.system.name resource attribute missing")
 	assert.Equal(t, "MySQL", prod.Str())
 }
+
+// TestScrapeTopQueryFuncNoDetectedVersion verifies that when no version was
+// detected at connect time (detectedVersion.version is nil), the db.system.name
+// and db.system.version resource attributes are omitted, while the always-set
+// resource attributes (e.g. the instance endpoint) are still stamped.
+func TestScrapeTopQueryFuncNoDetectedVersion(t *testing.T) {
+	mc := &mockClient{
+		topQueriesFile: "top_queries",
+	}
+	s := newTopQueryScraper(t, mc)
+	// Simulate version detection having failed at connect time.
+	s.detectedVersion = dbVersion{}
+
+	s.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
+	s.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
+
+	logs, err := s.scrapeTopQueryFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	_, ok := attrs.Get("db.system.version")
+	assert.False(t, ok, "db.system.version must not be set when no version was detected")
+	_, ok = attrs.Get("db.system.name")
+	assert.False(t, ok, "db.system.name must not be set when no version was detected")
+
+	// The endpoint resource attribute is always set regardless of detection.
+	endpoint, ok := attrs.Get("mysql.instance.endpoint")
+	assert.True(t, ok, "mysql.instance.endpoint resource attribute missing")
+	assert.Equal(t, "localhost:3306", endpoint.Str())
+}

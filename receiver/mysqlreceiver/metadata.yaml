@@ -16,7 +16,7 @@ override_value_enabled: true
 
 resource_attributes:
   db.system.name:
-    description: The database product of the instance. Examples include "mysql" and "mariadb".
+    description: The database product of the instance. Examples include "MySQL" and "MariaDB".
     enabled: false
     type: string
   db.system.version:
