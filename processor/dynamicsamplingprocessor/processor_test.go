@@ -4,20 +4,25 @@
 package dynamicsamplingprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/metadatatest"
 )
 
 func newTestProcessor(t *testing.T, cfg *Config, sink *consumertest.TracesSink) *dynamicSamplingProcessor {
@@ -589,6 +594,15 @@ func TestProcessor_UpstreamStricterThanOurs_LatePathHonoursUpstream(t *testing.T
 }
 
 func TestProcessor_UnparseableTracestateCounter(t *testing.T) {
+	// Use a real componenttest.Telemetry so the counter actually records and
+	// we can assert on it via the generated metadatatest helper.
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		// Cleanup runs after the test's context is canceled; use a fresh
+		// background context so Shutdown can drain.
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // see comment
+	})
+
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
 		TraceTimeout:  50 * time.Millisecond,
@@ -598,7 +612,10 @@ func TestProcessor_UnparseableTracestateCounter(t *testing.T) {
 			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
 		},
 	}
-	p := newTestProcessor(t, cfg, sink)
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
 	traceID := pcommon.TraceID([16]byte{0xAB})
 	td := newTrace(traceID, ptrace.StatusCodeUnset)
@@ -606,6 +623,12 @@ func TestProcessor_UnparseableTracestateCounter(t *testing.T) {
 	setTraceState(td, "!!not-a-tracestate!!")
 	require.NoError(t, p.ConsumeTraces(t.Context(), td))
 	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	metadatatest.AssertEqualProcessorDynamicSamplingIncomingTracestateUnparseable(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func TestProcessor_DecisionCacheDisabled(t *testing.T) {
