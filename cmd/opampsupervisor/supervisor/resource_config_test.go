@@ -98,6 +98,34 @@ func TestInitTelemetrySettingsWithHostResourceDetection(t *testing.T) {
 	assert.True(t, hasHostName || hasOSType || hasOSDescription)
 }
 
+func TestInitTelemetrySettingsStableDetectorsIgnored(t *testing.T) {
+	settings, err := initTelemetrySettings(t.Context(), zap.NewNop(), config.Telemetry{
+		Logs: config.Logs{
+			Level:            zap.InfoLevel,
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		},
+		Resource: config.ResourceConfig{
+			ResourceConfig: otelconftelemetry.ResourceConfig{
+				Resource: otelconf.Resource{
+					Detectors: &otelconf.Detectors{
+						Attributes: &otelconf.DetectorsAttributes{
+							Included: []string{"host.*", "os.*"},
+						},
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	attrs := settings.Resource.Attributes()
+	_, hasHostName := attrs.Get("host.name")
+	_, hasOSType := attrs.Get("os.type")
+	assert.False(t, hasHostName)
+	assert.False(t, hasOSType)
+}
+
 func TestInitTelemetrySettingsResourceDetectionKeepsSupervisorServiceAttributes(t *testing.T) {
 	settings, err := initTelemetrySettings(t.Context(), zap.NewNop(), config.Telemetry{
 		Logs: config.Logs{

@@ -107,6 +107,20 @@ telemetry:
     encoding: console
 ```
 
+The supervisor can also configure resource detection for its own telemetry
+using the experimental `telemetry.resource.detection/development` field.
+
+```yaml
+telemetry:
+  resource:
+    detection/development:
+      detectors:
+        - host: {}
+        - process: {}
+```
+
+Supported detector entries are `container`, `host`, `process`, and `service`.
+
 Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
 
 ## Persistent data storage
