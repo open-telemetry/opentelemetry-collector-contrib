@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	errNoConditionDefined = errors.New("no condition is defined")
-	errTooManyConditions  = errors.New("only one failover condition can be applied")
+	errNoConditionDefined           = errors.New("no condition is defined")
+	errTooManyConditions            = errors.New("only one failover condition can be applied")
+	_                     Condition = (*ErrorCondition)(nil)
 )
 
 // At most only one condition can be set
@@ -33,11 +34,13 @@ func (c *ConditionsConfig) Validate() error {
 	return nil
 }
 
+// All conditions must implement this interface
 type Condition interface {
 	// ShouldFailover determines if the connector should failover based on current consumer error
 	ShouldFailover(err error) bool
 }
 
+// ErrorCondition implements Condition
 type ErrorCondition struct {
 	Contains string `mapstructure:"contains"`
 }

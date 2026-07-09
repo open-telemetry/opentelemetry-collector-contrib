@@ -34,7 +34,7 @@ func (f *logsRouter) Consume(ctx context.Context, ld plog.Logs) error {
 		if !ok {
 			return f.consumeByHealthyPipeline(ctx, ld)
 		}
-		// if connection was successful, propogate the error upstream
+		// if connection was successful, propagate the error upstream
 		// it is possible for the error to be non-nil here
 		return err
 	default:
