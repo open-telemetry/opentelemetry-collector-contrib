@@ -1,12 +1,6 @@
 default:
 all_set:
   metrics:
-    db.postgresql.vector.search.count:
-      enabled: true
-      attributes: ["distance.function"]
-    db.postgresql.vector.search.duration:
-      enabled: true
-      attributes: ["distance.function"]
     postgresql.backends:
       enabled: true
     postgresql.bgwriter.buffers.allocated:
@@ -82,6 +76,12 @@ all_set:
       enabled: true
     postgresql.tup_updated:
       enabled: true
+    postgresql.vector.search.count:
+      enabled: true
+      attributes: ["distance.function"]
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: ["distance.function"]
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -112,12 +112,6 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
-    db.postgresql.vector.search.count:
-      enabled: true
-      attributes: []
-    db.postgresql.vector.search.duration:
-      enabled: true
-      attributes: []
     postgresql.backends:
       enabled: true
     postgresql.bgwriter.buffers.allocated:
@@ -193,6 +187,12 @@ reaggregate_set:
       enabled: true
     postgresql.tup_updated:
       enabled: true
+    postgresql.vector.search.count:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: []
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -223,12 +223,6 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
-    db.postgresql.vector.search.count:
-      enabled: false
-      attributes: ["distance.function"]
-    db.postgresql.vector.search.duration:
-      enabled: false
-      attributes: ["distance.function"]
     postgresql.backends:
       enabled: false
     postgresql.bgwriter.buffers.allocated:
@@ -304,6 +298,12 @@ none_set:
       enabled: false
     postgresql.tup_updated:
       enabled: false
+    postgresql.vector.search.count:
+      enabled: false
+      attributes: ["distance.function"]
+    postgresql.vector.search.duration:
+      enabled: false
+      attributes: ["distance.function"]
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:

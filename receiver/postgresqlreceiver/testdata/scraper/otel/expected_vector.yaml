@@ -214,7 +214,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: The number of vector similarity search operations executed, grouped by the distance function used.
-            name: db.postgresql.vector.search.count
+            name: postgresql.vector.search.count
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -235,7 +235,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{searches}'
           - description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
-            name: db.postgresql.vector.search.duration
+            name: postgresql.vector.search.duration
             sum:
               aggregationTemporality: 2
               dataPoints:

@@ -10,102 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// DbPostgresqlVectorSearchCountMetricAttributeKey specifies the key of an attribute for the db.postgresql.vector.search.count metric.
-type DbPostgresqlVectorSearchCountMetricAttributeKey string
-
-const (
-	DbPostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction DbPostgresqlVectorSearchCountMetricAttributeKey = "distance.function"
-)
-
-// DbPostgresqlVectorSearchCountMetricConfig provides config for the db.postgresql.vector.search.count metric.
-type DbPostgresqlVectorSearchCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []DbPostgresqlVectorSearchCountMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *DbPostgresqlVectorSearchCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *DbPostgresqlVectorSearchCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case DbPostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction:
-		default:
-			return fmt.Errorf("metric db.postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [distance.function]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// DbPostgresqlVectorSearchDurationMetricAttributeKey specifies the key of an attribute for the db.postgresql.vector.search.duration metric.
-type DbPostgresqlVectorSearchDurationMetricAttributeKey string
-
-const (
-	DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction DbPostgresqlVectorSearchDurationMetricAttributeKey = "distance.function"
-)
-
-// DbPostgresqlVectorSearchDurationMetricConfig provides config for the db.postgresql.vector.search.duration metric.
-type DbPostgresqlVectorSearchDurationMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []DbPostgresqlVectorSearchDurationMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *DbPostgresqlVectorSearchDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *DbPostgresqlVectorSearchDurationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction:
-		default:
-			return fmt.Errorf("metric db.postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [distance.function]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // PostgresqlBackendsMetricConfig provides config for the postgresql.backends metric.
 type PostgresqlBackendsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1020,6 +924,102 @@ func (ms *PostgresqlTupUpdatedMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
+// PostgresqlVectorSearchCountMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.count metric.
+type PostgresqlVectorSearchCountMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction PostgresqlVectorSearchCountMetricAttributeKey = "distance.function"
+)
+
+// PostgresqlVectorSearchCountMetricConfig provides config for the postgresql.vector.search.count metric.
+type PostgresqlVectorSearchCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [distance.function]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlVectorSearchDurationMetricAttributeKey specifies the key of an attribute for the postgresql.vector.search.duration metric.
+type PostgresqlVectorSearchDurationMetricAttributeKey string
+
+const (
+	PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction PostgresqlVectorSearchDurationMetricAttributeKey = "distance.function"
+)
+
+// PostgresqlVectorSearchDurationMetricConfig provides config for the postgresql.vector.search.duration metric.
+type PostgresqlVectorSearchDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlVectorSearchDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlVectorSearchDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlVectorSearchDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction:
+		default:
+			return fmt.Errorf("metric postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [distance.function]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlWalAgeMetricConfig provides config for the postgresql.wal.age metric.
 type PostgresqlWalAgeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1140,8 +1140,6 @@ func (ms *PostgresqlWalLagMetricConfig) Validate() error {
 
 // MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
-	DbPostgresqlVectorSearchCount      DbPostgresqlVectorSearchCountMetricConfig      `mapstructure:"db.postgresql.vector.search.count"`
-	DbPostgresqlVectorSearchDuration   DbPostgresqlVectorSearchDurationMetricConfig   `mapstructure:"db.postgresql.vector.search.duration"`
 	PostgresqlBackends                 PostgresqlBackendsMetricConfig                 `mapstructure:"postgresql.backends"`
 	PostgresqlBgwriterBuffersAllocated PostgresqlBgwriterBuffersAllocatedMetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
 	PostgresqlBgwriterBuffersWrites    PostgresqlBgwriterBuffersWritesMetricConfig    `mapstructure:"postgresql.bgwriter.buffers.writes"`
@@ -1175,6 +1173,8 @@ type MetricsConfig struct {
 	PostgresqlTupInserted              PostgresqlTupInsertedMetricConfig              `mapstructure:"postgresql.tup_inserted"`
 	PostgresqlTupReturned              PostgresqlTupReturnedMetricConfig              `mapstructure:"postgresql.tup_returned"`
 	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
+	PostgresqlVectorSearchCount        PostgresqlVectorSearchCountMetricConfig        `mapstructure:"postgresql.vector.search.count"`
+	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
 	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
@@ -1182,16 +1182,6 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		DbPostgresqlVectorSearchCount: DbPostgresqlVectorSearchCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DbPostgresqlVectorSearchCountMetricAttributeKey{DbPostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction},
-		},
-		DbPostgresqlVectorSearchDuration: DbPostgresqlVectorSearchDurationMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DbPostgresqlVectorSearchDurationMetricAttributeKey{DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction},
-		},
 		PostgresqlBackends: PostgresqlBackendsMetricConfig{
 			Enabled: true,
 		},
@@ -1308,6 +1298,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
 			Enabled: false,
+		},
+		PostgresqlVectorSearchCount: PostgresqlVectorSearchCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchCountMetricAttributeKey{PostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction},
+		},
+		PostgresqlVectorSearchDuration: PostgresqlVectorSearchDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlVectorSearchDurationMetricAttributeKey{PostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction},
 		},
 		PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
 			Enabled: true,
