@@ -118,6 +118,8 @@ go.opentelemetry.io/collector/pdata/pprofile v0.156.0 h1:TnQzA2d5iMGH5//mGLqPjwd
 go.opentelemetry.io/collector/pdata/pprofile v0.156.0/go.mod h1:3dtjs/mliblJJCCTXUE0AkpBNfBEybPruj3ml6WCOoI=
 go.opentelemetry.io/collector/pdata/testdata v0.156.0 h1:0+0YZYap+zHwx4c3TrgvWGbODlErrFXpUsT+RsyGmoQ=
 go.opentelemetry.io/collector/pdata/testdata v0.156.0/go.mod h1:7amnd10hSandpk/VHGBJ9vMR59PnKh2ngwbtFLKezi4=
+go.opentelemetry.io/collector/pdata/xpdata v0.156.0 h1:p5eRg+/kJduIzXUDyCM1tMiYomV5Yz0JzG30t7iwi4w=
+go.opentelemetry.io/collector/pdata/xpdata v0.156.0/go.mod h1:cs5rPBIE1du6CSJIUIqDYRRGzfuV4kyURKEMQHnu+zQ=
 go.opentelemetry.io/collector/pipeline v1.62.0 h1:+fFaLegFsMPhBl6oHauS09qOoKWgtufjM3g9i/wXZ44=
 go.opentelemetry.io/collector/pipeline v1.62.0/go.mod h1:RD90NG3Jbk965Xaqym3JyHkuol4uZJjQVUkD9ddXJIs=
 go.opentelemetry.io/collector/processor v1.62.0 h1:nDJmVVy/JZG+VuDITF4ZnWBzn5SyQ2nYc8m/zdHQxBY=
