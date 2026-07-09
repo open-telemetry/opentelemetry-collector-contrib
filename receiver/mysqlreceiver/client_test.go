@@ -13,7 +13,6 @@ import (
 	version "github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 )
 
@@ -433,13 +432,15 @@ func TestDBVersionHelperMethods(t *testing.T) {
 		assert.Equal(t, "MySQL", dbVersion{}.productString())
 	})
 	t.Run("systemName MySQL", func(t *testing.T) {
-		// db.system.name values come from the semconv package.
-		assert.Equal(t, semconv.DBSystemNameMySQL.Value.AsString(), dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")}.systemName())
+		// Expected values are hardcoded (not sourced from the semconv package) because
+		// depguard disallows importing semconv in test files; this keeps the test an
+		// independent check on the values systemName maps to.
+		assert.Equal(t, "mysql", dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")}.systemName())
 	})
 	t.Run("systemName MariaDB", func(t *testing.T) {
-		assert.Equal(t, semconv.DBSystemNameMariaDB.Value.AsString(), dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")}.systemName())
+		assert.Equal(t, "mariadb", dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")}.systemName())
 	})
 	t.Run("systemName zero value defaults to mysql", func(t *testing.T) {
-		assert.Equal(t, semconv.DBSystemNameMySQL.Value.AsString(), dbVersion{}.systemName())
+		assert.Equal(t, "mysql", dbVersion{}.systemName())
 	})
 }
