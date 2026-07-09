@@ -237,8 +237,6 @@ The default rules will create the following aggregated metrics from the [`hostme
 * vmpage_io.swap.in
 * vmpage_io.swap.out
 
-`cpu.num_processors` is copied from `system.cpu.logical.count`; the source metric is not excluded by default.
-
 ## Example Config
 
 ```yaml
