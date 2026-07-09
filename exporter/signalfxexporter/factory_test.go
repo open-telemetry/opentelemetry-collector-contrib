@@ -570,6 +570,7 @@ func TestDefaultCPUTranslations(t *testing.T) {
 
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, 8, int(*cpuNumProcessors[0].Value.IntValue))
 
 	cpuIdle := m["cpu.idle"]
 	require.Len(t, cpuIdle, 1)
