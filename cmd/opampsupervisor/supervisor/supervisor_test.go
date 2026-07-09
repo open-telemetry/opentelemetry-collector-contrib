@@ -416,6 +416,24 @@ func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
 	require.Equal(t, "{\"level\":\"error\",\"msg\":\"boom\"}\npanic: boom", s.collectorCrashLogSnippet())
 }
 
+func TestCollectorCrashLogSnippetPassthroughLogsWithLiveCommander(t *testing.T) {
+	s := newCollectorCrashLogTestSupervisor(t, true)
+
+	cmdr, err := commander.NewCommander(
+		zap.NewNop(),
+		filepath.Join(s.config.Storage.Directory, agentLogFileName),
+		s.config.Agent,
+	)
+	require.NoError(t, err)
+	s.commander = cmdr
+	cmdr.SetPassthroughLogHook(s.appendPassthroughLogLine)
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
+	s.appendPassthroughLogLine("panic: boom")
+
+	require.Equal(t, "{\"level\":\"error\",\"msg\":\"boom\"}\npanic: boom", s.collectorCrashLogSnippet())
+}
+
 func TestCollectorCrashLogSnippetPassthroughLogsClearedBetweenStarts(t *testing.T) {
 	s := newCollectorCrashLogTestSupervisor(t, true)
 

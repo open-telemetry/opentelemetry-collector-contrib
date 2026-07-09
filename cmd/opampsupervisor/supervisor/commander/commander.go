@@ -249,6 +249,9 @@ func (c *Commander) watch() {
 
 // LogFilePath returns the path where the agent stdout/stderr are captured.
 func (c *Commander) LogFilePath() string {
+	if c.cfg.PassthroughLogs {
+		return ""
+	}
 	return c.logFilePath
 }
 
