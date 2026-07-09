@@ -74,7 +74,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: mongodb.health
-            unit: "1"
+            unit: '1'
           - description: The number of bytes received.
             name: mongodb.network.io.receive
             sum:
