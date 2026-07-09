@@ -46,11 +46,8 @@ type ErrorCondition struct {
 }
 
 // TODO: currently no-op
-func (e *ErrorCondition) ShouldFailover(err error) bool {
-	if err == nil {
-		return false
-	}
-	return true
+func (*ErrorCondition) ShouldFailover(err error) bool {
+	return err != nil
 }
 
 func buildCondition(c *ConditionsConfig) Condition {
