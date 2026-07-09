@@ -58,6 +58,26 @@ func Test_mapKeys(t *testing.T) {
 			}),
 			want: map[string]any{},
 		},
+		{
+			name: "duplicate mapped keys keep later value",
+			source: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutInt("number-1", 1)
+				m.PutInt("number-2", 2)
+				m.PutStr("value-1", "one")
+				m.PutInt("number-3", 3)
+				m.PutBool("value-2", true)
+				return m
+			}(),
+			keyMapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, getBindings func(string) any) (any, error) {
+				key := getBindings("k").(string)
+				return strings.Split(key, "-")[0], nil
+			}),
+			want: map[string]any{
+				"number": int64(3),
+				"value":  true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

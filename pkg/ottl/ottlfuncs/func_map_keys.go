@@ -52,12 +52,19 @@ func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[
 
 		var builder xpdata.MapBuilder
 		builder.EnsureCapacity(sourceVal.Len())
+		seenKeys := make(map[string]pcommon.Value, sourceVal.Len())
 		for k, v := range sourceVal.All() {
 			newKey, err := funcutil.EvaluateBiFunction[K, string](tCtx, lb, k, v)
 			if err != nil {
 				return pcommon.Map{}, fmt.Errorf("error while evaluating lambda function on map item (%s, %v): %w", k, v, err)
 			}
-			v.CopyTo(builder.AppendEmpty(newKey))
+			if seenValue, ok := seenKeys[newKey]; ok {
+				v.CopyTo(seenValue)
+				continue
+			}
+			newValue := builder.AppendEmpty(newKey)
+			v.CopyTo(newValue)
+			seenKeys[newKey] = newValue
 		}
 
 		res := pcommon.NewMap()
