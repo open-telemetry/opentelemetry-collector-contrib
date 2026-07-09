@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.62.0
 	go.opentelemetry.io/collector/processor/processorhelper v0.156.0
 	go.opentelemetry.io/collector/processor/processortest v0.156.0
-  go.opentelemetry.io/otel/metric v1.44.0
+	go.opentelemetry.io/otel/metric v1.44.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
