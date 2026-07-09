@@ -1602,6 +1602,20 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["filtered_slice"], Filter(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				filtered := tCtx.GetLogRecord().Attributes().PutEmptySlice("filtered_slice")
+				filtered.AppendEmpty().SetStr("value1")
+			},
+		},
+		{
+			statement: `set(attributes["filtered_map"], Filter(attributes["foo"], (k, _) => k == "bar"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				filtered := tCtx.GetLogRecord().Attributes().PutEmptyMap("filtered_map")
+				filtered.PutStr("bar", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["prefixed_foo"], MapKeys(attributes["foo"], (k, _) => Concat(["http.", k], "")))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				prefixed := tCtx.GetLogRecord().Attributes().PutEmptyMap("prefixed_foo")
@@ -1653,6 +1667,8 @@ func Test_e2e_converters(t *testing.T) {
 }
 
 func Test_e2e_ottl_features(t *testing.T) {
+	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
+		true))
 	tests := []struct {
 		name      string
 		statement string
@@ -1910,6 +1926,24 @@ func Test_e2e_ottl_features(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], SliceToMap(["pass", "fail"])[attributes["int_value_str"]])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => attributes["int_value"] > 0, "positive", "negative"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "negative")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), attributes["foo"]["bar"], "fail"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), When(() => attributes["foo"]["bar"] == "pass", "pass", "fail"), "fail"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
