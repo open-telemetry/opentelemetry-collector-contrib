@@ -16,8 +16,8 @@ var ConditionsMapping = map[string]ConditionsBuilder{
 }
 
 type Condition interface {
-	// GoToNextConsumer determines if the connector should failover based on current consumer error
-	GoToNextConsumer(err error) bool
+	// ShouldFailover determines if the connector should failover based on current consumer error
+	ShouldFailover(err error) bool
 }
 
 type ErrorCondition struct {
@@ -34,8 +34,8 @@ func NewErrorCondition(config *confmap.Conf) (Condition, error) {
 	return e, nil
 }
 
-// TODO
-func (e *ErrorCondition) GoToNextConsumer(err error) bool {
+// TODO: currently no-op
+func (e *ErrorCondition) ShouldFailover(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -58,7 +58,7 @@ func NewHealthCheckCondition(config *confmap.Conf) (Condition, error) {
 	return e, nil
 }
 
-// TODO:
-func (h *HealthCheckCondition) GoToNextConsumer(_ error) bool {
+// TODO: no-op
+func (h *HealthCheckCondition) ShouldFailover(_ error) bool {
 	return true
 }

@@ -29,10 +29,14 @@ func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) 
 func (f *metricsRouter) Consume(ctx context.Context, md pmetric.Metrics) error {
 	select {
 	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, md) {
+		ok, err := f.sampleRetryConsumers(ctx, md)
+		// if unable to revive any connection, use the current pipeline again
+		if !ok {
 			return f.consumeByHealthyPipeline(ctx, md)
 		}
-		return nil
+		// if connection was successful, propagate the error back
+		// It is possible for the error to be non-nil here
+		return err
 	default:
 		return f.consumeByHealthyPipeline(ctx, md)
 	}
@@ -59,7 +63,7 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 }
 
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Metrics) bool {
+func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Metrics) (bool, error) {
 	stableIndex := f.pS.CurrentPipeline()
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
@@ -68,10 +72,10 @@ func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Met
 		// reset the pipeline to healthy
 		if err == nil || !f.shouldFailoverOnError(err) {
 			f.pS.ResetHealthyPipeline(i)
-			return true
+			return true, err
 		}
 	}
-	return false
+	return false, nil
 }
 
 type metricsFailover struct {

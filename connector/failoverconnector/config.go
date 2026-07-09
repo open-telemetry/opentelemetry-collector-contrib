@@ -58,7 +58,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Condition) > 1 {
-		return fmt.Errorf("only one failover condition is expected")
+		return fmt.Errorf("only one failover condition can be applied")
 	}
 	// validate provided name of the condition is supported
 	for name := range c.Condition {

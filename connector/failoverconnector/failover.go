@@ -55,7 +55,7 @@ func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
 // to check if given error should cause failover
 func (f *baseFailoverRouter[C]) shouldFailoverOnError(err error) bool {
 	if f.conditions != nil {
-		return f.conditions.GoToNextConsumer(err)
+		return f.conditions.ShouldFailover(err)
 	}
 	return true
 }
@@ -92,7 +92,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		builder := ConditionsMapping[name]
 		condition, err = builder(config)
 		if err != nil {
-			return nil, fmt.Errorf("could not build conditions: %w", err)
+			return nil, fmt.Errorf("could not build condition:%s due to %w", name, err)
 		}
 	}
 
