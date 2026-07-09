@@ -75,6 +75,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSystemFilesystemInodesUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemInodesUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemInodesUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.inodes.usage doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type, state]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemInodesUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemFilesystemUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.usage doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type, state]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemFilesystemUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.utilization doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

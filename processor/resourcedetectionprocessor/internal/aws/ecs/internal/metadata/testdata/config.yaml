@@ -31,38 +31,6 @@ all_set:
       enabled: true
     cloud.region:
       enabled: true
-reaggregate_set:
-  resource_attributes:
-    aws.ecs.cluster.arn:
-      enabled: true
-    aws.ecs.launchtype:
-      enabled: true
-    aws.ecs.task.arn:
-      enabled: true
-    aws.ecs.task.family:
-      enabled: true
-    aws.ecs.task.id:
-      enabled: true
-    aws.ecs.task.revision:
-      enabled: true
-    aws.log.group.arns:
-      enabled: true
-    aws.log.group.names:
-      enabled: true
-    aws.log.stream.arns:
-      enabled: true
-    aws.log.stream.names:
-      enabled: true
-    cloud.account.id:
-      enabled: true
-    cloud.availability_zone:
-      enabled: true
-    cloud.platform:
-      enabled: true
-    cloud.provider:
-      enabled: true
-    cloud.region:
-      enabled: true
 none_set:
   resource_attributes:
     aws.ecs.cluster.arn:

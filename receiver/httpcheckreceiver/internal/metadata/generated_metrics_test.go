@@ -96,14 +96,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckDNSLookupDurationDataPoint(ts, 3, "http.url-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckDurationDataPoint(ts, 3, "http.url-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckErrorDataPoint(ts, 1, "http.url-val", "error.message-val")
@@ -122,7 +120,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckResponseSizeDataPoint(ts, 3, "http.url-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")

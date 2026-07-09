@@ -26,6 +26,8 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Scheme                  string                    `mapstructure:"scheme"`
@@ -37,6 +39,13 @@ type Config struct {
 	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
 	Timeout                 time.Duration             `mapstructure:"timeout"`
 	DirectConnection        bool                      `mapstructure:"direct_connection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
@@ -63,6 +72,10 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("username provided without password"))
 	} else if c.Username == "" && c.Password != "" {
 		err = multierr.Append(err, errors.New("password provided without user"))
+	}
+
+	if c.QuerySampleCollection.MaxRowsPerQuery == 0 {
+		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
 	}
 
 	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {

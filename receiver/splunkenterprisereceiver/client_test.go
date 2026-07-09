@@ -33,11 +33,15 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func TestClientCreation(t *testing.T) {
+	idxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	idxEndpoint.MaxIdleConns = 0
+	idxEndpoint.IdleConnTimeout = 0
+	idxEndpoint.ForceAttemptHTTP2 = false
+	idxEndpoint.Endpoint = "https://localhost:8089"
+	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cfg := &Config{
-		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: "https://localhost:8089",
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
+		IdxEndpoint: idxEndpoint,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
@@ -62,11 +66,15 @@ func TestClientCreation(t *testing.T) {
 // test functionality of createRequest which is used for building metrics out of
 // ad-hoc searches
 func TestClientCreateRequest(t *testing.T) {
+	idxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	idxEndpoint.MaxIdleConns = 0
+	idxEndpoint.IdleConnTimeout = 0
+	idxEndpoint.ForceAttemptHTTP2 = false
+	idxEndpoint.Endpoint = "https://localhost:8089"
+	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cfg := &Config{
-		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: "https://localhost:8089",
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
+		IdxEndpoint: idxEndpoint,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
@@ -150,11 +158,15 @@ func TestClientCreateRequest(t *testing.T) {
 
 // createAPIRequest creates a request for api calls i.e. to introspection endpoint
 func TestAPIRequestCreate(t *testing.T) {
+	idxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	idxEndpoint.MaxIdleConns = 0
+	idxEndpoint.IdleConnTimeout = 0
+	idxEndpoint.ForceAttemptHTTP2 = false
+	idxEndpoint.Endpoint = "https://localhost:8089"
+	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cfg := &Config{
-		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: "https://localhost:8089",
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
+		IdxEndpoint: idxEndpoint,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,

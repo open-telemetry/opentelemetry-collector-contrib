@@ -48,25 +48,32 @@ var MapAttributeDirection = map[string]AttributeDirection{
 
 var MetricsInfo = metricsInfo{
 	SystemDiskIo: metricInfo{
-		Name: "system.disk.io",
+		Name:       "system.disk.io",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemDiskIoTime: metricInfo{
-		Name: "system.disk.io_time",
+		Name:       "system.disk.io_time",
+		Attributes: []string{"device"},
 	},
 	SystemDiskMerged: metricInfo{
-		Name: "system.disk.merged",
+		Name:       "system.disk.merged",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemDiskOperationTime: metricInfo{
-		Name: "system.disk.operation_time",
+		Name:       "system.disk.operation_time",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemDiskOperations: metricInfo{
-		Name: "system.disk.operations",
+		Name:       "system.disk.operations",
+		Attributes: []string{"device", "direction"},
 	},
 	SystemDiskPendingOperations: metricInfo{
-		Name: "system.disk.pending_operations",
+		Name:       "system.disk.pending_operations",
+		Attributes: []string{"device"},
 	},
 	SystemDiskWeightedIoTime: metricInfo{
-		Name: "system.disk.weighted_io_time",
+		Name:       "system.disk.weighted_io_time",
+		Attributes: []string{"device"},
 	},
 }
 
@@ -81,7 +88,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemDiskIo struct {

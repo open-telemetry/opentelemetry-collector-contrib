@@ -143,14 +143,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -169,14 +167,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 3, "pipe_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBlockedDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -195,14 +191,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -215,14 +209,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryExecutedDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -235,35 +227,30 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -309,15 +296,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
