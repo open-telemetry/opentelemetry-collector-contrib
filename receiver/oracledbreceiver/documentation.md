@@ -828,14 +828,6 @@ Average number of sessions over the metric interval.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | session_status | Session status | Any Str | Recommended | - |
 
-### oracledb.session.count
-
-Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {session} | Gauge | Int | Development |
-
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.

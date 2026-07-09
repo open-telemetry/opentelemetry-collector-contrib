@@ -379,9 +379,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionAverageDataPoint(ts, 3, "session_status-val-2")
 			}
-
-			allMetricsCount++
-			mb.RecordOracledbSessionCountDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
@@ -2042,18 +2039,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("session_status")
 						assert.False(t, ok)
 					}
-				case "oracledb.session.count":
-					assert.False(t, validatedMetrics["oracledb.session.count"], "Found a duplicate in the metrics slice: oracledb.session.count")
-					validatedMetrics["oracledb.session.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.", mi.Description())
-					assert.Equal(t, "{session}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.sessions.limit":
 					assert.False(t, validatedMetrics["oracledb.sessions.limit"], "Found a duplicate in the metrics slice: oracledb.sessions.limit")
 					validatedMetrics["oracledb.sessions.limit"] = true

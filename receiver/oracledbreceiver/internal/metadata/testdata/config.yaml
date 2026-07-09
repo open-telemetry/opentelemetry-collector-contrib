@@ -173,8 +173,6 @@ all_set:
     oracledb.session.average:
       enabled: true
       attributes: ["session_status"]
-    oracledb.session.count:
-      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -417,8 +415,6 @@ reaggregate_set:
     oracledb.session.average:
       enabled: true
       attributes: []
-    oracledb.session.count:
-      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -661,8 +657,6 @@ none_set:
     oracledb.session.average:
       enabled: false
       attributes: ["session_status"]
-    oracledb.session.count:
-      enabled: false
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:

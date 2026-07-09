@@ -149,7 +149,6 @@ var queryResponses = map[string][]metricRow{
 		{"METRIC_NAME": "PGA Cache Hit %", "VALUE": "92.10"},
 		{"METRIC_NAME": "CPU Usage Per Sec", "VALUE": "150.00"},
 		{"METRIC_NAME": "Host CPU Usage Per Sec", "VALUE": "320.00"},
-		{"METRIC_NAME": "Session Count", "VALUE": "125"},
 	},
 }
 
@@ -1190,14 +1189,13 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			cfg.Metrics.OracledbRedoAllocationUtilization.Enabled = true
 			cfg.Metrics.OracledbParseRate.Enabled = true
 			cfg.Metrics.OracledbExecutionUtilization.Enabled = true
-			cfg.Metrics.OracledbSessionAverage.Enabled = true
-			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
-			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
-			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
-			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
 			cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+			cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
 			cfg.Metrics.OracledbHostCPUUsageRate.Enabled = true
-			cfg.Metrics.OracledbSessionCount.Enabled = true
+			cfg.Metrics.OracledbIoSingleBlockReadLatency.Enabled = true
+			cfg.Metrics.OracledbPgaCacheUtilization.Enabled = true
+			cfg.Metrics.OracledbSessionAverage.Enabled = true
+			cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -1263,7 +1261,6 @@ func TestScraper_ScrapeSysMetrics(t *testing.T) {
 			assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
 			// 320 cs/s -> 3.2 CPU cores
 			assert.InDelta(t, 3.20, metricMap["oracledb.host.cpu.usage.rate"], floatDelta)
-			assert.Equal(t, int64(125), intMetricMap["oracledb.session.count"])
 		})
 	}
 }

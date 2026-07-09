@@ -1157,13 +1157,6 @@ metrics:
       value_type: double
     unit: "{session}"
     attributes: [session_status]
-  oracledb.session.count:
-    description: Number of sessions. Distinct from oracledb.sessions.usage, which breaks the session population down by status and type.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-    unit: "{session}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true

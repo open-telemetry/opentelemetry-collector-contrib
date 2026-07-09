@@ -54,14 +54,13 @@ const (
 	sysmetricExecuteWithoutParseRatio = "Execute Without Parse Ratio"
 
 	// V$SYSMETRIC health & efficiency indicators (group_id=2, ~60s interval)
+	sysmetricAverageActiveSessions  = "Average Active Sessions"
 	sysmetricCPUUsagePerSec         = "CPU Usage Per Sec"
 	sysmetricCursorCacheHitRatio    = "Cursor Cache Hit Ratio"
 	sysmetricHostCPUUsagePerSec     = "Host CPU Usage Per Sec"
-	sysmetricSingleBlockReadLatency = "Average Synchronous Single-Block Read Latency"
 	sysmetricPGACacheHitPct         = "PGA Cache Hit %"
-	sysmetricAverageActiveSessions  = "Average Active Sessions"
-	sysmetricSessionCount           = "Session Count"
 	sysmetricResponseTimePerTxn     = "Response Time Per Txn"
+	sysmetricSingleBlockReadLatency = "Average Synchronous Single-Block Read Latency"
 
 	consistentGets                 = "consistent gets"
 	cpuTime                        = "CPU used by this session"
@@ -1041,7 +1040,6 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled
 	if !anySysmetricEnabled {
 		return
@@ -1112,6 +1110,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 			if s.metricsBuilderConfig.Metrics.OracledbExecutionUtilization.Enabled {
 				s.mb.RecordOracledbExecutionUtilizationDataPoint(now, val, metadata.AttributeOracledbParseTypeSoft)
 			}
+		case sysmetricAverageActiveSessions:
+			if s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled {
+				s.mb.RecordOracledbSessionAverageDataPoint(now, val, "active")
+			}
 		case sysmetricCPUUsagePerSec:
 			if s.metricsBuilderConfig.Metrics.OracledbCPUUsageRate.Enabled {
 				s.mb.RecordOracledbCPUUsageRateDataPoint(now, val/100)
@@ -1124,25 +1126,17 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 			if s.metricsBuilderConfig.Metrics.OracledbHostCPUUsageRate.Enabled {
 				s.mb.RecordOracledbHostCPUUsageRateDataPoint(now, val/100)
 			}
-		case sysmetricSingleBlockReadLatency:
-			if s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled {
-				s.mb.RecordOracledbIoSingleBlockReadLatencyDataPoint(now, val/1000)
-			}
 		case sysmetricPGACacheHitPct:
 			if s.metricsBuilderConfig.Metrics.OracledbPgaCacheUtilization.Enabled {
 				s.mb.RecordOracledbPgaCacheUtilizationDataPoint(now, val)
 			}
-		case sysmetricAverageActiveSessions:
-			if s.metricsBuilderConfig.Metrics.OracledbSessionAverage.Enabled {
-				s.mb.RecordOracledbSessionAverageDataPoint(now, val, "active")
-			}
-		case sysmetricSessionCount:
-			if s.metricsBuilderConfig.Metrics.OracledbSessionCount.Enabled {
-				s.mb.RecordOracledbSessionCountDataPoint(now, int64(val))
-			}
 		case sysmetricResponseTimePerTxn:
 			if s.metricsBuilderConfig.Metrics.OracledbTransactionResponseTime.Enabled {
 				s.mb.RecordOracledbTransactionResponseTimeDataPoint(now, val/100)
+			}
+		case sysmetricSingleBlockReadLatency:
+			if s.metricsBuilderConfig.Metrics.OracledbIoSingleBlockReadLatency.Enabled {
+				s.mb.RecordOracledbIoSingleBlockReadLatencyDataPoint(now, val/1000)
 			}
 		}
 	}
