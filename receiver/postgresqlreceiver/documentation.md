@@ -305,6 +305,20 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | function | The name of the function. | Any Str | Recommended | - |
 
+### postgresql.query.conflicts
+
+Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.conflict.type | The type of recovery conflict that caused a query to be canceled on a standby server. | Str: ``tablespace``, ``lock``, ``snapshot``, ``bufferpin``, ``deadlock`` | Recommended | - |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.
