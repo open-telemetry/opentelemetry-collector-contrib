@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -211,4 +212,96 @@ func TestYAMLSourceInvalidYAML(t *testing.T) {
 	err = source.Start(t.Context(), host)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse YAML file")
+}
+
+func TestYAMLSourceWatchReload(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "mappings.yaml")
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("user001: \"Alice Johnson\"\n"), 0o600))
+
+	factory := NewFactory()
+	cfg := &Config{Path: yamlPath, Watch: true}
+
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, source)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, source.Start(t.Context(), host))
+	t.Cleanup(func() { _ = source.Shutdown(t.Context()) })
+
+	val, found, err := source.Lookup(t.Context(), "user001")
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "Alice Johnson", val)
+
+	// Rewrite the file with new content and expect the watcher to reload it.
+	require.NoError(t, os.WriteFile(yamlPath, []byte("user001: \"Alice Cooper\"\nuser002: \"Bob Smith\"\n"), 0o600))
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		val, found, err := source.Lookup(t.Context(), "user001")
+		assert.NoError(c, err)
+		assert.True(c, found)
+		assert.Equal(c, "Alice Cooper", val)
+
+		val, found, err = source.Lookup(t.Context(), "user002")
+		assert.NoError(c, err)
+		assert.True(c, found)
+		assert.Equal(c, "Bob Smith", val)
+	}, 5*time.Second, 20*time.Millisecond)
+}
+
+func TestYAMLSourceWatchKeepsLastDataOnInvalidReload(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "mappings.yaml")
+
+	require.NoError(t, os.WriteFile(yamlPath, []byte("user001: \"Alice Johnson\"\n"), 0o600))
+
+	factory := NewFactory()
+	cfg := &Config{Path: yamlPath, Watch: true}
+
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, source.Start(t.Context(), host))
+	t.Cleanup(func() { _ = source.Shutdown(t.Context()) })
+
+	// Write invalid YAML; the source should keep serving the last good data.
+	require.NoError(t, os.WriteFile(yamlPath, []byte("not: valid: yaml: ["), 0o600))
+
+	require.Never(t, func() bool {
+		_, found, _ := source.Lookup(t.Context(), "user001")
+		return !found
+	}, 500*time.Millisecond, 50*time.Millisecond)
+
+	val, found, err := source.Lookup(t.Context(), "user001")
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "Alice Johnson", val)
+}
+
+func TestYAMLSourceWatchInvalidPath(t *testing.T) {
+	factory := NewFactory()
+	cfg := &Config{Path: "/nonexistent/path/to/file.yaml", Watch: true}
+
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	err = source.Start(t.Context(), host)
+	require.Error(t, err)
 }

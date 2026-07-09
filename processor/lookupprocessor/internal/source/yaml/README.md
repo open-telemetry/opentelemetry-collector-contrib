@@ -1,12 +1,13 @@
 # yaml Source
 
-Looks up keys from a YAML file loaded at startup. Supports both scalar values (1:1 mapping) and nested maps (1:N mapping). The file is read once during `Start` and kept in memory.
+Looks up keys from a YAML file loaded at startup. Supports both scalar values (1:1 mapping) and nested maps (1:N mapping). The file is read once during `Start` and kept in memory. When `watch` is enabled, the file is additionally watched for changes and reloaded in the background.
 
 ## Configuration
 
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `path` | Path to the YAML file containing key-value mappings (required) | - |
+| `watch` | Watch the file for changes and reload its contents in the background. If a reload fails (e.g. the file is temporarily missing or contains invalid YAML), the last successfully loaded data is kept. | `false` |
 
 ## Examples
 
@@ -27,6 +28,7 @@ processors:
     source:
       type: yaml
       path: /etc/otel/mappings.yaml
+      watch: false
     lookups:
       - key: log.attributes["user.id"]
         attributes:
