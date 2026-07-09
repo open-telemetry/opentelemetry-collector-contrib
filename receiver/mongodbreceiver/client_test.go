@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -84,6 +85,11 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 	}
 
 	return result, args.Error(1)
+}
+
+func (fc *fakeClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).([]bson.M), args.Error(1)
 }
 
 func TestListDatabaseNames(t *testing.T) {
@@ -220,6 +226,103 @@ func TestGetVersion(t *testing.T) {
 	version, err := client.GetVersion(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "4.4.10", version.String())
+}
+
+func TestCurrentOp(t *testing.T) {
+	mont := drivertest.NewMockDeployment()
+	mont.AddResponses(bson.D{
+		bson.E{Key: "ok", Value: 1},
+		bson.E{Key: "cursor", Value: bson.D{
+			bson.E{Key: "id", Value: int64(0)},
+			bson.E{Key: "ns", Value: "admin.$cmd.aggregate"},
+			bson.E{Key: "firstBatch", Value: bson.A{
+				bson.D{
+					bson.E{Key: "type", Value: "op"},
+					bson.E{Key: "ns", Value: "testdb.testcol"},
+					bson.E{Key: "op", Value: "query"},
+					bson.E{Key: "secs_running", Value: int32(5)},
+				},
+				bson.D{
+					bson.E{Key: "type", Value: "op"},
+					bson.E{Key: "ns", Value: "testdb.anothercol"},
+					bson.E{Key: "op", Value: "insert"},
+					bson.E{Key: "secs_running", Value: int32(1)},
+				},
+			}},
+		}},
+	})
+	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+	opts.Deployment = mont
+	c, err := mongo.Connect(opts)
+	require.NoError(t, err)
+
+	client := &mongodbClient{
+		Client: c,
+		logger: zap.NewNop(),
+	}
+	ops, err := client.CurrentOp(t.Context())
+	require.NoError(t, err)
+	require.Len(t, ops, 2)
+	require.Equal(t, "query", ops[0]["op"])
+	require.Equal(t, "insert", ops[1]["op"])
+}
+
+func TestCurrentOpPipelineStages(t *testing.T) {
+	pipeline := currentOpPipeline()
+	require.Len(t, pipeline, 2, "pipeline should contain $currentOp and $match stages")
+
+	require.Equal(t, "$currentOp", pipeline[0][0].Key)
+
+	require.Equal(t, "$match", pipeline[1][0].Key)
+	match, ok := pipeline[1][0].Value.(bson.M)
+	require.True(t, ok, "$match value should be a bson.M")
+
+	nsFilter, ok := match["ns"].(bson.M)
+	require.True(t, ok, "$match should constrain ns")
+	require.Equal(t, true, nsFilter["$exists"])
+	require.Empty(t, nsFilter["$ne"])
+	nsNot, ok := nsFilter["$not"].(bson.M)
+	require.True(t, ok)
+	require.Equal(t, currentOpNamespaceFilterRegex, nsNot["$regex"])
+
+	commandFilter, ok := match["command"].(bson.M)
+	require.True(t, ok, "$match should constrain command existence")
+	require.Equal(t, true, commandFilter["$exists"])
+
+	for _, key := range []string{"command.hello", "command.ping", "command.isMaster"} {
+		filter, ok := match[key].(bson.M)
+		require.Truef(t, ok, "$match should constrain %q", key)
+		require.Equalf(t, false, filter["$exists"], "%q should require $exists: false", key)
+	}
+}
+
+func TestCurrentOpNamespaceFilterRegex(t *testing.T) {
+	re := regexp.MustCompile(currentOpNamespaceFilterRegex)
+
+	excluded := []string{
+		"admin.system.version",
+		"admin.$cmd",
+		"admin.system.users",
+		"admin",
+		"local.oplog.rs",
+		"local.startup_log",
+		"local",
+	}
+	for _, ns := range excluded {
+		require.Truef(t, re.MatchString(ns), "regex should match internal namespace %q", ns)
+	}
+
+	preserved := []string{
+		"mydb.users",
+		"administrative.audit",
+		"localized.data",
+		"adminuser",
+		"localhost.metrics",
+	}
+	for _, ns := range preserved {
+		require.Falsef(t, re.MatchString(ns), "regex should NOT match user namespace %q", ns)
+	}
 }
 
 func TestGetVersionFailures(t *testing.T) {

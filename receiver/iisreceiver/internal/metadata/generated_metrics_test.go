@@ -78,68 +78,54 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolStateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolUptimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisConnectionActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisConnectionAnonymousDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisConnectionAttemptCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkBlockedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisNetworkFileCountDataPoint(ts, 3, AttributeDirectionReceived)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisNetworkIoDataPoint(ts, 3, AttributeDirectionReceived)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisRequestCountDataPoint(ts, 3, AttributeRequestGet)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestQueueAgeMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestQueueCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestRejectedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisThreadActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisUptimeDataPoint(ts, 1)

@@ -86,3 +86,9 @@ azure_blob/err6:
     type: "workload_identity"
     client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
     tenant_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+azure_blob/err-compression:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "connection_string"
+    connection_string: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
+  compression: "foo"

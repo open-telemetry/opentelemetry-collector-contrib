@@ -1627,6 +1627,139 @@ func TestTailStorageExtensionFromHost(t *testing.T) {
 	assert.Positive(t, host.extension.takeCount)
 }
 
+// TestSpanIngestPendingStorageDeletedOnDecisionWait verifies that when a trace
+// stays pending in span-ingest mode until DecisionWait fires, the storage entry
+// is explicitly deleted regardless of which cache implementation is in use.
+func TestSpanIngestPendingStorageDeletedOnDecisionWait(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	for _, tc := range []struct {
+		name            string
+		sampledCache    int
+		nonSampledCache int
+	}{
+		{name: "without cache", sampledCache: 0, nonSampledCache: 0},
+		{name: "with cache", sampledCache: 10, nonSampledCache: 10},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			controller := newTestTSPController()
+			msp := new(consumertest.TracesSink)
+
+			cfg := Config{
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        defaultNumTraces,
+				SamplingStrategy: samplingStrategySpanIngest,
+				DecisionCache: DecisionCacheConfig{
+					SampledCacheSize:    tc.sampledCache,
+					NonSampledCacheSize: tc.nonSampledCache,
+				},
+				// Probabilistic at 0% always returns NotSampled from Evaluate.
+				// makeDecisionOnSpanIngest treats that as Pending (only Sampled
+				// and Dropped are terminal), so the batch is written to storage.
+				PolicyCfgs: []PolicyCfg{{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:             "never-immediate",
+						Type:             Probabilistic,
+						ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 0},
+					},
+				}},
+				TailStorageID: &testExtensionID,
+				Options:       []Option{withTestController(controller)},
+			}
+
+			host := &extensionHost{}
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), host))
+			defer func() { require.NoError(t, p.Shutdown(t.Context())) }()
+
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+
+			// First tick closes the current batcher window; second tick processes
+			// it, simulating DecisionWait expiry.
+			controller.waitForTick()
+			controller.waitForTick()
+
+			tsp := p.(*tailSamplingSpanProcessor)
+			assert.Positive(t, host.extension.appendCount, "span batch must have been written to storage")
+			assert.Positive(t, host.extension.deleteCount, "storage entry must be deleted after pending trace is finalized")
+			assert.Empty(t, tsp.idToTrace, "trace must be evicted from the in-memory map")
+			assert.Zero(t, tsp.deleteTraceQueue.Len(), "trace must be removed from the delete queue")
+		})
+	}
+}
+
+// TestSpanIngestPendingStorageDeletedOnNumTracesOverflow verifies that when
+// NumTraces is exhausted, waitForSpace evicts the oldest pending trace and
+// deletes its storage entry via dropTrace, and that the evicting trace's own
+// storage entry is subsequently cleaned when DecisionWait fires.
+func TestSpanIngestPendingStorageDeletedOnNumTracesOverflow(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	traceID1 := pcommon.TraceID([16]byte{1})
+	traceID2 := pcommon.TraceID([16]byte{2})
+
+	for _, tc := range []struct {
+		name            string
+		sampledCache    int
+		nonSampledCache int
+	}{
+		{name: "without cache", sampledCache: 0, nonSampledCache: 0},
+		{name: "with cache", sampledCache: 10, nonSampledCache: 10},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			controller := newTestTSPController()
+			msp := new(consumertest.TracesSink)
+
+			cfg := Config{
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        1, // forces overflow on the second trace
+				SamplingStrategy: samplingStrategySpanIngest,
+				DecisionCache: DecisionCacheConfig{
+					SampledCacheSize:    tc.sampledCache,
+					NonSampledCacheSize: tc.nonSampledCache,
+				},
+				PolicyCfgs: []PolicyCfg{{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:             "never-immediate",
+						Type:             Probabilistic,
+						ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 0},
+					},
+				}},
+				TailStorageID: &testExtensionID,
+				Options:       []Option{withTestController(controller)},
+			}
+
+			host := &extensionHost{}
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), host))
+			defer func() { require.NoError(t, p.Shutdown(t.Context())) }()
+
+			// Trace 1 stays pending — spans written to storage.
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTracesWithID(traceID1)))
+			// Trace 2 causes overflow; iter processes it after trace 1, so
+			// waitForSpace fires inside iter and evicts trace 1 via dropTrace.
+			// ConsumeTraces returns when iter *receives* trace 2, not when it
+			// finishes processing it, so we sync via a tick below.
+			require.NoError(t, p.ConsumeTraces(t.Context(), simpleTracesWithID(traceID2)))
+
+			// First tick: syncs after trace 2 processing (overflow deleted trace 1)
+			// and closes the batcher window containing trace 2.
+			controller.waitForTick()
+			// Second tick: processes trace 2's batcher window via the span-ingest
+			// path; our fix drops trace 2 from memory and storage.
+			controller.waitForTick()
+
+			tsp := p.(*tailSamplingSpanProcessor)
+			assert.GreaterOrEqual(t, host.extension.deleteCount, host.extension.appendCount,
+				"every appended trace must have been deleted from storage")
+			assert.Empty(t, tsp.idToTrace, "both traces must be evicted from the in-memory map")
+			assert.Zero(t, tsp.deleteTraceQueue.Len(), "both traces must be removed from the delete queue")
+		})
+	}
+}
+
 func TestTailStorageExtensionNotConfigured(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
@@ -1734,22 +1867,22 @@ func (e *extension) ensureStorage() {
 	}
 }
 
-func (e *extension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 	e.ensureStorage()
-	e.storage.Append(traceID, rss)
 	e.appendCount++
+	return e.storage.Append(traceID, td)
 }
 
-func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	e.ensureStorage()
 	e.takeCount++
 	return e.storage.Take(traceID)
 }
 
-func (e *extension) Delete(traceID pcommon.TraceID) {
+func (e *extension) Delete(traceID pcommon.TraceID) error {
 	e.ensureStorage()
-	e.storage.Delete(traceID)
 	e.deleteCount++
+	return e.storage.Delete(traceID)
 }
 
 // Start implements component.Component.

@@ -24,10 +24,18 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
+
+// dedupEntryTTLBuffer is added to dedup_interval to derive how long a per-UID
+// dedup entry is retained in the cache. The TTL is reset on every emit, so an
+// entry only gets evicted after dedup_interval+buffer of no emits for that UID.
+// The buffer keeps state alive slightly longer than the throttle window so a
+// UID being actively throttled is not evicted mid-window.
+const dedupEntryTTLBuffer = 5 * time.Minute
 
 type k8seventsReceiver struct {
 	config          *Config
@@ -38,10 +46,13 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+	telemetry       *metadata.TelemetryBuilder
 	mu              sync.Mutex
 	client          dynamic.Interface
 	storageClient   storage.Client
 	wg              sync.WaitGroup
+	// dedupCache holds the last-emit time per Event UID. nil unless dedup_interval > 0.
+	dedupCache *ttlmap.TTLMap
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -61,17 +72,31 @@ func newReceiver(
 		return nil, err
 	}
 
+	telemetry, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
 	return &k8seventsReceiver{
 		settings:     set,
 		config:       config,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
 		obsrecv:      obsrecv,
+		telemetry:    telemetry,
 	}, nil
 }
 
 func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
+
+	if kr.config.DedupInterval > 0 {
+		kr.settings.Logger.Info("dedup_interval enabled",
+			zap.Duration("dedup_interval", kr.config.DedupInterval),
+			zap.Duration("entry_ttl", kr.config.DedupInterval+dedupEntryTTLBuffer))
+	} else if kr.config.DedupInterval < 0 {
+		kr.settings.Logger.Info("dedup_interval is negative; dropping all MODIFIED watch events")
+	}
 
 	client, err := kr.config.getDynamicClient()
 	if err != nil {
@@ -149,11 +174,21 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 
+	if kr.dedupCache != nil {
+		kr.dedupCache.Shutdown()
+		kr.dedupCache = nil
+	}
+
+	if kr.telemetry != nil {
+		kr.telemetry.Shutdown()
+	}
 	return nil
 }
 
 // startWatchers creates and starts the k8sinventory watch observer
 func (kr *k8seventsReceiver) startWatchers() {
+	kr.initDedupCache()
+
 	// Events GVR (GroupVersionResource)
 	eventsGVR := schema.GroupVersionResource{
 		Group:    "",
@@ -197,7 +232,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 				return
 			}
 
-			kr.handleEvent(ev)
+			kr.handleEvent(ev, event.Type)
 		},
 	)
 	if err != nil {
@@ -211,15 +246,63 @@ func (kr *k8seventsReceiver) startWatchers() {
 	kr.mu.Unlock()
 }
 
-// handleEvent processes a Kubernetes event and sends it to the logs consumer
-func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
-	if kr.allowEvent(ev) {
-		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
-
-		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
-		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
-		kr.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 1, consumerErr)
+// handleEvent always emits ADDED; MODIFIED is gated by dedup_interval.
+// The dedup cache is seeded lazily on the first MODIFIED for a UID.
+func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event, watchType apiWatch.EventType) {
+	if !kr.allowEvent(ev) {
+		return
 	}
+
+	if watchType == apiWatch.Modified && !kr.shouldEmitModified(ev) {
+		kr.telemetry.K8sEventsModifiedFiltered.Add(kr.ctx, 1)
+		return
+	}
+
+	ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
+	ctx := kr.obsrecv.StartLogsOp(kr.ctx)
+	consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
+	kr.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 1, consumerErr)
+}
+
+// initDedupCache lazily (re)builds the dedup cache when dedup_interval is set.
+// No-op when the cache is already alive, so it is safe on every leader regain.
+func (kr *k8seventsReceiver) initDedupCache() {
+	if kr.config.DedupInterval <= 0 || kr.dedupCache != nil {
+		return
+	}
+	// Entry TTL is derived from dedup_interval so it always outlives the
+	// throttle window; see dedupEntryTTLBuffer.
+	entryTTL := kr.config.DedupInterval + dedupEntryTTLBuffer
+	// Sweep at half the TTL, capped at 60s and floored at 1s (sub-second TTLs
+	// would otherwise collapse to a 0s ticker).
+	entryTTLSeconds := max(int64(entryTTL/time.Second), 1)
+	sweepInterval := min(max(entryTTLSeconds/2, 1), 60)
+	kr.dedupCache = ttlmap.New(sweepInterval, entryTTLSeconds, make(chan struct{}))
+	kr.dedupCache.Start()
+}
+
+func (kr *k8seventsReceiver) shouldEmitModified(ev *corev1.Event) bool {
+	interval := kr.config.DedupInterval
+	if interval == 0 {
+		return true
+	}
+	if interval < 0 {
+		return false
+	}
+
+	uid := string(ev.UID)
+	val := kr.dedupCache.Get(uid)
+	if val == nil {
+		// First MODIFIED for this UID (or evicted past the entry TTL): seed and emit.
+		kr.dedupCache.Put(uid, time.Now())
+		return true
+	}
+
+	if time.Since(val.(time.Time)) < interval {
+		return false
+	}
+	kr.dedupCache.Put(uid, time.Now())
+	return true
 }
 
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)

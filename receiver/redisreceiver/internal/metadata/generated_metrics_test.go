@@ -85,19 +85,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsBlockedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsConnectedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsMaxInputBufferDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
@@ -161,90 +157,72 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisCmdUsecDataPoint(ts, 3, "cmd-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCommandsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCommandsProcessedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisConnectionsReceivedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisConnectionsRejectedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeStateSys)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisCPUTimeDataPoint(ts, 3, AttributeStateSysChildren)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbAvgTTLDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbAvgTTLDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbExpiresDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbExpiresDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisDbKeysDataPoint(ts, 1, "db-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisDbKeysDataPoint(ts, 3, "db-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeysEvictedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeysExpiredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeyspaceHitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisKeyspaceMissesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisLatestForkDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisMaxmemoryDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryFragmentationRatioDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryLuaDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryPeakDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryRssDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
@@ -260,23 +238,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordRedisModeDataPoint(ts, 3, AttributeModeSentinel)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetInputDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetOutputDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisReplicationOffsetDataPoint(ts, 1)
@@ -307,14 +280,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisSentinelTotalTiltDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisTrackingTotalKeysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisUptimeDataPoint(ts, 1)

@@ -126,7 +126,7 @@ type Config struct {
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
 	// This option can be used to included metrics that are otherwise dropped by default.
-	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+	// See ./internal/translation/default_metrics.yaml for a list of metrics that are dropped by default.
 	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
 
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of

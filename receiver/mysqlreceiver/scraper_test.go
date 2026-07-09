@@ -94,7 +94,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		actualQuerySamples, err := scraper.scrapeQuerySampleFunc(t.Context())
 		require.NoError(t, err)
@@ -105,7 +106,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
-			plogtest.IgnoreTimestamp()))
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.Endpoint)
 
 		// Scrape top queries
@@ -120,7 +122,8 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
-			plogtest.IgnoreTimestamp()))
+			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.Endpoint)
 	})
 
@@ -157,7 +160,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		var partialError scrapererror.PartialScrapeError
 		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
@@ -194,7 +197,8 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 }
 
 // assertLogsHaveInstanceEndpoint verifies that every ResourceLogs in logs carries
@@ -799,15 +803,16 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.processlistDB = text[5]
 		s.processlistCommand = text[6]
 		s.processlistState = text[7]
-		s.sqlText = text[8]
-		s.digest = text[9]
-		s.eventID, _ = parseInt(text[10])
-		s.sessionStatus = text[11]
-		s.waitEvent = text[12]
-		s.waitTime, _ = strconv.ParseFloat(text[13], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[14], 64)
-		if len(text) > 15 {
-			s.traceparent = text[15]
+		s.digestText = text[8]
+		s.sqlText = text[9]
+		s.digest = text[10]
+		s.eventID, _ = parseInt(text[11])
+		s.sessionStatus = text[12]
+		s.waitEvent = text[13]
+		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
+		if len(text) > 16 {
+			s.traceparent = text[16]
 		}
 
 		samples = append(samples, s)
@@ -937,6 +942,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					processlistUser:    "myuser",
 					processlistCommand: "Query",
 					processlistState:   "executing",
+					digestText:         "SELECT * FROM t",
 					sqlText:            "SELECT * FROM t",
 					digest:             digest,
 					eventID:            1,
@@ -1393,6 +1399,11 @@ func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	logs, err := s.scrapeTopQueryFunc(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	sls := logs.ResourceLogs().At(0).ScopeLogs()
+	digest, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.events_statements_summary_by_digest.digest")
+	queryPlanHash, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.query_plan.hash")
+	assert.Equal(t, digest, queryPlanHash)
 
 	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
 	ver, ok := attrs.Get("db.system.version")

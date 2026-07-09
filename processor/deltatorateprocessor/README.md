@@ -3,7 +3,6 @@
 
 The Delta to Rate Processor (`deltatorateprocessor`) converts delta sum metrics to rate metrics. This rate is a gauge. 
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

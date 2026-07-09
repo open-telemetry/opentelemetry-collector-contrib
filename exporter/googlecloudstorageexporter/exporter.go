@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -24,9 +25,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 )
 
 type poolItem interface {
@@ -180,7 +183,11 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// TODO Add option for authenticator
-	client, err := storage.NewClient(ctx)
+	var clientOpts []option.ClientOption
+	if s.cfg.UniverseDomain != "" {
+		clientOpts = append(clientOpts, option.WithUniverseDomain(s.cfg.UniverseDomain))
+	}
+	client, err := storage.NewClient(ctx, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}
@@ -231,7 +238,12 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if ld.ResourceLogs().Len() > 0 {
+		attributePartition = s.attributePartition(ld.ResourceLogs().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload logs: %w", err)
 	}
 	return nil
@@ -243,16 +255,44 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		return fmt.Errorf("failed to marshal traces: %w", err)
 	}
 
-	if err = s.uploadFile(ctx, buf); err != nil {
+	attributePartition := ""
+	if td.ResourceSpans().Len() > 0 {
+		attributePartition = s.attributePartition(td.ResourceSpans().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload traces: %w", err)
 	}
 	return nil
 }
 
-// generateFilename returns the name of the file to be uploaded.
-// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+// attributePartition returns the sanitized resource_attrs_to_gcs partition segment for the
+// resource, or "" when the mapping is unset, the attribute is absent, or it sanitizes empty.
+func (s *storageExporter) attributePartition(res pcommon.Resource) string {
+	if key := s.cfg.ResourceAttrsToGCS.Prefix; key != "" {
+		if value, ok := res.Attributes().Get(key); ok {
+			return sanitizePartitionSegment(value.AsString())
+		}
+	}
+	return ""
+}
+
+// sanitizePartitionSegment normalizes an untrusted attribute value for use in an object
+// name via path.Clean (collapses "//", drops "."/".."/empty segments). The leading "/"
+// prevents traversal above the root and is then trimmed.
+func sanitizePartitionSegment(value string) string {
+	return strings.TrimPrefix(path.Clean("/"+value), "/")
+}
+
+// generateFilename builds the object name with the layout (each segment optional, skipped
+// when empty):
+//
+//	<partitionPrefix>/<attributePartition>/<partitionFormat>/<filePrefix>_<uniqueID>[.ext]
+//
+// filePrefix joins uniqueID with "_" (or "/" when it ends in "/"); attributePartition comes
+// from resource_attrs_to_gcs; the .gz/.zst extension is appended when compression is set.
 func generateFilename(
-	uniqueID, filePrefix, partitionPrefix string,
+	uniqueID, filePrefix, partitionPrefix, attributePartition string,
 	compression configcompression.Type,
 	partitionFormat *strftime.Strftime,
 	now time.Time,
@@ -274,6 +314,13 @@ func generateFilename(
 		filename = partition + filename
 	}
 
+	if attributePartition != "" {
+		if !strings.HasSuffix(attributePartition, "/") {
+			attributePartition += "/"
+		}
+		filename = attributePartition + filename
+	}
+
 	if partitionPrefix != "" {
 		if !strings.HasSuffix(partitionPrefix, "/") {
 			partitionPrefix += "/"
@@ -292,7 +339,7 @@ func generateFilename(
 	return filename
 }
 
-func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
+func (s *storageExporter) uploadFile(ctx context.Context, content []byte, attributePartition string) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
 		return nil
@@ -311,6 +358,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		uniqueID,
 		s.cfg.Bucket.FilePrefix,
 		s.cfg.Bucket.Partition.Prefix,
+		attributePartition,
 		s.cfg.Bucket.Compression,
 		s.partitionFormat,
 		time.Now().UTC(),

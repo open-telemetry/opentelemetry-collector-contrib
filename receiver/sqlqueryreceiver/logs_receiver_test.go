@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -268,4 +269,56 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() >= 1
 	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
+}
+
+func TestStatusReportingLogs(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+		},
+	}
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	statusEvents := make(chan *componentstatus.Event, 10)
+	host := &statusReporterHost{
+		Host: componenttest.NewNopHost(),
+		report: func(event *componentstatus.Event) {
+			statusEvents <- event
+		},
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Millisecond,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, receiver.Start(ctx, host))
+
+	select {
+	case event := <-statusEvents:
+		require.Equal(t, componentstatus.StatusOK, event.Status())
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for status event")
+	}
+
+	require.NoError(t, receiver.Shutdown(ctx))
 }

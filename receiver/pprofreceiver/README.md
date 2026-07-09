@@ -3,7 +3,6 @@
 
 The Pprof Receiver collects profiles from files specified with a glob pattern, from a remote endpoint or the running collector.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: profiles   |

@@ -37,15 +37,16 @@ func IncludeValues() WriteOption {
 // name/version, metric name/type/unit/temporality/monotonic, and the set of
 // datapoint attribute permutations. Values, timestamps, and exemplars are
 // omitted.
+//
+// The input metrics must be semantically valid. WriteAssertionFile normalizes
+// valid metrics for assertion readability; it does not validate producer
+// output.
 func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts ...WriteOption) error {
 	tb.Helper()
 	var o writeOptions
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	doc, err := normalize(actual, o)
-	if err != nil {
-		return err
-	}
+	doc := normalize(actual, o)
 	return writeDocument(path, doc)
 }
