@@ -311,12 +311,12 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 }
 
 var MetricsInfo = metricsInfo{
-	DbPostgresqlVectorQueryExecutionTime: metricInfo{
-		Name:       "db.postgresql.vector.query.execution.time",
-		Attributes: []string{"distance.function"},
-	},
 	DbPostgresqlVectorSearchCount: metricInfo{
 		Name:       "db.postgresql.vector.search.count",
+		Attributes: []string{"distance.function"},
+	},
+	DbPostgresqlVectorSearchDuration: metricInfo{
+		Name:       "db.postgresql.vector.search.duration",
 		Attributes: []string{"distance.function"},
 	},
 	PostgresqlBackends: metricInfo{
@@ -441,140 +441,49 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	DbPostgresqlVectorQueryExecutionTime metricInfo
-	DbPostgresqlVectorSearchCount        metricInfo
-	PostgresqlBackends                   metricInfo
-	PostgresqlBgwriterBuffersAllocated   metricInfo
-	PostgresqlBgwriterBuffersWrites      metricInfo
-	PostgresqlBgwriterCheckpointCount    metricInfo
-	PostgresqlBgwriterDuration           metricInfo
-	PostgresqlBgwriterMaxwritten         metricInfo
-	PostgresqlBlksHit                    metricInfo
-	PostgresqlBlksRead                   metricInfo
-	PostgresqlBlocksRead                 metricInfo
-	PostgresqlCommits                    metricInfo
-	PostgresqlConnectionMax              metricInfo
-	PostgresqlDatabaseCount              metricInfo
-	PostgresqlDatabaseLocks              metricInfo
-	PostgresqlDbSize                     metricInfo
-	PostgresqlDeadlocks                  metricInfo
-	PostgresqlFunctionCalls              metricInfo
-	PostgresqlIndexScans                 metricInfo
-	PostgresqlIndexSize                  metricInfo
-	PostgresqlOperations                 metricInfo
-	PostgresqlReplicationDataDelay       metricInfo
-	PostgresqlRollbacks                  metricInfo
-	PostgresqlRows                       metricInfo
-	PostgresqlSequentialScans            metricInfo
-	PostgresqlTableCount                 metricInfo
-	PostgresqlTableSize                  metricInfo
-	PostgresqlTableVacuumCount           metricInfo
-	PostgresqlTempIo                     metricInfo
-	PostgresqlTempFiles                  metricInfo
-	PostgresqlTupDeleted                 metricInfo
-	PostgresqlTupFetched                 metricInfo
-	PostgresqlTupInserted                metricInfo
-	PostgresqlTupReturned                metricInfo
-	PostgresqlTupUpdated                 metricInfo
-	PostgresqlWalAge                     metricInfo
-	PostgresqlWalDelay                   metricInfo
-	PostgresqlWalLag                     metricInfo
+	DbPostgresqlVectorSearchCount      metricInfo
+	DbPostgresqlVectorSearchDuration   metricInfo
+	PostgresqlBackends                 metricInfo
+	PostgresqlBgwriterBuffersAllocated metricInfo
+	PostgresqlBgwriterBuffersWrites    metricInfo
+	PostgresqlBgwriterCheckpointCount  metricInfo
+	PostgresqlBgwriterDuration         metricInfo
+	PostgresqlBgwriterMaxwritten       metricInfo
+	PostgresqlBlksHit                  metricInfo
+	PostgresqlBlksRead                 metricInfo
+	PostgresqlBlocksRead               metricInfo
+	PostgresqlCommits                  metricInfo
+	PostgresqlConnectionMax            metricInfo
+	PostgresqlDatabaseCount            metricInfo
+	PostgresqlDatabaseLocks            metricInfo
+	PostgresqlDbSize                   metricInfo
+	PostgresqlDeadlocks                metricInfo
+	PostgresqlFunctionCalls            metricInfo
+	PostgresqlIndexScans               metricInfo
+	PostgresqlIndexSize                metricInfo
+	PostgresqlOperations               metricInfo
+	PostgresqlReplicationDataDelay     metricInfo
+	PostgresqlRollbacks                metricInfo
+	PostgresqlRows                     metricInfo
+	PostgresqlSequentialScans          metricInfo
+	PostgresqlTableCount               metricInfo
+	PostgresqlTableSize                metricInfo
+	PostgresqlTableVacuumCount         metricInfo
+	PostgresqlTempIo                   metricInfo
+	PostgresqlTempFiles                metricInfo
+	PostgresqlTupDeleted               metricInfo
+	PostgresqlTupFetched               metricInfo
+	PostgresqlTupInserted              metricInfo
+	PostgresqlTupReturned              metricInfo
+	PostgresqlTupUpdated               metricInfo
+	PostgresqlWalAge                   metricInfo
+	PostgresqlWalDelay                 metricInfo
+	PostgresqlWalLag                   metricInfo
 }
 
 type metricInfo struct {
 	Name       string
 	Attributes []string
-}
-
-type metricDbPostgresqlVectorQueryExecutionTime struct {
-	data          pmetric.Metric                                   // data buffer for generated metric.
-	config        DbPostgresqlVectorQueryExecutionTimeMetricConfig // metric config provided by user.
-	capacity      int                                              // max observed number of data points added to the metric.
-	aggDataPoints []float64                                        // slice containing number of aggregated datapoints at each index
-}
-
-// init fills db.postgresql.vector.query.execution.time metric with initial data.
-func (m *metricDbPostgresqlVectorQueryExecutionTime) init() {
-	m.data.SetName("db.postgresql.vector.query.execution.time")
-	m.data.SetDescription("The cumulative execution time of vector similarity search queries, grouped by the distance function used.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricDbPostgresqlVectorQueryExecutionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, distanceFunctionAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, DbPostgresqlVectorQueryExecutionTimeMetricAttributeKeyDistanceFunction) {
-		dp.Attributes().PutStr("distance.function", distanceFunctionAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetDoubleValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricDbPostgresqlVectorQueryExecutionTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricDbPostgresqlVectorQueryExecutionTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricDbPostgresqlVectorQueryExecutionTime(cfg DbPostgresqlVectorQueryExecutionTimeMetricConfig) metricDbPostgresqlVectorQueryExecutionTime {
-	m := metricDbPostgresqlVectorQueryExecutionTime{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
 }
 
 type metricDbPostgresqlVectorSearchCount struct {
@@ -660,6 +569,97 @@ func (m *metricDbPostgresqlVectorSearchCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricDbPostgresqlVectorSearchCount(cfg DbPostgresqlVectorSearchCountMetricConfig) metricDbPostgresqlVectorSearchCount {
 	m := metricDbPostgresqlVectorSearchCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricDbPostgresqlVectorSearchDuration struct {
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        DbPostgresqlVectorSearchDurationMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
+}
+
+// init fills db.postgresql.vector.search.duration metric with initial data.
+func (m *metricDbPostgresqlVectorSearchDuration) init() {
+	m.data.SetName("db.postgresql.vector.search.duration")
+	m.data.SetDescription("The cumulative execution time of vector similarity searches, grouped by the distance function used.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricDbPostgresqlVectorSearchDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, distanceFunctionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction) {
+		dp.Attributes().PutStr("distance.function", distanceFunctionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricDbPostgresqlVectorSearchDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricDbPostgresqlVectorSearchDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricDbPostgresqlVectorSearchDuration(cfg DbPostgresqlVectorSearchDurationMetricConfig) metricDbPostgresqlVectorSearchDuration {
+	m := metricDbPostgresqlVectorSearchDuration{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2970,51 +2970,51 @@ func newMetricPostgresqlWalLag(cfg PostgresqlWalLagMetricConfig) metricPostgresq
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                            int                  // maximum observed number of metrics per resource.
-	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                  component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter             map[string]filter.Filter
-	resourceAttributeExcludeFilter             map[string]filter.Filter
-	metricDbPostgresqlVectorQueryExecutionTime metricDbPostgresqlVectorQueryExecutionTime
-	metricDbPostgresqlVectorSearchCount        metricDbPostgresqlVectorSearchCount
-	metricPostgresqlBackends                   metricPostgresqlBackends
-	metricPostgresqlBgwriterBuffersAllocated   metricPostgresqlBgwriterBuffersAllocated
-	metricPostgresqlBgwriterBuffersWrites      metricPostgresqlBgwriterBuffersWrites
-	metricPostgresqlBgwriterCheckpointCount    metricPostgresqlBgwriterCheckpointCount
-	metricPostgresqlBgwriterDuration           metricPostgresqlBgwriterDuration
-	metricPostgresqlBgwriterMaxwritten         metricPostgresqlBgwriterMaxwritten
-	metricPostgresqlBlksHit                    metricPostgresqlBlksHit
-	metricPostgresqlBlksRead                   metricPostgresqlBlksRead
-	metricPostgresqlBlocksRead                 metricPostgresqlBlocksRead
-	metricPostgresqlCommits                    metricPostgresqlCommits
-	metricPostgresqlConnectionMax              metricPostgresqlConnectionMax
-	metricPostgresqlDatabaseCount              metricPostgresqlDatabaseCount
-	metricPostgresqlDatabaseLocks              metricPostgresqlDatabaseLocks
-	metricPostgresqlDbSize                     metricPostgresqlDbSize
-	metricPostgresqlDeadlocks                  metricPostgresqlDeadlocks
-	metricPostgresqlFunctionCalls              metricPostgresqlFunctionCalls
-	metricPostgresqlIndexScans                 metricPostgresqlIndexScans
-	metricPostgresqlIndexSize                  metricPostgresqlIndexSize
-	metricPostgresqlOperations                 metricPostgresqlOperations
-	metricPostgresqlReplicationDataDelay       metricPostgresqlReplicationDataDelay
-	metricPostgresqlRollbacks                  metricPostgresqlRollbacks
-	metricPostgresqlRows                       metricPostgresqlRows
-	metricPostgresqlSequentialScans            metricPostgresqlSequentialScans
-	metricPostgresqlTableCount                 metricPostgresqlTableCount
-	metricPostgresqlTableSize                  metricPostgresqlTableSize
-	metricPostgresqlTableVacuumCount           metricPostgresqlTableVacuumCount
-	metricPostgresqlTempIo                     metricPostgresqlTempIo
-	metricPostgresqlTempFiles                  metricPostgresqlTempFiles
-	metricPostgresqlTupDeleted                 metricPostgresqlTupDeleted
-	metricPostgresqlTupFetched                 metricPostgresqlTupFetched
-	metricPostgresqlTupInserted                metricPostgresqlTupInserted
-	metricPostgresqlTupReturned                metricPostgresqlTupReturned
-	metricPostgresqlTupUpdated                 metricPostgresqlTupUpdated
-	metricPostgresqlWalAge                     metricPostgresqlWalAge
-	metricPostgresqlWalDelay                   metricPostgresqlWalDelay
-	metricPostgresqlWalLag                     metricPostgresqlWalLag
+	config                                   MetricsBuilderConfig // config of the metrics builder.
+	startTime                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                          int                  // maximum observed number of metrics per resource.
+	metricsBuffer                            pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter           map[string]filter.Filter
+	resourceAttributeExcludeFilter           map[string]filter.Filter
+	metricDbPostgresqlVectorSearchCount      metricDbPostgresqlVectorSearchCount
+	metricDbPostgresqlVectorSearchDuration   metricDbPostgresqlVectorSearchDuration
+	metricPostgresqlBackends                 metricPostgresqlBackends
+	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
+	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
+	metricPostgresqlBgwriterCheckpointCount  metricPostgresqlBgwriterCheckpointCount
+	metricPostgresqlBgwriterDuration         metricPostgresqlBgwriterDuration
+	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
+	metricPostgresqlBlksHit                  metricPostgresqlBlksHit
+	metricPostgresqlBlksRead                 metricPostgresqlBlksRead
+	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
+	metricPostgresqlCommits                  metricPostgresqlCommits
+	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
+	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
+	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
+	metricPostgresqlDbSize                   metricPostgresqlDbSize
+	metricPostgresqlDeadlocks                metricPostgresqlDeadlocks
+	metricPostgresqlFunctionCalls            metricPostgresqlFunctionCalls
+	metricPostgresqlIndexScans               metricPostgresqlIndexScans
+	metricPostgresqlIndexSize                metricPostgresqlIndexSize
+	metricPostgresqlOperations               metricPostgresqlOperations
+	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
+	metricPostgresqlRollbacks                metricPostgresqlRollbacks
+	metricPostgresqlRows                     metricPostgresqlRows
+	metricPostgresqlSequentialScans          metricPostgresqlSequentialScans
+	metricPostgresqlTableCount               metricPostgresqlTableCount
+	metricPostgresqlTableSize                metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
+	metricPostgresqlTempIo                   metricPostgresqlTempIo
+	metricPostgresqlTempFiles                metricPostgresqlTempFiles
+	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
+	metricPostgresqlTupFetched               metricPostgresqlTupFetched
+	metricPostgresqlTupInserted              metricPostgresqlTupInserted
+	metricPostgresqlTupReturned              metricPostgresqlTupReturned
+	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
+	metricPostgresqlWalAge                   metricPostgresqlWalAge
+	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
+	metricPostgresqlWalLag                   metricPostgresqlWalLag
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -3036,50 +3036,50 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:        mbc,
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     settings.BuildInfo,
-		metricDbPostgresqlVectorQueryExecutionTime: newMetricDbPostgresqlVectorQueryExecutionTime(mbc.Metrics.DbPostgresqlVectorQueryExecutionTime),
-		metricDbPostgresqlVectorSearchCount:        newMetricDbPostgresqlVectorSearchCount(mbc.Metrics.DbPostgresqlVectorSearchCount),
-		metricPostgresqlBackends:                   newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated:   newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:      newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:    newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:           newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:         newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlksHit:                    newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
-		metricPostgresqlBlksRead:                   newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
-		metricPostgresqlBlocksRead:                 newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                    newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
-		metricPostgresqlConnectionMax:              newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:              newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
-		metricPostgresqlDatabaseLocks:              newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
-		metricPostgresqlDbSize:                     newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
-		metricPostgresqlDeadlocks:                  newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
-		metricPostgresqlFunctionCalls:              newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
-		metricPostgresqlIndexScans:                 newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                  newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
-		metricPostgresqlOperations:                 newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
-		metricPostgresqlReplicationDataDelay:       newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                  newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
-		metricPostgresqlRows:                       newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
-		metricPostgresqlSequentialScans:            newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
-		metricPostgresqlTableCount:                 newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
-		metricPostgresqlTableSize:                  newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:           newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
-		metricPostgresqlTempIo:                     newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
-		metricPostgresqlTempFiles:                  newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
-		metricPostgresqlTupDeleted:                 newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
-		metricPostgresqlTupFetched:                 newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
-		metricPostgresqlTupInserted:                newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
-		metricPostgresqlTupReturned:                newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
-		metricPostgresqlTupUpdated:                 newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
-		metricPostgresqlWalAge:                     newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
-		metricPostgresqlWalDelay:                   newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
-		metricPostgresqlWalLag:                     newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
-		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
+		config:                                   mbc,
+		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                            pmetric.NewMetrics(),
+		buildInfo:                                settings.BuildInfo,
+		metricDbPostgresqlVectorSearchCount:      newMetricDbPostgresqlVectorSearchCount(mbc.Metrics.DbPostgresqlVectorSearchCount),
+		metricDbPostgresqlVectorSearchDuration:   newMetricDbPostgresqlVectorSearchDuration(mbc.Metrics.DbPostgresqlVectorSearchDuration),
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlksHit:                  newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
+		metricPostgresqlBlksRead:                 newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
+		metricPostgresqlDeadlocks:                newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
+		metricPostgresqlFunctionCalls:            newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
+		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
+		metricPostgresqlSequentialScans:          newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlTempIo:                   newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
+		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
+		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
+		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
+		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
+		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
+		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
+		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
+		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
+		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
+		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["postgresql.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsInclude)
@@ -3192,8 +3192,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricDbPostgresqlVectorQueryExecutionTime.emit(ils.Metrics())
 	mb.metricDbPostgresqlVectorSearchCount.emit(ils.Metrics())
+	mb.metricDbPostgresqlVectorSearchDuration.emit(ils.Metrics())
 	mb.metricPostgresqlBackends.emit(ils.Metrics())
 	mb.metricPostgresqlBgwriterBuffersAllocated.emit(ils.Metrics())
 	mb.metricPostgresqlBgwriterBuffersWrites.emit(ils.Metrics())
@@ -3261,14 +3261,14 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordDbPostgresqlVectorQueryExecutionTimeDataPoint adds a data point to db.postgresql.vector.query.execution.time metric.
-func (mb *MetricsBuilder) RecordDbPostgresqlVectorQueryExecutionTimeDataPoint(ts pcommon.Timestamp, val float64, distanceFunctionAttributeValue AttributeDistanceFunction) {
-	mb.metricDbPostgresqlVectorQueryExecutionTime.recordDataPoint(mb.startTime, ts, val, distanceFunctionAttributeValue.String())
-}
-
 // RecordDbPostgresqlVectorSearchCountDataPoint adds a data point to db.postgresql.vector.search.count metric.
 func (mb *MetricsBuilder) RecordDbPostgresqlVectorSearchCountDataPoint(ts pcommon.Timestamp, val int64, distanceFunctionAttributeValue AttributeDistanceFunction) {
 	mb.metricDbPostgresqlVectorSearchCount.recordDataPoint(mb.startTime, ts, val, distanceFunctionAttributeValue.String())
+}
+
+// RecordDbPostgresqlVectorSearchDurationDataPoint adds a data point to db.postgresql.vector.search.duration metric.
+func (mb *MetricsBuilder) RecordDbPostgresqlVectorSearchDurationDataPoint(ts pcommon.Timestamp, val float64, distanceFunctionAttributeValue AttributeDistanceFunction) {
+	mb.metricDbPostgresqlVectorSearchDuration.recordDataPoint(mb.startTime, ts, val, distanceFunctionAttributeValue.String())
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.

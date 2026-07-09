@@ -1,10 +1,10 @@
 default:
 all_set:
   metrics:
-    db.postgresql.vector.query.execution.time:
+    db.postgresql.vector.search.count:
       enabled: true
       attributes: ["distance.function"]
-    db.postgresql.vector.search.count:
+    db.postgresql.vector.search.duration:
       enabled: true
       attributes: ["distance.function"]
     postgresql.backends:
@@ -112,10 +112,10 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
-    db.postgresql.vector.query.execution.time:
+    db.postgresql.vector.search.count:
       enabled: true
       attributes: []
-    db.postgresql.vector.search.count:
+    db.postgresql.vector.search.duration:
       enabled: true
       attributes: []
     postgresql.backends:
@@ -223,10 +223,10 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
-    db.postgresql.vector.query.execution.time:
+    db.postgresql.vector.search.count:
       enabled: false
       attributes: ["distance.function"]
-    db.postgresql.vector.search.count:
+    db.postgresql.vector.search.duration:
       enabled: false
       attributes: ["distance.function"]
     postgresql.backends:

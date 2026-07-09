@@ -98,8 +98,8 @@ func TestScraperVectorSearchStats(t *testing.T) {
 	// Opt in to the two pgvector metrics; everything else stays at defaults.
 	require.False(t, cfg.Metrics.DbPostgresqlVectorSearchCount.Enabled)
 	cfg.Metrics.DbPostgresqlVectorSearchCount.Enabled = true
-	require.False(t, cfg.Metrics.DbPostgresqlVectorQueryExecutionTime.Enabled)
-	cfg.Metrics.DbPostgresqlVectorQueryExecutionTime.Enabled = true
+	require.False(t, cfg.Metrics.DbPostgresqlVectorSearchDuration.Enabled)
+	cfg.Metrics.DbPostgresqlVectorSearchDuration.Enabled = true
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 

@@ -10,54 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// DbPostgresqlVectorQueryExecutionTimeMetricAttributeKey specifies the key of an attribute for the db.postgresql.vector.query.execution.time metric.
-type DbPostgresqlVectorQueryExecutionTimeMetricAttributeKey string
-
-const (
-	DbPostgresqlVectorQueryExecutionTimeMetricAttributeKeyDistanceFunction DbPostgresqlVectorQueryExecutionTimeMetricAttributeKey = "distance.function"
-)
-
-// DbPostgresqlVectorQueryExecutionTimeMetricConfig provides config for the db.postgresql.vector.query.execution.time metric.
-type DbPostgresqlVectorQueryExecutionTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []DbPostgresqlVectorQueryExecutionTimeMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *DbPostgresqlVectorQueryExecutionTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *DbPostgresqlVectorQueryExecutionTimeMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case DbPostgresqlVectorQueryExecutionTimeMetricAttributeKeyDistanceFunction:
-		default:
-			return fmt.Errorf("metric db.postgresql.vector.query.execution.time doesn't have an attribute %v, valid attributes: [distance.function]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // DbPostgresqlVectorSearchCountMetricAttributeKey specifies the key of an attribute for the db.postgresql.vector.search.count metric.
 type DbPostgresqlVectorSearchCountMetricAttributeKey string
 
@@ -94,6 +46,54 @@ func (ms *DbPostgresqlVectorSearchCountMetricConfig) Validate() error {
 		case DbPostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction:
 		default:
 			return fmt.Errorf("metric db.postgresql.vector.search.count doesn't have an attribute %v, valid attributes: [distance.function]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// DbPostgresqlVectorSearchDurationMetricAttributeKey specifies the key of an attribute for the db.postgresql.vector.search.duration metric.
+type DbPostgresqlVectorSearchDurationMetricAttributeKey string
+
+const (
+	DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction DbPostgresqlVectorSearchDurationMetricAttributeKey = "distance.function"
+)
+
+// DbPostgresqlVectorSearchDurationMetricConfig provides config for the db.postgresql.vector.search.duration metric.
+type DbPostgresqlVectorSearchDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []DbPostgresqlVectorSearchDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *DbPostgresqlVectorSearchDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *DbPostgresqlVectorSearchDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction:
+		default:
+			return fmt.Errorf("metric db.postgresql.vector.search.duration doesn't have an attribute %v, valid attributes: [distance.function]", val)
 		}
 	}
 
@@ -1140,57 +1140,57 @@ func (ms *PostgresqlWalLagMetricConfig) Validate() error {
 
 // MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
-	DbPostgresqlVectorQueryExecutionTime DbPostgresqlVectorQueryExecutionTimeMetricConfig `mapstructure:"db.postgresql.vector.query.execution.time"`
-	DbPostgresqlVectorSearchCount        DbPostgresqlVectorSearchCountMetricConfig        `mapstructure:"db.postgresql.vector.search.count"`
-	PostgresqlBackends                   PostgresqlBackendsMetricConfig                   `mapstructure:"postgresql.backends"`
-	PostgresqlBgwriterBuffersAllocated   PostgresqlBgwriterBuffersAllocatedMetricConfig   `mapstructure:"postgresql.bgwriter.buffers.allocated"`
-	PostgresqlBgwriterBuffersWrites      PostgresqlBgwriterBuffersWritesMetricConfig      `mapstructure:"postgresql.bgwriter.buffers.writes"`
-	PostgresqlBgwriterCheckpointCount    PostgresqlBgwriterCheckpointCountMetricConfig    `mapstructure:"postgresql.bgwriter.checkpoint.count"`
-	PostgresqlBgwriterDuration           PostgresqlBgwriterDurationMetricConfig           `mapstructure:"postgresql.bgwriter.duration"`
-	PostgresqlBgwriterMaxwritten         PostgresqlBgwriterMaxwrittenMetricConfig         `mapstructure:"postgresql.bgwriter.maxwritten"`
-	PostgresqlBlksHit                    PostgresqlBlksHitMetricConfig                    `mapstructure:"postgresql.blks_hit"`
-	PostgresqlBlksRead                   PostgresqlBlksReadMetricConfig                   `mapstructure:"postgresql.blks_read"`
-	PostgresqlBlocksRead                 PostgresqlBlocksReadMetricConfig                 `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits                    PostgresqlCommitsMetricConfig                    `mapstructure:"postgresql.commits"`
-	PostgresqlConnectionMax              PostgresqlConnectionMaxMetricConfig              `mapstructure:"postgresql.connection.max"`
-	PostgresqlDatabaseCount              PostgresqlDatabaseCountMetricConfig              `mapstructure:"postgresql.database.count"`
-	PostgresqlDatabaseLocks              PostgresqlDatabaseLocksMetricConfig              `mapstructure:"postgresql.database.locks"`
-	PostgresqlDbSize                     PostgresqlDbSizeMetricConfig                     `mapstructure:"postgresql.db_size"`
-	PostgresqlDeadlocks                  PostgresqlDeadlocksMetricConfig                  `mapstructure:"postgresql.deadlocks"`
-	PostgresqlFunctionCalls              PostgresqlFunctionCallsMetricConfig              `mapstructure:"postgresql.function.calls"`
-	PostgresqlIndexScans                 PostgresqlIndexScansMetricConfig                 `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize                  PostgresqlIndexSizeMetricConfig                  `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations                 PostgresqlOperationsMetricConfig                 `mapstructure:"postgresql.operations"`
-	PostgresqlReplicationDataDelay       PostgresqlReplicationDataDelayMetricConfig       `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlRollbacks                  PostgresqlRollbacksMetricConfig                  `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows                       PostgresqlRowsMetricConfig                       `mapstructure:"postgresql.rows"`
-	PostgresqlSequentialScans            PostgresqlSequentialScansMetricConfig            `mapstructure:"postgresql.sequential_scans"`
-	PostgresqlTableCount                 PostgresqlTableCountMetricConfig                 `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize                  PostgresqlTableSizeMetricConfig                  `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount           PostgresqlTableVacuumCountMetricConfig           `mapstructure:"postgresql.table.vacuum.count"`
-	PostgresqlTempIo                     PostgresqlTempIoMetricConfig                     `mapstructure:"postgresql.temp.io"`
-	PostgresqlTempFiles                  PostgresqlTempFilesMetricConfig                  `mapstructure:"postgresql.temp_files"`
-	PostgresqlTupDeleted                 PostgresqlTupDeletedMetricConfig                 `mapstructure:"postgresql.tup_deleted"`
-	PostgresqlTupFetched                 PostgresqlTupFetchedMetricConfig                 `mapstructure:"postgresql.tup_fetched"`
-	PostgresqlTupInserted                PostgresqlTupInsertedMetricConfig                `mapstructure:"postgresql.tup_inserted"`
-	PostgresqlTupReturned                PostgresqlTupReturnedMetricConfig                `mapstructure:"postgresql.tup_returned"`
-	PostgresqlTupUpdated                 PostgresqlTupUpdatedMetricConfig                 `mapstructure:"postgresql.tup_updated"`
-	PostgresqlWalAge                     PostgresqlWalAgeMetricConfig                     `mapstructure:"postgresql.wal.age"`
-	PostgresqlWalDelay                   PostgresqlWalDelayMetricConfig                   `mapstructure:"postgresql.wal.delay"`
-	PostgresqlWalLag                     PostgresqlWalLagMetricConfig                     `mapstructure:"postgresql.wal.lag"`
+	DbPostgresqlVectorSearchCount      DbPostgresqlVectorSearchCountMetricConfig      `mapstructure:"db.postgresql.vector.search.count"`
+	DbPostgresqlVectorSearchDuration   DbPostgresqlVectorSearchDurationMetricConfig   `mapstructure:"db.postgresql.vector.search.duration"`
+	PostgresqlBackends                 PostgresqlBackendsMetricConfig                 `mapstructure:"postgresql.backends"`
+	PostgresqlBgwriterBuffersAllocated PostgresqlBgwriterBuffersAllocatedMetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
+	PostgresqlBgwriterBuffersWrites    PostgresqlBgwriterBuffersWritesMetricConfig    `mapstructure:"postgresql.bgwriter.buffers.writes"`
+	PostgresqlBgwriterCheckpointCount  PostgresqlBgwriterCheckpointCountMetricConfig  `mapstructure:"postgresql.bgwriter.checkpoint.count"`
+	PostgresqlBgwriterDuration         PostgresqlBgwriterDurationMetricConfig         `mapstructure:"postgresql.bgwriter.duration"`
+	PostgresqlBgwriterMaxwritten       PostgresqlBgwriterMaxwrittenMetricConfig       `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlksHit                  PostgresqlBlksHitMetricConfig                  `mapstructure:"postgresql.blks_hit"`
+	PostgresqlBlksRead                 PostgresqlBlksReadMetricConfig                 `mapstructure:"postgresql.blks_read"`
+	PostgresqlBlocksRead               PostgresqlBlocksReadMetricConfig               `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits                  PostgresqlCommitsMetricConfig                  `mapstructure:"postgresql.commits"`
+	PostgresqlConnectionMax            PostgresqlConnectionMaxMetricConfig            `mapstructure:"postgresql.connection.max"`
+	PostgresqlDatabaseCount            PostgresqlDatabaseCountMetricConfig            `mapstructure:"postgresql.database.count"`
+	PostgresqlDatabaseLocks            PostgresqlDatabaseLocksMetricConfig            `mapstructure:"postgresql.database.locks"`
+	PostgresqlDbSize                   PostgresqlDbSizeMetricConfig                   `mapstructure:"postgresql.db_size"`
+	PostgresqlDeadlocks                PostgresqlDeadlocksMetricConfig                `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls            PostgresqlFunctionCallsMetricConfig            `mapstructure:"postgresql.function.calls"`
+	PostgresqlIndexScans               PostgresqlIndexScansMetricConfig               `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize                PostgresqlIndexSizeMetricConfig                `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations               PostgresqlOperationsMetricConfig               `mapstructure:"postgresql.operations"`
+	PostgresqlReplicationDataDelay     PostgresqlReplicationDataDelayMetricConfig     `mapstructure:"postgresql.replication.data_delay"`
+	PostgresqlRollbacks                PostgresqlRollbacksMetricConfig                `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows                     PostgresqlRowsMetricConfig                     `mapstructure:"postgresql.rows"`
+	PostgresqlSequentialScans          PostgresqlSequentialScansMetricConfig          `mapstructure:"postgresql.sequential_scans"`
+	PostgresqlTableCount               PostgresqlTableCountMetricConfig               `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize                PostgresqlTableSizeMetricConfig                `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount         PostgresqlTableVacuumCountMetricConfig         `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                   PostgresqlTempIoMetricConfig                   `mapstructure:"postgresql.temp.io"`
+	PostgresqlTempFiles                PostgresqlTempFilesMetricConfig                `mapstructure:"postgresql.temp_files"`
+	PostgresqlTupDeleted               PostgresqlTupDeletedMetricConfig               `mapstructure:"postgresql.tup_deleted"`
+	PostgresqlTupFetched               PostgresqlTupFetchedMetricConfig               `mapstructure:"postgresql.tup_fetched"`
+	PostgresqlTupInserted              PostgresqlTupInsertedMetricConfig              `mapstructure:"postgresql.tup_inserted"`
+	PostgresqlTupReturned              PostgresqlTupReturnedMetricConfig              `mapstructure:"postgresql.tup_returned"`
+	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
+	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
+	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
+	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		DbPostgresqlVectorQueryExecutionTime: DbPostgresqlVectorQueryExecutionTimeMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DbPostgresqlVectorQueryExecutionTimeMetricAttributeKey{DbPostgresqlVectorQueryExecutionTimeMetricAttributeKeyDistanceFunction},
-		},
 		DbPostgresqlVectorSearchCount: DbPostgresqlVectorSearchCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []DbPostgresqlVectorSearchCountMetricAttributeKey{DbPostgresqlVectorSearchCountMetricAttributeKeyDistanceFunction},
+		},
+		DbPostgresqlVectorSearchDuration: DbPostgresqlVectorSearchDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []DbPostgresqlVectorSearchDurationMetricAttributeKey{DbPostgresqlVectorSearchDurationMetricAttributeKeyDistanceFunction},
 		},
 		PostgresqlBackends: PostgresqlBackendsMetricConfig{
 			Enabled: true,

@@ -213,27 +213,6 @@ resourceMetrics:
             stringValue: PRAKSURY-M-7HKV:5432
     scopeMetrics:
       - metrics:
-          - description: The cumulative execution time of vector similarity search queries, grouped by the distance function used.
-            name: db.postgresql.vector.query.execution.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asDouble: 0.5
-                  attributes:
-                    - key: distance.function
-                      value:
-                        stringValue: cosine
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 1.5
-                  attributes:
-                    - key: distance.function
-                      value:
-                        stringValue: l2
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
           - description: The number of vector similarity search operations executed, grouped by the distance function used.
             name: db.postgresql.vector.search.count
             sum:
@@ -255,6 +234,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{searches}'
+          - description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
+            name: db.postgresql.vector.search.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.5
+                  attributes:
+                    - key: distance.function
+                      value:
+                        stringValue: cosine
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.5
+                  attributes:
+                    - key: distance.function
+                      value:
+                        stringValue: l2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

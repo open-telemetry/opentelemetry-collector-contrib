@@ -599,7 +599,7 @@ func (p *postgreSQLScraper) collectVectorSearchStats(
 	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
 	// the collection entirely unless at least one of them is enabled.
 	if !p.config.Metrics.DbPostgresqlVectorSearchCount.Enabled &&
-		!p.config.Metrics.DbPostgresqlVectorQueryExecutionTime.Enabled {
+		!p.config.Metrics.DbPostgresqlVectorSearchDuration.Enabled {
 		return
 	}
 
@@ -619,7 +619,7 @@ func (p *postgreSQLScraper) collectVectorSearchStats(
 			continue
 		}
 		p.mb.RecordDbPostgresqlVectorSearchCountDataPoint(now, stat.calls, distanceFunction)
-		p.mb.RecordDbPostgresqlVectorQueryExecutionTimeDataPoint(now, stat.totalExecTime, distanceFunction)
+		p.mb.RecordDbPostgresqlVectorSearchDurationDataPoint(now, stat.totalExecTime, distanceFunction)
 		recorded = true
 	}
 

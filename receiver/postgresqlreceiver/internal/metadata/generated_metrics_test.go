@@ -67,8 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["db.postgresql.vector.query.execution.time"] = mb.metricDbPostgresqlVectorQueryExecutionTime.config.AggregationStrategy
 			aggMap["db.postgresql.vector.search.count"] = mb.metricDbPostgresqlVectorSearchCount.config.AggregationStrategy
+			aggMap["db.postgresql.vector.search.duration"] = mb.metricDbPostgresqlVectorSearchDuration.config.AggregationStrategy
 			aggMap["postgresql.bgwriter.buffers.writes"] = mb.metricPostgresqlBgwriterBuffersWrites.config.AggregationStrategy
 			aggMap["postgresql.bgwriter.checkpoint.count"] = mb.metricPostgresqlBgwriterCheckpointCount.config.AggregationStrategy
 			aggMap["postgresql.bgwriter.duration"] = mb.metricPostgresqlBgwriterDuration.config.AggregationStrategy
@@ -90,15 +90,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordDbPostgresqlVectorQueryExecutionTimeDataPoint(ts, 1, AttributeDistanceFunctionCosine)
-			if tt.name == "reaggregate_set" {
-				mb.RecordDbPostgresqlVectorQueryExecutionTimeDataPoint(ts, 3, AttributeDistanceFunctionL2)
-			}
-
-			allMetricsCount++
 			mb.RecordDbPostgresqlVectorSearchCountDataPoint(ts, 1, AttributeDistanceFunctionCosine)
 			if tt.name == "reaggregate_set" {
 				mb.RecordDbPostgresqlVectorSearchCountDataPoint(ts, 3, AttributeDistanceFunctionL2)
+			}
+
+			allMetricsCount++
+			mb.RecordDbPostgresqlVectorSearchDurationDataPoint(ts, 1, AttributeDistanceFunctionCosine)
+			if tt.name == "reaggregate_set" {
+				mb.RecordDbPostgresqlVectorSearchDurationDataPoint(ts, 3, AttributeDistanceFunctionL2)
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -253,8 +253,8 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricDbPostgresqlVectorQueryExecutionTime.aggDataPoints)
 				assert.Empty(t, mb.metricDbPostgresqlVectorSearchCount.aggDataPoints)
+				assert.Empty(t, mb.metricDbPostgresqlVectorSearchDuration.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlBgwriterBuffersWrites.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlBgwriterCheckpointCount.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlBgwriterDuration.aggDataPoints)
@@ -293,50 +293,6 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
-				case "db.postgresql.vector.query.execution.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["db.postgresql.vector.query.execution.time"], "Found a duplicate in the metrics slice: db.postgresql.vector.query.execution.time")
-						validatedMetrics["db.postgresql.vector.query.execution.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The cumulative execution time of vector similarity search queries, grouped by the distance function used.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						distanceFunctionAttrVal, ok := dp.Attributes().Get("distance.function")
-						assert.True(t, ok)
-						assert.Equal(t, "cosine", distanceFunctionAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["db.postgresql.vector.query.execution.time"], "Found a duplicate in the metrics slice: db.postgresql.vector.query.execution.time")
-						validatedMetrics["db.postgresql.vector.query.execution.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The cumulative execution time of vector similarity search queries, grouped by the distance function used.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["db.postgresql.vector.query.execution.time"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("distance.function")
-						assert.False(t, ok)
-					}
 				case "db.postgresql.vector.search.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["db.postgresql.vector.search.count"], "Found a duplicate in the metrics slice: db.postgresql.vector.search.count")
@@ -377,6 +333,50 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(1), dp.IntValue())
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("distance.function")
+						assert.False(t, ok)
+					}
+				case "db.postgresql.vector.search.duration":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["db.postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: db.postgresql.vector.search.duration")
+						validatedMetrics["db.postgresql.vector.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						distanceFunctionAttrVal, ok := dp.Attributes().Get("distance.function")
+						assert.True(t, ok)
+						assert.Equal(t, "cosine", distanceFunctionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["db.postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: db.postgresql.vector.search.duration")
+						validatedMetrics["db.postgresql.vector.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative execution time of vector similarity searches, grouped by the distance function used.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["db.postgresql.vector.search.duration"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
 						_, ok := dp.Attributes().Get("distance.function")
 						assert.False(t, ok)
