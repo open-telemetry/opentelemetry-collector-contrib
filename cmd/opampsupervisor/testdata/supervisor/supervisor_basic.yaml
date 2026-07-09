@@ -27,3 +27,6 @@ agent:
   {{- if .validate_config }}
   validate_config: {{ .validate_config }}
   {{- end }}
+  {{- if .collector_crash_log_snippet_kib }}
+  collector_crash_log_snippet_kib: {{ .collector_crash_log_snippet_kib }}
+  {{- end }}

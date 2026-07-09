@@ -1673,10 +1673,16 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 			dp.Attributes().PutStr("state", state)
 		}
 	}
+	cpuCount := sm.Metrics().AppendEmpty()
+	cpuCount.SetName("system.cpu.logical.count")
+	cpuCountSum := cpuCount.SetEmptySum()
+	cpuCountSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	cpuCountSum.DataPoints().AppendEmpty().SetIntValue(32)
+
 	dps := converter.MetricsToSignalFxV2(md)
 	found := map[string]int64{}
 	for _, dp := range dps {
-		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
+		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" || dp.Metric == "system.cpu.logical.count" {
 			intVal := dp.Value.IntValue
 			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
 			found[dp.Metric] = *intVal
@@ -1686,8 +1692,9 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 		}
 	}
 	require.Equal(t, map[string]int64{
-		"cpu.num_processors": 32,
-		"cpu.idle":           0,
+		"cpu.num_processors":       32,
+		"cpu.idle":                 0,
+		"system.cpu.logical.count": 32,
 	}, found)
 }
 
