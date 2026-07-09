@@ -1325,7 +1325,7 @@ func TestLogDetectedVersion(t *testing.T) {
 }
 
 // TestScrapeQuerySampleFuncResourceAttributes verifies that scrapeQuerySampleFunc
-// stamps db.version and db.product resource attributes — exercising emitLogs
+// stamps db.system.version and db.system.name resource attributes — exercising emitLogs
 // via the query-sample path (as opposed to the top-query path).
 func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")

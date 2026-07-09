@@ -52,7 +52,8 @@ type mySQLScraper struct {
 	serviceInstanceID      string
 
 	// detectedVersion is the database product and version detected at Connect time.
-	// It is set once during start() and used to stamp scope attributes on emitted logs.
+	// It is set once during start() and used to stamp the db.system.name and
+	// db.system.version resource attributes on emitted data.
 	detectedVersion dbVersion
 
 	// Feature gates regarding resource attributes

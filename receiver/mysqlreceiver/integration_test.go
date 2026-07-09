@@ -441,8 +441,8 @@ func TestIntegrationLogScraper(t *testing.T) {
 			}
 
 			// Verify resource attributes on top-query logs.
-			// setScopeAttributes is called after every Emit, so db.version and
-			// db.product must appear on every ScopeLogs scope.
+			// setResourceAttributes is called on every Emit, so db.system.name and
+			// db.system.version must appear on every ResourceLogs resource.
 			for i := range topLogs.ResourceLogs().Len() {
 				attrs := topLogs.ResourceLogs().At(i).Resource().Attributes()
 				_, hasVersion := attrs.Get("db.system.version")
