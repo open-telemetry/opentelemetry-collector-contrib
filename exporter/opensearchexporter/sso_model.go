@@ -62,6 +62,7 @@ type ssoSpan struct {
 type ssoRecord struct {
 	Attributes           map[string]any `json:"attributes,omitempty"`
 	Body                 string         `json:"body"`
+	EventName            string         `json:"eventName,omitempty"`
 	InstrumentationScope struct {
 		Attributes map[string]any `json:"attributes,omitempty"`
 		Name       string         `json:"name,omitempty"`
