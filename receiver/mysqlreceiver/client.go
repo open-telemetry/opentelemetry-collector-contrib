@@ -19,6 +19,7 @@ import (
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 )
 
@@ -55,13 +56,14 @@ func (v dbVersion) productString() string {
 }
 
 // systemName returns the db.system.name value following OpenTelemetry semantic
-// conventions, which use lowercase identifiers ("mysql", "mariadb"). This is
-// distinct from productString, which is intended for human-readable logging.
+// conventions, sourced from the semconv package so the values stay tied to the
+// spec. This is distinct from productString, which is intended for
+// human-readable logging.
 func (v dbVersion) systemName() string {
 	if v.product == dbProductMariaDB {
-		return "mariadb"
+		return semconv.DBSystemNameMariaDB.Value.AsString()
 	}
-	return "mysql"
+	return semconv.DBSystemNameMySQL.Value.AsString()
 }
 
 // supportsQuerySampleText reports whether the server's

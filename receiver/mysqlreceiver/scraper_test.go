@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -1353,7 +1354,7 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	assert.Equal(t, "8.0.27", ver.Str())
 	prod, ok := attrs.Get("db.system.name")
 	assert.True(t, ok, "db.system.name resource attribute missing on query-sample output")
-	assert.Equal(t, "mysql", prod.Str())
+	assert.Equal(t, semconv.DBSystemNameMySQL.Value.AsString(), prod.Str())
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
@@ -1411,7 +1412,7 @@ func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	assert.Equal(t, "8.0.27", ver.Str())
 	prod, ok := attrs.Get("db.system.name")
 	assert.True(t, ok, "db.system.name resource attribute missing")
-	assert.Equal(t, "mysql", prod.Str())
+	assert.Equal(t, semconv.DBSystemNameMySQL.Value.AsString(), prod.Str())
 }
 
 // TestScrapeTopQueryFuncNoDetectedVersion verifies that when no version was

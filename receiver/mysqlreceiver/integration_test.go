@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -256,7 +257,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 			image:             "mysql:8.0.33",
 			wantSampleTextCol: true,
 			wantEOLWarn:       false,
-			wantProduct:       "mysql",
+			wantProduct:       semconv.DBSystemNameMySQL.Value.AsString(),
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on ARM hosts.
@@ -264,21 +265,21 @@ func TestIntegrationLogScraper(t *testing.T) {
 			image:             "mysql:5.7",
 			wantSampleTextCol: false,
 			wantEOLWarn:       true,
-			wantProduct:       "mysql",
+			wantProduct:       semconv.DBSystemNameMySQL.Value.AsString(),
 		},
 		{
 			name:              "MariaDB-10.11-LogScraper",
 			image:             "mariadb:10.11",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "mariadb",
+			wantProduct:       semconv.DBSystemNameMariaDB.Value.AsString(),
 		},
 		{
 			name:              "MariaDB-11.4-LogScraper",
 			image:             "mariadb:11.4",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "mariadb",
+			wantProduct:       semconv.DBSystemNameMariaDB.Value.AsString(),
 		},
 	}
 
