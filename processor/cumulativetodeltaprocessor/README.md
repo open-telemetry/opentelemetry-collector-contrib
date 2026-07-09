@@ -5,7 +5,6 @@ The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monoto
 histogram metrics from cumulative to delta aggregation temporality. Non-monotonic sums are excluded. Delta metrics are
 excluded from any conversion and forwarded without changes.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

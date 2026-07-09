@@ -59,6 +59,10 @@ exporters:
 
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
+
+    # (Optional) Use AWS PrivateLink for private connectivity. When true, data is sent to
+    # ingress.private.<domain>. See "Coralogix's Domain" section below for details.
+    # private_link: true
 ```
 
 ### Transport Protocol

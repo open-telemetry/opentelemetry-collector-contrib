@@ -38,7 +38,8 @@ type Config struct {
 	// condition has an error then the payload will be routed to the default exporter. `propagate`
 	// means the processor returns the error up the pipeline.  This will result in the payload being
 	// dropped from the collector.
-	// The default value is `propagate`.
+	// The default value is `propagate`, but when the `connector.routing.defaultErrorModeIgnore`
+	// feature gate is enabled, the default changes to `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be
 	// found in the routing table.
@@ -99,7 +100,7 @@ func (c *Config) Validate() error {
 		}
 
 		switch item.Context {
-		case "", "resource", "span", "metric", "datapoint", "log": // ok
+		case "", "resource", "span", "metric", "datapoint", "log", "otelcol": // ok
 		case "request":
 			if item.Statement != "" || item.Condition == "" {
 				return fmt.Errorf("%q context requires a 'condition'", item.Context)
@@ -116,8 +117,8 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
-	// One of "request", "resource", "log", "span", "metric", "datapoint".
-	// Optional. Default "resource".
+	// One of "request" (deprecated), "resource", "log", "span", "metric", "datapoint", "otelcol".
+	// Optional. Default is inferred from the condition/statement paths.
 	Context string `mapstructure:"context"`
 
 	// Statement is an OTTL statement used for making a routing decision.

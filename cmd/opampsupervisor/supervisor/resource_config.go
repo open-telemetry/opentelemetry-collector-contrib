@@ -8,13 +8,12 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-func buildSupervisorResourceConfig(cfg *config.ResourceConfig) (*telemetryconfig.Resource, error) {
+func buildSupervisorResourceConfig(cfg *otelconftelemetry.ResourceConfig) (*telemetryconfig.Resource, error) {
 	instanceUUID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -24,6 +23,11 @@ func buildSupervisorResourceConfig(cfg *config.ResourceConfig) (*telemetryconfig
 	resourceCfg.Detectors = nil
 	resourceCfg.Attributes = make([]telemetryconfig.AttributeNameValue, 0, len(cfg.Attributes)+len(cfg.LegacyAttributes)+2)
 
+	declarativeAttributeNames := make(map[string]struct{}, len(cfg.Attributes))
+	for _, attr := range cfg.Attributes {
+		declarativeAttributeNames[attr.Name] = struct{}{}
+	}
+
 	defaultAttributes := map[string]any{
 		string(conventions.ServiceNameKey):       "opamp-supervisor",
 		string(conventions.ServiceInstanceIDKey): instanceUUID.String(),
@@ -31,6 +35,9 @@ func buildSupervisorResourceConfig(cfg *config.ResourceConfig) (*telemetryconfig
 
 	for name, value := range defaultAttributes {
 		if _, ok := cfg.LegacyAttributes[name]; ok {
+			continue
+		}
+		if _, ok := declarativeAttributeNames[name]; ok {
 			continue
 		}
 		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
@@ -50,6 +57,7 @@ func buildSupervisorResourceConfig(cfg *config.ResourceConfig) (*telemetryconfig
 	}
 
 	resourceCfg.Attributes = append(resourceCfg.Attributes, cfg.Attributes...)
+
 	if resourceCfg.SchemaUrl == nil {
 		schemaURL := conventions.SchemaURL
 		resourceCfg.SchemaUrl = &schemaURL

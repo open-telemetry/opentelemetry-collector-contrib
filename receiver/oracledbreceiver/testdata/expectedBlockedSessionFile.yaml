@@ -24,6 +24,9 @@ resourceLogs:
                   stringValue: APP_USER
               - key: db.namespace
                 value:
+                  stringValue: ORCLPDB1
+              - key: oracle.db.service
+                value:
                   stringValue: ORCL
               - key: client.address
                 value:
@@ -97,6 +100,9 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 15
+              - key: db.query.comment_tags
+                value:
+                  stringValue: ""
               - key: oracledb.query.started
                 value:
                   stringValue: "2026-05-06T09:59:45Z"

@@ -5,7 +5,6 @@ This receiver, for Windows only, captures the configured system, application, or
 custom performance counter data from the Windows registry using the [PDH
 interface](https://docs.microsoft.com/en-us/windows/win32/perfctrs/using-the-pdh-functions-to-consume-counter-data).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

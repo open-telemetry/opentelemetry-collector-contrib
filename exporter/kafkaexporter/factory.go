@@ -90,6 +90,24 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	exp := newTracesExporter(oCfg, set)
+
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
+		return xexporterhelper.NewTracesRequest(
+			ctx,
+			set,
+			newTracesRequestConverter(exp),
+			newTracesRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				xexporterhelper.QueueBatchSettings{},
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		set,

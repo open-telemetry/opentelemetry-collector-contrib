@@ -14,8 +14,6 @@ status:
   codeowners:
     active: [atoulme, jkoronaAtCisco]
 
-reaggregation_enabled: true
-
 resource_attributes:
   net.peer.ip:
     enabled: true

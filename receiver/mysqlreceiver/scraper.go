@@ -6,12 +6,17 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"math"
+	"net"
+	"os"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
@@ -28,6 +33,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
+const defaultServiceName = "unknown_service:mysql"
+
+// otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
+// as defined by the OpenTelemetry specification.
+var otelUUIDv5Namespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+
 type mySQLScraper struct {
 	sqlclient              client
 	logger                 *zap.Logger
@@ -38,6 +49,7 @@ type mySQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	obfuscator             *obfuscator
 	lastExecutionTimestamp time.Time
+	serviceInstanceID      string
 
 	// detectedVersion is the database product and version detected at Connect time.
 	// It is set once during start() and used to stamp scope attributes on emitted logs.
@@ -53,6 +65,8 @@ func newMySQLScraper(
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
+	seed := resolveServiceInstanceSeed(config.Endpoint, settings.Logger)
+	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
@@ -62,7 +76,34 @@ func newMySQLScraper(
 		queryPlanCache:         queryPlanCache,
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
+		serviceInstanceID:      serviceInstanceID,
 	}
+}
+
+// resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5
+// seed for service.instance.id. For local endpoints (localhost, loopback IPs),
+// it substitutes the machine hostname so that co-hosted receivers on different
+// machines produce distinct IDs. The port is preserved so two local databases
+// on different ports remain distinguishable.
+func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		logger.Warn("Failed to parse endpoint for service.instance.id; using raw endpoint as UUID seed",
+			zap.String("endpoint", endpoint),
+			zap.Error(err))
+		return endpoint
+	}
+	if host == "localhost" || (net.ParseIP(host) != nil && net.ParseIP(host).IsLoopback()) {
+		hostname, hostnameErr := os.Hostname()
+		if hostnameErr != nil {
+			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
+				zap.String("endpoint", endpoint),
+				zap.Error(hostnameErr))
+			return endpoint
+		}
+		return net.JoinHostPort(hostname, port)
+	}
+	return endpoint
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -175,6 +216,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceInstanceID(m.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
@@ -185,6 +229,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 func (m *mySQLScraper) emitLogsWithScopeAttrs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
 	rb := m.lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceInstanceID(m.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
 	m.setScopeAttributes(logs)
 	return logs, errs.Combine()
@@ -747,15 +794,18 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		var queryPlan string
+
+		queryPlanCacheID := m.getQueryPlanCacheID(q.digest, q.digestText)
+
 		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
 		// Skip EXPLAIN in that case — there is no sample statement to explain.
 		if q.digest != "" && q.querySampleText != "" {
-			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest)
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, queryPlanCacheID)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = q.digest
+			queryPlanHash = queryPlanCacheID
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -780,14 +830,21 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		return
 	}
 
+	droppedSamples := 0
+
 	for i := range samples {
 		sample := &samples[i]
+		if sample.digestText == "" {
+			droppedSamples++
+			continue
+		}
+
 		clientAddress := sample.processlistHost
 		clientPort := int64(sample.clientPort)
 		networkPeerAddress := clientAddress
 		networkPeerPort := clientPort
 
-		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.sqlText)
+		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.digestText)
 		if obfErr != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(obfErr))
 		}
@@ -807,13 +864,16 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		var queryPlan string
+
+		queryPlanCacheID := m.getQueryPlanCacheID(sample.digest, sample.digestText)
+
 		if sample.digest != "" {
-			queryPlan = m.retrieveQueryPlan(obfuscatedQuery, sample.sqlText, sample.processlistDB, sample.digest)
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, queryPlanCacheID)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = sample.digest
+			queryPlanHash = queryPlanCacheID
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -841,12 +901,25 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerPort,
 		)
 	}
+
+	if droppedSamples > 0 {
+		m.logger.Warn("dropped query samples due to missing digest_text",
+			zap.Int("count", droppedSamples))
+	}
 }
 
-func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest string) string {
+func (m *mySQLScraper) getQueryPlanCacheID(digest, digestText string) string {
+	if !m.detectedVersion.supportsQuerySampleText() {
+		// Use the digestTextHash as plan key for MySQL versions < 8 and Mariadb since digest is not available consistently in those versions.
+		return getDigestTextHash(digestText)
+	}
+	return digest
+}
+
+func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest, digestTextHash string) string {
 	var queryPlan string
 	var ok bool
-	cacheKey := createCacheKey(schemaOrDbName, digest)
+	cacheKey := createCacheKey(schemaOrDbName, digestTextHash)
 	if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
 		// attempt to explain the query
 		queryPlan = m.sqlclient.explainQuery(queryDigestText, querySampleText, schemaOrDbName, digest, m.logger)
@@ -867,8 +940,13 @@ func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schem
 	return queryPlan
 }
 
-func createCacheKey(dbName, digest string) string {
-	return dbName + "-" + digest
+func createCacheKey(dbName, digestTextHash string) string {
+	return dbName + "-" + digestTextHash
+}
+
+func getDigestTextHash(digestText string) string {
+	sum := sha256.Sum256([]byte(digestText))
+	return hex.EncodeToString(sum[:])
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given

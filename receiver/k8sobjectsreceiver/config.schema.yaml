@@ -17,6 +17,9 @@ $defs:
         type: string
       group:
         type: string
+      initial_delay:
+        type: string
+        format: duration
       interval:
         type: string
         format: duration

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/pprof/profile"
@@ -454,9 +456,13 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 			},
 		}
 
-		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		pprof := makeProfile(sample)
+
+		require.NoError(t, pprof.CheckValid())
+
+		_, err := ConvertPprofToProfiles(pprof)
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("labels with multiple values (%d) are not supported", 2))
 	})
 
 	t.Run("numeric label with multiple values", func(t *testing.T) {
@@ -470,7 +476,24 @@ func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
 
 		_, err := ConvertPprofToProfiles(makeProfile(sample))
 		require.Error(t, err)
-		require.ErrorIs(t, err, errPprofInvalid)
+		require.EqualError(t, err, fmt.Sprintf("numeric labels with multiple values (%d) are not supported", 2))
+	})
+
+	t.Run("numeric unit with multiple values", func(t *testing.T) {
+		sample := &profile.Sample{
+			Location: []*profile.Location{baseLocation},
+			Value:    []int64{10},
+			NumLabel: map[string][]int64{
+				"n": {1},
+			},
+			NumUnit: map[string][]string{
+				"n": {"a", "b"},
+			},
+		}
+
+		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		require.Error(t, err)
+		require.EqualError(t, err, fmt.Sprintf("numeric units with multiple values (%d) are not supported", 2))
 	})
 }
 
@@ -531,7 +554,33 @@ func TestConvertPprofToProfiles_LabelAndNumUnitPaths(t *testing.T) {
 
 	p := out.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	require.Equal(t, 1, p.Samples().Len())
-	require.GreaterOrEqual(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	require.Equal(t, 4, p.Samples().At(0).AttributeIndices().Len())
+	for _, attrIdx := range p.Samples().At(0).AttributeIndices().All() {
+		require.NotZero(t, attrIdx)
+		attr := out.Dictionary().AttributeTable().At(int(attrIdx))
+		keyIdx := attr.KeyStrindex()
+		require.NotZero(t, keyIdx)
+		key := out.Dictionary().StringTable().At(int(keyIdx))
+		switch key {
+		case "label.with.unit":
+			require.Equal(t, "v", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "label.no.unit":
+			require.Equal(t, "x", attr.Value().AsString())
+			require.Zero(t, attr.UnitStrindex())
+		case "num.with.unit":
+			require.Equal(t, int64(7), attr.Value().Int())
+			unitIdx := attr.UnitStrindex()
+			require.NotZero(t, unitIdx)
+			unit := out.Dictionary().StringTable().At(int(unitIdx))
+			require.Equal(t, "ms", unit)
+		case "num.no.unit":
+			require.Equal(t, int64(8), attr.Value().Int())
+			require.Zero(t, attr.UnitStrindex())
+		default:
+			t.Errorf("unexpected key: %s", key)
+		}
+	}
 	require.GreaterOrEqual(t, p.AttributeIndices().Len(), 3)
 }
 
@@ -636,6 +685,7 @@ func TestGetAttributeStringWithPrefix(t *testing.T) {
 }
 
 func TestConvertMultipleSampleTypes(t *testing.T) {
+	currentTS := time.Now()
 	// Create a pprof profile with multiple sample types
 	prof := &profile.Profile{
 		SampleType: []*profile.ValueType{
@@ -644,7 +694,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"},
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     currentTS.UnixNano(),
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -759,7 +809,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		}
 
 		// Verify profile metadata
-		require.Equal(t, int64(1000000000), p.Time().AsTime().UnixNano())
+		require.Equal(t, currentTS.UnixNano(), p.Time().AsTime().UnixNano())
 		require.Equal(t, uint64(5000000000), p.DurationNano())
 		require.Equal(t, int64(524288), p.Period())
 	}
@@ -783,10 +833,12 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j])
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 
 func TestDefaultSampleTypeConvention(t *testing.T) {
+	currentTS := time.Now()
 	// Create a pprof profile with multiple sample types.
 	// By convention, the last sample type (inuse_space) is the default in pprof.
 	prof := &profile.Profile{
@@ -796,7 +848,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"}, // default (last)
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     currentTS.UnixNano(),
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -876,6 +928,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j], "Round-trip should preserve original sample values order")
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 

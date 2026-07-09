@@ -23,6 +23,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewReplaceMatchFactory[K](),
 		NewReplacePatternFactory[K](),
 		NewSetFactory[K](),
+		NewStringifyAllFactory[K](),
 		NewTruncateAllFactory[K](),
 	}
 	f = append(f, converters[K]()...)
@@ -54,6 +55,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewDurationFactory[K](),
 		NewExtractPatternsFactory[K](),
 		NewExtractGrokPatternsFactory[K](),
+		NewFilterFactory[K](),
 		NewFnvFactory[K](),
 		NewGetXMLFactory[K](),
 		NewHasPrefixFactory[K](),
@@ -123,6 +125,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
+		NewWhenFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
 		NewDeleteIndexFactory[K](),

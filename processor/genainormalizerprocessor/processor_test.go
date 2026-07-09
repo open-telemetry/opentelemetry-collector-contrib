@@ -302,6 +302,64 @@ func TestNormalizeAttributes_ReportsWrote(t *testing.T) {
 	})
 }
 
+func TestNormalizeAttributes_AggregatorRunsBeforeRenames(t *testing.T) {
+	_, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("llm.input_messages.0.message.role", "user")
+	attrs.PutStr("llm.input_messages.0.message.content", "hello")
+	attrs.PutStr("llm.model_name", "gpt-4")
+
+	sn := sourceNormalizer{
+		lookupTable:     openinference.LookupTable,
+		transformValue:  openinference.Transform,
+		aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+		removeOriginals: true,
+		overwrite:       false,
+	}
+
+	wrote := sn.normalizeAttributes(attrs)
+	require.True(t, wrote)
+
+	v, ok := attrs.Get("gen_ai.input.messages")
+	require.True(t, ok)
+	assert.Contains(t, v.AsString(), `"role":"user"`)
+
+	_, ok = attrs.Get("llm.input_messages.0.message.role")
+	assert.False(t, ok)
+
+	model, ok := attrs.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "gpt-4", model.Str())
+}
+
+func TestNormalizeAttributes_AggregatorReportsWrote(t *testing.T) {
+	t.Run("returns true when aggregator writes", func(t *testing.T) {
+		_, span := newSpan()
+		attrs := span.Attributes()
+		attrs.PutStr("llm.input_messages.0.message.role", "user")
+		attrs.PutStr("llm.input_messages.0.message.content", "hi")
+
+		sn := sourceNormalizer{
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			lookupTable:     map[string]string{},
+			removeOriginals: true,
+		}
+		assert.True(t, sn.normalizeAttributes(attrs))
+	})
+
+	t.Run("returns false when aggregator has nothing to do", func(t *testing.T) {
+		_, span := newSpan()
+		span.Attributes().PutStr("http.method", "GET")
+
+		sn := sourceNormalizer{
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			lookupTable:     map[string]string{},
+			removeOriginals: true,
+		}
+		assert.False(t, sn.normalizeAttributes(span.Attributes()))
+	})
+}
+
 func TestProcessTraces_AppliesToSpans(t *testing.T) {
 	p := &genaiNormalizerProcessor{
 		sources: []sourceNormalizer{
@@ -329,6 +387,27 @@ func TestProcessTraces_StampsSchemaURLWhenMappingFires(t *testing.T) {
 
 	td, span := newSpan()
 	span.Attributes().PutStr("src.model", "m")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+}
+
+func TestProcessTraces_StampsSchemaURLWhenAggregatorFires(t *testing.T) {
+	p := &genaiNormalizerProcessor{
+		sources: []sourceNormalizer{{
+			lookupTable:     openinference.LookupTable,
+			transformValue:  openinference.Transform,
+			aggregators:     []attributeAggregator{openinference.MessageAggregator{}},
+			removeOriginals: true,
+		}},
+	}
+
+	td, span := newSpan()
+	span.Attributes().PutStr("llm.input_messages.0.message.role", "user")
+	span.Attributes().PutStr("llm.input_messages.0.message.content", "hi")
 
 	_, err := p.processTraces(t.Context(), td)
 	require.NoError(t, err)

@@ -4,7 +4,6 @@
 This extension allows acking of data upon successful processing. The upstream agent can choose to send event again
 if ack fails.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]  |

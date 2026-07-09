@@ -3,7 +3,6 @@
 
 This receiver supports opening a Unix Named Pipe (aka FIFO), and reading logs from it.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

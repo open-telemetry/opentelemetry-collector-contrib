@@ -5,7 +5,6 @@ This processor re-associates spans, log records and metric datapoints to a *Reso
 attributes. As a result, all spans, log records or metric datapoints with the same values for the specified attributes
 are "grouped" under the same *Resource*.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |

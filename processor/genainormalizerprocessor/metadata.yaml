@@ -7,7 +7,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [TylerHelmuth]
+    active: [TylerHelmuth, kylehounslow]
 
 tests:
   config:

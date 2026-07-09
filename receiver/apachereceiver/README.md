@@ -3,7 +3,6 @@
 
 The Apache Web Server Receiver fetches stats from an Apache Web Server instance using the `server-status?auto` endpoint.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

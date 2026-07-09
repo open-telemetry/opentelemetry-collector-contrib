@@ -103,6 +103,10 @@ be found at [Docker Detector Resource Attributes](./internal/docker/documentatio
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
+If `container.name` or `container.image.name` is enabled, the detector inspects the current container
+by using the container hostname as the Docker container name or ID. This can fail when the container
+hostname is changed, for example when running with `network_mode: host`.
+
 Example:
 
 ```yaml
@@ -201,12 +205,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
     * k8s.cluster.name
     * host.id (instance id)
-    * host.name (instance name; only when workload identity is disabled)
-
-One known issue is when GKE workload identity is enabled, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
-able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
-- `node.name` through the downward API with the `env` detector
-- obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
+    * host.name (instance name; availability with workload identity depends on GKE version)
 
 #### Google Cloud Run Services Metadata
 
@@ -228,6 +227,16 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
+
+#### Cloud Run Worker Pools Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.instance (instance id)
+    * faas.name (worker pool name)
+    * faas.version (worker pool revision)
 
 #### Google Cloud Functions Metadata
 
@@ -596,11 +605,11 @@ roleRef:
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 
-### K8S Node Metadata
+### K8S API Metadata
 
-Queries the K8S api server to retrieve node resource attributes.
+Queries the K8S API server to retrieve node and cluster resource attributes. The `k8snode` detector name is deprecated — use `k8s_api` instead.
 
-The list of the populated resource attributes can be found at [k8snode Detector Resource Attributes](./internal/k8snode/documentation.md).
+The list of the populated resource attributes can be found at [k8s_api Detector Resource Attributes](./internal/k8sapi/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -611,7 +620,13 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
 ```
+
+> **Note:** `node_from_env_var` and the `nodes` RBAC permission are required even when only `k8s.cluster.uid` is enabled; the detector will fail to start if the env variable is unset or empty. The `namespaces` permission is required for `k8s.cluster.uid`; if missing, detection continues without it.
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -622,8 +637,8 @@ rules:
 
 ```yaml
 processors:
-  resource_detection/k8snode:
-    detectors: [k8snode]
+  resource_detection:
+    detectors: [k8s_api]
 ```
 and add this to your workload:
 ```yaml
@@ -637,9 +652,9 @@ and add this to your workload:
 #### Example using a custom variable `node_from_env_var` option:
 ```yaml
 processors:
-  resource_detection/k8snode:
-    detectors: [k8snode]
-    k8snode:
+  resource_detection:
+    detectors: [k8s_api]
+    k8s_api:
       node_from_env_var: "my_custom_var"
 ```
 and add this to your workload:
@@ -956,7 +971,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode", "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

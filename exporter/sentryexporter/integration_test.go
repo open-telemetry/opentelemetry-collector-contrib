@@ -441,3 +441,38 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
+
+var traversalServiceNames = []string{
+	"../../organizations/victim/members",
+	"../../organizations/victim/members/?",
+	"../../organizations/victim/members/#",
+	"%2e%2e%2f%2e%2e%2forganizations%2fvictim%2fmembers",
+	"/organizations/victim/members",
+}
+
+func TestIntegration_TraversalServiceNamesIssueNoRequests(t *testing.T) {
+	t.Parallel()
+
+	for _, payload := range traversalServiceNames {
+		t.Run(payload, func(t *testing.T) {
+			t.Parallel()
+			ts := newTestServer()
+			t.Cleanup(ts.close)
+
+			cfg := newTestServerConfig(ts)
+			set := exportertest.NewNopSettings(metadata.Type)
+			state, err := newEndpointState(cfg, set)
+			require.NoError(t, err)
+
+			td := tracesForProject(payload)
+			require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
+
+			ld := logsForProject(payload)
+			require.NoError(t, state.pushLogData(t.Context(), zap.NewNop(), ld))
+
+			require.Eventually(t, func() bool {
+				return ts.recordedCount() == 0
+			}, 2*time.Second, 50*time.Millisecond)
+		})
+	}
+}

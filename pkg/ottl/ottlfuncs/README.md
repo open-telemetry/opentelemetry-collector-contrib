@@ -59,6 +59,7 @@ Available Editors:
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 - [set](#set)
+- [stringify_all](#stringify_all)
 - [truncate_all](#truncate_all)
 
 ### append
@@ -446,6 +447,27 @@ Examples:
 
 - `set(span.attributes["source"], span.trace_state["source"])`
 
+### stringify_all
+
+`stringify_all(target)`
+
+The `stringify_all` function converts all non-string values in a `pcommon.Map` to their string representation.
+
+`target` is a path expression to a `pcommon.Map` type field.
+
+The map will be mutated such that all values are of type string. Values already of type string are unchanged. Non-string values are converted using their standard string representation:
+- `int64`/`float64`: numeric string (e.g., `"42"`, `"3.14"`)
+- `bool`: `"true"` or `"false"`
+- `[]byte`: base64-encoded string
+- `pcommon.Map`: JSON-marshaled string
+- `pcommon.Slice`: JSON-marshaled string
+- Empty: `""`
+
+Examples:
+
+- `stringify_all(log.attributes)`
+- `stringify_all(resource.attributes)`
+
 ### truncate_all
 
 `truncate_all(target, limit, Optional[utf8_safe])`
@@ -488,6 +510,7 @@ Available Converters:
 - [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [Filter](#filter)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -566,6 +589,7 @@ Available Converters:
 - [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
+- [When](#when)
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
@@ -969,6 +993,37 @@ Examples:
      - `user.name`: smith
      - `user.password`: pass123
 
+### Filter
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Filter(source, predicate)`
+
+The `Filter` converter returns a new `pcommon.Slice` or `pcommon.Map` containing only the elements for which
+`predicate` evaluates to `true`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. The first parameter is
+the element index when filtering a slice (`int64`), or the element key when filtering a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Filter a slice by value:
+
+- `Filter(log.attributes["tags"], (_, v) => v == "prod")`
+
+Filter a map by key:
+
+- `Filter(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Store the filtered result:
+
+- `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
@@ -2385,11 +2440,11 @@ Examples:
 
 ### Substring
 
-`Substring(target, start, length)`
+`Substring(target, start, length, Optional[utf8_safe])`
 
 The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `start` and `length` are `int64`.
+`target` is a string. `start` and `length` are byte offsets as `int64`. `utf8_safe` is an optional boolean (default: `false`); when `true`, a mid-character `start` advances to the next UTF-8 boundary and a mid-character end (`start+length`) backs up to the previous one, so multi-byte characters are never split, and the result may be shorter than `length` bytes.
 
 If `target` is not a string or is nil, an error is returned.
 If the start/length exceed the length of the `target` string, an error is returned.
@@ -2397,6 +2452,7 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+- `Substring("一二三", 0, 4, true)`
 
 ### Time
 
@@ -2782,6 +2838,35 @@ The returned range is 0-6 (Sun-Sat)
 Examples:
 
 - `Weekday(Now())`
+
+### When
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`When(condition, trueValue, falseValue)`
+
+The `When` converter returns `trueValue` when `condition` evaluates to true, otherwise it returns `falseValue`.
+
+`condition` is a lambda expression with no parameters that returns a `boolean`.
+
+`trueValue` and `falseValue` are OTTL expressions or literal values.
+
+If `condition` does not return a `boolean`, it returns an error.
+
+Examples:
+
+Select a value based on a type check:
+
+- `When(() => IsMap(log.attributes), "map", "not map")`
+
+Select a value based on a comparison:
+
+- `When(() => attributes["int_value"] > 0, "positive", "negative")`
+
+Store the result:
+
+- `set(log.attributes["result"], When(() => IsMap(log.attributes), "yes", "no"))`
 
 ### XXH3
 

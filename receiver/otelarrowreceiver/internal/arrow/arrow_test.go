@@ -880,8 +880,12 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
 
+	// Like other cancel-driven shutdown tests in this file, the
+	// recv goroutine may observe EOF before the Canceled status
+	// surfaces (especially on Windows runners), so accept either a
+	// Canceled status or a clean shutdown. See issue #46000.
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
