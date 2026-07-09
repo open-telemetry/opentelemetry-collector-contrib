@@ -90,6 +90,16 @@ resourceMetrics:
                   timeUnixNano: "1136214245000000000"
               isMonotonic: true
             unit: s
+          - description: Number of available logical CPUs.
+            name: system.cpu.logical.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1662132756000000000"
+                  timeUnixNano: "1136214245000000000"
+              isMonotonic: false
+            unit: "{cpu}"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
           version: latest
