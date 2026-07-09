@@ -35,5 +35,5 @@ var ReceiverPostgresqlUseOTelSemconvFeatureGate = featuregate.GlobalRegistry().M
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, uses a single resource per server with server.address, server.port, and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry semantic conventions. When disabled, uses the legacy per-entity resource model with postgresql.database.name, postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource attributes."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347"),
-	featuregate.WithRegisterFromVersion("v0.148.0"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
 )
