@@ -118,13 +118,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
-					Metadata: enabledAttributes(),
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
 					Namespace: []string{"team-a", "team-b"},
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{

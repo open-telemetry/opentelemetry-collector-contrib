@@ -54,7 +54,6 @@ type WatchClient struct {
 	additionalJobInformers         []cache.SharedInformer
 	replicasetInformer             cache.SharedInformer
 	additionalReplicaSetInformers  []cache.SharedInformer
-	replicasetRegex                *regexp.Regexp
 	cronJobRegex                   *regexp.Regexp
 	deleteQueue                    []deleteRequest
 	stopCh                         chan struct{}
@@ -1785,16 +1784,12 @@ func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, er
 	return labelSelector, fields.AndSelectors(selectors...), nil
 }
 
-func normalizedFilterNamespaces(filters Filters) []string {
-	namespaces := filters.Namespaces
-	if len(namespaces) == 0 {
-		namespaces = []string{filters.Namespace}
-	}
-
-	if len(namespaces) == 0 {
-		return []string{""}
-	}
-
+// NormalizeFilterNamespaces trims, de-duplicates and validates a list of
+// namespace filters. A whitespace-only or empty entry means "watch all
+// namespaces", so it collapses the result to a single empty-string element.
+// The returned slice always contains at least one element, so callers can
+// safely index namespaces[0] and range over namespaces[1:].
+func NormalizeFilterNamespaces(namespaces []string) []string {
 	normalized := make([]string, 0, len(namespaces))
 	seen := make(map[string]struct{}, len(namespaces))
 	for _, namespace := range namespaces {
@@ -1814,6 +1809,17 @@ func normalizedFilterNamespaces(filters Filters) []string {
 	}
 
 	return normalized
+}
+
+// normalizedFilterNamespaces resolves the namespaces to watch from a Filters,
+// preferring the multi-value Namespaces field and falling back to the
+// deprecated single Namespace field for backwards compatibility.
+func normalizedFilterNamespaces(filters Filters) []string {
+	namespaces := filters.Namespaces
+	if len(namespaces) == 0 {
+		namespaces = []string{filters.Namespace}
+	}
+	return NormalizeFilterNamespaces(namespaces)
 }
 
 func (c *WatchClient) addOrUpdateNamespace(namespace *meta_v1.PartialObjectMetadata) {

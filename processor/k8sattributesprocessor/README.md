@@ -568,6 +568,8 @@ k8s_attributes:
 ```
 With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment label/annotation extraction) in the selected namespace(s). Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
+When multiple namespaces are listed, the processor starts a separate watch (informer) per namespace for every watched resource kind (pods and, when required, replicasets, deployments, statefulsets, daemonsets and jobs). This is necessary because namespace-scoped RBAC cannot list/watch across arbitrary namespaces in a single request. Keep in mind that the number of watches, and the associated memory and API server load, grows with the number of configured namespaces. If you need to watch a large number of namespaces, consider using cluster-scoped RBAC with an empty namespace filter instead.
+
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 
 Example `Role` and `RoleBinding` to create in the namespace being watched.
