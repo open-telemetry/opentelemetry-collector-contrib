@@ -93,7 +93,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		errTryLock:  state.NewTryLock(),
 		done:        done,
 		notifyRetry: notifyRetry,
-		conditions:  buildCondition(cfg.Condition),
+		conditions:  buildCondition(cfg.Condition.Get()),
 	}, nil
 }
 

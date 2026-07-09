@@ -72,11 +72,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				RetryInterval: 5 * time.Minute,
-				Condition: &ConditionsConfig{
+				Condition: configoptional.Some(ConditionsConfig{
 					ErrorCond: &ErrorCondition{
 						Contains: "network failure",
 					},
-				},
+				}),
 			},
 		},
 	}
