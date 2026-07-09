@@ -40,7 +40,9 @@ type Config struct {
 	// it will not try to recover the level that exceeded the maximum retries
 	MaxRetries int `mapstructure:"max_retries"` // **Deprecated**
 
-	Condition ConditionsConfig `mapstructure:"condition"`
+	// Condition is an optional user-defined rule that controls which downstream
+	// errors trigger failover. When omitted, any error triggers failover.
+	Condition *ConditionsConfig `mapstructure:"condition"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

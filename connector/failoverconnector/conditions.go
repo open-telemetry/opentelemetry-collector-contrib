@@ -4,7 +4,12 @@
 package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
-	"fmt"
+	"errors"
+)
+
+var (
+	errNoConditionDefined = errors.New("no conditions are defined")
+	errTooManyConditions  = errors.New("only one failover condition can be applied")
 )
 
 // At most only one condition can be set
@@ -18,11 +23,11 @@ func (c *ConditionsConfig) Validate() error {
 		set++
 	}
 	if set > 1 {
-		return fmt.Errorf("only one failover condition can be applied")
+		return errTooManyConditions
 	}
 
 	if set == 0 {
-		return fmt.Errorf("no conditions are defined")
+		return errNoConditionDefined
 	}
 
 	return nil
@@ -45,7 +50,10 @@ func (e *ErrorCondition) ShouldFailover(err error) bool {
 	return true
 }
 
-func buildCondition(c ConditionsConfig) Condition {
+func buildCondition(c *ConditionsConfig) Condition {
+	if c == nil {
+		return nil
+	}
 	if c.ErrorCond != nil {
 		return c.ErrorCond
 	}
