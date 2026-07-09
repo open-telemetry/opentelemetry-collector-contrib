@@ -537,19 +537,6 @@ func testGetTranslator(t *testing.T) *translation.MetricTranslator {
 	return tr
 }
 
-func appendLogicalCPUCountDataPoint(dps []*sfxpb.DataPoint, value int64) []*sfxpb.DataPoint {
-	metricType := sfxpb.MetricType_GAUGE
-	timestamp := int64(1597439222299)
-	return append(dps, &sfxpb.DataPoint{
-		Metric:     "system.cpu.logical.count",
-		Timestamp:  timestamp,
-		MetricType: &metricType,
-		Value: sfxpb.Datum{
-			IntValue: &value,
-		},
-	})
-}
-
 func TestDefaultCPUTranslations(t *testing.T) {
 	var pts1 []*sfxpb.DataPoint
 	err := testReadJSON("testdata/json/system.cpu.time.1.json", &pts1)
@@ -558,7 +545,6 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	var pts2 []*sfxpb.DataPoint
 	err = testReadJSON("testdata/json/system.cpu.time.2.json", &pts2)
 	require.NoError(t, err)
-	pts2 = appendLogicalCPUCountDataPoint(pts2, 8)
 
 	tr := testGetTranslator(t)
 	log := zap.NewNop()
