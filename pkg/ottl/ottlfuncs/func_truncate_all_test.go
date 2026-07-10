@@ -230,6 +230,7 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 		testString string
 		limit      int64
 		marker     string
+		utf8Safe   bool
 		want       func(pcommon.Map)
 	}{
 		{
@@ -237,6 +238,19 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 			testString: "hello world",
 			limit:      7,
 			marker:     "(...)",
+			utf8Safe:   true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "he(...)")
+			},
+		},
+		{
+			name:       "truncate map unsafe with marker",
+			testString: "hello world",
+			limit:      7,
+			marker:     "(...)",
+			utf8Safe:   false,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -248,6 +262,7 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 			testString: "hello world",
 			limit:      5,
 			marker:     "(...)",
+			utf8Safe:   true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -259,6 +274,7 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 			testString: "hello world",
 			limit:      10,
 			marker:     "[✄]",
+			utf8Safe:   true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
@@ -270,10 +286,23 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 			testString: "hell😀 w😀rld",
 			limit:      16, // Truncates in the middle of the second emoji. Backs up to the preceding char and adds the marker.
 			marker:     "(...)",
+			utf8Safe:   true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 				expectedMap.PutStr("test", "hell😀 w(...)")
+			},
+		},
+		{
+			name:       "truncate utf-8 unsafe with marker",
+			testString: "hell😀 w😀rld",
+			limit:      16, // Truncates in the middle of the second emoji. Results in non-utf8 trailing bytes.
+			marker:     "(...)",
+			utf8Safe:   false,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hell😀 w\xf0(...)")
 			},
 		},
 	}
@@ -299,7 +328,8 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 			}
 
 			truncateMarkerOpt := ottl.NewTestingOptional(tt.marker)
-			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{}, truncateMarkerOpt, zap.NewNop())
+			utf8SafeOpt := ottl.NewTestingOptional(tt.utf8Safe)
+			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, truncateMarkerOpt, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
