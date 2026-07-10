@@ -97,7 +97,26 @@ Start the Supervisor:
 ./opampsupervisor --config=supervisor.yaml
 ```
 
+The supervisor's own log encoding is configured under `telemetry.logs.encoding`.
+Use `console` for plain-text logs with ISO8601 timestamps. Leave the field
+unset (or set it to `json`) to keep the default JSON output.
+
+```yaml
+telemetry:
+  logs:
+    encoding: console
+```
+
 Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
+
+## Collector crash log snippets
+
+The Supervisor can include the tail of the Collector's logs in health and remote config failure messages when the Collector process exits unexpectedly. This is disabled by default because Collector logs may contain sensitive data. To enable it, set `agent::collector_crash_log_snippet_kib` to the maximum number of log KiB to include. A value of `0` disables the feature. `4` is a reasonable starting point. The maximum value is `1024` (1 MiB).
+
+```yaml
+agent:
+  collector_crash_log_snippet_kib: 4
+```
 
 ## Persistent data storage
 
