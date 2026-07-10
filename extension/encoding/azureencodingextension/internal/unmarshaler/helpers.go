@@ -126,8 +126,10 @@ func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
 	}
 
 	// Detect ND JSON
+	// Support both LF and CRLF line endings: Azure blobs may use \r\n,
+	// in which case the byte before \n is \r (not '}').
 	idx := bytes.IndexByte(input, '\n')
-	if idx > 1 && input[idx-1] == '}' {
+	if idx > 1 && (input[idx-1] == '}' || (input[idx-1] == '\r' && idx > 2 && input[idx-2] == '}')) {
 		return FormatNDJSON, nil
 	}
 
