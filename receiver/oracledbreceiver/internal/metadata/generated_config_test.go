@@ -136,7 +136,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection},
+						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
 					},
 					OracledbHardParses: OracledbHardParsesMetricConfig{
 						Enabled: true,
@@ -482,7 +482,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection},
+						EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
 					},
 					OracledbHardParses: OracledbHardParsesMetricConfig{
 						Enabled: false,
@@ -789,7 +789,7 @@ func TestOracledbGcCurrentBlockTimeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbGcCurrentBlockTimeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.gc.current_block.time doesn't have an attribute invalid, valid attributes: [oracledb.gc.direction]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.gc.current_block.time doesn't have an attribute invalid, valid attributes: [network.io.direction]")
 
 	cfg = DefaultMetricsConfig().OracledbGcCurrentBlockTime
 	cfg.AggregationStrategy = "invalid"

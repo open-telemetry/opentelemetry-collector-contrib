@@ -794,7 +794,7 @@ func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error 
 type OracledbGcCurrentBlockTimeMetricAttributeKey string
 
 const (
-	OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection OracledbGcCurrentBlockTimeMetricAttributeKey = "oracledb.gc.direction"
+	OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection OracledbGcCurrentBlockTimeMetricAttributeKey = "network.io.direction"
 )
 
 // OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric.
@@ -823,9 +823,9 @@ func (ms *OracledbGcCurrentBlockTimeMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *OracledbGcCurrentBlockTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection:
+		case OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection:
 		default:
-			return fmt.Errorf("metric oracledb.gc.current_block.time doesn't have an attribute %v, valid attributes: [oracledb.gc.direction]", val)
+			return fmt.Errorf("metric oracledb.gc.current_block.time doesn't have an attribute %v, valid attributes: [network.io.direction]", val)
 		}
 	}
 
@@ -2755,7 +2755,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbGcCurrentBlockTime: OracledbGcCurrentBlockTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection},
+			EnabledAttributes:   []OracledbGcCurrentBlockTimeMetricAttributeKey{OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection},
 		},
 		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,

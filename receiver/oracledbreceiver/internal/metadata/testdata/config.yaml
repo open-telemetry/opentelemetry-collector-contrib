@@ -72,7 +72,7 @@ all_set:
       enabled: true
     oracledb.gc.current_block.time:
       enabled: true
-      attributes: ["oracledb.gc.direction"]
+      attributes: ["network.io.direction"]
     oracledb.hard_parses:
       enabled: true
     oracledb.host.cpu.utilization:
@@ -552,7 +552,7 @@ none_set:
       enabled: false
     oracledb.gc.current_block.time:
       enabled: false
-      attributes: ["oracledb.gc.direction"]
+      attributes: ["network.io.direction"]
     oracledb.hard_parses:
       enabled: false
     oracledb.host.cpu.utilization:

@@ -96,7 +96,7 @@ attributes:
     type: string
     enum: [buffered, total]
   network.io.direction:
-    description: Direction of the SQL*Net network transfer.
+    description: Direction of the network transfer.
     type: string
     enum: [receive, transmit]
   network.peer.address:
@@ -193,10 +193,6 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
-  oracledb.gc.direction:
-    description: Direction of the RAC cache fusion block transfer.
-    type: string
-    enum: [receive]
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
@@ -738,7 +734,7 @@ metrics:
     unit: "{executions}"
   oracledb.gc.current_block.time:
     attributes:
-      - oracledb.gc.direction
+      - network.io.direction
     description: Cumulative time spent transferring current blocks between instances over RAC cache fusion.
     enabled: false
     stability: development
@@ -1273,7 +1269,7 @@ metrics:
       value_type: int
     unit: By
   oracledb.transaction.rollbacks:
-    description: Number of transactions rolled back.
+    description: Total number of transactions rolled back.
     enabled: false
     stability: development
     sum:

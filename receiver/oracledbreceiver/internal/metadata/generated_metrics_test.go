@@ -212,9 +212,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbExecutionsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 1, AttributeOracledbGcDirectionReceive)
+			mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 1, AttributeNetworkIoDirectionReceive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 3, AttributeOracledbGcDirectionReceive)
+				mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit)
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1101,9 +1101,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						oracledbGcDirectionAttrVal, ok := dp.Attributes().Get("oracledb.gc.direction")
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", oracledbGcDirectionAttrVal.Str())
+						assert.Equal(t, "receive", networkIoDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.gc.current_block.time"], "Found a duplicate in the metrics slice: oracledb.gc.current_block.time")
 						validatedMetrics["oracledb.gc.current_block.time"] = true
@@ -1127,7 +1127,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("oracledb.gc.direction")
+						_, ok := dp.Attributes().Get("network.io.direction")
 						assert.False(t, ok)
 					}
 				case "oracledb.hard_parses":
@@ -2426,7 +2426,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.transaction.rollbacks"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of transactions rolled back.", mi.Description())
+					assert.Equal(t, "Total number of transactions rolled back.", mi.Description())
 					assert.Equal(t, "{rollback}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

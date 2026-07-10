@@ -116,20 +116,13 @@ const (
 	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
-	// Transactions, Locks & Recovery v$sysstat names
-	gcCurrentBlockReceiveTime     = "gc current block receive time"
-	recoveryBlocksRead            = "recovery blocks read"
-	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
-	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
-	transactionLockBackgroundTime = "transaction lock background get time"
-	transactionLockForegroundTime = "transaction lock foreground wait time"
-	transactionRollbacks          = "transaction rollbacks"
 	dbTimeStat                    = "DB time"
 	enqueueConversionsStat        = "enqueue conversions"
 	enqueueReleasesStat           = "enqueue releases"
 	enqueueRequestsStat           = "enqueue requests"
 	enqueueTimeoutsStat           = "enqueue timeouts"
 	enqueueWaitsStat              = "enqueue waits"
+	gcCurrentBlockReceiveTime     = "gc current block receive time"
 	indexFastFullScansDirectStat  = "index fast full scans (direct read)"
 	indexFastFullScansFullStat    = "index fast full scans (full)"
 	indexFastFullScansRowidStat   = "index fast full scans (rowid ranges)"
@@ -138,10 +131,13 @@ const (
 	openedCursorsCurrentStat      = "opened cursors current"
 	parseTimeCPUStat              = "parse time cpu"
 	parseTimeElapsedStat          = "parse time elapsed"
+	recoveryBlocksRead            = "recovery blocks read"
 	recursiveCallsStat            = "recursive calls"
 	recursiveCPUUsageStat         = "recursive cpu usage"
 	sessionCursorCacheCountStat   = "session cursor cache count"
 	sessionCursorCacheHitsStat    = "session cursor cache hits"
+	smonInstanceRecoveryPosts     = "SMON posted for instance recovery"
+	smonTxnRecoveryPosts          = "SMON posted for txn recovery for other instances"
 	sortsDiskStat                 = "sorts (disk)"
 	sortsMemoryStat               = "sorts (memory)"
 	sortsRowsStat                 = "sorts (rows)"
@@ -149,6 +145,9 @@ const (
 	tableScansDirectReadStat      = "table scans (direct read)"
 	tableScansLongTablesStat      = "table scans (long tables)"
 	tableScansRowidRangesStat     = "table scans (rowid ranges)"
+	transactionLockBackgroundTime = "transaction lock background get time"
+	transactionLockForegroundTime = "transaction lock foreground wait time"
+	transactionRollbacks          = "transaction rollbacks"
 	userCallsStat                 = "user calls"
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
@@ -371,11 +370,6 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocks.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
@@ -383,13 +377,18 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbGcCurrentBlockTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLockTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbParseElapsedTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbRecoveryBlocks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanCount.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSmonPosts.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTransactionRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockChanges.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferCacheBlockGets.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbBufferInspected.Enabled ||
@@ -803,7 +802,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", gcCurrentBlockReceiveTime, row["VALUE"], err))
 				} else {
-					s.mb.RecordOracledbGcCurrentBlockTimeDataPoint(now, value/100, metadata.AttributeOracledbGcDirectionReceive)
+					s.mb.RecordOracledbGcCurrentBlockTimeDataPoint(now, value/100, metadata.AttributeNetworkIoDirectionReceive)
 				}
 			case recoveryBlocksRead:
 				if err := s.mb.RecordOracledbRecoveryBlocksDataPoint(now, row["VALUE"]); err != nil {

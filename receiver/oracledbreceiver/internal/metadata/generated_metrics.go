@@ -242,28 +242,6 @@ var MapAttributeOracledbEnqueueType = map[string]AttributeOracledbEnqueueType{
 	"waits":       AttributeOracledbEnqueueTypeWaits,
 }
 
-// AttributeOracledbGcDirection specifies the value oracledb.gc.direction attribute.
-type AttributeOracledbGcDirection int
-
-const (
-	_ AttributeOracledbGcDirection = iota
-	AttributeOracledbGcDirectionReceive
-)
-
-// String returns the string representation of the AttributeOracledbGcDirection.
-func (av AttributeOracledbGcDirection) String() string {
-	switch av {
-	case AttributeOracledbGcDirectionReceive:
-		return "receive"
-	}
-	return ""
-}
-
-// MapAttributeOracledbGcDirection is a helper map of string to AttributeOracledbGcDirection attribute value.
-var MapAttributeOracledbGcDirection = map[string]AttributeOracledbGcDirection{
-	"receive": AttributeOracledbGcDirectionReceive,
-}
-
 // AttributeOracledbParseResult specifies the value oracledb.parse.result attribute.
 type AttributeOracledbParseResult int
 
@@ -624,7 +602,7 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbGcCurrentBlockTime: metricInfo{
 		Name:       "oracledb.gc.current_block.time",
-		Attributes: []string{"oracledb.gc.direction"},
+		Attributes: []string{"network.io.direction"},
 	},
 	OracledbHardParses: metricInfo{
 		Name: "oracledb.hard_parses",
@@ -2779,7 +2757,7 @@ func (m *metricOracledbGcCurrentBlockTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbGcDirectionAttributeValue string) {
+func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, networkIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2787,8 +2765,8 @@ func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbGcCurrentBlockTimeMetricAttributeKeyOracledbGcDirection) {
-		dp.Attributes().PutStr("oracledb.gc.direction", oracledbGcDirectionAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbGcCurrentBlockTimeMetricAttributeKeyNetworkIoDirection) {
+		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
 	}
 
 	var s string
@@ -6403,7 +6381,7 @@ type metricOracledbTransactionRollbacks struct {
 // init fills oracledb.transaction.rollbacks metric with initial data.
 func (m *metricOracledbTransactionRollbacks) init() {
 	m.data.SetName("oracledb.transaction.rollbacks")
-	m.data.SetDescription("Number of transactions rolled back.")
+	m.data.SetDescription("Total number of transactions rolled back.")
 	m.data.SetUnit("{rollback}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -7408,8 +7386,8 @@ func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp
 }
 
 // RecordOracledbGcCurrentBlockTimeDataPoint adds a data point to oracledb.gc.current_block.time metric.
-func (mb *MetricsBuilder) RecordOracledbGcCurrentBlockTimeDataPoint(ts pcommon.Timestamp, val float64, oracledbGcDirectionAttributeValue AttributeOracledbGcDirection) {
-	mb.metricOracledbGcCurrentBlockTime.recordDataPoint(mb.startTime, ts, val, oracledbGcDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordOracledbGcCurrentBlockTimeDataPoint(ts pcommon.Timestamp, val float64, networkIoDirectionAttributeValue AttributeNetworkIoDirection) {
+	mb.metricOracledbGcCurrentBlockTime.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String())
 }
 
 // RecordOracledbHardParsesDataPoint adds a data point to oracledb.hard_parses metric.

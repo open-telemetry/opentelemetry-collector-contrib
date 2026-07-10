@@ -386,11 +386,11 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 // scrapeWithConfig starts a scraper over the shared fake responses and returns one scrape.
 func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
+	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
 	cfg.Metrics.OracledbLockTime.Enabled = true
 	cfg.Metrics.OracledbRecoveryBlocks.Enabled = true
 	cfg.Metrics.OracledbSmonPosts.Enabled = true
-	cfg.Metrics.OracledbGcCurrentBlockTime.Enabled = true
+	cfg.Metrics.OracledbTransactionRollbacks.Enabled = true
 
 	m := scrapeWithConfig(t, cfg)
 
@@ -403,9 +403,11 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 		}
 		dps := me.Sum().DataPoints()
 		switch me.Name() {
-		case "oracledb.transaction.rollbacks":
+		case "oracledb.gc.current_block.time":
 			seen++
-			assert.Equal(t, int64(4521), dps.At(0).IntValue())
+			gcDir, _ := dps.At(0).Attributes().Get("network.io.direction")
+			assert.Equal(t, "receive", gcDir.Str())
+			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
 		case "oracledb.lock.time":
 			seen++
 			// one data point per oracledb.session.type; raw centiseconds are divided by 100
@@ -439,11 +441,9 @@ func TestScraper_ScrapeTransactionLockRecoveryMetrics(t *testing.T) {
 					t.Errorf("unexpected oracledb.smon.type %q", smonType.Str())
 				}
 			}
-		case "oracledb.gc.current_block.time":
+		case "oracledb.transaction.rollbacks":
 			seen++
-			gcDir, _ := dps.At(0).Attributes().Get("oracledb.gc.direction")
-			assert.Equal(t, "receive", gcDir.Str())
-			assert.InDelta(t, 6.4, dps.At(0).DoubleValue(), 1e-9)
+			assert.Equal(t, int64(4521), dps.At(0).IntValue())
 		}
 	}
 	assert.Equal(t, 5, seen)
