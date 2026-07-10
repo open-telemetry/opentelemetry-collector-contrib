@@ -211,9 +211,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordPostgresqlQueryConflictsDataPoint(ts, 1, AttributePostgresqlConflictTypeTablespace)
+			mb.RecordPostgresqlQueryConflictsDataPoint(ts, 1, AttributePostgresqlConflictTypeTablespace, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlQueryConflictsDataPoint(ts, 3, AttributePostgresqlConflictTypeLock)
+				mb.RecordPostgresqlQueryConflictsDataPoint(ts, 3, AttributePostgresqlConflictTypeLock, "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1166,6 +1166,9 @@ func TestMetricsBuilder(t *testing.T) {
 						postgresqlConflictTypeAttrVal, ok := dp.Attributes().Get("postgresql.conflict.type")
 						assert.True(t, ok)
 						assert.Equal(t, "tablespace", postgresqlConflictTypeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.query.conflicts"], "Found a duplicate in the metrics slice: postgresql.query.conflicts")
 						validatedMetrics["postgresql.query.conflicts"] = true
@@ -1190,6 +1193,8 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("postgresql.conflict.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.replication.data_delay":

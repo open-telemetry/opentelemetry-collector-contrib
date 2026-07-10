@@ -1,9 +1,5 @@
 resourceMetrics:
-  - resource:
-      attributes:
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+  - resource: {}
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -214,9 +210,6 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: open
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -228,7 +221,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache.
+          - description: Number of times disk blocks were found already in the buffer cache. 
             name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
@@ -238,7 +231,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database.
+          - description: Number of disk blocks read in this database. 
             name: postgresql.blks_read
             sum:
               aggregationTemporality: 2
@@ -247,7 +240,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{blks_read}'
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -277,48 +270,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{deadlock}'
-          - description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
-            name: postgresql.query.conflicts
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "17"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: bufferpin
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "18"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: deadlock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "15"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: lock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "16"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: snapshot
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "14"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: tablespace
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{query}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -367,7 +318,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_deleted}'
+            unit: '{tup_deleted}'            
           - description: Number of rows fetched by queries in the database.
             name: postgresql.tup_fetched
             sum:
@@ -387,7 +338,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_inserted}'
+            unit: '{tup_inserted}'            
           - description: Number of rows returned by queries in the database.
             name: postgresql.tup_returned
             sum:
@@ -407,7 +358,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_updated}'
+            unit: '{tup_updated}'            
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -416,9 +367,6 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -430,7 +378,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache.
+          - description: Number of times disk blocks were found already in the buffer cache. 
             name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
@@ -440,7 +388,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database.
+          - description: Number of disk blocks read in this database. 
             name: postgresql.blks_read
             sum:
               aggregationTemporality: 2
@@ -449,7 +397,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{blks_read}'
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -479,48 +427,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{deadlock}'
-          - description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
-            name: postgresql.query.conflicts
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "16"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: bufferpin
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "17"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: deadlock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "14"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: lock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "15"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: snapshot
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "13"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: tablespace
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{query}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -569,7 +475,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_deleted}'
+            unit: '{tup_deleted}'            
           - description: Number of rows fetched by queries in the database.
             name: postgresql.tup_fetched
             sum:
@@ -589,7 +495,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_inserted}'
+            unit: '{tup_inserted}'            
           - description: Number of rows returned by queries in the database.
             name: postgresql.tup_returned
             sum:
@@ -618,9 +524,6 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -632,7 +535,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Number of times disk blocks were found already in the buffer cache.
+          - description: Number of times disk blocks were found already in the buffer cache. 
             name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
@@ -642,7 +545,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{blks_hit}'
-          - description: Number of disk blocks read in this database.
+          - description: Number of disk blocks read in this database. 
             name: postgresql.blks_read
             sum:
               aggregationTemporality: 2
@@ -651,7 +554,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{blks_read}'
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -681,48 +584,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{deadlock}'
-          - description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
-            name: postgresql.query.conflicts
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "18"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: bufferpin
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "19"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: deadlock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "16"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: lock
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "17"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: snapshot
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "15"
-                  attributes:
-                    - key: postgresql.conflict.type
-                      value:
-                        stringValue: tablespace
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{query}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -771,7 +632,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_deleted}'
+            unit: '{tup_deleted}'            
           - description: Number of rows fetched by queries in the database.
             name: postgresql.tup_fetched
             sum:
@@ -791,7 +652,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_inserted}'
+            unit: '{tup_inserted}'            
           - description: Number of rows returned by queries in the database.
             name: postgresql.tup_returned
             sum:
@@ -811,7 +672,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_updated}'
+            unit: '{tup_updated}'            
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -826,9 +687,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -992,9 +850,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1158,9 +1013,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1324,9 +1176,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1490,9 +1339,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1656,9 +1502,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1825,9 +1668,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1865,9 +1705,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1905,9 +1742,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1945,9 +1779,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1985,9 +1816,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -2025,9 +1853,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

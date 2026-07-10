@@ -33,8 +33,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
 
   - id: receiver.postgresql.separateSchemaAttr
-    description: >-
-      Moves Schema Names into dedicated Attribute.
+    description: Moves Schema Names into dedicated Attribute
     stage: alpha
     from_version: "v0.122.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
@@ -525,7 +524,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [postgresql.conflict.type]
+    attributes: [postgresql.conflict.type, db.namespace]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.

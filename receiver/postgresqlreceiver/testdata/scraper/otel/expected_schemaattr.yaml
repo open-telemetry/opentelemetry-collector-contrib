@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -216,7 +216,7 @@ resourceMetrics:
             stringValue: otel
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -424,7 +424,7 @@ resourceMetrics:
             stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -590,7 +590,7 @@ resourceMetrics:
             stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -759,7 +759,7 @@ resourceMetrics:
             stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -799,7 +799,7 @@ resourceMetrics:
             stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

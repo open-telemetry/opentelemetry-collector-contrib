@@ -56,7 +56,7 @@ all_set:
       attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: true
-      attributes: ["postgresql.conflict.type"]
+      attributes: ["postgresql.conflict.type","db.namespace"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
@@ -320,7 +320,7 @@ none_set:
       attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: false
-      attributes: ["postgresql.conflict.type"]
+      attributes: ["postgresql.conflict.type","db.namespace"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]

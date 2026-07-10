@@ -3,13 +3,14 @@
 package metadata
 
 import (
+	"slices"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"slices"
-	"time"
 )
 
 const (
@@ -380,7 +381,7 @@ var MetricsInfo = metricsInfo{
 	},
 	PostgresqlQueryConflicts: metricInfo{
 		Name:       "postgresql.query.conflicts",
-		Attributes: []string{"postgresql.conflict.type"},
+		Attributes: []string{"postgresql.conflict.type", "db.namespace"},
 	},
 	PostgresqlReplicationDataDelay: metricInfo{
 		Name:       "postgresql.replication.data_delay",
@@ -2115,7 +2116,7 @@ func (m *metricPostgresqlQueryConflicts) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlQueryConflicts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue string) {
+func (m *metricPostgresqlQueryConflicts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2125,6 +2126,9 @@ func (m *metricPostgresqlQueryConflicts) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType) {
 		dp.Attributes().PutStr("postgresql.conflict.type", postgresqlConflictTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 
 	var s string
@@ -4107,8 +4111,8 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timesta
 }
 
 // RecordPostgresqlQueryConflictsDataPoint adds a data point to postgresql.query.conflicts metric.
-func (mb *MetricsBuilder) RecordPostgresqlQueryConflictsDataPoint(ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue AttributePostgresqlConflictType) {
-	mb.metricPostgresqlQueryConflicts.recordDataPoint(mb.startTime, ts, val, postgresqlConflictTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordPostgresqlQueryConflictsDataPoint(ts pcommon.Timestamp, val int64, postgresqlConflictTypeAttributeValue AttributePostgresqlConflictType, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlQueryConflicts.recordDataPoint(mb.startTime, ts, val, postgresqlConflictTypeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.

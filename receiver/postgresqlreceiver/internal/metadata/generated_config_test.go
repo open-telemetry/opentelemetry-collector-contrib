@@ -117,7 +117,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType},
+						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             true,
@@ -310,7 +310,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType},
+						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             false,
@@ -603,7 +603,7 @@ func TestPostgresqlQueryConflictsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlQueryConflictsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.query.conflicts doesn't have an attribute invalid, valid attributes: [postgresql.conflict.type]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.query.conflicts doesn't have an attribute invalid, valid attributes: [postgresql.conflict.type, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlQueryConflicts
 	cfg.AggregationStrategy = "invalid"

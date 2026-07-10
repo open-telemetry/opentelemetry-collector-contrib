@@ -1,9 +1,5 @@
 resourceMetrics:
-  - resource:
-      attributes:
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
+  - resource: {}
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -148,9 +144,6 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -208,9 +201,6 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -274,9 +264,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -430,9 +417,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -586,9 +570,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -742,9 +723,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -901,9 +879,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -941,9 +916,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -981,9 +953,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1021,9 +990,6 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
-        - key: service.instance.id
-          value:
-            stringValue: Arves-MacBook-Pro-2.fritz.box:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

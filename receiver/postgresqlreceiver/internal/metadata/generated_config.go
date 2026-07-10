@@ -826,6 +826,7 @@ type PostgresqlQueryConflictsMetricAttributeKey string
 
 const (
 	PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType PostgresqlQueryConflictsMetricAttributeKey = "postgresql.conflict.type"
+	PostgresqlQueryConflictsMetricAttributeKeyDbNamespace            PostgresqlQueryConflictsMetricAttributeKey = "db.namespace"
 )
 
 // PostgresqlQueryConflictsMetricConfig provides config for the postgresql.query.conflicts metric.
@@ -854,9 +855,9 @@ func (ms *PostgresqlQueryConflictsMetricConfig) Unmarshal(parser *confmap.Conf) 
 func (ms *PostgresqlQueryConflictsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType:
+		case PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace:
 		default:
-			return fmt.Errorf("metric postgresql.query.conflicts doesn't have an attribute %v, valid attributes: [postgresql.conflict.type]", val)
+			return fmt.Errorf("metric postgresql.query.conflicts doesn't have an attribute %v, valid attributes: [postgresql.conflict.type, db.namespace]", val)
 		}
 	}
 
@@ -1797,7 +1798,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType},
+			EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 			Enabled:             true,

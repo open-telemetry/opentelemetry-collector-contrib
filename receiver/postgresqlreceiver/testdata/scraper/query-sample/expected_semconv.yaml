@@ -60,7 +60,7 @@ resourceLogs:
                   doubleValue: 1.2
               - key: postgresql.blocking.pids
                 value:
-                  stringValue: ""
+                  stringValue: '{}'
               - key: postgresql.blocking.start_time
                 value:
                   stringValue: ""
