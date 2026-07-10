@@ -621,6 +621,8 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 2
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
+
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestNamespaceDenyListWatchObject(t *testing.T) {
