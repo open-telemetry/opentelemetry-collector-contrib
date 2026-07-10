@@ -69,10 +69,12 @@ func DefaultMetrics(exporterType, hostname string, timestamp uint64, tags []stri
 	return metrics
 }
 
-// FargateMetrics creates built-in metrics to report that a Fargate exporter is running.
-func FargateMetrics(timestamp uint64, tags []string) []datadogV2.MetricSeries {
+// WorkloadMetrics creates a built-in metric to report that a workload-specific
+// exporter (e.g. Fargate, Azure Container Apps) is running. The resulting metric
+// name is "otel.datadog_exporter.metrics.running.<metricSuffix>".
+func WorkloadMetrics(metricSuffix string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
 	metrics := []datadogV2.MetricSeries{
-		NewGauge("otel.datadog_exporter.metrics.running.fargate", timestamp, 0, 1.0, tags),
+		NewGauge("otel.datadog_exporter.metrics.running."+metricSuffix, timestamp, 0, 1.0, tags),
 	}
 	for i := range metrics {
 		metrics[i].SetResources([]datadogV2.MetricResource{

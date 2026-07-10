@@ -5,10 +5,10 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
-	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -20,10 +20,20 @@ import (
 )
 
 var (
-	_ metrics.Consumer     = (*Consumer)(nil)
-	_ metrics.HostConsumer = (*Consumer)(nil)
-	_ metrics.TagsConsumer = (*Consumer)(nil)
+	_ metrics.Consumer       = (*Consumer)(nil)
+	_ metrics.HostConsumer   = (*Consumer)(nil)
+	_ metrics.TagsConsumer   = (*Consumer)(nil)
+	_ metrics.TagSetConsumer = (*Consumer)(nil)
 )
+
+// tagSetKey namespaces a ConsumeTagSet dedup key by metricSuffix, so that two
+// different workload types can never collide in seenTagSets even if their
+// tag content happens to coincide. key is derived from tags themselves
+// (sorted and joined) so that two calls with identical tags always dedup.
+type tagSetKey struct {
+	metricSuffix string
+	key          string
+}
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
@@ -32,6 +42,7 @@ type Consumer struct {
 	sl           sketches.SketchSeriesList
 	seenHosts    map[string]struct{}
 	seenTags     map[string]struct{}
+	seenTagSets  map[tagSetKey][]string // value: full "key:value" tag slice for the metric
 	gatewayUsage *attributes.GatewayUsage
 }
 
@@ -40,6 +51,7 @@ func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
 	return &Consumer{
 		seenHosts:    make(map[string]struct{}),
 		seenTags:     make(map[string]struct{}),
+		seenTagSets:  make(map[tagSetKey][]string),
 		gatewayUsage: gatewayUsage,
 	}
 }
@@ -71,14 +83,17 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for tag := range c.seenTags {
-		var tagSeries []datadogV2.MetricSeries
-		if strings.HasPrefix(tag, string(source.AWSECSFargateKind)+":") {
-			tagSeries = FargateMetrics(timestamp, buildTags)
-		} else {
-			tagSeries = DefaultMetrics("metrics", "", timestamp, buildTags)
-		}
+		tagSeries := DefaultMetrics("metrics", "", timestamp, buildTags)
 		for i := range tagSeries {
 			tagSeries[i].Tags = append(tagSeries[i].Tags, tag)
+		}
+		series = append(series, tagSeries...)
+	}
+
+	for k, tags := range c.seenTagSets {
+		tagSeries := WorkloadMetrics(k.metricSuffix, timestamp, buildTags)
+		for i := range tagSeries {
+			tagSeries[i].Tags = append(tagSeries[i].Tags, tags...)
 		}
 		series = append(series, tagSeries...)
 	}
@@ -156,6 +171,14 @@ func (c *Consumer) ConsumeHost(host string) {
 // ConsumeTag implements the metrics.TagsConsumer interface.
 func (c *Consumer) ConsumeTag(tag string) {
 	c.seenTags[tag] = struct{}{}
+}
+
+// ConsumeTagSet implements the metrics.TagSetConsumer interface.
+func (c *Consumer) ConsumeTagSet(metricSuffix string, tags []string) {
+	sorted := slices.Clone(tags)
+	slices.Sort(sorted)
+	key := tagSetKey{metricSuffix: metricSuffix, key: strings.Join(sorted, ",")}
+	c.seenTagSets[key] = slices.Clone(tags)
 }
 
 // ConsumeExplicitBoundHistogram implements the metrics.ExplicitBoundHistogramConsumer interface.
