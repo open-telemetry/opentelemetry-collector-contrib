@@ -1,0 +1,97 @@
+config:
+  exporters:
+    otlphttp/o11ytest1:
+      headers:
+        X-SF-Token: "nqELjKI66FobF5NJMSn6cg"
+        X-splunk-instrumentation-library: dbmon
+      logs_endpoint: https://external-ingest.rc0.signalfx.com/v3/event
+      sending_queue:
+        batch:
+          flush_timeout: 15s
+          max_size: 10485760
+          sizer: bytes
+    signalfx/o11ytest1:
+      access_token: "nqELjKI66FobF5NJMSn6cg"
+      api_url: https://external-api.rc0.signalfx.com
+      ingest_url: https://external-ingest.rc0.signalfx.com
+      sync_host_metadata: true    
+    otlphttp/o11ytest:
+      headers:
+        X-SF-Token: "nqELjKI66FobF5NJMSn6cg"
+        X-splunk-instrumentation-library: dbmon
+      logs_endpoint: https://external-ingest.rc0.signalfx.com/v3/event
+      sending_queue:
+        batch:
+          flush_timeout: 15s
+          max_size: 10485760
+          sizer: bytes
+    signalfx/o11ytest:
+      access_token: "nqELjKI66FobF5NJMSn6cg"
+      api_url: https://external-api.rc0.signalfx.com
+      ingest_url: https://external-ingest.rc0.signalfx.com
+      sync_host_metadata: true     
+  processors:
+    batch:
+      send_batch_max_size: 2
+      send_batch_size: 1
+      timeout: 10s
+    memory_limiter:
+      check_interval: 2s
+      limit_mib: 500
+      limit_percentage: 80
+      spike_limit_percentage: 30
+    resourcedetection:
+      detectors:
+      - env
+      - eks
+      - ec2
+      - system
+      override: true
+      timeout: 15s
+  receivers:   
+    oracledb/19:
+      collection_interval: 10s
+      events:
+        db.server.query_sample:
+          enabled: true
+        db.server.top_query:
+          enabled: true
+      password: fHsjfsTPym0RwhQK
+      endpoint: dbmon-oracle-19std2-db-instance.cwkewkrhrxtj.us-east-2.rds.amazonaws.com:1521
+      username: admin
+      service: ORCL    
+  service:
+    pipelines:
+      logs:
+        exporters:
+        - otlphttp/o11ytest
+        - otlphttp/o11ytest1
+        processors:
+        - memory_limiter
+        - batch
+        receivers:
+        - oracledb/19
+      metrics/sqlserver:
+        exporters:
+        - signalfx/o11ytest
+        - signalfx/o11ytest1
+        processors:
+        - memory_limiter
+        - batch
+        - resourcedetection
+        receivers:
+        - oracledb/19
+image:
+  repository: 977933106931.dkr.ecr.us-east-1.amazonaws.com/dashbase
+  tag: oraclebs
+  pullPolicy: Always 
+mode: deployment
+nodeSelector:
+  kubernetes.io/hostname: ip-192-168-55-121.us-east-2.compute.internal
+resources:
+  limits:
+    cpu: 500m
+    memory: 1000Mi
+  requests:
+    cpu: 250m
+    memory: 128Mi

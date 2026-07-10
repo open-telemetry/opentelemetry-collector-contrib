@@ -40,6 +40,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
+	cfg.Metrics.SqlserverConnectionResetRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
@@ -50,6 +51,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.Metrics.SqlserverErrorRate.Enabled = enabled
 	cfg.Metrics.SqlserverExtentOperationRate.Enabled = enabled
 	cfg.Metrics.SqlserverGhostRecordSkippedRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
@@ -58,10 +60,15 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
 	cfg.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
+	cfg.Metrics.SqlserverLockBlockCount.Enabled = enabled
+	cfg.Metrics.SqlserverLockEscalationRate.Enabled = enabled
+	cfg.Metrics.SqlserverLockMemory.Enabled = enabled
+	cfg.Metrics.SqlserverLockRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitTimeTotal.Enabled = enabled
 	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
 	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryArea.Enabled = enabled
