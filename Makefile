@@ -293,6 +293,9 @@ $(ALL_MODS):
 # is used so it works on the runner's GNU Make 4.3 (`.WAIT`/`.NOTPARALLEL`
 # prereqs need 4.4+).
 exporter/datadogexporter/integrationtest: exporter/datadogexporter
+pkg/datadog: exporter/datadogexporter/integrationtest
+extension/datadogextension: pkg/datadog
+connector/datadogconnector: extension/datadogextension
 
 # Trigger each module's delegation target
 .PHONY: for-all-target
