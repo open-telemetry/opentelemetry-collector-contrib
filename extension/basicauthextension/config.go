@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	errNoCredentialSource              = errors.New("no credential source provided")
-	errMultipleAuthenticators          = errors.New("only one of `htpasswd` or `client_auth` can be specified")
-	errSecretProviderAndOtherSource    = errors.New("only one credential source allowed: choose `secret_provider` or inline/file, not both")
-	errSecretProviderMissingID         = errors.New("`secret_provider.id` is required")
-	errSecretProviderMissingKeys       = errors.New("`secret_provider.username_key` and `secret_provider.password_key` are required for client_auth")
+	errNoCredentialSource           = errors.New("no credential source provided")
+	errMultipleAuthenticators       = errors.New("only one of `htpasswd` or `client_auth` can be specified")
+	errSecretProviderAndOtherSource = errors.New("only one credential source allowed: choose `secret_provider` or inline/file, not both")
+	errSecretProviderMissingID      = errors.New("`secret_provider.id` is required")
+	errSecretProviderMissingKeys    = errors.New("`secret_provider.username_key` and `secret_provider.password_key` are required for client_auth")
 )
 
 // SecretProviderConfig references an external secret-providing extension by component ID.

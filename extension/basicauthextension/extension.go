@@ -49,8 +49,8 @@ func newServerAuthExtension(cfg *Config) (*basicAuthServer, error) {
 }
 
 var (
-	_ extension.Extension            = (*basicAuthServer)(nil)
-	_ extensionauth.Server           = (*basicAuthServer)(nil)
+	_ extension.Extension             = (*basicAuthServer)(nil)
+	_ extensionauth.Server            = (*basicAuthServer)(nil)
 	_ extensioncapabilities.Dependent = (*basicAuthServer)(nil)
 )
 
@@ -153,9 +153,9 @@ func (ba *basicAuthServer) updateHtpasswd(raw string) error {
 }
 
 var (
-	_ extension.Extension            = (*basicAuthClient)(nil)
-	_ extensionauth.HTTPClient       = (*basicAuthClient)(nil)
-	_ extensionauth.GRPCClient       = (*basicAuthClient)(nil)
+	_ extension.Extension             = (*basicAuthClient)(nil)
+	_ extensionauth.HTTPClient        = (*basicAuthClient)(nil)
+	_ extensionauth.GRPCClient        = (*basicAuthClient)(nil)
 	_ extensioncapabilities.Dependent = (*basicAuthClient)(nil)
 )
 
