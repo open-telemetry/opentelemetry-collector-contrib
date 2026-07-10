@@ -173,6 +173,11 @@ all_set:
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.sga.limit:
+      enabled: true
+    oracledb.sga.usage:
+      enabled: true
+      attributes: ["oracledb.sga.component.name"]
     oracledb.shared_pool.utilization:
       enabled: true
     oracledb.smon.posts:
@@ -411,6 +416,11 @@ reaggregate_set:
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
+      enabled: true
+      attributes: []
+    oracledb.sga.limit:
+      enabled: true
+    oracledb.sga.usage:
       enabled: true
       attributes: []
     oracledb.shared_pool.utilization:
@@ -653,6 +663,11 @@ none_set:
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.sga.limit:
+      enabled: false
+    oracledb.sga.usage:
+      enabled: false
+      attributes: ["oracledb.sga.component.name"]
     oracledb.shared_pool.utilization:
       enabled: false
     oracledb.smon.posts:
