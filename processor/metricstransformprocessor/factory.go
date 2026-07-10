@@ -155,6 +155,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			NewName:             t.NewName,
 			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
+			SubmatchCase:        t.SubmatchCase,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
 

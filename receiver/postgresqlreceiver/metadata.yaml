@@ -158,6 +158,16 @@ attributes:
   postgresql.client_hostname:
     description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
     type: string
+  postgresql.conflict.type:
+    description: The type of recovery conflict that caused a query to be canceled on a standby server.
+    type: string
+    enum:
+      - tablespace
+      - lock
+      - snapshot
+      - bufferpin
+      - deadlock
+    requirement_level: recommended
   postgresql.pid:
     description: Process ID of this backend.
     type: int
@@ -472,6 +482,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [operation]
+  postgresql.query.conflicts:
+    enabled: false
+    description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+    stability: development
+    unit: "{query}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [postgresql.conflict.type]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
