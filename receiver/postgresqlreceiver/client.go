@@ -153,10 +153,8 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		nulls[i] = "null"
 	}
 
-	// run cleanup on a context that survives cancellation of ctx, so it still
-	// runs even if ctx was already canceled or timed out.
-	// otherwise, long-lived pooled connections can be left with leaked
-	// server-side state since prepared statements need to be deallocated
+	// Deallocate the prepared statement on a context detached from ctx so the
+	// cleanup still runs even if ctx was already canceled or timed out.
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
 		defer cancel()
