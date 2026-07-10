@@ -32,6 +32,8 @@ import (
 const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
+
+	defaultServiceName = "unknown_service:postgresql"
 )
 
 type postgreSQLScraper struct {
@@ -108,9 +110,10 @@ func newPostgreSQLScraper(
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap map[databaseName]int64
-	dbSizeMap   map[databaseName]int64
-	dbStats     map[databaseName]databaseStats
+	activityMap     map[databaseName]int64
+	dbSizeMap       map[databaseName]int64
+	dbStats         map[databaseName]databaseStats
+	dbConflictStats map[databaseName]databaseConflictStats
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -143,9 +146,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		activityMap: make(map[databaseName]int64),
-		dbSizeMap:   make(map[databaseName]int64),
-		dbStats:     make(map[databaseName]databaseStats),
+		activityMap:     make(map[databaseName]int64),
+		dbSizeMap:       make(map[databaseName]int64),
+		dbStats:         make(map[databaseName]databaseStats),
+		dbConflictStats: make(map[databaseName]databaseConflictStats),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -221,6 +225,33 @@ func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval t
 	return false
 }
 
+func attrString(atts map[string]any, key string) string {
+	if v, ok := atts[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func attrInt64(atts map[string]any, key string) int64 {
+	if v, ok := atts[key]; ok {
+		if i, ok := v.(int64); ok {
+			return i
+		}
+	}
+	return 0
+}
+
+func attrFloat64(atts map[string]any, key string) float64 {
+	if v, ok := atts[key]; ok {
+		if f, ok := v.(float64); ok {
+			return f
+		}
+	}
+	return 0
+}
+
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
@@ -241,20 +272,27 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		p.lb.RecordDbServerQuerySampleEvent(logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			atts[string(semconv.DBNamespaceKey)].(string),
-			atts[string(semconv.DBQueryTextKey)].(string),
-			atts[string(semconv.UserNameKey)].(string),
-			atts[dbAttributePrefix+querySampleColumnState].(string),
-			atts[dbAttributePrefix+querySampleColumnPID].(int64),
-			atts[dbAttributePrefix+querySampleColumnApplicationName].(string),
-			atts[string(semconv.NetworkPeerAddressKey)].(string),
-			atts[string(semconv.NetworkPeerPortKey)].(int64),
-			atts[dbAttributePrefix+querySampleColumnClientHostname].(string),
-			atts[dbAttributePrefix+querySampleColumnQueryStart].(string),
-			atts[dbAttributePrefix+querySampleColumnWaitEvent].(string),
-			atts[dbAttributePrefix+querySampleColumnWaitEventType].(string),
-			atts[dbAttributePrefix+querySampleColumnQueryID].(string),
-			atts[postgresqlTotalExecTimeAttributeName].(float64),
+			attrString(atts, string(semconv.DBNamespaceKey)),
+			attrString(atts, string(semconv.DBQueryTextKey)),
+			attrString(atts, string(semconv.UserNameKey)),
+			attrString(atts, dbAttributePrefix+querySampleColumnState),
+			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
+			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
+			attrString(atts, string(semconv.NetworkPeerAddressKey)),
+			attrInt64(atts, string(semconv.NetworkPeerPortKey)),
+			attrString(atts, dbAttributePrefix+querySampleColumnClientHostname),
+			attrString(atts, dbAttributePrefix+querySampleColumnQueryStart),
+			attrString(atts, dbAttributePrefix+querySampleColumnWaitEvent),
+			attrString(atts, dbAttributePrefix+querySampleColumnWaitEventType),
+			attrString(atts, dbAttributePrefix+querySampleColumnQueryID),
+			attrFloat64(atts, postgresqlTotalExecTimeAttributeName),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingPIDs),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingStartTime),
+			attrInt64(atts, dbAttributePrefix+querySampleColumnBlockingWaitDuration),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockMode),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockType),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingLockRelation),
+			attrString(atts, dbAttributePrefix+querySampleColumnBlockingTxnStartTime),
 		)
 	}
 }
@@ -420,6 +458,14 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
 	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
 
+	// pg_stat_database_conflicts is queried separately and only when the metric is
+	// enabled, since the counters are only populated on standby servers and would
+	// otherwise add an unnecessary query on every scrape.
+	if p.config.Metrics.PostgresqlQueryConflicts.Enabled {
+		wg.Add(1)
+		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
+	}
+
 	wg.Wait()
 }
 
@@ -445,6 +491,13 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted)
 		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit)
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
+	}
+	if conflicts, ok := r.dbConflictStats[dbName]; ok {
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributePostgresqlConflictTypeTablespace)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflLock, metadata.AttributePostgresqlConflictTypeLock)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflSnapshot, metadata.AttributePostgresqlConflictTypeSnapshot)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributePostgresqlConflictTypeBufferpin)
+		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributePostgresqlConflictTypeDeadlock)
 	}
 	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -692,6 +745,26 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	r.Unlock()
 }
 
+func (p *postgreSQLScraper) retrieveDatabaseConflicts(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	client client,
+	databases []string,
+	r *dbRetrieval,
+	errs *errsMux,
+) {
+	defer wg.Done()
+	dbConflictStats, err := client.getDatabaseConflicts(ctx, databases)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching database recovery conflicts", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	r.Lock()
+	r.dbConflictStats = dbConflictStats
+	r.Unlock()
+}
+
 func (p *postgreSQLScraper) retrieveDatabaseSize(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -733,6 +806,8 @@ func (*postgreSQLScraper) retrieveBackends(
 
 func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}
