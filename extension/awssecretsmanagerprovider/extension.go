@@ -13,10 +13,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider"
 )
 
 const fetchTimeout = 30 * time.Second
@@ -27,7 +28,7 @@ type secretsManagerClient interface {
 }
 
 var (
-	_ extension.Extension        = (*awsSecretProvider)(nil)
+	_ extension.Extension           = (*awsSecretProvider)(nil)
 	_ secretprovider.SecretProvider = (*awsSecretProvider)(nil)
 )
 
