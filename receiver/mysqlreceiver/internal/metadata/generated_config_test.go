@@ -247,6 +247,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemName:          DbSystemNameResourceAttributeConfig{Enabled: true},
+					DbSystemVersion:       DbSystemVersionResourceAttributeConfig{Enabled: true},
 					MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{Enabled: true},
 					ServiceInstanceID:     ServiceInstanceIDResourceAttributeConfig{Enabled: true},
 					ServiceName:           ServiceNameResourceAttributeConfig{Enabled: true},
@@ -478,6 +480,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemName:          DbSystemNameResourceAttributeConfig{Enabled: false},
+					DbSystemVersion:       DbSystemVersionResourceAttributeConfig{Enabled: false},
 					MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{Enabled: false},
 					ServiceInstanceID:     ServiceInstanceIDResourceAttributeConfig{Enabled: false},
 					ServiceName:           ServiceNameResourceAttributeConfig{Enabled: false},
@@ -489,7 +493,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -970,6 +974,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				DbSystemName:          DbSystemNameResourceAttributeConfig{Enabled: true},
+				DbSystemVersion:       DbSystemVersionResourceAttributeConfig{Enabled: true},
 				MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID:     ServiceInstanceIDResourceAttributeConfig{Enabled: true},
 				ServiceName:           ServiceNameResourceAttributeConfig{Enabled: true},
@@ -979,6 +985,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				DbSystemName:          DbSystemNameResourceAttributeConfig{Enabled: false},
+				DbSystemVersion:       DbSystemVersionResourceAttributeConfig{Enabled: false},
 				MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID:     ServiceInstanceIDResourceAttributeConfig{Enabled: false},
 				ServiceName:           ServiceNameResourceAttributeConfig{Enabled: false},
@@ -989,7 +997,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DbSystemNameResourceAttributeConfig{}, DbSystemVersionResourceAttributeConfig{}, MysqlInstanceEndpointResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -997,6 +1005,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 
 func TestResourceAttributesOverrideConfig(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.DbSystemName.OverrideValue, "override_value should be set for db.system.name")
+	assert.NotNil(t, cfg.DbSystemVersion.OverrideValue, "override_value should be set for db.system.version")
 	assert.NotNil(t, cfg.MysqlInstanceEndpoint.OverrideValue, "override_value should be set for mysql.instance.endpoint")
 	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")
 	assert.NotNil(t, cfg.ServiceName.OverrideValue, "override_value should be set for service.name")
