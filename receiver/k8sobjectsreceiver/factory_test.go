@@ -5,6 +5,7 @@ package k8sobjectsreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,8 +29,9 @@ func TestDefaultConfig(t *testing.T) {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
-		ErrorMode:           PropagateError,
-		IncludeInitialState: false,
+		ErrorMode:                PropagateError,
+		IncludeInitialState:      false,
+		InformerCacheSyncTimeout: 10 * time.Second,
 	}, rCfg)
 }
 
