@@ -148,6 +148,26 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			},
 			expected: "foo",
 		},
+		{
+			name:     "infer from lambda body argument",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{"set(span.foo, Lambda(() => spanevent.bar))"},
+			expected:   "spanevent",
+		},
+		{
+			name:     "local identifiers are not candidates",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{"set(span.foo, Lambda((spanevent) => spanevent.bar))"},
+			expected:   "span",
+		},
 	}
 
 	for _, tt := range tests {
@@ -278,6 +298,16 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
 			},
 			expected: "foo",
+		},
+		{
+			name:     "infer from lambda body argument",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			conditions: []string{"Lambda(() => spanevent.bar) == true"},
+			expected:   "spanevent",
 		},
 	}
 

@@ -7,7 +7,28 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+// SqlserverAccessScanRateMetricConfig provides config for the sqlserver.access.scan.rate metric.
+type SqlserverAccessScanRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverAccessScanRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
 // SqlserverAttentionRateMetricConfig provides config for the sqlserver.attention.rate metric.
 type SqlserverAttentionRateMetricConfig struct {
@@ -96,6 +117,26 @@ type SqlserverComputerUptimeMetricConfig struct {
 }
 
 func (ms *SqlserverComputerUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverConnectionResetRateMetricConfig provides config for the sqlserver.connection.reset.rate metric.
+type SqlserverConnectionResetRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverConnectionResetRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -478,6 +519,66 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric.
+type SqlserverErrorRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverErrorRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverExtentOperationRateMetricConfig provides config for the sqlserver.extent.operation.rate metric.
+type SqlserverExtentOperationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverExtentOperationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverGhostRecordSkippedRateMetricConfig provides config for the sqlserver.ghost_record.skipped.rate metric.
+type SqlserverGhostRecordSkippedRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric.
 type SqlserverIndexSearchRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -626,6 +727,86 @@ func (ms *SqlserverLatchWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
+// SqlserverLockBlockCountMetricConfig provides config for the sqlserver.lock.block.count metric.
+type SqlserverLockBlockCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLockBlockCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLockEscalationRateMetricConfig provides config for the sqlserver.lock.escalation.rate metric.
+type SqlserverLockEscalationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLockEscalationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLockMemoryMetricConfig provides config for the sqlserver.lock.memory metric.
+type SqlserverLockMemoryMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLockMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLockRequestRateMetricConfig provides config for the sqlserver.lock.request.rate metric.
+type SqlserverLockRequestRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLockRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric.
 type SqlserverLockTimeoutRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -693,6 +874,26 @@ type SqlserverLockWaitTimeAvgMetricConfig struct {
 }
 
 func (ms *SqlserverLockWaitTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLockWaitTimeTotalMetricConfig provides config for the sqlserver.lock.wait_time.total metric.
+type SqlserverLockWaitTimeTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLockWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -979,6 +1180,26 @@ func (ms *SqlserverOsWaitDurationMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverPageAllocationRateMetricConfig provides config for the sqlserver.page.allocation.rate metric.
+type SqlserverPageAllocationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageAllocationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverPageBufferCacheFreeListStallsRateMetricConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric.
 type SqlserverPageBufferCacheFreeListStallsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1026,6 +1247,26 @@ type SqlserverPageCheckpointFlushRateMetricConfig struct {
 }
 
 func (ms *SqlserverPageCheckpointFlushRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverPageCompressionRateMetricConfig provides config for the sqlserver.page.compression.rate metric.
+type SqlserverPageCompressionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageCompressionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1172,6 +1413,26 @@ func (ms *SqlserverPageOperationRateMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// SqlserverPageReadAheadRateMetricConfig provides config for the sqlserver.page.read_ahead.rate metric.
+type SqlserverPageReadAheadRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverPageReadAheadRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1467,6 +1728,26 @@ func (ms *SqlserverResourcePoolDiskThrottledWriteRateMetricConfig) Unmarshal(par
 	return nil
 }
 
+// SqlserverScanPointRevalidationRateMetricConfig provides config for the sqlserver.scan_point.revalidation.rate metric.
+type SqlserverScanPointRevalidationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverScanPointRevalidationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverTableCountMetricAttributeKey specifies the key of an attribute for the sqlserver.table.count metric.
 type SqlserverTableCountMetricAttributeKey string
 
@@ -1736,13 +2017,35 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
+// SqlserverWorktableCacheHitRatioMetricConfig provides config for the sqlserver.worktable.cache.hit_ratio metric.
+type SqlserverWorktableCacheHitRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
+	SqlserverAccessScanRate                     SqlserverAccessScanRateMetricConfig                     `mapstructure:"sqlserver.access.scan.rate"`
 	SqlserverAttentionRate                      SqlserverAttentionRateMetricConfig                      `mapstructure:"sqlserver.attention.rate"`
 	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          SqlserverBatchSQLRecompilationRateMetricConfig          `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
 	SqlserverComputerUptime                     SqlserverComputerUptimeMetricConfig                     `mapstructure:"sqlserver.computer.uptime"`
+	SqlserverConnectionResetRate                SqlserverConnectionResetRateMetricConfig                `mapstructure:"sqlserver.connection.reset.rate"`
 	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      SqlserverDatabaseCountMetricConfig                      `mapstructure:"sqlserver.database.count"`
@@ -1754,16 +2057,24 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverErrorRate                          SqlserverErrorRateMetricConfig                          `mapstructure:"sqlserver.error.rate"`
+	SqlserverExtentOperationRate                SqlserverExtentOperationRateMetricConfig                `mapstructure:"sqlserver.extent.operation.rate"`
+	SqlserverGhostRecordSkippedRate             SqlserverGhostRecordSkippedRateMetricConfig             `mapstructure:"sqlserver.ghost_record.skipped.rate"`
 	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLatchSuperlatchCount               SqlserverLatchSuperlatchCountMetricConfig               `mapstructure:"sqlserver.latch.superlatch.count"`
 	SqlserverLatchSuperlatchTransitionRate      SqlserverLatchSuperlatchTransitionRateMetricConfig      `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
 	SqlserverLatchWaitRate                      SqlserverLatchWaitRateMetricConfig                      `mapstructure:"sqlserver.latch.wait.rate"`
 	SqlserverLatchWaitTimeAvg                   SqlserverLatchWaitTimeAvgMetricConfig                   `mapstructure:"sqlserver.latch.wait_time.avg"`
 	SqlserverLatchWaitTimeTotal                 SqlserverLatchWaitTimeTotalMetricConfig                 `mapstructure:"sqlserver.latch.wait_time.total"`
+	SqlserverLockBlockCount                     SqlserverLockBlockCountMetricConfig                     `mapstructure:"sqlserver.lock.block.count"`
+	SqlserverLockEscalationRate                 SqlserverLockEscalationRateMetricConfig                 `mapstructure:"sqlserver.lock.escalation.rate"`
+	SqlserverLockMemory                         SqlserverLockMemoryMetricConfig                         `mapstructure:"sqlserver.lock.memory"`
+	SqlserverLockRequestRate                    SqlserverLockRequestRateMetricConfig                    `mapstructure:"sqlserver.lock.request.rate"`
 	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLockWaitTimeTotal                  SqlserverLockWaitTimeTotalMetricConfig                  `mapstructure:"sqlserver.lock.wait_time.total"`
 	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
 	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
 	SqlserverMemoryArea                         SqlserverMemoryAreaMetricConfig                         `mapstructure:"sqlserver.memory.area"`
@@ -1772,13 +2083,16 @@ type MetricsConfig struct {
 	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
 	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
 	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
+	SqlserverPageAllocationRate                 SqlserverPageAllocationRateMetricConfig                 `mapstructure:"sqlserver.page.allocation.rate"`
 	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageCompressionRate                SqlserverPageCompressionRateMetricConfig                `mapstructure:"sqlserver.page.compression.rate"`
 	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
 	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
 	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
 	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageReadAheadRate                  SqlserverPageReadAheadRateMetricConfig                  `mapstructure:"sqlserver.page.read_ahead.rate"`
 	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
 	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
@@ -1788,6 +2102,7 @@ type MetricsConfig struct {
 	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverScanPointRevalidationRate          SqlserverScanPointRevalidationRateMetricConfig          `mapstructure:"sqlserver.scan_point.revalidation.rate"`
 	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
 	SqlserverTransactionDelay                   SqlserverTransactionDelayMetricConfig                   `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate         SqlserverTransactionMirrorWriteRateMetricConfig         `mapstructure:"sqlserver.transaction.mirror_write.rate"`
@@ -1800,10 +2115,14 @@ type MetricsConfig struct {
 	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
 	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
+	SqlserverWorktableCacheHitRatio             SqlserverWorktableCacheHitRatioMetricConfig             `mapstructure:"sqlserver.worktable.cache.hit_ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SqlserverAccessScanRate: SqlserverAccessScanRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverAttentionRate: SqlserverAttentionRateMetricConfig{
 			Enabled: false,
 		},
@@ -1817,6 +2136,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SqlserverComputerUptime: SqlserverComputerUptimeMetricConfig{
+			Enabled: false,
+		},
+		SqlserverConnectionResetRate: SqlserverConnectionResetRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverCPUCount: SqlserverCPUCountMetricConfig{
@@ -1862,6 +2184,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
 			Enabled: false,
 		},
+		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverExtentOperationRate: SqlserverExtentOperationRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
 			Enabled: false,
 		},
@@ -1882,6 +2213,18 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLatchWaitTimeTotal: SqlserverLatchWaitTimeTotalMetricConfig{
 			Enabled: false,
 		},
+		SqlserverLockBlockCount: SqlserverLockBlockCountMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLockEscalationRate: SqlserverLockEscalationRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLockMemory: SqlserverLockMemoryMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLockRequestRate: SqlserverLockRequestRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{
 			Enabled: false,
 		},
@@ -1893,6 +2236,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverLockWaitTimeAvg: SqlserverLockWaitTimeAvgMetricConfig{
 			Enabled: true,
+		},
+		SqlserverLockWaitTimeTotal: SqlserverLockWaitTimeTotalMetricConfig{
+			Enabled: false,
 		},
 		SqlserverLoginRate: SqlserverLoginRateMetricConfig{
 			Enabled: false,
@@ -1926,6 +2272,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SqlserverOsWaitDurationMetricAttributeKey{SqlserverOsWaitDurationMetricAttributeKeyWaitCategory, SqlserverOsWaitDurationMetricAttributeKeyWaitType},
 		},
+		SqlserverPageAllocationRate: SqlserverPageAllocationRateMetricConfig{
+			Enabled: false,
+		},
 		SqlserverPageBufferCacheFreeListStallsRate: SqlserverPageBufferCacheFreeListStallsRateMetricConfig{
 			Enabled: false,
 		},
@@ -1934,6 +2283,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverPageCheckpointFlushRate: SqlserverPageCheckpointFlushRateMetricConfig{
 			Enabled: true,
+		},
+		SqlserverPageCompressionRate: SqlserverPageCompressionRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverPageLazyWriteRate: SqlserverPageLazyWriteRateMetricConfig{
 			Enabled: true,
@@ -1950,6 +2302,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverPageOperationRateMetricAttributeKey{SqlserverPageOperationRateMetricAttributeKeyPageOperations},
+		},
+		SqlserverPageReadAheadRate: SqlserverPageReadAheadRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverPageSplitRate: SqlserverPageSplitRateMetricConfig{
 			Enabled: true,
@@ -1984,6 +2339,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverScanPointRevalidationRate: SqlserverScanPointRevalidationRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverTableCount: SqlserverTableCountMetricConfig{
@@ -2024,6 +2382,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverUserConnectionCount: SqlserverUserConnectionCountMetricConfig{
 			Enabled: true,
 		},
+		SqlserverWorktableCacheHitRatio: SqlserverWorktableCacheHitRatioMetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -2063,9 +2424,11 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+// HostNameResourceAttributeConfig provides config for the host.name resource attribute.
+type HostNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -2084,7 +2447,287 @@ type ResourceAttributeConfig struct {
 	enabledSetByUser bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *HostNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerPortResourceAttributeConfig provides config for the server.port resource attribute.
+type ServerPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceInstanceIDResourceAttributeConfig provides config for the service.instance.id resource attribute.
+type ServiceInstanceIDResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceInstanceIDResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceNameResourceAttributeConfig provides config for the service.name resource attribute.
+type ServiceNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServiceNamespaceResourceAttributeConfig provides config for the service.namespace resource attribute.
+type ServiceNamespaceResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverComputerNameResourceAttributeConfig provides config for the sqlserver.computer.name resource attribute.
+type SqlserverComputerNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SqlserverComputerNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverDatabaseNameResourceAttributeConfig provides config for the sqlserver.database.name resource attribute.
+type SqlserverDatabaseNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SqlserverDatabaseNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverInstanceNameResourceAttributeConfig provides config for the sqlserver.instance.name resource attribute.
+type SqlserverInstanceNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SqlserverInstanceNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2098,38 +2741,79 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
-	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
-	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
-	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
-	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
-	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
-	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
+	HostName              HostNameResourceAttributeConfig              `mapstructure:"host.name"`
+	ServerAddress         ServerAddressResourceAttributeConfig         `mapstructure:"server.address"`
+	ServerPort            ServerPortResourceAttributeConfig            `mapstructure:"server.port"`
+	ServiceInstanceID     ServiceInstanceIDResourceAttributeConfig     `mapstructure:"service.instance.id"`
+	ServiceName           ServiceNameResourceAttributeConfig           `mapstructure:"service.name"`
+	ServiceNamespace      ServiceNamespaceResourceAttributeConfig      `mapstructure:"service.namespace"`
+	SqlserverComputerName SqlserverComputerNameResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
+	SqlserverDatabaseName SqlserverDatabaseNameResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
+	SqlserverInstanceName SqlserverInstanceNameResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		HostName: ResourceAttributeConfig{
+		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		ServerAddress: ResourceAttributeConfig{
+		ServerAddress: ServerAddressResourceAttributeConfig{
 			Enabled: false,
 		},
-		ServerPort: ResourceAttributeConfig{
+		ServerPort: ServerPortResourceAttributeConfig{
 			Enabled: false,
 		},
-		ServiceInstanceID: ResourceAttributeConfig{
+		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,
 		},
-		SqlserverComputerName: ResourceAttributeConfig{
+		ServiceName: ServiceNameResourceAttributeConfig{
 			Enabled: false,
 		},
-		SqlserverDatabaseName: ResourceAttributeConfig{
+		ServiceNamespace: ServiceNamespaceResourceAttributeConfig{
+			Enabled: false,
+		},
+		SqlserverComputerName: SqlserverComputerNameResourceAttributeConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseName: SqlserverDatabaseNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		SqlserverInstanceName: ResourceAttributeConfig{
+		SqlserverInstanceName: SqlserverInstanceNameResourceAttributeConfig{
 			Enabled: false,
 		},
+	}
+}
+
+// applyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
+		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
+	}
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
+	}
+	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
+		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
+	}
+	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
+		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)
+	}
+	if rac.ServiceName.Enabled && rac.ServiceName.OverrideValue != nil {
+		res.Attributes().PutStr("service.name", *rac.ServiceName.OverrideValue)
+	}
+	if rac.ServiceNamespace.Enabled && rac.ServiceNamespace.OverrideValue != nil {
+		res.Attributes().PutStr("service.namespace", *rac.ServiceNamespace.OverrideValue)
+	}
+	if rac.SqlserverComputerName.Enabled && rac.SqlserverComputerName.OverrideValue != nil {
+		res.Attributes().PutStr("sqlserver.computer.name", *rac.SqlserverComputerName.OverrideValue)
+	}
+	if rac.SqlserverDatabaseName.Enabled && rac.SqlserverDatabaseName.OverrideValue != nil {
+		res.Attributes().PutStr("sqlserver.database.name", *rac.SqlserverDatabaseName.OverrideValue)
+	}
+	if rac.SqlserverInstanceName.Enabled && rac.SqlserverInstanceName.OverrideValue != nil {
+		res.Attributes().PutStr("sqlserver.instance.name", *rac.SqlserverInstanceName.OverrideValue)
 	}
 }
 

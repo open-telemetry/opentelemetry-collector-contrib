@@ -62,6 +62,25 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "with_resource_attrs_to_gcs"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Encoding = func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}()
+				cfg.Bucket.Name = "test-bucket"
+				cfg.Bucket.Region = "test-region"
+				cfg.Bucket.ProjectID = "test-project-id"
+				cfg.Bucket.Partition = partitionConfig{
+					Format: "%Y-%m-%d/%H",
+					Prefix: "storage",
+				}
+				cfg.ResourceAttrsToGCS = ResourceAttrsToGCS{Prefix: "service.name"}
+				return cfg
+			}(),
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "with_resiliency"),
 			expected: func() *Config {
 				cfg := createDefaultConfig().(*Config)

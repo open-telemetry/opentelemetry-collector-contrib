@@ -308,6 +308,8 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
 		return
 	}
+
+	receivedAt := time.Now()
 	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
 	var (
 		logCount int
@@ -326,7 +328,17 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 	case "application/json":
 		buf := translator.GetBuffer()
 		defer translator.PutBuffer(buf)
-		if _, err = io.Copy(buf, req.Body); err != nil {
+
+		reader, derr := createDecompressingReader(req.Body, req.Header.Get("Content-Encoding"))
+		if derr != nil {
+			err = derr
+			http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+			ddr.params.Logger.Error("error creating decompressing reader", zap.Error(derr))
+			return
+		}
+		defer reader.Close()
+
+		if _, err = io.Copy(buf, reader); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			ddr.params.Logger.Error(err.Error())
 			return
@@ -346,7 +358,7 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 			ddLogs = append(ddLogs, ddLog)
 		}
 
-		plogs := translator.ToPlog(ddLogs)
+		plogs := translator.ToPlog(ddLogs, receivedAt, ddr.config.Logs.DecodeJSONMessage)
 
 		logCount = plogs.LogRecordCount()
 		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)

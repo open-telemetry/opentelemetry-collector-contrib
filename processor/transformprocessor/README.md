@@ -54,12 +54,12 @@ and allows you to configure a list of statements for the processor to execute. T
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
-| Signal             | Path Prefix Values                             |
-|--------------------|------------------------------------------------|
-| trace_statements   | `resource`, `scope`, `span`, and `spanevent`   |
-| metric_statements  | `resource`, `scope`, `metric`, and `datapoint` |
-| log_statements     | `resource`, `scope`, and `log`                 |
-| profile_statements | `resource`, `scope`, and `profile`             |
+| Signal             | Path Prefix Values                                          |
+|--------------------|-------------------------------------------------------------|
+| trace_statements   | `resource`, `scope`, `span`, and `spanevent`                |
+| metric_statements  | `resource`, `scope`, `metric`, `datapoint`, and `exemplar`  |
+| log_statements     | `resource`, `scope`, and `log`                              |
+| profile_statements | `resource`, `scope`, and `profile`                          |
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
@@ -275,6 +275,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
+- [ParseCLF](#parseclf)
 - [ParseLEEF](#parseleef)
 
 **Traces only functions**
@@ -709,6 +710,48 @@ Examples:
 # bounds: [0.2, 1.0, 5.0, 30.0]
 # counts: [84, 126, 5, 50, 1]
 ```
+
+### ParseCLF
+
+`ParseCLF(target, Optional[format])`
+
+The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Log Format (CLF)](https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format) HTTP access log entry.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed in the selected format, an error will be returned.
+
+`format` is an optional string that selects the log format to parse. Valid values are:
+
+- `"clf"` (default) — the strict Common Log Format:
+
+  ```
+  remotehost rfc931 auth_user [date] "request" status bytes
+  ```
+
+- `"combined"` — the NCSA Combined Log Format used by default in many Apache and nginx configurations, which is CLF with the quoted referer and user-agent appended:
+
+  ```
+  remotehost rfc931 auth_user [date] "request" status bytes "referer" "user-agent"
+  ```
+
+Quoted fields (`request`, `referer`, `user-agent`) may contain backslash escape sequences as produced by Apache (`\"`, `\\`, `\xhh`, and C-style control escapes such as `\n` and `\t` — see the [mod_log_config format notes](https://httpd.apache.org/docs/current/mod/mod_log_config.html#format-notes)) and nginx (`\xhh`). These sequences are unescaped in the returned values.
+
+The returned map has the following fields:
+
+- `clf.remote_host` — the client's DNS name or IP address.
+- `clf.rfc931` — the remote logname of the user (CLF uses `-` when unknown).
+- `clf.auth_user` — the authenticated user (CLF uses `-` when unknown).
+- `clf.timestamp` — the contents of the bracketed date field, preserved as a string.
+- `clf.request` — the raw request line as sent by the client.
+- `clf.method`, `clf.request_uri`, `clf.protocol` — the parsed components of the request line, only set when the request line is well-formed.
+- `clf.status` — the HTTP status code as an integer.
+- `clf.bytes` — the content-length of the response as an integer. Omitted when CLF reports `-` (e.g. on a 304 response).
+- `clf.referer`, `clf.user_agent` — the referer and user-agent strings, only set when `format` is `"combined"`.
+
+Examples:
+
+- `ParseCLF(body)`
+- `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
+- `ParseCLF(body, "combined")`
 
 ### ParseLEEF
 

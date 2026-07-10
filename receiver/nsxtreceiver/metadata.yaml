@@ -1,6 +1,5 @@
 display_name: NSX-T Receiver
 type: nsxt
-reaggregation_enabled: true
 
 description: |
   This receiver fetches metrics important to run virtual networking using NSX-T. The receiver ingests metrics via the
@@ -95,7 +94,7 @@ metrics:
   nsxt.node.memory.cache.usage:
     description: The size of the node's memory cache.
     stability: development
-    unit: KBy
+    unit: kBy
     sum:
       monotonic: false
       value_type: int
@@ -104,7 +103,7 @@ metrics:
   nsxt.node.memory.usage:
     description: The memory usage of the node.
     stability: development
-    unit: KBy
+    unit: kBy
     sum:
       monotonic: false
       value_type: int
