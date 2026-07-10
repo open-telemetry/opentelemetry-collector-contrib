@@ -20,6 +20,12 @@ groups:
     type: attribute_group
     brief: Metric attributes
     attributes:
+      - id: file.include
+        type: string
+        brief: The glob pattern configured via the `include` option that produced this count.
+        stability: development
+        requirement_level: opt_in
+        examples: [ "/var/log/*.log", "/tmp/test1/*" ]
       - id: file.permissions
         type: string
         brief: the permissions associated with the file, using an octal format.

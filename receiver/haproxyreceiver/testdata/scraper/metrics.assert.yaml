@@ -11,12 +11,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.rate
@@ -74,12 +74,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.rate
@@ -137,12 +137,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.errors
@@ -222,12 +222,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.errors
@@ -302,12 +302,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.errors
@@ -382,12 +382,12 @@ resources:
           metrics:
             - name: haproxy.bytes.input
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.bytes.output
               type: sum
-              unit: by
+              unit: By
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.errors
