@@ -25,6 +25,13 @@ import (
 )
 
 func Test_NewLogsExporter(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
+
 	tests := []struct {
 		name string
 		args struct {
@@ -39,10 +46,8 @@ func Test_NewLogsExporter(t *testing.T) {
 				logger *zap.Logger
 			}{
 				config: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "http://example.logicmonitor.com/rest",
-					},
-					APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+					ClientConfig: clientConfig,
+					APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 				},
 				logger: zaptest.NewLogger(t),
 			},
@@ -68,11 +73,15 @@ func TestPushLogData(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = ts.URL
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: ts.URL,
-		},
-		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+		ClientConfig: clientConfig,
+		APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
 
 	tests := []struct {
