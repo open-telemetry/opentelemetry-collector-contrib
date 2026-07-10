@@ -26,7 +26,7 @@ const (
 	//
 	// The truncation logic in Event.Validate assumes this value is larger than
 	// perEventHeaderBytes + len(truncatedSuffix).
-	defaultMaxEventPayloadBytes = 1024 * 256 // 256 KiB
+	defaultMaxEventPayloadBytes = 256 * 1024 // 256 KiB
 	// https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maxRequestEventCount   = 10000
 	perEventHeaderBytes    = 26
