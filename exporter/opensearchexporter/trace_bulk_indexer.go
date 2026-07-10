@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"slices"
 	"time"
 
@@ -49,7 +50,11 @@ func (tbi *traceBulkIndexer) close(ctx context.Context) {
 
 func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		tbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
+		// Indexer-level errors are transport/flush failures (connection refused,
+		// timeout, DNS). They are transient, so surface them as a retryable error
+		// and let exporterhelper's retry_on_failure resend the batch instead of
+		// dropping it as permanent.
+		tbi.errs = append(tbi.errs, indexerErr)
 	}
 }
 
@@ -130,8 +135,15 @@ func (tbi *traceBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem,
 		// Non-recoverable OpenSearch error while indexing document
 		tbi.appendPermanentError(responseAsError(resp))
 	default:
-		// Encoding error. We didn't even attempt to send the event
-		tbi.appendPermanentError(itemErr)
+		// A transport error (e.g. net.OpError) reported per item is transient and
+		// should be retried; anything else here is an encoding error we never sent,
+		// which is permanent.
+		var netErr *net.OpError
+		if errors.As(itemErr, &netErr) {
+			tbi.appendRetryTraceError(itemErr, traces)
+		} else {
+			tbi.appendPermanentError(itemErr)
+		}
 	}
 }
 
