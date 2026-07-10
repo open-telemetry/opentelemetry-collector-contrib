@@ -1,0 +1,7 @@
+change_type: enhancement
+component: exporter/signalfx
+note: "Simplify `system.cpu` default translations now that hostmetrics CPU metrics are state-aggregated by default."
+issues: [49589]
+subtext: |
+  The default translations no longer aggregate translated CPU metrics across the `cpu` attribute. If that attribute is explicitly re-enabled on `system.cpu.time`, translated `cpu.*` and `cpu.utilization` datapoints keep it.
+change_logs: [user]

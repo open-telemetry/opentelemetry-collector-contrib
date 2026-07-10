@@ -12,7 +12,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.18.7
+	github.com/klauspost/compress v1.19.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.156.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.156.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.156.0
@@ -61,7 +61,6 @@ require (
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.8-0.20260421145859-31a7e515a571 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
