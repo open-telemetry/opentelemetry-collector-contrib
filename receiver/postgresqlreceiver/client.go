@@ -32,6 +32,10 @@ import (
 
 const querySampleTraceContextKey = "_otel_trace_context"
 
+// detachedCleanupTimeout bounds the best-effort DEALLOCATE PREPARE cleanup in
+// explainQuery so a truly unresponsive backend can't hang cleanup forever.
+const detachedCleanupTimeout = 5 * time.Second
+
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
 // i.e. database1
 type databaseName string
@@ -68,7 +72,7 @@ type client interface {
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
-	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
+	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -129,7 +133,7 @@ func isExplainableQuery(query string) bool {
 }
 
 // explainQuery implements client.
-func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
+func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
@@ -148,8 +152,14 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		nulls[i] = "null"
 	}
 
+	// run cleanup on a context that survives cancellation of ctx, so it still
+	// runs even if ctx was already canceled or timed out.
+	// otherwise, long-lived pooled connections can be left with leaked
+	// server-side state since prepared statements need to be deallocated
 	defer func() {
-		_, _ = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
+		defer cancel()
+		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
 	// if there is no parameter needed, we can not put an empty bracket
@@ -164,7 +174,7 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
 
-	result, err := wrappedDb.QueryRows(context.Background())
+	result, err := wrappedDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err

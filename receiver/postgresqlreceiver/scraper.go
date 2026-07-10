@@ -360,7 +360,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
-				plan, err = dbClient.explainQuery(rawQuery, queryID, logger)
+				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, logger)
 				if err != nil {
 					logger.Error("failed to explain query", zap.String("query", rawQuery), zap.Error(err))
 				}
