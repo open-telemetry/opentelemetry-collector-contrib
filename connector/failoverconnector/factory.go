@@ -31,8 +31,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetryInterval: 10 * time.Minute,
-		RetryGap:      0,
-		MaxRetries:    0,
 	}
 }
 
