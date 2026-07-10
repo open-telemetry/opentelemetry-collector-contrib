@@ -95,7 +95,7 @@ The receiver supports HMAC-SHA256 hex digest signature verification, which is us
 
 ```yaml
 receivers:
-    webhookevent:
+    webhook_event:
         endpoint: localhost:8088
         path: "/github/webhooks"
         hmac_signature:
