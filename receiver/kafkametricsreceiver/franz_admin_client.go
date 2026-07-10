@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kadm"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -17,16 +16,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-// franzAdminProvider lazily creates a single franz-go admin client shared by all
-// of the receiver's scrapers. The client is created on first use and reference
-// counted so it is closed only once every scraper has shut down.
+// franzAdminProvider hands out a single franz-go admin client shared by all of
+// the receiver's scrapers: effectively an idle pool of size one, reference
+// counted by the scrapers using it. The client is created lazily on first use
+// and closed only once the last scraper has released it.
 type franzAdminProvider struct {
 	clientConfig configkafka.ClientConfig
 	logger       *zap.Logger
 
 	mu       sync.Mutex
 	adm      *kadm.Client
-	cl       *kgo.Client
 	refCount int
 }
 
@@ -51,12 +50,13 @@ func (p *franzAdminProvider) admin(ctx context.Context, host component.Host) (*k
 	if p.adm != nil {
 		return p.adm, nil
 	}
-	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, host, p.clientConfig, p.logger)
+	// kadm.Client wraps and owns the underlying *kgo.Client, so we only need to
+	// hold on to the admin client (its Close also closes the kgo client).
+	adm, _, err := kafka.NewFranzClusterAdminClient(ctx, host, p.clientConfig, p.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create franz-go admin client: %w", err)
 	}
 	p.adm = adm
-	p.cl = cl
 	return p.adm, nil
 }
 
@@ -78,6 +78,5 @@ func (p *franzAdminProvider) closeLocked() {
 		// kadm.Client.Close also closes the underlying *kgo.Client.
 		p.adm.Close()
 		p.adm = nil
-		p.cl = nil
 	}
 }
