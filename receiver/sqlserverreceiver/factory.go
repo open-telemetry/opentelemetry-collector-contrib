@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -107,6 +108,27 @@ func getDBConnectionString(config *Config) string {
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
 
+// newSharedDBProvider returns a DbProviderFunc that lazily opens a single
+// *sql.DB and returns that same pool to every scraper it is passed to. A
+// *sql.DB is safe for concurrent use and already maintains its own connection
+// pool, so sharing one pool across all scrapers of a receiver avoids creating a
+// redundant, independently-managed pool per query. sql.Open is only invoked
+// once, on the first scraper to Start; sql.DB.Close is idempotent, so it is
+// safe for each scraper to close the shared pool on Shutdown.
+func newSharedDBProvider(dsn string) sqlquery.DbProviderFunc {
+	var (
+		once sync.Once
+		db   *sql.DB
+		err  error
+	)
+	return func() (*sql.DB, error) {
+		once.Do(func() {
+			db, err = sql.Open("sqlserver", dsn)
+		})
+		return db, err
+	}
+}
+
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
 	if !cfg.isDirectDBConnectionEnabled {
@@ -120,11 +142,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 		return nil
 	}
 
-	// TODO: Test if this needs to be re-defined for each scraper
-	// This should be tested when there is more than one query being made.
-	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
-	}
+	// All scrapers of this receiver share a single connection pool so that the
+	// number of pools does not grow with the number of enabled queries.
+	dbProviderFunc := newSharedDBProvider(getDBConnectionString(cfg))
 
 	var scrapers []*sqlServerScraperHelper
 	for i, query := range queries {
@@ -161,11 +181,9 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		return nil
 	}
 
-	// TODO: Test if this needs to be re-defined for each scraper
-	// This should be tested when there is more than one query being made.
-	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
-	}
+	// All scrapers of this receiver share a single connection pool so that the
+	// number of pools does not grow with the number of enabled queries.
+	dbProviderFunc := newSharedDBProvider(getDBConnectionString(cfg))
 
 	var scrapers []*sqlServerScraperHelper
 	for i, query := range queries {

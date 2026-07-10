@@ -252,6 +252,42 @@ func TestNewCache(t *testing.T) {
 	require.NotNil(t, cache.Values())
 }
 
+// TestScrapersShareSingleConnectionPool verifies that all scrapers created for
+// a receiver share one *sql.DB connection pool rather than each opening its own.
+func TestScrapersShareSingleConnectionPool(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	// Enable metrics that map to several distinct queries so more than one
+	// scraper is created.
+	cfg.Metrics.SqlserverDatabaseLatency.Enabled = true // database IO query
+	cfg.Metrics.SqlserverOsWaitDuration.Enabled = true  // wait stats query
+	cfg.Metrics.SqlserverDatabaseCount.Enabled = true   // properties query
+	require.NoError(t, cfg.Validate())
+	require.True(t, cfg.isDirectDBConnectionEnabled)
+
+	params := receivertest.NewNopSettings(metadata.Type)
+	scrapers := setupSQLServerScrapers(params, cfg)
+	require.Greater(t, len(scrapers), 1, "expected more than one scraper to prove pool sharing")
+
+	for _, s := range scrapers {
+		require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	}
+
+	shared := scrapers[0].db
+	require.NotNil(t, shared)
+	for _, s := range scrapers {
+		require.Same(t, shared, s.db, "all scrapers must share the same *sql.DB pool")
+	}
+
+	for _, s := range scrapers {
+		require.NoError(t, s.Shutdown(t.Context()))
+	}
+}
+
 func TestSetupQueries(t *testing.T) {
 	var metadata map[string]any
 
