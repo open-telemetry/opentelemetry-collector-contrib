@@ -265,7 +265,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
 
 		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStateCommitted)
-		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStatePending)
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Pending, metadata.AttributeClusterStateQueueStatePending)
 
 		r.mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
 		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateCompatible)
