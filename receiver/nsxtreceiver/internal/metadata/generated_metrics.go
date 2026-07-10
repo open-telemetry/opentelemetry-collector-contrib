@@ -411,7 +411,7 @@ type metricNsxtNodeMemoryCacheUsage struct {
 func (m *metricNsxtNodeMemoryCacheUsage) init() {
 	m.data.SetName("nsxt.node.memory.cache.usage")
 	m.data.SetDescription("The size of the node's memory cache.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -463,7 +463,7 @@ type metricNsxtNodeMemoryUsage struct {
 func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetName("nsxt.node.memory.usage")
 	m.data.SetDescription("The memory usage of the node.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
