@@ -54,9 +54,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			continue
 		}
 
-		// A failure to generate the parse function is not an entry-level parse
-		// error, so it is not subject to the on_error strategy; return it
-		// directly, mirroring Process.
+		// Return the error directly to mirror the behavior of Process.
 		parse, err := p.parseFuncFromHeaderAttribute(e)
 		if err != nil {
 			errs = append(errs, err)
