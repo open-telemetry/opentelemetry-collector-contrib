@@ -109,7 +109,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheRequestTimeDataPoint(ts, "1")
@@ -128,14 +127,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheTrafficRateDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheUptimeDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkerLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
