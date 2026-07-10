@@ -4,7 +4,6 @@
 package opensearchexporter
 
 import (
-	"context"
 	"errors"
 	"net"
 	"testing"
@@ -65,7 +64,7 @@ func TestTraceProcessItemFailure(t *testing.T) {
 
 func TestTraceOnIndexerErrorIsRetryable(t *testing.T) {
 	tbi := &traceBulkIndexer{}
-	tbi.onIndexerError(context.Background(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	tbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
 	err := tbi.joinedError()
 	if err == nil {
 		t.Fatal("expected an error")

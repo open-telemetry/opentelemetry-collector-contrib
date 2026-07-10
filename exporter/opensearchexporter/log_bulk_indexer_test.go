@@ -4,7 +4,6 @@
 package opensearchexporter
 
 import (
-	"context"
 	"errors"
 	"net"
 	"testing"
@@ -66,7 +65,7 @@ func TestProcessItemFailure(t *testing.T) {
 func TestOnIndexerErrorIsRetryable(t *testing.T) {
 	lbi := &logBulkIndexer{}
 	// A transport failure surfaces through the bulk indexer's OnError callback.
-	lbi.onIndexerError(context.Background(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	lbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
 	err := lbi.joinedError()
 	if err == nil {
 		t.Fatal("expected an error")
