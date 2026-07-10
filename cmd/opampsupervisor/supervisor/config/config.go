@@ -309,10 +309,6 @@ func (a Agent) Validate() error {
 		return err
 	}
 
-	if err := a.Package.Validate(); err != nil {
-		return err
-	}
-
 	return nil
 }
 

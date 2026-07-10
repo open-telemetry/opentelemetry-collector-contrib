@@ -16,15 +16,6 @@ type AgentPackage struct {
 	_ struct{}
 }
 
-// Validate validates the agent package configuration.
-func (a AgentPackage) Validate() error {
-	if err := a.Verifier.Validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Verifier configures how downloaded packages are verified. The verification
 // methods themselves (e.g. cosign) are added in later PRs; for now only the
 // no-op verifier is supported.
